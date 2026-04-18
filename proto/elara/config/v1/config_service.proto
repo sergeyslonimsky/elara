@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+package elara.config.v1;
+
+import "buf/validate/validate.proto";
+import "elara/common/v1/common.proto";
+import "elara/config/v1/config.proto";
+
+service ConfigService {
+  rpc CreateConfig(CreateConfigRequest) returns (CreateConfigResponse);
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse);
+  rpc DeleteConfig(DeleteConfigRequest) returns (DeleteConfigResponse);
+  rpc ListConfigs(ListConfigsRequest) returns (ListConfigsResponse);
+  rpc GetConfigHistory(GetConfigHistoryRequest) returns (GetConfigHistoryResponse);
+  rpc GetConfigAtRevision(GetConfigAtRevisionRequest) returns (GetConfigAtRevisionResponse);
+  rpc SearchConfigs(SearchConfigsRequest) returns (SearchConfigsResponse);
+  rpc CopyConfig(CopyConfigRequest) returns (CopyConfigResponse);
+  rpc ValidateConfig(ValidateConfigRequest) returns (ValidateConfigResponse);
+  rpc WatchConfigs(WatchConfigsRequest) returns (stream WatchConfigsResponse);
+}
+
+message CreateConfigRequest {
+  string path = 1 [(buf.validate.field).string.min_len = 1];
+  string content = 2 [(buf.validate.field).string.min_len = 1];
+  Format format = 3;
+  string namespace = 4;
+  map<string, string> metadata = 5;
+}
+
+message CreateConfigResponse {
+  Config config = 1;
+}
+
+message GetConfigRequest {
+  string path = 1 [(buf.validate.field).string.min_len = 1];
+  string namespace = 2;
+}
+
+message GetConfigResponse {
+  Config config = 1;
+}
+
+message UpdateConfigRequest {
+  string path = 1 [(buf.validate.field).string.min_len = 1];
+  string content = 2 [(buf.validate.field).string.min_len = 1];
+  Format format = 3;
+  string namespace = 4;
+  int64 version = 5;
+  map<string, string> metadata = 6;
+}
+
+message UpdateConfigResponse {
+  Config config = 1;
+}
+
+message DeleteConfigRequest {
+  string path = 1 [(buf.validate.field).string.min_len = 1];
+  string namespace = 2;
+}
+
+message DeleteConfigResponse {}
+
+message ListConfigsRequest {
+  string namespace = 1;
+  string path = 2; // Folder path: "" or "/" = root, "/services" = children of /services
+  elara.common.v1.PaginationRequest pagination = 3;
+  elara.common.v1.SortRequest sort = 4;
+  string query = 5; // optional: filter entries by name substring
+}
+
+message ListConfigsResponse {
+  repeated elara.config.v1.DirectoryEntry entries = 1;
+  elara.common.v1.PaginationResponse pagination = 2;
+}
+
+message GetConfigHistoryRequest {
+  string path = 1 [(buf.validate.field).string.min_len = 1];
+  string namespace = 2;
+  int32 limit = 3; // default 20, max entries to return (newest first)
+}
+
+message GetConfigHistoryResponse {
+  repeated elara.config.v1.HistoryEntry entries = 1;
+}
+
+message GetConfigAtRevisionRequest {
+  string path = 1 [(buf.validate.field).string.min_len = 1];
+  string namespace = 2;
+  int64 revision = 3 [(buf.validate.field).int64.gt = 0];
+}
+
+message GetConfigAtRevisionResponse {
+  elara.config.v1.HistoryEntry entry = 1;
+}
+
+message SearchConfigsRequest {
+  string query = 1 [(buf.validate.field).string.min_len = 1];
+  string namespace = 2;
+  elara.common.v1.PaginationRequest pagination = 3;
+  elara.common.v1.SortRequest sort = 4;
+}
+
+message SearchConfigsResponse {
+  repeated elara.config.v1.ConfigSummary results = 1;
+  elara.common.v1.PaginationResponse pagination = 2;
+}
+
+message CopyConfigRequest {
+  string source_path = 1 [(buf.validate.field).string.min_len = 1];
+  string source_namespace = 2;
+  string destination_path = 3 [(buf.validate.field).string.min_len = 1];
+  string destination_namespace = 4;
+}
+
+message CopyConfigResponse {
+  Config config = 1;
+}
+
+message ValidateConfigRequest {
+  string content = 1 [(buf.validate.field).string.min_len = 1];
+  Format format = 2;
+}
+
+message ValidateConfigResponse {
+  ValidationResult result = 1;
+}
+
+message WatchConfigsRequest {
+  string path_prefix = 1;
+  string namespace = 2;
+}
+
+message WatchConfigsResponse {
+  WatchEvent event = 1;
+}

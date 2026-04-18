@@ -1,0 +1,124 @@
+version: "2"
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+    - gci
+    - golines
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/sergeyslonimsky/elara)
+    golines:
+      max-len: 120
+
+linters:
+  default: all
+
+  disable:
+    - iface
+    # Covered by govet + staticcheck; revive too noisy with exported/package-comments
+    - revive
+    - depguard
+
+    - exhaustruct
+    - forbidigo
+    - gochecknoinits
+    - gocognit       # redundant with cyclop
+    - gocyclo        # redundant with cyclop
+    - godot
+    - goheader
+    - gomodguard
+    - gosmopolitan
+    - grouper
+    - interfacebloat
+    - lll            # redundant with golines
+    - maintidx       # redundant with cyclop
+    - nestif
+    - noinlineerr
+    - tparallel       # redundant with paralleltest
+    - tagalign
+    - tagliatelle
+    - varnamelen
+    - wsl_v5
+    - godoclint
+
+    # Not relevant for this project
+    - arangolint
+    - embeddedstructfieldcheck
+    - ginkgolinter
+    - gochecksumtype
+    - goprintffuncname
+    - importas
+    - promlinter
+    - rowserrcheck
+    - spancheck
+    - sqlclosecheck
+    - testableexamples
+    - unqueryvet
+    - zerologlint
+    - wsl
+
+  exclusions:
+    # Exclude files whose first line contains "// Code generated" — covers gen/, protoc output, mocks.
+    # Prefer this over hard-coding directory names so any generated file is excluded regardless of location.
+    generated: strict
+
+    rules:
+      - path: _test\.go
+        linters:
+          - unparam
+          - goconst
+          - gosec
+          - err113   # test fakes use errors.New("boom") idiomatically; sentinel errors add noise
+          - funlen   # table-driven tests are naturally longer
+
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        # Too opinionated / impractical for this codebase
+        - hugeParam      # domain structs are passed by value by design; pointer refactor would break APIs
+        - unnamedResult  # named return types are a style preference, not a correctness issue
+
+    gosec:
+      excludes:
+        # G115: integer overflow conversion — we use bounded numeric conversions throughout
+        # (pagination, revision, counts). All are verified safe by domain invariants.
+        - G115
+        # G301: directory permissions — we use 0o755 which is standard for data dirs.
+        - G301
+        # G118: CompileRegex is not always safe — not applicable here.
+        - G118
+
+    funlen:
+      lines: 80
+      statements: 50
+
+    nakedret:
+      max-func-lines: 30
+
+    nonamedreturns:
+      report-error-in-defer: false
+
+    testpackage:
+      # Files named *_internal_test.go are intentional white-box tests and
+      # must live in the production package to access unexported symbols.
+      skip-regexp: "_internal_test\\.go$"
+
+    unparam:
+      check-exported: false

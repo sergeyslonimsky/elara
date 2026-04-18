@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sergeyslonimsky/elara/helm/values.schema.json",
+  "title": "Elara Helm chart values",
+  "description": "Schema for helm/values.yaml. Invariants marked today with `const` or single-value `enum` will relax when raft HA and pluggable storage ship.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["image", "replicaCount", "storage", "persistence", "config", "service"],
+  "properties": {
+    "image": {
+      "type": "object",
+      "required": ["repository"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag":        { "type": "string" },
+        "pullPolicy": { "enum": ["Always", "IfNotPresent", "Never"] },
+        "digest":     { "type": "string", "pattern": "^$|^sha256:[a-f0-9]{64}$" }
+      }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "type": "string" } }
+      }
+    },
+    "nameOverride":     { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+
+    "replicaCount": {
+      "description": "MUST be 1 until raft-based HA is implemented. bbolt storage holds an exclusive file lock; any value >1 causes startup failures and potential corruption.",
+      "type": "integer",
+      "const": 1
+    },
+    "revisionHistoryLimit":          { "type": "integer", "minimum": 0 },
+    "terminationGracePeriodSeconds": { "type": "integer", "minimum": 1 },
+    "updateStrategy":                { "type": "object" },
+    "podAnnotations":                { "type": "object" },
+    "podLabels":                     { "type": "object" },
+    "priorityClassName":             { "type": "string" },
+
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "create":                       { "type": "boolean" },
+        "automountServiceAccountToken": { "type": "boolean" },
+        "annotations":                  { "type": "object" },
+        "name":                         { "type": "string" }
+      }
+    },
+
+    "podSecurityContext":       { "type": "object" },
+    "containerSecurityContext": { "type": "object" },
+
+    "config": {
+      "type": "object",
+      "required": ["http", "grpc"],
+      "properties": {
+        "http": {
+          "type": "object",
+          "properties": {
+            "port":         { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "readTimeout":  { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" },
+            "writeTimeout": { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" }
+          }
+        },
+        "grpc": {
+          "type": "object",
+          "properties": {
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+          }
+        },
+        "serviceName": { "type": "string" },
+        "clients": {
+          "type": "object",
+          "properties": {
+            "historyMaxRecords":    { "type": "integer", "minimum": 0 },
+            "historyMaxAge":        { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" },
+            "recentEventsCapacity": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+
+    "storage": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "description": "Storage backend. Only bbolt is supported today; postgres and s3 are planned.",
+          "enum": ["bbolt"]
+        },
+        "bbolt": {
+          "type": "object",
+          "properties": {
+            "path": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "serviceMonitor": {
+          "type": "object",
+          "properties": {
+            "enabled":           { "type": "boolean" },
+            "interval":          { "type": "string" },
+            "scrapeTimeout":     { "type": "string" },
+            "labels":            { "type": "object" },
+            "relabelings":       { "type": "array" },
+            "metricRelabelings": { "type": "array" },
+            "jobLabel":          { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "tracing": {
+      "type": "object",
+      "properties": {
+        "enabled":      { "type": "boolean" },
+        "otlpEndpoint": { "type": "string" }
+      }
+    },
+
+    "service": {
+      "type": "object",
+      "required": ["type", "ports"],
+      "properties": {
+        "type":        { "enum": ["ClusterIP", "NodePort", "LoadBalancer"] },
+        "annotations": { "type": "object" },
+        "ports": {
+          "type": "object",
+          "required": ["http", "grpc"],
+          "properties": {
+            "http": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "grpc": { "type": "integer", "minimum": 1, "maximum": 65535 }
+          }
+        },
+        "loadBalancerIP":            { "type": "string" },
+        "loadBalancerSourceRanges":  { "type": "array", "items": { "type": "string" } },
+        "externalTrafficPolicy":     { "type": "string" },
+        "publishNotReadyAddresses":  { "type": "boolean" }
+      }
+    },
+
+    "ingress": {
+      "type": "object",
+      "properties": {
+        "enabled":     { "type": "boolean" },
+        "className":   { "type": "string" },
+        "annotations": { "type": "object" },
+        "hosts":       { "type": "array" },
+        "tls":         { "type": "array" }
+      }
+    },
+
+    "resources": { "type": "object" },
+    "nodeSelector": { "type": "object" },
+    "tolerations":  { "type": "array" },
+    "affinity":     { "type": "object" },
+    "topologySpreadConstraints": { "type": "array" },
+
+    "livenessProbe":  { "type": "object" },
+    "readinessProbe": { "type": "object" },
+    "startupProbe":   { "type": "object" },
+
+    "persistence": {
+      "type": "object",
+      "properties": {
+        "enabled":        { "type": "boolean" },
+        "existingClaim":  { "type": "string" },
+        "accessMode":     { "enum": ["ReadWriteOnce"] },
+        "size":           { "type": "string" },
+        "storageClassName": { "type": "string" },
+        "annotations":    { "type": "object" }
+      }
+    },
+
+    "networkPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "ingress": { "type": "array" },
+        "egress":  { "type": "array" }
+      }
+    },
+
+    "extraEnv":          { "type": "array" },
+    "extraEnvFrom":      { "type": "array" },
+    "extraVolumes":      { "type": "array" },
+    "extraVolumeMounts": { "type": "array" },
+    "extraContainers":   { "type": "array" },
+    "initContainers":    { "type": "array" },
+    "hostAliases":       { "type": "array" },
+    "dnsConfig":         { "type": "object" },
+    "dnsPolicy":         { "type": "string" }
+  }
+}

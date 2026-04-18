@@ -1,0 +1,65 @@
+# VCS & editors
+.git
+.gitignore
+.idea/
+.vscode/
+.claude/
+.mcp.json
+*.swp
+*.swo
+*~
+
+# Docs (not needed for the build)
+docs/
+doc/
+*.md
+
+# CI/CD & tooling configs
+.github/
+.golangci.yml
+
+# Helm chart (shipped separately, not in image)
+helm/
+
+# Local runtime state
+data/
+.env*
+config.local.yaml
+*.local
+Makefile
+
+# Go vendor — not committed; `go mod download` runs inside the build.
+vendor/
+
+# Frontend — the image's frontend stage runs `npm ci` from package*.json,
+# so local node_modules / dist never enter the build context.
+web/node_modules/
+web/dist/
+
+# OS / junk
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Repo-only testing & examples
+test/
+coverage.out
+examples/
+assets/
+
+# Compose files (operator tooling, not app code)
+docker-compose*.yml
+
+# Logs
+*.log
+
+# Built binaries (we build inside the image)
+elara
+*.exe
+
+# Proto source & buf tooling — service imports pre-generated Go under internal/proto/
+proto/
+buf.gen.yaml
+buf.lock
+buf.yaml

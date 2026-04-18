@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package elara.clients.v1;
+
+import "buf/validate/validate.proto";
+import "elara/clients/v1/clients.proto";
+
+service ClientsService {
+  // ListActiveClients returns all currently-connected clients.
+  rpc ListActiveClients(ListActiveClientsRequest) returns (ListActiveClientsResponse);
+
+  // GetClient returns one client (active or recently disconnected) along with
+  // its recent in-memory event log. Recent events are not persisted — for
+  // disconnected clients, recent_events will be empty.
+  rpc GetClient(GetClientRequest) returns (GetClientResponse);
+
+  // ListHistoricalConnections returns past connections, newest first.
+  rpc ListHistoricalConnections(ListHistoricalConnectionsRequest) returns (ListHistoricalConnectionsResponse);
+
+  // ListClientSessions returns past connections of the same logical client
+  // (matched by client_name + k8s_namespace), newest first. The current
+  // session (current_id) is excluded if provided.
+  rpc ListClientSessions(ListClientSessionsRequest) returns (ListClientSessionsResponse);
+
+  // WatchClients streams live updates: full snapshots on a periodic ticker
+  // plus immediate Connected/Disconnected events. Designed to feed a UI list
+  // view; cancelled when the client closes the stream.
+  rpc WatchClients(WatchClientsRequest) returns (stream WatchClientsResponse);
+
+  // WatchClient streams live updates for a single client: snapshot updates
+  // (so KPI cards stay live) and per-RPC events (so the activity log can
+  // tail in real time). The stream ends when the client disconnects.
+  rpc WatchClient(WatchClientRequest) returns (stream WatchClientResponse);
+}
+
+message ListActiveClientsRequest {}
+
+message ListActiveClientsResponse {
+  repeated Client clients = 1;
+}
+
+message GetClientRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetClientResponse {
+  Client client = 1;
+  // Recent in-memory events (oldest first). Capacity is bounded server-side.
+  repeated ClientEvent recent_events = 2;
+}
+
+message ListHistoricalConnectionsRequest {
+  // Maximum number of records to return; 0 → server default.
+  int32 limit = 1;
+}
+
+message ListHistoricalConnectionsResponse {
+  // Newest-first.
+  repeated Client clients = 1;
+}
+
+message WatchClientsRequest {}
+
+message WatchClientsResponse {
+  Kind kind = 1;
+  // For SNAPSHOT: full active-client list at this moment.
+  // For CONNECTED/DISCONNECTED: single-element list with the affected client.
+  repeated Client clients = 2;
+
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_SNAPSHOT = 1;
+    KIND_CONNECTED = 2;
+    KIND_DISCONNECTED = 3;
+  }
+}
+
+message ListClientSessionsRequest {
+  string client_name = 1 [(buf.validate.field).string.min_len = 1];
+  string k8s_namespace = 2;
+  // Connection ID to exclude (typically the active session being viewed).
+  string current_id = 3;
+  // 0 → server default.
+  int32 limit = 4;
+}
+
+message ListClientSessionsResponse {
+  // Newest-first.
+  repeated Client sessions = 1;
+}
+
+message WatchClientRequest {
+  string id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message WatchClientResponse {
+  Kind kind = 1;
+  // For SNAPSHOT and DISCONNECTED: full snapshot of this client.
+  Client client = 2;
+  // For REQUEST_RECORDED: the per-RPC event detail.
+  ClientEvent event = 3;
+
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_SNAPSHOT = 1;
+    KIND_REQUEST_RECORDED = 2;
+    KIND_DISCONNECTED = 3;
+  }
+}

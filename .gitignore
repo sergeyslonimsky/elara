@@ -1,0 +1,34 @@
+# Editors & tools
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+*~
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Local runtime state
+.env
+.env.local
+config.yaml
+data/
+coverage.out
+*.log
+
+# Go vendor tree — pulled via `go mod download` (go.sum pins integrity).
+# Keep out of git to avoid noisy dependency-bump diffs and 40+ MB bloat.
+vendor/
+
+# Compiled binary from local `go build`
+/elara
+
+# Helm chart artifacts
+*.tgz
+.cr-release-packages/
+
+# Claude code
+CLAUDE.md
+.mcp.json

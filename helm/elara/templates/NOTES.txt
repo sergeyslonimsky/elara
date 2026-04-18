@@ -1,0 +1,65 @@
+Elara {{ .Chart.AppVersion }} has been installed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+1. Wait for the pod to become ready:
+
+   kubectl --namespace {{ .Release.Namespace }} rollout status statefulset/{{ include "elara.fullname" . }} --timeout=120s
+
+2. Access the Web UI and ConnectRPC API:
+
+{{- if .Values.ingress.enabled }}
+   Ingress is enabled. Reach Elara at:
+   {{- $tls := .Values.ingress.tls }}
+   {{- range $host := .Values.ingress.hosts }}
+   {{- range $path := $host.paths }}
+     http{{ if $tls }}s{{ end }}://{{ $host.host }}{{ $path.path }}
+   {{- end }}
+   {{- end }}
+{{- else if eq .Values.service.type "LoadBalancer" }}
+   Service is of type LoadBalancer. Fetch the external IP:
+   kubectl --namespace {{ .Release.Namespace }} get svc {{ include "elara.fullname" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+{{- else }}
+   Service is of type {{ .Values.service.type }}. Forward a local port:
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "elara.fullname" . }} 8080:{{ .Values.service.ports.http }}
+
+   Then open http://localhost:8080 in your browser.
+{{- end }}
+
+3. The etcd-compatible gRPC API is served on port {{ .Values.service.ports.grpc }} of the same Service.
+   It is intentionally NOT exposed via Ingress — use a gRPC-aware ingress,
+   a LoadBalancer-type service, or consume it cluster-internally.
+
+   Quick local check:
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "elara.fullname" . }} 2379:{{ .Values.service.ports.grpc }}
+   ETCDCTL_API=3 etcdctl --endpoints=localhost:2379 endpoint health
+
+4. Health endpoints (HTTP port):
+   - /livez  — liveness  (always 200 while the process runs)
+   - /readyz — readiness (200 only after all internal checks pass)
+
+{{- if .Values.metrics.enabled }}
+
+5. Prometheus metrics are exposed at /metrics on the HTTP port.
+{{- if .Values.metrics.serviceMonitor.enabled }}
+   A ServiceMonitor has been created; make sure your Prometheus instance
+   watches namespace "{{ .Release.Namespace }}" and matches the release's labels.
+{{- else }}
+   Enable a ServiceMonitor (requires Prometheus Operator) with:
+     --set metrics.serviceMonitor.enabled=true
+{{- end }}
+{{- end }}
+
+{{- if .Values.tracing.enabled }}
+
+6. OTLP tracing is enabled — traces are pushed to:
+   {{ .Values.tracing.otlpEndpoint }}
+{{- end }}
+
+IMPORTANT:
+  Elara uses an embedded bbolt database. It MUST run as a single replica until
+  raft-based HA is shipped. Do NOT scale this release to replicaCount > 1 —
+  values.schema.json enforces this today to prevent data corruption.
+
+Run the chart's smoke test:
+  helm --namespace {{ .Release.Namespace }} test {{ .Release.Name }}
+
+Chart source: https://github.com/sergeyslonimsky/elara

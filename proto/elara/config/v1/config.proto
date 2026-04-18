@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package elara.config.v1;
+
+import "google/protobuf/timestamp.proto";
+
+enum Format {
+  FORMAT_UNSPECIFIED = 0;
+  FORMAT_JSON = 1;
+  FORMAT_YAML = 2;
+  FORMAT_OTHER = 3;
+}
+
+message Config {
+  string path = 1;
+  string content = 2;
+  string content_hash = 3;
+  Format format = 4;
+  string namespace = 5;
+  int64 version = 6;
+  map<string, string> metadata = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  int64 revision = 10;
+}
+
+message ConfigSummary {
+  string path = 1;
+  string content_hash = 2;
+  Format format = 3;
+  string namespace = 4;
+  int64 version = 5;
+  int64 revision = 6;
+  map<string, string> metadata = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message DirectoryEntry {
+  string name = 1;
+  string full_path = 2;
+  bool is_file = 3;
+  // File metadata (populated only for files):
+  Format format = 4;
+  int64 version = 5;
+  int64 revision = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  // Folder metadata (populated only for folders):
+  int32 child_count = 8;
+}
+
+message HistoryEntry {
+  int64 revision = 1;
+  string content = 2;
+  string content_hash = 3;
+  EventType event_type = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+message ValidationResult {
+  bool valid = 1;
+  repeated string errors = 2;
+  Format detected_format = 3;
+  string normalized_content = 4;
+}
+
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  EVENT_TYPE_CREATED = 1;
+  EVENT_TYPE_UPDATED = 2;
+  EVENT_TYPE_DELETED = 3;
+}
+
+message WatchEvent {
+  EventType type = 1;
+  string path = 2;
+  string namespace = 3;
+  Config config = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}

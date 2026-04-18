@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package elara.namespace.v1;
+
+import "buf/validate/validate.proto";
+import "elara/common/v1/common.proto";
+import "elara/namespace/v1/namespace.proto";
+
+service NamespaceService {
+  rpc CreateNamespace(CreateNamespaceRequest) returns (CreateNamespaceResponse);
+  rpc GetNamespace(GetNamespaceRequest) returns (GetNamespaceResponse);
+  rpc UpdateNamespace(UpdateNamespaceRequest) returns (UpdateNamespaceResponse);
+  rpc ListNamespaces(ListNamespacesRequest) returns (ListNamespacesResponse);
+  rpc DeleteNamespace(DeleteNamespaceRequest) returns (DeleteNamespaceResponse);
+}
+
+message CreateNamespaceRequest {
+  string name = 1 [(buf.validate.field).string = {
+    min_len: 1,
+    max_len: 128,
+    pattern: "^[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?$"
+  }];
+  string description = 2;
+}
+
+message CreateNamespaceResponse {
+  Namespace namespace = 1;
+}
+
+message GetNamespaceRequest {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetNamespaceResponse {
+  Namespace namespace = 1;
+}
+
+message ListNamespacesRequest {
+  elara.common.v1.PaginationRequest pagination = 1;
+  elara.common.v1.SortRequest sort = 2;
+  string query = 3; // optional: filter namespaces by name substring
+}
+
+message ListNamespacesResponse {
+  repeated Namespace namespaces = 1;
+  elara.common.v1.PaginationResponse pagination = 2;
+}
+
+message UpdateNamespaceRequest {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string description = 2;
+}
+
+message UpdateNamespaceResponse {
+  Namespace namespace = 1;
+}
+
+message DeleteNamespaceRequest {
+  string name = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteNamespaceResponse {}

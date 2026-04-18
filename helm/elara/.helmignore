@@ -1,0 +1,27 @@
+# Patterns to ignore when building the chart tarball.
+# Follows the standard `helm create` template.
+
+# VCS & editors
+.DS_Store
+.git/
+.gitignore
+.bzr/
+.bzrignore
+.hg/
+.hgignore
+.svn/
+.idea/
+.vscode/
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+
+# Chart artifacts
+*.tgz
+OWNERS
+
+# Local-only files
+examples/
+README.md.gotmpl

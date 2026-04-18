@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "elara.headlessServiceName" . }}
+  labels:
+    {{- include "elara.labels" . | nindent 4 }}
+  annotations:
+    # Required so StatefulSet pods receive stable DNS records via the
+    # headless service — needed today for intra-cluster gRPC clients and
+    # tomorrow for raft peer discovery.
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: http
+      port: {{ .Values.config.http.port }}
+      targetPort: http
+      protocol: TCP
+      appProtocol: http2
+    - name: grpc
+      port: {{ .Values.config.grpc.port }}
+      targetPort: grpc
+      protocol: TCP
+      appProtocol: grpc
+  selector:
+    {{- include "elara.selectorLabels" . | nindent 4 }}

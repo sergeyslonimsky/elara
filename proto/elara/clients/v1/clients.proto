@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package elara.clients.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+// Client is a snapshot of a connected (or recently disconnected) etcd-API
+// client. All identity fields beyond peer_address are best-effort and may be
+// empty when the client does not advertise them.
+message Client {
+  string id = 1;
+  string peer_address = 2;
+  string user_agent = 3;
+  string client_name = 4;
+  string client_version = 5;
+  string k8s_namespace = 6;
+  string k8s_pod = 7;
+  string k8s_node = 8;
+  string instance_id = 9;
+  google.protobuf.Timestamp connected_at = 10;
+  // Set only for historical/disconnected clients.
+  google.protobuf.Timestamp disconnected_at = 11;
+  google.protobuf.Timestamp last_activity_at = 12;
+  // Total open watches; equals len(active_watch_list) for live clients,
+  // 0 for historical/persisted clients (detail is not persisted).
+  int32 active_watches = 13;
+  map<string, int64> request_counts = 14;
+  int64 error_count = 15;
+  // Per-watch detail. Only populated for live clients.
+  repeated ActiveWatch active_watch_list = 16;
+}
+
+// ActiveWatch represents one open Watch held by a client. Keys are in their
+// etcd-encoded form ("/{namespace}/{path}"); the UI splits them for display.
+message ActiveWatch {
+  int64 watch_id = 1;
+  string start_key = 2;
+  // Empty for single-key watches; "\x00" (single null byte) for "all keys ≥ start".
+  string end_key = 3;
+  int64 start_revision = 4;
+  google.protobuf.Timestamp created_at = 5;
+  bool prev_kv = 6;
+  bool progress_notify = 7;
+}
+
+// ClientEvent is one entry in the per-client recent-events ring buffer.
+message ClientEvent {
+  google.protobuf.Timestamp timestamp = 1;
+  string method = 2;
+  string key = 3;
+  int64 revision = 4;
+  google.protobuf.Duration duration = 5;
+  string error = 6;
+}

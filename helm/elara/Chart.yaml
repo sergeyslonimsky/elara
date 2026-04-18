@@ -1,0 +1,54 @@
+apiVersion: v2
+name: elara
+description: |
+  Elara — configuration management service with Web UI, ConnectRPC API,
+  and etcd-compatible gRPC API. Single-instance bbolt storage (raft HA on roadmap).
+type: application
+
+# Chart version — bumped on every chart change.
+version: 0.3.0
+
+# Application version — kept in sync with chart version via CI.
+appVersion: "0.3.0"
+
+kubeVersion: ">=1.25.0-0"
+
+home: https://github.com/sergeyslonimsky/elara
+sources:
+  - https://github.com/sergeyslonimsky/elara
+icon: https://raw.githubusercontent.com/sergeyslonimsky/elara/master/helm/elara/assets/logo.svg
+
+keywords:
+  - configuration
+  - config-management
+  - etcd
+  - connectrpc
+  - grpc
+  - key-value
+  - web-ui
+
+maintainers:
+  - name: Sergey Slonimsky
+    email: sergeyslonimsky@gmail.com
+    url: https://github.com/sergeyslonimsky
+
+annotations:
+  artifacthub.io/license: MIT
+  artifacthub.io/category: networking
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/links: |
+    - name: GitHub
+      url: https://github.com/sergeyslonimsky/elara
+    - name: Chart Source
+      url: https://github.com/sergeyslonimsky/elara/tree/master/helm
+  artifacthub.io/changes: |
+    - kind: changed
+      description: Deployment switched to StatefulSet with volumeClaimTemplates
+    - kind: fixed
+      description: Environment variable names now match the service config schema
+    - kind: fixed
+      description: Probe paths corrected to /livez and /readyz
+    - kind: added
+      description: values.schema.json, NOTES.txt, ServiceMonitor, NetworkPolicy, helm tests
+    - kind: removed
+      description: Dead PostgreSQL migrations and HPA templates (reserved for future raft HA)

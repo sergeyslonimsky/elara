@@ -1,0 +1,340 @@
+# Default values for elara.
+# https://github.com/sergeyslonimsky/elara
+#
+# This file is the primary user-facing interface for the chart. Every
+# override lives here or under an --set flag. Section order follows the
+# common install path: image → workload → security → app config → storage
+# → observability → network → resources → probes → persistence → extras.
+
+# -- Container image.
+# `tag` falls back to .Chart.AppVersion when empty.
+# `digest` takes precedence over `tag` when both are set — prefer digest pinning in production.
+image:
+  repository: ghcr.io/sergeyslonimsky/elara
+  tag: ""
+  pullPolicy: IfNotPresent
+  digest: ""
+
+# -- Image pull secrets for private registries.
+imagePullSecrets: []
+# - name: my-registry-secret
+
+# -- Overrides for the generated resource names. Leave empty unless you
+# need to force a specific name (e.g. migrating from another release).
+nameOverride: ""
+fullnameOverride: ""
+
+# -----------------------------------------------------------------------
+# Workload
+# -----------------------------------------------------------------------
+# INVARIANT: Elara runs as a single instance until raft-based HA lands.
+# Multi-replica with bbolt storage causes data corruption. values.schema.json
+# enforces replicaCount == 1 today; will relax to `minimum: 1` when raft ships.
+replicaCount: 1
+
+# -- Number of previous ReplicaSets to retain for rollback (StatefulSet field).
+revisionHistoryLimit: 10
+
+# -- Time Kubernetes waits between SIGTERM and SIGKILL. Must exceed the
+# service's internal shutdown timeout (30s) with a small buffer.
+terminationGracePeriodSeconds: 35
+
+# -- StatefulSet rolling update strategy.
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    partition: 0
+
+podAnnotations: {}
+podLabels: {}
+
+# -- priorityClassName for the pod.
+priorityClassName: ""
+
+# -----------------------------------------------------------------------
+# Service account & pod-level security
+# -----------------------------------------------------------------------
+
+serviceAccount:
+  # -- Create a dedicated ServiceAccount for the pod.
+  create: true
+  # -- Mount the SA token. The service does not talk to the Kubernetes API,
+  # so the token is disabled by default.
+  automountServiceAccountToken: false
+  annotations: {}
+  name: ""
+
+# -- podSecurityContext applies to all containers in the pod.
+# runAsUser 65532 matches the `USER 65532:65532` directive in the Dockerfile.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  fsGroupChangePolicy: OnRootMismatch
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- containerSecurityContext applies to the elara container.
+containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+  seccompProfile:
+    type: RuntimeDefault
+
+# -----------------------------------------------------------------------
+# Elara service configuration (→ env vars via ConfigMap)
+# -----------------------------------------------------------------------
+# Each key maps 1:1 to a viper config path in the service. Viper
+# uppercases dots to underscores, so http.frontend.readTimeout is
+# exposed as HTTP_FRONTEND_READTIMEOUT (no underscore inside camelCase
+# tokens — this is the core library's SetEnvKeyReplacer(".", "_") rule).
+config:
+  http:
+    # -- HTTP/2 port serving ConnectRPC + static UI.
+    port: 8080
+    # -- Max duration for reading the request body. `0s` = library default.
+    readTimeout: "0s"
+    # -- Max duration for writing the response. Must be long because the
+    # service hosts server-streaming RPCs (WatchConfigs, WatchClients).
+    # Default in-code is 24h; overriding below 5m will cut streams.
+    writeTimeout: "24h"
+  grpc:
+    # -- etcd-compatible gRPC API port.
+    port: 2379
+  # -- Overrides the resolved service name used in Prometheus / OTel
+  # resource labels. Leave empty to derive from the chart name.
+  serviceName: ""
+  clients:
+    # -- Max historical client events retained in memory.
+    historyMaxRecords: 1000
+    # -- Retention window for client history (Go duration).
+    historyMaxAge: "720h"
+    # -- Capacity of the recent-events ring buffer.
+    recentEventsCapacity: 100
+
+# -----------------------------------------------------------------------
+# Storage backend
+# -----------------------------------------------------------------------
+# Pluggable storage. Today only `bbolt` is supported. Future backends
+# (`postgres`, `s3`) will plug in as sibling keys below. Reserved keys
+# are commented out and validated away by values.schema.json.
+storage:
+  # -- Backend kind. Schema enum: [bbolt] today; will expand with backends.
+  type: bbolt
+  bbolt:
+    # -- Directory inside the PVC mount where the `elara.db` file lives.
+    path: /var/lib/elara
+  # postgres:                    # RESERVED for future backend
+  #   host: ""
+  #   port: 5432
+  #   database: elara
+  #   user: ""
+  #   existingSecret: ""         # Secret with `password` key
+  #   sslMode: require
+  #   migrations:
+  #     image: { repository: "", tag: "" }
+  # s3:                          # RESERVED for future backend
+  #   endpoint: ""
+  #   bucket: ""
+  #   region: ""
+  #   existingSecret: ""         # Secret with access/secret key
+
+# -----------------------------------------------------------------------
+# Observability
+# -----------------------------------------------------------------------
+
+metrics:
+  # -- Expose Prometheus /metrics on the HTTP port.
+  enabled: false
+  serviceMonitor:
+    # -- Create a Prometheus-Operator ServiceMonitor. Requires the
+    # monitoring.coreos.com CRDs; enable only when the operator is installed.
+    enabled: false
+    interval: "30s"
+    scrapeTimeout: "10s"
+    # -- Extra labels to apply (e.g. {release: kube-prometheus-stack}).
+    labels: {}
+    relabelings: []
+    metricRelabelings: []
+    jobLabel: ""
+
+tracing:
+  # -- Enable OTLP trace export.
+  enabled: false
+  # -- OTLP HTTP endpoint, e.g. http://otel-collector.observability:4318
+  otlpEndpoint: ""
+
+# -----------------------------------------------------------------------
+# Services & ingress
+# -----------------------------------------------------------------------
+
+service:
+  type: ClusterIP
+  annotations: {}
+  ports:
+    # -- HTTP/2 port for ConnectRPC and the Web UI.
+    http: 8080
+    # -- etcd-compatible gRPC port.
+    grpc: 2379
+  # -- LoadBalancer-type fields (ignored otherwise).
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+  externalTrafficPolicy: ""
+  # -- Publish the pod address before readiness (useful for peer discovery).
+  # Keep `false` — probe-gated rollout is safer until raft HA.
+  publishNotReadyAddresses: false
+
+ingress:
+  # -- Create an Ingress for HTTP / ConnectRPC / Web UI traffic.
+  # NOTE: the etcd-compatible gRPC port (2379) is intentionally NOT
+  # exposed here — use a gRPC-aware ingress or a dedicated LoadBalancer.
+  enabled: false
+  className: ""
+  annotations: {}
+    # nginx-ingress example:
+    # nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: elara.local
+      paths:
+        - path: /
+          pathType: Prefix
+          port: http
+  tls: []
+  # - secretName: elara-tls
+  #   hosts:
+  #     - elara.example.com
+
+# -----------------------------------------------------------------------
+# Resources & scheduling
+# -----------------------------------------------------------------------
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# -- Template-ready; meaningful only when replicaCount > 1 (future raft HA).
+topologySpreadConstraints: []
+
+# -----------------------------------------------------------------------
+# Probes
+# -----------------------------------------------------------------------
+
+livenessProbe:
+  httpGet:
+    path: /livez
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# -- Grants 60s to first /livez success before liveness kicks in.
+startupProbe:
+  httpGet:
+    path: /livez
+    port: http
+  periodSeconds: 2
+  failureThreshold: 30
+  timeoutSeconds: 3
+
+# -----------------------------------------------------------------------
+# Persistence (bbolt database)
+# -----------------------------------------------------------------------
+# Only relevant when storage.type == "bbolt". PVC is created via
+# StatefulSet volumeClaimTemplates — deleting the release does NOT
+# delete data; remove the PVC manually when intended.
+persistence:
+  enabled: true
+  # -- Use a pre-existing PVC instead of volumeClaimTemplates.
+  existingClaim: ""
+  # -- Must be ReadWriteOnce: bbolt needs an exclusive file lock.
+  accessMode: ReadWriteOnce
+  size: 2Gi
+  # -- Empty → uses the cluster's default StorageClass.
+  storageClassName: ""
+  annotations: {}
+
+# -----------------------------------------------------------------------
+# Autoscaling (reserved for future raft HA)
+# -----------------------------------------------------------------------
+# autoscaling:
+#   enabled: false
+#   minReplicas: 3
+#   maxReplicas: 5
+#   targetCPUUtilizationPercentage: 80
+# DO NOT enable with bbolt storage — bbolt is single-instance. This
+# section is commented out intentionally; a template will ship once
+# raft-based HA is implemented in the service.
+
+# -----------------------------------------------------------------------
+# Network policy (opt-in, CNI-dependent)
+# -----------------------------------------------------------------------
+
+networkPolicy:
+  # -- Render a NetworkPolicy restricting ingress traffic.
+  enabled: false
+  # -- Additional `from:` selectors for ingress rules. When empty, all
+  # pods in the release namespace can reach the service.
+  # Example:
+  #   - namespaceSelector:
+  #       matchLabels: { kubernetes.io/metadata.name: monitoring }
+  ingress: []
+  # -- Egress is left unrestricted by default (OTLP, DNS). Add `to:`
+  # selectors here to tighten.
+  egress: []
+
+# -----------------------------------------------------------------------
+# Extensibility hooks
+# -----------------------------------------------------------------------
+
+# -- Extra env vars appended to the container (literal values).
+extraEnv: []
+# - name: MY_EXTRA
+#   value: "hello"
+
+# -- Extra envFrom sources (ConfigMap/Secret references).
+extraEnvFrom: []
+# - secretRef:
+#     name: my-otlp-auth
+# - configMapRef:
+#     name: my-shared-config
+
+# -- Extra volumes mounted on the pod.
+extraVolumes: []
+
+# -- Extra volume mounts on the elara container.
+extraVolumeMounts: []
+
+# -- Sidecar containers.
+extraContainers: []
+
+# -- Init containers appended before the elara container.
+initContainers: []
+
+hostAliases: []
+dnsConfig: {}
+dnsPolicy: ""

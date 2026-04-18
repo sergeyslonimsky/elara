@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "elara.configMapName" . }}
+  labels:
+    {{- include "elara.labels" . | nindent 4 }}
+data:
+  # Env-var names are derived from viper config keys by the core library's
+  # SetEnvKeyReplacer(".", "_") rule: dotted path → uppercased underscores,
+  # WITHOUT splitting camelCase tokens. So http.frontend.readTimeout is
+  # HTTP_FRONTEND_READTIMEOUT (not HTTP_FRONTEND_READ_TIMEOUT).
+
+  # HTTP/2 server (ConnectRPC + Web UI)
+  HTTP_FRONTEND_PORT: {{ .Values.config.http.port | quote }}
+  HTTP_FRONTEND_READTIMEOUT: {{ .Values.config.http.readTimeout | quote }}
+  HTTP_FRONTEND_WRITETIMEOUT: {{ .Values.config.http.writeTimeout | quote }}
+
+  # gRPC server (etcd-compatible API)
+  GRPC_ETCD_PORT: {{ .Values.config.grpc.port | quote }}
+
+  # Service identity (used as Prometheus / OTel resource labels)
+  SERVICE_NAME: {{ include "elara.serviceName" . | quote }}
+  SERVICE_VERSION: {{ .Chart.AppVersion | quote }}
+
+  # Connected-clients monitor (in-memory, etcd API)
+  CLIENTS_HISTORY_MAX_RECORDS: {{ .Values.config.clients.historyMaxRecords | quote }}
+  CLIENTS_HISTORY_MAX_AGE: {{ .Values.config.clients.historyMaxAge | quote }}
+  CLIENTS_RECENT_EVENTS_CAPACITY: {{ .Values.config.clients.recentEventsCapacity | quote }}
+
+  # Observability (opt-in)
+  METRICS_ENABLED: {{ .Values.metrics.enabled | quote }}
+  TRACING_ENABLED: {{ .Values.tracing.enabled | quote }}
+  {{- if .Values.tracing.otlpEndpoint }}
+  TRACING_OTLP_ENDPOINT: {{ .Values.tracing.otlpEndpoint | quote }}
+  {{- end }}
+
+  # Storage backend — bbolt keeps its single db file in CONFIG_DATA_PATH.
+  {{- if eq .Values.storage.type "bbolt" }}
+  CONFIG_DATA_PATH: {{ .Values.storage.bbolt.path | quote }}
+  {{- end }}
