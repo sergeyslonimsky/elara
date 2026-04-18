@@ -1,0 +1,53 @@
+apiVersion: v1
+entries:
+  elara:
+  - annotations:
+      artifacthub.io/category: networking
+      artifacthub.io/changes: |
+        - kind: changed
+          description: Deployment switched to StatefulSet with volumeClaimTemplates
+        - kind: fixed
+          description: Environment variable names now match the service config schema
+        - kind: fixed
+          description: Probe paths corrected to /livez and /readyz
+        - kind: added
+          description: values.schema.json, NOTES.txt, ServiceMonitor, NetworkPolicy, helm tests
+        - kind: removed
+          description: Dead PostgreSQL migrations and HPA templates (reserved for future raft HA)
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: GitHub
+          url: https://github.com/sergeyslonimsky/elara
+        - name: Chart Source
+          url: https://github.com/sergeyslonimsky/elara/tree/master/helm
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 0.1.0-rc.0
+    created: "2026-04-18T01:46:20.55565493Z"
+    description: 'Elara — configuration management service with Web UI, ConnectRPC
+      API, and etcd-compatible gRPC API. Single-instance bbolt storage (raft HA on
+      roadmap). '
+    digest: e36603010e606929b6a3c2df70c27ae5ceaf61578a2d601e7cc622bca3887d7d
+    home: https://github.com/sergeyslonimsky/elara
+    icon: https://raw.githubusercontent.com/sergeyslonimsky/elara/master/helm/elara/assets/logo.svg
+    keywords:
+    - configuration
+    - config-management
+    - etcd
+    - connectrpc
+    - grpc
+    - key-value
+    - web-ui
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - email: sergeyslonimsky@gmail.com
+      name: Sergey Slonimsky
+      url: https://github.com/sergeyslonimsky
+    name: elara
+    sources:
+    - https://github.com/sergeyslonimsky/elara
+    type: application
+    urls:
+    - https://github.com/sergeyslonimsky/elara/releases/download/elara-0.1.0-rc.0/elara-0.1.0-rc.0.tgz
+    version: 0.1.0-rc.0
+generated: "2026-04-18T01:46:20.555689956Z"
