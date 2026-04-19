@@ -115,7 +115,7 @@ func validateYAML(content string) error {
 func normalizeJSON(content string) (string, error) {
 	var js any
 	if err := json.Unmarshal([]byte(content), &js); err != nil {
-		return "", fmt.Errorf("unmarshal JSON: %w", err)
+		return "", fmt.Errorf("%w: unmarshal JSON: %w", ErrInvalidContent, err)
 	}
 
 	normalized, err := json.MarshalIndent(js, "", "  ")
@@ -129,7 +129,7 @@ func normalizeJSON(content string) (string, error) {
 func normalizeYAML(content string) (string, error) {
 	var ys any
 	if err := yaml.Unmarshal([]byte(content), &ys); err != nil {
-		return "", fmt.Errorf("unmarshal YAML: %w", err)
+		return "", fmt.Errorf("%w: unmarshal YAML: %w", ErrInvalidContent, err)
 	}
 
 	normalized, err := yaml.Marshal(ys)

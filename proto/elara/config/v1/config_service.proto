@@ -18,13 +18,14 @@ service ConfigService {
   rpc CopyConfig(CopyConfigRequest) returns (CopyConfigResponse);
   rpc ValidateConfig(ValidateConfigRequest) returns (ValidateConfigResponse);
   rpc WatchConfigs(WatchConfigsRequest) returns (stream WatchConfigsResponse);
+  rpc GetConfigDiff(GetConfigDiffRequest) returns (GetConfigDiffResponse);
 }
 
 message CreateConfigRequest {
-  string path = 1 [(buf.validate.field).string.min_len = 1];
-  string content = 2 [(buf.validate.field).string.min_len = 1];
+  string path = 1 [(buf.validate.field).required = true];
+  string content = 2 [(buf.validate.field).required = true];
   Format format = 3;
-  string namespace = 4;
+  string namespace = 4 [(buf.validate.field).required = true];
   map<string, string> metadata = 5;
 }
 
@@ -33,8 +34,8 @@ message CreateConfigResponse {
 }
 
 message GetConfigRequest {
-  string path = 1 [(buf.validate.field).string.min_len = 1];
-  string namespace = 2;
+  string path = 1 [(buf.validate.field).required = true];
+  string namespace = 2 [(buf.validate.field).required = true];
 }
 
 message GetConfigResponse {
@@ -42,10 +43,10 @@ message GetConfigResponse {
 }
 
 message UpdateConfigRequest {
-  string path = 1 [(buf.validate.field).string.min_len = 1];
-  string content = 2 [(buf.validate.field).string.min_len = 1];
+  string path = 1 [(buf.validate.field).required = true];
+  string content = 2 [(buf.validate.field).required = true];
   Format format = 3;
-  string namespace = 4;
+  string namespace = 4 [(buf.validate.field).required = true];
   int64 version = 5;
   map<string, string> metadata = 6;
 }
@@ -55,8 +56,8 @@ message UpdateConfigResponse {
 }
 
 message DeleteConfigRequest {
-  string path = 1 [(buf.validate.field).string.min_len = 1];
-  string namespace = 2;
+  string path = 1 [(buf.validate.field).required = true];
+  string namespace = 2 [(buf.validate.field).required = true];
 }
 
 message DeleteConfigResponse {}
@@ -75,7 +76,7 @@ message ListConfigsResponse {
 }
 
 message GetConfigHistoryRequest {
-  string path = 1 [(buf.validate.field).string.min_len = 1];
+  string path = 1 [(buf.validate.field).required = true];
   string namespace = 2;
   int32 limit = 3; // default 20, max entries to return (newest first)
 }
@@ -85,7 +86,7 @@ message GetConfigHistoryResponse {
 }
 
 message GetConfigAtRevisionRequest {
-  string path = 1 [(buf.validate.field).string.min_len = 1];
+  string path = 1 [(buf.validate.field).required = true];
   string namespace = 2;
   int64 revision = 3 [(buf.validate.field).int64.gt = 0];
 }
@@ -95,7 +96,7 @@ message GetConfigAtRevisionResponse {
 }
 
 message SearchConfigsRequest {
-  string query = 1 [(buf.validate.field).string.min_len = 1];
+  string query = 1 [(buf.validate.field).required = true];
   string namespace = 2;
   elara.common.v1.PaginationRequest pagination = 3;
   elara.common.v1.SortRequest sort = 4;
@@ -107,9 +108,9 @@ message SearchConfigsResponse {
 }
 
 message CopyConfigRequest {
-  string source_path = 1 [(buf.validate.field).string.min_len = 1];
+  string source_path = 1 [(buf.validate.field).required = true];
   string source_namespace = 2;
-  string destination_path = 3 [(buf.validate.field).string.min_len = 1];
+  string destination_path = 3 [(buf.validate.field).required = true];
   string destination_namespace = 4;
 }
 
@@ -118,7 +119,7 @@ message CopyConfigResponse {
 }
 
 message ValidateConfigRequest {
-  string content = 1 [(buf.validate.field).string.min_len = 1];
+  string content = 1 [(buf.validate.field).required = true];
   Format format = 2;
 }
 
@@ -133,4 +134,19 @@ message WatchConfigsRequest {
 
 message WatchConfigsResponse {
   WatchEvent event = 1;
+}
+
+message GetConfigDiffRequest {
+  string path = 1 [(buf.validate.field).required = true];
+  string namespace = 2 [(buf.validate.field).required = true];
+  int64 from_revision = 3;
+  int64 to_revision = 4 [(buf.validate.field).required = true];
+}
+
+message GetConfigDiffResponse {
+  int64 from_revision = 1;
+  int64 to_revision = 2;
+  string from_content = 3;
+  string to_content = 4;
+  string diff = 5;
 }

@@ -15,23 +15,42 @@ import {
 } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
-	const location = useLocation();
+	const { pathname } = useLocation();
 	const { namespace } = useParams();
 
-	const configsHref = namespace ? `/browse/${namespace}` : "/browse";
-
-	const isDashboardActive = location.pathname === "/dashboard";
-	const isConfigsActive =
-		location.pathname.startsWith("/browse") ||
-		location.pathname.startsWith("/config");
-	const isNamespacesActive = location.pathname.startsWith("/namespaces");
-	const isClientsActive = location.pathname.startsWith("/clients");
+	const navItems = [
+		{
+			title: "Dashboard",
+			href: "/",
+			icon: LayoutDashboard,
+			isActive: pathname === "/",
+		},
+		{
+			title: "Configs",
+			href: namespace ? `/browse/${namespace}` : "/browse",
+			icon: FolderTree,
+			isActive:
+				pathname.startsWith("/browse") || pathname.startsWith("/config"),
+		},
+		{
+			title: "Namespaces",
+			href: "/namespaces",
+			icon: Database,
+			isActive: pathname.startsWith("/namespaces"),
+		},
+		{
+			title: "Clients",
+			href: "/clients",
+			icon: Network,
+			isActive: pathname.startsWith("/clients"),
+		},
+	];
 
 	return (
 		<Sidebar>
 			<SidebarHeader>
 				<div className="flex items-center gap-2 px-2 py-1">
-					<Logo className="h-7 w-7 text-primary" />
+					<Logo className="h-7 w-7 text-foreground" />
 					<span className="font-semibold text-sm">Elara</span>
 				</div>
 			</SidebarHeader>
@@ -40,42 +59,17 @@ export function AppSidebar() {
 					<SidebarGroupLabel>Navigation</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							<SidebarMenuItem>
-								<SidebarMenuButton
-									isActive={isDashboardActive}
-									render={<Link to="/dashboard" />}
-								>
-									<LayoutDashboard className="h-4 w-4" />
-									<span>Dashboard</span>
-								</SidebarMenuButton>
-							</SidebarMenuItem>
-							<SidebarMenuItem>
-								<SidebarMenuButton
-									isActive={isConfigsActive}
-									render={<Link to={configsHref} />}
-								>
-									<FolderTree className="h-4 w-4" />
-									<span>Configs</span>
-								</SidebarMenuButton>
-							</SidebarMenuItem>
-							<SidebarMenuItem>
-								<SidebarMenuButton
-									isActive={isNamespacesActive}
-									render={<Link to="/namespaces" />}
-								>
-									<Database className="h-4 w-4" />
-									<span>Namespaces</span>
-								</SidebarMenuButton>
-							</SidebarMenuItem>
-							<SidebarMenuItem>
-								<SidebarMenuButton
-									isActive={isClientsActive}
-									render={<Link to="/clients" />}
-								>
-									<Network className="h-4 w-4" />
-									<span>Clients</span>
-								</SidebarMenuButton>
-							</SidebarMenuItem>
+							{navItems.map((item) => (
+								<SidebarMenuItem key={item.title}>
+									<SidebarMenuButton
+										isActive={item.isActive}
+										render={<Link to={item.href} />}
+									>
+										<item.icon />
+										<span>{item.title}</span>
+									</SidebarMenuButton>
+								</SidebarMenuItem>
+							))}
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>

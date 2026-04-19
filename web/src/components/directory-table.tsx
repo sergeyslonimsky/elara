@@ -1,25 +1,12 @@
 import { timestampDate } from "@bufbuild/protobuf/wkt";
-import {
-	type ColumnDef,
-	flexRender,
-	getCoreRowModel,
-	type SortingState,
-	useReactTable,
-} from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { ChevronRight, FilePlus, FileText, Folder } from "lucide-react";
 import { useNavigate } from "react-router";
+import { DataTable } from "@/components/data-table";
 import { SortableHeader } from "@/components/sortable-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import { SortDirection } from "@/gen/elara/common/v1/common_pb";
 import { type DirectoryEntry, Format } from "@/gen/elara/config/v1/config_pb";
 import { formatLabel } from "@/lib/format";
@@ -120,21 +107,9 @@ export function DirectoryTable({
 }: DirectoryTableProps) {
 	const navigate = useNavigate();
 
-	const table = useReactTable({
-		data: entries,
-		columns,
-		state: { sorting },
-		onSortingChange: (updater) => {
-			const next = typeof updater === "function" ? updater(sorting) : updater;
-			onSortingChange(next);
-		},
-		getCoreRowModel: getCoreRowModel(),
-		manualSorting: true, // Server-side sorting.
-	});
-
 	if (isLoading) {
 		return (
-			<div className="space-y-2 p-4">
+			<div className="space-y-2 p-4 border rounded-xl bg-card">
 				{Array.from({ length: 5 }).map((_, i) => (
 					// biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder
 					<Skeleton key={i} className="h-10 w-full" />
@@ -150,7 +125,7 @@ export function DirectoryTable({
 				: `/config/new/${namespace}${currentPath}`;
 
 		return (
-			<div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
+			<div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground border rounded-xl bg-card">
 				<Folder className="h-12 w-12" />
 				<p className="text-lg font-medium">Empty directory</p>
 				<p className="text-sm">No configs found at this path</p>
@@ -163,57 +138,18 @@ export function DirectoryTable({
 	}
 
 	return (
-		<Table>
-			<TableHeader>
-				{table.getHeaderGroups().map((headerGroup) => (
-					<TableRow key={headerGroup.id}>
-						{headerGroup.headers.map((header) => (
-							<TableHead
-								key={header.id}
-								className={header.id === "name" ? "w-[50%]" : ""}
-							>
-								{header.isPlaceholder
-									? null
-									: flexRender(
-											header.column.columnDef.header,
-											header.getContext(),
-										)}
-							</TableHead>
-						))}
-					</TableRow>
-				))}
-			</TableHeader>
-			<TableBody>
-				{table.getRowModel().rows.map((row) => {
-					const entry = row.original;
-					const href = entry.isFile
-						? `/config/${namespace}${entry.fullPath}`
-						: `/browse/${namespace}${entry.fullPath}`;
-
-					return (
-						<TableRow
-							key={row.id}
-							className="cursor-pointer"
-							tabIndex={0}
-							role="link"
-							onClick={() => navigate(href)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" || e.key === " ") {
-									e.preventDefault();
-									navigate(href);
-								}
-							}}
-						>
-							{row.getVisibleCells().map((cell) => (
-								<TableCell key={cell.id}>
-									{flexRender(cell.column.columnDef.cell, cell.getContext())}
-								</TableCell>
-							))}
-						</TableRow>
-					);
-				})}
-			</TableBody>
-		</Table>
+		<DataTable
+			columns={columns}
+			data={entries}
+			sorting={sorting}
+			onSortingChange={onSortingChange}
+			onRowClick={(entry) => {
+				const href = entry.isFile
+					? `/config/${namespace}${entry.fullPath}`
+					: `/browse/${namespace}${entry.fullPath}`;
+				navigate(href);
+			}}
+		/>
 	);
 }
 

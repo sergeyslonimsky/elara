@@ -1,11 +1,10 @@
 import { useQuery } from "@connectrpc/connect-query";
-import { FolderOpen, RefreshCw, Zap } from "lucide-react";
+import { FolderOpen, Zap } from "lucide-react";
 import { Link } from "react-router";
-import { AppHeader } from "@/components/app-header";
 import { ErrorCard } from "@/components/error-card";
 import { KpiCard } from "@/components/kpi-card";
+import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Table,
@@ -22,13 +21,9 @@ import {
 } from "@/gen/elara/dashboard/v1/dashboard_service-DashboardService_connectquery";
 import { listNamespaces } from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
 import { timeAgo, tsToMs } from "@/lib/time";
-import { cn } from "@/lib/utils";
 
 const DEFAULT_ACTIVITIES_COUNT = 20;
 
-// Stable keys for loading skeletons. Using array-index keys triggers React
-// warnings about reordering/state; for static-length skeletons we use unique
-// string IDs instead.
 const ACTIVITY_SKELETON_KEYS = ["a1", "a2", "a3", "a4", "a5", "a6"];
 const NAMESPACE_SKELETON_KEYS = ["n1", "n2", "n3", "n4"];
 
@@ -50,27 +45,16 @@ export function DashboardPage() {
 	};
 
 	return (
-		<>
-			<AppHeader />
-			<div className="flex flex-1 flex-col gap-6 p-4 pt-0">
-				<div className="mt-4 flex items-center gap-3">
-					<h1 className="font-semibold text-xl">Dashboard</h1>
-					<Button
-						variant="outline"
-						size="icon"
-						onClick={refresh}
-						aria-label="Refresh"
-					>
-						<RefreshCw
-							className={cn("h-4 w-4", isRefreshing && "animate-spin")}
-						/>
-					</Button>
-				</div>
-
+		<div className="flex flex-1 flex-col">
+			<PageHeader
+				title="Dashboard"
+				onRefresh={refresh}
+				isRefreshing={isRefreshing}
+			/>
+			<div className="flex flex-1 flex-col gap-6 p-4">
 				{statsQ.error && <ErrorCard message={statsQ.error.message} />}
 				{activityQ.error && <ErrorCard message={activityQ.error.message} />}
 
-				{/* KPI row */}
 				<div className="grid grid-cols-2 gap-4 md:grid-cols-4">
 					<KpiCard
 						label="Namespaces"
@@ -92,7 +76,6 @@ export function DashboardPage() {
 				</div>
 
 				<div className="grid gap-4 lg:grid-cols-3">
-					{/* Recent Activity (wider) */}
 					<Card className="rounded-xl lg:col-span-2">
 						<CardHeader className="pb-3">
 							<CardTitle className="text-base">
@@ -158,7 +141,6 @@ export function DashboardPage() {
 						</CardContent>
 					</Card>
 
-					{/* Namespace overview */}
 					<Card className="rounded-xl">
 						<CardHeader className="pb-3">
 							<CardTitle className="text-base">Namespaces</CardTitle>
@@ -212,7 +194,7 @@ export function DashboardPage() {
 					</Card>
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }
 

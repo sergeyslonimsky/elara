@@ -504,9 +504,9 @@ const file_elara_namespace_v1_namespace_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tB5\xbaH2r0\x10\x01\x18\x80\x012)^[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?$R\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\"V\n" +
 	"\x17CreateNamespaceResponse\x12;\n" +
-	"\tnamespace\x18\x01 \x01(\v2\x1d.elara.namespace.v1.NamespaceR\tnamespace\"2\n" +
-	"\x13GetNamespaceRequest\x12\x1b\n" +
-	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"S\n" +
+	"\tnamespace\x18\x01 \x01(\v2\x1d.elara.namespace.v1.NamespaceR\tnamespace\"1\n" +
+	"\x13GetNamespaceRequest\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\"S\n" +
 	"\x14GetNamespaceResponse\x12;\n" +
 	"\tnamespace\x18\x01 \x01(\v2\x1d.elara.namespace.v1.NamespaceR\tnamespace\"\xa3\x01\n" +
 	"\x15ListNamespacesRequest\x12B\n" +
@@ -521,14 +521,14 @@ const file_elara_namespace_v1_namespace_service_proto_rawDesc = "" +
 	"namespaces\x12C\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2#.elara.common.v1.PaginationResponseR\n" +
-	"pagination\"W\n" +
-	"\x16UpdateNamespaceRequest\x12\x1b\n" +
-	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12 \n" +
+	"pagination\"V\n" +
+	"\x16UpdateNamespaceRequest\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\"V\n" +
 	"\x17UpdateNamespaceResponse\x12;\n" +
-	"\tnamespace\x18\x01 \x01(\v2\x1d.elara.namespace.v1.NamespaceR\tnamespace\"5\n" +
-	"\x16DeleteNamespaceRequest\x12\x1b\n" +
-	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"\x19\n" +
+	"\tnamespace\x18\x01 \x01(\v2\x1d.elara.namespace.v1.NamespaceR\tnamespace\"4\n" +
+	"\x16DeleteNamespaceRequest\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\"\x19\n" +
 	"\x17DeleteNamespaceResponse2\xa2\x04\n" +
 	"\x10NamespaceService\x12j\n" +
 	"\x0fCreateNamespace\x12*.elara.namespace.v1.CreateNamespaceRequest\x1a+.elara.namespace.v1.CreateNamespaceResponse\x12a\n" +

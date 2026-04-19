@@ -1,8 +1,4 @@
-import {
-	createConnectQueryKey,
-	useMutation,
-	useQuery,
-} from "@connectrpc/connect-query";
+import { useMutation, useQuery } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -33,11 +29,11 @@ import { Format } from "@/gen/elara/config/v1/config_pb";
 import {
 	createConfig,
 	getConfig,
-	listConfigs,
 	updateConfig,
 	validateConfig,
 } from "@/gen/elara/config/v1/config_service-ConfigService_connectquery";
 import { formatToLanguage } from "@/lib/format";
+import { invalidateConfig, invalidateConfigs } from "@/lib/queries";
 
 function formatToString(f: Format): string {
 	switch (f) {
@@ -174,18 +170,8 @@ export function ConfigFormPage() {
 	});
 
 	function invalidateAndNavigate() {
-		void queryClient.invalidateQueries({
-			queryKey: createConnectQueryKey({
-				schema: listConfigs,
-				cardinality: undefined,
-			}),
-		});
-		void queryClient.invalidateQueries({
-			queryKey: createConnectQueryKey({
-				schema: getConfig,
-				cardinality: undefined,
-			}),
-		});
+		void invalidateConfigs(queryClient);
+		void invalidateConfig(queryClient);
 		navigate(
 			isEdit
 				? `/config/${namespace}${configPath}`

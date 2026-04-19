@@ -711,9 +711,9 @@ const file_elara_clients_v1_clients_service_proto_rawDesc = "" +
 	"&elara/clients/v1/clients_service.proto\x12\x10elara.clients.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1eelara/clients/v1/clients.proto\"\x1a\n" +
 	"\x18ListActiveClientsRequest\"O\n" +
 	"\x19ListActiveClientsResponse\x122\n" +
-	"\aclients\x18\x01 \x03(\v2\x18.elara.clients.v1.ClientR\aclients\"+\n" +
-	"\x10GetClientRequest\x12\x17\n" +
-	"\x02id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\"\x89\x01\n" +
+	"\aclients\x18\x01 \x03(\v2\x18.elara.clients.v1.ClientR\aclients\"*\n" +
+	"\x10GetClientRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x02id\"\x89\x01\n" +
 	"\x11GetClientResponse\x120\n" +
 	"\x06client\x18\x01 \x01(\v2\x18.elara.clients.v1.ClientR\x06client\x12B\n" +
 	"\rrecent_events\x18\x02 \x03(\v2\x1d.elara.clients.v1.ClientEventR\frecentEvents\"8\n" +
@@ -729,18 +729,18 @@ const file_elara_clients_v1_clients_service_proto_rawDesc = "" +
 	"\x10KIND_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rKIND_SNAPSHOT\x10\x01\x12\x12\n" +
 	"\x0eKIND_CONNECTED\x10\x02\x12\x15\n" +
-	"\x11KIND_DISCONNECTED\x10\x03\"\x9f\x01\n" +
-	"\x19ListClientSessionsRequest\x12(\n" +
-	"\vclient_name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\n" +
+	"\x11KIND_DISCONNECTED\x10\x03\"\x9e\x01\n" +
+	"\x19ListClientSessionsRequest\x12'\n" +
+	"\vclient_name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\n" +
 	"clientName\x12#\n" +
 	"\rk8s_namespace\x18\x02 \x01(\tR\fk8sNamespace\x12\x1d\n" +
 	"\n" +
 	"current_id\x18\x03 \x01(\tR\tcurrentId\x12\x14\n" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\"R\n" +
 	"\x1aListClientSessionsResponse\x124\n" +
-	"\bsessions\x18\x01 \x03(\v2\x18.elara.clients.v1.ClientR\bsessions\"-\n" +
-	"\x12WatchClientRequest\x12\x17\n" +
-	"\x02id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\"\x9f\x02\n" +
+	"\bsessions\x18\x01 \x03(\v2\x18.elara.clients.v1.ClientR\bsessions\",\n" +
+	"\x12WatchClientRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x02id\"\x9f\x02\n" +
 	"\x13WatchClientResponse\x12>\n" +
 	"\x04kind\x18\x01 \x01(\x0e2*.elara.clients.v1.WatchClientResponse.KindR\x04kind\x120\n" +
 	"\x06client\x18\x02 \x01(\v2\x18.elara.clients.v1.ClientR\x06client\x123\n" +

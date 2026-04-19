@@ -1,10 +1,10 @@
 import { useQuery } from "@connectrpc/connect-query";
 import type { SortingState } from "@tanstack/react-table";
-import { Network, RefreshCw } from "lucide-react";
+import { Network } from "lucide-react";
 import { useMemo, useState } from "react";
-import { AppHeader } from "@/components/app-header";
 import { ClientsTable } from "@/components/clients-table";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
+import { SearchInput } from "@/components/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
 	Empty,
@@ -14,14 +14,12 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Client } from "@/gen/elara/clients/v1/clients_pb";
 import {
 	listActiveClients,
 	listHistoricalConnections,
 } from "@/gen/elara/clients/v1/clients_service-ClientsService_connectquery";
-import { cn } from "@/lib/utils";
 
 function filterClients(
 	clients: Client[] | undefined,
@@ -61,8 +59,6 @@ export function ClientsPage() {
 		[historyQ.data, search],
 	);
 
-	// Refetch via the query handles directly. Don't rely on guessing the
-	// ConnectRPC-generated query key shape — it's an internal detail.
 	const refresh = () => {
 		void activeQ.refetch();
 		void historyQ.refetch();
@@ -71,29 +67,21 @@ export function ClientsPage() {
 	const isRefreshing = activeQ.isFetching || historyQ.isFetching;
 
 	return (
-		<>
-			<AppHeader />
-			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-				<div className="mt-4 flex items-center gap-3">
-					<h1 className="font-semibold text-xl">Clients</h1>
-					<Button
-						variant="outline"
-						size="icon"
-						onClick={refresh}
-						aria-label="Refresh"
-					>
-						<RefreshCw
-							className={cn("h-4 w-4", isRefreshing && "animate-spin")}
-						/>
-					</Button>
-					<Input
-						placeholder="Search by name / pod / peer..."
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
-						className="ml-auto w-72"
-					/>
-				</div>
+		<div className="flex flex-1 flex-col">
+			<PageHeader
+				title="Clients"
+				onRefresh={refresh}
+				isRefreshing={isRefreshing}
+			>
+				<SearchInput
+					value={search}
+					onChange={setSearch}
+					onClear={() => setSearch("")}
+					placeholder="Search clients..."
+				/>
+			</PageHeader>
 
+			<div className="flex flex-1 flex-col gap-4 p-4">
 				<Tabs
 					value={tab}
 					onValueChange={(v) => setTab(v as "active" | "history")}
@@ -110,7 +98,7 @@ export function ClientsPage() {
 						<TabsTrigger value="history">History</TabsTrigger>
 					</TabsList>
 
-					<TabsContent value="active" className="space-y-3">
+					<TabsContent value="active" className="mt-4 space-y-3">
 						<Card className="rounded-xl">
 							<CardContent className="pt-4">
 								<ClientsTable
@@ -146,7 +134,7 @@ export function ClientsPage() {
 						</Card>
 					</TabsContent>
 
-					<TabsContent value="history" className="space-y-3">
+					<TabsContent value="history" className="mt-4 space-y-3">
 						<Card className="rounded-xl">
 							<CardContent className="pt-4">
 								<ClientsTable
@@ -175,6 +163,6 @@ export function ClientsPage() {
 					</TabsContent>
 				</Tabs>
 			</div>
-		</>
+		</div>
 	);
 }

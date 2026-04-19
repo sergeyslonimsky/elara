@@ -18,6 +18,7 @@ type UseCases struct {
 	CopyConfig     *configuc.CopyUseCase
 	ValidateConfig *configuc.ValidateUseCase
 	WatchConfigs   *configuc.WatchUseCase
+	ConfigDiff     *configuc.DiffUseCase
 
 	CreateNamespace *nsuc.CreateUseCase
 	GetNamespace    *nsuc.GetUseCase
@@ -41,6 +42,7 @@ func NewUseCases(a *Adapters) *UseCases {
 		CopyConfig:     configuc.NewCopyUseCase(a.ConfigRepo, a.ConfigRepo, a.Watch, a.NamespaceRepo, a.NamespaceRepo),
 		ValidateConfig: configuc.NewValidateUseCase(),
 		WatchConfigs:   configuc.NewWatchUseCase(a.Watch),
+		ConfigDiff:     configuc.NewDiffUseCase(a.ConfigRepo),
 
 		CreateNamespace: nsuc.NewCreateUseCase(a.NamespaceRepo, a.NamespaceRepo),
 		GetNamespace:    nsuc.NewGetUseCase(a.NamespaceRepo, a.NamespaceRepo),

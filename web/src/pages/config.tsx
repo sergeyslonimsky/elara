@@ -1,15 +1,19 @@
 import { timestampDate } from "@bufbuild/protobuf/wkt";
-import {
-	createConnectQueryKey,
-	useMutation,
-	useQuery,
-} from "@connectrpc/connect-query";
+import { useMutation, useQuery } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Clock, Copy, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import {
+	ArrowLeft,
+	Clock,
+	Copy,
+	GitCompare,
+	Pencil,
+	Trash2,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/app-header";
+import { ConfigDiffViewer } from "@/components/config-diff-viewer";
 import { ConfigEditor } from "@/components/config-editor";
 import { ErrorCard } from "@/components/error-card";
 import { NamespaceSelect } from "@/components/namespace-select";
@@ -38,18 +42,31 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EventType } from "@/gen/elara/config/v1/config_pb";
+import { EventType, type HistoryEntry } from "@/gen/elara/config/v1/config_pb";
 import {
 	copyConfig,
 	deleteConfig,
 	getConfig,
+	getConfigDiff,
 	getConfigHistory,
-	listConfigs,
+	updateConfig,
 } from "@/gen/elara/config/v1/config_service-ConfigService_connectquery";
 import { formatLabel, protoFormatToLanguage } from "@/lib/format";
+import {
+	invalidateConfig,
+	invalidateConfigHistory,
+	invalidateConfigs,
+} from "@/lib/queries";
 
 function eventTypeLabel(t: EventType): string {
 	switch (t) {
@@ -80,12 +97,7 @@ function CopyDialog({
 		onSuccess: () => {
 			toast.success(`Config copied to ${destPath}`);
 			setOpen(false);
-			void queryClient.invalidateQueries({
-				queryKey: createConnectQueryKey({
-					schema: listConfigs,
-					cardinality: undefined,
-				}),
-			});
+			void invalidateConfigs(queryClient);
 		},
 		onError: (err) => toast.error(err.message),
 	});
@@ -139,6 +151,216 @@ function CopyDialog({
 	);
 }
 
+function InlineDiffPanel({
+	path,
+	namespace,
+	language,
+	toRevision,
+	fromRevision,
+}: {
+	path: string;
+	namespace: string;
+	language: string;
+	toRevision: bigint;
+	fromRevision: bigint;
+}) {
+	const { data, isLoading, error } = useQuery(
+		getConfigDiff,
+		{ path, namespace, fromRevision, toRevision },
+		{ staleTime: Number.POSITIVE_INFINITY },
+	);
+
+	if (isLoading) {
+		return <Skeleton className="mt-2 h-48 w-full rounded-lg" />;
+	}
+
+	if (error) {
+		return <p className="mt-2 text-destructive text-xs">{error.message}</p>;
+	}
+
+	if (!data) return null;
+
+	return (
+		<div className="mt-2">
+			<ConfigDiffViewer
+				original={data.fromContent}
+				modified={data.toContent}
+				language={language}
+				height="240px"
+			/>
+		</div>
+	);
+}
+
+function ComparePanel({
+	path,
+	namespace,
+	language,
+	entries,
+	version,
+}: {
+	path: string;
+	namespace: string;
+	language: string;
+	entries: HistoryEntry[];
+	version: bigint;
+}) {
+	const queryClient = useQueryClient();
+	const [compareFrom, setCompareFrom] = useState<string>("");
+	const [compareTo, setCompareTo] = useState<string>("");
+
+	const { entriesAsc, entriesDesc } = useMemo(() => {
+		const asc = [...entries].sort((a, b) => Number(a.revision - b.revision));
+		return { entriesAsc: asc, entriesDesc: [...asc].reverse() };
+	}, [entries]);
+
+	const fromRevision = compareFrom ? BigInt(compareFrom) : undefined;
+	const toRevision = compareTo ? BigInt(compareTo) : undefined;
+
+	const enabled =
+		fromRevision !== undefined &&
+		toRevision !== undefined &&
+		fromRevision <= toRevision;
+
+	const { data, isLoading, error } = useQuery(
+		getConfigDiff,
+		{
+			path,
+			namespace,
+			fromRevision: fromRevision ?? 0n,
+			toRevision: toRevision ?? 0n,
+		},
+		{ enabled },
+	);
+
+	const [restoreOpen, setRestoreOpen] = useState(false);
+
+	const restoreMutation = useMutation(updateConfig, {
+		onSuccess: () => {
+			toast.success("Config restored");
+			setRestoreOpen(false);
+			void invalidateConfig(queryClient);
+			void invalidateConfigHistory(queryClient);
+		},
+		onError: (err) => toast.error(err.message),
+	});
+
+	const fromInvalid =
+		fromRevision !== undefined &&
+		toRevision !== undefined &&
+		fromRevision > toRevision;
+
+	return (
+		<div className="space-y-4">
+			<div className="flex flex-wrap items-center gap-3">
+				<div className="flex items-center gap-2">
+					<span className="text-sm">From:</span>
+					<Select
+						value={compareFrom}
+						onValueChange={(v) => setCompareFrom(v ?? "")}
+					>
+						<SelectTrigger className="w-48">
+							<SelectValue placeholder="Select revision" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="0">Empty (before first)</SelectItem>
+							{entriesAsc.map((e) => (
+								<SelectItem key={String(e.revision)} value={String(e.revision)}>
+									rev {String(e.revision)} — {eventTypeLabel(e.eventType)}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+				<div className="flex items-center gap-2">
+					<span className="text-sm">To:</span>
+					<Select
+						value={compareTo}
+						onValueChange={(v) => setCompareTo(v ?? "")}
+					>
+						<SelectTrigger className="w-48">
+							<SelectValue placeholder="Select revision" />
+						</SelectTrigger>
+						<SelectContent>
+							{entriesDesc.map((e) => (
+								<SelectItem key={String(e.revision)} value={String(e.revision)}>
+									rev {String(e.revision)} — {eventTypeLabel(e.eventType)}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={() => {
+						setCompareFrom("");
+						setCompareTo("");
+					}}
+				>
+					Reset
+				</Button>
+			</div>
+
+			{fromInvalid && (
+				<p className="text-sm text-yellow-600">
+					"From" revision is newer than "To" revision.
+				</p>
+			)}
+
+			{isLoading && <Skeleton className="h-64 w-full rounded-lg" />}
+			{error && <p className="text-destructive text-sm">{error.message}</p>}
+
+			{data && (
+				<>
+					<ConfigDiffViewer
+						original={data.fromContent}
+						modified={data.toContent}
+						language={language}
+						height="400px"
+					/>
+					{data.toContent && (
+						<div className="flex justify-end">
+							<AlertDialog open={restoreOpen} onOpenChange={setRestoreOpen}>
+								<AlertDialogTrigger
+									render={<Button variant="outline" size="sm" />}
+								>
+									Restore to "To" version
+								</AlertDialogTrigger>
+								<AlertDialogContent>
+									<AlertDialogHeader>
+										<AlertDialogTitle>Restore config?</AlertDialogTitle>
+										<AlertDialogDescription>
+											This will overwrite the current content with revision{" "}
+											{compareTo}.
+										</AlertDialogDescription>
+									</AlertDialogHeader>
+									<AlertDialogFooter>
+										<AlertDialogCancel>Cancel</AlertDialogCancel>
+										<AlertDialogAction
+											disabled={restoreMutation.isPending}
+											onClick={() =>
+												restoreMutation.mutate({
+													path,
+													namespace,
+													content: data.toContent,
+													version,
+												})
+											}
+										>
+											{restoreMutation.isPending ? "Restoring..." : "Restore"}
+										</AlertDialogAction>
+									</AlertDialogFooter>
+								</AlertDialogContent>
+							</AlertDialog>
+						</div>
+					)}
+				</>
+			)}
+		</div>
+	);
+}
+
 export function ConfigPage() {
 	const { namespace = "default", "*": splat = "" } = useParams();
 	const path = `/${splat}`;
@@ -161,22 +383,20 @@ export function ConfigPage() {
 	const deleteMutation = useMutation(deleteConfig, {
 		onSuccess: () => {
 			toast.success("Config deleted");
-			void queryClient.invalidateQueries({
-				queryKey: createConnectQueryKey({
-					schema: listConfigs,
-					cardinality: undefined,
-				}),
-			});
-			void queryClient.invalidateQueries({
-				queryKey: createConnectQueryKey({
-					schema: getConfig,
-					cardinality: undefined,
-				}),
-			});
+			void invalidateConfigs(queryClient);
+			void invalidateConfig(queryClient);
 			navigate(`/browse/${namespace}${parentPath}`);
 		},
 		onError: (err) => toast.error(err.message),
 	});
+
+	const [expandedRevision, setExpandedRevision] = useState<bigint | null>(null);
+	const [compareMode, setCompareMode] = useState(false);
+
+	const entries = historyData?.entries ?? [];
+	const language = data?.config
+		? protoFormatToLanguage(data.config.format)
+		: "plaintext";
 
 	return (
 		<>
@@ -284,7 +504,7 @@ export function ConfigPage() {
 										<ConfigEditor
 											value={data.config.content}
 											onChange={() => {}}
-											language={protoFormatToLanguage(data.config.format)}
+											language={language}
 											readOnly
 										/>
 									</CardContent>
@@ -314,47 +534,103 @@ export function ConfigPage() {
 							<TabsContent value="history">
 								<Card className="rounded-xl">
 									<CardContent className="pt-6">
-										{historyData?.entries && historyData.entries.length > 0 ? (
-											<div className="space-y-3">
-												{historyData.entries.map((entry) => (
-													<div
-														key={entry.revision}
-														className="flex items-start gap-3 rounded-lg border p-3"
-													>
-														<Badge
-															variant={
-																entry.eventType === EventType.CREATED
-																	? "default"
-																	: "secondary"
-															}
-															className="mt-0.5 shrink-0"
-														>
-															{eventTypeLabel(entry.eventType)}
-														</Badge>
-														<div className="min-w-0 flex-1">
-															<div className="flex items-center gap-2 text-sm">
-																<span className="font-mono text-muted-foreground">
-																	rev {entry.revision}
-																</span>
-																{entry.timestamp && (
-																	<span className="text-muted-foreground text-xs">
-																		{timestampDate(
-																			entry.timestamp,
-																		).toLocaleString()}
-																	</span>
-																)}
-															</div>
-															<pre className="mt-2 max-h-32 overflow-auto rounded bg-muted p-2 font-mono text-xs">
-																{entry.content}
-															</pre>
-														</div>
-													</div>
-												))}
-											</div>
-										) : (
+										<div className="mb-4 flex items-center justify-between">
+											<span className="text-muted-foreground text-sm">
+												{entries.length} revision
+												{entries.length !== 1 ? "s" : ""}
+											</span>
+											{entries.length >= 2 && (
+												<Button
+													variant={compareMode ? "default" : "outline"}
+													size="sm"
+													onClick={() => {
+														setCompareMode((v) => !v);
+														setExpandedRevision(null);
+													}}
+												>
+													<GitCompare className="mr-1 h-4 w-4" />
+													{compareMode ? "Exit compare" : "Compare revisions"}
+												</Button>
+											)}
+										</div>
+
+										{entries.length === 0 ? (
 											<p className="py-8 text-center text-muted-foreground">
 												No history available
 											</p>
+										) : compareMode ? (
+											<ComparePanel
+												path={path}
+												namespace={namespace}
+												language={language}
+												entries={entries}
+												version={data.config.version}
+											/>
+										) : (
+											<div className="space-y-3">
+												{entries.map((entry, idx) => {
+													const isExpanded =
+														expandedRevision === entry.revision;
+													const prevEntry = entries[idx + 1];
+													const fromRevision = prevEntry
+														? prevEntry.revision
+														: 0n;
+
+													return (
+														<div key={entry.revision}>
+															<button
+																type="button"
+																className="flex w-full cursor-pointer items-start gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+																onClick={() =>
+																	setExpandedRevision(
+																		isExpanded ? null : entry.revision,
+																	)
+																}
+															>
+																<Badge
+																	variant={
+																		entry.eventType === EventType.CREATED
+																			? "default"
+																			: "secondary"
+																	}
+																	className="mt-0.5 shrink-0"
+																>
+																	{eventTypeLabel(entry.eventType)}
+																</Badge>
+																<div className="min-w-0 flex-1">
+																	<div className="flex items-center gap-2 text-sm">
+																		<span className="font-mono text-muted-foreground">
+																			rev {entry.revision}
+																		</span>
+																		{entry.timestamp && (
+																			<span className="text-muted-foreground text-xs">
+																				{timestampDate(
+																					entry.timestamp,
+																				).toLocaleString()}
+																			</span>
+																		)}
+																	</div>
+																</div>
+																<span className="text-muted-foreground text-xs">
+																	{isExpanded ? "▲ hide diff" : "▼ show diff"}
+																</span>
+															</button>
+
+															{isExpanded && (
+																<div className="mx-3 mb-3 rounded-b-lg border border-t-0 p-3">
+																	<InlineDiffPanel
+																		path={path}
+																		namespace={namespace}
+																		language={language}
+																		fromRevision={fromRevision}
+																		toRevision={entry.revision}
+																	/>
+																</div>
+															)}
+														</div>
+													);
+												})}
+											</div>
 										)}
 									</CardContent>
 								</Card>
