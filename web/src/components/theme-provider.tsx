@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+	createContext,
+	useContext,
+	useEffect,
+	useState,
+	useSyncExternalStore,
+} from "react";
 
 type Theme = "dark" | "light" | "system";
 
@@ -76,3 +82,24 @@ export const useTheme = () => {
 		throw new Error("useTheme must be used within a ThemeProvider");
 	return context;
 };
+
+function subscribeSystemTheme(callback: () => void) {
+	const mq = window.matchMedia("(prefers-color-scheme: dark)");
+	mq.addEventListener("change", callback);
+	return () => mq.removeEventListener("change", callback);
+}
+
+function getSystemThemeSnapshot() {
+	return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+export function useResolvedTheme(): "dark" | "light" {
+	const { theme } = useTheme();
+	const systemDark = useSyncExternalStore(
+		subscribeSystemTheme,
+		getSystemThemeSnapshot,
+	);
+
+	if (theme === "system") return systemDark ? "dark" : "light";
+	return theme;
+}

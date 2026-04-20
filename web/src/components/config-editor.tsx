@@ -1,5 +1,5 @@
 import Editor from "@monaco-editor/react";
-import { useTheme } from "@/components/theme-provider";
+import { useResolvedTheme } from "@/components/theme-provider";
 
 interface ConfigEditorProps {
 	value: string;
@@ -16,13 +16,7 @@ export function ConfigEditor({
 	readOnly = false,
 	height = "400px",
 }: ConfigEditorProps) {
-	const { theme } = useTheme();
-	const resolvedTheme =
-		theme === "system"
-			? window.matchMedia("(prefers-color-scheme: dark)").matches
-				? "dark"
-				: "light"
-			: theme;
+	const resolvedTheme = useResolvedTheme();
 
 	return (
 		<div className="overflow-hidden rounded-lg border">

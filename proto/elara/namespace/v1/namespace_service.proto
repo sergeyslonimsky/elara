@@ -28,7 +28,7 @@ message CreateNamespaceResponse {
 }
 
 message GetNamespaceRequest {
-  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string name = 1 [(buf.validate.field).required = true];
 }
 
 message GetNamespaceResponse {
@@ -47,7 +47,7 @@ message ListNamespacesResponse {
 }
 
 message UpdateNamespaceRequest {
-  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string name = 1 [(buf.validate.field).required = true];
   string description = 2;
 }
 
@@ -56,7 +56,7 @@ message UpdateNamespaceResponse {
 }
 
 message DeleteNamespaceRequest {
-  string name = 1 [(buf.validate.field).string.min_len = 1];
+  string name = 1 [(buf.validate.field).required = true];
 }
 
 message DeleteNamespaceResponse {}

@@ -48,3 +48,11 @@ type HistoryEntry struct {
 	EventType   EventType
 	Timestamp   time.Time
 }
+
+type ConfigDiff struct {
+	FromRevision int64
+	ToRevision   int64
+	FromContent  string
+	ToContent    string
+	Diff         string
+}

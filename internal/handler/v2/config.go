@@ -24,6 +24,7 @@ type ConfigHandler struct {
 	copy     *configuc.CopyUseCase
 	validate *configuc.ValidateUseCase
 	watch    *configuc.WatchUseCase
+	diff     *configuc.DiffUseCase
 }
 
 func NewConfigHandler(
@@ -37,6 +38,7 @@ func NewConfigHandler(
 	copyCfg *configuc.CopyUseCase,
 	validate *configuc.ValidateUseCase,
 	watch *configuc.WatchUseCase,
+	diff *configuc.DiffUseCase,
 ) *ConfigHandler {
 	return &ConfigHandler{
 		create:   create,
@@ -49,6 +51,7 @@ func NewConfigHandler(
 		copy:     copyCfg,
 		validate: validate,
 		watch:    watch,
+		diff:     diff,
 	}
 }
 
@@ -285,6 +288,29 @@ func (h *ConfigHandler) ValidateConfig(
 			DetectedFormat:    domainFormatToProto(result.DetectedFormat),
 			NormalizedContent: result.NormalizedContent,
 		},
+	}), nil
+}
+
+func (h *ConfigHandler) GetConfigDiff(
+	ctx context.Context,
+	req *connect.Request[configv2.GetConfigDiffRequest],
+) (*connect.Response[configv2.GetConfigDiffResponse], error) {
+	result, err := h.diff.GetDiff(ctx,
+		req.Msg.GetPath(),
+		req.Msg.GetNamespace(),
+		req.Msg.GetFromRevision(),
+		req.Msg.GetToRevision(),
+	)
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+
+	return connect.NewResponse(&configv2.GetConfigDiffResponse{
+		FromRevision: result.FromRevision,
+		ToRevision:   result.ToRevision,
+		FromContent:  result.FromContent,
+		ToContent:    result.ToContent,
+		Diff:         result.Diff,
 	}), nil
 }
 

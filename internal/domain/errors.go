@@ -6,10 +6,11 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("not found")
-	ErrAlreadyExists = errors.New("already exists")
-	ErrConflict      = errors.New("version conflict")
-	ErrInvalidFormat = errors.New("invalid format")
+	ErrNotFound       = errors.New("not found")
+	ErrAlreadyExists  = errors.New("already exists")
+	ErrConflict       = errors.New("version conflict")
+	ErrInvalidFormat  = errors.New("invalid format")
+	ErrInvalidContent = errors.New("invalid content")
 )
 
 type ValidationError struct {

@@ -65,6 +65,9 @@ const (
 	// ConfigServiceWatchConfigsProcedure is the fully-qualified name of the ConfigService's
 	// WatchConfigs RPC.
 	ConfigServiceWatchConfigsProcedure = "/elara.config.v1.ConfigService/WatchConfigs"
+	// ConfigServiceGetConfigDiffProcedure is the fully-qualified name of the ConfigService's
+	// GetConfigDiff RPC.
+	ConfigServiceGetConfigDiffProcedure = "/elara.config.v1.ConfigService/GetConfigDiff"
 )
 
 // ConfigServiceClient is a client for the elara.config.v1.ConfigService service.
@@ -80,6 +83,7 @@ type ConfigServiceClient interface {
 	CopyConfig(context.Context, *connect.Request[v1.CopyConfigRequest]) (*connect.Response[v1.CopyConfigResponse], error)
 	ValidateConfig(context.Context, *connect.Request[v1.ValidateConfigRequest]) (*connect.Response[v1.ValidateConfigResponse], error)
 	WatchConfigs(context.Context, *connect.Request[v1.WatchConfigsRequest]) (*connect.ServerStreamForClient[v1.WatchConfigsResponse], error)
+	GetConfigDiff(context.Context, *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error)
 }
 
 // NewConfigServiceClient constructs a client for the elara.config.v1.ConfigService service. By
@@ -159,6 +163,12 @@ func NewConfigServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(configServiceMethods.ByName("WatchConfigs")),
 			connect.WithClientOptions(opts...),
 		),
+		getConfigDiff: connect.NewClient[v1.GetConfigDiffRequest, v1.GetConfigDiffResponse](
+			httpClient,
+			baseURL+ConfigServiceGetConfigDiffProcedure,
+			connect.WithSchema(configServiceMethods.ByName("GetConfigDiff")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -175,6 +185,7 @@ type configServiceClient struct {
 	copyConfig          *connect.Client[v1.CopyConfigRequest, v1.CopyConfigResponse]
 	validateConfig      *connect.Client[v1.ValidateConfigRequest, v1.ValidateConfigResponse]
 	watchConfigs        *connect.Client[v1.WatchConfigsRequest, v1.WatchConfigsResponse]
+	getConfigDiff       *connect.Client[v1.GetConfigDiffRequest, v1.GetConfigDiffResponse]
 }
 
 // CreateConfig calls elara.config.v1.ConfigService.CreateConfig.
@@ -232,6 +243,11 @@ func (c *configServiceClient) WatchConfigs(ctx context.Context, req *connect.Req
 	return c.watchConfigs.CallServerStream(ctx, req)
 }
 
+// GetConfigDiff calls elara.config.v1.ConfigService.GetConfigDiff.
+func (c *configServiceClient) GetConfigDiff(ctx context.Context, req *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error) {
+	return c.getConfigDiff.CallUnary(ctx, req)
+}
+
 // ConfigServiceHandler is an implementation of the elara.config.v1.ConfigService service.
 type ConfigServiceHandler interface {
 	CreateConfig(context.Context, *connect.Request[v1.CreateConfigRequest]) (*connect.Response[v1.CreateConfigResponse], error)
@@ -245,6 +261,7 @@ type ConfigServiceHandler interface {
 	CopyConfig(context.Context, *connect.Request[v1.CopyConfigRequest]) (*connect.Response[v1.CopyConfigResponse], error)
 	ValidateConfig(context.Context, *connect.Request[v1.ValidateConfigRequest]) (*connect.Response[v1.ValidateConfigResponse], error)
 	WatchConfigs(context.Context, *connect.Request[v1.WatchConfigsRequest], *connect.ServerStream[v1.WatchConfigsResponse]) error
+	GetConfigDiff(context.Context, *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error)
 }
 
 // NewConfigServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -320,6 +337,12 @@ func NewConfigServiceHandler(svc ConfigServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(configServiceMethods.ByName("WatchConfigs")),
 		connect.WithHandlerOptions(opts...),
 	)
+	configServiceGetConfigDiffHandler := connect.NewUnaryHandler(
+		ConfigServiceGetConfigDiffProcedure,
+		svc.GetConfigDiff,
+		connect.WithSchema(configServiceMethods.ByName("GetConfigDiff")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/elara.config.v1.ConfigService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ConfigServiceCreateConfigProcedure:
@@ -344,6 +367,8 @@ func NewConfigServiceHandler(svc ConfigServiceHandler, opts ...connect.HandlerOp
 			configServiceValidateConfigHandler.ServeHTTP(w, r)
 		case ConfigServiceWatchConfigsProcedure:
 			configServiceWatchConfigsHandler.ServeHTTP(w, r)
+		case ConfigServiceGetConfigDiffProcedure:
+			configServiceGetConfigDiffHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -395,4 +420,8 @@ func (UnimplementedConfigServiceHandler) ValidateConfig(context.Context, *connec
 
 func (UnimplementedConfigServiceHandler) WatchConfigs(context.Context, *connect.Request[v1.WatchConfigsRequest], *connect.ServerStream[v1.WatchConfigsResponse]) error {
 	return connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.WatchConfigs is not implemented"))
+}
+
+func (UnimplementedConfigServiceHandler) GetConfigDiff(context.Context, *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.GetConfigDiff is not implemented"))
 }

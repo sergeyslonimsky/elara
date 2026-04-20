@@ -53,3 +53,8 @@ export const copyConfig = ConfigService.method.copyConfig;
  * @generated from rpc elara.config.v1.ConfigService.ValidateConfig
  */
 export const validateConfig = ConfigService.method.validateConfig;
+
+/**
+ * @generated from rpc elara.config.v1.ConfigService.GetConfigDiff
+ */
+export const getConfigDiff = ConfigService.method.getConfigDiff;

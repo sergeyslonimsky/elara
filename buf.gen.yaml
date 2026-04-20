@@ -10,22 +10,22 @@ managed:
       value: github.com/sergeyslonimsky/elara/internal/proto
 plugins:
   # Go
-  - local: protoc-gen-go
+  - remote: buf.build/protocolbuffers/go:v1.36.11
     out: internal/proto
     opt:
       - paths=source_relative
-  - local: protoc-gen-connect-go
+  - remote: buf.build/connectrpc/go:v1.19.1
     out: internal/proto
     opt:
       - paths=source_relative
   # TypeScript (protobuf types + service descriptors)
-  - local: web/node_modules/.bin/protoc-gen-es
+  - remote: buf.build/bufbuild/es:v2.11.0
     out: web/src/gen
     include_imports: true
     opt:
       - target=ts
   # TypeScript (TanStack Query hooks)
-  - local: web/node_modules/.bin/protoc-gen-connect-query
+  - remote: buf.build/connectrpc/query-es:v2.2.0
     out: web/src/gen
     opt:
       - target=ts

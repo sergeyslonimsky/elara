@@ -34,6 +34,7 @@ func NewV2Handlers(uc *UseCases) *V2Handlers {
 			uc.CopyConfig,
 			uc.ValidateConfig,
 			uc.WatchConfigs,
+			uc.ConfigDiff,
 		),
 		Namespace: v2.NewNamespaceHandler(
 			uc.CreateNamespace,

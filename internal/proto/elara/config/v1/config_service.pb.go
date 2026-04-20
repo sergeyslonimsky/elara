@@ -1215,42 +1215,186 @@ func (x *WatchConfigsResponse) GetEvent() *WatchEvent {
 	return nil
 }
 
+type GetConfigDiffRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	FromRevision  int64                  `protobuf:"varint,3,opt,name=from_revision,json=fromRevision,proto3" json:"from_revision,omitempty"`
+	ToRevision    int64                  `protobuf:"varint,4,opt,name=to_revision,json=toRevision,proto3" json:"to_revision,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetConfigDiffRequest) Reset() {
+	*x = GetConfigDiffRequest{}
+	mi := &file_elara_config_v1_config_service_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetConfigDiffRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetConfigDiffRequest) ProtoMessage() {}
+
+func (x *GetConfigDiffRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_config_v1_config_service_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetConfigDiffRequest.ProtoReflect.Descriptor instead.
+func (*GetConfigDiffRequest) Descriptor() ([]byte, []int) {
+	return file_elara_config_v1_config_service_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GetConfigDiffRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *GetConfigDiffRequest) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *GetConfigDiffRequest) GetFromRevision() int64 {
+	if x != nil {
+		return x.FromRevision
+	}
+	return 0
+}
+
+func (x *GetConfigDiffRequest) GetToRevision() int64 {
+	if x != nil {
+		return x.ToRevision
+	}
+	return 0
+}
+
+type GetConfigDiffResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FromRevision  int64                  `protobuf:"varint,1,opt,name=from_revision,json=fromRevision,proto3" json:"from_revision,omitempty"`
+	ToRevision    int64                  `protobuf:"varint,2,opt,name=to_revision,json=toRevision,proto3" json:"to_revision,omitempty"`
+	FromContent   string                 `protobuf:"bytes,3,opt,name=from_content,json=fromContent,proto3" json:"from_content,omitempty"`
+	ToContent     string                 `protobuf:"bytes,4,opt,name=to_content,json=toContent,proto3" json:"to_content,omitempty"`
+	Diff          string                 `protobuf:"bytes,5,opt,name=diff,proto3" json:"diff,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetConfigDiffResponse) Reset() {
+	*x = GetConfigDiffResponse{}
+	mi := &file_elara_config_v1_config_service_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetConfigDiffResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetConfigDiffResponse) ProtoMessage() {}
+
+func (x *GetConfigDiffResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_config_v1_config_service_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetConfigDiffResponse.ProtoReflect.Descriptor instead.
+func (*GetConfigDiffResponse) Descriptor() ([]byte, []int) {
+	return file_elara_config_v1_config_service_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *GetConfigDiffResponse) GetFromRevision() int64 {
+	if x != nil {
+		return x.FromRevision
+	}
+	return 0
+}
+
+func (x *GetConfigDiffResponse) GetToRevision() int64 {
+	if x != nil {
+		return x.ToRevision
+	}
+	return 0
+}
+
+func (x *GetConfigDiffResponse) GetFromContent() string {
+	if x != nil {
+		return x.FromContent
+	}
+	return ""
+}
+
+func (x *GetConfigDiffResponse) GetToContent() string {
+	if x != nil {
+		return x.ToContent
+	}
+	return ""
+}
+
+func (x *GetConfigDiffResponse) GetDiff() string {
+	if x != nil {
+		return x.Diff
+	}
+	return ""
+}
+
 var File_elara_config_v1_config_service_proto protoreflect.FileDescriptor
 
 const file_elara_config_v1_config_service_proto_rawDesc = "" +
 	"\n" +
-	"$elara/config/v1/config_service.proto\x12\x0felara.config.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1celara/common/v1/common.proto\x1a\x1celara/config/v1/config.proto\"\xb1\x02\n" +
-	"\x13CreateConfigRequest\x12\x1b\n" +
-	"\x04path\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04path\x12!\n" +
-	"\acontent\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\acontent\x12/\n" +
-	"\x06format\x18\x03 \x01(\x0e2\x17.elara.config.v1.FormatR\x06format\x12\x1c\n" +
-	"\tnamespace\x18\x04 \x01(\tR\tnamespace\x12N\n" +
+	"$elara/config/v1/config_service.proto\x12\x0felara.config.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1celara/common/v1/common.proto\x1a\x1celara/config/v1/config.proto\"\xb7\x02\n" +
+	"\x13CreateConfigRequest\x12\x1a\n" +
+	"\x04path\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04path\x12 \n" +
+	"\acontent\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\acontent\x12/\n" +
+	"\x06format\x18\x03 \x01(\x0e2\x17.elara.config.v1.FormatR\x06format\x12$\n" +
+	"\tnamespace\x18\x04 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tnamespace\x12N\n" +
 	"\bmetadata\x18\x05 \x03(\v22.elara.config.v1.CreateConfigRequest.MetadataEntryR\bmetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"G\n" +
 	"\x14CreateConfigResponse\x12/\n" +
-	"\x06config\x18\x01 \x01(\v2\x17.elara.config.v1.ConfigR\x06config\"M\n" +
-	"\x10GetConfigRequest\x12\x1b\n" +
-	"\x04path\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04path\x12\x1c\n" +
-	"\tnamespace\x18\x02 \x01(\tR\tnamespace\"D\n" +
+	"\x06config\x18\x01 \x01(\v2\x17.elara.config.v1.ConfigR\x06config\"T\n" +
+	"\x10GetConfigRequest\x12\x1a\n" +
+	"\x04path\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04path\x12$\n" +
+	"\tnamespace\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tnamespace\"D\n" +
 	"\x11GetConfigResponse\x12/\n" +
-	"\x06config\x18\x01 \x01(\v2\x17.elara.config.v1.ConfigR\x06config\"\xcb\x02\n" +
-	"\x13UpdateConfigRequest\x12\x1b\n" +
-	"\x04path\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04path\x12!\n" +
-	"\acontent\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\acontent\x12/\n" +
-	"\x06format\x18\x03 \x01(\x0e2\x17.elara.config.v1.FormatR\x06format\x12\x1c\n" +
-	"\tnamespace\x18\x04 \x01(\tR\tnamespace\x12\x18\n" +
+	"\x06config\x18\x01 \x01(\v2\x17.elara.config.v1.ConfigR\x06config\"\xd1\x02\n" +
+	"\x13UpdateConfigRequest\x12\x1a\n" +
+	"\x04path\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04path\x12 \n" +
+	"\acontent\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\acontent\x12/\n" +
+	"\x06format\x18\x03 \x01(\x0e2\x17.elara.config.v1.FormatR\x06format\x12$\n" +
+	"\tnamespace\x18\x04 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tnamespace\x12\x18\n" +
 	"\aversion\x18\x05 \x01(\x03R\aversion\x12N\n" +
 	"\bmetadata\x18\x06 \x03(\v22.elara.config.v1.UpdateConfigRequest.MetadataEntryR\bmetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"G\n" +
 	"\x14UpdateConfigResponse\x12/\n" +
-	"\x06config\x18\x01 \x01(\v2\x17.elara.config.v1.ConfigR\x06config\"P\n" +
-	"\x13DeleteConfigRequest\x12\x1b\n" +
-	"\x04path\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04path\x12\x1c\n" +
-	"\tnamespace\x18\x02 \x01(\tR\tnamespace\"\x16\n" +
+	"\x06config\x18\x01 \x01(\v2\x17.elara.config.v1.ConfigR\x06config\"W\n" +
+	"\x13DeleteConfigRequest\x12\x1a\n" +
+	"\x04path\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04path\x12$\n" +
+	"\tnamespace\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tnamespace\"\x16\n" +
 	"\x14DeleteConfigResponse\"\xd2\x01\n" +
 	"\x12ListConfigsRequest\x12\x1c\n" +
 	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x12\n" +
@@ -1264,21 +1408,21 @@ const file_elara_config_v1_config_service_proto_rawDesc = "" +
 	"\aentries\x18\x01 \x03(\v2\x1f.elara.config.v1.DirectoryEntryR\aentries\x12C\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2#.elara.common.v1.PaginationResponseR\n" +
-	"pagination\"j\n" +
-	"\x17GetConfigHistoryRequest\x12\x1b\n" +
-	"\x04path\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04path\x12\x1c\n" +
+	"pagination\"i\n" +
+	"\x17GetConfigHistoryRequest\x12\x1a\n" +
+	"\x04path\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04path\x12\x1c\n" +
 	"\tnamespace\x18\x02 \x01(\tR\tnamespace\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\"S\n" +
 	"\x18GetConfigHistoryResponse\x127\n" +
-	"\aentries\x18\x01 \x03(\v2\x1d.elara.config.v1.HistoryEntryR\aentries\"|\n" +
-	"\x1aGetConfigAtRevisionRequest\x12\x1b\n" +
-	"\x04path\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04path\x12\x1c\n" +
+	"\aentries\x18\x01 \x03(\v2\x1d.elara.config.v1.HistoryEntryR\aentries\"{\n" +
+	"\x1aGetConfigAtRevisionRequest\x12\x1a\n" +
+	"\x04path\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04path\x12\x1c\n" +
 	"\tnamespace\x18\x02 \x01(\tR\tnamespace\x12#\n" +
 	"\brevision\x18\x03 \x01(\x03B\a\xbaH\x04\"\x02 \x00R\brevision\"R\n" +
 	"\x1bGetConfigAtRevisionResponse\x123\n" +
-	"\x05entry\x18\x01 \x01(\v2\x1d.elara.config.v1.HistoryEntryR\x05entry\"\xc9\x01\n" +
-	"\x14SearchConfigsRequest\x12\x1d\n" +
-	"\x05query\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x05query\x12\x1c\n" +
+	"\x05entry\x18\x01 \x01(\v2\x1d.elara.config.v1.HistoryEntryR\x05entry\"\xc8\x01\n" +
+	"\x14SearchConfigsRequest\x12\x1c\n" +
+	"\x05query\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x05query\x12\x1c\n" +
 	"\tnamespace\x18\x02 \x01(\tR\tnamespace\x12B\n" +
 	"\n" +
 	"pagination\x18\x03 \x01(\v2\".elara.common.v1.PaginationRequestR\n" +
@@ -1288,17 +1432,17 @@ const file_elara_config_v1_config_service_proto_rawDesc = "" +
 	"\aresults\x18\x01 \x03(\v2\x1e.elara.config.v1.ConfigSummaryR\aresults\x12C\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2#.elara.common.v1.PaginationResponseR\n" +
-	"pagination\"\xd1\x01\n" +
-	"\x11CopyConfigRequest\x12(\n" +
-	"\vsource_path\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\n" +
+	"pagination\"\xcf\x01\n" +
+	"\x11CopyConfigRequest\x12'\n" +
+	"\vsource_path\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\n" +
 	"sourcePath\x12)\n" +
-	"\x10source_namespace\x18\x02 \x01(\tR\x0fsourceNamespace\x122\n" +
-	"\x10destination_path\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x0fdestinationPath\x123\n" +
+	"\x10source_namespace\x18\x02 \x01(\tR\x0fsourceNamespace\x121\n" +
+	"\x10destination_path\x18\x03 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x0fdestinationPath\x123\n" +
 	"\x15destination_namespace\x18\x04 \x01(\tR\x14destinationNamespace\"E\n" +
 	"\x12CopyConfigResponse\x12/\n" +
-	"\x06config\x18\x01 \x01(\v2\x17.elara.config.v1.ConfigR\x06config\"k\n" +
-	"\x15ValidateConfigRequest\x12!\n" +
-	"\acontent\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\acontent\x12/\n" +
+	"\x06config\x18\x01 \x01(\v2\x17.elara.config.v1.ConfigR\x06config\"j\n" +
+	"\x15ValidateConfigRequest\x12 \n" +
+	"\acontent\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\acontent\x12/\n" +
 	"\x06format\x18\x02 \x01(\x0e2\x17.elara.config.v1.FormatR\x06format\"S\n" +
 	"\x16ValidateConfigResponse\x129\n" +
 	"\x06result\x18\x01 \x01(\v2!.elara.config.v1.ValidationResultR\x06result\"T\n" +
@@ -1307,7 +1451,21 @@ const file_elara_config_v1_config_service_proto_rawDesc = "" +
 	"pathPrefix\x12\x1c\n" +
 	"\tnamespace\x18\x02 \x01(\tR\tnamespace\"I\n" +
 	"\x14WatchConfigsResponse\x121\n" +
-	"\x05event\x18\x01 \x01(\v2\x1b.elara.config.v1.WatchEventR\x05event2\xa8\b\n" +
+	"\x05event\x18\x01 \x01(\v2\x1b.elara.config.v1.WatchEventR\x05event\"\xa6\x01\n" +
+	"\x14GetConfigDiffRequest\x12\x1a\n" +
+	"\x04path\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04path\x12$\n" +
+	"\tnamespace\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tnamespace\x12#\n" +
+	"\rfrom_revision\x18\x03 \x01(\x03R\ffromRevision\x12'\n" +
+	"\vto_revision\x18\x04 \x01(\x03B\x06\xbaH\x03\xc8\x01\x01R\n" +
+	"toRevision\"\xb3\x01\n" +
+	"\x15GetConfigDiffResponse\x12#\n" +
+	"\rfrom_revision\x18\x01 \x01(\x03R\ffromRevision\x12\x1f\n" +
+	"\vto_revision\x18\x02 \x01(\x03R\n" +
+	"toRevision\x12!\n" +
+	"\ffrom_content\x18\x03 \x01(\tR\vfromContent\x12\x1d\n" +
+	"\n" +
+	"to_content\x18\x04 \x01(\tR\ttoContent\x12\x12\n" +
+	"\x04diff\x18\x05 \x01(\tR\x04diff2\x88\t\n" +
 	"\rConfigService\x12[\n" +
 	"\fCreateConfig\x12$.elara.config.v1.CreateConfigRequest\x1a%.elara.config.v1.CreateConfigResponse\x12R\n" +
 	"\tGetConfig\x12!.elara.config.v1.GetConfigRequest\x1a\".elara.config.v1.GetConfigResponse\x12[\n" +
@@ -1320,7 +1478,8 @@ const file_elara_config_v1_config_service_proto_rawDesc = "" +
 	"\n" +
 	"CopyConfig\x12\".elara.config.v1.CopyConfigRequest\x1a#.elara.config.v1.CopyConfigResponse\x12a\n" +
 	"\x0eValidateConfig\x12&.elara.config.v1.ValidateConfigRequest\x1a'.elara.config.v1.ValidateConfigResponse\x12]\n" +
-	"\fWatchConfigs\x12$.elara.config.v1.WatchConfigsRequest\x1a%.elara.config.v1.WatchConfigsResponse0\x01B\xd1\x01\n" +
+	"\fWatchConfigs\x12$.elara.config.v1.WatchConfigsRequest\x1a%.elara.config.v1.WatchConfigsResponse0\x01\x12^\n" +
+	"\rGetConfigDiff\x12%.elara.config.v1.GetConfigDiffRequest\x1a&.elara.config.v1.GetConfigDiffResponseB\xd1\x01\n" +
 	"\x13com.elara.config.v1B\x12ConfigServiceProtoP\x01ZHgithub.com/sergeyslonimsky/elara/internal/proto/elara/config/v1;configv1\xa2\x02\x03ECX\xaa\x02\x0fElara.Config.V1\xca\x02\x0fElara\\Config\\V1\xe2\x02\x1bElara\\Config\\V1\\GPBMetadata\xea\x02\x11Elara::Config::V1b\x06proto3"
 
 var (
@@ -1335,7 +1494,7 @@ func file_elara_config_v1_config_service_proto_rawDescGZIP() []byte {
 	return file_elara_config_v1_config_service_proto_rawDescData
 }
 
-var file_elara_config_v1_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_elara_config_v1_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_elara_config_v1_config_service_proto_goTypes = []any{
 	(*CreateConfigRequest)(nil),         // 0: elara.config.v1.CreateConfigRequest
 	(*CreateConfigResponse)(nil),        // 1: elara.config.v1.CreateConfigResponse
@@ -1359,41 +1518,43 @@ var file_elara_config_v1_config_service_proto_goTypes = []any{
 	(*ValidateConfigResponse)(nil),      // 19: elara.config.v1.ValidateConfigResponse
 	(*WatchConfigsRequest)(nil),         // 20: elara.config.v1.WatchConfigsRequest
 	(*WatchConfigsResponse)(nil),        // 21: elara.config.v1.WatchConfigsResponse
-	nil,                                 // 22: elara.config.v1.CreateConfigRequest.MetadataEntry
-	nil,                                 // 23: elara.config.v1.UpdateConfigRequest.MetadataEntry
-	(Format)(0),                         // 24: elara.config.v1.Format
-	(*Config)(nil),                      // 25: elara.config.v1.Config
-	(*v1.PaginationRequest)(nil),        // 26: elara.common.v1.PaginationRequest
-	(*v1.SortRequest)(nil),              // 27: elara.common.v1.SortRequest
-	(*DirectoryEntry)(nil),              // 28: elara.config.v1.DirectoryEntry
-	(*v1.PaginationResponse)(nil),       // 29: elara.common.v1.PaginationResponse
-	(*HistoryEntry)(nil),                // 30: elara.config.v1.HistoryEntry
-	(*ConfigSummary)(nil),               // 31: elara.config.v1.ConfigSummary
-	(*ValidationResult)(nil),            // 32: elara.config.v1.ValidationResult
-	(*WatchEvent)(nil),                  // 33: elara.config.v1.WatchEvent
+	(*GetConfigDiffRequest)(nil),        // 22: elara.config.v1.GetConfigDiffRequest
+	(*GetConfigDiffResponse)(nil),       // 23: elara.config.v1.GetConfigDiffResponse
+	nil,                                 // 24: elara.config.v1.CreateConfigRequest.MetadataEntry
+	nil,                                 // 25: elara.config.v1.UpdateConfigRequest.MetadataEntry
+	(Format)(0),                         // 26: elara.config.v1.Format
+	(*Config)(nil),                      // 27: elara.config.v1.Config
+	(*v1.PaginationRequest)(nil),        // 28: elara.common.v1.PaginationRequest
+	(*v1.SortRequest)(nil),              // 29: elara.common.v1.SortRequest
+	(*DirectoryEntry)(nil),              // 30: elara.config.v1.DirectoryEntry
+	(*v1.PaginationResponse)(nil),       // 31: elara.common.v1.PaginationResponse
+	(*HistoryEntry)(nil),                // 32: elara.config.v1.HistoryEntry
+	(*ConfigSummary)(nil),               // 33: elara.config.v1.ConfigSummary
+	(*ValidationResult)(nil),            // 34: elara.config.v1.ValidationResult
+	(*WatchEvent)(nil),                  // 35: elara.config.v1.WatchEvent
 }
 var file_elara_config_v1_config_service_proto_depIdxs = []int32{
-	24, // 0: elara.config.v1.CreateConfigRequest.format:type_name -> elara.config.v1.Format
-	22, // 1: elara.config.v1.CreateConfigRequest.metadata:type_name -> elara.config.v1.CreateConfigRequest.MetadataEntry
-	25, // 2: elara.config.v1.CreateConfigResponse.config:type_name -> elara.config.v1.Config
-	25, // 3: elara.config.v1.GetConfigResponse.config:type_name -> elara.config.v1.Config
-	24, // 4: elara.config.v1.UpdateConfigRequest.format:type_name -> elara.config.v1.Format
-	23, // 5: elara.config.v1.UpdateConfigRequest.metadata:type_name -> elara.config.v1.UpdateConfigRequest.MetadataEntry
-	25, // 6: elara.config.v1.UpdateConfigResponse.config:type_name -> elara.config.v1.Config
-	26, // 7: elara.config.v1.ListConfigsRequest.pagination:type_name -> elara.common.v1.PaginationRequest
-	27, // 8: elara.config.v1.ListConfigsRequest.sort:type_name -> elara.common.v1.SortRequest
-	28, // 9: elara.config.v1.ListConfigsResponse.entries:type_name -> elara.config.v1.DirectoryEntry
-	29, // 10: elara.config.v1.ListConfigsResponse.pagination:type_name -> elara.common.v1.PaginationResponse
-	30, // 11: elara.config.v1.GetConfigHistoryResponse.entries:type_name -> elara.config.v1.HistoryEntry
-	30, // 12: elara.config.v1.GetConfigAtRevisionResponse.entry:type_name -> elara.config.v1.HistoryEntry
-	26, // 13: elara.config.v1.SearchConfigsRequest.pagination:type_name -> elara.common.v1.PaginationRequest
-	27, // 14: elara.config.v1.SearchConfigsRequest.sort:type_name -> elara.common.v1.SortRequest
-	31, // 15: elara.config.v1.SearchConfigsResponse.results:type_name -> elara.config.v1.ConfigSummary
-	29, // 16: elara.config.v1.SearchConfigsResponse.pagination:type_name -> elara.common.v1.PaginationResponse
-	25, // 17: elara.config.v1.CopyConfigResponse.config:type_name -> elara.config.v1.Config
-	24, // 18: elara.config.v1.ValidateConfigRequest.format:type_name -> elara.config.v1.Format
-	32, // 19: elara.config.v1.ValidateConfigResponse.result:type_name -> elara.config.v1.ValidationResult
-	33, // 20: elara.config.v1.WatchConfigsResponse.event:type_name -> elara.config.v1.WatchEvent
+	26, // 0: elara.config.v1.CreateConfigRequest.format:type_name -> elara.config.v1.Format
+	24, // 1: elara.config.v1.CreateConfigRequest.metadata:type_name -> elara.config.v1.CreateConfigRequest.MetadataEntry
+	27, // 2: elara.config.v1.CreateConfigResponse.config:type_name -> elara.config.v1.Config
+	27, // 3: elara.config.v1.GetConfigResponse.config:type_name -> elara.config.v1.Config
+	26, // 4: elara.config.v1.UpdateConfigRequest.format:type_name -> elara.config.v1.Format
+	25, // 5: elara.config.v1.UpdateConfigRequest.metadata:type_name -> elara.config.v1.UpdateConfigRequest.MetadataEntry
+	27, // 6: elara.config.v1.UpdateConfigResponse.config:type_name -> elara.config.v1.Config
+	28, // 7: elara.config.v1.ListConfigsRequest.pagination:type_name -> elara.common.v1.PaginationRequest
+	29, // 8: elara.config.v1.ListConfigsRequest.sort:type_name -> elara.common.v1.SortRequest
+	30, // 9: elara.config.v1.ListConfigsResponse.entries:type_name -> elara.config.v1.DirectoryEntry
+	31, // 10: elara.config.v1.ListConfigsResponse.pagination:type_name -> elara.common.v1.PaginationResponse
+	32, // 11: elara.config.v1.GetConfigHistoryResponse.entries:type_name -> elara.config.v1.HistoryEntry
+	32, // 12: elara.config.v1.GetConfigAtRevisionResponse.entry:type_name -> elara.config.v1.HistoryEntry
+	28, // 13: elara.config.v1.SearchConfigsRequest.pagination:type_name -> elara.common.v1.PaginationRequest
+	29, // 14: elara.config.v1.SearchConfigsRequest.sort:type_name -> elara.common.v1.SortRequest
+	33, // 15: elara.config.v1.SearchConfigsResponse.results:type_name -> elara.config.v1.ConfigSummary
+	31, // 16: elara.config.v1.SearchConfigsResponse.pagination:type_name -> elara.common.v1.PaginationResponse
+	27, // 17: elara.config.v1.CopyConfigResponse.config:type_name -> elara.config.v1.Config
+	26, // 18: elara.config.v1.ValidateConfigRequest.format:type_name -> elara.config.v1.Format
+	34, // 19: elara.config.v1.ValidateConfigResponse.result:type_name -> elara.config.v1.ValidationResult
+	35, // 20: elara.config.v1.WatchConfigsResponse.event:type_name -> elara.config.v1.WatchEvent
 	0,  // 21: elara.config.v1.ConfigService.CreateConfig:input_type -> elara.config.v1.CreateConfigRequest
 	2,  // 22: elara.config.v1.ConfigService.GetConfig:input_type -> elara.config.v1.GetConfigRequest
 	4,  // 23: elara.config.v1.ConfigService.UpdateConfig:input_type -> elara.config.v1.UpdateConfigRequest
@@ -1405,19 +1566,21 @@ var file_elara_config_v1_config_service_proto_depIdxs = []int32{
 	16, // 29: elara.config.v1.ConfigService.CopyConfig:input_type -> elara.config.v1.CopyConfigRequest
 	18, // 30: elara.config.v1.ConfigService.ValidateConfig:input_type -> elara.config.v1.ValidateConfigRequest
 	20, // 31: elara.config.v1.ConfigService.WatchConfigs:input_type -> elara.config.v1.WatchConfigsRequest
-	1,  // 32: elara.config.v1.ConfigService.CreateConfig:output_type -> elara.config.v1.CreateConfigResponse
-	3,  // 33: elara.config.v1.ConfigService.GetConfig:output_type -> elara.config.v1.GetConfigResponse
-	5,  // 34: elara.config.v1.ConfigService.UpdateConfig:output_type -> elara.config.v1.UpdateConfigResponse
-	7,  // 35: elara.config.v1.ConfigService.DeleteConfig:output_type -> elara.config.v1.DeleteConfigResponse
-	9,  // 36: elara.config.v1.ConfigService.ListConfigs:output_type -> elara.config.v1.ListConfigsResponse
-	11, // 37: elara.config.v1.ConfigService.GetConfigHistory:output_type -> elara.config.v1.GetConfigHistoryResponse
-	13, // 38: elara.config.v1.ConfigService.GetConfigAtRevision:output_type -> elara.config.v1.GetConfigAtRevisionResponse
-	15, // 39: elara.config.v1.ConfigService.SearchConfigs:output_type -> elara.config.v1.SearchConfigsResponse
-	17, // 40: elara.config.v1.ConfigService.CopyConfig:output_type -> elara.config.v1.CopyConfigResponse
-	19, // 41: elara.config.v1.ConfigService.ValidateConfig:output_type -> elara.config.v1.ValidateConfigResponse
-	21, // 42: elara.config.v1.ConfigService.WatchConfigs:output_type -> elara.config.v1.WatchConfigsResponse
-	32, // [32:43] is the sub-list for method output_type
-	21, // [21:32] is the sub-list for method input_type
+	22, // 32: elara.config.v1.ConfigService.GetConfigDiff:input_type -> elara.config.v1.GetConfigDiffRequest
+	1,  // 33: elara.config.v1.ConfigService.CreateConfig:output_type -> elara.config.v1.CreateConfigResponse
+	3,  // 34: elara.config.v1.ConfigService.GetConfig:output_type -> elara.config.v1.GetConfigResponse
+	5,  // 35: elara.config.v1.ConfigService.UpdateConfig:output_type -> elara.config.v1.UpdateConfigResponse
+	7,  // 36: elara.config.v1.ConfigService.DeleteConfig:output_type -> elara.config.v1.DeleteConfigResponse
+	9,  // 37: elara.config.v1.ConfigService.ListConfigs:output_type -> elara.config.v1.ListConfigsResponse
+	11, // 38: elara.config.v1.ConfigService.GetConfigHistory:output_type -> elara.config.v1.GetConfigHistoryResponse
+	13, // 39: elara.config.v1.ConfigService.GetConfigAtRevision:output_type -> elara.config.v1.GetConfigAtRevisionResponse
+	15, // 40: elara.config.v1.ConfigService.SearchConfigs:output_type -> elara.config.v1.SearchConfigsResponse
+	17, // 41: elara.config.v1.ConfigService.CopyConfig:output_type -> elara.config.v1.CopyConfigResponse
+	19, // 42: elara.config.v1.ConfigService.ValidateConfig:output_type -> elara.config.v1.ValidateConfigResponse
+	21, // 43: elara.config.v1.ConfigService.WatchConfigs:output_type -> elara.config.v1.WatchConfigsResponse
+	23, // 44: elara.config.v1.ConfigService.GetConfigDiff:output_type -> elara.config.v1.GetConfigDiffResponse
+	33, // [33:45] is the sub-list for method output_type
+	21, // [21:33] is the sub-list for method input_type
 	21, // [21:21] is the sub-list for extension type_name
 	21, // [21:21] is the sub-list for extension extendee
 	0,  // [0:21] is the sub-list for field type_name
@@ -1435,7 +1598,7 @@ func file_elara_config_v1_config_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_config_v1_config_service_proto_rawDesc), len(file_elara_config_v1_config_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   24,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

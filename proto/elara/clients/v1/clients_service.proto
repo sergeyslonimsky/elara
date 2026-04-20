@@ -40,7 +40,7 @@ message ListActiveClientsResponse {
 }
 
 message GetClientRequest {
-  string id = 1 [(buf.validate.field).string.min_len = 1];
+  string id = 1 [(buf.validate.field).required = true];
 }
 
 message GetClientResponse {
@@ -76,7 +76,7 @@ message WatchClientsResponse {
 }
 
 message ListClientSessionsRequest {
-  string client_name = 1 [(buf.validate.field).string.min_len = 1];
+  string client_name = 1 [(buf.validate.field).required = true];
   string k8s_namespace = 2;
   // Connection ID to exclude (typically the active session being viewed).
   string current_id = 3;
@@ -90,7 +90,7 @@ message ListClientSessionsResponse {
 }
 
 message WatchClientRequest {
-  string id = 1 [(buf.validate.field).string.min_len = 1];
+  string id = 1 [(buf.validate.field).required = true];
 }
 
 message WatchClientResponse {

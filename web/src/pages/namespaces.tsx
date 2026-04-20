@@ -1,11 +1,12 @@
-import { createConnectQueryKey, useMutation } from "@connectrpc/connect-query";
+import { useMutation } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { Database, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
-import { AppHeader } from "@/components/app-header";
 import { ErrorCard } from "@/components/error-card";
+import { PageHeader } from "@/components/page-header";
+import { SearchInput } from "@/components/search-input";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -34,6 +35,13 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,19 +49,10 @@ import { Textarea } from "@/components/ui/textarea";
 import {
 	createNamespace,
 	deleteNamespace,
-	listNamespaces,
 	updateNamespace,
 } from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
 import { useNamespaces } from "@/hooks/use-namespaces";
-
-function invalidateNamespaces(queryClient: ReturnType<typeof useQueryClient>) {
-	void queryClient.invalidateQueries({
-		queryKey: createConnectQueryKey({
-			schema: listNamespaces,
-			cardinality: undefined,
-		}),
-	});
-}
+import { invalidateNamespaces } from "@/lib/queries";
 
 function CreateDialog() {
 	const [open, setOpen] = useState(false);
@@ -67,7 +66,7 @@ function CreateDialog() {
 			setOpen(false);
 			setName("");
 			setDescription("");
-			invalidateNamespaces(queryClient);
+			void invalidateNamespaces(queryClient);
 		},
 		onError: (err) => toast.error(err.message),
 	});
@@ -139,7 +138,7 @@ function EditDialog({
 		onSuccess: () => {
 			toast.success(`Namespace "${name}" updated`);
 			setOpen(false);
-			invalidateNamespaces(queryClient);
+			void invalidateNamespaces(queryClient);
 		},
 		onError: (err) => toast.error(err.message),
 	});
@@ -185,7 +184,7 @@ function DeleteButton({ name }: { name: string }) {
 	const mutation = useMutation(deleteNamespace, {
 		onSuccess: () => {
 			toast.success(`Namespace "${name}" deleted`);
-			invalidateNamespaces(queryClient);
+			void invalidateNamespaces(queryClient);
 		},
 		onError: (err) => toast.error(err.message),
 	});
@@ -219,14 +218,37 @@ function DeleteButton({ name }: { name: string }) {
 }
 
 export function NamespacesPage() {
-	const { data, isLoading, error } = useNamespaces();
+	const [searchInput, setSearchInput] = useState("");
+	const [query, setQuery] = useState("");
+	const { data, isLoading, error, refetch, isFetching } = useNamespaces(query);
+
+	const handleSearch = () => {
+		setQuery(searchInput);
+	};
+
+	const handleClear = () => {
+		setSearchInput("");
+		setQuery("");
+	};
 
 	return (
-		<>
-			<AppHeader />
-			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-				<div className="mt-4 flex items-center justify-between">
-					<h1 className="font-semibold text-lg">Namespaces</h1>
+		<div className="flex flex-1 flex-col">
+			<PageHeader
+				title="Namespaces"
+				onRefresh={() => void refetch()}
+				isRefreshing={isFetching}
+			>
+				<SearchInput
+					value={searchInput}
+					onChange={setSearchInput}
+					onSearch={handleSearch}
+					onClear={handleClear}
+					placeholder="Search namespaces..."
+				/>
+			</PageHeader>
+
+			<div className="flex flex-1 flex-col gap-4 p-4">
+				<div className="flex items-center justify-end">
 					<CreateDialog />
 				</div>
 
@@ -272,16 +294,26 @@ export function NamespacesPage() {
 					))}
 
 					{data && data.namespaces.length === 0 && (
-						<div className="col-span-full flex flex-col items-center justify-center py-16 text-muted-foreground">
-							<Database className="mb-4 h-12 w-12" />
-							<p className="text-lg font-medium">No namespaces</p>
-							<p className="text-sm">
-								Create your first namespace to get started
-							</p>
+						<div className="col-span-full py-16">
+							<Empty>
+								<EmptyHeader>
+									<EmptyMedia variant="icon">
+										<Database />
+									</EmptyMedia>
+									<EmptyTitle>
+										{query ? "No namespaces found" : "No namespaces"}
+									</EmptyTitle>
+									<EmptyDescription>
+										{query
+											? `No results for "${query}"`
+											: "Create your first namespace to get started"}
+									</EmptyDescription>
+								</EmptyHeader>
+							</Empty>
 						</div>
 					)}
 				</div>
 			</div>
-		</>
+		</div>
 	);
 }
