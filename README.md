@@ -8,6 +8,33 @@
   Configuration management service with a Web UI, a ConnectRPC API, and an etcd-compatible gRPC API.
 </p>
 
+<p align="center">
+  <a href="https://github.com/sergeyslonimsky/elara/actions/workflows/ci.yml">
+    <img src="https://github.com/sergeyslonimsky/elara/actions/workflows/ci.yml/badge.svg" alt="CI"/>
+  </a>
+  <a href="https://github.com/sergeyslonimsky/elara/releases/latest">
+    <img src="https://img.shields.io/github/v/release/sergeyslonimsky/elara" alt="Latest Release"/>
+  </a>
+  <a href="https://pkg.go.dev/github.com/sergeyslonimsky/elara">
+    <img src="https://img.shields.io/github/go-mod/go-version/sergeyslonimsky/elara" alt="Go Version"/>
+  </a>
+  <a href="https://goreportcard.com/report/github.com/sergeyslonimsky/elara">
+    <img src="https://goreportcard.com/badge/github.com/sergeyslonimsky/elara" alt="Go Report Card"/>
+  </a>
+  <a href="https://pkg.go.dev/github.com/sergeyslonimsky/elara">
+    <img src="https://pkg.go.dev/badge/github.com/sergeyslonimsky/elara.svg" alt="Go Reference"/>
+  </a>
+  <a href="https://github.com/sergeyslonimsky/elara/pkgs/container/elara">
+    <img src="https://img.shields.io/badge/ghcr.io-elara-blue?logo=docker&logoColor=white" alt="Container Image"/>
+  </a>
+  <a href="https://artifacthub.io/packages/helm/elara/elara">
+    <img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/elara" alt="Artifact Hub"/>
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/sergeyslonimsky/elara" alt="License: MIT"/>
+  </a>
+</p>
+
 Elara stores, edits, and serves application configuration. Operators use the
 built-in Web UI for CRUD; services consume values through the same API
 surface as etcd (drop-in for any etcd v3 client) or through a typed
