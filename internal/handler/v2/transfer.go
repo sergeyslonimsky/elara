@@ -36,7 +36,6 @@ func (h *TransferHandler) ExportNamespace(
 		req.Msg.GetNamespace(),
 		req.Msg.GetZip(),
 		req.Msg.GetEncoding(),
-		req.Msg.GetZipLayout(),
 	)
 	if err != nil {
 		return nil, toConnectError(err)
@@ -79,6 +78,7 @@ func (h *TransferHandler) ImportNamespace(
 		req.Msg.GetData(),
 		req.Msg.GetOnConflict(),
 		req.Msg.GetDryRun(),
+		req.Msg.GetNamespace(),
 	)
 	if err != nil {
 		return nil, toConnectError(err)
@@ -86,6 +86,7 @@ func (h *TransferHandler) ImportNamespace(
 
 	resp := &transferv1.ImportNamespaceResponse{
 		Created: int32(report.Created),
+		Updated: int32(report.Updated),
 		Skipped: int32(report.Skipped),
 		Failed:  int32(report.Failed),
 		DryRun:  report.DryRun,

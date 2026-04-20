@@ -68,11 +68,10 @@ export function ExportDialog({ namespace }: ExportDialogProps) {
 	const isPending = exportNsMutation.isPending || exportAllMutation.isPending;
 
 	const handleExport = () => {
-		const params = { zip, encoding, zipLayout };
 		if (namespace) {
-			exportNsMutation.mutate({ namespace, ...params });
+			exportNsMutation.mutate({ namespace, zip, encoding });
 		} else {
-			exportAllMutation.mutate(params);
+			exportAllMutation.mutate({ zip, encoding, zipLayout });
 		}
 	};
 
@@ -127,7 +126,7 @@ export function ExportDialog({ namespace }: ExportDialogProps) {
 						</div>
 					</Field>
 
-					{zip && (
+					{zip && !namespace && (
 						<Field>
 							<FieldLabel>ZIP layout</FieldLabel>
 							<RadioGroup

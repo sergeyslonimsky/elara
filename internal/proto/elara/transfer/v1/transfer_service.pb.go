@@ -27,7 +27,6 @@ type ExportNamespaceRequest struct {
 	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	Zip           bool                   `protobuf:"varint,2,opt,name=zip,proto3" json:"zip,omitempty"`
 	Encoding      BundleEncoding         `protobuf:"varint,3,opt,name=encoding,proto3,enum=elara.transfer.v1.BundleEncoding" json:"encoding,omitempty"`
-	ZipLayout     ZipLayout              `protobuf:"varint,4,opt,name=zip_layout,json=zipLayout,proto3,enum=elara.transfer.v1.ZipLayout" json:"zip_layout,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -81,13 +80,6 @@ func (x *ExportNamespaceRequest) GetEncoding() BundleEncoding {
 		return x.Encoding
 	}
 	return BundleEncoding_BUNDLE_ENCODING_UNSPECIFIED
-}
-
-func (x *ExportNamespaceRequest) GetZipLayout() ZipLayout {
-	if x != nil {
-		return x.ZipLayout
-	}
-	return ZipLayout_ZIP_LAYOUT_UNSPECIFIED
 }
 
 type ExportNamespaceResponse struct {
@@ -271,10 +263,12 @@ func (x *ExportAllResponse) GetFilename() string {
 }
 
 type ImportNamespaceRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	OnConflict    ConflictResolution     `protobuf:"varint,2,opt,name=on_conflict,json=onConflict,proto3,enum=elara.transfer.v1.ConflictResolution" json:"on_conflict,omitempty"`
-	DryRun        bool                   `protobuf:"varint,3,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Data       []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	OnConflict ConflictResolution     `protobuf:"varint,2,opt,name=on_conflict,json=onConflict,proto3,enum=elara.transfer.v1.ConflictResolution" json:"on_conflict,omitempty"`
+	DryRun     bool                   `protobuf:"varint,3,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+	// When set, imports only into this namespace (overrides bundle namespace; rejects AllBundle).
+	Namespace     string `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -330,9 +324,17 @@ func (x *ImportNamespaceRequest) GetDryRun() bool {
 	return false
 }
 
+func (x *ImportNamespaceRequest) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
 type ImportNamespaceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Created       int32                  `protobuf:"varint,1,opt,name=created,proto3" json:"created,omitempty"`
+	Updated       int32                  `protobuf:"varint,6,opt,name=updated,proto3" json:"updated,omitempty"`
 	Skipped       int32                  `protobuf:"varint,2,opt,name=skipped,proto3" json:"skipped,omitempty"`
 	Failed        int32                  `protobuf:"varint,3,opt,name=failed,proto3" json:"failed,omitempty"`
 	Errors        []*ImportError         `protobuf:"bytes,4,rep,name=errors,proto3" json:"errors,omitempty"`
@@ -378,6 +380,13 @@ func (x *ImportNamespaceResponse) GetCreated() int32 {
 	return 0
 }
 
+func (x *ImportNamespaceResponse) GetUpdated() int32 {
+	if x != nil {
+		return x.Updated
+	}
+	return 0
+}
+
 func (x *ImportNamespaceResponse) GetSkipped() int32 {
 	if x != nil {
 		return x.Skipped
@@ -410,13 +419,11 @@ var File_elara_transfer_v1_transfer_service_proto protoreflect.FileDescriptor
 
 const file_elara_transfer_v1_transfer_service_proto_rawDesc = "" +
 	"\n" +
-	"(elara/transfer/v1/transfer_service.proto\x12\x11elara.transfer.v1\x1a\x1bbuf/validate/validate.proto\x1a elara/transfer/v1/transfer.proto\"\xcc\x01\n" +
+	"(elara/transfer/v1/transfer_service.proto\x12\x11elara.transfer.v1\x1a\x1bbuf/validate/validate.proto\x1a elara/transfer/v1/transfer.proto\"\x8f\x01\n" +
 	"\x16ExportNamespaceRequest\x12$\n" +
 	"\tnamespace\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tnamespace\x12\x10\n" +
 	"\x03zip\x18\x02 \x01(\bR\x03zip\x12=\n" +
-	"\bencoding\x18\x03 \x01(\x0e2!.elara.transfer.v1.BundleEncodingR\bencoding\x12;\n" +
-	"\n" +
-	"zip_layout\x18\x04 \x01(\x0e2\x1c.elara.transfer.v1.ZipLayoutR\tzipLayout\"l\n" +
+	"\bencoding\x18\x03 \x01(\x0e2!.elara.transfer.v1.BundleEncodingR\bencoding\"l\n" +
 	"\x17ExportNamespaceResponse\x12\x12\n" +
 	"\x04data\x18\x01 \x01(\fR\x04data\x12!\n" +
 	"\fcontent_type\x18\x02 \x01(\tR\vcontentType\x12\x1a\n" +
@@ -429,14 +436,16 @@ const file_elara_transfer_v1_transfer_service_proto_rawDesc = "" +
 	"\x11ExportAllResponse\x12\x12\n" +
 	"\x04data\x18\x01 \x01(\fR\x04data\x12!\n" +
 	"\fcontent_type\x18\x02 \x01(\tR\vcontentType\x12\x1a\n" +
-	"\bfilename\x18\x03 \x01(\tR\bfilename\"\x95\x01\n" +
+	"\bfilename\x18\x03 \x01(\tR\bfilename\"\xb3\x01\n" +
 	"\x16ImportNamespaceRequest\x12\x1a\n" +
 	"\x04data\x18\x01 \x01(\fB\x06\xbaH\x03\xc8\x01\x01R\x04data\x12F\n" +
 	"\von_conflict\x18\x02 \x01(\x0e2%.elara.transfer.v1.ConflictResolutionR\n" +
 	"onConflict\x12\x17\n" +
-	"\adry_run\x18\x03 \x01(\bR\x06dryRun\"\xb6\x01\n" +
+	"\adry_run\x18\x03 \x01(\bR\x06dryRun\x12\x1c\n" +
+	"\tnamespace\x18\x04 \x01(\tR\tnamespace\"\xd0\x01\n" +
 	"\x17ImportNamespaceResponse\x12\x18\n" +
 	"\acreated\x18\x01 \x01(\x05R\acreated\x12\x18\n" +
+	"\aupdated\x18\x06 \x01(\x05R\aupdated\x12\x18\n" +
 	"\askipped\x18\x02 \x01(\x05R\askipped\x12\x16\n" +
 	"\x06failed\x18\x03 \x01(\x05R\x06failed\x126\n" +
 	"\x06errors\x18\x04 \x03(\v2\x1e.elara.transfer.v1.ImportErrorR\x06errors\x12\x17\n" +
@@ -474,22 +483,21 @@ var file_elara_transfer_v1_transfer_service_proto_goTypes = []any{
 }
 var file_elara_transfer_v1_transfer_service_proto_depIdxs = []int32{
 	6, // 0: elara.transfer.v1.ExportNamespaceRequest.encoding:type_name -> elara.transfer.v1.BundleEncoding
-	7, // 1: elara.transfer.v1.ExportNamespaceRequest.zip_layout:type_name -> elara.transfer.v1.ZipLayout
-	6, // 2: elara.transfer.v1.ExportAllRequest.encoding:type_name -> elara.transfer.v1.BundleEncoding
-	7, // 3: elara.transfer.v1.ExportAllRequest.zip_layout:type_name -> elara.transfer.v1.ZipLayout
-	8, // 4: elara.transfer.v1.ImportNamespaceRequest.on_conflict:type_name -> elara.transfer.v1.ConflictResolution
-	9, // 5: elara.transfer.v1.ImportNamespaceResponse.errors:type_name -> elara.transfer.v1.ImportError
-	0, // 6: elara.transfer.v1.TransferService.ExportNamespace:input_type -> elara.transfer.v1.ExportNamespaceRequest
-	2, // 7: elara.transfer.v1.TransferService.ExportAll:input_type -> elara.transfer.v1.ExportAllRequest
-	4, // 8: elara.transfer.v1.TransferService.ImportNamespace:input_type -> elara.transfer.v1.ImportNamespaceRequest
-	1, // 9: elara.transfer.v1.TransferService.ExportNamespace:output_type -> elara.transfer.v1.ExportNamespaceResponse
-	3, // 10: elara.transfer.v1.TransferService.ExportAll:output_type -> elara.transfer.v1.ExportAllResponse
-	5, // 11: elara.transfer.v1.TransferService.ImportNamespace:output_type -> elara.transfer.v1.ImportNamespaceResponse
-	9, // [9:12] is the sub-list for method output_type
-	6, // [6:9] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	6, // 1: elara.transfer.v1.ExportAllRequest.encoding:type_name -> elara.transfer.v1.BundleEncoding
+	7, // 2: elara.transfer.v1.ExportAllRequest.zip_layout:type_name -> elara.transfer.v1.ZipLayout
+	8, // 3: elara.transfer.v1.ImportNamespaceRequest.on_conflict:type_name -> elara.transfer.v1.ConflictResolution
+	9, // 4: elara.transfer.v1.ImportNamespaceResponse.errors:type_name -> elara.transfer.v1.ImportError
+	0, // 5: elara.transfer.v1.TransferService.ExportNamespace:input_type -> elara.transfer.v1.ExportNamespaceRequest
+	2, // 6: elara.transfer.v1.TransferService.ExportAll:input_type -> elara.transfer.v1.ExportAllRequest
+	4, // 7: elara.transfer.v1.TransferService.ImportNamespace:input_type -> elara.transfer.v1.ImportNamespaceRequest
+	1, // 8: elara.transfer.v1.TransferService.ExportNamespace:output_type -> elara.transfer.v1.ExportNamespaceResponse
+	3, // 9: elara.transfer.v1.TransferService.ExportAll:output_type -> elara.transfer.v1.ExportAllResponse
+	5, // 10: elara.transfer.v1.TransferService.ImportNamespace:output_type -> elara.transfer.v1.ImportNamespaceResponse
+	8, // [8:11] is the sub-list for method output_type
+	5, // [5:8] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_elara_transfer_v1_transfer_service_proto_init() }

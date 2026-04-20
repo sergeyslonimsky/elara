@@ -38,7 +38,7 @@ interface ImportDialogProps {
 	namespace?: string;
 }
 
-export function ImportDialog({ namespace: _namespace }: ImportDialogProps) {
+export function ImportDialog({ namespace }: ImportDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [fileBytes, setFileBytes] = useState<Uint8Array | null>(null);
 	const [fileName, setFileName] = useState("");
@@ -72,7 +72,7 @@ export function ImportDialog({ namespace: _namespace }: ImportDialogProps) {
 		if (!fileBytes) return;
 
 		previewMutation.mutate(
-			{ data: fileBytes, onConflict, dryRun: true },
+			{ data: fileBytes, onConflict, dryRun: true, namespace: namespace ?? "" },
 			{
 				onSuccess: (res) => {
 					const rows: PreviewRow[] = [];
@@ -124,11 +124,16 @@ export function ImportDialog({ namespace: _namespace }: ImportDialogProps) {
 		if (!fileBytes) return;
 
 		mutation.mutate(
-			{ data: fileBytes, onConflict, dryRun: false },
+			{
+				data: fileBytes,
+				onConflict,
+				dryRun: false,
+				namespace: namespace ?? "",
+			},
 			{
 				onSuccess: (res) => {
 					toast.success(
-						`Import complete — Created: ${res.created}, Skipped: ${res.skipped}, Failed: ${res.failed}`,
+						`Import complete — Created: ${res.created}, Updated: ${res.updated}, Skipped: ${res.skipped}, Failed: ${res.failed}`,
 					);
 					setOpen(false);
 					resetState();

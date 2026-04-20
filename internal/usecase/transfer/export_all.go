@@ -59,7 +59,7 @@ func (uc *ExportAllUseCase) Execute(
 	if asZip {
 		innerName := "elara-export-all" + bundleExtension(ct, false)
 
-		payload, err = wrapInZip(innerName, payload, transferv1.ZipLayout_ZIP_LAYOUT_BUNDLE)
+		payload, err = wrapInZip(innerName, payload)
 		if err != nil {
 			return nil, "", "", err
 		}
@@ -83,7 +83,7 @@ func (uc *ExportAllUseCase) buildAllBundle(ctx context.Context) (domain.AllBundl
 	}
 
 	for _, ns := range namespaces {
-		nsBundle, err := uc.buildNamespaceBundle(ctx, ns.Name, exportedAt)
+		nsBundle, err := uc.buildNamespaceBundle(ctx, ns, exportedAt)
 		if err != nil {
 			return domain.AllBundle{}, err
 		}
@@ -96,18 +96,19 @@ func (uc *ExportAllUseCase) buildAllBundle(ctx context.Context) (domain.AllBundl
 
 func (uc *ExportAllUseCase) buildNamespaceBundle(
 	ctx context.Context,
-	name string,
+	ns *domain.Namespace,
 	exportedAt time.Time,
 ) (domain.NamespaceBundle, error) {
-	configs, err := uc.configs.ListAllByNamespace(ctx, name)
+	configs, err := uc.configs.ListAllByNamespace(ctx, ns.Name)
 	if err != nil {
-		return domain.NamespaceBundle{}, fmt.Errorf("list configs for namespace %s: %w", name, err)
+		return domain.NamespaceBundle{}, fmt.Errorf("list configs for namespace %s: %w", ns.Name, err)
 	}
 
 	nsBundle := domain.NamespaceBundle{
-		Namespace:  name,
-		ExportedAt: exportedAt,
-		Configs:    make([]domain.BundleConfig, 0, len(configs)),
+		Namespace:   ns.Name,
+		Description: ns.Description,
+		ExportedAt:  exportedAt,
+		Configs:     make([]domain.BundleConfig, 0, len(configs)),
 	}
 
 	for _, cfg := range configs {

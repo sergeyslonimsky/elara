@@ -10,9 +10,10 @@ type BundleConfig struct {
 }
 
 type NamespaceBundle struct {
-	Namespace  string         `json:"namespace"  yaml:"namespace"`
-	ExportedAt time.Time      `json:"exportedAt" yaml:"exportedAt"`
-	Configs    []BundleConfig `json:"configs"    yaml:"configs"`
+	Namespace   string         `json:"namespace"             yaml:"namespace"`
+	Description string         `json:"description,omitempty" yaml:"description,omitempty"`
+	ExportedAt  time.Time      `json:"exportedAt"            yaml:"exportedAt"`
+	Configs     []BundleConfig `json:"configs"               yaml:"configs"`
 }
 
 type AllBundle struct {
@@ -22,6 +23,7 @@ type AllBundle struct {
 
 type ImportReport struct {
 	Created int
+	Updated int
 	Skipped int
 	Failed  int
 	Errors  []BundleImportError

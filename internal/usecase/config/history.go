@@ -28,7 +28,7 @@ func (uc *HistoryUseCase) GetHistory(
 	limit int,
 ) ([]*domain.HistoryEntry, error) {
 	if namespace == "" {
-		namespace = domain.DefaultNamespace
+		return nil, domain.NewValidationError("namespace", "namespace is required")
 	}
 
 	if limit <= 0 {
@@ -49,7 +49,7 @@ func (uc *HistoryUseCase) GetAtRevision(
 	revision int64,
 ) (*domain.HistoryEntry, error) {
 	if namespace == "" {
-		namespace = domain.DefaultNamespace
+		return nil, domain.NewValidationError("namespace", "namespace is required")
 	}
 
 	entry, err := uc.configs.GetAtRevision(ctx, path, namespace, revision)

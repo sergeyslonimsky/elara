@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-const DefaultNamespace = "default"
-
 var namespaceNameRegex = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?$`)
 
 const maxNamespaceNameLen = 128
@@ -36,8 +34,4 @@ func (n *Namespace) Validate() error {
 	}
 
 	return nil
-}
-
-func (n *Namespace) IsDefault() bool {
-	return n.Name == DefaultNamespace
 }

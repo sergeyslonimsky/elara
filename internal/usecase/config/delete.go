@@ -26,7 +26,7 @@ func NewDeleteUseCase(configs configDeleter, watch deleteWatchNotifier) *DeleteU
 
 func (uc *DeleteUseCase) Execute(ctx context.Context, path, namespace string) error {
 	if namespace == "" {
-		namespace = domain.DefaultNamespace
+		return domain.NewValidationError("namespace", "namespace is required")
 	}
 
 	rev, err := uc.configs.Delete(ctx, path, namespace)

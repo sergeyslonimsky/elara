@@ -77,6 +77,7 @@ linters:
           - err113   # test fakes use errors.New("boom") idiomatically; sentinel errors add noise
           - funlen   # table-driven tests are naturally longer
           - wrapcheck
+          - dogsled
 
   settings:
     exhaustive:

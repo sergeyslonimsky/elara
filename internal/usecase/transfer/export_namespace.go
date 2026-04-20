@@ -31,13 +31,9 @@ func (uc *ExportNamespaceUseCase) Execute(
 	namespace string,
 	asZip bool,
 	enc transferv1.BundleEncoding,
-	layout transferv1.ZipLayout,
 ) ([]byte, string, string, error) {
-	if namespace == "" {
-		namespace = domain.DefaultNamespace
-	}
-
-	if _, err := uc.namespaces.Get(ctx, namespace); err != nil {
+	ns, err := uc.namespaces.Get(ctx, namespace)
+	if err != nil {
 		return nil, "", "", fmt.Errorf("get namespace: %w", err)
 	}
 
@@ -47,9 +43,10 @@ func (uc *ExportNamespaceUseCase) Execute(
 	}
 
 	bundle := domain.NamespaceBundle{
-		Namespace:  namespace,
-		ExportedAt: time.Now().UTC(),
-		Configs:    make([]domain.BundleConfig, 0, len(configs)),
+		Namespace:   namespace,
+		Description: ns.Description,
+		ExportedAt:  time.Now().UTC(),
+		Configs:     make([]domain.BundleConfig, 0, len(configs)),
 	}
 
 	for _, cfg := range configs {
@@ -72,7 +69,7 @@ func (uc *ExportNamespaceUseCase) Execute(
 	if asZip {
 		innerName := namespace + "-export" + bundleExtension(ct, false)
 
-		payload, err = wrapInZip(innerName, payload, layout)
+		payload, err = wrapInZip(innerName, payload)
 		if err != nil {
 			return nil, "", "", err
 		}

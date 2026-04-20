@@ -41,6 +41,28 @@ func marshalBundle(v any, enc transferv1.BundleEncoding) ([]byte, string, error)
 	}
 }
 
+// unmarshalAllBundle detects JSON/YAML/ZIP and returns an AllBundle.
+func unmarshalAllBundle(data []byte) (*domain.AllBundle, error) {
+	data, err := unzipIfNeeded(data)
+	if err != nil {
+		return nil, err
+	}
+
+	var bundle domain.AllBundle
+
+	if isYAML(data) {
+		if err := yaml.Unmarshal(data, &bundle); err != nil {
+			return nil, fmt.Errorf("yaml unmarshal bundle: %w", err)
+		}
+	} else {
+		if err := json.Unmarshal(data, &bundle); err != nil {
+			return nil, fmt.Errorf("json unmarshal bundle: %w", err)
+		}
+	}
+
+	return &bundle, nil
+}
+
 // unmarshalNamespaceBundle detects JSON/YAML/ZIP and returns a NamespaceBundle.
 func unmarshalNamespaceBundle(data []byte) (*domain.NamespaceBundle, error) {
 	data, err := unzipIfNeeded(data)
@@ -64,7 +86,7 @@ func unmarshalNamespaceBundle(data []byte) (*domain.NamespaceBundle, error) {
 }
 
 // wrapInZip wraps payload bytes into a ZIP archive with a single entry.
-func wrapInZip(filename string, data []byte, _ transferv1.ZipLayout) ([]byte, error) {
+func wrapInZip(filename string, data []byte) ([]byte, error) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 
