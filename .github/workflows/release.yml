@@ -58,6 +58,7 @@ jobs:
             org.opencontainers.image.licenses=MIT
 
       - name: Build & push (multi-arch)
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -67,6 +68,14 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign container image
+        run: |
+          cosign sign --yes \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
 
   # -----------------------------------------------------------------
   # Helm chart → gh-pages (served via GitHub Pages as a Helm repo)
