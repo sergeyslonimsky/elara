@@ -4,7 +4,7 @@ export
 PROJECT_REPO=github.com/sergeyslonimsky/elara
 
 build-fe:
-	@cd web && npm run build
+	@npm --prefix ./web run build
 
 .PHONY: format
 format:
@@ -12,13 +12,13 @@ format:
 	@gofumpt -w -extra .
 	@gci write --skip-vendor --skip-generated -s standard -s default -s "prefix(${PROJECT_REPO})" .
 	@golangci-lint fmt
-	@cd web && npm run format
+	@npm --prefix ./web run format
 
 .PHONY: lint
 lint:
 	@buf lint
 	@golangci-lint run
-	@cd web && npm run lint
+	@npm --prefix ./web run lint:fix
 
 .PHONY: test
 test:
