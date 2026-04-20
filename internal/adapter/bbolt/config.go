@@ -229,6 +229,11 @@ func (r *ConfigRepo) ListByPrefix(_ context.Context, pathPrefix, namespace strin
 	return configs, nil
 }
 
+// ListAllByNamespace returns every config in the given namespace.
+func (r *ConfigRepo) ListAllByNamespace(ctx context.Context, namespace string) ([]*domain.Config, error) {
+	return r.ListByPrefix(ctx, "", namespace)
+}
+
 // ListSummariesByPrefix returns summaries (without content) for all configs matching the prefix.
 func (r *ConfigRepo) ListSummariesByPrefix(
 	_ context.Context,

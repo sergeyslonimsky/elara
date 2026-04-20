@@ -5,6 +5,7 @@ import (
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 	dashboarduc "github.com/sergeyslonimsky/elara/internal/usecase/dashboard"
 	nsuc "github.com/sergeyslonimsky/elara/internal/usecase/namespace"
+	transferuc "github.com/sergeyslonimsky/elara/internal/usecase/transfer"
 )
 
 type UseCases struct {
@@ -28,6 +29,10 @@ type UseCases struct {
 
 	Clients   *clientsuc.UseCase
 	Dashboard *dashboarduc.UseCase
+
+	ExportNamespace *transferuc.ExportNamespaceUseCase
+	ExportAll       *transferuc.ExportAllUseCase
+	ImportNamespace *transferuc.ImportNamespaceUseCase
 }
 
 func NewUseCases(a *Adapters) *UseCases {
@@ -49,6 +54,16 @@ func NewUseCases(a *Adapters) *UseCases {
 		UpdateNamespace: nsuc.NewUpdateUseCase(a.NamespaceRepo, a.NamespaceRepo, a.NamespaceRepo),
 		ListNamespaces:  nsuc.NewListUseCase(a.NamespaceRepo, a.NamespaceRepo),
 		DeleteNamespace: nsuc.NewDeleteUseCase(a.NamespaceRepo, a.NamespaceRepo),
+
+		ExportNamespace: transferuc.NewExportNamespaceUseCase(a.ConfigRepo, a.NamespaceRepo),
+		ExportAll:       transferuc.NewExportAllUseCase(a.ConfigRepo, a.NamespaceRepo),
+		ImportNamespace: transferuc.NewImportNamespaceUseCase(
+			a.ConfigRepo,
+			a.ConfigRepo,
+			a.ConfigRepo,
+			a.NamespaceRepo,
+			a.NamespaceRepo,
+		),
 
 		Clients: clientsuc.NewUseCase(a.ClientRegistry, a.ClientHistory),
 		Dashboard: dashboarduc.NewUseCase(
