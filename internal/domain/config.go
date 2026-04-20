@@ -109,10 +109,6 @@ func (c *Config) GenerateHash() {
 }
 
 func (c *Config) SetDefaults() {
-	if c.Namespace == "" {
-		c.Namespace = DefaultNamespace
-	}
-
 	if c.Metadata == nil {
 		c.Metadata = make(map[string]string)
 	}

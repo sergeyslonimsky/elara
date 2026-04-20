@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package elara.transfer.v1;
+
+import "buf/validate/validate.proto";
+import "elara/transfer/v1/transfer.proto";
+
+service TransferService {
+  rpc ExportNamespace(ExportNamespaceRequest) returns (ExportNamespaceResponse);
+  rpc ExportAll(ExportAllRequest) returns (ExportAllResponse);
+  rpc ImportNamespace(ImportNamespaceRequest) returns (ImportNamespaceResponse);
+}
+
+message ExportNamespaceRequest {
+  string namespace = 1 [(buf.validate.field).required = true];
+  bool zip = 2;
+  BundleEncoding encoding = 3;
+}
+
+message ExportNamespaceResponse {
+  bytes data = 1;
+  string content_type = 2;
+  string filename = 3;
+}
+
+message ExportAllRequest {
+  bool zip = 1;
+  BundleEncoding encoding = 2;
+  ZipLayout zip_layout = 3;
+}
+
+message ExportAllResponse {
+  bytes data = 1;
+  string content_type = 2;
+  string filename = 3;
+}
+
+message ImportNamespaceRequest {
+  bytes data = 1 [(buf.validate.field).required = true];
+  ConflictResolution on_conflict = 2;
+  bool dry_run = 3;
+  // When set, imports only into this namespace (overrides bundle namespace; rejects AllBundle).
+  string namespace = 4;
+}
+
+message ImportNamespaceResponse {
+  int32 created = 1;
+  int32 updated = 6;
+  int32 skipped = 2;
+  int32 failed = 3;
+  repeated ImportError errors = 4;
+  bool dry_run = 5;
+}

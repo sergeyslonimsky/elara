@@ -12,6 +12,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1/configv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/dashboard/v1/dashboardv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/namespace/v1/namespacev1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1/transferv1connect"
 )
 
 type V2Handlers struct {
@@ -19,6 +20,7 @@ type V2Handlers struct {
 	Namespace *v2.NamespaceHandler
 	Clients   *v2.ClientsHandler
 	Dashboard *v2.DashboardHandler
+	Transfer  *v2.TransferHandler
 }
 
 func NewV2Handlers(uc *UseCases) *V2Handlers {
@@ -45,6 +47,7 @@ func NewV2Handlers(uc *UseCases) *V2Handlers {
 		),
 		Clients:   v2.NewClientsHandler(uc.Clients),
 		Dashboard: v2.NewDashboardHandler(uc.Dashboard),
+		Transfer:  v2.NewTransferHandler(uc.ExportNamespace, uc.ExportAll, uc.ImportNamespace),
 	}
 }
 
@@ -69,5 +72,8 @@ func V2Routes(server server, handlers *V2Handlers) {
 	server.Mount(path, handler)
 
 	path, handler = dashboardv1connect.NewDashboardServiceHandler(handlers.Dashboard, opts)
+	server.Mount(path, handler)
+
+	path, handler = transferv1connect.NewTransferServiceHandler(handlers.Transfer, opts)
 	server.Mount(path, handler)
 }

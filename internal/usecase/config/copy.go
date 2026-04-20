@@ -62,11 +62,11 @@ func (uc *CopyUseCase) Execute(
 	}
 
 	if srcNamespace == "" {
-		srcNamespace = domain.DefaultNamespace
+		return nil, domain.NewValidationError("source_namespace", "namespace is required")
 	}
 
 	if dstNamespace == "" {
-		dstNamespace = domain.DefaultNamespace
+		return nil, domain.NewValidationError("destination_namespace", "namespace is required")
 	}
 
 	// Get source config.

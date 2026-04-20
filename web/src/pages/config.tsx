@@ -12,11 +12,11 @@ import {
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
-import { AppHeader } from "@/components/app-header";
 import { ConfigDiffViewer } from "@/components/config-diff-viewer";
 import { ConfigEditor } from "@/components/config-editor";
 import { ErrorCard } from "@/components/error-card";
 import { NamespaceSelect } from "@/components/namespace-select";
+import { PageHeader } from "@/components/page-header.tsx";
 import { PathBreadcrumb } from "@/components/path-breadcrumb";
 import {
 	AlertDialog,
@@ -400,7 +400,7 @@ export function ConfigPage() {
 
 	return (
 		<>
-			<AppHeader />
+			<PageHeader title="Config Details" />
 			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
 				<div className="mt-4 flex items-center gap-4">
 					<Button

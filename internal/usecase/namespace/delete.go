@@ -25,11 +25,6 @@ func NewDeleteUseCase(namespaces nsDeleter, counter nsConfigCounter) *DeleteUseC
 }
 
 func (uc *DeleteUseCase) Execute(ctx context.Context, name string) error {
-	ns := &domain.Namespace{Name: name}
-	if ns.IsDefault() {
-		return domain.NewValidationError("name", "cannot delete default namespace")
-	}
-
 	count, err := uc.counter.CountConfigs(ctx, name)
 	if err != nil {
 		return fmt.Errorf("count configs in namespace: %w", err)

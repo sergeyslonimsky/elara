@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package elara.transfer.v1;
+
+enum BundleEncoding {
+  BUNDLE_ENCODING_UNSPECIFIED = 0;
+  BUNDLE_ENCODING_JSON = 1;
+  BUNDLE_ENCODING_YAML = 2;
+}
+
+enum ZipLayout {
+  ZIP_LAYOUT_UNSPECIFIED = 0;
+  ZIP_LAYOUT_BUNDLE = 1;
+  ZIP_LAYOUT_PER_NAMESPACE = 2;
+}
+
+enum ConflictResolution {
+  CONFLICT_RESOLUTION_UNSPECIFIED = 0;
+  CONFLICT_RESOLUTION_SKIP = 1;
+  CONFLICT_RESOLUTION_OVERWRITE = 2;
+  CONFLICT_RESOLUTION_FAIL = 3;
+}
+
+message ImportError {
+  string path = 1;
+  string namespace = 2;
+  string message = 3;
+}

@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { ErrorCard } from "@/components/error-card";
+import { ExportDialog } from "@/components/export-dialog";
+import { ImportDialog } from "@/components/import-dialog";
 import { PageHeader } from "@/components/page-header";
 import { SearchInput } from "@/components/search-input";
 import {
@@ -248,7 +250,9 @@ export function NamespacesPage() {
 			</PageHeader>
 
 			<div className="flex flex-1 flex-col gap-4 p-4">
-				<div className="flex items-center justify-end">
+				<div className="flex items-center justify-end gap-2">
+					<ImportDialog />
+					<ExportDialog />
 					<CreateDialog />
 				</div>
 
@@ -273,6 +277,8 @@ export function NamespacesPage() {
 										<CardTitle className="text-base">{ns.name}</CardTitle>
 									</Link>
 									<div className="flex gap-1">
+										<ExportDialog namespace={ns.name} />
+										<ImportDialog namespace={ns.name} />
 										<EditDialog
 											name={ns.name}
 											currentDescription={ns.description}

@@ -21,7 +21,7 @@ func NewGetUseCase(configs configGetter) *GetUseCase {
 
 func (uc *GetUseCase) Execute(ctx context.Context, path, namespace string) (*domain.Config, error) {
 	if namespace == "" {
-		namespace = domain.DefaultNamespace
+		return nil, domain.NewValidationError("namespace", "namespace is required")
 	}
 
 	cfg, err := uc.configs.Get(ctx, path, namespace)

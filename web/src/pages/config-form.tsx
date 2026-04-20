@@ -4,8 +4,8 @@ import { ArrowLeft, CheckCircle, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
-import { AppHeader } from "@/components/app-header";
 import { ConfigEditor } from "@/components/config-editor";
+import { PageHeader } from "@/components/page-header.tsx";
 import { PathBreadcrumb } from "@/components/path-breadcrumb";
 import { Button } from "@/components/ui/button";
 import {
@@ -218,7 +218,7 @@ export function ConfigFormPage() {
 
 	return (
 		<>
-			<AppHeader />
+			<PageHeader title="Edit Config" />
 			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
 				<div className="mt-4 flex items-center gap-4">
 					<Button variant="ghost" size="sm" render={<Link to={backTo} />}>
@@ -229,18 +229,12 @@ export function ConfigFormPage() {
 						namespace={namespace}
 						path={isEdit ? configPath : parentPath}
 					/>
-					<h1 className="ml-2 font-semibold text-lg">
-						{isEdit ? "Edit Config" : "New Config"}
-					</h1>
 				</div>
 
 				<form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3">
 					<div className="space-y-4 lg:col-span-2">
 						<Card className="rounded-xl">
 							<CardHeader>
-								<CardTitle>
-									{isEdit ? "Edit Config" : "Config Details"}
-								</CardTitle>
 								<CardDescription>
 									{isEdit ? (
 										<>
