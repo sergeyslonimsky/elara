@@ -26,15 +26,16 @@ type ListParams struct {
 }
 
 type DirectoryEntry struct {
-	Name       string
-	FullPath   string
-	IsFile     bool
-	Format     domain.Format
-	Version    int64
-	Revision   int64
-	UpdatedAt  time.Time
-	ChildCount int
-	Locked     bool
+	Name            string
+	FullPath        string
+	IsFile          bool
+	Format          domain.Format
+	Version         int64
+	Revision        int64
+	UpdatedAt       time.Time
+	ChildCount      int
+	Locked          bool
+	NamespaceLocked bool
 }
 
 type ListResult struct {
@@ -144,16 +145,24 @@ func buildDirectoryEntries(
 			}
 
 			files = append(files, &DirectoryEntry{
-				Name:      name,
-				FullPath:  fullPath,
-				IsFile:    true,
-				Format:    s.Format,
-				Version:   s.Version,
-				Locked:    s.Locked,
-				Revision:  s.Revision,
-				UpdatedAt: s.UpdatedAt,
+				Name:            name,
+				FullPath:        fullPath,
+				IsFile:          true,
+				Format:          s.Format,
+				Version:         s.Version,
+				Locked:          s.Locked,
+				NamespaceLocked: s.NamespaceLocked,
+				Revision:        s.Revision,
+				UpdatedAt:       s.UpdatedAt,
 			})
 		}
+	}
+
+	// Namespace lock is a property of the listing as a whole; any entry in the
+	// scan carries the same value, so sample the first summary.
+	var namespaceLocked bool
+	if len(summaries) > 0 {
+		namespaceLocked = summaries[0].NamespaceLocked
 	}
 
 	folderEntries := make([]*DirectoryEntry, 0, len(folders))
@@ -164,11 +173,12 @@ func buildDirectoryEntries(
 		}
 
 		folderEntries = append(folderEntries, &DirectoryEntry{
-			Name:       name,
-			FullPath:   fullPath,
-			IsFile:     false,
-			ChildCount: fi.childCount,
-			UpdatedAt:  fi.latestTime,
+			Name:            name,
+			FullPath:        fullPath,
+			IsFile:          false,
+			ChildCount:      fi.childCount,
+			UpdatedAt:       fi.latestTime,
+			NamespaceLocked: namespaceLocked,
 		})
 	}
 

@@ -9,16 +9,25 @@ type nsLocker interface {
 	LockNamespace(ctx context.Context, name string) error
 }
 
-type LockUseCase struct{ store nsLocker }
+type lockNotifier interface {
+	NotifyNamespaceLocked(ctx context.Context, namespace string)
+}
 
-func NewLockUseCase(store nsLocker) *LockUseCase {
-	return &LockUseCase{store: store}
+type LockUseCase struct {
+	store    nsLocker
+	notifier lockNotifier
+}
+
+func NewLockUseCase(store nsLocker, notifier lockNotifier) *LockUseCase {
+	return &LockUseCase{store: store, notifier: notifier}
 }
 
 func (uc *LockUseCase) Execute(ctx context.Context, name string) error {
 	if err := uc.store.LockNamespace(ctx, name); err != nil {
 		return fmt.Errorf("lock namespace: %w", err)
 	}
+
+	uc.notifier.NotifyNamespaceLocked(ctx, name)
 
 	return nil
 }

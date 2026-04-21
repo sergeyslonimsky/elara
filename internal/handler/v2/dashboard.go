@@ -82,6 +82,10 @@ func changelogEntryToActivityProto(e *domain.ChangelogEntry) *dashboardv1.Activi
 		entry.EventType = configv1.EventType_EVENT_TYPE_LOCKED
 	case domain.EventTypeUnlocked:
 		entry.EventType = configv1.EventType_EVENT_TYPE_UNLOCKED
+	case domain.EventTypeNamespaceLocked:
+		entry.EventType = configv1.EventType_EVENT_TYPE_NAMESPACE_LOCKED
+	case domain.EventTypeNamespaceUnlocked:
+		entry.EventType = configv1.EventType_EVENT_TYPE_NAMESPACE_UNLOCKED
 	}
 
 	return entry

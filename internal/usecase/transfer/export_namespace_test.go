@@ -285,3 +285,58 @@ func TestExportNamespaceUseCase_ConfigMetadata_Preserved(t *testing.T) {
 	require.Len(t, bundle.Configs, 1)
 	assert.Equal(t, map[string]string{"env": "prod", "owner": "team-a"}, bundle.Configs[0].Metadata)
 }
+
+// Lock state is per-instance, not part of the bundle. Exports must never leak
+// it, so an import produces fresh, unlocked configs.
+func TestExportNamespaceUseCase_LockState_Stripped(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+
+	ns := &domain.Namespace{Name: "locked-ns", Locked: true}
+	configs := []*domain.Config{
+		{
+			Path:            "/locked.json",
+			Content:         `{}`,
+			Format:          domain.FormatJSON,
+			Namespace:       "locked-ns",
+			Locked:          true,
+			NamespaceLocked: true,
+		},
+		{
+			Path:            "/unlocked.json",
+			Content:         `{}`,
+			Format:          domain.FormatJSON,
+			Namespace:       "locked-ns",
+			Locked:          false,
+			NamespaceLocked: true,
+		},
+	}
+
+	uc := newExportNSUC(
+		&mockExportNSConfigLister{configs: configs},
+		&mockExportNSChecker{namespace: ns},
+	)
+
+	payload, _, _, err := uc.Execute(ctx, "locked-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
+	require.NoError(t, err)
+
+	// Decode as a generic map so we catch regressions that would add a "locked"
+	// field to the wire format — even if domain.BundleConfig doesn't model it.
+	var raw map[string]any
+	require.NoError(t, json.Unmarshal(payload, &raw))
+
+	assert.NotContains(t, raw, "locked", "namespace bundle must not expose locked state")
+
+	bundleConfigs, ok := raw["configs"].([]any)
+	require.True(t, ok)
+	require.Len(t, bundleConfigs, 2)
+
+	for _, c := range bundleConfigs {
+		entry, ok := c.(map[string]any)
+		require.True(t, ok)
+		assert.NotContains(t, entry, "locked", "bundle config must not carry per-config lock")
+		assert.NotContains(t, entry, "namespaceLocked")
+		assert.NotContains(t, entry, "namespace_locked")
+	}
+}

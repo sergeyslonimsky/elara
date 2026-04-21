@@ -12,6 +12,9 @@ var (
 	ErrInvalidFormat  = errors.New("invalid format")
 	ErrInvalidContent = errors.New("invalid content")
 	ErrLocked         = errors.New("config is locked")
+	// ErrNamespaceLocked wraps ErrLocked so callers can attribute the cause
+	// (e.g. for metrics) while still matching errors.Is(err, ErrLocked).
+	ErrNamespaceLocked = fmt.Errorf("namespace is locked: %w", ErrLocked)
 )
 
 type ValidationError struct {

@@ -14,10 +14,10 @@ export interface DecodedKey {
  * namespace segment).
  *
  * Examples:
- *   "/default/foo.json"       → {namespace: "default", path: "/foo.json"}
+ *   "/prod/foo.json"          → {namespace: "prod",    path: "/foo.json"}
  *   "/prod/services/api.yaml" → {namespace: "prod",    path: "/services/api.yaml"}
- *   "/default"                → {namespace: "default", path: "/"}
- *   "/default/"               → {namespace: "default", path: "/"}
+ *   "/prod"                   → {namespace: "prod",    path: "/"}
+ *   "/prod/"                  → {namespace: "prod",    path: "/"}
  *   "bad"                     → null
  */
 export function splitEtcdKey(key: string): DecodedKey | null {
@@ -40,7 +40,7 @@ export function splitEtcdKey(key: string): DecodedKey | null {
 
 /**
  * isPrefixRange reports whether (start, end) form an etcd "prefix range" —
- * end is `start` with the last byte incremented (e.g. "/default/" + "/default0").
+ * end is `start` with the last byte incremented (e.g. "/prod/" + "/prod0").
  */
 export function isPrefixRange(start: string, end: string): boolean {
 	if (!start || start.length !== end.length) return false;

@@ -106,6 +106,136 @@ func TestNamespaceRepo_CountConfigs(t *testing.T) {
 	assert.Equal(t, 1, count)
 }
 
+func TestNamespaceRepo_LockBlocksMutations(t *testing.T) {
+	t.Parallel()
+	store := newTestStore(t)
+	nsRepo := bboltadapter.NewNamespaceRepo(store)
+	cfgRepo := bboltadapter.NewConfigRepo(store)
+	ctx := context.Background()
+
+	ns := &domain.Namespace{Name: "prod", Description: "Production"}
+	require.NoError(t, nsRepo.Create(ctx, ns))
+
+	cfg := &domain.Config{
+		Path: "/a.json", Content: `{}`, Format: domain.FormatJSON, Namespace: "prod",
+	}
+	require.NoError(t, cfgRepo.Create(ctx, cfg))
+
+	require.NoError(t, nsRepo.LockNamespace(ctx, "prod"))
+
+	// Update description blocked.
+	err := nsRepo.Update(ctx, &domain.Namespace{Name: "prod", Description: "new desc"})
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrLocked)
+	assert.ErrorIs(t, err, domain.ErrNamespaceLocked, "namespace-origin lock must satisfy both sentinels")
+
+	// Delete blocked.
+	err = nsRepo.Delete(ctx, "prod")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrLocked)
+	assert.ErrorIs(t, err, domain.ErrNamespaceLocked)
+
+	// LockConfig blocked inside a locked namespace.
+	err = cfgRepo.LockConfig(ctx, "prod", "/a.json")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrLocked)
+	assert.ErrorIs(t, err, domain.ErrNamespaceLocked)
+
+	// UnlockConfig blocked inside a locked namespace.
+	err = cfgRepo.UnlockConfig(ctx, "prod", "/a.json")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrLocked)
+	assert.ErrorIs(t, err, domain.ErrNamespaceLocked)
+
+	// After unlock, namespace mutations work again.
+	require.NoError(t, nsRepo.UnlockNamespace(ctx, "prod"))
+
+	err = nsRepo.Update(ctx, &domain.Namespace{Name: "prod", Description: "new desc"})
+	require.NoError(t, err)
+
+	require.NoError(t, cfgRepo.LockConfig(ctx, "prod", "/a.json"))
+	require.NoError(t, cfgRepo.UnlockConfig(ctx, "prod", "/a.json"))
+}
+
+func TestNamespaceRepo_LockWritesHistory(t *testing.T) {
+	t.Parallel()
+	store := newTestStore(t)
+	nsRepo := bboltadapter.NewNamespaceRepo(store)
+	cfgRepo := bboltadapter.NewConfigRepo(store)
+	ctx := context.Background()
+
+	require.NoError(t, nsRepo.Create(ctx, &domain.Namespace{Name: "prod"}))
+	require.NoError(t, cfgRepo.Create(ctx, &domain.Config{
+		Path: "/a.json", Content: `{}`, Format: domain.FormatJSON, Namespace: "prod",
+	}))
+
+	require.NoError(t, nsRepo.LockNamespace(ctx, "prod"))
+	require.NoError(t, nsRepo.UnlockNamespace(ctx, "prod"))
+
+	// Config history should surface the parent namespace's lock + unlock events.
+	entries, err := cfgRepo.GetConfigHistory(ctx, "/a.json", "prod", 20)
+	require.NoError(t, err)
+
+	var nsLocked, nsUnlocked int
+	for _, e := range entries {
+		switch e.EventType {
+		case domain.EventTypeNamespaceLocked:
+			nsLocked++
+		case domain.EventTypeNamespaceUnlocked:
+			nsUnlocked++
+		}
+	}
+	assert.Equal(t, 1, nsLocked, "expected a NAMESPACE_LOCKED event in config history")
+	assert.Equal(t, 1, nsUnlocked, "expected a NAMESPACE_UNLOCKED event in config history")
+
+	// Activity feed (dashboard) should include both events via the lock changelog.
+	recent, err := cfgRepo.ListRecentChanges(ctx, 20)
+	require.NoError(t, err)
+
+	var dashLocked, dashUnlocked int
+	for _, e := range recent {
+		if e.Namespace != "prod" {
+			continue
+		}
+		switch e.Type {
+		case domain.EventTypeNamespaceLocked:
+			dashLocked++
+		case domain.EventTypeNamespaceUnlocked:
+			dashUnlocked++
+		}
+	}
+	assert.Equal(t, 1, dashLocked)
+	assert.Equal(t, 1, dashUnlocked)
+}
+
+func TestConfigRepo_NamespaceLockedPropagates(t *testing.T) {
+	t.Parallel()
+	store := newTestStore(t)
+	nsRepo := bboltadapter.NewNamespaceRepo(store)
+	cfgRepo := bboltadapter.NewConfigRepo(store)
+	ctx := context.Background()
+
+	require.NoError(t, nsRepo.Create(ctx, &domain.Namespace{Name: "prod"}))
+	require.NoError(t, cfgRepo.Create(ctx, &domain.Config{
+		Path: "/a.json", Content: `{}`, Format: domain.FormatJSON, Namespace: "prod",
+	}))
+
+	got, err := cfgRepo.Get(ctx, "/a.json", "prod")
+	require.NoError(t, err)
+	assert.False(t, got.NamespaceLocked)
+
+	require.NoError(t, nsRepo.LockNamespace(ctx, "prod"))
+
+	got, err = cfgRepo.Get(ctx, "/a.json", "prod")
+	require.NoError(t, err)
+	assert.True(t, got.NamespaceLocked)
+
+	summaries, err := cfgRepo.ListSummariesByPrefix(ctx, "/", "prod")
+	require.NoError(t, err)
+	require.Len(t, summaries, 1)
+	assert.True(t, summaries[0].NamespaceLocked)
+}
+
 func TestNamespaceRepo_UpdateTimestamp(t *testing.T) {
 	t.Parallel()
 	store := newTestStore(t)

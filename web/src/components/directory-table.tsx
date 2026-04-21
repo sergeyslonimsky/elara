@@ -19,6 +19,7 @@ interface DirectoryTableProps {
 	isLoading: boolean;
 	sorting: SortingState;
 	onSortingChange: (sorting: SortingState) => void;
+	namespaceLocked?: boolean;
 }
 
 const columns: ColumnDef<DirectoryEntry>[] = [
@@ -29,6 +30,10 @@ const columns: ColumnDef<DirectoryEntry>[] = [
 		),
 		cell: ({ row }) => {
 			const entry = row.original;
+			const showLock = entry.isFile && (entry.locked || entry.namespaceLocked);
+			const lockTitle = entry.namespaceLocked
+				? "Namespace is locked"
+				: "Config is locked";
 			return (
 				<div className="flex items-center gap-2 font-medium">
 					{entry.isFile ? (
@@ -37,8 +42,11 @@ const columns: ColumnDef<DirectoryEntry>[] = [
 						<Folder className="h-4 w-4 shrink-0 text-blue-500" />
 					)}
 					{entry.name}
-					{entry.isFile && entry.locked && (
-						<Lock className="h-3 w-3 shrink-0 text-amber-500" />
+					{showLock && (
+						<Lock
+							className="h-3 w-3 shrink-0 text-amber-500"
+							aria-label={lockTitle}
+						/>
 					)}
 					{!entry.isFile && (
 						<ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
@@ -107,6 +115,7 @@ export function DirectoryTable({
 	isLoading,
 	sorting,
 	onSortingChange,
+	namespaceLocked = false,
 }: DirectoryTableProps) {
 	const navigate = useNavigate();
 
@@ -132,10 +141,22 @@ export function DirectoryTable({
 				<Folder className="h-12 w-12" />
 				<p className="text-lg font-medium">Empty directory</p>
 				<p className="text-sm">No configs found at this path</p>
-				<Button variant="outline" size="sm" onClick={() => navigate(newPath)}>
-					<FilePlus className="mr-1 h-4 w-4" />
-					New Config
-				</Button>
+				{namespaceLocked ? (
+					<Button
+						variant="outline"
+						size="sm"
+						disabled
+						title={`Namespace "${namespace}" is locked`}
+					>
+						<FilePlus className="mr-1 h-4 w-4" />
+						New Config
+					</Button>
+				) : (
+					<Button variant="outline" size="sm" onClick={() => navigate(newPath)}>
+						<FilePlus className="mr-1 h-4 w-4" />
+						New Config
+					</Button>
+				)}
 			</div>
 		);
 	}

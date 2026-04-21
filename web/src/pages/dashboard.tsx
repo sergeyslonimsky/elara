@@ -1,5 +1,5 @@
 import { useQuery } from "@connectrpc/connect-query";
-import { FolderOpen, Zap } from "lucide-react";
+import { FolderOpen, Lock, LockOpen, Zap } from "lucide-react";
 import { Link } from "react-router";
 import { ErrorCard } from "@/components/error-card";
 import { KpiCard } from "@/components/kpi-card";
@@ -111,31 +111,49 @@ export function DashboardPage() {
 											</TableCell>
 										</TableRow>
 									)}
-									{activityQ.data?.entries.map((entry) => (
-										<TableRow key={entry.revision.toString()}>
-											<TableCell>
-												<EventTypeBadge type={entry.eventType} />
-											</TableCell>
-											<TableCell className="font-mono text-xs">
-												{entry.namespace || (
-													<span className="text-muted-foreground">—</span>
-												)}
-											</TableCell>
-											<TableCell className="max-w-[240px] truncate font-mono text-xs">
-												<Link
-													to={`/config/${entry.namespace}${entry.path}`}
-													className="hover:underline"
-												>
-													{entry.path}
-												</Link>
-											</TableCell>
-											<TableCell className="text-right text-muted-foreground text-xs">
-												{entry.timestamp
-													? timeAgo(new Date(tsToMs(entry.timestamp)))
-													: "—"}
-											</TableCell>
-										</TableRow>
-									))}
+									{activityQ.data?.entries.map((entry, idx) => {
+										const isNamespaceEvent =
+											entry.eventType === EventType.NAMESPACE_LOCKED ||
+											entry.eventType === EventType.NAMESPACE_UNLOCKED ||
+											!entry.path;
+										const key = `${entry.revision.toString()}-${entry.namespace}-${entry.path}-${idx}`;
+										return (
+											<TableRow key={key}>
+												<TableCell>
+													<EventTypeBadge type={entry.eventType} />
+												</TableCell>
+												<TableCell className="font-mono text-xs">
+													{entry.namespace ? (
+														<Link
+															to={`/browse/${entry.namespace}`}
+															className="hover:underline"
+														>
+															{entry.namespace}
+														</Link>
+													) : (
+														<span className="text-muted-foreground">—</span>
+													)}
+												</TableCell>
+												<TableCell className="max-w-[240px] truncate font-mono text-xs">
+													{isNamespaceEvent ? (
+														<span className="text-muted-foreground">—</span>
+													) : (
+														<Link
+															to={`/config/${entry.namespace}${entry.path}`}
+															className="hover:underline"
+														>
+															{entry.path}
+														</Link>
+													)}
+												</TableCell>
+												<TableCell className="text-right text-muted-foreground text-xs">
+													{entry.timestamp
+														? timeAgo(new Date(tsToMs(entry.timestamp)))
+														: "—"}
+												</TableCell>
+											</TableRow>
+										);
+									})}
 								</TableBody>
 							</Table>
 						</CardContent>
@@ -217,6 +235,34 @@ function EventTypeBadge({ type }: { type: EventType }) {
 			return (
 				<Badge className="bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400">
 					Deleted
+				</Badge>
+			);
+		case EventType.LOCKED:
+			return (
+				<Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400">
+					<Lock className="mr-1 h-3 w-3" />
+					Locked
+				</Badge>
+			);
+		case EventType.UNLOCKED:
+			return (
+				<Badge className="bg-amber-50 text-amber-700 hover:bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400">
+					<LockOpen className="mr-1 h-3 w-3" />
+					Unlocked
+				</Badge>
+			);
+		case EventType.NAMESPACE_LOCKED:
+			return (
+				<Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400">
+					<Lock className="mr-1 h-3 w-3" />
+					NS Locked
+				</Badge>
+			);
+		case EventType.NAMESPACE_UNLOCKED:
+			return (
+				<Badge className="bg-amber-50 text-amber-700 hover:bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400">
+					<LockOpen className="mr-1 h-3 w-3" />
+					NS Unlocked
 				</Badge>
 			);
 		default:

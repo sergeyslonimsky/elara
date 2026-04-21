@@ -111,6 +111,44 @@ func (p *Publisher) NotifyDeleted(_ context.Context, path, namespace string, rev
 	})
 }
 
+func (p *Publisher) NotifyConfigLocked(_ context.Context, cfg *domain.Config) {
+	p.notify(domain.WatchEvent{
+		Type:      domain.EventTypeLocked,
+		Path:      cfg.Path,
+		Namespace: cfg.Namespace,
+		Revision:  cfg.Revision,
+		Config:    cfg,
+		Timestamp: time.Now(),
+	})
+}
+
+func (p *Publisher) NotifyConfigUnlocked(_ context.Context, cfg *domain.Config) {
+	p.notify(domain.WatchEvent{
+		Type:      domain.EventTypeUnlocked,
+		Path:      cfg.Path,
+		Namespace: cfg.Namespace,
+		Revision:  cfg.Revision,
+		Config:    cfg,
+		Timestamp: time.Now(),
+	})
+}
+
+func (p *Publisher) NotifyNamespaceLocked(_ context.Context, namespace string) {
+	p.notify(domain.WatchEvent{
+		Type:      domain.EventTypeNamespaceLocked,
+		Namespace: namespace,
+		Timestamp: time.Now(),
+	})
+}
+
+func (p *Publisher) NotifyNamespaceUnlocked(_ context.Context, namespace string) {
+	p.notify(domain.WatchEvent{
+		Type:      domain.EventTypeNamespaceUnlocked,
+		Namespace: namespace,
+		Timestamp: time.Now(),
+	})
+}
+
 func (p *Publisher) Shutdown() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -145,6 +183,13 @@ func (p *Publisher) notify(event domain.WatchEvent) {
 func matches(sub *subscription, event domain.WatchEvent) bool {
 	if sub.namespace != "" && sub.namespace != event.Namespace {
 		return false
+	}
+
+	// Namespace-level events (path=="") are delivered to every subscriber of
+	// that namespace regardless of pathPrefix — a namespace lock affects all
+	// configs beneath any prefix.
+	if event.Path == "" {
+		return true
 	}
 
 	if sub.pathPrefix != "" && !strings.HasPrefix(event.Path, sub.pathPrefix) {

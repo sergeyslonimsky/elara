@@ -48,10 +48,11 @@ type KVServer struct {
 
 	repo      KVRepo
 	publisher KVPublisher
+	metrics   *kvMetrics
 }
 
 func NewKVServer(repo KVRepo, publisher KVPublisher) *KVServer {
-	return &KVServer{repo: repo, publisher: publisher}
+	return &KVServer{repo: repo, publisher: publisher, metrics: newKVMetrics()}
 }
 
 func (s *KVServer) Range(ctx context.Context, req *etcdserverpb.RangeRequest) (*etcdserverpb.RangeResponse, error) {
@@ -109,7 +110,8 @@ func (s *KVServer) Put(ctx context.Context, req *etcdserverpb.PutRequest) (*etcd
 
 	prev, newRev, err := s.repo.PutKey(ctx, namespace, path, req.Value)
 	if err != nil {
-		return nil, toKVStatus(err, "put")
+		s.recordRejectedWrite(ctx, "put", namespace, err)
+		return nil, toKVStatus(err, "put", path)
 	}
 
 	s.notifyPut(ctx, namespace, path, req.Value, prev, newRev)
@@ -136,7 +138,8 @@ func (s *KVServer) DeleteRange(
 
 	deleted, newRev, err := s.repo.DeleteRangeKeys(ctx, startNS, startPath, endNS, endPath, req.PrevKv)
 	if err != nil {
-		return nil, toKVStatus(err, "delete range")
+		s.recordRejectedWrite(ctx, "delete", startNS, err)
+		return nil, toKVStatus(err, "delete range", startPath)
 	}
 
 	if newRev == 0 {
@@ -472,9 +475,14 @@ func newHeader(rev int64) *etcdserverpb.ResponseHeader {
 	}
 }
 
-func toKVStatus(err error, op string) error {
+// toKVStatus maps a repo error to a gRPC status appropriate for an etcd
+// client. Lock errors are normalized to a uniform "config %q is locked"
+// message regardless of whether the underlying cause was a config or
+// namespace lock — etcd has no concept of namespace, and clients should
+// only need to react to FailedPrecondition with a path.
+func toKVStatus(err error, op, path string) error {
 	if errors.Is(err, domain.ErrLocked) {
-		return status.Errorf(codes.FailedPrecondition, "%s: %v", op, err)
+		return status.Errorf(codes.FailedPrecondition, "%s: config %q is locked", op, path)
 	}
 
 	return status.Errorf(codes.Internal, "%s: %v", op, err)

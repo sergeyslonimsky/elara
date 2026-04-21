@@ -124,9 +124,11 @@ function CreateDialog() {
 function EditDialog({
 	name,
 	currentDescription,
+	locked,
 }: {
 	name: string;
 	currentDescription: string;
+	locked: boolean;
 }) {
 	const [open, setOpen] = useState(false);
 	const [description, setDescription] = useState(currentDescription);
@@ -148,7 +150,16 @@ function EditDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger render={<Button variant="ghost" size="icon-xs" />}>
+			<DialogTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon-xs"
+						disabled={locked ? true : undefined}
+						title={locked ? `Namespace "${name}" is locked` : undefined}
+					/>
+				}
+			>
 				<Pencil className="h-3.5 w-3.5" />
 			</DialogTrigger>
 			<DialogContent>
@@ -233,8 +244,8 @@ function LockButton({ name, locked }: { name: string; locked: boolean }) {
 					</AlertDialogTitle>
 					<AlertDialogDescription>
 						{locked
-							? "Configs in this namespace will be allowed to be created, updated, and deleted."
-							: "Config creates, updates, and deletes within this namespace will be blocked."}
+							? "Unlocking restores all operations on this namespace and its configs."
+							: "While locked, this namespace cannot be edited or deleted, and its configs cannot be created, updated, deleted, locked, or unlocked."}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
@@ -261,7 +272,7 @@ function LockButton({ name, locked }: { name: string; locked: boolean }) {
 	);
 }
 
-function DeleteButton({ name }: { name: string }) {
+function DeleteButton({ name, locked }: { name: string; locked: boolean }) {
 	const queryClient = useQueryClient();
 
 	const mutation = useMutation(deleteNamespace, {
@@ -274,7 +285,16 @@ function DeleteButton({ name }: { name: string }) {
 
 	return (
 		<AlertDialog>
-			<AlertDialogTrigger render={<Button variant="ghost" size="icon-xs" />}>
+			<AlertDialogTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon-xs"
+						disabled={locked ? true : undefined}
+						title={locked ? `Namespace "${name}" is locked` : undefined}
+					/>
+				}
+			>
 				<Trash2 className="h-3.5 w-3.5 text-destructive" />
 			</AlertDialogTrigger>
 			<AlertDialogContent>
@@ -362,8 +382,9 @@ export function NamespacesPage() {
 										<EditDialog
 											name={ns.name}
 											currentDescription={ns.description}
+											locked={ns.locked}
 										/>
-										{ns.name !== "default" && <DeleteButton name={ns.name} />}
+										<DeleteButton name={ns.name} locked={ns.locked} />
 									</div>
 								</div>
 								{ns.description && (

@@ -101,6 +101,13 @@ func (r *ConfigRepo) Get(_ context.Context, path, namespace string) (*domain.Con
 
 		cfg = configMetaToDomain(&m, string(content), path, namespace)
 
+		nsLocked, err := isNamespaceLocked(tx, namespace)
+		if err != nil {
+			return err
+		}
+
+		cfg.NamespaceLocked = nsLocked
+
 		return nil
 	})
 	if err != nil {
@@ -245,11 +252,20 @@ func (r *ConfigRepo) ListByPrefix(_ context.Context, pathPrefix, namespace strin
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		meta := tx.Bucket([]byte(bucketMeta))
 		content := tx.Bucket([]byte(bucketContent))
+		nsLocks := nsLockCache{}
 
 		return scanMeta(meta, namespace, pathPrefix, func(key []byte, m *configMeta) error {
 			ns, path := parseConfigKey(key)
 			contentBytes := content.Get(key)
-			configs = append(configs, configMetaToDomain(m, string(contentBytes), path, ns))
+			cfg := configMetaToDomain(m, string(contentBytes), path, ns)
+
+			nsLocked, err := nsLocks.get(tx, ns)
+			if err != nil {
+				return err
+			}
+
+			cfg.NamespaceLocked = nsLocked
+			configs = append(configs, cfg)
 
 			return nil
 		})
@@ -275,10 +291,19 @@ func (r *ConfigRepo) ListSummariesByPrefix(
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		meta := tx.Bucket([]byte(bucketMeta))
+		nsLocks := nsLockCache{}
 
 		return scanMeta(meta, namespace, pathPrefix, func(key []byte, m *configMeta) error {
 			ns, path := parseConfigKey(key)
-			summaries = append(summaries, configMetaToSummary(m, path, ns))
+			s := configMetaToSummary(m, path, ns)
+
+			nsLocked, err := nsLocks.get(tx, ns)
+			if err != nil {
+				return err
+			}
+
+			s.NamespaceLocked = nsLocked
+			summaries = append(summaries, s)
 
 			return nil
 		})
@@ -303,12 +328,21 @@ func (r *ConfigRepo) ListSummaryPage(
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		meta := tx.Bucket([]byte(bucketMeta))
+		nsLocks := nsLockCache{}
 		idx := 0
 
 		return scanMeta(meta, namespace, pathPrefix, func(key []byte, m *configMeta) error {
 			if idx >= offset && len(summaries) < limit {
 				ns, path := parseConfigKey(key)
-				summaries = append(summaries, configMetaToSummary(m, path, ns))
+				s := configMetaToSummary(m, path, ns)
+
+				nsLocked, err := nsLocks.get(tx, ns)
+				if err != nil {
+					return err
+				}
+
+				s.NamespaceLocked = nsLocked
+				summaries = append(summaries, s)
 			}
 
 			idx++
@@ -338,13 +372,22 @@ func (r *ConfigRepo) ListConfigPage(
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		meta := tx.Bucket([]byte(bucketMeta))
 		content := tx.Bucket([]byte(bucketContent))
+		nsLocks := nsLockCache{}
 		idx := 0
 
 		return scanMeta(meta, namespace, pathPrefix, func(key []byte, m *configMeta) error {
 			if idx >= offset && len(configs) < limit {
 				ns, path := parseConfigKey(key)
 				contentBytes := content.Get(key)
-				configs = append(configs, configMetaToDomain(m, string(contentBytes), path, ns))
+				cfg := configMetaToDomain(m, string(contentBytes), path, ns)
+
+				nsLocked, err := nsLocks.get(tx, ns)
+				if err != nil {
+					return err
+				}
+
+				cfg.NamespaceLocked = nsLocked
+				configs = append(configs, cfg)
 			}
 
 			idx++
@@ -477,11 +520,32 @@ func (r *ConfigRepo) GetConfigHistory(
 			contentEntries = append(contentEntries, entry)
 		}
 
-		// Collect lock history entries.
+		// Collect per-config lock events.
 		var lockEntries []*domain.HistoryEntry
 
 		lc := lockHistory.Cursor()
 		for k, v := lc.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = lc.Next() {
+			var lhe lockHistoryEntry
+			if err := json.Unmarshal(v, &lhe); err != nil {
+				continue
+			}
+
+			lockEntries = append(lockEntries, &domain.HistoryEntry{
+				EventType: domain.EventType(lhe.Type),
+				Timestamp: lhe.Timestamp,
+			})
+		}
+
+		// Also surface namespace-level lock events (stored under prefix
+		// "<ns>\x00\x00") so the config history explains when/why the parent
+		// namespace was locked or unlocked.
+		nsPrefix := historyPrefix(namespace, "")
+
+		for k, v := lc.Seek(nsPrefix); k != nil && bytes.HasPrefix(k, nsPrefix); k, v = lc.Next() {
+			if len(k)-len(nsPrefix) != revisionSize {
+				continue
+			}
+
 			var lhe lockHistoryEntry
 			if err := json.Unmarshal(v, &lhe); err != nil {
 				continue
@@ -672,8 +736,13 @@ func collectRecentChangelog(bkt *bolt.Bucket, limit int) []*domain.ChangelogEntr
 
 // LockConfig marks a config as locked, preventing updates and deletes.
 // Idempotent: calling on an already-locked config is a no-op.
+// Returns ErrLocked if the parent namespace is locked.
 func (r *ConfigRepo) LockConfig(_ context.Context, namespace, path string) error {
 	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		if err := validateNamespaceUnlocked(tx, namespace); err != nil {
+			return fmt.Errorf("validate namespace unlocked: %w", err)
+		}
+
 		meta := tx.Bucket([]byte(bucketMeta))
 		key := configKey(namespace, path)
 
@@ -713,8 +782,13 @@ func (r *ConfigRepo) LockConfig(_ context.Context, namespace, path string) error
 
 // UnlockConfig removes the lock from a config, allowing updates and deletes again.
 // Idempotent: calling on an already-unlocked config is a no-op.
+// Returns ErrLocked if the parent namespace is locked.
 func (r *ConfigRepo) UnlockConfig(_ context.Context, namespace, path string) error {
 	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		if err := validateNamespaceUnlocked(tx, namespace); err != nil {
+			return fmt.Errorf("validate namespace unlocked: %w", err)
+		}
+
 		meta := tx.Bucket([]byte(bucketMeta))
 		key := configKey(namespace, path)
 
@@ -768,6 +842,25 @@ func isNamespaceLocked(tx *bolt.Tx, namespace string) (bool, error) {
 	return m.Locked, nil
 }
 
+// nsLockCache caches namespace lock lookups within a single transaction to
+// avoid repeated bucket reads when scanning many configs.
+type nsLockCache map[string]bool
+
+func (c nsLockCache) get(tx *bolt.Tx, namespace string) (bool, error) {
+	if v, ok := c[namespace]; ok {
+		return v, nil
+	}
+
+	v, err := isNamespaceLocked(tx, namespace)
+	if err != nil {
+		return false, err
+	}
+
+	c[namespace] = v
+
+	return v, nil
+}
+
 func validateNamespaceUnlocked(tx *bolt.Tx, namespace string) error {
 	locked, err := isNamespaceLocked(tx, namespace)
 	if err != nil {
@@ -775,7 +868,7 @@ func validateNamespaceUnlocked(tx *bolt.Tx, namespace string) error {
 	}
 
 	if locked {
-		return fmt.Errorf("namespace %q: %w", namespace, domain.ErrLocked)
+		return fmt.Errorf("namespace %q: %w", namespace, domain.ErrNamespaceLocked)
 	}
 
 	return nil
