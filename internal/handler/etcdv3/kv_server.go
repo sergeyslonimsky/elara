@@ -111,6 +111,7 @@ func (s *KVServer) Put(ctx context.Context, req *etcdserverpb.PutRequest) (*etcd
 	prev, newRev, err := s.repo.PutKey(ctx, namespace, path, req.Value)
 	if err != nil {
 		s.recordRejectedWrite(ctx, "put", namespace, err)
+
 		return nil, toKVStatus(err, "put", path)
 	}
 
@@ -139,6 +140,7 @@ func (s *KVServer) DeleteRange(
 	deleted, newRev, err := s.repo.DeleteRangeKeys(ctx, startNS, startPath, endNS, endPath, req.PrevKv)
 	if err != nil {
 		s.recordRejectedWrite(ctx, "delete", startNS, err)
+
 		return nil, toKVStatus(err, "delete range", startPath)
 	}
 

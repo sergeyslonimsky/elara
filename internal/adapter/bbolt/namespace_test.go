@@ -125,27 +125,23 @@ func TestNamespaceRepo_LockBlocksMutations(t *testing.T) {
 
 	// Update description blocked.
 	err := nsRepo.Update(ctx, &domain.Namespace{Name: "prod", Description: "new desc"})
-	require.Error(t, err)
-	assert.ErrorIs(t, err, domain.ErrLocked)
-	assert.ErrorIs(t, err, domain.ErrNamespaceLocked, "namespace-origin lock must satisfy both sentinels")
+	require.ErrorIs(t, err, domain.ErrLocked)
+	require.ErrorIs(t, err, domain.ErrNamespaceLocked, "namespace-origin lock must satisfy both sentinels")
 
 	// Delete blocked.
 	err = nsRepo.Delete(ctx, "prod")
-	require.Error(t, err)
-	assert.ErrorIs(t, err, domain.ErrLocked)
-	assert.ErrorIs(t, err, domain.ErrNamespaceLocked)
+	require.ErrorIs(t, err, domain.ErrLocked)
+	require.ErrorIs(t, err, domain.ErrNamespaceLocked)
 
 	// LockConfig blocked inside a locked namespace.
 	err = cfgRepo.LockConfig(ctx, "prod", "/a.json")
-	require.Error(t, err)
-	assert.ErrorIs(t, err, domain.ErrLocked)
-	assert.ErrorIs(t, err, domain.ErrNamespaceLocked)
+	require.ErrorIs(t, err, domain.ErrLocked)
+	require.ErrorIs(t, err, domain.ErrNamespaceLocked)
 
 	// UnlockConfig blocked inside a locked namespace.
 	err = cfgRepo.UnlockConfig(ctx, "prod", "/a.json")
-	require.Error(t, err)
-	assert.ErrorIs(t, err, domain.ErrLocked)
-	assert.ErrorIs(t, err, domain.ErrNamespaceLocked)
+	require.ErrorIs(t, err, domain.ErrLocked)
+	require.ErrorIs(t, err, domain.ErrNamespaceLocked)
 
 	// After unlock, namespace mutations work again.
 	require.NoError(t, nsRepo.UnlockNamespace(ctx, "prod"))
@@ -183,6 +179,9 @@ func TestNamespaceRepo_LockWritesHistory(t *testing.T) {
 			nsLocked++
 		case domain.EventTypeNamespaceUnlocked:
 			nsUnlocked++
+		case domain.EventTypeCreated, domain.EventTypeUpdated, domain.EventTypeDeleted,
+			domain.EventTypeLocked, domain.EventTypeUnlocked:
+			// not relevant for this assertion
 		}
 	}
 	assert.Equal(t, 1, nsLocked, "expected a NAMESPACE_LOCKED event in config history")
@@ -202,6 +201,9 @@ func TestNamespaceRepo_LockWritesHistory(t *testing.T) {
 			dashLocked++
 		case domain.EventTypeNamespaceUnlocked:
 			dashUnlocked++
+		case domain.EventTypeCreated, domain.EventTypeUpdated, domain.EventTypeDeleted,
+			domain.EventTypeLocked, domain.EventTypeUnlocked:
+			// not relevant for this assertion
 		}
 	}
 	assert.Equal(t, 1, dashLocked)

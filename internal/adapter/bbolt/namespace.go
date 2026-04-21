@@ -214,7 +214,7 @@ func (r *NamespaceRepo) LockNamespace(_ context.Context, name string) error {
 		}
 
 		if err := b.Put([]byte(name), newData); err != nil {
-			return err
+			return fmt.Errorf("put namespace: %w", err)
 		}
 
 		return writeLockHistory(tx, name, "", domain.EventTypeNamespaceLocked)
@@ -252,7 +252,7 @@ func (r *NamespaceRepo) UnlockNamespace(_ context.Context, name string) error {
 		}
 
 		if err := b.Put([]byte(name), newData); err != nil {
-			return err
+			return fmt.Errorf("put namespace: %w", err)
 		}
 
 		return writeLockHistory(tx, name, "", domain.EventTypeNamespaceUnlocked)

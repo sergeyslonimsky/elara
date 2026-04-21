@@ -2,7 +2,6 @@ package config_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,8 +73,7 @@ func TestCopy_DestinationNamespaceLocked(t *testing.T) {
 	)
 
 	_, err := uc.Execute(context.Background(), "/a.json", "src", "/b.json", "dst")
-	require.Error(t, err)
-	assert.ErrorIs(t, err, domain.ErrLocked)
+	require.ErrorIs(t, err, domain.ErrLocked)
 	assert.False(t, creator.called, "creator must not be called when destination namespace is locked")
 }
 
@@ -94,5 +92,5 @@ func TestCopy_DestinationNamespaceNotFound(t *testing.T) {
 	require.Error(t, err)
 
 	var ve *domain.ValidationError
-	assert.True(t, errors.As(err, &ve), "expected validation error for missing destination namespace")
+	require.ErrorAs(t, err, &ve, "expected validation error for missing destination namespace")
 }

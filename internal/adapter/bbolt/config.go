@@ -487,75 +487,12 @@ func (r *ConfigRepo) GetConfigHistory(
 	var entries []*domain.HistoryEntry
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
-		history := tx.Bucket([]byte(bucketHistory))
-		changelog := tx.Bucket([]byte(bucketChangelog))
-		lockHistory := tx.Bucket([]byte(bucketLockHistory))
 		prefix := historyPrefix(namespace, path)
 
-		// Collect content history entries.
-		var contentEntries []*domain.HistoryEntry
+		contentEntries := collectContentHistory(tx, prefix)
 
-		c := history.Cursor()
-		for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
-			keyCopy := make([]byte, len(k))
-			copy(keyCopy, k)
-
-			content := history.Get(keyCopy)
-			rev := parseRevision(keyCopy[len(prefix):])
-
-			entry := &domain.HistoryEntry{
-				Revision:    rev,
-				Content:     string(content),
-				ContentHash: computeHash(content),
-			}
-
-			if clData := changelog.Get(revisionBytes(rev)); clData != nil {
-				var cl changelogEntry
-				if err := json.Unmarshal(clData, &cl); err == nil {
-					entry.EventType = domain.EventType(cl.Type)
-					entry.Timestamp = cl.Timestamp
-				}
-			}
-
-			contentEntries = append(contentEntries, entry)
-		}
-
-		// Collect per-config lock events.
-		var lockEntries []*domain.HistoryEntry
-
-		lc := lockHistory.Cursor()
-		for k, v := lc.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = lc.Next() {
-			var lhe lockHistoryEntry
-			if err := json.Unmarshal(v, &lhe); err != nil {
-				continue
-			}
-
-			lockEntries = append(lockEntries, &domain.HistoryEntry{
-				EventType: domain.EventType(lhe.Type),
-				Timestamp: lhe.Timestamp,
-			})
-		}
-
-		// Also surface namespace-level lock events (stored under prefix
-		// "<ns>\x00\x00") so the config history explains when/why the parent
-		// namespace was locked or unlocked.
-		nsPrefix := historyPrefix(namespace, "")
-
-		for k, v := lc.Seek(nsPrefix); k != nil && bytes.HasPrefix(k, nsPrefix); k, v = lc.Next() {
-			if len(k)-len(nsPrefix) != revisionSize {
-				continue
-			}
-
-			var lhe lockHistoryEntry
-			if err := json.Unmarshal(v, &lhe); err != nil {
-				continue
-			}
-
-			lockEntries = append(lockEntries, &domain.HistoryEntry{
-				EventType: domain.EventType(lhe.Type),
-				Timestamp: lhe.Timestamp,
-			})
-		}
+		lockEntries := collectConfigLockHistory(tx, prefix)
+		lockEntries = append(lockEntries, collectNamespaceLockHistory(tx, namespace)...)
 
 		entries = mergeHistoryEntries(contentEntries, lockEntries, limit)
 
@@ -566,6 +503,90 @@ func (r *ConfigRepo) GetConfigHistory(
 	}
 
 	return entries, nil
+}
+
+func collectContentHistory(tx *bolt.Tx, prefix []byte) []*domain.HistoryEntry {
+	history := tx.Bucket([]byte(bucketHistory))
+	changelog := tx.Bucket([]byte(bucketChangelog))
+
+	var entries []*domain.HistoryEntry
+
+	c := history.Cursor()
+	for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+		keyCopy := make([]byte, len(k))
+		copy(keyCopy, k)
+
+		content := history.Get(keyCopy)
+		rev := parseRevision(keyCopy[len(prefix):])
+
+		entry := &domain.HistoryEntry{
+			Revision:    rev,
+			Content:     string(content),
+			ContentHash: computeHash(content),
+		}
+
+		if clData := changelog.Get(revisionBytes(rev)); clData != nil {
+			var cl changelogEntry
+			if err := json.Unmarshal(clData, &cl); err == nil {
+				entry.EventType = domain.EventType(cl.Type)
+				entry.Timestamp = cl.Timestamp
+			}
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries
+}
+
+func collectConfigLockHistory(tx *bolt.Tx, prefix []byte) []*domain.HistoryEntry {
+	lockHistory := tx.Bucket([]byte(bucketLockHistory))
+
+	var entries []*domain.HistoryEntry
+
+	c := lockHistory.Cursor()
+	for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+		var lhe lockHistoryEntry
+		if err := json.Unmarshal(v, &lhe); err != nil {
+			continue
+		}
+
+		entries = append(entries, &domain.HistoryEntry{
+			EventType: domain.EventType(lhe.Type),
+			Timestamp: lhe.Timestamp,
+		})
+	}
+
+	return entries
+}
+
+// collectNamespaceLockHistory reads namespace-level lock events stored under
+// "<ns>\x00\x00<seq>" so the parent namespace's lock changes show up in a
+// config's history.
+func collectNamespaceLockHistory(tx *bolt.Tx, namespace string) []*domain.HistoryEntry {
+	lockHistory := tx.Bucket([]byte(bucketLockHistory))
+	nsPrefix := historyPrefix(namespace, "")
+
+	var entries []*domain.HistoryEntry
+
+	c := lockHistory.Cursor()
+	for k, v := c.Seek(nsPrefix); k != nil && bytes.HasPrefix(k, nsPrefix); k, v = c.Next() {
+		if len(k)-len(nsPrefix) != revisionSize {
+			continue
+		}
+
+		var lhe lockHistoryEntry
+		if err := json.Unmarshal(v, &lhe); err != nil {
+			continue
+		}
+
+		entries = append(entries, &domain.HistoryEntry{
+			EventType: domain.EventType(lhe.Type),
+			Timestamp: lhe.Timestamp,
+		})
+	}
+
+	return entries
 }
 
 // GetAtRevision returns the history entry at a specific revision (or the closest earlier one).
