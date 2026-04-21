@@ -302,6 +302,9 @@ Key defaults:
 | `config.data.path`    | `CONFIG_DATA_PATH`     | `./data`         |
 | `metrics.enabled`     | `METRICS_ENABLED`      | `false`          |
 | `tracing.enabled`     | `TRACING_ENABLED`      | `false`          |
+| `log.level`           | `LOG_LEVEL`            | `info`           |
+| `log.format`          | `LOG_FORMAT`           | `json`           |
+| `log.noSource`        | `LOG_NOSOURCE`         | `false`          |
 
 ## Contributing
 

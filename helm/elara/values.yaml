@@ -117,6 +117,13 @@ config:
     historyMaxAge: "720h"
     # -- Capacity of the recent-events ring buffer.
     recentEventsCapacity: 100
+  log:
+    # -- Log verbosity. One of: debug, info, warn, error.
+    level: "info"
+    # -- Log output format. One of: json, text.
+    format: "json"
+    # -- Omit source file and line from log entries.
+    noSource: false
 
 # -----------------------------------------------------------------------
 # Storage backend

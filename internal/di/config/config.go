@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	defaultHTTPPort = "8080"
-	defaultGRPCPort = "2379"
-	defaultDataPath = "./data"
+	defaultHTTPPort  = "8080"
+	defaultGRPCPort  = "2379"
+	defaultDataPath  = "./data"
+	defaultLogLevel  = "info"
+	defaultLogFormat = "json"
 
 	defaultClientHistoryMaxRecords = 1000
 	defaultClientHistoryMaxAge     = 30 * 24 * time.Hour
@@ -46,6 +48,14 @@ type Config struct {
 	// Operator / Tempo / Jaeger can boot it without extra config.
 	Metrics MetricsConfig
 	Tracing TracingConfig
+	Log     LogConfig
+}
+
+// LogConfig controls structured-log verbosity, output format, and source location.
+type LogConfig struct {
+	Level    string // "debug" | "info" | "warn" | "error"
+	Format   string // "json" | "text"
+	NoSource bool
 }
 
 // ClientsConfig is the in-process config for the connected-clients monitor.
@@ -116,6 +126,11 @@ func NewConfig(ctx context.Context) (Config, error) {
 			// Reads tracing.otlp.endpoint / TRACING_OTLP_ENDPOINT.
 			// Required when Tracing.Enabled is true; validated at setup.
 			OTLPEndpoint: cfg.GetString("tracing.otlp.endpoint"),
+		},
+		Log: LogConfig{
+			Level:    cfg.GetStringOrDefault("log.level", defaultLogLevel),
+			Format:   cfg.GetStringOrDefault("log.format", defaultLogFormat),
+			NoSource: cfg.GetBool("log.noSource"),
 		},
 	}, nil
 }

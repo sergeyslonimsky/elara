@@ -34,6 +34,11 @@ data:
   TRACING_OTLP_ENDPOINT: {{ .Values.tracing.otlpEndpoint | quote }}
   {{- end }}
 
+  # Logging
+  LOG_LEVEL: {{ .Values.config.log.level | quote }}
+  LOG_FORMAT: {{ .Values.config.log.format | quote }}
+  LOG_NOSOURCE: {{ .Values.config.log.noSource | quote }}
+
   # Storage backend — bbolt keeps its single db file in CONFIG_DATA_PATH.
   {{- if eq .Values.storage.type "bbolt" }}
   CONFIG_DATA_PATH: {{ .Values.storage.bbolt.path | quote }}
