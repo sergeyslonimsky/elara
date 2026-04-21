@@ -124,6 +124,9 @@ sections:
 | `metrics.serviceMonitor.enabled` | `false`                         | Requires Prometheus Operator CRDs                      |
 | `tracing.enabled`         | `false`                         | OTLP push                                              |
 | `tracing.otlpEndpoint`    | `""`                            | Required when `tracing.enabled=true`                   |
+| `config.log.level`        | `info`                          | One of: `debug`, `info`, `warn`, `error`               |
+| `config.log.format`       | `json`                          | One of: `json`, `text`                                 |
+| `config.log.noSource`     | `false`                         | Set `true` to omit source file/line from log entries   |
 | `service.type`            | `ClusterIP`                     | `NodePort`/`LoadBalancer` supported                    |
 | `ingress.enabled`         | `false`                         | Exposes HTTP port only                                 |
 | `networkPolicy.enabled`   | `false`                         | Optional; CNI-dependent                                |
@@ -147,6 +150,9 @@ key maps to an env var by **uppercasing and replacing dots with underscores
 | `metrics.enabled`              | `METRICS_ENABLED`             |
 | `tracing.otlp.endpoint`        | `TRACING_OTLP_ENDPOINT`       |
 | `clients.history.max_records`  | `CLIENTS_HISTORY_MAX_RECORDS` |
+| `log.level`                    | `LOG_LEVEL`                   |
+| `log.format`                   | `LOG_FORMAT`                  |
+| `log.noSource`                 | `LOG_NOSOURCE`                |
 
 Add extra env-vars via `extraEnv` or wire a Secret with `extraEnvFrom`.
 

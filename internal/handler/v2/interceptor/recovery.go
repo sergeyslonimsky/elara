@@ -11,17 +11,15 @@ import (
 
 var errInternal = errors.New("internal error")
 
-type recoveryInterceptor struct{}
+type RecoveryInterceptor struct{}
 
-// NewRecoveryInterceptor returns a connect.Interceptor that recovers from
+// NewRecoveryInterceptor returns a RecoveryInterceptor that recovers from
 // panics in both unary and streaming handlers.
-//
-//nolint:ireturn // factory must return the interface type per API contract
-func NewRecoveryInterceptor() connect.Interceptor {
-	return &recoveryInterceptor{}
+func NewRecoveryInterceptor() *RecoveryInterceptor {
+	return &RecoveryInterceptor{}
 }
 
-func (i *recoveryInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+func (i *RecoveryInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	//nolint:nonamedreturns // resp must be named because err is named for defer-based panic recovery
 	return func(ctx context.Context, req connect.AnyRequest) (resp connect.AnyResponse, err error) {
 		defer func() {
@@ -39,11 +37,11 @@ func (i *recoveryInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 	}
 }
 
-func (i *recoveryInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+func (i *RecoveryInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
 	return next
 }
 
-func (i *recoveryInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+func (i *RecoveryInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return func(ctx context.Context, conn connect.StreamingHandlerConn) (err error) {
 		defer func() {
 			if r := recover(); r != nil {

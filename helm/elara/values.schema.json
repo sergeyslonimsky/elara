@@ -79,6 +79,14 @@
             "historyMaxAge":        { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" },
             "recentEventsCapacity": { "type": "integer", "minimum": 0 }
           }
+        },
+        "log": {
+          "type": "object",
+          "properties": {
+            "level":     { "enum": ["debug", "info", "warn", "error"] },
+            "format":    { "enum": ["json", "text"] },
+            "noSource": { "type": "boolean" }
+          }
         }
       }
     },

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -26,12 +27,6 @@ import (
 const shutdownTimeout = 30 * time.Second
 
 func main() {
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource:   true,
-		Level:       slog.LevelDebug,
-		ReplaceAttr: nil,
-	})))
-
 	if err := run(); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("service exited with error", slog.Any("err", err))
 		os.Exit(1)
@@ -52,6 +47,7 @@ func run() error {
 	}
 
 	cfg, svc := container.Config, container.Services
+	setupLogger(cfg)
 
 	a := coreapp.New(coreapp.WithShutdownTimeout(shutdownTimeout))
 
@@ -108,6 +104,33 @@ func run() error {
 	}
 
 	return nil
+}
+
+func setupLogger(cfg config.Config) {
+	level := parseLogLevel(cfg.Log.Level)
+	opts := &slog.HandlerOptions{AddSource: !cfg.Log.NoSource, Level: level}
+
+	var handler slog.Handler
+	if cfg.Log.Format == "text" {
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	} else {
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	}
+
+	slog.SetDefault(slog.New(handler))
+}
+
+func parseLogLevel(s string) slog.Level {
+	switch strings.ToLower(s) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
 
 // setupMetrics initialises a Prometheus pull-based MeterProvider and the
