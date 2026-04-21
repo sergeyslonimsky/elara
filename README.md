@@ -12,6 +12,12 @@
   <a href="https://github.com/sergeyslonimsky/elara/actions/workflows/ci.yml">
     <img src="https://github.com/sergeyslonimsky/elara/actions/workflows/ci.yml/badge.svg" alt="CI"/>
   </a>
+  <a href="https://github.com/sergeyslonimsky/elara/actions/workflows/github-code-scanning/codeql">
+    <img src="https://github.com/sergeyslonimsky/elara/actions/workflows/github-code-scanning/codeql/badge.svg" alt="CodeQL"/>
+  </a>
+  <a href="https://sonarcloud.io/project/overview?id=sergeyslonimsky_elara">
+    <img src="https://sonarcloud.io/api/project_badges/measure?project=sergeyslonimsky_elara&metric=alert_status" alt="Quality Gate"/>
+  </a>
   <a href="https://github.com/sergeyslonimsky/elara/releases/latest">
     <img src="https://img.shields.io/github/v/release/sergeyslonimsky/elara" alt="Latest Release"/>
   </a>
