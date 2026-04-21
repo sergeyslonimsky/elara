@@ -8,17 +8,15 @@ import (
 	"connectrpc.com/connect"
 )
 
-type loggingInterceptor struct{}
+type LoggingInterceptor struct{}
 
-// NewLoggingInterceptor returns a connect.Interceptor that logs start and
+// NewLoggingInterceptor returns a LoggingInterceptor that logs start and
 // completion (with duration and status code) for both unary and streaming RPCs.
-//
-//nolint:ireturn // factory must return the interface type per API contract
-func NewLoggingInterceptor() connect.Interceptor {
-	return &loggingInterceptor{}
+func NewLoggingInterceptor() *LoggingInterceptor {
+	return &LoggingInterceptor{}
 }
 
-func (i *loggingInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+func (i *LoggingInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		start := time.Now()
 
@@ -35,11 +33,11 @@ func (i *loggingInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc
 	}
 }
 
-func (i *loggingInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+func (i *LoggingInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
 	return next
 }
 
-func (i *loggingInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+func (i *LoggingInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
 		start := time.Now()
 
