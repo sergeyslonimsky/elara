@@ -37,6 +37,8 @@ func NewV2Handlers(uc *UseCases) *V2Handlers {
 			uc.ValidateConfig,
 			uc.WatchConfigs,
 			uc.ConfigDiff,
+			uc.LockConfig,
+			uc.UnlockConfig,
 		),
 		Namespace: v2.NewNamespaceHandler(
 			uc.CreateNamespace,
@@ -44,6 +46,8 @@ func NewV2Handlers(uc *UseCases) *V2Handlers {
 			uc.UpdateNamespace,
 			uc.ListNamespaces,
 			uc.DeleteNamespace,
+			uc.LockNamespace,
+			uc.UnlockNamespace,
 		),
 		Clients:   v2.NewClientsHandler(uc.Clients),
 		Dashboard: v2.NewDashboardHandler(uc.Dashboard),

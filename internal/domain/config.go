@@ -73,6 +73,7 @@ type Config struct {
 	CreateRevision int64 // global revision when first created (etcd compat)
 	Namespace      string
 	Metadata       map[string]string
+	Locked         bool
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -85,6 +86,7 @@ type ConfigSummary struct {
 	Revision    int64
 	Namespace   string
 	Metadata    map[string]string
+	Locked      bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -98,6 +100,7 @@ func (c *Config) ToSummary() *ConfigSummary {
 		Revision:    c.Revision,
 		Namespace:   c.Namespace,
 		Metadata:    c.Metadata,
+		Locked:      c.Locked,
 		CreatedAt:   c.CreatedAt,
 		UpdatedAt:   c.UpdatedAt,
 	}

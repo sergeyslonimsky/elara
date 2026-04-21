@@ -495,6 +495,166 @@ func (*DeleteNamespaceResponse) Descriptor() ([]byte, []int) {
 	return file_elara_namespace_v1_namespace_service_proto_rawDescGZIP(), []int{9}
 }
 
+type LockNamespaceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LockNamespaceRequest) Reset() {
+	*x = LockNamespaceRequest{}
+	mi := &file_elara_namespace_v1_namespace_service_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LockNamespaceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LockNamespaceRequest) ProtoMessage() {}
+
+func (x *LockNamespaceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_namespace_v1_namespace_service_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LockNamespaceRequest.ProtoReflect.Descriptor instead.
+func (*LockNamespaceRequest) Descriptor() ([]byte, []int) {
+	return file_elara_namespace_v1_namespace_service_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *LockNamespaceRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type LockNamespaceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LockNamespaceResponse) Reset() {
+	*x = LockNamespaceResponse{}
+	mi := &file_elara_namespace_v1_namespace_service_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LockNamespaceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LockNamespaceResponse) ProtoMessage() {}
+
+func (x *LockNamespaceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_namespace_v1_namespace_service_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LockNamespaceResponse.ProtoReflect.Descriptor instead.
+func (*LockNamespaceResponse) Descriptor() ([]byte, []int) {
+	return file_elara_namespace_v1_namespace_service_proto_rawDescGZIP(), []int{11}
+}
+
+type UnlockNamespaceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnlockNamespaceRequest) Reset() {
+	*x = UnlockNamespaceRequest{}
+	mi := &file_elara_namespace_v1_namespace_service_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnlockNamespaceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnlockNamespaceRequest) ProtoMessage() {}
+
+func (x *UnlockNamespaceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_namespace_v1_namespace_service_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnlockNamespaceRequest.ProtoReflect.Descriptor instead.
+func (*UnlockNamespaceRequest) Descriptor() ([]byte, []int) {
+	return file_elara_namespace_v1_namespace_service_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *UnlockNamespaceRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type UnlockNamespaceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnlockNamespaceResponse) Reset() {
+	*x = UnlockNamespaceResponse{}
+	mi := &file_elara_namespace_v1_namespace_service_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnlockNamespaceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnlockNamespaceResponse) ProtoMessage() {}
+
+func (x *UnlockNamespaceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_namespace_v1_namespace_service_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnlockNamespaceResponse.ProtoReflect.Descriptor instead.
+func (*UnlockNamespaceResponse) Descriptor() ([]byte, []int) {
+	return file_elara_namespace_v1_namespace_service_proto_rawDescGZIP(), []int{13}
+}
+
 var File_elara_namespace_v1_namespace_service_proto protoreflect.FileDescriptor
 
 const file_elara_namespace_v1_namespace_service_proto_rawDesc = "" +
@@ -529,13 +689,21 @@ const file_elara_namespace_v1_namespace_service_proto_rawDesc = "" +
 	"\tnamespace\x18\x01 \x01(\v2\x1d.elara.namespace.v1.NamespaceR\tnamespace\"4\n" +
 	"\x16DeleteNamespaceRequest\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\"\x19\n" +
-	"\x17DeleteNamespaceResponse2\xa2\x04\n" +
+	"\x17DeleteNamespaceResponse\"2\n" +
+	"\x14LockNamespaceRequest\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\"\x17\n" +
+	"\x15LockNamespaceResponse\"4\n" +
+	"\x16UnlockNamespaceRequest\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\"\x19\n" +
+	"\x17UnlockNamespaceResponse2\xf4\x05\n" +
 	"\x10NamespaceService\x12j\n" +
 	"\x0fCreateNamespace\x12*.elara.namespace.v1.CreateNamespaceRequest\x1a+.elara.namespace.v1.CreateNamespaceResponse\x12a\n" +
 	"\fGetNamespace\x12'.elara.namespace.v1.GetNamespaceRequest\x1a(.elara.namespace.v1.GetNamespaceResponse\x12j\n" +
 	"\x0fUpdateNamespace\x12*.elara.namespace.v1.UpdateNamespaceRequest\x1a+.elara.namespace.v1.UpdateNamespaceResponse\x12g\n" +
 	"\x0eListNamespaces\x12).elara.namespace.v1.ListNamespacesRequest\x1a*.elara.namespace.v1.ListNamespacesResponse\x12j\n" +
-	"\x0fDeleteNamespace\x12*.elara.namespace.v1.DeleteNamespaceRequest\x1a+.elara.namespace.v1.DeleteNamespaceResponseB\xeb\x01\n" +
+	"\x0fDeleteNamespace\x12*.elara.namespace.v1.DeleteNamespaceRequest\x1a+.elara.namespace.v1.DeleteNamespaceResponse\x12d\n" +
+	"\rLockNamespace\x12(.elara.namespace.v1.LockNamespaceRequest\x1a).elara.namespace.v1.LockNamespaceResponse\x12j\n" +
+	"\x0fUnlockNamespace\x12*.elara.namespace.v1.UnlockNamespaceRequest\x1a+.elara.namespace.v1.UnlockNamespaceResponseB\xeb\x01\n" +
 	"\x16com.elara.namespace.v1B\x15NamespaceServiceProtoP\x01ZNgithub.com/sergeyslonimsky/elara/internal/proto/elara/namespace/v1;namespacev1\xa2\x02\x03ENX\xaa\x02\x12Elara.Namespace.V1\xca\x02\x13Elara\\Namespace_\\V1\xe2\x02\x1fElara\\Namespace_\\V1\\GPBMetadata\xea\x02\x14Elara::Namespace::V1b\x06proto3"
 
 var (
@@ -550,7 +718,7 @@ func file_elara_namespace_v1_namespace_service_proto_rawDescGZIP() []byte {
 	return file_elara_namespace_v1_namespace_service_proto_rawDescData
 }
 
-var file_elara_namespace_v1_namespace_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_elara_namespace_v1_namespace_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_elara_namespace_v1_namespace_service_proto_goTypes = []any{
 	(*CreateNamespaceRequest)(nil),  // 0: elara.namespace.v1.CreateNamespaceRequest
 	(*CreateNamespaceResponse)(nil), // 1: elara.namespace.v1.CreateNamespaceResponse
@@ -562,31 +730,39 @@ var file_elara_namespace_v1_namespace_service_proto_goTypes = []any{
 	(*UpdateNamespaceResponse)(nil), // 7: elara.namespace.v1.UpdateNamespaceResponse
 	(*DeleteNamespaceRequest)(nil),  // 8: elara.namespace.v1.DeleteNamespaceRequest
 	(*DeleteNamespaceResponse)(nil), // 9: elara.namespace.v1.DeleteNamespaceResponse
-	(*Namespace)(nil),               // 10: elara.namespace.v1.Namespace
-	(*v1.PaginationRequest)(nil),    // 11: elara.common.v1.PaginationRequest
-	(*v1.SortRequest)(nil),          // 12: elara.common.v1.SortRequest
-	(*v1.PaginationResponse)(nil),   // 13: elara.common.v1.PaginationResponse
+	(*LockNamespaceRequest)(nil),    // 10: elara.namespace.v1.LockNamespaceRequest
+	(*LockNamespaceResponse)(nil),   // 11: elara.namespace.v1.LockNamespaceResponse
+	(*UnlockNamespaceRequest)(nil),  // 12: elara.namespace.v1.UnlockNamespaceRequest
+	(*UnlockNamespaceResponse)(nil), // 13: elara.namespace.v1.UnlockNamespaceResponse
+	(*Namespace)(nil),               // 14: elara.namespace.v1.Namespace
+	(*v1.PaginationRequest)(nil),    // 15: elara.common.v1.PaginationRequest
+	(*v1.SortRequest)(nil),          // 16: elara.common.v1.SortRequest
+	(*v1.PaginationResponse)(nil),   // 17: elara.common.v1.PaginationResponse
 }
 var file_elara_namespace_v1_namespace_service_proto_depIdxs = []int32{
-	10, // 0: elara.namespace.v1.CreateNamespaceResponse.namespace:type_name -> elara.namespace.v1.Namespace
-	10, // 1: elara.namespace.v1.GetNamespaceResponse.namespace:type_name -> elara.namespace.v1.Namespace
-	11, // 2: elara.namespace.v1.ListNamespacesRequest.pagination:type_name -> elara.common.v1.PaginationRequest
-	12, // 3: elara.namespace.v1.ListNamespacesRequest.sort:type_name -> elara.common.v1.SortRequest
-	10, // 4: elara.namespace.v1.ListNamespacesResponse.namespaces:type_name -> elara.namespace.v1.Namespace
-	13, // 5: elara.namespace.v1.ListNamespacesResponse.pagination:type_name -> elara.common.v1.PaginationResponse
-	10, // 6: elara.namespace.v1.UpdateNamespaceResponse.namespace:type_name -> elara.namespace.v1.Namespace
+	14, // 0: elara.namespace.v1.CreateNamespaceResponse.namespace:type_name -> elara.namespace.v1.Namespace
+	14, // 1: elara.namespace.v1.GetNamespaceResponse.namespace:type_name -> elara.namespace.v1.Namespace
+	15, // 2: elara.namespace.v1.ListNamespacesRequest.pagination:type_name -> elara.common.v1.PaginationRequest
+	16, // 3: elara.namespace.v1.ListNamespacesRequest.sort:type_name -> elara.common.v1.SortRequest
+	14, // 4: elara.namespace.v1.ListNamespacesResponse.namespaces:type_name -> elara.namespace.v1.Namespace
+	17, // 5: elara.namespace.v1.ListNamespacesResponse.pagination:type_name -> elara.common.v1.PaginationResponse
+	14, // 6: elara.namespace.v1.UpdateNamespaceResponse.namespace:type_name -> elara.namespace.v1.Namespace
 	0,  // 7: elara.namespace.v1.NamespaceService.CreateNamespace:input_type -> elara.namespace.v1.CreateNamespaceRequest
 	2,  // 8: elara.namespace.v1.NamespaceService.GetNamespace:input_type -> elara.namespace.v1.GetNamespaceRequest
 	6,  // 9: elara.namespace.v1.NamespaceService.UpdateNamespace:input_type -> elara.namespace.v1.UpdateNamespaceRequest
 	4,  // 10: elara.namespace.v1.NamespaceService.ListNamespaces:input_type -> elara.namespace.v1.ListNamespacesRequest
 	8,  // 11: elara.namespace.v1.NamespaceService.DeleteNamespace:input_type -> elara.namespace.v1.DeleteNamespaceRequest
-	1,  // 12: elara.namespace.v1.NamespaceService.CreateNamespace:output_type -> elara.namespace.v1.CreateNamespaceResponse
-	3,  // 13: elara.namespace.v1.NamespaceService.GetNamespace:output_type -> elara.namespace.v1.GetNamespaceResponse
-	7,  // 14: elara.namespace.v1.NamespaceService.UpdateNamespace:output_type -> elara.namespace.v1.UpdateNamespaceResponse
-	5,  // 15: elara.namespace.v1.NamespaceService.ListNamespaces:output_type -> elara.namespace.v1.ListNamespacesResponse
-	9,  // 16: elara.namespace.v1.NamespaceService.DeleteNamespace:output_type -> elara.namespace.v1.DeleteNamespaceResponse
-	12, // [12:17] is the sub-list for method output_type
-	7,  // [7:12] is the sub-list for method input_type
+	10, // 12: elara.namespace.v1.NamespaceService.LockNamespace:input_type -> elara.namespace.v1.LockNamespaceRequest
+	12, // 13: elara.namespace.v1.NamespaceService.UnlockNamespace:input_type -> elara.namespace.v1.UnlockNamespaceRequest
+	1,  // 14: elara.namespace.v1.NamespaceService.CreateNamespace:output_type -> elara.namespace.v1.CreateNamespaceResponse
+	3,  // 15: elara.namespace.v1.NamespaceService.GetNamespace:output_type -> elara.namespace.v1.GetNamespaceResponse
+	7,  // 16: elara.namespace.v1.NamespaceService.UpdateNamespace:output_type -> elara.namespace.v1.UpdateNamespaceResponse
+	5,  // 17: elara.namespace.v1.NamespaceService.ListNamespaces:output_type -> elara.namespace.v1.ListNamespacesResponse
+	9,  // 18: elara.namespace.v1.NamespaceService.DeleteNamespace:output_type -> elara.namespace.v1.DeleteNamespaceResponse
+	11, // 19: elara.namespace.v1.NamespaceService.LockNamespace:output_type -> elara.namespace.v1.LockNamespaceResponse
+	13, // 20: elara.namespace.v1.NamespaceService.UnlockNamespace:output_type -> elara.namespace.v1.UnlockNamespaceResponse
+	14, // [14:21] is the sub-list for method output_type
+	7,  // [7:14] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name
@@ -604,7 +780,7 @@ func file_elara_namespace_v1_namespace_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_namespace_v1_namespace_service_proto_rawDesc), len(file_elara_namespace_v1_namespace_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

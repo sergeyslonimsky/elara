@@ -11,6 +11,7 @@ var (
 	ErrConflict       = errors.New("version conflict")
 	ErrInvalidFormat  = errors.New("invalid format")
 	ErrInvalidContent = errors.New("invalid content")
+	ErrLocked         = errors.New("config is locked")
 )
 
 type ValidationError struct {
@@ -34,6 +35,10 @@ func IsValidationError(err error) bool {
 	var ve *ValidationError
 
 	return errors.As(err, &ve)
+}
+
+func NewLockedError(path string) error {
+	return fmt.Errorf("config %q: %w", path, ErrLocked)
 }
 
 func NewInvalidFormatError(format string) error {

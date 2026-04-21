@@ -19,6 +19,8 @@ service ConfigService {
   rpc ValidateConfig(ValidateConfigRequest) returns (ValidateConfigResponse);
   rpc WatchConfigs(WatchConfigsRequest) returns (stream WatchConfigsResponse);
   rpc GetConfigDiff(GetConfigDiffRequest) returns (GetConfigDiffResponse);
+  rpc LockConfig(LockConfigRequest) returns (LockConfigResponse);
+  rpc UnlockConfig(UnlockConfigRequest) returns (UnlockConfigResponse);
 }
 
 message CreateConfigRequest {
@@ -150,3 +152,17 @@ message GetConfigDiffResponse {
   string to_content = 4;
   string diff = 5;
 }
+
+message LockConfigRequest {
+  string path = 1 [(buf.validate.field).required = true];
+  string namespace = 2 [(buf.validate.field).required = true];
+}
+
+message LockConfigResponse {}
+
+message UnlockConfigRequest {
+  string path = 1 [(buf.validate.field).required = true];
+  string namespace = 2 [(buf.validate.field).required = true];
+}
+
+message UnlockConfigResponse {}

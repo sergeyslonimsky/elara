@@ -6,6 +6,8 @@ import {
 	Clock,
 	Copy,
 	GitCompare,
+	Lock,
+	LockOpen,
 	Pencil,
 	Trash2,
 } from "lucide-react";
@@ -59,6 +61,8 @@ import {
 	getConfig,
 	getConfigDiff,
 	getConfigHistory,
+	lockConfig,
+	unlockConfig,
 	updateConfig,
 } from "@/gen/elara/config/v1/config_service-ConfigService_connectquery";
 import { formatLabel, protoFormatToLanguage } from "@/lib/format";
@@ -390,6 +394,24 @@ export function ConfigPage() {
 		onError: (err) => toast.error(err.message),
 	});
 
+	const lockMutation = useMutation(lockConfig, {
+		onSuccess: () => {
+			toast.success("Config locked");
+			void invalidateConfig(queryClient);
+			void invalidateConfigs(queryClient);
+		},
+		onError: (err) => toast.error(err.message),
+	});
+
+	const unlockMutation = useMutation(unlockConfig, {
+		onSuccess: () => {
+			toast.success("Config unlocked");
+			void invalidateConfig(queryClient);
+			void invalidateConfigs(queryClient);
+		},
+		onError: (err) => toast.error(err.message),
+	});
+
 	const [expandedRevision, setExpandedRevision] = useState<bigint | null>(null);
 	const [compareMode, setCompareMode] = useState(false);
 
@@ -431,6 +453,15 @@ export function ConfigPage() {
 								{formatLabel(data.config.format)}
 							</Badge>
 							<Badge variant="outline">v{data.config.version}</Badge>
+							{data.config.locked && (
+								<Badge
+									variant="outline"
+									className="gap-1 text-amber-600 border-amber-400"
+								>
+									<Lock className="h-3 w-3" />
+									Locked
+								</Badge>
+							)}
 							<span className="text-muted-foreground text-xs">
 								rev {data.config.revision}
 							</span>
@@ -449,18 +480,81 @@ export function ConfigPage() {
 						</div>
 
 						<div className="flex flex-wrap gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								render={<Link to={`/config/edit/${namespace}${path}`} />}
-							>
-								<Pencil className="mr-1 h-4 w-4" />
-								Edit
-							</Button>
+							{data.config.locked ? (
+								<Button variant="outline" size="sm" disabled>
+									<Pencil className="mr-1 h-4 w-4" />
+									Edit
+								</Button>
+							) : (
+								<Button
+									variant="outline"
+									size="sm"
+									render={<Link to={`/config/edit/${namespace}${path}`} />}
+								>
+									<Pencil className="mr-1 h-4 w-4" />
+									Edit
+								</Button>
+							)}
 							<CopyDialog sourcePath={path} sourceNamespace={namespace} />
 							<AlertDialog>
 								<AlertDialogTrigger
-									render={<Button variant="destructive" size="sm" />}
+									render={<Button variant="outline" size="sm" />}
+								>
+									{data.config.locked ? (
+										<>
+											<LockOpen className="mr-1 h-4 w-4" />
+											Unlock
+										</>
+									) : (
+										<>
+											<Lock className="mr-1 h-4 w-4" />
+											Lock
+										</>
+									)}
+								</AlertDialogTrigger>
+								<AlertDialogContent>
+									<AlertDialogHeader>
+										<AlertDialogTitle>
+											{data.config.locked ? "Unlock config?" : "Lock config?"}
+										</AlertDialogTitle>
+										<AlertDialogDescription>
+											{data.config.locked
+												? "Unlocking will allow this config to be updated or deleted."
+												: "Locking will prevent this config from being updated or deleted until unlocked."}
+										</AlertDialogDescription>
+									</AlertDialogHeader>
+									<AlertDialogFooter>
+										<AlertDialogCancel>Cancel</AlertDialogCancel>
+										<AlertDialogAction
+											disabled={
+												lockMutation.isPending || unlockMutation.isPending
+											}
+											onClick={() =>
+												data.config?.locked
+													? unlockMutation.mutate({ path, namespace })
+													: lockMutation.mutate({ path, namespace })
+											}
+										>
+											{data.config.locked
+												? unlockMutation.isPending
+													? "Unlocking..."
+													: "Unlock"
+												: lockMutation.isPending
+													? "Locking..."
+													: "Lock"}
+										</AlertDialogAction>
+									</AlertDialogFooter>
+								</AlertDialogContent>
+							</AlertDialog>
+							<AlertDialog>
+								<AlertDialogTrigger
+									render={
+										<Button
+											variant="destructive"
+											size="sm"
+											disabled={data.config.locked ? true : undefined}
+										/>
+									}
 								>
 									<Trash2 className="mr-1 h-4 w-4" />
 									Delete

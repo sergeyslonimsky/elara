@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/namespace/v1/namespace.proto.
  */
 export const file_elara_namespace_v1_namespace: GenFile = /*@__PURE__*/
-  fileDesc("CiJlbGFyYS9uYW1lc3BhY2UvdjEvbmFtZXNwYWNlLnByb3RvEhJlbGFyYS5uYW1lc3BhY2UudjEipAEKCU5hbWVzcGFjZRIMCgRuYW1lGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEi4KCmNyZWF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhQKDGNvbmZpZ19jb3VudBgFIAEoBULkAQoWY29tLmVsYXJhLm5hbWVzcGFjZS52MUIOTmFtZXNwYWNlUHJvdG9QAVpOZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvbmFtZXNwYWNlL3YxO25hbWVzcGFjZXYxogIDRU5YqgISRWxhcmEuTmFtZXNwYWNlLlYxygITRWxhcmFcTmFtZXNwYWNlX1xWMeICH0VsYXJhXE5hbWVzcGFjZV9cVjFcR1BCTWV0YWRhdGHqAhRFbGFyYTo6TmFtZXNwYWNlOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("CiJlbGFyYS9uYW1lc3BhY2UvdjEvbmFtZXNwYWNlLnByb3RvEhJlbGFyYS5uYW1lc3BhY2UudjEitAEKCU5hbWVzcGFjZRIMCgRuYW1lGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEi4KCmNyZWF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhQKDGNvbmZpZ19jb3VudBgFIAEoBRIOCgZsb2NrZWQYBiABKAhC5AEKFmNvbS5lbGFyYS5uYW1lc3BhY2UudjFCDk5hbWVzcGFjZVByb3RvUAFaTmdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL25hbWVzcGFjZS92MTtuYW1lc3BhY2V2MaICA0VOWKoCEkVsYXJhLk5hbWVzcGFjZS5WMcoCE0VsYXJhXE5hbWVzcGFjZV9cVjHiAh9FbGFyYVxOYW1lc3BhY2VfXFYxXEdQQk1ldGFkYXRh6gIURWxhcmE6Ok5hbWVzcGFjZTo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message elara.namespace.v1.Namespace
@@ -42,6 +42,11 @@ export type Namespace = Message<"elara.namespace.v1.Namespace"> & {
    * @generated from field: int32 config_count = 5;
    */
   configCount: number;
+
+  /**
+   * @generated from field: bool locked = 6;
+   */
+  locked: boolean;
 };
 
 /**

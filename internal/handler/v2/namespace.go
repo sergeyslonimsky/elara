@@ -18,6 +18,8 @@ type NamespaceHandler struct {
 	update *nsuc.UpdateUseCase
 	list   *nsuc.ListUseCase
 	del    *nsuc.DeleteUseCase
+	lock   *nsuc.LockUseCase
+	unlock *nsuc.UnlockUseCase
 }
 
 func NewNamespaceHandler(
@@ -26,6 +28,8 @@ func NewNamespaceHandler(
 	update *nsuc.UpdateUseCase,
 	list *nsuc.ListUseCase,
 	del *nsuc.DeleteUseCase,
+	lock *nsuc.LockUseCase,
+	unlock *nsuc.UnlockUseCase,
 ) *NamespaceHandler {
 	return &NamespaceHandler{
 		create: create,
@@ -33,6 +37,8 @@ func NewNamespaceHandler(
 		update: update,
 		list:   list,
 		del:    del,
+		lock:   lock,
+		unlock: unlock,
 	}
 }
 
@@ -138,6 +144,28 @@ func (h *NamespaceHandler) DeleteNamespace(
 	return connect.NewResponse(&namespacev2.DeleteNamespaceResponse{}), nil
 }
 
+func (h *NamespaceHandler) LockNamespace(
+	ctx context.Context,
+	req *connect.Request[namespacev2.LockNamespaceRequest],
+) (*connect.Response[namespacev2.LockNamespaceResponse], error) {
+	if err := h.lock.Execute(ctx, req.Msg.GetName()); err != nil {
+		return nil, toConnectError(err)
+	}
+
+	return connect.NewResponse(&namespacev2.LockNamespaceResponse{}), nil
+}
+
+func (h *NamespaceHandler) UnlockNamespace(
+	ctx context.Context,
+	req *connect.Request[namespacev2.UnlockNamespaceRequest],
+) (*connect.Response[namespacev2.UnlockNamespaceResponse], error) {
+	if err := h.unlock.Execute(ctx, req.Msg.GetName()); err != nil {
+		return nil, toConnectError(err)
+	}
+
+	return connect.NewResponse(&namespacev2.UnlockNamespaceResponse{}), nil
+}
+
 func domainNamespaceToProto(ns *domain.Namespace) *namespacev2.Namespace {
 	if ns == nil {
 		return nil
@@ -147,6 +175,7 @@ func domainNamespaceToProto(ns *domain.Namespace) *namespacev2.Namespace {
 		Name:        ns.Name,
 		Description: ns.Description,
 		ConfigCount: int32(ns.ConfigCount),
+		Locked:      ns.Locked,
 		CreatedAt:   timestamppb.New(ns.CreatedAt),
 		UpdatedAt:   timestamppb.New(ns.UpdatedAt),
 	}

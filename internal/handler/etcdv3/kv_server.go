@@ -3,6 +3,7 @@ package etcdv3
 import (
 	"bytes"
 	"context"
+	"errors"
 	"sort"
 	"time"
 
@@ -108,7 +109,7 @@ func (s *KVServer) Put(ctx context.Context, req *etcdserverpb.PutRequest) (*etcd
 
 	prev, newRev, err := s.repo.PutKey(ctx, namespace, path, req.Value)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "put: %v", err)
+		return nil, toKVStatus(err, "put")
 	}
 
 	s.notifyPut(ctx, namespace, path, req.Value, prev, newRev)
@@ -135,7 +136,7 @@ func (s *KVServer) DeleteRange(
 
 	deleted, newRev, err := s.repo.DeleteRangeKeys(ctx, startNS, startPath, endNS, endPath, req.PrevKv)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "delete range: %v", err)
+		return nil, toKVStatus(err, "delete range")
 	}
 
 	if newRev == 0 {
@@ -469,4 +470,12 @@ func newHeader(rev int64) *etcdserverpb.ResponseHeader {
 		Revision:  rev,
 		RaftTerm:  raftTerm,
 	}
+}
+
+func toKVStatus(err error, op string) error {
+	if errors.Is(err, domain.ErrLocked) {
+		return status.Errorf(codes.FailedPrecondition, "%s: %v", op, err)
+	}
+
+	return status.Errorf(codes.Internal, "%s: %v", op, err)
 }

@@ -13,6 +13,7 @@ type Namespace struct {
 	Name        string
 	Description string
 	ConfigCount int
+	Locked      bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

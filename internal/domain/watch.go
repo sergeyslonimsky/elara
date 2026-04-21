@@ -8,6 +8,8 @@ const (
 	EventTypeCreated EventType = iota + 1
 	EventTypeUpdated
 	EventTypeDeleted
+	EventTypeLocked
+	EventTypeUnlocked
 )
 
 func (e EventType) String() string {
@@ -18,6 +20,10 @@ func (e EventType) String() string {
 		return "UPDATED"
 	case EventTypeDeleted:
 		return "DELETED"
+	case EventTypeLocked:
+		return "LOCKED"
+	case EventTypeUnlocked:
+		return "UNLOCKED"
 	default:
 		return "UNKNOWN"
 	}

@@ -1,6 +1,6 @@
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { ChevronRight, FilePlus, FileText, Folder } from "lucide-react";
+import { ChevronRight, FilePlus, FileText, Folder, Lock } from "lucide-react";
 import { useNavigate } from "react-router";
 import { DataTable } from "@/components/data-table";
 import { SortableHeader } from "@/components/sortable-header";
@@ -37,6 +37,9 @@ const columns: ColumnDef<DirectoryEntry>[] = [
 						<Folder className="h-4 w-4 shrink-0 text-blue-500" />
 					)}
 					{entry.name}
+					{entry.isFile && entry.locked && (
+						<Lock className="h-3 w-3 shrink-0 text-amber-500" />
+					)}
 					{!entry.isFile && (
 						<ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
 					)}

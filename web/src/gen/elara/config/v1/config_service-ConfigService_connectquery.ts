@@ -58,3 +58,13 @@ export const validateConfig = ConfigService.method.validateConfig;
  * @generated from rpc elara.config.v1.ConfigService.GetConfigDiff
  */
 export const getConfigDiff = ConfigService.method.getConfigDiff;
+
+/**
+ * @generated from rpc elara.config.v1.ConfigService.LockConfig
+ */
+export const lockConfig = ConfigService.method.lockConfig;
+
+/**
+ * @generated from rpc elara.config.v1.ConfigService.UnlockConfig
+ */
+export const unlockConfig = ConfigService.method.unlockConfig;

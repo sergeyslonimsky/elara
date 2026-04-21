@@ -34,6 +34,7 @@ type DirectoryEntry struct {
 	Revision   int64
 	UpdatedAt  time.Time
 	ChildCount int
+	Locked     bool
 }
 
 type ListResult struct {
@@ -148,6 +149,7 @@ func buildDirectoryEntries(
 				IsFile:    true,
 				Format:    s.Format,
 				Version:   s.Version,
+				Locked:    s.Locked,
 				Revision:  s.Revision,
 				UpdatedAt: s.UpdatedAt,
 			})

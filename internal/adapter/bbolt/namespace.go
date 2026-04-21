@@ -174,6 +174,74 @@ func (r *NamespaceRepo) CountConfigs(_ context.Context, name string) (int, error
 	return count, nil
 }
 
+func (r *NamespaceRepo) LockNamespace(_ context.Context, name string) error {
+	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucketNamespaces))
+		data := b.Get([]byte(name))
+
+		if data == nil {
+			return domain.NewNotFoundError("namespace", name)
+		}
+
+		var m namespaceMeta
+		if err := json.Unmarshal(data, &m); err != nil {
+			return fmt.Errorf("unmarshal namespace: %w", err)
+		}
+
+		if m.Locked {
+			return nil
+		}
+
+		m.Locked = true
+
+		newData, err := json.Marshal(&m)
+		if err != nil {
+			return fmt.Errorf("marshal namespace: %w", err)
+		}
+
+		return b.Put([]byte(name), newData)
+	})
+	if err != nil {
+		return fmt.Errorf("lock namespace: %w", err)
+	}
+
+	return nil
+}
+
+func (r *NamespaceRepo) UnlockNamespace(_ context.Context, name string) error {
+	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucketNamespaces))
+		data := b.Get([]byte(name))
+
+		if data == nil {
+			return domain.NewNotFoundError("namespace", name)
+		}
+
+		var m namespaceMeta
+		if err := json.Unmarshal(data, &m); err != nil {
+			return fmt.Errorf("unmarshal namespace: %w", err)
+		}
+
+		if !m.Locked {
+			return nil
+		}
+
+		m.Locked = false
+
+		newData, err := json.Marshal(&m)
+		if err != nil {
+			return fmt.Errorf("marshal namespace: %w", err)
+		}
+
+		return b.Put([]byte(name), newData)
+	})
+	if err != nil {
+		return fmt.Errorf("unlock namespace: %w", err)
+	}
+
+	return nil
+}
+
 func (r *NamespaceRepo) UpdateTimestamp(_ context.Context, name string) error {
 	err := r.store.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketNamespaces))

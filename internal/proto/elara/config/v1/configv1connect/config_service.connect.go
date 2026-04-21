@@ -68,6 +68,12 @@ const (
 	// ConfigServiceGetConfigDiffProcedure is the fully-qualified name of the ConfigService's
 	// GetConfigDiff RPC.
 	ConfigServiceGetConfigDiffProcedure = "/elara.config.v1.ConfigService/GetConfigDiff"
+	// ConfigServiceLockConfigProcedure is the fully-qualified name of the ConfigService's LockConfig
+	// RPC.
+	ConfigServiceLockConfigProcedure = "/elara.config.v1.ConfigService/LockConfig"
+	// ConfigServiceUnlockConfigProcedure is the fully-qualified name of the ConfigService's
+	// UnlockConfig RPC.
+	ConfigServiceUnlockConfigProcedure = "/elara.config.v1.ConfigService/UnlockConfig"
 )
 
 // ConfigServiceClient is a client for the elara.config.v1.ConfigService service.
@@ -84,6 +90,8 @@ type ConfigServiceClient interface {
 	ValidateConfig(context.Context, *connect.Request[v1.ValidateConfigRequest]) (*connect.Response[v1.ValidateConfigResponse], error)
 	WatchConfigs(context.Context, *connect.Request[v1.WatchConfigsRequest]) (*connect.ServerStreamForClient[v1.WatchConfigsResponse], error)
 	GetConfigDiff(context.Context, *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error)
+	LockConfig(context.Context, *connect.Request[v1.LockConfigRequest]) (*connect.Response[v1.LockConfigResponse], error)
+	UnlockConfig(context.Context, *connect.Request[v1.UnlockConfigRequest]) (*connect.Response[v1.UnlockConfigResponse], error)
 }
 
 // NewConfigServiceClient constructs a client for the elara.config.v1.ConfigService service. By
@@ -169,6 +177,18 @@ func NewConfigServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(configServiceMethods.ByName("GetConfigDiff")),
 			connect.WithClientOptions(opts...),
 		),
+		lockConfig: connect.NewClient[v1.LockConfigRequest, v1.LockConfigResponse](
+			httpClient,
+			baseURL+ConfigServiceLockConfigProcedure,
+			connect.WithSchema(configServiceMethods.ByName("LockConfig")),
+			connect.WithClientOptions(opts...),
+		),
+		unlockConfig: connect.NewClient[v1.UnlockConfigRequest, v1.UnlockConfigResponse](
+			httpClient,
+			baseURL+ConfigServiceUnlockConfigProcedure,
+			connect.WithSchema(configServiceMethods.ByName("UnlockConfig")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -186,6 +206,8 @@ type configServiceClient struct {
 	validateConfig      *connect.Client[v1.ValidateConfigRequest, v1.ValidateConfigResponse]
 	watchConfigs        *connect.Client[v1.WatchConfigsRequest, v1.WatchConfigsResponse]
 	getConfigDiff       *connect.Client[v1.GetConfigDiffRequest, v1.GetConfigDiffResponse]
+	lockConfig          *connect.Client[v1.LockConfigRequest, v1.LockConfigResponse]
+	unlockConfig        *connect.Client[v1.UnlockConfigRequest, v1.UnlockConfigResponse]
 }
 
 // CreateConfig calls elara.config.v1.ConfigService.CreateConfig.
@@ -248,6 +270,16 @@ func (c *configServiceClient) GetConfigDiff(ctx context.Context, req *connect.Re
 	return c.getConfigDiff.CallUnary(ctx, req)
 }
 
+// LockConfig calls elara.config.v1.ConfigService.LockConfig.
+func (c *configServiceClient) LockConfig(ctx context.Context, req *connect.Request[v1.LockConfigRequest]) (*connect.Response[v1.LockConfigResponse], error) {
+	return c.lockConfig.CallUnary(ctx, req)
+}
+
+// UnlockConfig calls elara.config.v1.ConfigService.UnlockConfig.
+func (c *configServiceClient) UnlockConfig(ctx context.Context, req *connect.Request[v1.UnlockConfigRequest]) (*connect.Response[v1.UnlockConfigResponse], error) {
+	return c.unlockConfig.CallUnary(ctx, req)
+}
+
 // ConfigServiceHandler is an implementation of the elara.config.v1.ConfigService service.
 type ConfigServiceHandler interface {
 	CreateConfig(context.Context, *connect.Request[v1.CreateConfigRequest]) (*connect.Response[v1.CreateConfigResponse], error)
@@ -262,6 +294,8 @@ type ConfigServiceHandler interface {
 	ValidateConfig(context.Context, *connect.Request[v1.ValidateConfigRequest]) (*connect.Response[v1.ValidateConfigResponse], error)
 	WatchConfigs(context.Context, *connect.Request[v1.WatchConfigsRequest], *connect.ServerStream[v1.WatchConfigsResponse]) error
 	GetConfigDiff(context.Context, *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error)
+	LockConfig(context.Context, *connect.Request[v1.LockConfigRequest]) (*connect.Response[v1.LockConfigResponse], error)
+	UnlockConfig(context.Context, *connect.Request[v1.UnlockConfigRequest]) (*connect.Response[v1.UnlockConfigResponse], error)
 }
 
 // NewConfigServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -343,6 +377,18 @@ func NewConfigServiceHandler(svc ConfigServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(configServiceMethods.ByName("GetConfigDiff")),
 		connect.WithHandlerOptions(opts...),
 	)
+	configServiceLockConfigHandler := connect.NewUnaryHandler(
+		ConfigServiceLockConfigProcedure,
+		svc.LockConfig,
+		connect.WithSchema(configServiceMethods.ByName("LockConfig")),
+		connect.WithHandlerOptions(opts...),
+	)
+	configServiceUnlockConfigHandler := connect.NewUnaryHandler(
+		ConfigServiceUnlockConfigProcedure,
+		svc.UnlockConfig,
+		connect.WithSchema(configServiceMethods.ByName("UnlockConfig")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/elara.config.v1.ConfigService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ConfigServiceCreateConfigProcedure:
@@ -369,6 +415,10 @@ func NewConfigServiceHandler(svc ConfigServiceHandler, opts ...connect.HandlerOp
 			configServiceWatchConfigsHandler.ServeHTTP(w, r)
 		case ConfigServiceGetConfigDiffProcedure:
 			configServiceGetConfigDiffHandler.ServeHTTP(w, r)
+		case ConfigServiceLockConfigProcedure:
+			configServiceLockConfigHandler.ServeHTTP(w, r)
+		case ConfigServiceUnlockConfigProcedure:
+			configServiceUnlockConfigHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -424,4 +474,12 @@ func (UnimplementedConfigServiceHandler) WatchConfigs(context.Context, *connect.
 
 func (UnimplementedConfigServiceHandler) GetConfigDiff(context.Context, *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.GetConfigDiff is not implemented"))
+}
+
+func (UnimplementedConfigServiceHandler) LockConfig(context.Context, *connect.Request[v1.LockConfigRequest]) (*connect.Response[v1.LockConfigResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.LockConfig is not implemented"))
+}
+
+func (UnimplementedConfigServiceHandler) UnlockConfig(context.Context, *connect.Request[v1.UnlockConfigRequest]) (*connect.Response[v1.UnlockConfigResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.UnlockConfig is not implemented"))
 }

@@ -81,6 +81,8 @@ const (
 	EventType_EVENT_TYPE_CREATED     EventType = 1
 	EventType_EVENT_TYPE_UPDATED     EventType = 2
 	EventType_EVENT_TYPE_DELETED     EventType = 3
+	EventType_EVENT_TYPE_LOCKED      EventType = 4
+	EventType_EVENT_TYPE_UNLOCKED    EventType = 5
 )
 
 // Enum value maps for EventType.
@@ -90,12 +92,16 @@ var (
 		1: "EVENT_TYPE_CREATED",
 		2: "EVENT_TYPE_UPDATED",
 		3: "EVENT_TYPE_DELETED",
+		4: "EVENT_TYPE_LOCKED",
+		5: "EVENT_TYPE_UNLOCKED",
 	}
 	EventType_value = map[string]int32{
 		"EVENT_TYPE_UNSPECIFIED": 0,
 		"EVENT_TYPE_CREATED":     1,
 		"EVENT_TYPE_UPDATED":     2,
 		"EVENT_TYPE_DELETED":     3,
+		"EVENT_TYPE_LOCKED":      4,
+		"EVENT_TYPE_UNLOCKED":    5,
 	}
 )
 
@@ -138,6 +144,7 @@ type Config struct {
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	Revision      int64                  `protobuf:"varint,10,opt,name=revision,proto3" json:"revision,omitempty"`
+	Locked        bool                   `protobuf:"varint,11,opt,name=locked,proto3" json:"locked,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -242,6 +249,13 @@ func (x *Config) GetRevision() int64 {
 	return 0
 }
 
+func (x *Config) GetLocked() bool {
+	if x != nil {
+		return x.Locked
+	}
+	return false
+}
+
 type ConfigSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
@@ -253,6 +267,7 @@ type ConfigSummary struct {
 	Metadata      map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Locked        bool                   `protobuf:"varint,10,opt,name=locked,proto3" json:"locked,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -350,6 +365,13 @@ func (x *ConfigSummary) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *ConfigSummary) GetLocked() bool {
+	if x != nil {
+		return x.Locked
+	}
+	return false
+}
+
 type DirectoryEntry struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	Name     string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -362,6 +384,7 @@ type DirectoryEntry struct {
 	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	// Folder metadata (populated only for folders):
 	ChildCount    int32 `protobuf:"varint,8,opt,name=child_count,json=childCount,proto3" json:"child_count,omitempty"`
+	Locked        bool  `protobuf:"varint,9,opt,name=locked,proto3" json:"locked,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -450,6 +473,13 @@ func (x *DirectoryEntry) GetChildCount() int32 {
 		return x.ChildCount
 	}
 	return 0
+}
+
+func (x *DirectoryEntry) GetLocked() bool {
+	if x != nil {
+		return x.Locked
+	}
+	return false
 }
 
 type HistoryEntry struct {
@@ -676,7 +706,7 @@ var File_elara_config_v1_config_proto protoreflect.FileDescriptor
 
 const file_elara_config_v1_config_proto_rawDesc = "" +
 	"\n" +
-	"\x1celara/config/v1/config.proto\x12\x0felara.config.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd4\x03\n" +
+	"\x1celara/config/v1/config.proto\x12\x0felara.config.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xec\x03\n" +
 	"\x06Config\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12!\n" +
@@ -690,10 +720,11 @@ const file_elara_config_v1_config_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1a\n" +
 	"\brevision\x18\n" +
-	" \x01(\x03R\brevision\x1a;\n" +
+	" \x01(\x03R\brevision\x12\x16\n" +
+	"\x06locked\x18\v \x01(\bR\x06locked\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc8\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe0\x03\n" +
 	"\rConfigSummary\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12!\n" +
 	"\fcontent_hash\x18\x02 \x01(\tR\vcontentHash\x12/\n" +
@@ -705,10 +736,12 @@ const file_elara_config_v1_config_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x1a;\n" +
+	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x16\n" +
+	"\x06locked\x18\n" +
+	" \x01(\bR\x06locked\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9d\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb5\x02\n" +
 	"\x0eDirectoryEntry\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
 	"\tfull_path\x18\x02 \x01(\tR\bfullPath\x12\x17\n" +
@@ -719,7 +752,8 @@ const file_elara_config_v1_config_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1f\n" +
 	"\vchild_count\x18\b \x01(\x05R\n" +
-	"childCount\"\xdc\x01\n" +
+	"childCount\x12\x16\n" +
+	"\x06locked\x18\t \x01(\bR\x06locked\"\xdc\x01\n" +
 	"\fHistoryEntry\x12\x1a\n" +
 	"\brevision\x18\x01 \x01(\x03R\brevision\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12!\n" +
@@ -743,12 +777,14 @@ const file_elara_config_v1_config_proto_rawDesc = "" +
 	"\x12FORMAT_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vFORMAT_JSON\x10\x01\x12\x0f\n" +
 	"\vFORMAT_YAML\x10\x02\x12\x10\n" +
-	"\fFORMAT_OTHER\x10\x03*o\n" +
+	"\fFORMAT_OTHER\x10\x03*\x9f\x01\n" +
 	"\tEventType\x12\x1a\n" +
 	"\x16EVENT_TYPE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12EVENT_TYPE_CREATED\x10\x01\x12\x16\n" +
 	"\x12EVENT_TYPE_UPDATED\x10\x02\x12\x16\n" +
-	"\x12EVENT_TYPE_DELETED\x10\x03B\xca\x01\n" +
+	"\x12EVENT_TYPE_DELETED\x10\x03\x12\x15\n" +
+	"\x11EVENT_TYPE_LOCKED\x10\x04\x12\x17\n" +
+	"\x13EVENT_TYPE_UNLOCKED\x10\x05B\xca\x01\n" +
 	"\x13com.elara.config.v1B\vConfigProtoP\x01ZHgithub.com/sergeyslonimsky/elara/internal/proto/elara/config/v1;configv1\xa2\x02\x03ECX\xaa\x02\x0fElara.Config.V1\xca\x02\x0fElara\\Config\\V1\xe2\x02\x1bElara\\Config\\V1\\GPBMetadata\xea\x02\x11Elara::Config::V1b\x06proto3"
 
 var (

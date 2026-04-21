@@ -48,6 +48,12 @@ const (
 	// NamespaceServiceDeleteNamespaceProcedure is the fully-qualified name of the NamespaceService's
 	// DeleteNamespace RPC.
 	NamespaceServiceDeleteNamespaceProcedure = "/elara.namespace.v1.NamespaceService/DeleteNamespace"
+	// NamespaceServiceLockNamespaceProcedure is the fully-qualified name of the NamespaceService's
+	// LockNamespace RPC.
+	NamespaceServiceLockNamespaceProcedure = "/elara.namespace.v1.NamespaceService/LockNamespace"
+	// NamespaceServiceUnlockNamespaceProcedure is the fully-qualified name of the NamespaceService's
+	// UnlockNamespace RPC.
+	NamespaceServiceUnlockNamespaceProcedure = "/elara.namespace.v1.NamespaceService/UnlockNamespace"
 )
 
 // NamespaceServiceClient is a client for the elara.namespace.v1.NamespaceService service.
@@ -57,6 +63,8 @@ type NamespaceServiceClient interface {
 	UpdateNamespace(context.Context, *connect.Request[v1.UpdateNamespaceRequest]) (*connect.Response[v1.UpdateNamespaceResponse], error)
 	ListNamespaces(context.Context, *connect.Request[v1.ListNamespacesRequest]) (*connect.Response[v1.ListNamespacesResponse], error)
 	DeleteNamespace(context.Context, *connect.Request[v1.DeleteNamespaceRequest]) (*connect.Response[v1.DeleteNamespaceResponse], error)
+	LockNamespace(context.Context, *connect.Request[v1.LockNamespaceRequest]) (*connect.Response[v1.LockNamespaceResponse], error)
+	UnlockNamespace(context.Context, *connect.Request[v1.UnlockNamespaceRequest]) (*connect.Response[v1.UnlockNamespaceResponse], error)
 }
 
 // NewNamespaceServiceClient constructs a client for the elara.namespace.v1.NamespaceService
@@ -100,6 +108,18 @@ func NewNamespaceServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(namespaceServiceMethods.ByName("DeleteNamespace")),
 			connect.WithClientOptions(opts...),
 		),
+		lockNamespace: connect.NewClient[v1.LockNamespaceRequest, v1.LockNamespaceResponse](
+			httpClient,
+			baseURL+NamespaceServiceLockNamespaceProcedure,
+			connect.WithSchema(namespaceServiceMethods.ByName("LockNamespace")),
+			connect.WithClientOptions(opts...),
+		),
+		unlockNamespace: connect.NewClient[v1.UnlockNamespaceRequest, v1.UnlockNamespaceResponse](
+			httpClient,
+			baseURL+NamespaceServiceUnlockNamespaceProcedure,
+			connect.WithSchema(namespaceServiceMethods.ByName("UnlockNamespace")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -110,6 +130,8 @@ type namespaceServiceClient struct {
 	updateNamespace *connect.Client[v1.UpdateNamespaceRequest, v1.UpdateNamespaceResponse]
 	listNamespaces  *connect.Client[v1.ListNamespacesRequest, v1.ListNamespacesResponse]
 	deleteNamespace *connect.Client[v1.DeleteNamespaceRequest, v1.DeleteNamespaceResponse]
+	lockNamespace   *connect.Client[v1.LockNamespaceRequest, v1.LockNamespaceResponse]
+	unlockNamespace *connect.Client[v1.UnlockNamespaceRequest, v1.UnlockNamespaceResponse]
 }
 
 // CreateNamespace calls elara.namespace.v1.NamespaceService.CreateNamespace.
@@ -137,6 +159,16 @@ func (c *namespaceServiceClient) DeleteNamespace(ctx context.Context, req *conne
 	return c.deleteNamespace.CallUnary(ctx, req)
 }
 
+// LockNamespace calls elara.namespace.v1.NamespaceService.LockNamespace.
+func (c *namespaceServiceClient) LockNamespace(ctx context.Context, req *connect.Request[v1.LockNamespaceRequest]) (*connect.Response[v1.LockNamespaceResponse], error) {
+	return c.lockNamespace.CallUnary(ctx, req)
+}
+
+// UnlockNamespace calls elara.namespace.v1.NamespaceService.UnlockNamespace.
+func (c *namespaceServiceClient) UnlockNamespace(ctx context.Context, req *connect.Request[v1.UnlockNamespaceRequest]) (*connect.Response[v1.UnlockNamespaceResponse], error) {
+	return c.unlockNamespace.CallUnary(ctx, req)
+}
+
 // NamespaceServiceHandler is an implementation of the elara.namespace.v1.NamespaceService service.
 type NamespaceServiceHandler interface {
 	CreateNamespace(context.Context, *connect.Request[v1.CreateNamespaceRequest]) (*connect.Response[v1.CreateNamespaceResponse], error)
@@ -144,6 +176,8 @@ type NamespaceServiceHandler interface {
 	UpdateNamespace(context.Context, *connect.Request[v1.UpdateNamespaceRequest]) (*connect.Response[v1.UpdateNamespaceResponse], error)
 	ListNamespaces(context.Context, *connect.Request[v1.ListNamespacesRequest]) (*connect.Response[v1.ListNamespacesResponse], error)
 	DeleteNamespace(context.Context, *connect.Request[v1.DeleteNamespaceRequest]) (*connect.Response[v1.DeleteNamespaceResponse], error)
+	LockNamespace(context.Context, *connect.Request[v1.LockNamespaceRequest]) (*connect.Response[v1.LockNamespaceResponse], error)
+	UnlockNamespace(context.Context, *connect.Request[v1.UnlockNamespaceRequest]) (*connect.Response[v1.UnlockNamespaceResponse], error)
 }
 
 // NewNamespaceServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -183,6 +217,18 @@ func NewNamespaceServiceHandler(svc NamespaceServiceHandler, opts ...connect.Han
 		connect.WithSchema(namespaceServiceMethods.ByName("DeleteNamespace")),
 		connect.WithHandlerOptions(opts...),
 	)
+	namespaceServiceLockNamespaceHandler := connect.NewUnaryHandler(
+		NamespaceServiceLockNamespaceProcedure,
+		svc.LockNamespace,
+		connect.WithSchema(namespaceServiceMethods.ByName("LockNamespace")),
+		connect.WithHandlerOptions(opts...),
+	)
+	namespaceServiceUnlockNamespaceHandler := connect.NewUnaryHandler(
+		NamespaceServiceUnlockNamespaceProcedure,
+		svc.UnlockNamespace,
+		connect.WithSchema(namespaceServiceMethods.ByName("UnlockNamespace")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/elara.namespace.v1.NamespaceService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case NamespaceServiceCreateNamespaceProcedure:
@@ -195,6 +241,10 @@ func NewNamespaceServiceHandler(svc NamespaceServiceHandler, opts ...connect.Han
 			namespaceServiceListNamespacesHandler.ServeHTTP(w, r)
 		case NamespaceServiceDeleteNamespaceProcedure:
 			namespaceServiceDeleteNamespaceHandler.ServeHTTP(w, r)
+		case NamespaceServiceLockNamespaceProcedure:
+			namespaceServiceLockNamespaceHandler.ServeHTTP(w, r)
+		case NamespaceServiceUnlockNamespaceProcedure:
+			namespaceServiceUnlockNamespaceHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -222,4 +272,12 @@ func (UnimplementedNamespaceServiceHandler) ListNamespaces(context.Context, *con
 
 func (UnimplementedNamespaceServiceHandler) DeleteNamespace(context.Context, *connect.Request[v1.DeleteNamespaceRequest]) (*connect.Response[v1.DeleteNamespaceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.namespace.v1.NamespaceService.DeleteNamespace is not implemented"))
+}
+
+func (UnimplementedNamespaceServiceHandler) LockNamespace(context.Context, *connect.Request[v1.LockNamespaceRequest]) (*connect.Response[v1.LockNamespaceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.namespace.v1.NamespaceService.LockNamespace is not implemented"))
+}
+
+func (UnimplementedNamespaceServiceHandler) UnlockNamespace(context.Context, *connect.Request[v1.UnlockNamespaceRequest]) (*connect.Response[v1.UnlockNamespaceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.namespace.v1.NamespaceService.UnlockNamespace is not implemented"))
 }

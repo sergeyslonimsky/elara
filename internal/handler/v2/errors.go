@@ -20,6 +20,8 @@ func toConnectError(err error) error {
 		return connect.NewError(connect.CodeAlreadyExists, err)
 	case errors.Is(err, domain.ErrConflict):
 		return connect.NewError(connect.CodeAborted, err)
+	case errors.Is(err, domain.ErrLocked):
+		return connect.NewError(connect.CodeFailedPrecondition, err)
 	case errors.Is(err, domain.ErrInvalidFormat):
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	case domain.IsValidationError(err):

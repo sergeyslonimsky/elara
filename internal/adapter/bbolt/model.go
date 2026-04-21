@@ -14,8 +14,14 @@ type configMeta struct {
 	Revision       int64             `json:"revision"`
 	CreateRevision int64             `json:"create_revision"`
 	Metadata       map[string]string `json:"metadata,omitempty"`
+	Locked         bool              `json:"locked,omitempty"`
 	CreatedAt      time.Time         `json:"created_at"`
 	UpdatedAt      time.Time         `json:"updated_at"`
+}
+
+type lockHistoryEntry struct {
+	Type      int       `json:"type"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 type changelogEntry struct {
@@ -28,6 +34,7 @@ type changelogEntry struct {
 
 type namespaceMeta struct {
 	Description string    `json:"description"`
+	Locked      bool      `json:"locked,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -54,6 +61,7 @@ func configMetaToDomain(m *configMeta, content, path, namespace string) *domain.
 		CreateRevision: m.CreateRevision,
 		Namespace:      namespace,
 		Metadata:       metadata,
+		Locked:         m.Locked,
 		CreatedAt:      m.CreatedAt,
 		UpdatedAt:      m.UpdatedAt,
 	}
@@ -79,6 +87,7 @@ func configMetaToSummary(m *configMeta, path, namespace string) *domain.ConfigSu
 		Revision:    m.Revision,
 		Namespace:   namespace,
 		Metadata:    metadata,
+		Locked:      m.Locked,
 		CreatedAt:   m.CreatedAt,
 		UpdatedAt:   m.UpdatedAt,
 	}
@@ -92,6 +101,7 @@ func domainToConfigMeta(cfg *domain.Config) *configMeta {
 		Revision:       cfg.Revision,
 		CreateRevision: cfg.CreateRevision,
 		Metadata:       cfg.Metadata,
+		Locked:         cfg.Locked,
 		CreatedAt:      cfg.CreatedAt,
 		UpdatedAt:      cfg.UpdatedAt,
 	}
@@ -112,6 +122,7 @@ func namespaceMetaToDomain(m *namespaceMeta, name string) *domain.Namespace {
 	return &domain.Namespace{
 		Name:        name,
 		Description: m.Description,
+		Locked:      m.Locked,
 		CreatedAt:   m.CreatedAt,
 		UpdatedAt:   m.UpdatedAt,
 	}
@@ -120,6 +131,7 @@ func namespaceMetaToDomain(m *namespaceMeta, name string) *domain.Namespace {
 func domainToNamespaceMeta(ns *domain.Namespace) *namespaceMeta {
 	return &namespaceMeta{
 		Description: ns.Description,
+		Locked:      ns.Locked,
 		CreatedAt:   ns.CreatedAt,
 		UpdatedAt:   ns.UpdatedAt,
 	}
