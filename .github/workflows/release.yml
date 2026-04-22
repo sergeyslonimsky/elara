@@ -70,7 +70,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
 
       - name: Sign container image
         run: |
@@ -115,3 +115,44 @@ jobs:
           skip_existing: true
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to GHCR for Helm
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+        run: |
+          echo "$GH_TOKEN" | helm registry login ghcr.io \
+            --username "$GH_ACTOR" \
+            --password-stdin
+
+      - name: Push chart to OCI registry
+        id: push
+        env:
+          VERSION: ${{ needs.image.outputs.version }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          TGZ=".cr-release-packages/elara-${VERSION}.tgz"
+          if [ ! -f "$TGZ" ]; then
+            echo "::notice::Chart package not found (likely already released); skipping OCI push"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          OCI_REPO="oci://ghcr.io/${OWNER,,}/charts"
+          PUSH_OUTPUT=$(helm push "$TGZ" "$OCI_REPO" 2>&1)
+          echo "$PUSH_OUTPUT"
+          DIGEST=$(echo "$PUSH_OUTPUT" | awk '/Digest:/ {print $2}')
+          if [ -z "$DIGEST" ]; then
+            echo "::error::Failed to capture chart digest from helm push output"
+            exit 1
+          fi
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "ref=ghcr.io/${OWNER,,}/charts/elara@${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Install cosign
+        if: steps.push.outputs.skip != 'true'
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+      - name: Sign Helm chart
+        if: steps.push.outputs.skip != 'true'
+        run: |
+          cosign sign --yes ${{ steps.push.outputs.ref }}
