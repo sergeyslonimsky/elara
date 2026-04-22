@@ -2,8 +2,8 @@ import { useQuery } from "@connectrpc/connect-query";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router";
-import { AppHeader } from "@/components/app-header";
 import { ErrorCard } from "@/components/error-card";
+import { PageShell } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getClient } from "@/gen/elara/clients/v1/clients_service-ClientsService_connectquery";
@@ -12,6 +12,17 @@ import { tsToMs } from "@/lib/time";
 import { DetailHeader } from "./detail-header";
 import { DetailTabs } from "./detail-tabs";
 import { KpiRow } from "./kpi-row";
+
+function BackButton() {
+	return (
+		<div className="mt-4">
+			<Button variant="ghost" size="sm" render={<Link to="/clients" />}>
+				<ArrowLeft className="mr-1 h-4 w-4" />
+				Back to clients
+			</Button>
+		</div>
+	);
+}
 
 export function ClientDetailPage() {
 	const { id = "" } = useParams();
@@ -56,52 +67,33 @@ export function ClientDetailPage() {
 
 	if (initialQ.isLoading && !client) {
 		return (
-			<>
-				<AppHeader />
-				<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-					<Skeleton className="mt-4 h-8 w-48" />
-					<Skeleton className="h-32 w-full rounded-xl" />
-					<Skeleton className="h-64 w-full rounded-xl" />
-				</div>
-			</>
+			<PageShell title="Client Detail">
+				<Skeleton className="mt-4 h-8 w-48" />
+				<Skeleton className="h-32 w-full rounded-xl" />
+				<Skeleton className="h-64 w-full rounded-xl" />
+			</PageShell>
 		);
 	}
 
 	if (initialQ.error || !client) {
 		return (
-			<>
-				<AppHeader />
-				<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-					<div className="mt-4">
-						<Button variant="ghost" size="sm" render={<Link to="/clients" />}>
-							<ArrowLeft className="mr-1 h-4 w-4" />
-							Back to clients
-						</Button>
-					</div>
-					<ErrorCard message={initialQ.error?.message ?? "Client not found"} />
-				</div>
-			</>
+			<PageShell title="Client Detail">
+				<BackButton />
+				<ErrorCard message={initialQ.error?.message ?? "Client not found"} />
+			</PageShell>
 		);
 	}
 
 	return (
-		<>
-			<AppHeader />
-			<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-				<div className="mt-4">
-					<Button variant="ghost" size="sm" render={<Link to="/clients" />}>
-						<ArrowLeft className="mr-1 h-4 w-4" />
-						Back to clients
-					</Button>
-				</div>
-				<DetailHeader
-					client={client}
-					isActive={isActive}
-					streamStatus={live.status}
-				/>
-				<KpiRow client={client} isActive={isActive} />
-				<DetailTabs client={client} events={events} isActive={isActive} />
-			</div>
-		</>
+		<PageShell title="Client Detail">
+			<BackButton />
+			<DetailHeader
+				client={client}
+				isActive={isActive}
+				streamStatus={live.status}
+			/>
+			<KpiRow client={client} isActive={isActive} />
+			<DetailTabs client={client} events={events} isActive={isActive} />
+		</PageShell>
 	);
 }

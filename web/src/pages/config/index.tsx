@@ -48,12 +48,14 @@ export function ConfigPage() {
 
 	return (
 		<PageShell title="Config Details">
-			<div className="mt-4 flex items-center gap-4">
+			<div className="flex min-h-7 items-center">
+				<PathBreadcrumb namespace={namespace} path={path} />
+			</div>
+			<div>
 				<Button variant="ghost" size="sm" render={<Link to={backLink} />}>
 					<ArrowLeft className="mr-1 h-4 w-4" />
 					Back
 				</Button>
-				<PathBreadcrumb namespace={namespace} path={path} />
 			</div>
 
 			{isLoading && (

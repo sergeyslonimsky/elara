@@ -128,15 +128,17 @@ export function ConfigFormPage() {
 
 	return (
 		<PageShell title={isEdit ? "Edit Config" : "New Config"}>
-			<div className="mt-4 flex items-center gap-4">
-				<Button variant="ghost" size="sm" render={<Link to={backTo} />}>
-					<ArrowLeft className="mr-1 h-4 w-4" />
-					Back
-				</Button>
+			<div className="flex min-h-7 items-center">
 				<PathBreadcrumb
 					namespace={namespace}
 					path={isEdit ? configPath : parentPath}
 				/>
+			</div>
+			<div>
+				<Button variant="ghost" size="sm" render={<Link to={backTo} />}>
+					<ArrowLeft className="mr-1 h-4 w-4" />
+					Back
+				</Button>
 			</div>
 
 			<form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3">

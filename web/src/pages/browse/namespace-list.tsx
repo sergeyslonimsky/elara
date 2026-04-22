@@ -71,7 +71,7 @@ export function NamespaceList({
 				/>
 			}
 		>
-			<div className="flex items-center">
+			<div className="flex min-h-7 items-center">
 				<PathBreadcrumb path="/" />
 			</div>
 

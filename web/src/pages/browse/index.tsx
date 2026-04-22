@@ -89,7 +89,7 @@ export function BrowsePage() {
 				/>
 			}
 		>
-			<div className="flex items-center justify-between">
+			<div className="flex min-h-7 items-center justify-between">
 				<PathBreadcrumb namespace={namespace} path={path ?? "/"} />
 				<LockAwareButton
 					size="sm"
