@@ -21,7 +21,11 @@ interface ActivityCardProps {
 	limit: number;
 }
 
-export function ActivityCard({ entries, isLoading, limit }: ActivityCardProps) {
+export function ActivityCard({
+	entries,
+	isLoading,
+	limit,
+}: Readonly<ActivityCardProps>) {
 	return (
 		<Card className="rounded-xl lg:col-span-2">
 			<CardHeader className="pb-3">

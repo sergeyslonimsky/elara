@@ -17,7 +17,7 @@ export function ConfigDiffViewer({
 	language = "plaintext",
 	height = "400px",
 	header,
-}: ConfigDiffViewerProps) {
+}: Readonly<ConfigDiffViewerProps>) {
 	const resolvedTheme = useResolvedTheme();
 
 	const [sideBySide, setSideBySide] = useState(true);

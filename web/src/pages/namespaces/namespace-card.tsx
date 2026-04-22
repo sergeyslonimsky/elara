@@ -15,7 +15,7 @@ import { DeleteButton } from "./delete-button";
 import { EditDialog } from "./edit-dialog";
 import { LockButton } from "./lock-button";
 
-export function NamespaceCard({ ns }: { ns: Namespace }) {
+export function NamespaceCard({ ns }: Readonly<{ ns: Namespace }>) {
 	return (
 		<Card className="rounded-xl">
 			<CardHeader className="pb-2">
@@ -43,7 +43,7 @@ export function NamespaceCard({ ns }: { ns: Namespace }) {
 			</CardHeader>
 			<CardContent className="space-y-2">
 				<Badge variant="secondary">
-					{ns.configCount} config{ns.configCount !== 1 ? "s" : ""}
+					{ns.configCount} config{ns.configCount === 1 ? "" : "s"}
 				</Badge>
 				<div className="flex flex-wrap gap-2">
 					<ExportDialog namespace={ns.name} />

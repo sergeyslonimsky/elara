@@ -8,10 +8,10 @@ import { timeAgo, tsToMs } from "@/lib/time";
 export function KpiRow({
 	client,
 	isActive,
-}: {
+}: Readonly<{
 	client: Client;
 	isActive: boolean;
-}) {
+}>) {
 	const requests = totalRequests(client);
 	const errors = Number(client.errorCount);
 	const watches = client.activeWatches;

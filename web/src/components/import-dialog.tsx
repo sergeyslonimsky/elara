@@ -39,7 +39,7 @@ interface ImportDialogProps {
 	namespace?: string;
 }
 
-export function ImportDialog({ namespace }: ImportDialogProps) {
+export function ImportDialog({ namespace }: Readonly<ImportDialogProps>) {
 	const [open, setOpen] = useState(false);
 	const [fileBytes, setFileBytes] = useState<Uint8Array | null>(null);
 	const [fileName, setFileName] = useState("");

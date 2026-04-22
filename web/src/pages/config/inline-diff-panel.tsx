@@ -17,7 +17,7 @@ export function InlineDiffPanel({
 	language,
 	toRevision,
 	fromRevision,
-}: InlineDiffPanelProps) {
+}: Readonly<InlineDiffPanelProps>) {
 	const { data, isLoading, error } = useQuery(
 		getConfigDiff,
 		{ path, namespace, fromRevision, toRevision },

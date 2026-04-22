@@ -22,10 +22,10 @@ import { timeAgo, tsToMs } from "@/lib/time";
 export function WatchesTab({
 	client,
 	isActive,
-}: {
+}: Readonly<{
 	client: Client;
 	isActive: boolean;
-}) {
+}>) {
 	const watches = client.activeWatchList ?? [];
 
 	if (!isActive) {
@@ -126,7 +126,7 @@ export function WatchesTab({
 	);
 }
 
-function WatchTypeBadge({ target }: { target: WatchTarget }) {
+function WatchTypeBadge({ target }: Readonly<{ target: WatchTarget }>) {
 	switch (target.kind) {
 		case "key":
 			return (
@@ -167,7 +167,7 @@ function WatchTypeBadge({ target }: { target: WatchTarget }) {
 	}
 }
 
-function WatchNamespaceCell({ target }: { target: WatchTarget }) {
+function WatchNamespaceCell({ target }: Readonly<{ target: WatchTarget }>) {
 	if (target.kind === "raw") {
 		return <span className="text-muted-foreground italic">—</span>;
 	}
@@ -178,7 +178,7 @@ function WatchNamespaceCell({ target }: { target: WatchTarget }) {
 	);
 }
 
-function WatchPathCell({ target }: { target: WatchTarget }) {
+function WatchPathCell({ target }: Readonly<{ target: WatchTarget }>) {
 	switch (target.kind) {
 		case "key":
 			return <span className="font-mono text-xs">{target.path}</span>;

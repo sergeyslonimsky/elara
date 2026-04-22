@@ -23,7 +23,7 @@ import { totalRequests } from "@/lib/client";
 import { formatUptime } from "@/lib/duration";
 import { timeAgo, tsToMs } from "@/lib/time";
 
-export function SessionsTab({ client }: { client: Client }) {
+export function SessionsTab({ client }: Readonly<{ client: Client }>) {
 	const navigate = useNavigate();
 	const enabled = !!client.clientName;
 

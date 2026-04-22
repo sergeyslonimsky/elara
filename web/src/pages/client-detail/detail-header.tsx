@@ -15,7 +15,7 @@ export function DetailHeader({
 	client,
 	isActive,
 	streamStatus,
-}: DetailHeaderProps) {
+}: Readonly<DetailHeaderProps>) {
 	const live = isLive(tsToMs(client.lastActivityAt));
 	return (
 		<Card className="rounded-xl">

@@ -52,7 +52,7 @@ export function ContentCard({
 	content,
 	onContentChange,
 	protoFormat,
-}: ContentCardProps) {
+}: Readonly<ContentCardProps>) {
 	const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
 	const formatMutation = useMutation(validateConfig, {

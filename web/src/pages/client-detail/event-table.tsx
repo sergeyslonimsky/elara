@@ -14,10 +14,10 @@ import { tsToMs } from "@/lib/time";
 export function EventTable({
 	events,
 	highlightErrors = false,
-}: {
+}: Readonly<{
 	events: ClientEvent[];
 	highlightErrors?: boolean;
-}) {
+}>) {
 	return (
 		<div className="overflow-hidden rounded-md border">
 			<Table>
@@ -33,11 +33,8 @@ export function EventTable({
 				<TableBody>
 					{events.map((ev, idx) => {
 						const t = ev.timestamp ? new Date(tsToMs(ev.timestamp)) : null;
-						const rowClass = highlightErrors
-							? "bg-destructive/5"
-							: ev.error
-								? "bg-destructive/5"
-								: undefined;
+						const rowClass =
+							highlightErrors || ev.error ? "bg-destructive/5" : undefined;
 						return (
 							<TableRow
 								// biome-ignore lint/suspicious/noArrayIndexKey: events have no stable id

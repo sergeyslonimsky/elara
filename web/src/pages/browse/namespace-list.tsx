@@ -23,9 +23,9 @@ import { nsColumns } from "./ns-columns";
 
 export function NamespaceList({
 	tableState,
-}: {
+}: Readonly<{
 	tableState: ReturnType<typeof useTableState>;
-}) {
+}>) {
 	const navigate = useNavigate();
 	const {
 		offset,
@@ -56,30 +56,10 @@ export function NamespaceList({
 
 	const total = data?.pagination?.total ?? 0;
 
-	return (
-		<PageShell
-			title="Browse"
-			onRefresh={() => void refetch()}
-			isRefreshing={isFetching}
-			headerSlot={
-				<SearchInput
-					value={searchInput}
-					onChange={setSearchInput}
-					onSearch={handleSearch}
-					onClear={handleClear}
-					placeholder="Search namespaces..."
-				/>
-			}
-		>
-			<div className="flex min-h-7 items-center">
-				<PathBreadcrumb path="/" />
-			</div>
-
-			{error && <ErrorCard message={error.message} />}
-
-			{isLoading ? (
-				<SkeletonList count={5} />
-			) : total === 0 ? (
+	const renderBody = () => {
+		if (isLoading) return <SkeletonList count={5} />;
+		if (total === 0) {
+			return (
 				<div className="py-16">
 					<Empty>
 						<EmptyHeader>
@@ -108,15 +88,43 @@ export function NamespaceList({
 						)}
 					</Empty>
 				</div>
-			) : (
-				<DataTable
-					columns={nsColumns}
-					data={data?.namespaces ?? []}
-					sorting={sorting}
-					onSortingChange={setSorting}
-					onRowClick={(row) => navigate(`/browse/${row.name}`)}
+			);
+		}
+		return (
+			<DataTable
+				columns={nsColumns}
+				data={data?.namespaces ?? []}
+				sorting={sorting}
+				onSortingChange={setSorting}
+				onRowClick={(row) => navigate(`/browse/${row.name}`)}
+			/>
+		);
+	};
+
+	return (
+		<PageShell
+			title="Browse"
+			onRefresh={() => {
+				refetch();
+			}}
+			isRefreshing={isFetching}
+			headerSlot={
+				<SearchInput
+					value={searchInput}
+					onChange={setSearchInput}
+					onSearch={handleSearch}
+					onClear={handleClear}
+					placeholder="Search namespaces..."
 				/>
-			)}
+			}
+		>
+			<div className="flex min-h-7 items-center">
+				<PathBreadcrumb path="/" />
+			</div>
+
+			{error && <ErrorCard message={error.message} />}
+
+			{renderBody()}
 
 			<PaginationControls
 				total={total}

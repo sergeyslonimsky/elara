@@ -26,7 +26,7 @@ interface ExportDialogProps {
 	namespace?: string;
 }
 
-export function ExportDialog({ namespace }: ExportDialogProps) {
+export function ExportDialog({ namespace }: Readonly<ExportDialogProps>) {
 	const [open, setOpen] = useState(false);
 	const [encoding, setEncoding] = useState<BundleEncoding>(BundleEncoding.JSON);
 	const [zip, setZip] = useState(false);

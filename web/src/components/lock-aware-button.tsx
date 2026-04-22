@@ -33,7 +33,7 @@ export function LockAwareButton({
 	variant,
 	size,
 	className,
-}: LockAwareButtonProps) {
+}: Readonly<LockAwareButtonProps>) {
 	if (locked) {
 		return (
 			<Button

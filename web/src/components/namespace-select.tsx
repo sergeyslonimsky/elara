@@ -19,7 +19,10 @@ interface NamespaceSelectProps {
 	onChange: (value: string) => void;
 }
 
-export function NamespaceSelect({ value, onChange }: NamespaceSelectProps) {
+export function NamespaceSelect({
+	value,
+	onChange,
+}: Readonly<NamespaceSelectProps>) {
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
 	const debouncedSearch = useDebouncedValue(search, 200);

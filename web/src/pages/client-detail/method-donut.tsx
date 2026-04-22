@@ -9,7 +9,7 @@ const MethodDonutImpl = lazy(() =>
 /**
  * MethodDonut defers loading of recharts until the "Counters" tab is opened.
  */
-export function MethodDonut({ client }: { client: Client }) {
+export function MethodDonut({ client }: Readonly<{ client: Client }>) {
 	return (
 		<Suspense fallback={<Skeleton className="h-full w-full rounded-lg" />}>
 			<MethodDonutImpl client={client} />

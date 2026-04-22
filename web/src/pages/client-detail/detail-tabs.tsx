@@ -14,7 +14,11 @@ interface DetailTabsProps {
 	isActive: boolean;
 }
 
-export function DetailTabs({ client, events, isActive }: DetailTabsProps) {
+export function DetailTabs({
+	client,
+	events,
+	isActive,
+}: Readonly<DetailTabsProps>) {
 	const totalErrors = Number(client.errorCount);
 
 	return (

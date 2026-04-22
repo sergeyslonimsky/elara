@@ -21,16 +21,16 @@ import { toastError } from "@/lib/toast";
 export function DeleteButton({
 	name,
 	locked,
-}: {
+}: Readonly<{
 	name: string;
 	locked: boolean;
-}) {
+}>) {
 	const queryClient = useQueryClient();
 
 	const mutation = useMutation(deleteNamespace, {
 		onSuccess: () => {
 			toast.success(`Namespace "${name}" deleted`);
-			void invalidate(queryClient, "namespaces");
+			invalidate(queryClient, "namespaces");
 		},
 		onError: toastError,
 	});

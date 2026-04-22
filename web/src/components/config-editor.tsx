@@ -13,7 +13,7 @@ interface ConfigEditorProps {
 	height?: string;
 }
 
-export function ConfigEditor(props: ConfigEditorProps) {
+export function ConfigEditor(props: Readonly<ConfigEditorProps>) {
 	const height = props.height ?? "400px";
 	return (
 		<Suspense

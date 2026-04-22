@@ -53,7 +53,7 @@ const counterColumns: ColumnDef<CounterRow>[] = [
 	},
 ];
 
-export function CountersTab({ client }: { client: Client }) {
+export function CountersTab({ client }: Readonly<{ client: Client }>) {
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: "method", desc: false },
 	]);

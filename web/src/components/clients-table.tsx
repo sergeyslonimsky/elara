@@ -226,7 +226,7 @@ export function ClientsTable({
 	sorting,
 	onSortingChange,
 	emptySlot,
-}: ClientsTableProps) {
+}: Readonly<ClientsTableProps>) {
 	const navigate = useNavigate();
 
 	const table = useReactTable({

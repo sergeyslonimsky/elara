@@ -77,7 +77,9 @@ export function BrowsePage() {
 	return (
 		<PageShell
 			title="Browse"
-			onRefresh={() => void refetch()}
+			onRefresh={() => {
+				refetch();
+			}}
 			isRefreshing={isFetching}
 			headerSlot={
 				<SearchInput

@@ -20,6 +20,11 @@ import { toastError } from "@/lib/toast";
 import { ContentCard } from "./content-card";
 import { MetadataEditor } from "./metadata-editor";
 
+function submitButtonLabel(isEdit: boolean, isPending: boolean): string {
+	if (isPending) return isEdit ? "Saving..." : "Creating...";
+	return isEdit ? "Save Changes" : "Create Config";
+}
+
 export function ConfigFormPage() {
 	const { namespace: namespaceParam, "*": splat = "" } = useParams();
 	const namespace = namespaceParam ?? "";
@@ -66,11 +71,9 @@ export function ConfigFormPage() {
 		}
 	}, [isEdit, existing, loaded]);
 
-	const fullPath = isEdit
-		? configPath
-		: parentPath === "/"
-			? `/${filename}`
-			: `${parentPath}/${filename}`;
+	const newFullPath =
+		parentPath === "/" ? `/${filename}` : `${parentPath}/${filename}`;
+	const fullPath = isEdit ? configPath : newFullPath;
 
 	const protoFormat = stringToProtoFormat(format);
 
@@ -91,7 +94,7 @@ export function ConfigFormPage() {
 	});
 
 	function invalidateAndNavigate() {
-		void invalidateAllConfigData(queryClient);
+		invalidateAllConfigData(queryClient);
 		navigate(
 			isEdit
 				? `/config/${namespace}${configPath}`
@@ -169,13 +172,7 @@ export function ConfigFormPage() {
 						className="w-full"
 						disabled={isPending || !filename || !content}
 					>
-						{isPending
-							? isEdit
-								? "Saving..."
-								: "Creating..."
-							: isEdit
-								? "Save Changes"
-								: "Create Config"}
+						{submitButtonLabel(isEdit, isPending)}
 					</Button>
 				</div>
 			</form>

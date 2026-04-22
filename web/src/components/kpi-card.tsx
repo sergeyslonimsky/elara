@@ -21,7 +21,7 @@ export function KpiCard({
 	series,
 	accentClass = "text-primary",
 	className,
-}: KpiCardProps) {
+}: Readonly<KpiCardProps>) {
 	return (
 		<Card className={cn("rounded-xl", className)}>
 			<CardContent className="space-y-2 pt-4">

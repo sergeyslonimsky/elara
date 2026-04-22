@@ -5,7 +5,7 @@ interface ErrorCardProps {
 	message: string;
 }
 
-export function ErrorCard({ message }: ErrorCardProps) {
+export function ErrorCard({ message }: Readonly<ErrorCardProps>) {
 	return (
 		<Card className="rounded-xl border-destructive">
 			<CardContent className="flex items-center gap-3 pt-6">

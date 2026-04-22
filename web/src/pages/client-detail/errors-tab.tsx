@@ -13,11 +13,11 @@ export function ErrorsTab({
 	events,
 	totalErrors,
 	isActive,
-}: {
+}: Readonly<{
 	events: ClientEvent[];
 	totalErrors: number;
 	isActive: boolean;
-}) {
+}>) {
 	const errorEvents = events.filter((ev) => ev.error !== "");
 
 	if (errorEvents.length === 0) {

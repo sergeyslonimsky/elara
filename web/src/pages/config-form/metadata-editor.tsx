@@ -14,7 +14,10 @@ interface MetadataEditorProps {
 	onChange: (next: Record<string, string>) => void;
 }
 
-export function MetadataEditor({ metadata, onChange }: MetadataEditorProps) {
+export function MetadataEditor({
+	metadata,
+	onChange,
+}: Readonly<MetadataEditorProps>) {
 	const [metaKey, setMetaKey] = useState("");
 	const [metaValue, setMetaValue] = useState("");
 

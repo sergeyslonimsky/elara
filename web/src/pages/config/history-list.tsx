@@ -22,15 +22,61 @@ export function HistoryList({
 	namespace,
 	language,
 	version,
-}: HistoryListProps) {
+}: Readonly<HistoryListProps>) {
 	const [expandedRevision, setExpandedRevision] = useState<bigint | null>(null);
 	const [compareMode, setCompareMode] = useState(false);
+
+	const renderBody = () => {
+		if (entries.length === 0) {
+			return (
+				<p className="py-8 text-center text-muted-foreground">
+					No history available
+				</p>
+			);
+		}
+		if (compareMode) {
+			return (
+				<ComparePanel
+					path={path}
+					namespace={namespace}
+					language={language}
+					entries={entries}
+					version={version}
+				/>
+			);
+		}
+		return (
+			<div className="space-y-3">
+				{entries.map((entry, idx) => {
+					if (isLockEvent(entry.eventType)) {
+						return <LockEventRow key={lockRowKey(entry)} entry={entry} />;
+					}
+					const isExpanded = expandedRevision === entry.revision;
+					const fromRevision = previousContentRevision(entries, idx);
+					return (
+						<ContentEventRow
+							key={entry.revision}
+							entry={entry}
+							isExpanded={isExpanded}
+							onToggle={() =>
+								setExpandedRevision(isExpanded ? null : entry.revision)
+							}
+							path={path}
+							namespace={namespace}
+							language={language}
+							fromRevision={fromRevision}
+						/>
+					);
+				})}
+			</div>
+		);
+	};
 
 	return (
 		<>
 			<div className="mb-4 flex items-center justify-between">
 				<span className="text-muted-foreground text-sm">
-					{entries.length} revision{entries.length !== 1 ? "s" : ""}
+					{entries.length} revision{entries.length === 1 ? "" : "s"}
 				</span>
 				{entries.length >= 2 && (
 					<Button
@@ -47,45 +93,7 @@ export function HistoryList({
 				)}
 			</div>
 
-			{entries.length === 0 ? (
-				<p className="py-8 text-center text-muted-foreground">
-					No history available
-				</p>
-			) : compareMode ? (
-				<ComparePanel
-					path={path}
-					namespace={namespace}
-					language={language}
-					entries={entries}
-					version={version}
-				/>
-			) : (
-				<div className="space-y-3">
-					{entries.map((entry, idx) => {
-						if (isLockEvent(entry.eventType)) {
-							return <LockEventRow key={lockRowKey(entry)} entry={entry} />;
-						}
-
-						const isExpanded = expandedRevision === entry.revision;
-						const fromRevision = previousContentRevision(entries, idx);
-
-						return (
-							<ContentEventRow
-								key={entry.revision}
-								entry={entry}
-								isExpanded={isExpanded}
-								onToggle={() =>
-									setExpandedRevision(isExpanded ? null : entry.revision)
-								}
-								path={path}
-								namespace={namespace}
-								language={language}
-								fromRevision={fromRevision}
-							/>
-						);
-					})}
-				</div>
-			)}
+			{renderBody()}
 		</>
 	);
 }
@@ -104,7 +112,7 @@ function previousContentRevision(entries: HistoryEntry[], idx: number): bigint {
 	return 0n;
 }
 
-function LockEventRow({ entry }: { entry: HistoryEntry }) {
+function LockEventRow({ entry }: Readonly<{ entry: HistoryEntry }>) {
 	return (
 		<div className="flex items-start gap-3 rounded-lg border p-3">
 			<Badge
@@ -143,7 +151,7 @@ function ContentEventRow({
 	namespace,
 	language,
 	fromRevision,
-}: ContentEventRowProps) {
+}: Readonly<ContentEventRowProps>) {
 	return (
 		<div>
 			<button

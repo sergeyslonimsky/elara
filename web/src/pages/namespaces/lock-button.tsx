@@ -22,20 +22,29 @@ import {
 import { invalidate } from "@/lib/queries";
 import { toastError } from "@/lib/toast";
 
+function lockActionLabel(
+	locked: boolean,
+	lockPending: boolean,
+	unlockPending: boolean,
+): string {
+	if (locked) return unlockPending ? "Unlocking..." : "Unlock";
+	return lockPending ? "Locking..." : "Lock";
+}
+
 export function LockButton({
 	name,
 	locked,
-}: {
+}: Readonly<{
 	name: string;
 	locked: boolean;
-}) {
+}>) {
 	const queryClient = useQueryClient();
 	const [open, setOpen] = useState(false);
 
 	const lockMutation = useMutation(lockNamespace, {
 		onSuccess: () => {
 			toast.success(`Namespace "${name}" locked`);
-			void invalidate(queryClient, "namespaces");
+			invalidate(queryClient, "namespaces");
 			setOpen(false);
 		},
 		onError: toastError,
@@ -44,7 +53,7 @@ export function LockButton({
 	const unlockMutation = useMutation(unlockNamespace, {
 		onSuccess: () => {
 			toast.success(`Namespace "${name}" unlocked`);
-			void invalidate(queryClient, "namespaces");
+			invalidate(queryClient, "namespaces");
 			setOpen(false);
 		},
 		onError: toastError,
@@ -90,13 +99,11 @@ export function LockButton({
 								: lockMutation.mutate({ name })
 						}
 					>
-						{locked
-							? unlockMutation.isPending
-								? "Unlocking..."
-								: "Unlock"
-							: lockMutation.isPending
-								? "Locking..."
-								: "Lock"}
+						{lockActionLabel(
+							locked,
+							lockMutation.isPending,
+							unlockMutation.isPending,
+						)}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

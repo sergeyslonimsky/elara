@@ -31,7 +31,7 @@ export function CreateDialog() {
 			setOpen(false);
 			setName("");
 			setDescription("");
-			void invalidate(queryClient, "namespaces");
+			invalidate(queryClient, "namespaces");
 		},
 		onError: toastError,
 	});

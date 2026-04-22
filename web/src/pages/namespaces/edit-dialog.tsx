@@ -22,11 +22,11 @@ export function EditDialog({
 	name,
 	currentDescription,
 	locked,
-}: {
+}: Readonly<{
 	name: string;
 	currentDescription: string;
 	locked: boolean;
-}) {
+}>) {
 	const [open, setOpen] = useState(false);
 	const [description, setDescription] = useState(currentDescription);
 	const queryClient = useQueryClient();
@@ -40,7 +40,7 @@ export function EditDialog({
 		onSuccess: () => {
 			toast.success(`Namespace "${name}" updated`);
 			setOpen(false);
-			void invalidate(queryClient, "namespaces");
+			invalidate(queryClient, "namespaces");
 		},
 		onError: toastError,
 	});

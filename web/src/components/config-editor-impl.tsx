@@ -15,7 +15,7 @@ export function ConfigEditor({
 	language = "plaintext",
 	readOnly = false,
 	height = "400px",
-}: ConfigEditorProps) {
+}: Readonly<ConfigEditorProps>) {
 	const resolvedTheme = useResolvedTheme();
 
 	return (

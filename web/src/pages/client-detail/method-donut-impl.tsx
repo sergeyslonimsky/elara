@@ -32,7 +32,7 @@ function shortMethod(fullMethod: string): string {
 	return `${svc}/${parts[1]}`;
 }
 
-export function MethodDonut({ client }: { client: Client }) {
+export function MethodDonut({ client }: Readonly<{ client: Client }>) {
 	const data = useMemo(() => {
 		const entries = Object.entries(client.requestCounts ?? {})
 			.map(([method, count]) => ({
@@ -48,7 +48,7 @@ export function MethodDonut({ client }: { client: Client }) {
 		return [...top, { name: "other", value: otherSum }];
 	}, [client.requestCounts]);
 
-	if (data.length === 0 || data.every((d) => d.value === 0)) {
+	if (data.every((d) => d.value === 0)) {
 		return (
 			<Empty>
 				<EmptyHeader>
@@ -83,10 +83,9 @@ export function MethodDonut({ client }: { client: Client }) {
 					label={(entry) => entry.name}
 					labelLine={false}
 				>
-					{data.map((_, i) => (
+					{data.map((entry, i) => (
 						<Cell
-							// biome-ignore lint/suspicious/noArrayIndexKey: stable position-based color
-							key={i}
+							key={entry.name}
 							fill={DONUT_COLORS[i % DONUT_COLORS.length]}
 						/>
 					))}

@@ -16,7 +16,7 @@ export function ConfigActions({
 	namespace,
 	configLocked,
 	namespaceLocked,
-}: ConfigActionsProps) {
+}: Readonly<ConfigActionsProps>) {
 	const effectiveLocked = configLocked || namespaceLocked;
 
 	return (

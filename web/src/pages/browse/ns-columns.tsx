@@ -31,7 +31,7 @@ export const nsColumns: ColumnDef<Namespace>[] = [
 		cell: ({ row }) => (
 			<span className="text-muted-foreground text-sm">
 				{row.original.configCount} config
-				{row.original.configCount !== 1 ? "s" : ""}
+				{row.original.configCount === 1 ? "" : "s"}
 			</span>
 		),
 		enableSorting: false,

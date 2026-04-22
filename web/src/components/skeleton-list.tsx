@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -17,15 +18,16 @@ export function SkeletonList({
 	count,
 	className = "h-10 w-full",
 	wrapperClassName = "space-y-2",
-}: SkeletonListProps) {
+}: Readonly<SkeletonListProps>) {
+	// Stable, non-index keys. Regenerated only when `count` changes.
+	const keys = useMemo(
+		() => Array.from({ length: count }, () => crypto.randomUUID()),
+		[count],
+	);
 	return (
 		<div className={wrapperClassName}>
-			{Array.from({ length: count }).map((_, i) => (
-				<Skeleton
-					// biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder
-					key={i}
-					className={cn(className)}
-				/>
+			{keys.map((key) => (
+				<Skeleton key={key} className={cn(className)} />
 			))}
 		</div>
 	);

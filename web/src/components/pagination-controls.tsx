@@ -23,7 +23,7 @@ export function PaginationControls({
 	offset,
 	onOffsetChange,
 	onPageSizeChange,
-}: PaginationControlsProps) {
+}: Readonly<PaginationControlsProps>) {
 	if (total === 0) return null;
 
 	const totalPages = Math.ceil(total / pageSize);

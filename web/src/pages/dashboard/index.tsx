@@ -24,9 +24,9 @@ export function DashboardPage() {
 	const isRefreshing = statsQ.isFetching || activityQ.isFetching;
 
 	const refresh = () => {
-		void statsQ.refetch();
-		void activityQ.refetch();
-		void namespacesQ.refetch();
+		statsQ.refetch();
+		activityQ.refetch();
+		namespacesQ.refetch();
 	};
 
 	return (

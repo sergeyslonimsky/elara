@@ -15,7 +15,7 @@ interface ConfigDiffViewerProps {
 	header?: React.ReactNode;
 }
 
-export function ConfigDiffViewer(props: ConfigDiffViewerProps) {
+export function ConfigDiffViewer(props: Readonly<ConfigDiffViewerProps>) {
 	const height = props.height ?? "400px";
 	return (
 		<Suspense

@@ -30,7 +30,7 @@ export function DeleteDialog({
 	path,
 	namespace,
 	effectiveLocked,
-}: DeleteDialogProps) {
+}: Readonly<DeleteDialogProps>) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const backLink = useBackLink(namespace, path);
@@ -38,7 +38,7 @@ export function DeleteDialog({
 	const mutation = useMutation(deleteConfig, {
 		onSuccess: () => {
 			toast.success("Config deleted");
-			void invalidateAllConfigData(queryClient);
+			invalidateAllConfigData(queryClient);
 			navigate(backLink);
 		},
 		onError: toastError,

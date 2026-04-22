@@ -29,7 +29,9 @@ export function NamespacesPage() {
 	return (
 		<PageShell
 			title="Namespaces"
-			onRefresh={() => void refetch()}
+			onRefresh={() => {
+				refetch();
+			}}
 			isRefreshing={isFetching}
 			headerSlot={
 				<SearchInput
@@ -62,7 +64,7 @@ export function NamespacesPage() {
 					<NamespaceCard key={ns.name} ns={ns} />
 				))}
 
-				{data && data.namespaces.length === 0 && (
+				{data?.namespaces.length === 0 && (
 					<div className="col-span-full py-16">
 						<Empty>
 							<EmptyHeader>

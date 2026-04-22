@@ -83,7 +83,7 @@ const columns: ColumnDef<DirectoryEntry>[] = [
 			}
 			return (
 				<span className="text-muted-foreground text-sm">
-					{entry.childCount} item{entry.childCount !== 1 ? "s" : ""}
+					{entry.childCount} item{entry.childCount === 1 ? "" : "s"}
 				</span>
 			);
 		},
@@ -116,7 +116,7 @@ export function DirectoryTable({
 	sorting,
 	onSortingChange,
 	namespaceLocked = false,
-}: DirectoryTableProps) {
+}: Readonly<DirectoryTableProps>) {
 	const navigate = useNavigate();
 
 	if (isLoading) {

@@ -12,10 +12,10 @@ import { EventTable } from "./event-table";
 export function ActivityTab({
 	events,
 	isActive,
-}: {
+}: Readonly<{
 	events: ClientEvent[];
 	isActive: boolean;
-}) {
+}>) {
 	if (events.length === 0) {
 		return (
 			<Empty>

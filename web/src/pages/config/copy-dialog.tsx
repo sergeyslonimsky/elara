@@ -24,7 +24,10 @@ interface CopyDialogProps {
 	sourceNamespace: string;
 }
 
-export function CopyDialog({ sourcePath, sourceNamespace }: CopyDialogProps) {
+export function CopyDialog({
+	sourcePath,
+	sourceNamespace,
+}: Readonly<CopyDialogProps>) {
 	const [open, setOpen] = useState(false);
 	const [destPath, setDestPath] = useState(sourcePath);
 	const [destNamespace, setDestNamespace] = useState(sourceNamespace);
@@ -34,7 +37,7 @@ export function CopyDialog({ sourcePath, sourceNamespace }: CopyDialogProps) {
 		onSuccess: () => {
 			toast.success(`Config copied to ${destPath}`);
 			setOpen(false);
-			void invalidate(queryClient, "configs");
+			invalidate(queryClient, "configs");
 		},
 		onError: toastError,
 	});

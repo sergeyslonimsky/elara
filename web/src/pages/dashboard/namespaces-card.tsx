@@ -18,7 +18,10 @@ interface NamespacesCardProps {
 	isLoading: boolean;
 }
 
-export function NamespacesCard({ namespaces, isLoading }: NamespacesCardProps) {
+export function NamespacesCard({
+	namespaces,
+	isLoading,
+}: Readonly<NamespacesCardProps>) {
 	return (
 		<Card className="rounded-xl">
 			<CardHeader className="pb-3">

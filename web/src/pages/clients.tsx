@@ -60,8 +60,8 @@ export function ClientsPage() {
 	);
 
 	const refresh = () => {
-		void activeQ.refetch();
-		void historyQ.refetch();
+		activeQ.refetch();
+		historyQ.refetch();
 	};
 
 	const isRefreshing = activeQ.isFetching || historyQ.isFetching;

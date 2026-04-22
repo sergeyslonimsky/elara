@@ -29,19 +29,28 @@ interface LockDialogProps {
 	namespaceLocked: boolean;
 }
 
+function lockActionLabel(
+	locked: boolean,
+	lockPending: boolean,
+	unlockPending: boolean,
+): string {
+	if (locked) return unlockPending ? "Unlocking..." : "Unlock";
+	return lockPending ? "Locking..." : "Lock";
+}
+
 export function LockDialog({
 	path,
 	namespace,
 	configLocked,
 	namespaceLocked,
-}: LockDialogProps) {
+}: Readonly<LockDialogProps>) {
 	const queryClient = useQueryClient();
 	const [open, setOpen] = useState(false);
 
 	const lockMutation = useMutation(lockConfig, {
 		onSuccess: () => {
 			toast.success("Config locked");
-			void invalidateAllConfigData(queryClient);
+			invalidateAllConfigData(queryClient);
 			setOpen(false);
 		},
 		onError: toastError,
@@ -50,7 +59,7 @@ export function LockDialog({
 	const unlockMutation = useMutation(unlockConfig, {
 		onSuccess: () => {
 			toast.success("Config unlocked");
-			void invalidateAllConfigData(queryClient);
+			invalidateAllConfigData(queryClient);
 			setOpen(false);
 		},
 		onError: toastError,
@@ -101,13 +110,11 @@ export function LockDialog({
 								: lockMutation.mutate({ path, namespace })
 						}
 					>
-						{configLocked
-							? unlockMutation.isPending
-								? "Unlocking..."
-								: "Unlock"
-							: lockMutation.isPending
-								? "Locking..."
-								: "Lock"}
+						{lockActionLabel(
+							configLocked,
+							lockMutation.isPending,
+							unlockMutation.isPending,
+						)}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

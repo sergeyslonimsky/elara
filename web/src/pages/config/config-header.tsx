@@ -18,7 +18,7 @@ export function ConfigHeader({
 	path,
 	configLocked,
 	namespaceLocked,
-}: ConfigHeaderProps) {
+}: Readonly<ConfigHeaderProps>) {
 	const effectiveLocked = configLocked || namespaceLocked;
 
 	return (

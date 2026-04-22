@@ -46,7 +46,7 @@ export function ComparePanel({
 	language,
 	entries,
 	version,
-}: ComparePanelProps) {
+}: Readonly<ComparePanelProps>) {
 	const queryClient = useQueryClient();
 	const [compareFrom, setCompareFrom] = useState<string>("");
 	const [compareTo, setCompareTo] = useState<string>("");
@@ -83,7 +83,7 @@ export function ComparePanel({
 		onSuccess: () => {
 			toast.success("Config restored");
 			setRestoreOpen(false);
-			void invalidateAllConfigData(queryClient);
+			invalidateAllConfigData(queryClient);
 		},
 		onError: toastError,
 	});
