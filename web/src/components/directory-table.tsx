@@ -3,10 +3,10 @@ import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { ChevronRight, FilePlus, FileText, Folder, Lock } from "lucide-react";
 import { useNavigate } from "react-router";
 import { DataTable } from "@/components/data-table";
+import { LockAwareButton } from "@/components/lock-aware-button";
+import { SkeletonList } from "@/components/skeleton-list";
 import { SortableHeader } from "@/components/sortable-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { SortDirection } from "@/gen/elara/common/v1/common_pb";
 import { type DirectoryEntry, Format } from "@/gen/elara/config/v1/config_pb";
 import { formatLabel } from "@/lib/format";
@@ -83,7 +83,7 @@ const columns: ColumnDef<DirectoryEntry>[] = [
 			}
 			return (
 				<span className="text-muted-foreground text-sm">
-					{entry.childCount} item{entry.childCount !== 1 ? "s" : ""}
+					{entry.childCount} item{entry.childCount === 1 ? "" : "s"}
 				</span>
 			);
 		},
@@ -116,17 +116,15 @@ export function DirectoryTable({
 	sorting,
 	onSortingChange,
 	namespaceLocked = false,
-}: DirectoryTableProps) {
+}: Readonly<DirectoryTableProps>) {
 	const navigate = useNavigate();
 
 	if (isLoading) {
 		return (
-			<div className="space-y-2 p-4 border rounded-xl bg-card">
-				{Array.from({ length: 5 }).map((_, i) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder
-					<Skeleton key={i} className="h-10 w-full" />
-				))}
-			</div>
+			<SkeletonList
+				count={5}
+				wrapperClassName="space-y-2 p-4 border rounded-xl bg-card"
+			/>
 		);
 	}
 
@@ -141,22 +139,16 @@ export function DirectoryTable({
 				<Folder className="h-12 w-12" />
 				<p className="text-lg font-medium">Empty directory</p>
 				<p className="text-sm">No configs found at this path</p>
-				{namespaceLocked ? (
-					<Button
-						variant="outline"
-						size="sm"
-						disabled
-						title={`Namespace "${namespace}" is locked`}
-					>
-						<FilePlus className="mr-1 h-4 w-4" />
-						New Config
-					</Button>
-				) : (
-					<Button variant="outline" size="sm" onClick={() => navigate(newPath)}>
-						<FilePlus className="mr-1 h-4 w-4" />
-						New Config
-					</Button>
-				)}
+				<LockAwareButton
+					variant="outline"
+					size="sm"
+					locked={namespaceLocked}
+					lockedReason={`Namespace "${namespace}" is locked`}
+					onClick={() => navigate(newPath)}
+				>
+					<FilePlus className="mr-1 h-4 w-4" />
+					New Config
+				</LockAwareButton>
 			</div>
 		);
 	}

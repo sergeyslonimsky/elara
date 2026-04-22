@@ -18,7 +18,7 @@ export function SearchInput({
 	onClear,
 	placeholder = "Search...",
 	className,
-}: SearchInputProps) {
+}: Readonly<SearchInputProps>) {
 	return (
 		<div className={cn("relative w-72", className)}>
 			<Search className="absolute top-2 left-2.5 h-3.5 w-3.5 text-muted-foreground" />

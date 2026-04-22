@@ -1,7 +1,6 @@
 import { useMutation } from "@connectrpc/connect-query";
 import { Download } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -21,12 +20,13 @@ import {
 	exportNamespace,
 } from "@/gen/elara/transfer/v1/transfer_service-TransferService_connectquery";
 import { triggerDownload } from "@/lib/download";
+import { toastError } from "@/lib/toast";
 
 interface ExportDialogProps {
 	namespace?: string;
 }
 
-export function ExportDialog({ namespace }: ExportDialogProps) {
+export function ExportDialog({ namespace }: Readonly<ExportDialogProps>) {
 	const [open, setOpen] = useState(false);
 	const [encoding, setEncoding] = useState<BundleEncoding>(BundleEncoding.JSON);
 	const [zip, setZip] = useState(false);
@@ -41,28 +41,29 @@ export function ExportDialog({ namespace }: ExportDialogProps) {
 		? `${namespace}-export${ext}`
 		: `elara-export-all${ext}`;
 
+	// Both export RPCs return the same bundle-shaped response (data, filename,
+	// contentType), so they share onSuccess/onError handlers.
+	const handleDownload = (res: {
+		data: Uint8Array;
+		filename: string;
+		contentType: string;
+	}) => {
+		triggerDownload(
+			res.data,
+			res.filename || previewFilename,
+			res.contentType || "application/octet-stream",
+		);
+		setOpen(false);
+	};
+
 	const exportNsMutation = useMutation(exportNamespace, {
-		onSuccess: (res) => {
-			triggerDownload(
-				res.data,
-				res.filename || previewFilename,
-				res.contentType || "application/octet-stream",
-			);
-			setOpen(false);
-		},
-		onError: (err) => toast.error(err.message),
+		onSuccess: handleDownload,
+		onError: toastError,
 	});
 
 	const exportAllMutation = useMutation(exportAll, {
-		onSuccess: (res) => {
-			triggerDownload(
-				res.data,
-				res.filename || previewFilename,
-				res.contentType || "application/octet-stream",
-			);
-			setOpen(false);
-		},
-		onError: (err) => toast.error(err.message),
+		onSuccess: handleDownload,
+		onError: toastError,
 	});
 
 	const isPending = exportNsMutation.isPending || exportAllMutation.isPending;

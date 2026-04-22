@@ -46,7 +46,7 @@ export function ThemeProvider({
 	children,
 	defaultTheme = "system",
 	storageKey = "elara-theme",
-}: ThemeProviderProps) {
+}: Readonly<ThemeProviderProps>) {
 	const [theme, setTheme] = useState<Theme>(
 		() => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
 	);

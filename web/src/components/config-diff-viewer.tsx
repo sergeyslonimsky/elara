@@ -1,7 +1,11 @@
-import { DiffEditor } from "@monaco-editor/react";
-import { useState } from "react";
-import { useResolvedTheme } from "@/components/theme-provider";
-import { Button } from "@/components/ui/button";
+import { lazy, Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const ConfigDiffViewerImpl = lazy(() =>
+	import("./config-diff-viewer-impl").then((m) => ({
+		default: m.ConfigDiffViewer,
+	})),
+);
 
 interface ConfigDiffViewerProps {
 	original: string;
@@ -11,48 +15,13 @@ interface ConfigDiffViewerProps {
 	header?: React.ReactNode;
 }
 
-export function ConfigDiffViewer({
-	original,
-	modified,
-	language = "plaintext",
-	height = "400px",
-	header,
-}: ConfigDiffViewerProps) {
-	const resolvedTheme = useResolvedTheme();
-
-	const [sideBySide, setSideBySide] = useState(true);
-
+export function ConfigDiffViewer(props: Readonly<ConfigDiffViewerProps>) {
+	const height = props.height ?? "400px";
 	return (
-		<div className="space-y-2">
-			{header}
-			<div className="flex justify-end">
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={() => setSideBySide((v) => !v)}
-					className="text-xs"
-				>
-					{sideBySide ? "Inline" : "Side by side"}
-				</Button>
-			</div>
-			<div className="overflow-hidden rounded-lg border">
-				<DiffEditor
-					height={height}
-					language={language}
-					theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
-					original={original}
-					modified={modified}
-					options={{
-						readOnly: true,
-						renderSideBySide: sideBySide,
-						minimap: { enabled: false },
-						fontSize: 13,
-						scrollBeyondLastLine: false,
-						automaticLayout: true,
-						padding: { top: 12 },
-					}}
-				/>
-			</div>
-		</div>
+		<Suspense
+			fallback={<Skeleton className="w-full rounded-lg" style={{ height }} />}
+		>
+			<ConfigDiffViewerImpl {...props} />
+		</Suspense>
 	);
 }

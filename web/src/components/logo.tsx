@@ -4,7 +4,7 @@ interface LogoProps extends React.SVGProps<SVGSVGElement> {
 	className?: string;
 }
 
-export function Logo({ className, ...props }: LogoProps) {
+export function Logo({ className, ...props }: Readonly<LogoProps>) {
 	return (
 		<svg
 			viewBox="0 0 512 512"

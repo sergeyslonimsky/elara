@@ -14,7 +14,10 @@ interface PathBreadcrumbProps {
 	path: string;
 }
 
-export function PathBreadcrumb({ namespace, path }: PathBreadcrumbProps) {
+export function PathBreadcrumb({
+	namespace,
+	path,
+}: Readonly<PathBreadcrumbProps>) {
 	const pathSegments = path.split("/").filter(Boolean);
 
 	// Build full breadcrumb segments: [namespace?, ...pathSegments]

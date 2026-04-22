@@ -34,3 +34,29 @@ export function protoFormatToLanguage(format: Format): string {
 			return "plaintext";
 	}
 }
+
+export function formatToString(f: Format): string {
+	switch (f) {
+		case Format.JSON:
+			return "json";
+		case Format.YAML:
+			return "yaml";
+		case Format.OTHER:
+			return "other";
+		default:
+			return "auto";
+	}
+}
+
+export function stringToProtoFormat(s: string): Format {
+	switch (s) {
+		case "json":
+			return Format.JSON;
+		case "yaml":
+			return Format.YAML;
+		case "other":
+			return Format.OTHER;
+		default:
+			return Format.UNSPECIFIED;
+	}
+}

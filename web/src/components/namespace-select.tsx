@@ -9,6 +9,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { listNamespaces } from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -18,20 +19,22 @@ interface NamespaceSelectProps {
 	onChange: (value: string) => void;
 }
 
-export function NamespaceSelect({ value, onChange }: NamespaceSelectProps) {
+export function NamespaceSelect({
+	value,
+	onChange,
+}: Readonly<NamespaceSelectProps>) {
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
-	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const debouncedSearch = useDebouncedValue(search, 200);
 	const [limit, setLimit] = useState(PAGE_SIZE);
 	const listRef = useRef<HTMLDivElement>(null);
 
+	// Reset pagination when the debounced query changes. `debouncedSearch` is
+	// intentionally the trigger even though it's not read inside the effect.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: trigger-only dep
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			setDebouncedSearch(search);
-			setLimit(PAGE_SIZE);
-		}, 200);
-		return () => clearTimeout(timer);
-	}, [search]);
+		setLimit(PAGE_SIZE);
+	}, [debouncedSearch]);
 
 	const { data, isFetching } = useQuery(listNamespaces, {
 		pagination: { limit, offset: 0 },
