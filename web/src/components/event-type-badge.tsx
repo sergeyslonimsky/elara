@@ -2,7 +2,7 @@ import { Lock, LockOpen, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EventType } from "@/gen/elara/config/v1/config_pb";
 
-export function EventTypeBadge({ type }: { type: EventType }) {
+export function EventTypeBadge({ type }: Readonly<{ type: EventType }>) {
 	switch (type) {
 		case EventType.CREATED:
 			return (

@@ -6,7 +6,7 @@ import { Area, AreaChart, ResponsiveContainer } from "recharts";
  * so `React.lazy` (in sparkline.tsx) can defer recharts until a sparkline is
  * actually rendered — saves ~200KB on pages that don't show one.
  */
-export function Sparkline({ data }: { data: number[] }) {
+export function Sparkline({ data }: Readonly<{ data: number[] }>) {
 	const uid = useId();
 	const series = data.map((v, i) => ({ i, v }));
 	return (

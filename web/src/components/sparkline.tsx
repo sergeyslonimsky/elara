@@ -8,7 +8,7 @@ const SparklineImpl = lazy(() =>
  * Sparkline defers loading of the recharts library until first render.
  * The fallback is a transparent placeholder that holds layout space.
  */
-export function Sparkline({ data }: { data: number[] }) {
+export function Sparkline({ data }: Readonly<{ data: number[] }>) {
 	return (
 		<Suspense fallback={<div className="h-full w-full" />}>
 			<SparklineImpl data={data} />
