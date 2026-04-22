@@ -141,6 +141,12 @@ function AlertDialogDescription({
   )
 }
 
+// AlertDialogAction is a plain Button — it does NOT wrap AlertDialogPrimitive.Close,
+// so clicking it does not auto-close the dialog (unlike AlertDialogCancel).
+// Any dialog that mutates server state and should close on success must be
+// controlled via `open` / `onOpenChange` and call `setOpen(false)` inside the
+// mutation's `onSuccess`. Leaving onError unhandled keeps the dialog open so
+// the user sees the failure toast in context.
 function AlertDialogAction({
   className,
   ...props

@@ -7,51 +7,34 @@ import {
 } from "@/gen/elara/config/v1/config_service-ConfigService_connectquery";
 import { listNamespaces } from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
 
-export const queryKeys = {
-	namespaces: () =>
-		createConnectQueryKey({
-			schema: listNamespaces,
-			cardinality: undefined,
-		}),
-	configs: () =>
-		createConnectQueryKey({
-			schema: listConfigs,
-			cardinality: undefined,
-		}),
-	config: () =>
-		createConnectQueryKey({
-			schema: getConfig,
-			cardinality: undefined,
-		}),
-	configHistory: () =>
-		createConnectQueryKey({
-			schema: getConfigHistory,
-			cardinality: undefined,
-		}),
-} as const;
-
 export type QueryClient = ReturnType<typeof useQueryClient>;
 
-export function invalidateNamespaces(queryClient: QueryClient) {
-	return queryClient.invalidateQueries({
-		queryKey: queryKeys.namespaces(),
-	});
+const queryKeys = {
+	namespaces: () =>
+		createConnectQueryKey({ schema: listNamespaces, cardinality: undefined }),
+	configs: () =>
+		createConnectQueryKey({ schema: listConfigs, cardinality: undefined }),
+	config: () =>
+		createConnectQueryKey({ schema: getConfig, cardinality: undefined }),
+	configHistory: () =>
+		createConnectQueryKey({ schema: getConfigHistory, cardinality: undefined }),
+} as const;
+
+type QueryKey = keyof typeof queryKeys;
+
+/** Invalidate one server-side cached query family. */
+export function invalidate(client: QueryClient, key: QueryKey) {
+	return client.invalidateQueries({ queryKey: queryKeys[key]() });
 }
 
-export function invalidateConfigs(queryClient: QueryClient) {
-	return queryClient.invalidateQueries({
-		queryKey: queryKeys.configs(),
-	});
-}
-
-export function invalidateConfig(queryClient: QueryClient) {
-	return queryClient.invalidateQueries({
-		queryKey: queryKeys.config(),
-	});
-}
-
-export function invalidateConfigHistory(queryClient: QueryClient) {
-	return queryClient.invalidateQueries({
-		queryKey: queryKeys.configHistory(),
-	});
+/**
+ * Invalidate every config-related query in one call — used by mutations that
+ * affect both the list and the detail views (lock/unlock, delete, restore).
+ */
+export function invalidateAllConfigData(client: QueryClient) {
+	return Promise.all([
+		invalidate(client, "configs"),
+		invalidate(client, "config"),
+		invalidate(client, "configHistory"),
+	]);
 }

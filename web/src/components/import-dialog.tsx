@@ -27,6 +27,7 @@ import {
 	type ImportError,
 } from "@/gen/elara/transfer/v1/transfer_pb";
 import { importNamespace } from "@/gen/elara/transfer/v1/transfer_service-TransferService_connectquery";
+import { toastError } from "@/lib/toast";
 
 interface PreviewRow {
 	path: string;
@@ -107,7 +108,7 @@ export function ImportDialog({ namespace }: ImportDialogProps) {
 					setPreview(rows);
 					setPreviewErrors(res.errors);
 				},
-				onError: (err) => toast.error(err.message),
+				onError: toastError,
 			},
 		);
 	};
@@ -138,7 +139,7 @@ export function ImportDialog({ namespace }: ImportDialogProps) {
 					setOpen(false);
 					resetState();
 				},
-				onError: (err) => toast.error(err.message),
+				onError: toastError,
 			},
 		);
 	};

@@ -7,8 +7,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
-const PAGE_SIZES = [10, 20, 50, 100];
+import { PAGE_SIZE_OPTIONS } from "@/lib/constants";
 
 interface PaginationControlsProps {
 	total: number;
@@ -76,7 +75,7 @@ export function PaginationControls({
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
-						{PAGE_SIZES.map((size) => (
+						{PAGE_SIZE_OPTIONS.map((size) => (
 							<SelectItem key={size} value={String(size)}>
 								{size}
 							</SelectItem>

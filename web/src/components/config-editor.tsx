@@ -1,5 +1,9 @@
-import Editor from "@monaco-editor/react";
-import { useResolvedTheme } from "@/components/theme-provider";
+import { lazy, Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const ConfigEditorImpl = lazy(() =>
+	import("./config-editor-impl").then((m) => ({ default: m.ConfigEditor })),
+);
 
 interface ConfigEditorProps {
 	value: string;
@@ -9,35 +13,13 @@ interface ConfigEditorProps {
 	height?: string;
 }
 
-export function ConfigEditor({
-	value,
-	onChange,
-	language = "plaintext",
-	readOnly = false,
-	height = "400px",
-}: ConfigEditorProps) {
-	const resolvedTheme = useResolvedTheme();
-
+export function ConfigEditor(props: ConfigEditorProps) {
+	const height = props.height ?? "400px";
 	return (
-		<div className="overflow-hidden rounded-lg border">
-			<Editor
-				height={height}
-				language={language}
-				theme={resolvedTheme === "dark" ? "vs-dark" : "vs"}
-				value={value}
-				onChange={(v) => onChange?.(v ?? "")}
-				options={{
-					readOnly,
-					minimap: { enabled: false },
-					fontSize: 13,
-					lineNumbers: "on",
-					scrollBeyondLastLine: false,
-					wordWrap: "on",
-					tabSize: 2,
-					automaticLayout: true,
-					padding: { top: 12 },
-				}}
-			/>
-		</div>
+		<Suspense
+			fallback={<Skeleton className="w-full rounded-lg" style={{ height }} />}
+		>
+			<ConfigEditorImpl {...props} />
+		</Suspense>
 	);
 }
