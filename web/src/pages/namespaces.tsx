@@ -201,11 +201,13 @@ function EditDialog({
 
 function LockButton({ name, locked }: { name: string; locked: boolean }) {
 	const queryClient = useQueryClient();
+	const [open, setOpen] = useState(false);
 
 	const lockMutation = useMutation(lockNamespace, {
 		onSuccess: () => {
 			toast.success(`Namespace "${name}" locked`);
 			void invalidateNamespaces(queryClient);
+			setOpen(false);
 		},
 		onError: (err) => toast.error(err.message),
 	});
@@ -214,6 +216,7 @@ function LockButton({ name, locked }: { name: string; locked: boolean }) {
 		onSuccess: () => {
 			toast.success(`Namespace "${name}" unlocked`);
 			void invalidateNamespaces(queryClient);
+			setOpen(false);
 		},
 		onError: (err) => toast.error(err.message),
 	});
@@ -221,7 +224,7 @@ function LockButton({ name, locked }: { name: string; locked: boolean }) {
 	const isPending = lockMutation.isPending || unlockMutation.isPending;
 
 	return (
-		<AlertDialog>
+		<AlertDialog open={open} onOpenChange={setOpen}>
 			<AlertDialogTrigger render={<Button variant="outline" size="sm" />}>
 				{locked ? (
 					<>
@@ -387,9 +390,9 @@ export function NamespacesPage() {
 										<DeleteButton name={ns.name} locked={ns.locked} />
 									</div>
 								</div>
-								{ns.description && (
-									<CardDescription>{ns.description}</CardDescription>
-								)}
+								<CardDescription className="min-h-[1.25rem]">
+									{ns.description}
+								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-2">
 								<Badge variant="secondary">

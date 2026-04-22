@@ -414,11 +414,14 @@ export function ConfigPage() {
 		onError: (err) => toast.error(err.message),
 	});
 
+	const [lockDialogOpen, setLockDialogOpen] = useState(false);
+
 	const lockMutation = useMutation(lockConfig, {
 		onSuccess: () => {
 			toast.success("Config locked");
 			void invalidateConfig(queryClient);
 			void invalidateConfigs(queryClient);
+			setLockDialogOpen(false);
 		},
 		onError: (err) => toast.error(err.message),
 	});
@@ -428,6 +431,7 @@ export function ConfigPage() {
 			toast.success("Config unlocked");
 			void invalidateConfig(queryClient);
 			void invalidateConfigs(queryClient);
+			setLockDialogOpen(false);
 		},
 		onError: (err) => toast.error(err.message),
 	});
@@ -525,7 +529,10 @@ export function ConfigPage() {
 								</Button>
 							)}
 							<CopyDialog sourcePath={path} sourceNamespace={namespace} />
-							<AlertDialog>
+							<AlertDialog
+								open={lockDialogOpen}
+								onOpenChange={setLockDialogOpen}
+							>
 								<AlertDialogTrigger
 									render={
 										<Button
