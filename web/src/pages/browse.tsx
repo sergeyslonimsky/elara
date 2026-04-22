@@ -25,7 +25,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { listConfigs } from "@/gen/elara/config/v1/config_service-ConfigService_connectquery";
 import type { Namespace } from "@/gen/elara/namespace/v1/namespace_pb";
-import { listNamespaces } from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
+import {
+	getNamespace,
+	listNamespaces,
+} from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
 import { useTableState } from "@/hooks/use-table-state";
 import { timeAgo, tsToMs } from "@/lib/time";
 
@@ -233,6 +236,13 @@ export function BrowsePage() {
 		{ enabled: !!namespace },
 	);
 
+	const { data: namespaceData } = useQuery(
+		getNamespace,
+		{ name: namespace ?? "" },
+		{ enabled: !!namespace },
+	);
+	const namespaceLocked = namespaceData?.namespace?.locked ?? false;
+
 	const total = data?.pagination?.total ?? 0;
 
 	if (!namespace) {
@@ -263,10 +273,21 @@ export function BrowsePage() {
 			<div className="flex flex-1 flex-col gap-4 p-4">
 				<div className="flex items-center justify-between">
 					<PathBreadcrumb namespace={namespace} path={path ?? "/"} />
-					<Button size="sm" render={<Link to={newConfigPath} />}>
-						<FilePlus className="mr-1 h-4 w-4" />
-						New Config
-					</Button>
+					{namespaceLocked ? (
+						<Button
+							size="sm"
+							disabled
+							title={`Namespace "${namespace}" is locked`}
+						>
+							<FilePlus className="mr-1 h-4 w-4" />
+							New Config
+						</Button>
+					) : (
+						<Button size="sm" render={<Link to={newConfigPath} />}>
+							<FilePlus className="mr-1 h-4 w-4" />
+							New Config
+						</Button>
+					)}
 				</div>
 
 				{error && <ErrorCard message={error.message} />}
@@ -278,6 +299,7 @@ export function BrowsePage() {
 					isLoading={isLoading}
 					sorting={sorting}
 					onSortingChange={setSorting}
+					namespaceLocked={namespaceLocked}
 				/>
 
 				<PaginationControls

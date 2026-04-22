@@ -29,6 +29,7 @@ type Namespace struct {
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ConfigCount   int32                  `protobuf:"varint,5,opt,name=config_count,json=configCount,proto3" json:"config_count,omitempty"`
+	Locked        bool                   `protobuf:"varint,6,opt,name=locked,proto3" json:"locked,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -98,11 +99,18 @@ func (x *Namespace) GetConfigCount() int32 {
 	return 0
 }
 
+func (x *Namespace) GetLocked() bool {
+	if x != nil {
+		return x.Locked
+	}
+	return false
+}
+
 var File_elara_namespace_v1_namespace_proto protoreflect.FileDescriptor
 
 const file_elara_namespace_v1_namespace_proto_rawDesc = "" +
 	"\n" +
-	"\"elara/namespace/v1/namespace.proto\x12\x12elara.namespace.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xda\x01\n" +
+	"\"elara/namespace/v1/namespace.proto\x12\x12elara.namespace.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf2\x01\n" +
 	"\tNamespace\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x129\n" +
@@ -110,7 +118,8 @@ const file_elara_namespace_v1_namespace_proto_rawDesc = "" +
 	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12!\n" +
-	"\fconfig_count\x18\x05 \x01(\x05R\vconfigCountB\xe4\x01\n" +
+	"\fconfig_count\x18\x05 \x01(\x05R\vconfigCount\x12\x16\n" +
+	"\x06locked\x18\x06 \x01(\bR\x06lockedB\xe4\x01\n" +
 	"\x16com.elara.namespace.v1B\x0eNamespaceProtoP\x01ZNgithub.com/sergeyslonimsky/elara/internal/proto/elara/namespace/v1;namespacev1\xa2\x02\x03ENX\xaa\x02\x12Elara.Namespace.V1\xca\x02\x13Elara\\Namespace_\\V1\xe2\x02\x1fElara\\Namespace_\\V1\\GPBMetadata\xea\x02\x14Elara::Namespace::V1b\x06proto3"
 
 var (

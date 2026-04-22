@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/namespace/v1/namespace_service.proto.
  */
 export const file_elara_namespace_v1_namespace_service: GenFile = /*@__PURE__*/
-  fileDesc("CiplbGFyYS9uYW1lc3BhY2UvdjEvbmFtZXNwYWNlX3NlcnZpY2UucHJvdG8SEmVsYXJhLm5hbWVzcGFjZS52MSJyChZDcmVhdGVOYW1lc3BhY2VSZXF1ZXN0EkMKBG5hbWUYASABKAlCNbpIMnIwEAEYgAEyKV5bYS16QS1aMC05XShbYS16QS1aMC05Xy1dKlthLXpBLVowLTldKT8kEhMKC2Rlc2NyaXB0aW9uGAIgASgJIksKF0NyZWF0ZU5hbWVzcGFjZVJlc3BvbnNlEjAKCW5hbWVzcGFjZRgBIAEoCzIdLmVsYXJhLm5hbWVzcGFjZS52MS5OYW1lc3BhY2UiKwoTR2V0TmFtZXNwYWNlUmVxdWVzdBIUCgRuYW1lGAEgASgJQga6SAPIAQEiSAoUR2V0TmFtZXNwYWNlUmVzcG9uc2USMAoJbmFtZXNwYWNlGAEgASgLMh0uZWxhcmEubmFtZXNwYWNlLnYxLk5hbWVzcGFjZSKKAQoVTGlzdE5hbWVzcGFjZXNSZXF1ZXN0EjYKCnBhZ2luYXRpb24YASABKAsyIi5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlcXVlc3QSKgoEc29ydBgCIAEoCzIcLmVsYXJhLmNvbW1vbi52MS5Tb3J0UmVxdWVzdBINCgVxdWVyeRgDIAEoCSKEAQoWTGlzdE5hbWVzcGFjZXNSZXNwb25zZRIxCgpuYW1lc3BhY2VzGAEgAygLMh0uZWxhcmEubmFtZXNwYWNlLnYxLk5hbWVzcGFjZRI3CgpwYWdpbmF0aW9uGAIgASgLMiMuZWxhcmEuY29tbW9uLnYxLlBhZ2luYXRpb25SZXNwb25zZSJDChZVcGRhdGVOYW1lc3BhY2VSZXF1ZXN0EhQKBG5hbWUYASABKAlCBrpIA8gBARITCgtkZXNjcmlwdGlvbhgCIAEoCSJLChdVcGRhdGVOYW1lc3BhY2VSZXNwb25zZRIwCgluYW1lc3BhY2UYASABKAsyHS5lbGFyYS5uYW1lc3BhY2UudjEuTmFtZXNwYWNlIi4KFkRlbGV0ZU5hbWVzcGFjZVJlcXVlc3QSFAoEbmFtZRgBIAEoCUIGukgDyAEBIhkKF0RlbGV0ZU5hbWVzcGFjZVJlc3BvbnNlMqIEChBOYW1lc3BhY2VTZXJ2aWNlEmoKD0NyZWF0ZU5hbWVzcGFjZRIqLmVsYXJhLm5hbWVzcGFjZS52MS5DcmVhdGVOYW1lc3BhY2VSZXF1ZXN0GisuZWxhcmEubmFtZXNwYWNlLnYxLkNyZWF0ZU5hbWVzcGFjZVJlc3BvbnNlEmEKDEdldE5hbWVzcGFjZRInLmVsYXJhLm5hbWVzcGFjZS52MS5HZXROYW1lc3BhY2VSZXF1ZXN0GiguZWxhcmEubmFtZXNwYWNlLnYxLkdldE5hbWVzcGFjZVJlc3BvbnNlEmoKD1VwZGF0ZU5hbWVzcGFjZRIqLmVsYXJhLm5hbWVzcGFjZS52MS5VcGRhdGVOYW1lc3BhY2VSZXF1ZXN0GisuZWxhcmEubmFtZXNwYWNlLnYxLlVwZGF0ZU5hbWVzcGFjZVJlc3BvbnNlEmcKDkxpc3ROYW1lc3BhY2VzEikuZWxhcmEubmFtZXNwYWNlLnYxLkxpc3ROYW1lc3BhY2VzUmVxdWVzdBoqLmVsYXJhLm5hbWVzcGFjZS52MS5MaXN0TmFtZXNwYWNlc1Jlc3BvbnNlEmoKD0RlbGV0ZU5hbWVzcGFjZRIqLmVsYXJhLm5hbWVzcGFjZS52MS5EZWxldGVOYW1lc3BhY2VSZXF1ZXN0GisuZWxhcmEubmFtZXNwYWNlLnYxLkRlbGV0ZU5hbWVzcGFjZVJlc3BvbnNlQusBChZjb20uZWxhcmEubmFtZXNwYWNlLnYxQhVOYW1lc3BhY2VTZXJ2aWNlUHJvdG9QAVpOZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvbmFtZXNwYWNlL3YxO25hbWVzcGFjZXYxogIDRU5YqgISRWxhcmEuTmFtZXNwYWNlLlYxygITRWxhcmFcTmFtZXNwYWNlX1xWMeICH0VsYXJhXE5hbWVzcGFjZV9cVjFcR1BCTWV0YWRhdGHqAhRFbGFyYTo6TmFtZXNwYWNlOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_elara_common_v1_common, file_elara_namespace_v1_namespace]);
+  fileDesc("CiplbGFyYS9uYW1lc3BhY2UvdjEvbmFtZXNwYWNlX3NlcnZpY2UucHJvdG8SEmVsYXJhLm5hbWVzcGFjZS52MSJyChZDcmVhdGVOYW1lc3BhY2VSZXF1ZXN0EkMKBG5hbWUYASABKAlCNbpIMnIwEAEYgAEyKV5bYS16QS1aMC05XShbYS16QS1aMC05Xy1dKlthLXpBLVowLTldKT8kEhMKC2Rlc2NyaXB0aW9uGAIgASgJIksKF0NyZWF0ZU5hbWVzcGFjZVJlc3BvbnNlEjAKCW5hbWVzcGFjZRgBIAEoCzIdLmVsYXJhLm5hbWVzcGFjZS52MS5OYW1lc3BhY2UiKwoTR2V0TmFtZXNwYWNlUmVxdWVzdBIUCgRuYW1lGAEgASgJQga6SAPIAQEiSAoUR2V0TmFtZXNwYWNlUmVzcG9uc2USMAoJbmFtZXNwYWNlGAEgASgLMh0uZWxhcmEubmFtZXNwYWNlLnYxLk5hbWVzcGFjZSKKAQoVTGlzdE5hbWVzcGFjZXNSZXF1ZXN0EjYKCnBhZ2luYXRpb24YASABKAsyIi5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlcXVlc3QSKgoEc29ydBgCIAEoCzIcLmVsYXJhLmNvbW1vbi52MS5Tb3J0UmVxdWVzdBINCgVxdWVyeRgDIAEoCSKEAQoWTGlzdE5hbWVzcGFjZXNSZXNwb25zZRIxCgpuYW1lc3BhY2VzGAEgAygLMh0uZWxhcmEubmFtZXNwYWNlLnYxLk5hbWVzcGFjZRI3CgpwYWdpbmF0aW9uGAIgASgLMiMuZWxhcmEuY29tbW9uLnYxLlBhZ2luYXRpb25SZXNwb25zZSJDChZVcGRhdGVOYW1lc3BhY2VSZXF1ZXN0EhQKBG5hbWUYASABKAlCBrpIA8gBARITCgtkZXNjcmlwdGlvbhgCIAEoCSJLChdVcGRhdGVOYW1lc3BhY2VSZXNwb25zZRIwCgluYW1lc3BhY2UYASABKAsyHS5lbGFyYS5uYW1lc3BhY2UudjEuTmFtZXNwYWNlIi4KFkRlbGV0ZU5hbWVzcGFjZVJlcXVlc3QSFAoEbmFtZRgBIAEoCUIGukgDyAEBIhkKF0RlbGV0ZU5hbWVzcGFjZVJlc3BvbnNlIiwKFExvY2tOYW1lc3BhY2VSZXF1ZXN0EhQKBG5hbWUYASABKAlCBrpIA8gBASIXChVMb2NrTmFtZXNwYWNlUmVzcG9uc2UiLgoWVW5sb2NrTmFtZXNwYWNlUmVxdWVzdBIUCgRuYW1lGAEgASgJQga6SAPIAQEiGQoXVW5sb2NrTmFtZXNwYWNlUmVzcG9uc2Uy9AUKEE5hbWVzcGFjZVNlcnZpY2USagoPQ3JlYXRlTmFtZXNwYWNlEiouZWxhcmEubmFtZXNwYWNlLnYxLkNyZWF0ZU5hbWVzcGFjZVJlcXVlc3QaKy5lbGFyYS5uYW1lc3BhY2UudjEuQ3JlYXRlTmFtZXNwYWNlUmVzcG9uc2USYQoMR2V0TmFtZXNwYWNlEicuZWxhcmEubmFtZXNwYWNlLnYxLkdldE5hbWVzcGFjZVJlcXVlc3QaKC5lbGFyYS5uYW1lc3BhY2UudjEuR2V0TmFtZXNwYWNlUmVzcG9uc2USagoPVXBkYXRlTmFtZXNwYWNlEiouZWxhcmEubmFtZXNwYWNlLnYxLlVwZGF0ZU5hbWVzcGFjZVJlcXVlc3QaKy5lbGFyYS5uYW1lc3BhY2UudjEuVXBkYXRlTmFtZXNwYWNlUmVzcG9uc2USZwoOTGlzdE5hbWVzcGFjZXMSKS5lbGFyYS5uYW1lc3BhY2UudjEuTGlzdE5hbWVzcGFjZXNSZXF1ZXN0GiouZWxhcmEubmFtZXNwYWNlLnYxLkxpc3ROYW1lc3BhY2VzUmVzcG9uc2USagoPRGVsZXRlTmFtZXNwYWNlEiouZWxhcmEubmFtZXNwYWNlLnYxLkRlbGV0ZU5hbWVzcGFjZVJlcXVlc3QaKy5lbGFyYS5uYW1lc3BhY2UudjEuRGVsZXRlTmFtZXNwYWNlUmVzcG9uc2USZAoNTG9ja05hbWVzcGFjZRIoLmVsYXJhLm5hbWVzcGFjZS52MS5Mb2NrTmFtZXNwYWNlUmVxdWVzdBopLmVsYXJhLm5hbWVzcGFjZS52MS5Mb2NrTmFtZXNwYWNlUmVzcG9uc2USagoPVW5sb2NrTmFtZXNwYWNlEiouZWxhcmEubmFtZXNwYWNlLnYxLlVubG9ja05hbWVzcGFjZVJlcXVlc3QaKy5lbGFyYS5uYW1lc3BhY2UudjEuVW5sb2NrTmFtZXNwYWNlUmVzcG9uc2VC6wEKFmNvbS5lbGFyYS5uYW1lc3BhY2UudjFCFU5hbWVzcGFjZVNlcnZpY2VQcm90b1ABWk5naXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9uYW1lc3BhY2UvdjE7bmFtZXNwYWNldjGiAgNFTliqAhJFbGFyYS5OYW1lc3BhY2UuVjHKAhNFbGFyYVxOYW1lc3BhY2VfXFYx4gIfRWxhcmFcTmFtZXNwYWNlX1xWMVxHUEJNZXRhZGF0YeoCFEVsYXJhOjpOYW1lc3BhY2U6OlYxYgZwcm90bzM", [file_buf_validate_validate, file_elara_common_v1_common, file_elara_namespace_v1_namespace]);
 
 /**
  * @generated from message elara.namespace.v1.CreateNamespaceRequest
@@ -211,6 +211,66 @@ export const DeleteNamespaceResponseSchema: GenMessage<DeleteNamespaceResponse> 
   messageDesc(file_elara_namespace_v1_namespace_service, 9);
 
 /**
+ * @generated from message elara.namespace.v1.LockNamespaceRequest
+ */
+export type LockNamespaceRequest = Message<"elara.namespace.v1.LockNamespaceRequest"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message elara.namespace.v1.LockNamespaceRequest.
+ * Use `create(LockNamespaceRequestSchema)` to create a new message.
+ */
+export const LockNamespaceRequestSchema: GenMessage<LockNamespaceRequest> = /*@__PURE__*/
+  messageDesc(file_elara_namespace_v1_namespace_service, 10);
+
+/**
+ * @generated from message elara.namespace.v1.LockNamespaceResponse
+ */
+export type LockNamespaceResponse = Message<"elara.namespace.v1.LockNamespaceResponse"> & {
+};
+
+/**
+ * Describes the message elara.namespace.v1.LockNamespaceResponse.
+ * Use `create(LockNamespaceResponseSchema)` to create a new message.
+ */
+export const LockNamespaceResponseSchema: GenMessage<LockNamespaceResponse> = /*@__PURE__*/
+  messageDesc(file_elara_namespace_v1_namespace_service, 11);
+
+/**
+ * @generated from message elara.namespace.v1.UnlockNamespaceRequest
+ */
+export type UnlockNamespaceRequest = Message<"elara.namespace.v1.UnlockNamespaceRequest"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message elara.namespace.v1.UnlockNamespaceRequest.
+ * Use `create(UnlockNamespaceRequestSchema)` to create a new message.
+ */
+export const UnlockNamespaceRequestSchema: GenMessage<UnlockNamespaceRequest> = /*@__PURE__*/
+  messageDesc(file_elara_namespace_v1_namespace_service, 12);
+
+/**
+ * @generated from message elara.namespace.v1.UnlockNamespaceResponse
+ */
+export type UnlockNamespaceResponse = Message<"elara.namespace.v1.UnlockNamespaceResponse"> & {
+};
+
+/**
+ * Describes the message elara.namespace.v1.UnlockNamespaceResponse.
+ * Use `create(UnlockNamespaceResponseSchema)` to create a new message.
+ */
+export const UnlockNamespaceResponseSchema: GenMessage<UnlockNamespaceResponse> = /*@__PURE__*/
+  messageDesc(file_elara_namespace_v1_namespace_service, 13);
+
+/**
  * @generated from service elara.namespace.v1.NamespaceService
  */
 export const NamespaceService: GenService<{
@@ -253,6 +313,22 @@ export const NamespaceService: GenService<{
     methodKind: "unary";
     input: typeof DeleteNamespaceRequestSchema;
     output: typeof DeleteNamespaceResponseSchema;
+  },
+  /**
+   * @generated from rpc elara.namespace.v1.NamespaceService.LockNamespace
+   */
+  lockNamespace: {
+    methodKind: "unary";
+    input: typeof LockNamespaceRequestSchema;
+    output: typeof LockNamespaceResponseSchema;
+  },
+  /**
+   * @generated from rpc elara.namespace.v1.NamespaceService.UnlockNamespace
+   */
+  unlockNamespace: {
+    methodKind: "unary";
+    input: typeof UnlockNamespaceRequestSchema;
+    output: typeof UnlockNamespaceResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_elara_namespace_v1_namespace_service, 0);

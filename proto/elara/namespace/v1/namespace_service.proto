@@ -12,6 +12,8 @@ service NamespaceService {
   rpc UpdateNamespace(UpdateNamespaceRequest) returns (UpdateNamespaceResponse);
   rpc ListNamespaces(ListNamespacesRequest) returns (ListNamespacesResponse);
   rpc DeleteNamespace(DeleteNamespaceRequest) returns (DeleteNamespaceResponse);
+  rpc LockNamespace(LockNamespaceRequest) returns (LockNamespaceResponse);
+  rpc UnlockNamespace(UnlockNamespaceRequest) returns (UnlockNamespaceResponse);
 }
 
 message CreateNamespaceRequest {
@@ -60,3 +62,15 @@ message DeleteNamespaceRequest {
 }
 
 message DeleteNamespaceResponse {}
+
+message LockNamespaceRequest {
+  string name = 1 [(buf.validate.field).required = true];
+}
+
+message LockNamespaceResponse {}
+
+message UnlockNamespaceRequest {
+  string name = 1 [(buf.validate.field).required = true];
+}
+
+message UnlockNamespaceResponse {}

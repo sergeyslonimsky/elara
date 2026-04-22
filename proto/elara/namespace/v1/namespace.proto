@@ -10,4 +10,5 @@ message Namespace {
   google.protobuf.Timestamp created_at = 3;
   google.protobuf.Timestamp updated_at = 4;
   int32 config_count = 5;
+  bool locked = 6;
 }

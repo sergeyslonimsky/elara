@@ -1,6 +1,6 @@
 import { useMutation } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
-import { Database, Pencil, Plus, Trash2 } from "lucide-react";
+import { Database, Lock, LockOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -51,6 +51,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
 	createNamespace,
 	deleteNamespace,
+	lockNamespace,
+	unlockNamespace,
 	updateNamespace,
 } from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
 import { useNamespaces } from "@/hooks/use-namespaces";
@@ -122,15 +124,16 @@ function CreateDialog() {
 function EditDialog({
 	name,
 	currentDescription,
+	locked,
 }: {
 	name: string;
 	currentDescription: string;
+	locked: boolean;
 }) {
 	const [open, setOpen] = useState(false);
 	const [description, setDescription] = useState(currentDescription);
 	const queryClient = useQueryClient();
 
-	// Reset description when dialog opens with fresh props.
 	const handleOpenChange = (isOpen: boolean) => {
 		if (isOpen) setDescription(currentDescription);
 		setOpen(isOpen);
@@ -147,7 +150,16 @@ function EditDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger render={<Button variant="ghost" size="icon-xs" />}>
+			<DialogTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon-xs"
+						disabled={locked ? true : undefined}
+						title={locked ? `Namespace "${name}" is locked` : undefined}
+					/>
+				}
+			>
 				<Pencil className="h-3.5 w-3.5" />
 			</DialogTrigger>
 			<DialogContent>
@@ -170,6 +182,13 @@ function EditDialog({
 						</Field>
 					</div>
 					<DialogFooter>
+						<Button
+							variant="outline"
+							type="button"
+							onClick={() => setOpen(false)}
+						>
+							Discard
+						</Button>
 						<Button type="submit" disabled={mutation.isPending}>
 							{mutation.isPending ? "Saving..." : "Save"}
 						</Button>
@@ -180,7 +199,83 @@ function EditDialog({
 	);
 }
 
-function DeleteButton({ name }: { name: string }) {
+function LockButton({ name, locked }: { name: string; locked: boolean }) {
+	const queryClient = useQueryClient();
+	const [open, setOpen] = useState(false);
+
+	const lockMutation = useMutation(lockNamespace, {
+		onSuccess: () => {
+			toast.success(`Namespace "${name}" locked`);
+			void invalidateNamespaces(queryClient);
+			setOpen(false);
+		},
+		onError: (err) => toast.error(err.message),
+	});
+
+	const unlockMutation = useMutation(unlockNamespace, {
+		onSuccess: () => {
+			toast.success(`Namespace "${name}" unlocked`);
+			void invalidateNamespaces(queryClient);
+			setOpen(false);
+		},
+		onError: (err) => toast.error(err.message),
+	});
+
+	const isPending = lockMutation.isPending || unlockMutation.isPending;
+
+	return (
+		<AlertDialog open={open} onOpenChange={setOpen}>
+			<AlertDialogTrigger render={<Button variant="outline" size="sm" />}>
+				{locked ? (
+					<>
+						<LockOpen className="mr-1 h-3.5 w-3.5" />
+						Unlock
+					</>
+				) : (
+					<>
+						<Lock className="mr-1 h-3.5 w-3.5" />
+						Lock
+					</>
+				)}
+			</AlertDialogTrigger>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>
+						{locked
+							? `Unlock namespace "${name}"?`
+							: `Lock namespace "${name}"?`}
+					</AlertDialogTitle>
+					<AlertDialogDescription>
+						{locked
+							? "Unlocking restores all operations on this namespace and its configs."
+							: "While locked, this namespace cannot be edited or deleted, and its configs cannot be created, updated, deleted, locked, or unlocked."}
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel>Cancel</AlertDialogCancel>
+					<AlertDialogAction
+						disabled={isPending}
+						onClick={() =>
+							locked
+								? unlockMutation.mutate({ name })
+								: lockMutation.mutate({ name })
+						}
+					>
+						{locked
+							? unlockMutation.isPending
+								? "Unlocking..."
+								: "Unlock"
+							: lockMutation.isPending
+								? "Locking..."
+								: "Lock"}
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
+	);
+}
+
+function DeleteButton({ name, locked }: { name: string; locked: boolean }) {
 	const queryClient = useQueryClient();
 
 	const mutation = useMutation(deleteNamespace, {
@@ -193,7 +288,16 @@ function DeleteButton({ name }: { name: string }) {
 
 	return (
 		<AlertDialog>
-			<AlertDialogTrigger render={<Button variant="ghost" size="icon-xs" />}>
+			<AlertDialogTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon-xs"
+						disabled={locked ? true : undefined}
+						title={locked ? `Namespace "${name}" is locked` : undefined}
+					/>
+				}
+			>
 				<Trash2 className="h-3.5 w-3.5 text-destructive" />
 			</AlertDialogTrigger>
 			<AlertDialogContent>
@@ -268,33 +372,37 @@ export function NamespacesPage() {
 					{data?.namespaces.map((ns) => (
 						<Card key={ns.name} className="rounded-xl">
 							<CardHeader className="pb-2">
-								<div className="flex items-start justify-between">
+								<div className="flex items-center justify-between">
 									<Link
 										to={`/browse/${ns.name}`}
 										className="flex items-center gap-2 hover:underline"
 									>
 										<Database className="h-4 w-4 text-muted-foreground" />
 										<CardTitle className="text-base">{ns.name}</CardTitle>
+										{ns.locked && <Lock className="h-3 w-3 text-amber-500" />}
 									</Link>
 									<div className="flex gap-1">
-										<ExportDialog namespace={ns.name} />
-										<ImportDialog namespace={ns.name} />
 										<EditDialog
 											name={ns.name}
 											currentDescription={ns.description}
+											locked={ns.locked}
 										/>
-										{ns.name !== "default" && <DeleteButton name={ns.name} />}
+										<DeleteButton name={ns.name} locked={ns.locked} />
 									</div>
 								</div>
-								{ns.description && (
-									<CardDescription>{ns.description}</CardDescription>
-								)}
+								<CardDescription className="min-h-[1.25rem]">
+									{ns.description}
+								</CardDescription>
 							</CardHeader>
-							<CardContent>
+							<CardContent className="space-y-2">
 								<Badge variant="secondary">
-									{ns.configCount} config
-									{ns.configCount !== 1 ? "s" : ""}
+									{ns.configCount} config{ns.configCount !== 1 ? "s" : ""}
 								</Badge>
+								<div className="flex flex-wrap gap-2">
+									<ExportDialog namespace={ns.name} />
+									<ImportDialog namespace={ns.name} />
+									<LockButton name={ns.name} locked={ns.locked} />
+								</div>
 							</CardContent>
 						</Card>
 					))}

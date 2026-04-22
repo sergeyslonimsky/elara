@@ -112,6 +112,10 @@ func (r *NamespaceRepo) Update(_ context.Context, ns *domain.Namespace) error {
 			return fmt.Errorf("unmarshal namespace: %w", err)
 		}
 
+		if existing.Locked {
+			return fmt.Errorf("namespace %q: %w", ns.Name, domain.ErrNamespaceLocked)
+		}
+
 		existing.Description = ns.Description
 		existing.UpdatedAt = time.Now()
 
@@ -139,9 +143,19 @@ func (r *NamespaceRepo) Update(_ context.Context, ns *domain.Namespace) error {
 func (r *NamespaceRepo) Delete(_ context.Context, name string) error {
 	err := r.store.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketNamespaces))
+		data := b.Get([]byte(name))
 
-		if b.Get([]byte(name)) == nil {
+		if data == nil {
 			return domain.NewNotFoundError("namespace", name)
+		}
+
+		var m namespaceMeta
+		if err := json.Unmarshal(data, &m); err != nil {
+			return fmt.Errorf("unmarshal namespace: %w", err)
+		}
+
+		if m.Locked {
+			return fmt.Errorf("namespace %q: %w", name, domain.ErrNamespaceLocked)
 		}
 
 		return b.Delete([]byte(name))
@@ -172,6 +186,82 @@ func (r *NamespaceRepo) CountConfigs(_ context.Context, name string) (int, error
 	}
 
 	return count, nil
+}
+
+func (r *NamespaceRepo) LockNamespace(_ context.Context, name string) error {
+	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucketNamespaces))
+		data := b.Get([]byte(name))
+
+		if data == nil {
+			return domain.NewNotFoundError("namespace", name)
+		}
+
+		var m namespaceMeta
+		if err := json.Unmarshal(data, &m); err != nil {
+			return fmt.Errorf("unmarshal namespace: %w", err)
+		}
+
+		if m.Locked {
+			return nil
+		}
+
+		m.Locked = true
+
+		newData, err := json.Marshal(&m)
+		if err != nil {
+			return fmt.Errorf("marshal namespace: %w", err)
+		}
+
+		if err := b.Put([]byte(name), newData); err != nil {
+			return fmt.Errorf("put namespace: %w", err)
+		}
+
+		return writeLockHistory(tx, name, "", domain.EventTypeNamespaceLocked)
+	})
+	if err != nil {
+		return fmt.Errorf("lock namespace: %w", err)
+	}
+
+	return nil
+}
+
+func (r *NamespaceRepo) UnlockNamespace(_ context.Context, name string) error {
+	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucketNamespaces))
+		data := b.Get([]byte(name))
+
+		if data == nil {
+			return domain.NewNotFoundError("namespace", name)
+		}
+
+		var m namespaceMeta
+		if err := json.Unmarshal(data, &m); err != nil {
+			return fmt.Errorf("unmarshal namespace: %w", err)
+		}
+
+		if !m.Locked {
+			return nil
+		}
+
+		m.Locked = false
+
+		newData, err := json.Marshal(&m)
+		if err != nil {
+			return fmt.Errorf("marshal namespace: %w", err)
+		}
+
+		if err := b.Put([]byte(name), newData); err != nil {
+			return fmt.Errorf("put namespace: %w", err)
+		}
+
+		return writeLockHistory(tx, name, "", domain.EventTypeNamespaceUnlocked)
+	})
+	if err != nil {
+		return fmt.Errorf("unlock namespace: %w", err)
+	}
+
+	return nil
 }
 
 func (r *NamespaceRepo) UpdateTimestamp(_ context.Context, name string) error {

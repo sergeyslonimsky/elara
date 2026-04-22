@@ -10,9 +10,9 @@ import (
 //
 // Examples:
 //
-//	/default/foo.json          → namespace="default", path="/foo.json"
+//	/prod/foo.json             → namespace="prod",    path="/foo.json"
 //	/prod/services/api.yaml    → namespace="prod",    path="/services/api.yaml"
-//	/default                   → namespace="default", path="/"          (namespace prefix, no config path)
+//	/prod                      → namespace="prod",    path="/"          (namespace prefix, no config path)
 //	foo                        → ok=false (missing leading /)
 func SplitKey(etcdKey []byte) (string, string, bool) {
 	if len(etcdKey) == 0 || etcdKey[0] != '/' {

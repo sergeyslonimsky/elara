@@ -62,7 +62,8 @@ function stringToProtoFormat(s: string): Format {
 }
 
 export function ConfigFormPage() {
-	const { namespace = "default", "*": splat = "" } = useParams();
+	const { namespace: namespaceParam, "*": splat = "" } = useParams();
+	const namespace = namespaceParam ?? "";
 	const currentPath = splat ? `/${splat}` : "/";
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();

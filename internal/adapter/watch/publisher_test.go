@@ -270,3 +270,61 @@ func TestPublisher_BufferFull_DropsWithoutBlocking(t *testing.T) {
 		t.Fatal("publisher blocked when buffer was full — events should be dropped instead")
 	}
 }
+
+func TestPublisher_NotifyConfigLocked_DeliversLockedEvent(t *testing.T) {
+	t.Parallel()
+
+	p := watchadapter.NewPublisher()
+	defer p.Shutdown()
+
+	ctx := context.Background()
+	events, cleanup := p.Subscribe(ctx, "", "prod")
+	defer cleanup()
+
+	cfg := &domain.Config{Path: "/a.json", Namespace: "prod", Locked: true, Revision: 7}
+	p.NotifyConfigLocked(ctx, cfg)
+
+	ev, ok := recvEvent(t, events)
+	require.True(t, ok)
+	assert.Equal(t, domain.EventTypeLocked, ev.Type)
+	assert.Equal(t, "/a.json", ev.Path)
+	require.NotNil(t, ev.Config)
+	assert.True(t, ev.Config.Locked)
+}
+
+func TestPublisher_NotifyNamespaceLocked_DeliveredToPathFilteredSubscribers(t *testing.T) {
+	t.Parallel()
+
+	p := watchadapter.NewPublisher()
+	defer p.Shutdown()
+
+	ctx := context.Background()
+
+	// Subscriber with a narrow path prefix — would normally not match namespace
+	// events (path == ""), but the publisher special-cases namespace-level events.
+	events, cleanup := p.Subscribe(ctx, "/services/", "prod")
+	defer cleanup()
+
+	p.NotifyNamespaceLocked(ctx, "prod")
+
+	ev, ok := recvEvent(t, events)
+	require.True(t, ok)
+	assert.Equal(t, domain.EventTypeNamespaceLocked, ev.Type)
+	assert.Equal(t, "prod", ev.Namespace)
+	assert.Empty(t, ev.Path)
+}
+
+func TestPublisher_NotifyNamespaceLocked_FiltersOtherNamespaces(t *testing.T) {
+	t.Parallel()
+
+	p := watchadapter.NewPublisher()
+	defer p.Shutdown()
+
+	ctx := context.Background()
+	events, cleanup := p.Subscribe(ctx, "", "staging")
+	defer cleanup()
+
+	p.NotifyNamespaceLocked(ctx, "prod")
+
+	assertNoEventWithin(t, events)
+}

@@ -20,12 +20,16 @@ type UseCases struct {
 	ValidateConfig *configuc.ValidateUseCase
 	WatchConfigs   *configuc.WatchUseCase
 	ConfigDiff     *configuc.DiffUseCase
+	LockConfig     *configuc.LockUseCase
+	UnlockConfig   *configuc.UnlockUseCase
 
 	CreateNamespace *nsuc.CreateUseCase
 	GetNamespace    *nsuc.GetUseCase
 	UpdateNamespace *nsuc.UpdateUseCase
 	ListNamespaces  *nsuc.ListUseCase
 	DeleteNamespace *nsuc.DeleteUseCase
+	LockNamespace   *nsuc.LockUseCase
+	UnlockNamespace *nsuc.UnlockUseCase
 
 	Clients   *clientsuc.UseCase
 	Dashboard *dashboarduc.UseCase
@@ -48,12 +52,16 @@ func NewUseCases(a *Adapters) *UseCases {
 		ValidateConfig: configuc.NewValidateUseCase(),
 		WatchConfigs:   configuc.NewWatchUseCase(a.Watch),
 		ConfigDiff:     configuc.NewDiffUseCase(a.ConfigRepo),
+		LockConfig:     configuc.NewLockUseCase(a.ConfigRepo, a.Watch),
+		UnlockConfig:   configuc.NewUnlockUseCase(a.ConfigRepo, a.Watch),
 
 		CreateNamespace: nsuc.NewCreateUseCase(a.NamespaceRepo, a.NamespaceRepo),
 		GetNamespace:    nsuc.NewGetUseCase(a.NamespaceRepo, a.NamespaceRepo),
 		UpdateNamespace: nsuc.NewUpdateUseCase(a.NamespaceRepo, a.NamespaceRepo, a.NamespaceRepo),
 		ListNamespaces:  nsuc.NewListUseCase(a.NamespaceRepo, a.NamespaceRepo),
 		DeleteNamespace: nsuc.NewDeleteUseCase(a.NamespaceRepo, a.NamespaceRepo),
+		LockNamespace:   nsuc.NewLockUseCase(a.NamespaceRepo, a.Watch),
+		UnlockNamespace: nsuc.NewUnlockUseCase(a.NamespaceRepo, a.Watch),
 
 		ExportNamespace: transferuc.NewExportNamespaceUseCase(a.ConfigRepo, a.NamespaceRepo),
 		ExportAll:       transferuc.NewExportAllUseCase(a.ConfigRepo, a.NamespaceRepo),

@@ -6,6 +6,8 @@ import {
 	Clock,
 	Copy,
 	GitCompare,
+	Lock,
+	LockOpen,
 	Pencil,
 	Trash2,
 } from "lucide-react";
@@ -59,6 +61,8 @@ import {
 	getConfig,
 	getConfigDiff,
 	getConfigHistory,
+	lockConfig,
+	unlockConfig,
 	updateConfig,
 } from "@/gen/elara/config/v1/config_service-ConfigService_connectquery";
 import { formatLabel, protoFormatToLanguage } from "@/lib/format";
@@ -76,9 +80,26 @@ function eventTypeLabel(t: EventType): string {
 			return "Updated";
 		case EventType.DELETED:
 			return "Deleted";
+		case EventType.LOCKED:
+			return "Locked";
+		case EventType.UNLOCKED:
+			return "Unlocked";
+		case EventType.NAMESPACE_LOCKED:
+			return "Namespace locked";
+		case EventType.NAMESPACE_UNLOCKED:
+			return "Namespace unlocked";
 		default:
 			return "Unknown";
 	}
+}
+
+function isLockEvent(t: EventType): boolean {
+	return (
+		t === EventType.LOCKED ||
+		t === EventType.UNLOCKED ||
+		t === EventType.NAMESPACE_LOCKED ||
+		t === EventType.NAMESPACE_UNLOCKED
+	);
 }
 
 function CopyDialog({
@@ -210,7 +231,9 @@ function ComparePanel({
 	const [compareTo, setCompareTo] = useState<string>("");
 
 	const { entriesAsc, entriesDesc } = useMemo(() => {
-		const asc = [...entries].sort((a, b) => Number(a.revision - b.revision));
+		// Lock events carry no revision/content — exclude them from diff picker.
+		const content = entries.filter((e) => !isLockEvent(e.eventType));
+		const asc = [...content].sort((a, b) => Number(a.revision - b.revision));
 		return { entriesAsc: asc, entriesDesc: [...asc].reverse() };
 	}, [entries]);
 
@@ -362,7 +385,8 @@ function ComparePanel({
 }
 
 export function ConfigPage() {
-	const { namespace = "default", "*": splat = "" } = useParams();
+	const { namespace: namespaceParam, "*": splat = "" } = useParams();
+	const namespace = namespaceParam ?? "";
 	const path = `/${splat}`;
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -390,6 +414,28 @@ export function ConfigPage() {
 		onError: (err) => toast.error(err.message),
 	});
 
+	const [lockDialogOpen, setLockDialogOpen] = useState(false);
+
+	const lockMutation = useMutation(lockConfig, {
+		onSuccess: () => {
+			toast.success("Config locked");
+			void invalidateConfig(queryClient);
+			void invalidateConfigs(queryClient);
+			setLockDialogOpen(false);
+		},
+		onError: (err) => toast.error(err.message),
+	});
+
+	const unlockMutation = useMutation(unlockConfig, {
+		onSuccess: () => {
+			toast.success("Config unlocked");
+			void invalidateConfig(queryClient);
+			void invalidateConfigs(queryClient);
+			setLockDialogOpen(false);
+		},
+		onError: (err) => toast.error(err.message),
+	});
+
 	const [expandedRevision, setExpandedRevision] = useState<bigint | null>(null);
 	const [compareMode, setCompareMode] = useState(false);
 
@@ -397,6 +443,10 @@ export function ConfigPage() {
 	const language = data?.config
 		? protoFormatToLanguage(data.config.format)
 		: "plaintext";
+
+	const configLocked = data?.config?.locked ?? false;
+	const namespaceLocked = data?.config?.namespaceLocked ?? false;
+	const effectiveLocked = configLocked || namespaceLocked;
 
 	return (
 		<>
@@ -431,6 +481,20 @@ export function ConfigPage() {
 								{formatLabel(data.config.format)}
 							</Badge>
 							<Badge variant="outline">v{data.config.version}</Badge>
+							{effectiveLocked && (
+								<Badge
+									variant="outline"
+									className="gap-1 text-amber-600 border-amber-400"
+									title={
+										namespaceLocked
+											? `Namespace "${namespace}" is locked`
+											: "Config is locked"
+									}
+								>
+									<Lock className="h-3 w-3" />
+									{namespaceLocked ? "Namespace locked" : "Locked"}
+								</Badge>
+							)}
 							<span className="text-muted-foreground text-xs">
 								rev {data.config.revision}
 							</span>
@@ -449,18 +513,93 @@ export function ConfigPage() {
 						</div>
 
 						<div className="flex flex-wrap gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								render={<Link to={`/config/edit/${namespace}${path}`} />}
-							>
-								<Pencil className="mr-1 h-4 w-4" />
-								Edit
-							</Button>
+							{effectiveLocked ? (
+								<Button variant="outline" size="sm" disabled>
+									<Pencil className="mr-1 h-4 w-4" />
+									Edit
+								</Button>
+							) : (
+								<Button
+									variant="outline"
+									size="sm"
+									render={<Link to={`/config/edit/${namespace}${path}`} />}
+								>
+									<Pencil className="mr-1 h-4 w-4" />
+									Edit
+								</Button>
+							)}
 							<CopyDialog sourcePath={path} sourceNamespace={namespace} />
+							<AlertDialog
+								open={lockDialogOpen}
+								onOpenChange={setLockDialogOpen}
+							>
+								<AlertDialogTrigger
+									render={
+										<Button
+											variant="outline"
+											size="sm"
+											disabled={namespaceLocked ? true : undefined}
+											title={
+												namespaceLocked ? "Namespace is locked" : undefined
+											}
+										/>
+									}
+								>
+									{configLocked ? (
+										<>
+											<LockOpen className="mr-1 h-4 w-4" />
+											Unlock
+										</>
+									) : (
+										<>
+											<Lock className="mr-1 h-4 w-4" />
+											Lock
+										</>
+									)}
+								</AlertDialogTrigger>
+								<AlertDialogContent>
+									<AlertDialogHeader>
+										<AlertDialogTitle>
+											{configLocked ? "Unlock config?" : "Lock config?"}
+										</AlertDialogTitle>
+										<AlertDialogDescription>
+											{configLocked
+												? "Unlocking will allow this config to be updated or deleted."
+												: "Locking will prevent this config from being updated or deleted until unlocked."}
+										</AlertDialogDescription>
+									</AlertDialogHeader>
+									<AlertDialogFooter>
+										<AlertDialogCancel>Cancel</AlertDialogCancel>
+										<AlertDialogAction
+											disabled={
+												lockMutation.isPending || unlockMutation.isPending
+											}
+											onClick={() =>
+												configLocked
+													? unlockMutation.mutate({ path, namespace })
+													: lockMutation.mutate({ path, namespace })
+											}
+										>
+											{configLocked
+												? unlockMutation.isPending
+													? "Unlocking..."
+													: "Unlock"
+												: lockMutation.isPending
+													? "Locking..."
+													: "Lock"}
+										</AlertDialogAction>
+									</AlertDialogFooter>
+								</AlertDialogContent>
+							</AlertDialog>
 							<AlertDialog>
 								<AlertDialogTrigger
-									render={<Button variant="destructive" size="sm" />}
+									render={
+										<Button
+											variant="destructive"
+											size="sm"
+											disabled={effectiveLocked ? true : undefined}
+										/>
+									}
 								>
 									<Trash2 className="mr-1 h-4 w-4" />
 									Delete
@@ -569,12 +708,45 @@ export function ConfigPage() {
 										) : (
 											<div className="space-y-3">
 												{entries.map((entry, idx) => {
+													if (isLockEvent(entry.eventType)) {
+														const ts = entry.timestamp
+															? Number(timestampDate(entry.timestamp))
+															: 0;
+														return (
+															<div
+																key={`lock-${entry.eventType}-${ts}`}
+																className="flex items-start gap-3 rounded-lg border p-3"
+															>
+																<Badge
+																	variant="outline"
+																	className="mt-0.5 shrink-0 gap-1 border-amber-400 text-amber-600"
+																>
+																	<Lock className="h-3 w-3" />
+																	{eventTypeLabel(entry.eventType)}
+																</Badge>
+																<div className="min-w-0 flex-1">
+																	{entry.timestamp && (
+																		<span className="text-muted-foreground text-xs">
+																			{timestampDate(
+																				entry.timestamp,
+																			).toLocaleString()}
+																		</span>
+																	)}
+																</div>
+															</div>
+														);
+													}
+
 													const isExpanded =
 														expandedRevision === entry.revision;
-													const prevEntry = entries[idx + 1];
-													const fromRevision = prevEntry
-														? prevEntry.revision
-														: 0n;
+													// Walk forward to find the previous *content* entry for diff base.
+													let fromRevision = 0n;
+													for (let j = idx + 1; j < entries.length; j++) {
+														if (!isLockEvent(entries[j].eventType)) {
+															fromRevision = entries[j].revision;
+															break;
+														}
+													}
 
 													return (
 														<div key={entry.revision}>

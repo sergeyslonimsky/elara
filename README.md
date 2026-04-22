@@ -103,17 +103,46 @@ export ETCDCTL_API=3
 export ETCDCTL_ENDPOINTS=localhost:2379
 
 # Write a config (namespace = prefix segment, path = key)
-etcdctl put /default/services/billing/config.yaml "$(cat config.yaml)"
+etcdctl put /prod/services/billing/config.yaml "$(cat config.yaml)"
 
 # Read it back
-etcdctl get /default/services/billing/config.yaml
+etcdctl get /prod/services/billing/config.yaml
 
 # Watch a prefix for live updates
-etcdctl watch --prefix /default/services/billing/
+etcdctl watch --prefix /prod/services/billing/
 
 # Check endpoint health
 etcdctl endpoint health
 ```
+
+### Locked configs and namespaces
+
+Lock is an admin/ops concern, not a data concern. Configs and namespaces can each be locked
+independently from the Web UI or the v2 connectrpc admin API; effective lock is true if either
+is locked. Locking protects against accidental writes — it does not affect the data itself.
+
+For etcd clients the contract is intentionally narrow:
+
+- **Reads and watches always work.** Locked configs are returned by `Get`/`Range` and appear in
+  `Watch` like any other key. The lock state is not surfaced to etcd clients.
+- **Writes on locked targets fail with `FailedPrecondition`.** Both `Put` and `DeleteRange` return
+  the same uniform message regardless of cause:
+
+  ```text
+  Error: etcdserver: put: config "/services/billing/config.yaml" is locked
+  ```
+
+  etcd has no concept of namespace, so the message always reads as if the *config* is locked
+  even when the parent namespace is the actual cause.
+- **Watch streams do not carry lock/unlock events.** This is by design — the etcd channel is a
+  clean data plane. Subscribe to `WatchConfigs` on the v2 connectrpc API if you need to react
+  to lock state changes.
+- **Lock management** (lock/unlock, audit history) is available only via the Web UI and the v2
+  connectrpc admin API. There is no etcd-side knob to flip the lock.
+
+Operators can detect clients that keep retrying against locked targets via the
+`elara_writes_rejected_total{op,reason,namespace}` Prometheus counter, where `reason` is
+`config_locked` or `namespace_locked`.
 
 ### ConnectRPC client (Go)
 

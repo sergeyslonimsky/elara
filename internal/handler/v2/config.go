@@ -25,6 +25,8 @@ type ConfigHandler struct {
 	validate *configuc.ValidateUseCase
 	watch    *configuc.WatchUseCase
 	diff     *configuc.DiffUseCase
+	lock     *configuc.LockUseCase
+	unlock   *configuc.UnlockUseCase
 }
 
 func NewConfigHandler(
@@ -39,6 +41,8 @@ func NewConfigHandler(
 	validate *configuc.ValidateUseCase,
 	watch *configuc.WatchUseCase,
 	diff *configuc.DiffUseCase,
+	lock *configuc.LockUseCase,
+	unlock *configuc.UnlockUseCase,
 ) *ConfigHandler {
 	return &ConfigHandler{
 		create:   create,
@@ -52,6 +56,8 @@ func NewConfigHandler(
 		validate: validate,
 		watch:    watch,
 		diff:     diff,
+		lock:     lock,
+		unlock:   unlock,
 	}
 }
 
@@ -342,6 +348,28 @@ func (h *ConfigHandler) WatchConfigs(
 	}
 }
 
+func (h *ConfigHandler) LockConfig(
+	ctx context.Context,
+	req *connect.Request[configv2.LockConfigRequest],
+) (*connect.Response[configv2.LockConfigResponse], error) {
+	if err := h.lock.Execute(ctx, req.Msg.GetNamespace(), req.Msg.GetPath()); err != nil {
+		return nil, toConnectError(err)
+	}
+
+	return connect.NewResponse(&configv2.LockConfigResponse{}), nil
+}
+
+func (h *ConfigHandler) UnlockConfig(
+	ctx context.Context,
+	req *connect.Request[configv2.UnlockConfigRequest],
+) (*connect.Response[configv2.UnlockConfigResponse], error) {
+	if err := h.unlock.Execute(ctx, req.Msg.GetNamespace(), req.Msg.GetPath()); err != nil {
+		return nil, toConnectError(err)
+	}
+
+	return connect.NewResponse(&configv2.UnlockConfigResponse{}), nil
+}
+
 // Converters
 
 func domainConfigToProto(cfg *domain.Config) *configv2.Config {
@@ -350,24 +378,27 @@ func domainConfigToProto(cfg *domain.Config) *configv2.Config {
 	}
 
 	return &configv2.Config{
-		Path:        cfg.Path,
-		Content:     cfg.Content,
-		ContentHash: cfg.ContentHash,
-		Format:      domainFormatToProto(cfg.Format),
-		Namespace:   cfg.Namespace,
-		Version:     cfg.Version,
-		Revision:    cfg.Revision,
-		Metadata:    cfg.Metadata,
-		CreatedAt:   timestamppb.New(cfg.CreatedAt),
-		UpdatedAt:   timestamppb.New(cfg.UpdatedAt),
+		Path:            cfg.Path,
+		Content:         cfg.Content,
+		ContentHash:     cfg.ContentHash,
+		Format:          domainFormatToProto(cfg.Format),
+		Namespace:       cfg.Namespace,
+		Version:         cfg.Version,
+		Revision:        cfg.Revision,
+		Metadata:        cfg.Metadata,
+		Locked:          cfg.Locked,
+		NamespaceLocked: cfg.NamespaceLocked,
+		CreatedAt:       timestamppb.New(cfg.CreatedAt),
+		UpdatedAt:       timestamppb.New(cfg.UpdatedAt),
 	}
 }
 
 func directoryEntryToProto(e *configuc.DirectoryEntry) *configv2.DirectoryEntry {
 	entry := &configv2.DirectoryEntry{
-		Name:     e.Name,
-		FullPath: e.FullPath,
-		IsFile:   e.IsFile,
+		Name:            e.Name,
+		FullPath:        e.FullPath,
+		IsFile:          e.IsFile,
+		NamespaceLocked: e.NamespaceLocked,
 	}
 
 	if e.IsFile {
@@ -375,6 +406,7 @@ func directoryEntryToProto(e *configuc.DirectoryEntry) *configv2.DirectoryEntry 
 		entry.Version = e.Version
 		entry.Revision = e.Revision
 		entry.UpdatedAt = timestamppb.New(e.UpdatedAt)
+		entry.Locked = e.Locked
 	} else {
 		entry.ChildCount = int32(e.ChildCount)
 		entry.UpdatedAt = timestamppb.New(e.UpdatedAt)
@@ -389,15 +421,17 @@ func domainSummaryToProto(s *domain.ConfigSummary) *configv2.ConfigSummary {
 	}
 
 	return &configv2.ConfigSummary{
-		Path:        s.Path,
-		ContentHash: s.ContentHash,
-		Format:      domainFormatToProto(s.Format),
-		Namespace:   s.Namespace,
-		Version:     s.Version,
-		Revision:    s.Revision,
-		Metadata:    s.Metadata,
-		CreatedAt:   timestamppb.New(s.CreatedAt),
-		UpdatedAt:   timestamppb.New(s.UpdatedAt),
+		Path:            s.Path,
+		ContentHash:     s.ContentHash,
+		Format:          domainFormatToProto(s.Format),
+		Namespace:       s.Namespace,
+		Version:         s.Version,
+		Revision:        s.Revision,
+		Metadata:        s.Metadata,
+		Locked:          s.Locked,
+		NamespaceLocked: s.NamespaceLocked,
+		CreatedAt:       timestamppb.New(s.CreatedAt),
+		UpdatedAt:       timestamppb.New(s.UpdatedAt),
 	}
 }
 
@@ -420,6 +454,14 @@ func domainHistoryEntryToProto(e *domain.HistoryEntry) *configv2.HistoryEntry {
 		entry.EventType = configv2.EventType_EVENT_TYPE_UPDATED
 	case domain.EventTypeDeleted:
 		entry.EventType = configv2.EventType_EVENT_TYPE_DELETED
+	case domain.EventTypeLocked:
+		entry.EventType = configv2.EventType_EVENT_TYPE_LOCKED
+	case domain.EventTypeUnlocked:
+		entry.EventType = configv2.EventType_EVENT_TYPE_UNLOCKED
+	case domain.EventTypeNamespaceLocked:
+		entry.EventType = configv2.EventType_EVENT_TYPE_NAMESPACE_LOCKED
+	case domain.EventTypeNamespaceUnlocked:
+		entry.EventType = configv2.EventType_EVENT_TYPE_NAMESPACE_UNLOCKED
 	}
 
 	return entry
@@ -483,6 +525,14 @@ func domainWatchEventToProto(event *domain.WatchEvent) *configv2.WatchEvent {
 		we.Type = configv2.EventType_EVENT_TYPE_UPDATED
 	case domain.EventTypeDeleted:
 		we.Type = configv2.EventType_EVENT_TYPE_DELETED
+	case domain.EventTypeLocked:
+		we.Type = configv2.EventType_EVENT_TYPE_LOCKED
+	case domain.EventTypeUnlocked:
+		we.Type = configv2.EventType_EVENT_TYPE_UNLOCKED
+	case domain.EventTypeNamespaceLocked:
+		we.Type = configv2.EventType_EVENT_TYPE_NAMESPACE_LOCKED
+	case domain.EventTypeNamespaceUnlocked:
+		we.Type = configv2.EventType_EVENT_TYPE_NAMESPACE_UNLOCKED
 	}
 
 	return we

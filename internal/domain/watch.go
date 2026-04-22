@@ -8,6 +8,10 @@ const (
 	EventTypeCreated EventType = iota + 1
 	EventTypeUpdated
 	EventTypeDeleted
+	EventTypeLocked
+	EventTypeUnlocked
+	EventTypeNamespaceLocked
+	EventTypeNamespaceUnlocked
 )
 
 func (e EventType) String() string {
@@ -18,6 +22,14 @@ func (e EventType) String() string {
 		return "UPDATED"
 	case EventTypeDeleted:
 		return "DELETED"
+	case EventTypeLocked:
+		return "LOCKED"
+	case EventTypeUnlocked:
+		return "UNLOCKED"
+	case EventTypeNamespaceLocked:
+		return "NAMESPACE_LOCKED"
+	case EventTypeNamespaceUnlocked:
+		return "NAMESPACE_UNLOCKED"
 	default:
 		return "UNKNOWN"
 	}

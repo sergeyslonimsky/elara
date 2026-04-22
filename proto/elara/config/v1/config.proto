@@ -22,6 +22,8 @@ message Config {
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp updated_at = 9;
   int64 revision = 10;
+  bool locked = 11;
+  bool namespace_locked = 12;
 }
 
 message ConfigSummary {
@@ -34,6 +36,8 @@ message ConfigSummary {
   map<string, string> metadata = 7;
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp updated_at = 9;
+  bool locked = 10;
+  bool namespace_locked = 11;
 }
 
 message DirectoryEntry {
@@ -47,6 +51,8 @@ message DirectoryEntry {
   google.protobuf.Timestamp updated_at = 7;
   // Folder metadata (populated only for folders):
   int32 child_count = 8;
+  bool locked = 9;
+  bool namespace_locked = 10;
 }
 
 message HistoryEntry {
@@ -69,6 +75,10 @@ enum EventType {
   EVENT_TYPE_CREATED = 1;
   EVENT_TYPE_UPDATED = 2;
   EVENT_TYPE_DELETED = 3;
+  EVENT_TYPE_LOCKED = 4;
+  EVENT_TYPE_UNLOCKED = 5;
+  EVENT_TYPE_NAMESPACE_LOCKED = 6;
+  EVENT_TYPE_NAMESPACE_UNLOCKED = 7;
 }
 
 message WatchEvent {

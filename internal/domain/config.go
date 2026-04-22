@@ -64,42 +64,48 @@ func (f Format) String() string {
 }
 
 type Config struct {
-	Path           string
-	Content        string
-	ContentHash    string
-	Format         Format
-	Version        int64
-	Revision       int64 // mod_revision: global revision when last modified
-	CreateRevision int64 // global revision when first created (etcd compat)
-	Namespace      string
-	Metadata       map[string]string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	Path            string
+	Content         string
+	ContentHash     string
+	Format          Format
+	Version         int64
+	Revision        int64 // mod_revision: global revision when last modified
+	CreateRevision  int64 // global revision when first created (etcd compat)
+	Namespace       string
+	Metadata        map[string]string
+	Locked          bool
+	NamespaceLocked bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 type ConfigSummary struct {
-	Path        string
-	ContentHash string
-	Format      Format
-	Version     int64
-	Revision    int64
-	Namespace   string
-	Metadata    map[string]string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	Path            string
+	ContentHash     string
+	Format          Format
+	Version         int64
+	Revision        int64
+	Namespace       string
+	Metadata        map[string]string
+	Locked          bool
+	NamespaceLocked bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (c *Config) ToSummary() *ConfigSummary {
 	return &ConfigSummary{
-		Path:        c.Path,
-		ContentHash: c.ContentHash,
-		Format:      c.Format,
-		Version:     c.Version,
-		Revision:    c.Revision,
-		Namespace:   c.Namespace,
-		Metadata:    c.Metadata,
-		CreatedAt:   c.CreatedAt,
-		UpdatedAt:   c.UpdatedAt,
+		Path:            c.Path,
+		ContentHash:     c.ContentHash,
+		Format:          c.Format,
+		Version:         c.Version,
+		Revision:        c.Revision,
+		Namespace:       c.Namespace,
+		Metadata:        c.Metadata,
+		Locked:          c.Locked,
+		NamespaceLocked: c.NamespaceLocked,
+		CreatedAt:       c.CreatedAt,
+		UpdatedAt:       c.UpdatedAt,
 	}
 }
 

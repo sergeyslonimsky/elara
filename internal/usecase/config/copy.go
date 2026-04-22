@@ -75,8 +75,9 @@ func (uc *CopyUseCase) Execute(
 		return nil, fmt.Errorf("get source config: %w", err)
 	}
 
-	// Check destination namespace exists.
-	if _, err := uc.nsChecker.Get(ctx, dstNamespace); err != nil {
+	// Check destination namespace exists and is not locked.
+	dstNs, err := uc.nsChecker.Get(ctx, dstNamespace)
+	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			return nil, domain.NewValidationError(
 				"destination_namespace",
@@ -85,6 +86,10 @@ func (uc *CopyUseCase) Execute(
 		}
 
 		return nil, fmt.Errorf("check destination namespace: %w", err)
+	}
+
+	if dstNs.Locked {
+		return nil, fmt.Errorf("destination namespace %q: %w", dstNamespace, domain.ErrLocked)
 	}
 
 	// Create copy at destination.

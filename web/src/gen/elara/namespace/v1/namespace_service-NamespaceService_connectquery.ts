@@ -28,3 +28,13 @@ export const listNamespaces = NamespaceService.method.listNamespaces;
  * @generated from rpc elara.namespace.v1.NamespaceService.DeleteNamespace
  */
 export const deleteNamespace = NamespaceService.method.deleteNamespace;
+
+/**
+ * @generated from rpc elara.namespace.v1.NamespaceService.LockNamespace
+ */
+export const lockNamespace = NamespaceService.method.lockNamespace;
+
+/**
+ * @generated from rpc elara.namespace.v1.NamespaceService.UnlockNamespace
+ */
+export const unlockNamespace = NamespaceService.method.unlockNamespace;

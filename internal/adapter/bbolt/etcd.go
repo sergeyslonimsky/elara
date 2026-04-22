@@ -265,6 +265,7 @@ func buildPutMeta(
 		newMeta.CreateRevision = existing.meta.CreateRevision
 		newMeta.CreatedAt = existing.meta.CreatedAt
 		newMeta.Metadata = existing.meta.Metadata
+		newMeta.Locked = existing.meta.Locked
 
 		return newMeta, domain.EventTypeUpdated
 	}
@@ -288,64 +289,67 @@ func (r *ConfigRepo) PutKey(
 		newRev int64
 	)
 
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
-		metaBkt := tx.Bucket([]byte(bucketMeta))
-		content := tx.Bucket([]byte(bucketContent))
-		key := configKey(namespace, path)
+	if err := r.store.db.Update(func(tx *bolt.Tx) error {
+		p, rev, err := putKeyTx(tx, namespace, path, value)
+		prev = p
+		newRev = rev
 
-		existing, found, err := resolveExistingKey(metaBkt, content, key)
-		if err != nil {
-			return err
-		}
-
-		revision, err := nextRevision(tx)
-		if err != nil {
-			return err
-		}
-
-		newMeta, eventType := buildPutMeta(path, value, revision, existing, found)
-
-		if found {
-			prev = &domain.KVPair{
-				Namespace:      namespace,
-				Path:           path,
-				Value:          existing.prevValueCopy,
-				CreateRevision: existing.meta.CreateRevision,
-				ModRevision:    existing.meta.Revision,
-				Version:        existing.meta.Version,
-			}
-		}
-
-		if err := content.Put(key, value); err != nil {
-			return fmt.Errorf("put content: %w", err)
-		}
-
-		newMetaBytes, err := json.Marshal(newMeta)
-		if err != nil {
-			return fmt.Errorf("marshal meta: %w", err)
-		}
-
-		if err := metaBkt.Put(key, newMetaBytes); err != nil {
-			return fmt.Errorf("put meta: %w", err)
-		}
-
-		if err := writeHistory(tx, namespace, path, revision, value); err != nil {
-			return err
-		}
-
-		if err := writeChangelog(tx, revision, eventType, path, namespace, newMeta.Version); err != nil {
-			return err
-		}
-
-		newRev = revision
-
-		return nil
-	})
-	if err != nil {
+		return err
+	}); err != nil {
 		return nil, 0, fmt.Errorf("put key: %w", err)
 	}
 
 	return prev, newRev, nil
+}
+
+func putKeyTx(tx *bolt.Tx, namespace, path string, value []byte) (*domain.KVPair, int64, error) {
+	metaBkt := tx.Bucket([]byte(bucketMeta))
+	content := tx.Bucket([]byte(bucketContent))
+	key := configKey(namespace, path)
+
+	existing, found, err := resolveExistingKey(metaBkt, content, key)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if err := validateNamespaceUnlocked(tx, namespace); err != nil {
+		return nil, 0, fmt.Errorf("validate namespace unlocked: %w", err)
+	}
+
+	if err := checkPutAllowed(existing, found, path); err != nil {
+		return nil, 0, err
+	}
+
+	revision, err := nextRevision(tx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	newMeta, eventType := buildPutMeta(path, value, revision, existing, found)
+	prev := buildPrevKV(existing, found, namespace, path)
+
+	if err := content.Put(key, value); err != nil {
+		return nil, 0, fmt.Errorf("put content: %w", err)
+	}
+
+	newMetaBytes, err := json.Marshal(newMeta)
+	if err != nil {
+		return nil, 0, fmt.Errorf("marshal meta: %w", err)
+	}
+
+	if err := metaBkt.Put(key, newMetaBytes); err != nil {
+		return nil, 0, fmt.Errorf("put meta: %w", err)
+	}
+
+	if err := writeHistory(tx, namespace, path, revision, value); err != nil {
+		return nil, 0, err
+	}
+
+	if err := writeChangelog(tx, revision, eventType, path, namespace, newMeta.Version); err != nil {
+		return nil, 0, err
+	}
+
+	return prev, revision, nil
 }
 
 // deleteTarget holds a key copy and its associated KVPair snapshot collected
@@ -357,6 +361,7 @@ type deleteTarget struct {
 
 // collectDeleteTargets scans the meta bucket for keys in range and returns
 // copies of both the raw key and the domain KVPair (with optional value copy).
+// Returns an error if any target config is locked.
 func collectDeleteTargets(
 	metaBkt, content *bolt.Bucket,
 	rp rangeParams,
@@ -376,12 +381,16 @@ func collectDeleteTargets(
 		ns, path := parseConfigKey(k)
 		kv := &domain.KVPair{Namespace: ns, Path: path}
 
-		if returnPrev {
-			var m configMeta
-			if err := json.Unmarshal(v, &m); err != nil {
-				return nil, fmt.Errorf("unmarshal meta: %w", err)
-			}
+		var m configMeta
+		if err := json.Unmarshal(v, &m); err != nil {
+			return nil, fmt.Errorf("unmarshal meta: %w", err)
+		}
 
+		if m.Locked {
+			return nil, fmt.Errorf("delete range: %w", domain.NewLockedError(path))
+		}
+
+		if returnPrev {
 			kv.CreateRevision = m.CreateRevision
 			kv.ModRevision = m.Revision
 			kv.Version = m.Version
@@ -412,50 +421,81 @@ func (r *ConfigRepo) DeleteRangeKeys(
 
 	rp := buildRangeParams(startNS, startPath, endNS, endPath)
 
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
-		metaBkt := tx.Bucket([]byte(bucketMeta))
-		content := tx.Bucket([]byte(bucketContent))
-
-		targets, err := collectDeleteTargets(metaBkt, content, rp, returnPrev)
-		if err != nil {
-			return err
-		}
-
-		if len(targets) == 0 {
-			return nil
-		}
-
-		revision, err := nextRevision(tx)
-		if err != nil {
-			return err
-		}
-
-		kvs := make([]*domain.KVPair, 0, len(targets))
-
-		for _, t := range targets {
-			if err := content.Delete(t.key); err != nil {
-				return fmt.Errorf("delete content: %w", err)
-			}
-
-			if err := metaBkt.Delete(t.key); err != nil {
-				return fmt.Errorf("delete meta: %w", err)
-			}
-
-			if err := writeChangelog(tx, revision, domain.EventTypeDeleted, t.kv.Path, t.kv.Namespace, 0); err != nil {
-				return err
-			}
-
-			kvs = append(kvs, t.kv)
-		}
-
+	if err := r.store.db.Update(func(tx *bolt.Tx) error {
+		kvs, rev, err := deleteRangeKeysTx(tx, rp, startNS, returnPrev)
 		deleted = kvs
-		newRev = revision
+		newRev = rev
 
-		return nil
-	})
-	if err != nil {
+		return err
+	}); err != nil {
 		return nil, 0, fmt.Errorf("delete range keys: %w", err)
 	}
 
 	return deleted, newRev, nil
+}
+
+func deleteRangeKeysTx(tx *bolt.Tx, rp rangeParams, startNS string, returnPrev bool) ([]*domain.KVPair, int64, error) {
+	if err := validateNamespaceUnlocked(tx, startNS); err != nil {
+		return nil, 0, fmt.Errorf("validate namespace unlocked: %w", err)
+	}
+
+	metaBkt := tx.Bucket([]byte(bucketMeta))
+	content := tx.Bucket([]byte(bucketContent))
+
+	targets, err := collectDeleteTargets(metaBkt, content, rp, returnPrev)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if len(targets) == 0 {
+		return nil, 0, nil
+	}
+
+	revision, err := nextRevision(tx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	kvs := make([]*domain.KVPair, 0, len(targets))
+
+	for _, t := range targets {
+		if err := content.Delete(t.key); err != nil {
+			return nil, 0, fmt.Errorf("delete content: %w", err)
+		}
+
+		if err := metaBkt.Delete(t.key); err != nil {
+			return nil, 0, fmt.Errorf("delete meta: %w", err)
+		}
+
+		if err := writeChangelog(tx, revision, domain.EventTypeDeleted, t.kv.Path, t.kv.Namespace, 0); err != nil {
+			return nil, 0, err
+		}
+
+		kvs = append(kvs, t.kv)
+	}
+
+	return kvs, revision, nil
+}
+
+func buildPrevKV(existing existingKeyInfo, found bool, namespace, path string) *domain.KVPair {
+	if !found {
+		return nil
+	}
+
+	return &domain.KVPair{
+		Namespace:      namespace,
+		Path:           path,
+		Value:          existing.prevValueCopy,
+		CreateRevision: existing.meta.CreateRevision,
+		ModRevision:    existing.meta.Revision,
+		Version:        existing.meta.Version,
+	}
+}
+
+func checkPutAllowed(existing existingKeyInfo, found bool, path string) error {
+	if found && existing.meta.Locked {
+		return fmt.Errorf("put: %w", domain.NewLockedError(path))
+	}
+
+	return nil
 }

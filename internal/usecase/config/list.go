@@ -26,14 +26,16 @@ type ListParams struct {
 }
 
 type DirectoryEntry struct {
-	Name       string
-	FullPath   string
-	IsFile     bool
-	Format     domain.Format
-	Version    int64
-	Revision   int64
-	UpdatedAt  time.Time
-	ChildCount int
+	Name            string
+	FullPath        string
+	IsFile          bool
+	Format          domain.Format
+	Version         int64
+	Revision        int64
+	UpdatedAt       time.Time
+	ChildCount      int
+	Locked          bool
+	NamespaceLocked bool
 }
 
 type ListResult struct {
@@ -102,17 +104,42 @@ func (uc *ListUseCase) Execute(ctx context.Context, params ListParams) (*ListRes
 	}, nil
 }
 
+type folderInfo struct {
+	childCount int
+	latestTime time.Time
+}
+
 func buildDirectoryEntries(
 	summaries []*domain.ConfigSummary,
 	prefix string,
 	sortParams domain.SortParams,
 ) []*DirectoryEntry {
-	type folderInfo struct {
-		childCount int
-		latestTime time.Time
+	folders, files := splitSummariesIntoFoldersAndFiles(summaries, prefix)
+
+	// Namespace lock is a property of the listing as a whole; any entry in the
+	// scan carries the same value, so sample the first summary.
+	var namespaceLocked bool
+	if len(summaries) > 0 {
+		namespaceLocked = summaries[0].NamespaceLocked
 	}
 
+	folderEntries := buildFolderEntries(folders, prefix, namespaceLocked)
+
+	result := make([]*DirectoryEntry, 0, len(folderEntries)+len(files))
+	result = append(result, folderEntries...)
+	result = append(result, files...)
+
+	sortEntries(result, sortParams)
+
+	return result
+}
+
+func splitSummariesIntoFoldersAndFiles(
+	summaries []*domain.ConfigSummary,
+	prefix string,
+) (map[string]*folderInfo, []*DirectoryEntry) {
 	folders := make(map[string]*folderInfo)
+
 	var files []*DirectoryEntry
 
 	for _, s := range summaries {
@@ -136,25 +163,34 @@ func buildDirectoryEntries(
 			if s.UpdatedAt.After(fi.latestTime) {
 				fi.latestTime = s.UpdatedAt
 			}
-		} else {
-			fullPath := prefix + name
-			if !strings.HasPrefix(fullPath, "/") {
-				fullPath = "/" + fullPath
-			}
 
-			files = append(files, &DirectoryEntry{
-				Name:      name,
-				FullPath:  fullPath,
-				IsFile:    true,
-				Format:    s.Format,
-				Version:   s.Version,
-				Revision:  s.Revision,
-				UpdatedAt: s.UpdatedAt,
-			})
+			continue
 		}
+
+		fullPath := prefix + name
+		if !strings.HasPrefix(fullPath, "/") {
+			fullPath = "/" + fullPath
+		}
+
+		files = append(files, &DirectoryEntry{
+			Name:            name,
+			FullPath:        fullPath,
+			IsFile:          true,
+			Format:          s.Format,
+			Version:         s.Version,
+			Locked:          s.Locked,
+			NamespaceLocked: s.NamespaceLocked,
+			Revision:        s.Revision,
+			UpdatedAt:       s.UpdatedAt,
+		})
 	}
 
+	return folders, files
+}
+
+func buildFolderEntries(folders map[string]*folderInfo, prefix string, namespaceLocked bool) []*DirectoryEntry {
 	folderEntries := make([]*DirectoryEntry, 0, len(folders))
+
 	for name, fi := range folders {
 		fullPath := prefix + name
 		if !strings.HasPrefix(fullPath, "/") {
@@ -162,22 +198,16 @@ func buildDirectoryEntries(
 		}
 
 		folderEntries = append(folderEntries, &DirectoryEntry{
-			Name:       name,
-			FullPath:   fullPath,
-			IsFile:     false,
-			ChildCount: fi.childCount,
-			UpdatedAt:  fi.latestTime,
+			Name:            name,
+			FullPath:        fullPath,
+			IsFile:          false,
+			ChildCount:      fi.childCount,
+			UpdatedAt:       fi.latestTime,
+			NamespaceLocked: namespaceLocked,
 		})
 	}
 
-	// Combine folders + files, then sort.
-	result := make([]*DirectoryEntry, 0, len(folderEntries)+len(files))
-	result = append(result, folderEntries...)
-	result = append(result, files...)
-
-	sortEntries(result, sortParams)
-
-	return result
+	return folderEntries
 }
 
 func sortEntries(entries []*DirectoryEntry, params domain.SortParams) {

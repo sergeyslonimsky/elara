@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -26,6 +27,10 @@ func NewConfigRepo(store *Store) *ConfigRepo {
 // Create creates a new config entry. Writes to content, meta, history, and changelog buckets atomically.
 func (r *ConfigRepo) Create(_ context.Context, cfg *domain.Config) error {
 	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		if err := validateNamespaceUnlocked(tx, cfg.Namespace); err != nil {
+			return fmt.Errorf("validate namespace unlocked: %w", err)
+		}
+
 		meta := tx.Bucket([]byte(bucketMeta))
 		key := configKey(cfg.Namespace, cfg.Path)
 
@@ -96,6 +101,13 @@ func (r *ConfigRepo) Get(_ context.Context, path, namespace string) (*domain.Con
 
 		cfg = configMetaToDomain(&m, string(content), path, namespace)
 
+		nsLocked, err := isNamespaceLocked(tx, namespace)
+		if err != nil {
+			return err
+		}
+
+		cfg.NamespaceLocked = nsLocked
+
 		return nil
 	})
 	if err != nil {
@@ -107,103 +119,130 @@ func (r *ConfigRepo) Get(_ context.Context, path, namespace string) (*domain.Con
 
 // Update updates a config with optimistic locking on version.
 func (r *ConfigRepo) Update(_ context.Context, cfg *domain.Config) error {
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
-		meta := tx.Bucket([]byte(bucketMeta))
-		key := configKey(cfg.Namespace, cfg.Path)
-
-		metaBytes := meta.Get(key)
-		if metaBytes == nil {
-			return domain.NewNotFoundError("config", cfg.Path)
-		}
-
-		var existing configMeta
-		if err := json.Unmarshal(metaBytes, &existing); err != nil {
-			return fmt.Errorf("unmarshal existing meta: %w", err)
-		}
-
-		if existing.Version != cfg.Version {
-			return domain.NewConflictError(cfg.Version, existing.Version)
-		}
-
-		cfg.GenerateHash()
-
-		now := time.Now()
-		cfg.Version = existing.Version + 1
-		cfg.CreatedAt = existing.CreatedAt
-		cfg.UpdatedAt = now
-		cfg.CreateRevision = existing.CreateRevision
-
-		revision, err := nextRevision(tx)
-		if err != nil {
-			return err
-		}
-
-		cfg.Revision = revision
-
-		if err := tx.Bucket([]byte(bucketContent)).Put(key, []byte(cfg.Content)); err != nil {
-			return fmt.Errorf("put content: %w", err)
-		}
-
-		newMetaBytes, err := json.Marshal(domainToConfigMeta(cfg))
-		if err != nil {
-			return fmt.Errorf("marshal meta: %w", err)
-		}
-
-		if err := meta.Put(key, newMetaBytes); err != nil {
-			return fmt.Errorf("put meta: %w", err)
-		}
-
-		if err := writeHistory(tx, cfg.Namespace, cfg.Path, revision, []byte(cfg.Content)); err != nil {
-			return err
-		}
-
-		return writeChangelog(tx, revision, domain.EventTypeUpdated, cfg.Path, cfg.Namespace, cfg.Version)
-	})
-	if err != nil {
+	if err := r.store.db.Update(func(tx *bolt.Tx) error { return updateConfigTx(tx, cfg) }); err != nil {
 		return fmt.Errorf("update config: %w", err)
 	}
 
 	return nil
 }
 
+func updateConfigTx(tx *bolt.Tx, cfg *domain.Config) error {
+	if err := validateNamespaceUnlocked(tx, cfg.Namespace); err != nil {
+		return fmt.Errorf("validate namespace unlocked: %w", err)
+	}
+
+	key := configKey(cfg.Namespace, cfg.Path)
+
+	metaBytes := tx.Bucket([]byte(bucketMeta)).Get(key)
+	if metaBytes == nil {
+		return fmt.Errorf("config with path %s not found: %w", cfg.Path, domain.ErrNotFound)
+	}
+
+	var existing configMeta
+	if err := json.Unmarshal(metaBytes, &existing); err != nil {
+		return fmt.Errorf("unmarshal existing meta: %w", err)
+	}
+
+	if err := validateUpdatePreconditions(&existing, cfg); err != nil {
+		return err
+	}
+
+	cfg.GenerateHash()
+
+	now := time.Now()
+	cfg.Version = existing.Version + 1
+	cfg.CreatedAt = existing.CreatedAt
+	cfg.UpdatedAt = now
+	cfg.CreateRevision = existing.CreateRevision
+
+	revision, err := nextRevision(tx)
+	if err != nil {
+		return err
+	}
+
+	cfg.Revision = revision
+
+	return writeConfigEntry(tx, key, cfg, revision, domain.EventTypeUpdated)
+}
+
+// writeConfigEntry writes content, meta, history and changelog for a config in one go.
+func writeConfigEntry(tx *bolt.Tx, key []byte, cfg *domain.Config, revision int64, eventType domain.EventType) error {
+	if err := tx.Bucket([]byte(bucketContent)).Put(key, []byte(cfg.Content)); err != nil {
+		return fmt.Errorf("put content: %w", err)
+	}
+
+	newMetaBytes, err := json.Marshal(domainToConfigMeta(cfg))
+	if err != nil {
+		return fmt.Errorf("marshal meta: %w", err)
+	}
+
+	if err := tx.Bucket([]byte(bucketMeta)).Put(key, newMetaBytes); err != nil {
+		return fmt.Errorf("put meta: %w", err)
+	}
+
+	if err := writeHistory(tx, cfg.Namespace, cfg.Path, revision, []byte(cfg.Content)); err != nil {
+		return err
+	}
+
+	return writeChangelog(tx, revision, eventType, cfg.Path, cfg.Namespace, cfg.Version)
+}
+
 // Delete removes a config by path and namespace.
 func (r *ConfigRepo) Delete(_ context.Context, path, namespace string) (int64, error) {
 	var newRev int64
 
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
-		meta := tx.Bucket([]byte(bucketMeta))
-		key := configKey(namespace, path)
+	if err := r.store.db.Update(func(tx *bolt.Tx) error {
+		rev, err := deleteConfigTx(tx, path, namespace)
+		newRev = rev
 
-		if meta.Get(key) == nil {
-			return domain.NewNotFoundError("config", path)
-		}
-
-		revision, err := nextRevision(tx)
-		if err != nil {
-			return err
-		}
-
-		if err := tx.Bucket([]byte(bucketContent)).Delete(key); err != nil {
-			return fmt.Errorf("delete content: %w", err)
-		}
-
-		if err := meta.Delete(key); err != nil {
-			return fmt.Errorf("delete meta: %w", err)
-		}
-
-		if err := writeChangelog(tx, revision, domain.EventTypeDeleted, path, namespace, 0); err != nil {
-			return err
-		}
-
-		newRev = revision
-
-		return nil
-	})
-	if err != nil {
+		return err
+	}); err != nil {
 		return 0, fmt.Errorf("delete config: %w", err)
 	}
 
 	return newRev, nil
+}
+
+func deleteConfigTx(tx *bolt.Tx, path, namespace string) (int64, error) {
+	if err := validateNamespaceUnlocked(tx, namespace); err != nil {
+		return 0, fmt.Errorf("validate namespace unlocked: %w", err)
+	}
+
+	meta := tx.Bucket([]byte(bucketMeta))
+	key := configKey(namespace, path)
+
+	metaBytes := meta.Get(key)
+	if metaBytes == nil {
+		return 0, fmt.Errorf("config with path %s not found: %w", path, domain.ErrNotFound)
+	}
+
+	var existing configMeta
+	if err := json.Unmarshal(metaBytes, &existing); err != nil {
+		return 0, fmt.Errorf("unmarshal existing meta: %w", err)
+	}
+
+	if existing.Locked {
+		return 0, fmt.Errorf("config %q: %w", path, domain.ErrLocked)
+	}
+
+	revision, err := nextRevision(tx)
+	if err != nil {
+		return 0, err
+	}
+
+	if err := tx.Bucket([]byte(bucketContent)).Delete(key); err != nil {
+		return 0, fmt.Errorf("delete content: %w", err)
+	}
+
+	if err := meta.Delete(key); err != nil {
+		return 0, fmt.Errorf("delete meta: %w", err)
+	}
+
+	if err := writeChangelog(tx, revision, domain.EventTypeDeleted, path, namespace, 0); err != nil {
+		return 0, err
+	}
+
+	return revision, nil
 }
 
 // ListByPrefix returns all configs matching the given path prefix and namespace.
@@ -213,11 +252,20 @@ func (r *ConfigRepo) ListByPrefix(_ context.Context, pathPrefix, namespace strin
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		meta := tx.Bucket([]byte(bucketMeta))
 		content := tx.Bucket([]byte(bucketContent))
+		nsLocks := nsLockCache{}
 
 		return scanMeta(meta, namespace, pathPrefix, func(key []byte, m *configMeta) error {
 			ns, path := parseConfigKey(key)
 			contentBytes := content.Get(key)
-			configs = append(configs, configMetaToDomain(m, string(contentBytes), path, ns))
+			cfg := configMetaToDomain(m, string(contentBytes), path, ns)
+
+			nsLocked, err := nsLocks.get(tx, ns)
+			if err != nil {
+				return err
+			}
+
+			cfg.NamespaceLocked = nsLocked
+			configs = append(configs, cfg)
 
 			return nil
 		})
@@ -243,10 +291,19 @@ func (r *ConfigRepo) ListSummariesByPrefix(
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		meta := tx.Bucket([]byte(bucketMeta))
+		nsLocks := nsLockCache{}
 
 		return scanMeta(meta, namespace, pathPrefix, func(key []byte, m *configMeta) error {
 			ns, path := parseConfigKey(key)
-			summaries = append(summaries, configMetaToSummary(m, path, ns))
+			s := configMetaToSummary(m, path, ns)
+
+			nsLocked, err := nsLocks.get(tx, ns)
+			if err != nil {
+				return err
+			}
+
+			s.NamespaceLocked = nsLocked
+			summaries = append(summaries, s)
 
 			return nil
 		})
@@ -271,12 +328,21 @@ func (r *ConfigRepo) ListSummaryPage(
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		meta := tx.Bucket([]byte(bucketMeta))
+		nsLocks := nsLockCache{}
 		idx := 0
 
 		return scanMeta(meta, namespace, pathPrefix, func(key []byte, m *configMeta) error {
 			if idx >= offset && len(summaries) < limit {
 				ns, path := parseConfigKey(key)
-				summaries = append(summaries, configMetaToSummary(m, path, ns))
+				s := configMetaToSummary(m, path, ns)
+
+				nsLocked, err := nsLocks.get(tx, ns)
+				if err != nil {
+					return err
+				}
+
+				s.NamespaceLocked = nsLocked
+				summaries = append(summaries, s)
 			}
 
 			idx++
@@ -306,13 +372,22 @@ func (r *ConfigRepo) ListConfigPage(
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		meta := tx.Bucket([]byte(bucketMeta))
 		content := tx.Bucket([]byte(bucketContent))
+		nsLocks := nsLockCache{}
 		idx := 0
 
 		return scanMeta(meta, namespace, pathPrefix, func(key []byte, m *configMeta) error {
 			if idx >= offset && len(configs) < limit {
 				ns, path := parseConfigKey(key)
 				contentBytes := content.Get(key)
-				configs = append(configs, configMetaToDomain(m, string(contentBytes), path, ns))
+				cfg := configMetaToDomain(m, string(contentBytes), path, ns)
+
+				nsLocked, err := nsLocks.get(tx, ns)
+				if err != nil {
+					return err
+				}
+
+				cfg.NamespaceLocked = nsLocked
+				configs = append(configs, cfg)
 			}
 
 			idx++
@@ -403,7 +478,7 @@ func (r *ConfigRepo) SearchByPath(
 }
 
 // GetConfigHistory returns the last `limit` history entries for a config, newest first.
-// Cross-references history bucket (content) with changelog bucket (event type, timestamp).
+// Merges content history (from bucketHistory + bucketChangelog) with lock events (from bucketLockHistory).
 func (r *ConfigRepo) GetConfigHistory(
 	_ context.Context,
 	path, namespace string,
@@ -412,45 +487,14 @@ func (r *ConfigRepo) GetConfigHistory(
 	var entries []*domain.HistoryEntry
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
-		history := tx.Bucket([]byte(bucketHistory))
-		changelog := tx.Bucket([]byte(bucketChangelog))
 		prefix := historyPrefix(namespace, path)
 
-		// Collect all matching keys.
-		var keys [][]byte
+		contentEntries := collectContentHistory(tx, prefix)
 
-		c := history.Cursor()
-		for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
-			keyCopy := make([]byte, len(k))
-			copy(keyCopy, k)
-			keys = append(keys, keyCopy)
-		}
+		lockEntries := collectConfigLockHistory(tx, prefix)
+		lockEntries = append(lockEntries, collectNamespaceLockHistory(tx, namespace)...)
 
-		start := max(len(keys)-limit, 0)
-
-		// Reverse order: newest first.
-		for i := len(keys) - 1; i >= start; i-- {
-			content := history.Get(keys[i])
-			revBytes := keys[i][len(prefix):]
-			rev := parseRevision(revBytes)
-
-			entry := &domain.HistoryEntry{
-				Revision:    rev,
-				Content:     string(content),
-				ContentHash: computeHash(content),
-			}
-
-			// Look up changelog for event type and timestamp.
-			if clData := changelog.Get(revisionBytes(rev)); clData != nil {
-				var cl changelogEntry
-				if err := json.Unmarshal(clData, &cl); err == nil {
-					entry.EventType = domain.EventType(cl.Type)
-					entry.Timestamp = cl.Timestamp
-				}
-			}
-
-			entries = append(entries, entry)
-		}
+		entries = mergeHistoryEntries(contentEntries, lockEntries, limit)
 
 		return nil
 	})
@@ -459,6 +503,90 @@ func (r *ConfigRepo) GetConfigHistory(
 	}
 
 	return entries, nil
+}
+
+func collectContentHistory(tx *bolt.Tx, prefix []byte) []*domain.HistoryEntry {
+	history := tx.Bucket([]byte(bucketHistory))
+	changelog := tx.Bucket([]byte(bucketChangelog))
+
+	var entries []*domain.HistoryEntry
+
+	c := history.Cursor()
+	for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+		keyCopy := make([]byte, len(k))
+		copy(keyCopy, k)
+
+		content := history.Get(keyCopy)
+		rev := parseRevision(keyCopy[len(prefix):])
+
+		entry := &domain.HistoryEntry{
+			Revision:    rev,
+			Content:     string(content),
+			ContentHash: computeHash(content),
+		}
+
+		if clData := changelog.Get(revisionBytes(rev)); clData != nil {
+			var cl changelogEntry
+			if err := json.Unmarshal(clData, &cl); err == nil {
+				entry.EventType = domain.EventType(cl.Type)
+				entry.Timestamp = cl.Timestamp
+			}
+		}
+
+		entries = append(entries, entry)
+	}
+
+	return entries
+}
+
+func collectConfigLockHistory(tx *bolt.Tx, prefix []byte) []*domain.HistoryEntry {
+	lockHistory := tx.Bucket([]byte(bucketLockHistory))
+
+	var entries []*domain.HistoryEntry
+
+	c := lockHistory.Cursor()
+	for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+		var lhe lockHistoryEntry
+		if err := json.Unmarshal(v, &lhe); err != nil {
+			continue
+		}
+
+		entries = append(entries, &domain.HistoryEntry{
+			EventType: domain.EventType(lhe.Type),
+			Timestamp: lhe.Timestamp,
+		})
+	}
+
+	return entries
+}
+
+// collectNamespaceLockHistory reads namespace-level lock events stored under
+// "<ns>\x00\x00<seq>" so the parent namespace's lock changes show up in a
+// config's history.
+func collectNamespaceLockHistory(tx *bolt.Tx, namespace string) []*domain.HistoryEntry {
+	lockHistory := tx.Bucket([]byte(bucketLockHistory))
+	nsPrefix := historyPrefix(namespace, "")
+
+	var entries []*domain.HistoryEntry
+
+	c := lockHistory.Cursor()
+	for k, v := c.Seek(nsPrefix); k != nil && bytes.HasPrefix(k, nsPrefix); k, v = c.Next() {
+		if len(k)-len(nsPrefix) != revisionSize {
+			continue
+		}
+
+		var lhe lockHistoryEntry
+		if err := json.Unmarshal(v, &lhe); err != nil {
+			continue
+		}
+
+		entries = append(entries, &domain.HistoryEntry{
+			EventType: domain.EventType(lhe.Type),
+			Timestamp: lhe.Timestamp,
+		})
+	}
+
+	return entries
 }
 
 // GetAtRevision returns the history entry at a specific revision (or the closest earlier one).
@@ -569,6 +697,7 @@ func (r *ConfigRepo) ListChanges(
 }
 
 // ListRecentChanges returns the most recent changelog entries, newest first.
+// Merges content changelog and lock changelog, sorted by timestamp.
 func (r *ConfigRepo) ListRecentChanges(
 	_ context.Context,
 	limit int,
@@ -581,17 +710,24 @@ func (r *ConfigRepo) ListRecentChanges(
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		changelog := tx.Bucket([]byte(bucketChangelog))
-		c := changelog.Cursor()
+		lockChangelog := tx.Bucket([]byte(bucketLockChangelog))
 
-		for k, v := c.Last(); k != nil && len(entries) < limit; k, v = c.Prev() {
-			var e changelogEntry
-			if err := json.Unmarshal(v, &e); err != nil {
-				return fmt.Errorf("unmarshal changelog entry: %w", err)
-			}
+		contentEntries := collectRecentChangelog(changelog, limit)
+		lockEntries := collectRecentChangelog(lockChangelog, limit)
 
-			rev := parseRevision(k)
-			entries = append(entries, changelogEntryToDomain(&e, rev))
+		all := make([]*domain.ChangelogEntry, 0, len(contentEntries)+len(lockEntries))
+		all = append(all, contentEntries...)
+		all = append(all, lockEntries...)
+
+		sort.Slice(all, func(i, j int) bool {
+			return all[i].Timestamp.After(all[j].Timestamp)
+		})
+
+		if len(all) > limit {
+			all = all[:limit]
 		}
+
+		entries = all
 
 		return nil
 	})
@@ -600,6 +736,163 @@ func (r *ConfigRepo) ListRecentChanges(
 	}
 
 	return entries, nil
+}
+
+func collectRecentChangelog(bkt *bolt.Bucket, limit int) []*domain.ChangelogEntry {
+	var entries []*domain.ChangelogEntry
+
+	c := bkt.Cursor()
+	for k, v := c.Last(); k != nil && len(entries) < limit; k, v = c.Prev() {
+		var e changelogEntry
+		if err := json.Unmarshal(v, &e); err != nil {
+			continue
+		}
+
+		rev := parseRevision(k)
+		entries = append(entries, changelogEntryToDomain(&e, rev))
+	}
+
+	return entries
+}
+
+// LockConfig marks a config as locked, preventing updates and deletes.
+// Idempotent: calling on an already-locked config is a no-op.
+// Returns ErrLocked if the parent namespace is locked.
+func (r *ConfigRepo) LockConfig(_ context.Context, namespace, path string) error {
+	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		if err := validateNamespaceUnlocked(tx, namespace); err != nil {
+			return fmt.Errorf("validate namespace unlocked: %w", err)
+		}
+
+		meta := tx.Bucket([]byte(bucketMeta))
+		key := configKey(namespace, path)
+
+		metaBytes := meta.Get(key)
+		if metaBytes == nil {
+			return domain.NewNotFoundError("config", path)
+		}
+
+		var m configMeta
+		if err := json.Unmarshal(metaBytes, &m); err != nil {
+			return fmt.Errorf("unmarshal meta: %w", err)
+		}
+
+		if m.Locked {
+			return nil
+		}
+
+		m.Locked = true
+
+		newMetaBytes, err := json.Marshal(m)
+		if err != nil {
+			return fmt.Errorf("marshal meta: %w", err)
+		}
+
+		if err := meta.Put(key, newMetaBytes); err != nil {
+			return fmt.Errorf("put meta: %w", err)
+		}
+
+		return writeLockHistory(tx, namespace, path, domain.EventTypeLocked)
+	})
+	if err != nil {
+		return fmt.Errorf("lock config: %w", err)
+	}
+
+	return nil
+}
+
+// UnlockConfig removes the lock from a config, allowing updates and deletes again.
+// Idempotent: calling on an already-unlocked config is a no-op.
+// Returns ErrLocked if the parent namespace is locked.
+func (r *ConfigRepo) UnlockConfig(_ context.Context, namespace, path string) error {
+	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		if err := validateNamespaceUnlocked(tx, namespace); err != nil {
+			return fmt.Errorf("validate namespace unlocked: %w", err)
+		}
+
+		meta := tx.Bucket([]byte(bucketMeta))
+		key := configKey(namespace, path)
+
+		metaBytes := meta.Get(key)
+		if metaBytes == nil {
+			return domain.NewNotFoundError("config", path)
+		}
+
+		var m configMeta
+		if err := json.Unmarshal(metaBytes, &m); err != nil {
+			return fmt.Errorf("unmarshal meta: %w", err)
+		}
+
+		if !m.Locked {
+			return nil
+		}
+
+		m.Locked = false
+
+		newMetaBytes, err := json.Marshal(m)
+		if err != nil {
+			return fmt.Errorf("marshal meta: %w", err)
+		}
+
+		if err := meta.Put(key, newMetaBytes); err != nil {
+			return fmt.Errorf("put meta: %w", err)
+		}
+
+		return writeLockHistory(tx, namespace, path, domain.EventTypeUnlocked)
+	})
+	if err != nil {
+		return fmt.Errorf("unlock config: %w", err)
+	}
+
+	return nil
+}
+
+func isNamespaceLocked(tx *bolt.Tx, namespace string) (bool, error) {
+	b := tx.Bucket([]byte(bucketNamespaces))
+	data := b.Get([]byte(namespace))
+
+	if data == nil {
+		return false, nil
+	}
+
+	var m namespaceMeta
+	if err := json.Unmarshal(data, &m); err != nil {
+		return false, fmt.Errorf("unmarshal namespace meta: %w", err)
+	}
+
+	return m.Locked, nil
+}
+
+// nsLockCache caches namespace lock lookups within a single transaction to
+// avoid repeated bucket reads when scanning many configs.
+type nsLockCache map[string]bool
+
+func (c nsLockCache) get(tx *bolt.Tx, namespace string) (bool, error) {
+	if v, ok := c[namespace]; ok {
+		return v, nil
+	}
+
+	v, err := isNamespaceLocked(tx, namespace)
+	if err != nil {
+		return false, err
+	}
+
+	c[namespace] = v
+
+	return v, nil
+}
+
+func validateNamespaceUnlocked(tx *bolt.Tx, namespace string) error {
+	locked, err := isNamespaceLocked(tx, namespace)
+	if err != nil {
+		return err
+	}
+
+	if locked {
+		return fmt.Errorf("namespace %q: %w", namespace, domain.ErrNamespaceLocked)
+	}
+
+	return nil
 }
 
 // --- internal helpers ---
@@ -656,6 +949,87 @@ func writeChangelog(
 
 	if err := changelog.Put(revisionBytes(revision), data); err != nil {
 		return fmt.Errorf("put changelog: %w", err)
+	}
+
+	return nil
+}
+
+func mergeHistoryEntries(content, lock []*domain.HistoryEntry, limit int) []*domain.HistoryEntry {
+	merged := make([]*domain.HistoryEntry, 0, len(content)+len(lock))
+	merged = append(merged, content...)
+	merged = append(merged, lock...)
+
+	sort.Slice(merged, func(i, j int) bool {
+		return merged[i].Timestamp.After(merged[j].Timestamp)
+	})
+
+	if len(merged) > limit {
+		merged = merged[:limit]
+	}
+
+	return merged
+}
+
+func validateUpdatePreconditions(existing *configMeta, cfg *domain.Config) error {
+	if existing.Locked {
+		return fmt.Errorf("update precondition: %w", domain.NewLockedError(cfg.Path))
+	}
+
+	if existing.Version != cfg.Version {
+		return fmt.Errorf("update precondition: %w", domain.NewConflictError(cfg.Version, existing.Version))
+	}
+
+	return nil
+}
+
+func nextLockSeq(tx *bolt.Tx) (int64, error) {
+	sys := tx.Bucket([]byte(bucketSys))
+	current := parseRevision(sys.Get([]byte(sysLockSeqKey)))
+	next := current + 1
+
+	if err := sys.Put([]byte(sysLockSeqKey), revisionBytes(next)); err != nil {
+		return 0, fmt.Errorf("update lock seq: %w", err)
+	}
+
+	return next, nil
+}
+
+func writeLockHistory(tx *bolt.Tx, namespace, path string, eventType domain.EventType) error {
+	seq, err := nextLockSeq(tx)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	entry := lockHistoryEntry{
+		Type:      int(eventType),
+		Timestamp: now,
+	}
+
+	data, err := json.Marshal(entry)
+	if err != nil {
+		return fmt.Errorf("marshal lock history entry: %w", err)
+	}
+
+	histKey := append(historyPrefix(namespace, path), revisionBytes(seq)...)
+	if err := tx.Bucket([]byte(bucketLockHistory)).Put(histKey, data); err != nil {
+		return fmt.Errorf("put lock history: %w", err)
+	}
+
+	cl := changelogEntry{
+		Type:      int(eventType),
+		Path:      path,
+		Namespace: namespace,
+		Timestamp: now,
+	}
+
+	clData, err := json.Marshal(cl)
+	if err != nil {
+		return fmt.Errorf("marshal lock changelog entry: %w", err)
+	}
+
+	if err := tx.Bucket([]byte(bucketLockChangelog)).Put(revisionBytes(seq), clData); err != nil {
+		return fmt.Errorf("put lock changelog: %w", err)
 	}
 
 	return nil
