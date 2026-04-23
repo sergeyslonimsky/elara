@@ -18,8 +18,8 @@ service NamespaceService {
 
 message CreateNamespaceRequest {
   string name = 1 [(buf.validate.field).string = {
-    min_len: 1,
-    max_len: 128,
+    min_len: 1
+    max_len: 128
     pattern: "^[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?$"
   }];
   string description = 2;
