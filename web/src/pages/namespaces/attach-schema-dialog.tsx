@@ -26,6 +26,11 @@ interface AttachSchemaDialogProps {
 	disabled?: boolean;
 }
 
+function getSubmitLabel(isEdit: boolean, isPending: boolean): string {
+	if (isPending) return isEdit ? "Saving..." : "Attaching...";
+	return isEdit ? "Save" : "Attach";
+}
+
 export function AttachSchemaDialog({
 	namespace,
 	initialPathPattern,
@@ -143,13 +148,7 @@ export function AttachSchemaDialog({
 								mutation.isPending || !pathPattern.trim() || !jsonSchema.trim()
 							}
 						>
-							{mutation.isPending
-								? isEdit
-									? "Saving..."
-									: "Attaching..."
-								: isEdit
-									? "Save"
-									: "Attach"}
+							{getSubmitLabel(isEdit, mutation.isPending)}
 						</Button>
 					</DialogFooter>
 				</form>
