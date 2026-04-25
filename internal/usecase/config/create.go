@@ -24,11 +24,16 @@ type createNSChecker interface {
 	Get(ctx context.Context, name string) (*domain.Namespace, error)
 }
 
+type createSchemaValidator interface {
+	Execute(ctx context.Context, namespace, configPath, content string, format domain.Format) error
+}
+
 type CreateUseCase struct {
-	configs    configCreator
-	watch      createWatchNotifier
-	namespaces createNSTimestampUpdater
-	nsChecker  createNSChecker
+	configs         configCreator
+	watch           createWatchNotifier
+	namespaces      createNSTimestampUpdater
+	nsChecker       createNSChecker
+	schemaValidator createSchemaValidator
 }
 
 func NewCreateUseCase(
@@ -36,12 +41,14 @@ func NewCreateUseCase(
 	watch createWatchNotifier,
 	namespaces createNSTimestampUpdater,
 	nsChecker createNSChecker,
+	schemaValidator createSchemaValidator,
 ) *CreateUseCase {
 	return &CreateUseCase{
-		configs:    configs,
-		watch:      watch,
-		namespaces: namespaces,
-		nsChecker:  nsChecker,
+		configs:         configs,
+		watch:           watch,
+		namespaces:      namespaces,
+		nsChecker:       nsChecker,
+		schemaValidator: schemaValidator,
 	}
 }
 
@@ -81,6 +88,10 @@ func (uc *CreateUseCase) Execute(ctx context.Context, cfg *domain.Config) (*doma
 	cfg.Content = normalized
 	cfg.GenerateHash()
 	cfg.Version = 1
+
+	if err := uc.schemaValidator.Execute(ctx, cfg.Namespace, cfg.Path, cfg.Content, cfg.Format); err != nil {
+		return nil, fmt.Errorf("schema validation: %w", err)
+	}
 
 	if err := uc.configs.Create(ctx, cfg); err != nil {
 		return nil, fmt.Errorf("create config: %w", err)

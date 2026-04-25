@@ -282,9 +282,24 @@ func (h *ConfigHandler) ValidateConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.ValidateConfigRequest],
 ) (*connect.Response[configv2.ValidateConfigResponse], error) {
-	result, err := h.validate.Execute(req.Msg.GetContent(), protoFormatToDomain(req.Msg.GetFormat()))
+	result, err := h.validate.Execute(
+		ctx,
+		req.Msg.GetContent(),
+		protoFormatToDomain(req.Msg.GetFormat()),
+		req.Msg.GetNamespace(),
+		req.Msg.GetPath(),
+	)
 	if err != nil {
 		return nil, toConnectError(err)
+	}
+
+	schemaViolations := make([]*configv2.SchemaViolationDetail, 0, len(result.SchemaViolations))
+	for _, v := range result.SchemaViolations {
+		schemaViolations = append(schemaViolations, &configv2.SchemaViolationDetail{
+			Path:    v.Path,
+			Message: v.Message,
+			Keyword: v.Keyword,
+		})
 	}
 
 	return connect.NewResponse(&configv2.ValidateConfigResponse{
@@ -293,6 +308,7 @@ func (h *ConfigHandler) ValidateConfig(
 			Errors:            result.Errors,
 			DetectedFormat:    domainFormatToProto(result.DetectedFormat),
 			NormalizedContent: result.NormalizedContent,
+			SchemaViolations:  schemaViolations,
 		},
 	}), nil
 }

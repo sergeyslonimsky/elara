@@ -1,5 +1,5 @@
 import { useQuery } from "@connectrpc/connect-query";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, ShieldCheck } from "lucide-react";
 import { Link, useParams } from "react-router";
 import { ConfigEditor } from "@/components/config-editor";
 import { ErrorCard } from "@/components/error-card";
@@ -20,6 +20,7 @@ import { protoFormatToLanguage } from "@/lib/format";
 import { ConfigActions } from "./config-actions";
 import { ConfigHeader } from "./config-header";
 import { HistoryList } from "./history-list";
+import { SchemaTab } from "./schema-tab";
 
 export function ConfigPage() {
 	const { namespace: namespaceParam, "*": splat = "" } = useParams();
@@ -93,6 +94,10 @@ export function ConfigPage() {
 								<Clock className="mr-1 h-3.5 w-3.5" />
 								History
 							</TabsTrigger>
+							<TabsTrigger value="schema">
+								<ShieldCheck className="mr-1 h-3.5 w-3.5" />
+								Schema
+							</TabsTrigger>
 						</TabsList>
 
 						<TabsContent value="content" className="space-y-4">
@@ -140,6 +145,15 @@ export function ConfigPage() {
 									/>
 								</CardContent>
 							</Card>
+						</TabsContent>
+
+						<TabsContent value="schema">
+							<SchemaTab
+								namespace={namespace}
+								path={path}
+								configContent={data.config.content}
+								language={language}
+							/>
 						</TabsContent>
 					</Tabs>
 				</div>

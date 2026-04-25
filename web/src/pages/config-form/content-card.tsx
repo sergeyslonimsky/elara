@@ -69,13 +69,20 @@ export function ContentCard({
 		onError: toastError,
 	});
 
+	const [schemaViolations, setSchemaViolations] = useState<
+		{ path: string; message: string; keyword: string }[]
+	>([]);
+
 	const validateMutation = useMutation(validateConfig, {
 		onSuccess: (res) => {
-			if (res.result?.valid) {
+			const violations = res.result?.schemaViolations ?? [];
+			if (res.result?.valid && violations.length === 0) {
 				toast.success("Content is valid");
 				setValidationErrors([]);
+				setSchemaViolations([]);
 			} else {
 				setValidationErrors(res.result?.errors ?? []);
+				setSchemaViolations(violations);
 				toast.error("Validation failed");
 			}
 		},
@@ -174,6 +181,8 @@ export function ContentCard({
 									validateMutation.mutate({
 										content,
 										format: protoFormat,
+										namespace: isEdit ? namespace : "",
+										path: isEdit ? configPath : "",
 									})
 								}
 								disabled={!canValidate || validateMutation.isPending}
@@ -188,6 +197,7 @@ export function ContentCard({
 						onChange={(v) => {
 							onContentChange(v);
 							setValidationErrors([]);
+							setSchemaViolations([]);
 						}}
 						language={editorLanguage}
 					/>
@@ -195,6 +205,16 @@ export function ContentCard({
 						<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
 							{validationErrors.map((err) => (
 								<p key={err}>{err}</p>
+							))}
+						</div>
+					)}
+					{schemaViolations.length > 0 && (
+						<div className="rounded-md bg-destructive/10 p-3 text-sm space-y-1">
+							<p className="font-medium text-destructive">Schema violations:</p>
+							{schemaViolations.map((v) => (
+								<p key={`${v.path}-${v.keyword}`} className="text-destructive">
+									<span className="font-mono">{v.path}</span> — {v.message}
+								</p>
 							))}
 						</div>
 					)}

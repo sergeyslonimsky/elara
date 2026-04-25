@@ -136,3 +136,27 @@ func domainToNamespaceMeta(ns *domain.Namespace) *namespaceMeta {
 		UpdatedAt:   ns.UpdatedAt,
 	}
 }
+
+type schemaMeta struct {
+	ID         string    `json:"id"`
+	JSONSchema string    `json:"json_schema"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
+func domainToSchemaMeta(s *domain.SchemaAttachment) *schemaMeta {
+	return &schemaMeta{
+		ID:         s.ID,
+		JSONSchema: s.JSONSchema,
+		CreatedAt:  s.CreatedAt,
+	}
+}
+
+func schemaMetaToDomain(m *schemaMeta, namespace, pathPattern string) *domain.SchemaAttachment {
+	return &domain.SchemaAttachment{
+		ID:          m.ID,
+		Namespace:   namespace,
+		PathPattern: pathPattern,
+		JSONSchema:  m.JSONSchema,
+		CreatedAt:   m.CreatedAt,
+	}
+}

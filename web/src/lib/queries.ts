@@ -5,6 +5,10 @@ import {
 	getConfigHistory,
 	listConfigs,
 } from "@/gen/elara/config/v1/config_service-ConfigService_connectquery";
+import {
+	getSchema,
+	listSchemas,
+} from "@/gen/elara/config/v1/schema_service-SchemaService_connectquery";
 import { listNamespaces } from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
 
 export type QueryClient = ReturnType<typeof useQueryClient>;
@@ -18,6 +22,10 @@ const queryKeys = {
 		createConnectQueryKey({ schema: getConfig, cardinality: undefined }),
 	configHistory: () =>
 		createConnectQueryKey({ schema: getConfigHistory, cardinality: undefined }),
+	schema: () =>
+		createConnectQueryKey({ schema: getSchema, cardinality: undefined }),
+	schemas: () =>
+		createConnectQueryKey({ schema: listSchemas, cardinality: undefined }),
 } as const;
 
 type QueryKey = keyof typeof queryKeys;

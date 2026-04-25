@@ -123,6 +123,8 @@ message CopyConfigResponse {
 message ValidateConfigRequest {
   string content = 1 [(buf.validate.field).required = true];
   Format format = 2;
+  string namespace = 3;
+  string path = 4;
 }
 
 message ValidateConfigResponse {

@@ -1027,6 +1027,8 @@ type ValidateConfigRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
 	Format        Format                 `protobuf:"varint,2,opt,name=format,proto3,enum=elara.config.v1.Format" json:"format,omitempty"`
+	Namespace     string                 `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Path          string                 `protobuf:"bytes,4,opt,name=path,proto3" json:"path,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1073,6 +1075,20 @@ func (x *ValidateConfigRequest) GetFormat() Format {
 		return x.Format
 	}
 	return Format_FORMAT_UNSPECIFIED
+}
+
+func (x *ValidateConfigRequest) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *ValidateConfigRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
 }
 
 type ValidateConfigResponse struct {
@@ -1616,10 +1632,12 @@ const file_elara_config_v1_config_service_proto_rawDesc = "" +
 	"\x10destination_path\x18\x03 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x0fdestinationPath\x123\n" +
 	"\x15destination_namespace\x18\x04 \x01(\tR\x14destinationNamespace\"E\n" +
 	"\x12CopyConfigResponse\x12/\n" +
-	"\x06config\x18\x01 \x01(\v2\x17.elara.config.v1.ConfigR\x06config\"j\n" +
+	"\x06config\x18\x01 \x01(\v2\x17.elara.config.v1.ConfigR\x06config\"\x9c\x01\n" +
 	"\x15ValidateConfigRequest\x12 \n" +
 	"\acontent\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\acontent\x12/\n" +
-	"\x06format\x18\x02 \x01(\x0e2\x17.elara.config.v1.FormatR\x06format\"S\n" +
+	"\x06format\x18\x02 \x01(\x0e2\x17.elara.config.v1.FormatR\x06format\x12\x1c\n" +
+	"\tnamespace\x18\x03 \x01(\tR\tnamespace\x12\x12\n" +
+	"\x04path\x18\x04 \x01(\tR\x04path\"S\n" +
 	"\x16ValidateConfigResponse\x129\n" +
 	"\x06result\x18\x01 \x01(\v2!.elara.config.v1.ValidationResultR\x06result\"T\n" +
 	"\x13WatchConfigsRequest\x12\x1f\n" +

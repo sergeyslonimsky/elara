@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package elara.config.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message SchemaAttachment {
+  string id = 1;
+  string namespace = 2;
+  string path_pattern = 3;
+  string json_schema = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message SchemaViolation {
+  string path = 1;
+  string message = 2;
+  string keyword = 3;
+}
+
+message SchemaValidationFailure {
+  repeated SchemaViolation violations = 1;
+}

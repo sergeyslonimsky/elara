@@ -21,6 +21,7 @@ type V2Handlers struct {
 	Clients   *v2.ClientsHandler
 	Dashboard *v2.DashboardHandler
 	Transfer  *v2.TransferHandler
+	Schema    *v2.SchemaHandler
 }
 
 func NewV2Handlers(uc *UseCases) *V2Handlers {
@@ -52,6 +53,13 @@ func NewV2Handlers(uc *UseCases) *V2Handlers {
 		Clients:   v2.NewClientsHandler(uc.Clients),
 		Dashboard: v2.NewDashboardHandler(uc.Dashboard),
 		Transfer:  v2.NewTransferHandler(uc.ExportNamespace, uc.ExportAll, uc.ImportNamespace),
+		Schema: v2.NewSchemaHandler(
+			uc.AttachSchema,
+			uc.DetachSchema,
+			uc.GetSchema,
+			uc.GetEffectiveSchema,
+			uc.ListSchemas,
+		),
 	}
 }
 
@@ -79,5 +87,8 @@ func V2Routes(server server, handlers *V2Handlers) {
 	server.Mount(path, handler)
 
 	path, handler = transferv1connect.NewTransferServiceHandler(handlers.Transfer, opts)
+	server.Mount(path, handler)
+
+	path, handler = configv1connect.NewSchemaServiceHandler(handlers.Schema, opts)
 	server.Mount(path, handler)
 }

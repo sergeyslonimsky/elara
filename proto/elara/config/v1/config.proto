@@ -68,6 +68,13 @@ message ValidationResult {
   repeated string errors = 2;
   Format detected_format = 3;
   string normalized_content = 4;
+  repeated SchemaViolationDetail schema_violations = 5;
+}
+
+message SchemaViolationDetail {
+  string path = 1;
+  string message = 2;
+  string keyword = 3;
 }
 
 enum EventType {

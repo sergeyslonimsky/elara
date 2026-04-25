@@ -50,6 +50,14 @@ func revisionBytes(rev int64) []byte {
 	return b
 }
 
+func schemaKey(namespace, pathPattern string) []byte {
+	return []byte(namespace + string(keySep) + pathPattern)
+}
+
+func schemaKeyPrefix(namespace string) []byte {
+	return []byte(namespace + string(keySep))
+}
+
 func parseRevision(b []byte) int64 {
 	if len(b) < revisionSize {
 		return 0

@@ -20,6 +20,7 @@ var buckets = [][]byte{
 	[]byte("sys"),
 	[]byte("lock_history"),
 	[]byte("lock_changelog"),
+	[]byte("schemas"),
 }
 
 const (
@@ -32,6 +33,7 @@ const (
 	bucketSys           = "sys"
 	bucketLockHistory   = "lock_history"
 	bucketLockChangelog = "lock_changelog"
+	bucketSchemas       = "schemas"
 
 	sysRevisionKey = "revision"
 	sysSchemaKey   = "schema"

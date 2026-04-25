@@ -23,11 +23,16 @@ type updateNSTimestampUpdater interface {
 	UpdateTimestamp(ctx context.Context, name string) error
 }
 
+type updateSchemaValidator interface {
+	Execute(ctx context.Context, namespace, configPath, content string, format domain.Format) error
+}
+
 type UpdateUseCase struct {
-	configs    configUpdater
-	getter     updateConfigGetter
-	watch      updateWatchNotifier
-	namespaces updateNSTimestampUpdater
+	configs         configUpdater
+	getter          updateConfigGetter
+	watch           updateWatchNotifier
+	namespaces      updateNSTimestampUpdater
+	schemaValidator updateSchemaValidator
 }
 
 func NewUpdateUseCase(
@@ -35,12 +40,14 @@ func NewUpdateUseCase(
 	getter updateConfigGetter,
 	watch updateWatchNotifier,
 	namespaces updateNSTimestampUpdater,
+	schemaValidator updateSchemaValidator,
 ) *UpdateUseCase {
 	return &UpdateUseCase{
-		configs:    configs,
-		getter:     getter,
-		watch:      watch,
-		namespaces: namespaces,
+		configs:         configs,
+		getter:          getter,
+		watch:           watch,
+		namespaces:      namespaces,
+		schemaValidator: schemaValidator,
 	}
 }
 
@@ -72,6 +79,10 @@ func (uc *UpdateUseCase) Execute(ctx context.Context, cfg *domain.Config) (*doma
 
 	cfg.Content = normalized
 	cfg.GenerateHash()
+
+	if err := uc.schemaValidator.Execute(ctx, cfg.Namespace, cfg.Path, cfg.Content, cfg.Format); err != nil {
+		return nil, fmt.Errorf("schema validation: %w", err)
+	}
 
 	if err := uc.configs.Update(ctx, cfg); err != nil {
 		return nil, fmt.Errorf("update config: %w", err)

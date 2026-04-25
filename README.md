@@ -60,6 +60,7 @@ pluggable storage backends (PostgreSQL, S3) are on the roadmap.
 - **Config history** — every version stored, retrievable by revision.
 - **Global revision counter** — monotonic, etcd-style semantics.
 - **Format-aware validation** for JSON and YAML; pass-through for everything else (ini, toml, plain text).
+- **JSON Schema validation** — attach a JSON Schema (draft-07) to a path pattern; every `CreateConfig`/`UpdateConfig` call is validated before storage, with structured violation details in the error response.
 - **Single bbolt file storage** — ACID transactions, no external DB required.
 - **Observability** — optional Prometheus `/metrics` and OTLP tracing.
 - **Kube-native Helm chart** with StatefulSet, ServiceMonitor, NetworkPolicy, JSON Schema validation, and a smoke test.
@@ -143,6 +144,48 @@ For etcd clients the contract is intentionally narrow:
 Operators can detect clients that keep retrying against locked targets via the
 `elara_writes_rejected_total{op,reason,namespace}` Prometheus counter, where `reason` is
 `config_locked` or `namespace_locked`.
+
+### JSON Schema validation
+
+Elara can validate config content against a JSON Schema before storing it. Schemas are attached to
+path glob patterns (e.g. `/services/**` or `/database.yaml`) and apply across the namespace.
+
+**Web UI**
+
+- **Namespace card → "Schemas"** — manage all schema attachments for a namespace in one place.
+  The table shows the pattern, a snippet of the schema, and the attachment date. Use **Attach Schema**
+  to add a new one, or the trash icon to remove it.
+- **Config page → "Schema" tab** — attach or detach a schema scoped to the exact config path.
+  The Monaco editor shows the current schema JSON. The **Live Validation** panel validates the
+  config's current content against the schema you're editing in real time (client-side, JSON only).
+
+**Behaviour**
+
+- Schema attachments use glob patterns. When a config is written, the most specific matching pattern
+  wins (fewest wildcards); ties are broken by oldest attachment.
+- Validation runs after format validation (JSON/YAML must parse first). `FormatOther` files are skipped.
+- YAML configs are converted to JSON before validation, so the same schema works for both formats.
+- On violation, the API returns `CodeInvalidArgument` with a `SchemaValidationFailure` error detail
+  containing each failing path, message, and keyword.
+
+**ConnectRPC** (`elara.config.v1.SchemaService`)
+
+```go
+schemaClient := configv1connect.NewSchemaServiceClient(http.DefaultClient, "http://localhost:8080")
+
+// Attach a schema to every YAML file in the "prod" namespace
+schemaClient.AttachSchema(ctx, connect.NewRequest(&configv1.AttachSchemaRequest{
+    Namespace:   "prod",
+    PathPattern: "/**/*.yaml",
+    JsonSchema:  `{"type":"object","required":["host"],"properties":{"host":{"type":"string"}}}`,
+}))
+
+// Detach
+schemaClient.DetachSchema(ctx, connect.NewRequest(&configv1.DetachSchemaRequest{
+    Namespace:   "prod",
+    PathPattern: "/**/*.yaml",
+}))
+```
 
 ### ConnectRPC client (Go)
 

@@ -1,8 +1,9 @@
-import { Database, Lock } from "lucide-react";
+import { Database, Lock, ShieldCheck } from "lucide-react";
 import { Link } from "react-router";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -49,6 +50,14 @@ export function NamespaceCard({ ns }: Readonly<{ ns: Namespace }>) {
 					<ExportDialog namespace={ns.name} />
 					<ImportDialog namespace={ns.name} />
 					<LockButton name={ns.name} locked={ns.locked} />
+					<Button
+						size="sm"
+						variant="outline"
+						render={<Link to={`/namespaces/${ns.name}/schemas`} />}
+					>
+						<ShieldCheck className="mr-1 h-3.5 w-3.5" />
+						Schemas
+					</Button>
 				</div>
 			</CardContent>
 		</Card>
