@@ -1,6 +1,6 @@
 import { Route } from "react-router";
-import { ClientDetailPage } from "@/pages/client-detail";
 import { ClientsPage } from "@/pages/clients";
+import { ClientDetailPage } from "@/pages/clients/detail";
 
 export const ClientsRoutes = (
 	<Route path="clients">
