@@ -19,6 +19,7 @@ type Adapters struct {
 	ConfigRepo        *bboltadapter.ConfigRepo
 	NamespaceRepo     *bboltadapter.NamespaceRepo
 	ClientHistoryRepo *bboltadapter.ClientHistoryRepo
+	SchemaRepo        *bboltadapter.SchemaRepo
 	Watch             *watchadapter.Publisher
 
 	// Connected-clients monitor: history is wired into the registry as a
@@ -57,6 +58,7 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 		ConfigRepo:        bboltadapter.NewConfigRepo(store),
 		NamespaceRepo:     bboltadapter.NewNamespaceRepo(store),
 		ClientHistoryRepo: clientHistoryRepo,
+		SchemaRepo:        bboltadapter.NewSchemaRepo(store),
 		Watch:             watchadapter.NewPublisher(),
 		ClientHistory:     clientHistory,
 		ClientRegistry:    clientRegistry,

@@ -13,6 +13,7 @@ type ValidationResult struct {
 	Errors            []string
 	DetectedFormat    Format
 	NormalizedContent string
+	SchemaViolations  []SchemaViolation
 }
 
 func ValidateContent(content string, format Format) error {

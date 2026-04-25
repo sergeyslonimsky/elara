@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package elara.config.v1;
+
+import "buf/validate/validate.proto";
+import "elara/config/v1/schema.proto";
+
+service SchemaService {
+  rpc AttachSchema(AttachSchemaRequest) returns (AttachSchemaResponse);
+  rpc DetachSchema(DetachSchemaRequest) returns (DetachSchemaResponse);
+  rpc GetSchema(GetSchemaRequest) returns (GetSchemaResponse);
+  rpc GetEffectiveSchema(GetEffectiveSchemaRequest) returns (GetEffectiveSchemaResponse);
+  rpc ListSchemas(ListSchemasRequest) returns (ListSchemasResponse);
+}
+
+message AttachSchemaRequest {
+  string namespace = 1 [(buf.validate.field).required = true];
+  string path_pattern = 2 [(buf.validate.field).required = true];
+  string json_schema = 3 [(buf.validate.field).required = true];
+}
+
+message AttachSchemaResponse {
+  SchemaAttachment schema = 1;
+}
+
+message DetachSchemaRequest {
+  string namespace = 1 [(buf.validate.field).required = true];
+  string path_pattern = 2 [(buf.validate.field).required = true];
+}
+
+message DetachSchemaResponse {}
+
+message GetSchemaRequest {
+  string namespace = 1 [(buf.validate.field).required = true];
+  string path_pattern = 2 [(buf.validate.field).required = true];
+}
+
+message GetSchemaResponse {
+  SchemaAttachment schema = 1;
+}
+
+message GetEffectiveSchemaRequest {
+  string namespace = 1 [(buf.validate.field).required = true];
+  string path = 2 [(buf.validate.field).required = true];
+}
+
+message GetEffectiveSchemaResponse {
+  SchemaAttachment schema = 1;
+}
+
+message ListSchemasRequest {
+  string namespace = 1 [(buf.validate.field).required = true];
+}
+
+message ListSchemasResponse {
+  repeated SchemaAttachment schemas = 1;
+}

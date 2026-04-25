@@ -589,11 +589,12 @@ func (x *HistoryEntry) GetTimestamp() *timestamppb.Timestamp {
 }
 
 type ValidationResult struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Valid             bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
-	Errors            []string               `protobuf:"bytes,2,rep,name=errors,proto3" json:"errors,omitempty"`
-	DetectedFormat    Format                 `protobuf:"varint,3,opt,name=detected_format,json=detectedFormat,proto3,enum=elara.config.v1.Format" json:"detected_format,omitempty"`
-	NormalizedContent string                 `protobuf:"bytes,4,opt,name=normalized_content,json=normalizedContent,proto3" json:"normalized_content,omitempty"`
+	state             protoimpl.MessageState   `protogen:"open.v1"`
+	Valid             bool                     `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
+	Errors            []string                 `protobuf:"bytes,2,rep,name=errors,proto3" json:"errors,omitempty"`
+	DetectedFormat    Format                   `protobuf:"varint,3,opt,name=detected_format,json=detectedFormat,proto3,enum=elara.config.v1.Format" json:"detected_format,omitempty"`
+	NormalizedContent string                   `protobuf:"bytes,4,opt,name=normalized_content,json=normalizedContent,proto3" json:"normalized_content,omitempty"`
+	SchemaViolations  []*SchemaViolationDetail `protobuf:"bytes,5,rep,name=schema_violations,json=schemaViolations,proto3" json:"schema_violations,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -656,6 +657,73 @@ func (x *ValidationResult) GetNormalizedContent() string {
 	return ""
 }
 
+func (x *ValidationResult) GetSchemaViolations() []*SchemaViolationDetail {
+	if x != nil {
+		return x.SchemaViolations
+	}
+	return nil
+}
+
+type SchemaViolationDetail struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Keyword       string                 `protobuf:"bytes,3,opt,name=keyword,proto3" json:"keyword,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SchemaViolationDetail) Reset() {
+	*x = SchemaViolationDetail{}
+	mi := &file_elara_config_v1_config_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SchemaViolationDetail) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SchemaViolationDetail) ProtoMessage() {}
+
+func (x *SchemaViolationDetail) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_config_v1_config_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SchemaViolationDetail.ProtoReflect.Descriptor instead.
+func (*SchemaViolationDetail) Descriptor() ([]byte, []int) {
+	return file_elara_config_v1_config_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SchemaViolationDetail) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *SchemaViolationDetail) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *SchemaViolationDetail) GetKeyword() string {
+	if x != nil {
+		return x.Keyword
+	}
+	return ""
+}
+
 type WatchEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Type          EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=elara.config.v1.EventType" json:"type,omitempty"`
@@ -669,7 +737,7 @@ type WatchEvent struct {
 
 func (x *WatchEvent) Reset() {
 	*x = WatchEvent{}
-	mi := &file_elara_config_v1_config_proto_msgTypes[5]
+	mi := &file_elara_config_v1_config_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -681,7 +749,7 @@ func (x *WatchEvent) String() string {
 func (*WatchEvent) ProtoMessage() {}
 
 func (x *WatchEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_config_v1_config_proto_msgTypes[5]
+	mi := &file_elara_config_v1_config_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -694,7 +762,7 @@ func (x *WatchEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchEvent.ProtoReflect.Descriptor instead.
 func (*WatchEvent) Descriptor() ([]byte, []int) {
-	return file_elara_config_v1_config_proto_rawDescGZIP(), []int{5}
+	return file_elara_config_v1_config_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *WatchEvent) GetType() EventType {
@@ -794,12 +862,17 @@ const file_elara_config_v1_config_proto_rawDesc = "" +
 	"\fcontent_hash\x18\x03 \x01(\tR\vcontentHash\x129\n" +
 	"\n" +
 	"event_type\x18\x04 \x01(\x0e2\x1a.elara.config.v1.EventTypeR\teventType\x128\n" +
-	"\ttimestamp\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\xb1\x01\n" +
+	"\ttimestamp\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\x86\x02\n" +
 	"\x10ValidationResult\x12\x14\n" +
 	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x16\n" +
 	"\x06errors\x18\x02 \x03(\tR\x06errors\x12@\n" +
 	"\x0fdetected_format\x18\x03 \x01(\x0e2\x17.elara.config.v1.FormatR\x0edetectedFormat\x12-\n" +
-	"\x12normalized_content\x18\x04 \x01(\tR\x11normalizedContent\"\xd9\x01\n" +
+	"\x12normalized_content\x18\x04 \x01(\tR\x11normalizedContent\x12S\n" +
+	"\x11schema_violations\x18\x05 \x03(\v2&.elara.config.v1.SchemaViolationDetailR\x10schemaViolations\"_\n" +
+	"\x15SchemaViolationDetail\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12\x18\n" +
+	"\akeyword\x18\x03 \x01(\tR\akeyword\"\xd9\x01\n" +
 	"\n" +
 	"WatchEvent\x12.\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1a.elara.config.v1.EventTypeR\x04type\x12\x12\n" +
@@ -836,7 +909,7 @@ func file_elara_config_v1_config_proto_rawDescGZIP() []byte {
 }
 
 var file_elara_config_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_elara_config_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_elara_config_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_elara_config_v1_config_proto_goTypes = []any{
 	(Format)(0),                   // 0: elara.config.v1.Format
 	(EventType)(0),                // 1: elara.config.v1.EventType
@@ -845,33 +918,35 @@ var file_elara_config_v1_config_proto_goTypes = []any{
 	(*DirectoryEntry)(nil),        // 4: elara.config.v1.DirectoryEntry
 	(*HistoryEntry)(nil),          // 5: elara.config.v1.HistoryEntry
 	(*ValidationResult)(nil),      // 6: elara.config.v1.ValidationResult
-	(*WatchEvent)(nil),            // 7: elara.config.v1.WatchEvent
-	nil,                           // 8: elara.config.v1.Config.MetadataEntry
-	nil,                           // 9: elara.config.v1.ConfigSummary.MetadataEntry
-	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
+	(*SchemaViolationDetail)(nil), // 7: elara.config.v1.SchemaViolationDetail
+	(*WatchEvent)(nil),            // 8: elara.config.v1.WatchEvent
+	nil,                           // 9: elara.config.v1.Config.MetadataEntry
+	nil,                           // 10: elara.config.v1.ConfigSummary.MetadataEntry
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
 }
 var file_elara_config_v1_config_proto_depIdxs = []int32{
 	0,  // 0: elara.config.v1.Config.format:type_name -> elara.config.v1.Format
-	8,  // 1: elara.config.v1.Config.metadata:type_name -> elara.config.v1.Config.MetadataEntry
-	10, // 2: elara.config.v1.Config.created_at:type_name -> google.protobuf.Timestamp
-	10, // 3: elara.config.v1.Config.updated_at:type_name -> google.protobuf.Timestamp
+	9,  // 1: elara.config.v1.Config.metadata:type_name -> elara.config.v1.Config.MetadataEntry
+	11, // 2: elara.config.v1.Config.created_at:type_name -> google.protobuf.Timestamp
+	11, // 3: elara.config.v1.Config.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 4: elara.config.v1.ConfigSummary.format:type_name -> elara.config.v1.Format
-	9,  // 5: elara.config.v1.ConfigSummary.metadata:type_name -> elara.config.v1.ConfigSummary.MetadataEntry
-	10, // 6: elara.config.v1.ConfigSummary.created_at:type_name -> google.protobuf.Timestamp
-	10, // 7: elara.config.v1.ConfigSummary.updated_at:type_name -> google.protobuf.Timestamp
+	10, // 5: elara.config.v1.ConfigSummary.metadata:type_name -> elara.config.v1.ConfigSummary.MetadataEntry
+	11, // 6: elara.config.v1.ConfigSummary.created_at:type_name -> google.protobuf.Timestamp
+	11, // 7: elara.config.v1.ConfigSummary.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 8: elara.config.v1.DirectoryEntry.format:type_name -> elara.config.v1.Format
-	10, // 9: elara.config.v1.DirectoryEntry.updated_at:type_name -> google.protobuf.Timestamp
+	11, // 9: elara.config.v1.DirectoryEntry.updated_at:type_name -> google.protobuf.Timestamp
 	1,  // 10: elara.config.v1.HistoryEntry.event_type:type_name -> elara.config.v1.EventType
-	10, // 11: elara.config.v1.HistoryEntry.timestamp:type_name -> google.protobuf.Timestamp
+	11, // 11: elara.config.v1.HistoryEntry.timestamp:type_name -> google.protobuf.Timestamp
 	0,  // 12: elara.config.v1.ValidationResult.detected_format:type_name -> elara.config.v1.Format
-	1,  // 13: elara.config.v1.WatchEvent.type:type_name -> elara.config.v1.EventType
-	2,  // 14: elara.config.v1.WatchEvent.config:type_name -> elara.config.v1.Config
-	10, // 15: elara.config.v1.WatchEvent.timestamp:type_name -> google.protobuf.Timestamp
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	7,  // 13: elara.config.v1.ValidationResult.schema_violations:type_name -> elara.config.v1.SchemaViolationDetail
+	1,  // 14: elara.config.v1.WatchEvent.type:type_name -> elara.config.v1.EventType
+	2,  // 15: elara.config.v1.WatchEvent.config:type_name -> elara.config.v1.Config
+	11, // 16: elara.config.v1.WatchEvent.timestamp:type_name -> google.protobuf.Timestamp
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_elara_config_v1_config_proto_init() }
@@ -885,7 +960,7 @@ func file_elara_config_v1_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_config_v1_config_proto_rawDesc), len(file_elara_config_v1_config_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

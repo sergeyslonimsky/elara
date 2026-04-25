@@ -5,6 +5,7 @@ import (
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 	dashboarduc "github.com/sergeyslonimsky/elara/internal/usecase/dashboard"
 	nsuc "github.com/sergeyslonimsky/elara/internal/usecase/namespace"
+	schemauc "github.com/sergeyslonimsky/elara/internal/usecase/schema"
 	transferuc "github.com/sergeyslonimsky/elara/internal/usecase/transfer"
 )
 
@@ -31,6 +32,12 @@ type UseCases struct {
 	LockNamespace   *nsuc.LockUseCase
 	UnlockNamespace *nsuc.UnlockUseCase
 
+	AttachSchema       *schemauc.AttachUseCase
+	DetachSchema       *schemauc.DetachUseCase
+	GetSchema          *schemauc.GetUseCase
+	GetEffectiveSchema *schemauc.GetEffectiveUseCase
+	ListSchemas        *schemauc.ListUseCase
+
 	Clients   *clientsuc.UseCase
 	Dashboard *dashboarduc.UseCase
 
@@ -40,16 +47,30 @@ type UseCases struct {
 }
 
 func NewUseCases(a *Adapters) *UseCases {
+	schemaValidator := schemauc.NewValidateContentUseCase(a.SchemaRepo)
+
 	return &UseCases{
-		CreateConfig:   configuc.NewCreateUseCase(a.ConfigRepo, a.Watch, a.NamespaceRepo, a.NamespaceRepo),
-		GetConfig:      configuc.NewGetUseCase(a.ConfigRepo),
-		UpdateConfig:   configuc.NewUpdateUseCase(a.ConfigRepo, a.ConfigRepo, a.Watch, a.NamespaceRepo),
+		CreateConfig: configuc.NewCreateUseCase(
+			a.ConfigRepo,
+			a.Watch,
+			a.NamespaceRepo,
+			a.NamespaceRepo,
+			schemaValidator,
+		),
+		GetConfig: configuc.NewGetUseCase(a.ConfigRepo),
+		UpdateConfig: configuc.NewUpdateUseCase(
+			a.ConfigRepo,
+			a.ConfigRepo,
+			a.Watch,
+			a.NamespaceRepo,
+			schemaValidator,
+		),
 		DeleteConfig:   configuc.NewDeleteUseCase(a.ConfigRepo, a.Watch),
 		ListConfigs:    configuc.NewListUseCase(a.ConfigRepo),
 		ConfigHistory:  configuc.NewHistoryUseCase(a.ConfigRepo),
 		SearchConfigs:  configuc.NewSearchUseCase(a.ConfigRepo),
 		CopyConfig:     configuc.NewCopyUseCase(a.ConfigRepo, a.ConfigRepo, a.Watch, a.NamespaceRepo, a.NamespaceRepo),
-		ValidateConfig: configuc.NewValidateUseCase(),
+		ValidateConfig: configuc.NewValidateUseCase(schemaValidator),
 		WatchConfigs:   configuc.NewWatchUseCase(a.Watch),
 		ConfigDiff:     configuc.NewDiffUseCase(a.ConfigRepo),
 		LockConfig:     configuc.NewLockUseCase(a.ConfigRepo, a.Watch),
@@ -72,6 +93,12 @@ func NewUseCases(a *Adapters) *UseCases {
 			a.NamespaceRepo,
 			a.NamespaceRepo,
 		),
+
+		AttachSchema:       schemauc.NewAttachUseCase(a.SchemaRepo, a.NamespaceRepo),
+		DetachSchema:       schemauc.NewDetachUseCase(a.SchemaRepo, a.NamespaceRepo),
+		GetSchema:          schemauc.NewGetUseCase(a.SchemaRepo),
+		GetEffectiveSchema: schemauc.NewGetEffectiveUseCase(a.SchemaRepo),
+		ListSchemas:        schemauc.NewListUseCase(a.SchemaRepo),
 
 		Clients: clientsuc.NewUseCase(a.ClientRegistry, a.ClientHistory),
 		Dashboard: dashboarduc.NewUseCase(

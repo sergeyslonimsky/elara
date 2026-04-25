@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	configv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
 )
 
 func toConnectError(err error) error {
@@ -24,9 +25,31 @@ func toConnectError(err error) error {
 		return connect.NewError(connect.CodeFailedPrecondition, err)
 	case errors.Is(err, domain.ErrInvalidFormat):
 		return connect.NewError(connect.CodeInvalidArgument, err)
+	case domain.IsSchemaValidationError(err):
+		return schemaValidationConnectError(err)
 	case domain.IsValidationError(err):
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	default:
 		return connect.NewError(connect.CodeInternal, err)
 	}
+}
+
+func schemaValidationConnectError(err error) *connect.Error {
+	connectErr := connect.NewError(connect.CodeInvalidArgument, err)
+	var sve *domain.SchemaValidationError
+	if errors.As(err, &sve) {
+		failure := &configv1.SchemaValidationFailure{}
+		for _, v := range sve.Violations {
+			failure.Violations = append(failure.Violations, &configv1.SchemaViolation{
+				Path:    v.Path,
+				Message: v.Message,
+				Keyword: v.Keyword,
+			})
+		}
+		if detail, detailErr := connect.NewErrorDetail(failure); detailErr == nil {
+			connectErr.AddDetail(detail)
+		}
+	}
+
+	return connectErr
 }
