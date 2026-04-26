@@ -112,7 +112,9 @@ jobs:
         env:
           HELM_GPG_KEY: ${{ secrets.HELM_GPG_KEY }}
         run: |
-          echo "$HELM_GPG_KEY" | base64 -d | gpg --dearmor > "$HOME/secring.gpg"
+          set -euo pipefail
+          printf '%s' "$HELM_GPG_KEY" | base64 -d | gpg --dearmor > "$HOME/secring.gpg"
+          gpg --no-default-keyring --keyring "$HOME/secring.gpg" --list-secret-keys
           touch "$HOME/passphrase.txt"
           echo "CR_KEYRING=$HOME/secring.gpg" >> "$GITHUB_ENV"
           echo "CR_KEY=Sergey Slonimsky" >> "$GITHUB_ENV"
