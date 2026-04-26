@@ -148,6 +148,14 @@ jobs:
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "ref=ghcr.io/${OWNER,,}/charts/elara@${DIGEST}" >> "$GITHUB_OUTPUT"
 
+      - name: Log in to GHCR for cosign
+        if: steps.push.outputs.skip != 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install cosign
         if: steps.push.outputs.skip != 'true'
         uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
