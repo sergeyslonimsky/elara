@@ -33,6 +33,9 @@ maintainers:
     url: https://github.com/sergeyslonimsky
 
 annotations:
+  artifacthub.io/signKey: |
+    fingerprint: 7B11D05E0EFFD8DB25ED8119ADC3B0CE9EB1B31B
+    url: https://raw.githubusercontent.com/sergeyslonimsky/elara/master/helm-signing-key.asc
   artifacthub.io/license: MIT
   artifacthub.io/category: networking
   artifacthub.io/prerelease: "false"

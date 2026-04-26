@@ -108,11 +108,30 @@ jobs:
           sed -i -E "s/^appVersion:.*/appVersion: \"${VERSION}\"/" helm/elara/Chart.yaml
           grep -E '^(version|appVersion):' helm/elara/Chart.yaml
 
+      - name: Import GPG signing key
+        env:
+          HELM_GPG_KEY: ${{ secrets.HELM_GPG_KEY }}
+        run: |
+          echo "$HELM_GPG_KEY" | base64 -d | gpg --import
+          gpg --export-secret-keys > ~/.gnupg/secring.gpg
+
+      - name: Package and sign chart
+        env:
+          VERSION: ${{ needs.image.outputs.version }}
+        run: |
+          mkdir -p .cr-release-packages
+          helm package helm/elara \
+            --sign \
+            --key "Sergey Slonimsky" \
+            --keyring ~/.gnupg/secring.gpg \
+            --destination .cr-release-packages
+
       - name: Release chart to gh-pages
         uses: helm/chart-releaser-action@v1.7.0
         with:
           charts_dir: helm
           skip_existing: true
+          skip_packaging: true
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
