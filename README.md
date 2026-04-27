@@ -116,6 +116,115 @@ etcdctl watch --prefix /prod/services/billing/
 etcdctl endpoint health
 ```
 
+### etcd Go client
+
+Keys follow the pattern `/{namespace}/{path}` where `{path}` always starts
+with `/`. For example, a config at path `/services/billing/config.yaml` in
+the `prod` namespace is stored under the etcd key
+`/prod/services/billing/config.yaml`.
+
+**Connect**
+
+```go
+import clientv3 "go.etcd.io/etcd/client/v3"
+
+cli, err := clientv3.New(clientv3.Config{
+    Endpoints:   []string{"localhost:2379"},
+    DialTimeout: 5 * time.Second,
+})
+if err != nil {
+    log.Fatal(err)
+}
+defer cli.Close()
+```
+
+**Get a single config**
+
+```go
+resp, err := cli.Get(ctx, "/prod/services/billing/config.yaml")
+if err != nil {
+    log.Fatal(err)
+}
+if len(resp.Kvs) == 0 {
+    log.Println("key not found")
+} else {
+    fmt.Printf("value: %s\n", resp.Kvs[0].Value)
+}
+```
+
+**Get all configs in a namespace (prefix range)**
+
+```go
+// clientv3.WithPrefix() expands "/prod/" into the range ["/prod/", "/prod0").
+resp, err := cli.Get(ctx, "/prod/", clientv3.WithPrefix())
+if err != nil {
+    log.Fatal(err)
+}
+for _, kv := range resp.Kvs {
+    fmt.Printf("%s = %s\n", kv.Key, kv.Value)
+}
+```
+
+**Watch a single key**
+
+```go
+watchCh := cli.Watch(ctx, "/prod/services/billing/config.yaml")
+for wresp := range watchCh {
+    for _, ev := range wresp.Events {
+        switch ev.Type {
+        case clientv3.EventTypePut:
+            fmt.Printf("updated: %s\n", ev.Kv.Value)
+        case clientv3.EventTypeDelete:
+            fmt.Println("deleted")
+        }
+    }
+}
+```
+
+**Watch a namespace prefix for any change**
+
+```go
+watchCh := cli.Watch(ctx, "/prod/", clientv3.WithPrefix())
+for wresp := range watchCh {
+    for _, ev := range wresp.Events {
+        fmt.Printf("[%s] %s\n", ev.Type, ev.Kv.Key)
+    }
+}
+```
+
+**Watch from a known revision (resumable)**
+
+The `Revision` field on every response header is a global monotonic counter.
+Store it between restarts to catch changes that happened while your service
+was offline:
+
+```go
+// First call: read current configs and capture the revision.
+resp, _ := cli.Get(ctx, "/prod/", clientv3.WithPrefix())
+startRev := resp.Header.Revision
+
+// On restart: watch from the saved revision so no events are missed.
+watchCh := cli.Watch(ctx, "/prod/",
+    clientv3.WithPrefix(),
+    clientv3.WithRev(startRev+1),
+)
+for wresp := range watchCh {
+    for _, ev := range wresp.Events {
+        fmt.Printf("[rev %d] [%s] %s\n", ev.Kv.ModRevision, ev.Type, ev.Kv.Key)
+    }
+}
+```
+
+**Put / Delete**
+
+```go
+// Create or update a config.
+_, err = cli.Put(ctx, "/prod/services/billing/config.yaml", `retries: 3`)
+
+// Delete a config.
+_, err = cli.Delete(ctx, "/prod/services/billing/config.yaml")
+```
+
 ### Locked configs and namespaces
 
 Lock is an admin/ops concern, not a data concern. Configs and namespaces can each be locked
