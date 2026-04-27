@@ -1,4 +1,10 @@
-import { Database, FolderTree, LayoutDashboard, Network } from "lucide-react";
+import {
+	Database,
+	FolderTree,
+	LayoutDashboard,
+	Network,
+	Webhook,
+} from "lucide-react";
 import { Link, useLocation, useParams } from "react-router";
 import { Logo } from "@/components/logo";
 import {
@@ -43,6 +49,12 @@ export function AppSidebar() {
 			href: "/clients",
 			icon: Network,
 			isActive: pathname.startsWith("/clients"),
+		},
+		{
+			title: "Webhooks",
+			href: "/webhooks",
+			icon: Webhook,
+			isActive: pathname.startsWith("/webhooks"),
 		},
 	];
 

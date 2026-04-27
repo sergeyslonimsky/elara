@@ -21,6 +21,7 @@ var buckets = [][]byte{
 	[]byte("lock_history"),
 	[]byte("lock_changelog"),
 	[]byte("schemas"),
+	[]byte("webhooks"),
 }
 
 const (
@@ -34,6 +35,7 @@ const (
 	bucketLockHistory   = "lock_history"
 	bucketLockChangelog = "lock_changelog"
 	bucketSchemas       = "schemas"
+	bucketWebhooks      = "webhooks"
 
 	sysRevisionKey = "revision"
 	sysSchemaKey   = "schema"

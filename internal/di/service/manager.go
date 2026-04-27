@@ -37,6 +37,8 @@ func NewServiceManager(
 
 	useCases := NewUseCases(adapters)
 
+	go adapters.WebhookDispatcher.Start(ctx)
+
 	return &Manager{
 		Adapters:     adapters,
 		UseCases:     useCases,

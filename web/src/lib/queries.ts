@@ -10,10 +10,13 @@ import {
 	listSchemas,
 } from "@/gen/elara/config/v1/schema_service-SchemaService_connectquery";
 import { listNamespaces } from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
+import { listWebhooks } from "@/gen/elara/webhook/v1/webhook_service-WebhookService_connectquery";
 
 export type QueryClient = ReturnType<typeof useQueryClient>;
 
 const queryKeys = {
+	webhooks: () =>
+		createConnectQueryKey({ schema: listWebhooks, cardinality: undefined }),
 	namespaces: () =>
 		createConnectQueryKey({ schema: listNamespaces, cardinality: undefined }),
 	configs: () =>

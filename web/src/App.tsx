@@ -6,6 +6,7 @@ import { BrowseRoutes } from "@/routes/browse-routes";
 import { ClientsRoutes } from "@/routes/clients-routes";
 import { ConfigRoutes } from "@/routes/config-routes";
 import { NamespacesRoutes } from "@/routes/namespaces-routes";
+import { WebhooksRoutes } from "@/routes/webhooks-routes";
 
 function App() {
 	return (
@@ -17,6 +18,7 @@ function App() {
 				{ConfigRoutes}
 				{ClientsRoutes}
 				{NamespacesRoutes}
+				{WebhooksRoutes}
 
 				<Route path="*" element={<NotFoundPage />} />
 			</Routes>

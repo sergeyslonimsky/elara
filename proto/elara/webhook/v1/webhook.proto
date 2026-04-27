@@ -1,0 +1,33 @@
+syntax = "proto3";
+package elara.webhook.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/sergeyslonimsky/elara/internal/proto/elara/webhook/v1;webhookv1";
+
+enum WebhookEvent {
+  WEBHOOK_EVENT_UNSPECIFIED = 0;
+  WEBHOOK_EVENT_CREATED = 1;
+  WEBHOOK_EVENT_UPDATED = 2;
+  WEBHOOK_EVENT_DELETED = 3;
+}
+
+message Webhook {
+  string id = 1;
+  string url = 2;
+  string namespace_filter = 3;
+  string path_prefix = 4;
+  repeated WebhookEvent events = 5;
+  bool enabled = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message DeliveryAttempt {
+  int32 attempt_number = 1;
+  int32 status_code = 2;
+  int64 latency_ms = 3;
+  string error = 4;
+  bool success = 5;
+  google.protobuf.Timestamp timestamp = 6;
+}
