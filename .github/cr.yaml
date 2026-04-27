@@ -1,0 +1,3 @@
+sign: true
+key: Sergey Slonimsky
+# keyring and passphrase-file are set via CR_KEYRING / CR_PASSPHRASE_FILE env vars
