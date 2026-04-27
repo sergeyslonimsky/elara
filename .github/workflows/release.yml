@@ -108,11 +108,24 @@ jobs:
           sed -i -E "s/^appVersion:.*/appVersion: \"${VERSION}\"/" helm/elara/Chart.yaml
           grep -E '^(version|appVersion):' helm/elara/Chart.yaml
 
+      - name: Prepare GPG signing key
+        env:
+          HELM_GPG_KEY: ${{ secrets.HELM_GPG_KEY }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$HELM_GPG_KEY" | base64 -d | gpg --dearmor > "$HOME/secring.gpg"
+          gpg --no-default-keyring --keyring "$HOME/secring.gpg" --list-secret-keys
+          printf '\n' > "$HOME/passphrase.txt"
+          echo "CR_KEYRING=$HOME/secring.gpg" >> "$GITHUB_ENV"
+          echo "CR_KEY=Sergey Slonimsky" >> "$GITHUB_ENV"
+          echo "CR_PASSPHRASE_FILE=$HOME/passphrase.txt" >> "$GITHUB_ENV"
+
       - name: Release chart to gh-pages
         uses: helm/chart-releaser-action@v1.7.0
         with:
           charts_dir: helm
           skip_existing: true
+          config: .github/cr.yaml
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
