@@ -115,7 +115,7 @@ jobs:
           set -euo pipefail
           printf '%s' "$HELM_GPG_KEY" | base64 -d | gpg --dearmor > "$HOME/secring.gpg"
           gpg --no-default-keyring --keyring "$HOME/secring.gpg" --list-secret-keys
-          touch "$HOME/passphrase.txt"
+          printf '\n' > "$HOME/passphrase.txt"
           echo "CR_KEYRING=$HOME/secring.gpg" >> "$GITHUB_ENV"
           echo "CR_KEY=Sergey Slonimsky" >> "$GITHUB_ENV"
           echo "CR_PASSPHRASE_FILE=$HOME/passphrase.txt" >> "$GITHUB_ENV"
