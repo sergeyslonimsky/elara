@@ -8,3 +8,8 @@ Object.defineProperty(window, "localStorage", {
 		clear: () => {},
 	},
 });
+
+// Polyfill Element.prototype.getAnimations for happy-dom
+if (typeof Element.prototype.getAnimations !== "function") {
+	Element.prototype.getAnimations = () => [];
+}
