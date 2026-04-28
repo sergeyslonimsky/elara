@@ -69,7 +69,7 @@ export function WebhookSheet({
 			openedWithIdRef.current = undefined;
 			return;
 		}
-		const currentId = webhook?.id;
+		const currentId = webhook?.id ?? "__CREATE__";
 		if (openedWithIdRef.current === currentId) return;
 		openedWithIdRef.current = currentId;
 		if (webhook) {
@@ -152,18 +152,18 @@ export function WebhookSheet({
 							<FieldLabel>Events</FieldLabel>
 							<div className="flex gap-4 pt-1">
 								{ALL_EVENTS.map(({ value, label }) => (
-									<button
+									<label
 										key={value}
-										type="button"
+										htmlFor={`event-${value}`}
 										className="flex items-center gap-2 text-sm cursor-pointer select-none"
-										onClick={() => toggleEvent(value)}
 									>
 										<Checkbox
+											id={`event-${value}`}
 											checked={form.events.includes(value)}
 											onCheckedChange={() => toggleEvent(value)}
 										/>
 										{label}
-									</button>
+									</label>
 								))}
 							</div>
 						</Field>
@@ -207,19 +207,19 @@ export function WebhookSheet({
 							/>
 						</Field>
 
-						<button
-							type="button"
+						<label
+							htmlFor="webhook-enabled"
 							className="flex items-center gap-2 text-sm cursor-pointer select-none"
-							onClick={() => setForm((f) => ({ ...f, enabled: !f.enabled }))}
 						>
 							<Checkbox
+								id="webhook-enabled"
 								checked={form.enabled}
 								onCheckedChange={(checked) =>
 									setForm((f) => ({ ...f, enabled: !!checked }))
 								}
 							/>
 							Enabled
-						</button>
+						</label>
 					</div>
 
 					<SheetFooter>

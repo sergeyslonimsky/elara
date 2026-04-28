@@ -7,6 +7,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_update.go -package=webhook_mock . webhookUpdater
+
 type webhookUpdater interface {
 	Get(ctx context.Context, id string) (*domain.Webhook, error)
 	Update(ctx context.Context, w *domain.Webhook) error

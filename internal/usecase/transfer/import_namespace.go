@@ -9,6 +9,8 @@ import (
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
 )
 
+//go:generate mockgen -destination=mocks/mock_import_namespace.go -package=transfer_mock . importConfigGetter,importConfigCreator,importConfigUpdater,importNSGetter,importNSCreator
+
 type importConfigGetter interface {
 	Get(ctx context.Context, path, namespace string) (*domain.Config, error)
 }

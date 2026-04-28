@@ -2,6 +2,8 @@ package webhook
 
 import "github.com/sergeyslonimsky/elara/internal/domain"
 
+//go:generate mockgen -destination=mocks/mock_history.go -package=webhook_mock . deliveryHistoryProvider
+
 type deliveryHistoryProvider interface {
 	GetDeliveryHistory(webhookID string) []domain.DeliveryAttempt
 }

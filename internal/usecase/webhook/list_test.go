@@ -1,25 +1,17 @@
 package webhook_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
+	webhook_mock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
 )
-
-type mockLister struct {
-	webhooks []*domain.Webhook
-	err      error
-}
-
-func (m *mockLister) List(_ context.Context) ([]*domain.Webhook, error) {
-	return m.webhooks, m.err
-}
 
 func TestListUseCase_Execute(t *testing.T) {
 	t.Parallel()
@@ -62,7 +54,11 @@ func TestListUseCase_Execute(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			uc := webhookuc.NewListUseCase(&mockLister{webhooks: tt.webhooks, err: tt.err})
+			ctrl := gomock.NewController(t)
+			repo := webhook_mock.NewMockwebhookLister(ctrl)
+			repo.EXPECT().List(gomock.Any()).Return(tt.webhooks, tt.err)
+
+			uc := webhookuc.NewListUseCase(repo)
 			result, err := uc.Execute(t.Context())
 
 			if tt.wantErr {

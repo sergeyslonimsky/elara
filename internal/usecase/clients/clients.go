@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_clients.go -package=clients_mock . ActiveSource,HistorySource
+
 // ActiveSource is the live in-memory state (typically *monitor.Registry).
 type ActiveSource interface {
 	ListActive() []*domain.Client

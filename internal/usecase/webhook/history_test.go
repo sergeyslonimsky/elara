@@ -5,22 +5,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
+	webhook_mock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
 )
-
-type mockHistoryProvider struct {
-	history map[string][]domain.DeliveryAttempt
-}
-
-func (m *mockHistoryProvider) GetDeliveryHistory(webhookID string) []domain.DeliveryAttempt {
-	if attempts, ok := m.history[webhookID]; ok {
-		return attempts
-	}
-
-	return []domain.DeliveryAttempt{}
-}
 
 func TestHistoryUseCase_Execute(t *testing.T) {
 	t.Parallel()
@@ -61,15 +51,18 @@ func TestHistoryUseCase_Execute(t *testing.T) {
 		},
 	}
 
-	provider := &mockHistoryProvider{
-		history: map[string][]domain.DeliveryAttempt{
-			knownID: attempts,
-		},
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			provider := webhook_mock.NewMockdeliveryHistoryProvider(ctrl)
+
+			if tt.webhookID == knownID {
+				provider.EXPECT().GetDeliveryHistory(tt.webhookID).Return(attempts)
+			} else {
+				provider.EXPECT().GetDeliveryHistory(tt.webhookID).Return([]domain.DeliveryAttempt{})
+			}
 
 			uc := webhookuc.NewHistoryUseCase(provider)
 			result := uc.Execute(tt.webhookID)

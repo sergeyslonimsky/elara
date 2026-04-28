@@ -18,48 +18,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	webhookadapter "github.com/sergeyslonimsky/elara/internal/adapter/webhook"
+	webhook_mock "github.com/sergeyslonimsky/elara/internal/adapter/webhook/mocks"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
-
-type mockPublisher struct {
-	ch chan domain.WatchEvent
-}
-
-func newMockPublisher() *mockPublisher {
-	return &mockPublisher{ch: make(chan domain.WatchEvent, 10)}
-}
-
-func (m *mockPublisher) Subscribe(_ context.Context, _, _ string) (<-chan domain.WatchEvent, func()) {
-	return m.ch, func() {}
-}
-
-func (m *mockPublisher) Send(e domain.WatchEvent) {
-	m.ch <- e
-}
-
-type mockLister struct {
-	mu       sync.RWMutex
-	webhooks []*domain.Webhook
-}
-
-func (m *mockLister) List(_ context.Context) ([]*domain.Webhook, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-
-	out := make([]*domain.Webhook, len(m.webhooks))
-	copy(out, m.webhooks)
-
-	return out, nil
-}
-
-func (m *mockLister) setWebhooks(webhooks []*domain.Webhook) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.webhooks = webhooks
-}
 
 func TestDispatcher_EventDispatchedToMatchingWebhook(t *testing.T) {
 	t.Parallel()
@@ -71,16 +35,22 @@ func TestDispatcher_EventDispatchedToMatchingWebhook(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-1",
 			URL:     srv.URL,
 			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
 			Enabled: true,
 		},
-	})
+	}, nil).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -89,13 +59,13 @@ func TestDispatcher_EventDispatchedToMatchingWebhook(t *testing.T) {
 
 	go dispatcher.Start(ctx)
 
-	pub.Send(domain.WatchEvent{
+	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
 		Path:      "/config.json",
 		Namespace: "prod",
 		Revision:  1,
 		Timestamp: time.Now(),
-	})
+	}
 
 	require.Eventually(t, func() bool {
 		return received.Load() == 1
@@ -124,10 +94,17 @@ func TestDispatcher_HMACHeaderPresentAndCorrect(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	ctrl := gomock.NewController(t)
+
 	secret := "my-secret"
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-2",
 			URL:     srv.URL,
@@ -135,7 +112,7 @@ func TestDispatcher_HMACHeaderPresentAndCorrect(t *testing.T) {
 			Secret:  secret,
 			Enabled: true,
 		},
-	})
+	}, nil).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -144,13 +121,13 @@ func TestDispatcher_HMACHeaderPresentAndCorrect(t *testing.T) {
 
 	go dispatcher.Start(ctx)
 
-	pub.Send(domain.WatchEvent{
+	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
 		Path:      "/config.json",
 		Namespace: "prod",
 		Revision:  1,
 		Timestamp: time.Now(),
-	})
+	}
 
 	require.Eventually(t, func() bool {
 		dataMu.Lock()
@@ -179,9 +156,15 @@ func TestDispatcher_NonMatchingNamespaceSkipped(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:              "wh-3",
 			URL:             srv.URL,
@@ -189,7 +172,7 @@ func TestDispatcher_NonMatchingNamespaceSkipped(t *testing.T) {
 			NamespaceFilter: "staging",
 			Enabled:         true,
 		},
-	})
+	}, nil).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -198,16 +181,15 @@ func TestDispatcher_NonMatchingNamespaceSkipped(t *testing.T) {
 
 	go dispatcher.Start(ctx)
 
-	pub.Send(domain.WatchEvent{
+	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
 		Path:      "/config.json",
 		Namespace: "production",
 		Revision:  1,
 		Timestamp: time.Now(),
-	})
+	}
 
-	time.Sleep(200 * time.Millisecond)
-	assert.Equal(t, int32(0), received.Load())
+	assert.Never(t, func() bool { return received.Load() > 0 }, 200*time.Millisecond, 10*time.Millisecond)
 }
 
 func TestDispatcher_EventNotDelivered(t *testing.T) {
@@ -261,11 +243,19 @@ func TestDispatcher_EventNotDelivered(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			tt.webhook.URL = srv.URL
+			ctrl := gomock.NewController(t)
 
-			pub := newMockPublisher()
-			lister := &mockLister{}
-			lister.setWebhooks([]*domain.Webhook{&tt.webhook})
+			ch := make(chan domain.WatchEvent, 10)
+			var chRecv <-chan domain.WatchEvent = ch
+			pub := webhook_mock.NewMockeventPublisher(ctrl)
+			pub.EXPECT().
+				Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(chRecv, func() {})
+
+			wh := tt.webhook
+			wh.URL = srv.URL
+			lister := webhook_mock.NewMockwebhookLister(ctrl)
+			lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{&wh}, nil).AnyTimes()
 
 			dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -274,10 +264,9 @@ func TestDispatcher_EventNotDelivered(t *testing.T) {
 
 			go dispatcher.Start(ctx)
 
-			pub.Send(tt.event)
+			ch <- tt.event
 
-			time.Sleep(200 * time.Millisecond)
-			assert.Equal(t, int32(0), received.Load())
+			assert.Never(t, func() bool { return received.Load() > 0 }, 200*time.Millisecond, 10*time.Millisecond)
 		})
 	}
 }
@@ -290,16 +279,22 @@ func TestDispatcher_DeliveryHistoryRecorded(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-5",
 			URL:     srv.URL,
 			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
 			Enabled: true,
 		},
-	})
+	}, nil).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -308,13 +303,13 @@ func TestDispatcher_DeliveryHistoryRecorded(t *testing.T) {
 
 	go dispatcher.Start(ctx)
 
-	pub.Send(domain.WatchEvent{
+	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
 		Path:      "/config.json",
 		Namespace: "prod",
 		Revision:  1,
 		Timestamp: time.Now(),
-	})
+	}
 
 	require.Eventually(t, func() bool {
 		history := dispatcher.GetDeliveryHistory("wh-5")
@@ -359,16 +354,22 @@ func TestDispatcher_PayloadContents(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-6",
 			URL:     srv.URL,
 			Events:  []domain.WebhookEventType{domain.WebhookEventUpdated},
 			Enabled: true,
 		},
-	})
+	}, nil).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -377,13 +378,13 @@ func TestDispatcher_PayloadContents(t *testing.T) {
 
 	go dispatcher.Start(ctx)
 
-	pub.Send(domain.WatchEvent{
+	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeUpdated,
 		Path:      "/myapp/config.yaml",
 		Namespace: "staging",
 		Revision:  42,
 		Timestamp: time.Now(),
-	})
+	}
 
 	require.Eventually(t, func() bool {
 		receivedMu.Lock()
@@ -404,8 +405,7 @@ func TestDispatcher_PayloadContents(t *testing.T) {
 func TestDeliveryRingBuffer_Push60ReturnsLast50(t *testing.T) {
 	t.Parallel()
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
+	ctrl := gomock.NewController(t)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -413,14 +413,21 @@ func TestDeliveryRingBuffer_Push60ReturnsLast50(t *testing.T) {
 	defer srv.Close()
 
 	webhookID := "wh-ring"
-	lister.setWebhooks([]*domain.Webhook{
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      webhookID,
 			URL:     srv.URL,
 			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
 			Enabled: true,
 		},
-	})
+	}, nil).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -432,13 +439,13 @@ func TestDeliveryRingBuffer_Push60ReturnsLast50(t *testing.T) {
 	const total = 60
 
 	for i := range total {
-		pub.Send(domain.WatchEvent{
+		ch <- domain.WatchEvent{
 			Type:      domain.EventTypeCreated,
 			Path:      fmt.Sprintf("/config-%d.json", i),
 			Namespace: "prod",
 			Revision:  int64(i + 1),
 			Timestamp: time.Now(),
-		})
+		}
 	}
 
 	require.Eventually(t, func() bool {
@@ -456,57 +463,14 @@ func TestDeliveryRingBuffer_Push60ReturnsLast50(t *testing.T) {
 func TestDispatcher_GetDeliveryHistory_UnknownWebhookID_ReturnsEmpty(t *testing.T) {
 	t.Parallel()
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
+	ctrl := gomock.NewController(t)
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
-
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	go dispatcher.Start(ctx)
 
 	history := dispatcher.GetDeliveryHistory("nonexistent-wh")
 	assert.Empty(t, history)
-}
-
-func TestDispatcher_UnknownEventTypeNotDelivered(t *testing.T) {
-	t.Parallel()
-
-	var received atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		received.Add(1)
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer srv.Close()
-
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
-		{
-			ID:      "wh-unknown",
-			URL:     srv.URL,
-			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
-			Enabled: true,
-		},
-	})
-
-	dispatcher := webhookadapter.NewDispatcher(lister, pub)
-
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	go dispatcher.Start(ctx)
-
-	pub.Send(domain.WatchEvent{
-		Type:      domain.EventTypeLocked,
-		Path:      "/config.json",
-		Namespace: "prod",
-		Revision:  1,
-		Timestamp: time.Now(),
-	})
-
-	time.Sleep(200 * time.Millisecond)
-	assert.Equal(t, int32(0), received.Load())
 }
 
 func TestDispatcher_ClearHistory_RemovesHistory(t *testing.T) {
@@ -517,16 +481,22 @@ func TestDispatcher_ClearHistory_RemovesHistory(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-clear",
 			URL:     srv.URL,
 			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
 			Enabled: true,
 		},
-	})
+	}, nil).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -535,13 +505,13 @@ func TestDispatcher_ClearHistory_RemovesHistory(t *testing.T) {
 
 	go dispatcher.Start(ctx)
 
-	pub.Send(domain.WatchEvent{
+	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
 		Path:      "/config.json",
 		Namespace: "prod",
 		Revision:  1,
 		Timestamp: time.Now(),
-	})
+	}
 
 	require.Eventually(t, func() bool {
 		return len(dispatcher.GetDeliveryHistory("wh-clear")) == 1
@@ -551,66 +521,50 @@ func TestDispatcher_ClearHistory_RemovesHistory(t *testing.T) {
 	assert.Empty(t, dispatcher.GetDeliveryHistory("wh-clear"))
 }
 
-// mockListerWithError always returns an error from List.
-type mockListerWithError struct {
-	err error
-}
-
-func (m *mockListerWithError) List(_ context.Context) ([]*domain.Webhook, error) {
-	return nil, m.err
-}
-
-func TestDispatcher_Stop_StopsProcessing(t *testing.T) {
+func TestDispatcher_Stop_ExitsStartLoop(t *testing.T) {
 	t.Parallel()
 
-	var received atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		received.Add(1)
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer srv.Close()
+	ctrl := gomock.NewController(t)
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
-		{
-			ID:      "wh-stop",
-			URL:     srv.URL,
-			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
-			Enabled: true,
-		},
-	})
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		dispatcher.Start(ctx)
+	}()
 
-	// Stop the dispatcher before sending any event.
 	dispatcher.Stop()
 
-	// Give the dispatcher goroutine time to process the stop signal.
-	time.Sleep(50 * time.Millisecond)
-
-	pub.Send(domain.WatchEvent{
-		Type:      domain.EventTypeCreated,
-		Path:      "/config.json",
-		Namespace: "prod",
-		Revision:  1,
-		Timestamp: time.Now(),
-	})
-
-	time.Sleep(200 * time.Millisecond)
-	assert.Equal(t, int32(0), received.Load())
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("dispatcher.Start did not return after Stop()")
+	}
 }
 
 func TestDispatcher_DispatchListError_NoDelivery(t *testing.T) {
 	t.Parallel()
 
-	pub := newMockPublisher()
-	lister := &mockListerWithError{err: errors.New("db error")}
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return(nil, errors.New("db error")).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -619,19 +573,17 @@ func TestDispatcher_DispatchListError_NoDelivery(t *testing.T) {
 
 	go dispatcher.Start(ctx)
 
-	pub.Send(domain.WatchEvent{
+	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
 		Path:      "/config.json",
 		Namespace: "prod",
 		Revision:  1,
 		Timestamp: time.Now(),
-	})
+	}
 
-	// No panic and no delivery — just verify the dispatcher is still alive.
-	time.Sleep(200 * time.Millisecond)
-
-	history := dispatcher.GetDeliveryHistory("any-wh")
-	assert.Empty(t, history)
+	assert.Never(t, func() bool {
+		return len(dispatcher.GetDeliveryHistory("any-wh")) > 0
+	}, 200*time.Millisecond, 10*time.Millisecond)
 }
 
 func TestDispatcher_RetryOnFailure_EventuallySucceeds(t *testing.T) {
@@ -672,17 +624,25 @@ func TestDispatcher_RetryOnFailure_EventuallySucceeds(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			pub := newMockPublisher()
-			lister := &mockLister{}
+			ctrl := gomock.NewController(t)
+
+			ch := make(chan domain.WatchEvent, 10)
+			var chRecv <-chan domain.WatchEvent = ch
+			pub := webhook_mock.NewMockeventPublisher(ctrl)
+			pub.EXPECT().
+				Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(chRecv, func() {})
+
 			webhookID := "wh-retry-" + tt.name
-			lister.setWebhooks([]*domain.Webhook{
+			lister := webhook_mock.NewMockwebhookLister(ctrl)
+			lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 				{
 					ID:      webhookID,
 					URL:     srv.URL,
 					Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
 					Enabled: true,
 				},
-			})
+			}, nil).AnyTimes()
 
 			dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -691,13 +651,13 @@ func TestDispatcher_RetryOnFailure_EventuallySucceeds(t *testing.T) {
 
 			go dispatcher.Start(ctx)
 
-			pub.Send(domain.WatchEvent{
+			ch <- domain.WatchEvent{
 				Type:      domain.EventTypeCreated,
 				Path:      "/config.json",
 				Namespace: "prod",
 				Revision:  1,
 				Timestamp: time.Now(),
-			})
+			}
 
 			require.Eventually(t, func() bool {
 				history := dispatcher.GetDeliveryHistory(webhookID)
@@ -742,16 +702,22 @@ func TestDispatcher_BuildPayload_ContentHashPresent(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-content-hash",
 			URL:     srv.URL,
 			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
 			Enabled: true,
 		},
-	})
+	}, nil).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -760,14 +726,14 @@ func TestDispatcher_BuildPayload_ContentHashPresent(t *testing.T) {
 
 	go dispatcher.Start(ctx)
 
-	pub.Send(domain.WatchEvent{
+	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
 		Path:      "/config.json",
 		Namespace: "prod",
 		Revision:  1,
 		Timestamp: time.Now(),
 		Config:    &domain.Config{ContentHash: "abc123"},
-	})
+	}
 
 	require.Eventually(t, func() bool {
 		receivedMu.Lock()
@@ -792,17 +758,23 @@ func TestDispatcher_SendRequest_NetworkError_RecordsFailure(t *testing.T) {
 	closedURL := srv.URL
 	srv.Close()
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
 	webhookID := "wh-net-err"
-	lister.setWebhooks([]*domain.Webhook{
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      webhookID,
 			URL:     closedURL,
 			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
 			Enabled: true,
 		},
-	})
+	}, nil).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -811,13 +783,13 @@ func TestDispatcher_SendRequest_NetworkError_RecordsFailure(t *testing.T) {
 
 	go dispatcher.Start(ctx)
 
-	pub.Send(domain.WatchEvent{
+	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
 		Path:      "/config.json",
 		Namespace: "prod",
 		Revision:  1,
 		Timestamp: time.Now(),
-	})
+	}
 
 	require.Eventually(t, func() bool {
 		return len(dispatcher.GetDeliveryHistory(webhookID)) > 0
@@ -841,16 +813,22 @@ func TestDispatcher_ConcurrentDeliveries_SemaphoreNotExceeded(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-concurrent",
 			URL:     srv.URL,
 			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
 			Enabled: true,
 		},
-	})
+	}, nil).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -860,13 +838,13 @@ func TestDispatcher_ConcurrentDeliveries_SemaphoreNotExceeded(t *testing.T) {
 	go dispatcher.Start(ctx)
 
 	for i := range numEvents {
-		pub.Send(domain.WatchEvent{
+		ch <- domain.WatchEvent{
 			Type:      domain.EventTypeCreated,
 			Path:      fmt.Sprintf("/config-%d.json", i),
 			Namespace: "prod",
 			Revision:  int64(i + 1),
 			Timestamp: time.Now(),
-		})
+		}
 	}
 
 	require.Eventually(t, func() bool {

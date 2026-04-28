@@ -15,6 +15,8 @@ import (
 // matching the standard diff -u default.
 const diffContextLines = 3
 
+//go:generate mockgen -destination=mocks/mock_diff.go -package=config_mock . configDiffReader
+
 type configDiffReader interface {
 	GetAtRevision(ctx context.Context, path, namespace string, revision int64) (*domain.HistoryEntry, error)
 }

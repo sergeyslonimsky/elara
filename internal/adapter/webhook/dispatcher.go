@@ -28,6 +28,8 @@ const (
 	jitterWindowFactor      = 2 // window = delay/jitterRange * jitterWindowFactor
 )
 
+//go:generate mockgen -destination=mocks/mock_dispatcher.go -package=webhook_mock . webhookLister,eventPublisher
+
 type webhookLister interface {
 	List(ctx context.Context) ([]*domain.Webhook, error)
 }
@@ -134,9 +136,10 @@ func (d *Dispatcher) dispatch(ctx context.Context, event domain.WatchEvent) {
 					defer func() { <-d.deliverySem }()
 					d.deliver(ctx, w, event)
 				}(wh)
-			default:
-				slog.Warn("dispatcher: max concurrent deliveries reached, dropping",
-					"webhook_id", wh.ID)
+			case <-ctx.Done():
+				return
+			case <-d.stopCh:
+				return
 			}
 		}
 	}
@@ -159,6 +162,8 @@ func (d *Dispatcher) deliver(ctx context.Context, wh *domain.Webhook, event doma
 			select {
 			case <-time.After(jitter):
 			case <-ctx.Done():
+				return
+			case <-d.stopCh:
 				return
 			}
 		}

@@ -1,35 +1,16 @@
 package webhook_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
+	webhook_mock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
 )
-
-type mockUpdater struct {
-	webhook *domain.Webhook
-	getErr  error
-	upErr   error
-}
-
-func (m *mockUpdater) Get(_ context.Context, _ string) (*domain.Webhook, error) {
-	return m.webhook, m.getErr
-}
-
-func (m *mockUpdater) Update(_ context.Context, w *domain.Webhook) error {
-	if m.upErr != nil {
-		return m.upErr
-	}
-
-	m.webhook = w
-
-	return nil
-}
 
 func TestUpdateUseCase_Execute_MergesCorrectly(t *testing.T) {
 	t.Parallel()
@@ -152,9 +133,16 @@ func TestUpdateUseCase_Execute_MergesCorrectly(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			m := &mockUpdater{webhook: tt.existing}
-			uc := webhookuc.NewUpdateUseCase(m)
+			ctrl := gomock.NewController(t)
+			repo := webhook_mock.NewMockwebhookUpdater(ctrl)
 
+			repo.EXPECT().Get(gomock.Any(), tt.existing.ID).Return(tt.existing, nil)
+
+			if !tt.wantErr {
+				repo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+			}
+
+			uc := webhookuc.NewUpdateUseCase(repo)
 			result, err := uc.Execute(t.Context(), tt.existing.ID, tt.params)
 
 			if tt.wantErr {
@@ -173,12 +161,16 @@ func TestUpdateUseCase_Execute_MergesCorrectly(t *testing.T) {
 func TestUpdateUseCase_Execute_ValidationError(t *testing.T) {
 	t.Parallel()
 
-	m := &mockUpdater{webhook: &domain.Webhook{
+	ctrl := gomock.NewController(t)
+	repo := webhook_mock.NewMockwebhookUpdater(ctrl)
+
+	repo.EXPECT().Get(gomock.Any(), "wh-1").Return(&domain.Webhook{
 		ID:     "wh-1",
 		URL:    "https://example.com/hook",
 		Events: []domain.WebhookEventType{domain.WebhookEventCreated},
-	}}
-	uc := webhookuc.NewUpdateUseCase(m)
+	}, nil)
+
+	uc := webhookuc.NewUpdateUseCase(repo)
 
 	// Setting URL to an invalid value triggers a validation error.
 	_, err := uc.Execute(t.Context(), "wh-1", webhookuc.UpdateParams{
@@ -193,8 +185,12 @@ func TestUpdateUseCase_Execute_ValidationError(t *testing.T) {
 func TestUpdateUseCase_Execute_GetError(t *testing.T) {
 	t.Parallel()
 
-	m := &mockUpdater{getErr: domain.ErrNotFound}
-	uc := webhookuc.NewUpdateUseCase(m)
+	ctrl := gomock.NewController(t)
+	repo := webhook_mock.NewMockwebhookUpdater(ctrl)
+
+	repo.EXPECT().Get(gomock.Any(), "missing").Return(nil, domain.ErrNotFound)
+
+	uc := webhookuc.NewUpdateUseCase(repo)
 
 	_, err := uc.Execute(t.Context(), "missing", webhookuc.UpdateParams{
 		URL:    "https://example.com/hook",
@@ -208,15 +204,17 @@ func TestUpdateUseCase_Execute_GetError(t *testing.T) {
 func TestUpdateUseCase_Execute_UpdateError(t *testing.T) {
 	t.Parallel()
 
-	m := &mockUpdater{
-		webhook: &domain.Webhook{
-			ID:     "wh-1",
-			URL:    "https://example.com/hook",
-			Events: []domain.WebhookEventType{domain.WebhookEventCreated},
-		},
-		upErr: domain.ErrNotFound,
-	}
-	uc := webhookuc.NewUpdateUseCase(m)
+	ctrl := gomock.NewController(t)
+	repo := webhook_mock.NewMockwebhookUpdater(ctrl)
+
+	repo.EXPECT().Get(gomock.Any(), "wh-1").Return(&domain.Webhook{
+		ID:     "wh-1",
+		URL:    "https://example.com/hook",
+		Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+	}, nil)
+	repo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(domain.ErrNotFound)
+
+	uc := webhookuc.NewUpdateUseCase(repo)
 
 	_, err := uc.Execute(t.Context(), "wh-1", webhookuc.UpdateParams{
 		URL:    "https://example.com/hook",

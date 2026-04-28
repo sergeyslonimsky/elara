@@ -1,38 +1,19 @@
 package config_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
+	config_mock "github.com/sergeyslonimsky/elara/internal/usecase/config/mocks"
 )
-
-type mockDiffReader struct {
-	entries map[int64]*domain.HistoryEntry
-	err     error
-}
-
-func (m *mockDiffReader) GetAtRevision(_ context.Context, _, _ string, revision int64) (*domain.HistoryEntry, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-
-	e, ok := m.entries[revision]
-	if !ok {
-		return nil, domain.NewNotFoundError("revision", "not found")
-	}
-
-	return e, nil
-}
 
 func TestGetDiff_Validation(t *testing.T) {
 	t.Parallel()
-
-	uc := config.NewDiffUseCase(&mockDiffReader{entries: map[int64]*domain.HistoryEntry{}})
 
 	tests := []struct {
 		name         string
@@ -68,6 +49,11 @@ func TestGetDiff_Validation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctrl := gomock.NewController(t)
+			mock := config_mock.NewMockconfigDiffReader(ctrl)
+			// No mock expectations: validation fails before any repo call.
+
+			uc := config.NewDiffUseCase(mock)
 			_, err := uc.GetDiff(t.Context(), tc.path, tc.namespace, tc.fromRevision, tc.toRevision)
 			require.Error(t, err)
 			var ve *domain.ValidationError
@@ -80,12 +66,16 @@ func TestGetDiff_Validation(t *testing.T) {
 func TestGetDiff_Success(t *testing.T) {
 	t.Parallel()
 
+	entry := func(rev int64, content string, ev domain.EventType) *domain.HistoryEntry {
+		return &domain.HistoryEntry{Revision: rev, Content: content, EventType: ev}
+	}
+
 	tests := []struct {
 		name          string
 		path          string
-		entries       map[int64]*domain.HistoryEntry
 		fromRevision  int64
 		toRevision    int64
+		setupMock     func(mock *config_mock.MockconfigDiffReader, path string)
 		wantFromEmpty bool
 		wantToEmpty   bool
 		wantDiffEmpty bool
@@ -93,61 +83,74 @@ func TestGetDiff_Success(t *testing.T) {
 	}{
 		{
 			name: "normal case json diff",
-			path: "/app.json",
-			entries: map[int64]*domain.HistoryEntry{
-				1: {Revision: 1, Content: `{"key":"old"}`, EventType: domain.EventTypeCreated},
-				3: {Revision: 3, Content: `{"key":"new"}`, EventType: domain.EventTypeUpdated},
+			path: "/app.json", fromRevision: 1, toRevision: 3,
+			setupMock: func(m *config_mock.MockconfigDiffReader, path string) {
+				m.EXPECT().
+					GetAtRevision(gomock.Any(), path, "default", int64(3)).
+					Return(entry(3, `{"key":"new"}`, domain.EventTypeUpdated), nil)
+				m.EXPECT().
+					GetAtRevision(gomock.Any(), path, "default", int64(1)).
+					Return(entry(1, `{"key":"old"}`, domain.EventTypeCreated), nil)
 			},
-			fromRevision: 1, toRevision: 3,
 			wantDiffHas: "-",
 		},
 		{
 			name: "from zero shows all as added",
-			path: "/app.json",
-			entries: map[int64]*domain.HistoryEntry{
-				1: {Revision: 1, Content: `{"key":"val"}`, EventType: domain.EventTypeCreated},
+			path: "/app.json", fromRevision: 0, toRevision: 1,
+			setupMock: func(m *config_mock.MockconfigDiffReader, path string) {
+				m.EXPECT().
+					GetAtRevision(gomock.Any(), path, "default", int64(1)).
+					Return(entry(1, `{"key":"val"}`, domain.EventTypeCreated), nil)
 			},
-			fromRevision: 0, toRevision: 1,
 			wantFromEmpty: true,
 			wantDiffHas:   "+",
 		},
 		{
 			name: "same revision diff empty",
-			path: "/app.json",
-			entries: map[int64]*domain.HistoryEntry{
-				2: {Revision: 2, Content: `{"stable":true}`, EventType: domain.EventTypeUpdated},
+			path: "/app.json", fromRevision: 2, toRevision: 2,
+			setupMock: func(m *config_mock.MockconfigDiffReader, path string) {
+				e := entry(2, `{"stable":true}`, domain.EventTypeUpdated)
+				m.EXPECT().GetAtRevision(gomock.Any(), path, "default", int64(2)).Return(e, nil).Times(2)
 			},
-			fromRevision: 2, toRevision: 2,
 			wantDiffEmpty: true,
 		},
 		{
 			name: "yaml whitespace normalized same",
-			path: "/config.yaml",
-			entries: map[int64]*domain.HistoryEntry{
-				1: {Revision: 1, Content: "name:   elara\n", EventType: domain.EventTypeCreated},
-				2: {Revision: 2, Content: "name: elara\n", EventType: domain.EventTypeUpdated},
+			path: "/config.yaml", fromRevision: 1, toRevision: 2,
+			setupMock: func(m *config_mock.MockconfigDiffReader, path string) {
+				m.EXPECT().
+					GetAtRevision(gomock.Any(), path, "default", int64(2)).
+					Return(entry(2, "name: elara\n", domain.EventTypeUpdated), nil)
+				m.EXPECT().
+					GetAtRevision(gomock.Any(), path, "default", int64(1)).
+					Return(entry(1, "name:   elara\n", domain.EventTypeCreated), nil)
 			},
-			fromRevision: 1, toRevision: 2,
 			wantDiffEmpty: true,
 		},
 		{
 			name: "json key order normalized same",
-			path: "/app.json",
-			entries: map[int64]*domain.HistoryEntry{
-				1: {Revision: 1, Content: `{"b":2,"a":1}`, EventType: domain.EventTypeCreated},
-				2: {Revision: 2, Content: `{"a":1,"b":2}`, EventType: domain.EventTypeUpdated},
+			path: "/app.json", fromRevision: 1, toRevision: 2,
+			setupMock: func(m *config_mock.MockconfigDiffReader, path string) {
+				m.EXPECT().
+					GetAtRevision(gomock.Any(), path, "default", int64(2)).
+					Return(entry(2, `{"a":1,"b":2}`, domain.EventTypeUpdated), nil)
+				m.EXPECT().
+					GetAtRevision(gomock.Any(), path, "default", int64(1)).
+					Return(entry(1, `{"b":2,"a":1}`, domain.EventTypeCreated), nil)
 			},
-			fromRevision: 1, toRevision: 2,
 			wantDiffEmpty: true,
 		},
 		{
 			name: "deleted revision to_content empty",
-			path: "/app.json",
-			entries: map[int64]*domain.HistoryEntry{
-				4: {Revision: 4, Content: `{"alive":true}`, EventType: domain.EventTypeUpdated},
-				5: {Revision: 5, Content: "", EventType: domain.EventTypeDeleted},
+			path: "/app.json", fromRevision: 4, toRevision: 5,
+			setupMock: func(m *config_mock.MockconfigDiffReader, path string) {
+				m.EXPECT().
+					GetAtRevision(gomock.Any(), path, "default", int64(5)).
+					Return(entry(5, "", domain.EventTypeDeleted), nil)
+				m.EXPECT().
+					GetAtRevision(gomock.Any(), path, "default", int64(4)).
+					Return(entry(4, `{"alive":true}`, domain.EventTypeUpdated), nil)
 			},
-			fromRevision: 4, toRevision: 5,
 			wantToEmpty: true,
 			wantDiffHas: "-",
 		},
@@ -157,17 +160,16 @@ func TestGetDiff_Success(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			uc := config.NewDiffUseCase(&mockDiffReader{entries: tc.entries})
+			ctrl := gomock.NewController(t)
+			mock := config_mock.NewMockconfigDiffReader(ctrl)
+			tc.setupMock(mock, tc.path)
+
+			uc := config.NewDiffUseCase(mock)
 			result, err := uc.GetDiff(t.Context(), tc.path, "default", tc.fromRevision, tc.toRevision)
 			require.NoError(t, err)
 
-			if tc.wantFromEmpty {
-				assert.Empty(t, result.FromContent)
-			}
-
-			if tc.wantToEmpty {
-				assert.Empty(t, result.ToContent)
-			}
+			assert.Equal(t, tc.wantFromEmpty, result.FromContent == "")
+			assert.Equal(t, tc.wantToEmpty, result.ToContent == "")
 
 			if tc.wantDiffEmpty {
 				assert.Empty(t, result.Diff)
@@ -182,7 +184,12 @@ func TestGetDiff_Error_RevisionNotFound(t *testing.T) {
 	t.Parallel()
 
 	notFoundErr := domain.NewNotFoundError("revision", "99")
-	uc := config.NewDiffUseCase(&mockDiffReader{err: notFoundErr})
+
+	ctrl := gomock.NewController(t)
+	mock := config_mock.NewMockconfigDiffReader(ctrl)
+	mock.EXPECT().GetAtRevision(gomock.Any(), "/app.json", "default", int64(99)).Return(nil, notFoundErr)
+
+	uc := config.NewDiffUseCase(mock)
 	_, err := uc.GetDiff(t.Context(), "/app.json", "default", 0, 99)
 
 	require.Error(t, err)

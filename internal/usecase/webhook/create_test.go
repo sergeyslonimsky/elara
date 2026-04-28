@@ -1,34 +1,27 @@
 package webhook_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
+	webhook_mock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
 )
-
-type mockCreator struct {
-	err error
-}
-
-func (m *mockCreator) Create(_ context.Context, _ *domain.Webhook) error {
-	return m.err
-}
 
 func TestCreateUseCase_Execute(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name    string
-		webhook *domain.Webhook
-		repoErr error
-		wantErr bool
-		errMsg  string
+		name      string
+		webhook   *domain.Webhook
+		setupMock func(repo *webhook_mock.MockwebhookCreator)
+		wantErr   bool
+		errMsg    string
 	}{
 		{
 			name: "valid webhook",
@@ -37,6 +30,9 @@ func TestCreateUseCase_Execute(t *testing.T) {
 				Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
 				Enabled: true,
 			},
+			setupMock: func(repo *webhook_mock.MockwebhookCreator) {
+				repo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+			},
 			wantErr: false,
 		},
 		{
@@ -44,6 +40,9 @@ func TestCreateUseCase_Execute(t *testing.T) {
 			webhook: &domain.Webhook{
 				URL:    "not-a-url",
 				Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+			},
+			setupMock: func(_ *webhook_mock.MockwebhookCreator) {
+				// validation fails before Create is called
 			},
 			wantErr: true,
 			errMsg:  "validate",
@@ -55,7 +54,9 @@ func TestCreateUseCase_Execute(t *testing.T) {
 				Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
 				Enabled: true,
 			},
-			repoErr: errors.New("storage failure"),
+			setupMock: func(repo *webhook_mock.MockwebhookCreator) {
+				repo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(errors.New("storage failure"))
+			},
 			wantErr: true,
 			errMsg:  "create",
 		},
@@ -65,7 +66,11 @@ func TestCreateUseCase_Execute(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			uc := webhookuc.NewCreateUseCase(&mockCreator{err: tt.repoErr})
+			ctrl := gomock.NewController(t)
+			repo := webhook_mock.NewMockwebhookCreator(ctrl)
+			tt.setupMock(repo)
+
+			uc := webhookuc.NewCreateUseCase(repo)
 			result, err := uc.Execute(t.Context(), tt.webhook)
 
 			if tt.wantErr {

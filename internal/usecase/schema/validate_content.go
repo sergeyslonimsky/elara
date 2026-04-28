@@ -19,6 +19,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_validate_content.go -package=schema_mock . schemaContentLister
+
 type schemaContentLister interface {
 	List(ctx context.Context, namespace string) ([]*domain.SchemaAttachment, error)
 }

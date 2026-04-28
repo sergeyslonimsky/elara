@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+//go:generate mockgen -destination=mocks/mock_delete.go -package=webhook_mock . webhookDeleter,historyClearer
+
 type webhookDeleter interface {
 	Delete(ctx context.Context, id string) error
 }
