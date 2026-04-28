@@ -62,6 +62,7 @@ pluggable storage backends (PostgreSQL, S3) are on the roadmap.
 - **Format-aware validation** for JSON and YAML; pass-through for everything else (ini, toml, plain text).
 - **JSON Schema validation** — attach a JSON Schema (draft-07) to a path pattern; every `CreateConfig`/`UpdateConfig` call is validated before storage, with structured violation details in the error response.
 - **Single bbolt file storage** — ACID transactions, no external DB required.
+- **Webhooks** — HTTP push notifications on every config change (create / update / delete). Filter by namespace and path prefix, sign payloads with HMAC-SHA256, and inspect per-webhook delivery history from the UI.
 - **Observability** — optional Prometheus `/metrics` and OTLP tracing.
 - **Kube-native Helm chart** with StatefulSet, ServiceMonitor, NetworkPolicy, JSON Schema validation, and a smoke test.
 
@@ -293,6 +294,115 @@ schemaClient.AttachSchema(ctx, connect.NewRequest(&configv1.AttachSchemaRequest{
 schemaClient.DetachSchema(ctx, connect.NewRequest(&configv1.DetachSchemaRequest{
     Namespace:   "prod",
     PathPattern: "/**/*.yaml",
+}))
+```
+
+### Webhooks
+
+Elara sends an HTTP POST to registered webhook endpoints whenever a config is
+created, updated, or deleted. Each webhook is managed independently — you can
+have multiple endpoints covering different namespaces or path patterns.
+
+**Web UI**
+
+- **Webhooks** page (left nav) — list, create, edit, and delete webhooks.
+  Each row shows the target URL, the subscribed events, and a status
+  indicator. Click a row to open the delivery history panel and inspect recent
+  attempts (status code, latency, error message).
+
+**Payload**
+
+Every delivery is a JSON `POST` with the `Content-Type: application/json` header:
+
+```json
+{
+  "event":        "updated",
+  "namespace":    "prod",
+  "path":         "/services/billing/config.yaml",
+  "revision":     42,
+  "content_hash": "sha256:<hex>",
+  "timestamp":    "2024-06-01T12:00:00Z"
+}
+```
+
+`event` is one of `created`, `updated`, `deleted`.
+
+**HMAC-SHA256 signing**
+
+When a webhook has a secret configured, Elara adds an
+`X-Elara-Signature: sha256=<hex>` header. Verify it on the receiver side:
+
+```go
+mac := hmac.New(sha256.New, []byte(secret))
+mac.Write(body)
+expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+if !hmac.Equal([]byte(r.Header.Get("X-Elara-Signature")), []byte(expected)) {
+    http.Error(w, "invalid signature", http.StatusUnauthorized)
+}
+```
+
+**Filtering**
+
+| Field              | Behaviour                                                  |
+| ------------------ | ---------------------------------------------------------- |
+| `namespace_filter` | If set, only events from that namespace are delivered.     |
+| `path_prefix`      | If set, only events whose path starts with the prefix.     |
+| `events`           | Subset of `created`, `updated`, `deleted` to subscribe to. |
+
+An empty filter means "match everything".
+
+**Retries and delivery history**
+
+Failed deliveries (non-2xx or network error) are retried up to 5 times with
+exponential back-off plus cryptographic jitter. Each attempt — success or
+failure — is recorded and visible in the UI delivery history panel (last 50
+attempts per webhook).
+
+**ConnectRPC** (`elara.webhook.v1.WebhookService`)
+
+```go
+import (
+    webhookv1 "github.com/sergeyslonimsky/elara/gen/elara/webhook/v1"
+    "github.com/sergeyslonimsky/elara/gen/elara/webhook/v1/webhookv1connect"
+)
+
+client := webhookv1connect.NewWebhookServiceClient(
+    http.DefaultClient,
+    "http://localhost:8080",
+)
+
+// Create a webhook
+resp, _ := client.CreateWebhook(ctx, connect.NewRequest(&webhookv1.CreateWebhookRequest{
+    Url:             "https://my-service.example.com/elara-hook",
+    Events:          []webhookv1.WebhookEvent{
+        webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED,
+        webhookv1.WebhookEvent_WEBHOOK_EVENT_UPDATED,
+    },
+    NamespaceFilter: "prod",          // empty = all namespaces
+    PathPrefix:      "/services/",   // empty = all paths
+    Secret:          "my-hmac-secret",
+    Enabled:         true,
+}))
+fmt.Println("created:", resp.Msg.Webhook.Id)
+
+// List all webhooks
+list, _ := client.ListWebhooks(ctx, connect.NewRequest(&webhookv1.ListWebhooksRequest{}))
+for _, wh := range list.Msg.Webhooks {
+    fmt.Printf("%s  %s  enabled=%v\n", wh.Id, wh.Url, wh.Enabled)
+}
+
+// Inspect delivery history
+history, _ := client.GetDeliveryHistory(ctx, connect.NewRequest(&webhookv1.GetDeliveryHistoryRequest{
+    WebhookId: resp.Msg.Webhook.Id,
+}))
+for _, a := range history.Msg.Attempts {
+    fmt.Printf("attempt %d: status=%d latency=%dms ok=%v\n",
+        a.AttemptNumber, a.StatusCode, a.LatencyMs, a.Success)
+}
+
+// Delete a webhook
+client.DeleteWebhook(ctx, connect.NewRequest(&webhookv1.DeleteWebhookRequest{
+    Id: resp.Msg.Webhook.Id,
 }))
 ```
 
