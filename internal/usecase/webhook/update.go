@@ -35,17 +35,11 @@ func (uc *UpdateUseCase) Execute(ctx context.Context, id string, params UpdatePa
 		return nil, fmt.Errorf("get webhook: %w", err)
 	}
 
-	if params.URL != "" {
-		existing.URL = params.URL
-	}
-
+	existing.URL = params.URL
 	existing.NamespaceFilter = params.NamespaceFilter
 	existing.PathPrefix = params.PathPrefix
 	existing.Enabled = params.Enabled
-
-	if len(params.Events) > 0 {
-		existing.Events = params.Events
-	}
+	existing.Events = params.Events
 
 	if params.Secret != "" {
 		existing.Secret = params.Secret

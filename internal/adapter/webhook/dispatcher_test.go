@@ -209,44 +209,76 @@ func TestDispatcher_NonMatchingNamespaceSkipped(t *testing.T) {
 	assert.Equal(t, int32(0), received.Load())
 }
 
-func TestDispatcher_DisabledWebhookSkipped(t *testing.T) {
+func TestDispatcher_EventNotDelivered(t *testing.T) {
 	t.Parallel()
 
-	var received atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		received.Add(1)
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer srv.Close()
-
-	pub := newMockPublisher()
-	lister := &mockLister{}
-	lister.setWebhooks([]*domain.Webhook{
+	tests := []struct {
+		name    string
+		webhook domain.Webhook
+		event   domain.WatchEvent
+	}{
 		{
-			ID:      "wh-4",
-			URL:     srv.URL,
-			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
-			Enabled: false,
+			name: "disabled webhook skipped",
+			webhook: domain.Webhook{
+				ID:      "wh-4",
+				Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+				Enabled: false,
+			},
+			event: domain.WatchEvent{
+				Type:      domain.EventTypeCreated,
+				Path:      "/config.json",
+				Namespace: "prod",
+				Revision:  1,
+				Timestamp: time.Now(),
+			},
 		},
-	})
+		{
+			name: "unknown event type not delivered",
+			webhook: domain.Webhook{
+				ID:      "wh-unknown",
+				Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+				Enabled: true,
+			},
+			event: domain.WatchEvent{
+				Type:      domain.EventTypeLocked,
+				Path:      "/config.json",
+				Namespace: "prod",
+				Revision:  1,
+				Timestamp: time.Now(),
+			},
+		},
+	}
 
-	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
+			var received atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				received.Add(1)
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer srv.Close()
 
-	go dispatcher.Start(ctx)
+			tt.webhook.URL = srv.URL
 
-	pub.Send(domain.WatchEvent{
-		Type:      domain.EventTypeCreated,
-		Path:      "/config.json",
-		Namespace: "prod",
-		Revision:  1,
-		Timestamp: time.Now(),
-	})
+			pub := newMockPublisher()
+			lister := &mockLister{}
+			lister.setWebhooks([]*domain.Webhook{&tt.webhook})
 
-	time.Sleep(200 * time.Millisecond)
-	assert.Equal(t, int32(0), received.Load())
+			dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			go dispatcher.Start(ctx)
+
+			pub.Send(tt.event)
+
+			time.Sleep(200 * time.Millisecond)
+			assert.Equal(t, int32(0), received.Load())
+		})
+	}
 }
 
 func TestDispatcher_DeliveryHistoryRecorded(t *testing.T) {
@@ -418,4 +450,102 @@ func TestDeliveryRingBuffer_Push60ReturnsLast50(t *testing.T) {
 	for _, a := range history {
 		assert.True(t, a.Success)
 	}
+}
+
+func TestDispatcher_GetDeliveryHistory_UnknownWebhookID_ReturnsEmpty(t *testing.T) {
+	t.Parallel()
+
+	pub := newMockPublisher()
+	lister := &mockLister{}
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Start(ctx)
+
+	history := dispatcher.GetDeliveryHistory("nonexistent-wh")
+	assert.Empty(t, history)
+}
+
+func TestDispatcher_UnknownEventTypeNotDelivered(t *testing.T) {
+	t.Parallel()
+
+	var received atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	pub := newMockPublisher()
+	lister := &mockLister{}
+	lister.setWebhooks([]*domain.Webhook{
+		{
+			ID:      "wh-unknown",
+			URL:     srv.URL,
+			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+			Enabled: true,
+		},
+	})
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Start(ctx)
+
+	pub.Send(domain.WatchEvent{
+		Type:      domain.EventTypeLocked,
+		Path:      "/config.json",
+		Namespace: "prod",
+		Revision:  1,
+		Timestamp: time.Now(),
+	})
+
+	time.Sleep(200 * time.Millisecond)
+	assert.Equal(t, int32(0), received.Load())
+}
+
+func TestDispatcher_ClearHistory_RemovesHistory(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	pub := newMockPublisher()
+	lister := &mockLister{}
+	lister.setWebhooks([]*domain.Webhook{
+		{
+			ID:      "wh-clear",
+			URL:     srv.URL,
+			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+			Enabled: true,
+		},
+	})
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Start(ctx)
+
+	pub.Send(domain.WatchEvent{
+		Type:      domain.EventTypeCreated,
+		Path:      "/config.json",
+		Namespace: "prod",
+		Revision:  1,
+		Timestamp: time.Now(),
+	})
+
+	require.Eventually(t, func() bool {
+		return len(dispatcher.GetDeliveryHistory("wh-clear")) == 1
+	}, 2*time.Second, 10*time.Millisecond)
+
+	dispatcher.ClearHistory("wh-clear")
+	assert.Empty(t, dispatcher.GetDeliveryHistory("wh-clear"))
 }

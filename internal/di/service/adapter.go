@@ -79,6 +79,10 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 // same cached result.
 func (a *Adapters) Shutdown(_ context.Context) error {
 	a.shutdownOnce.Do(func() {
+		if a.WebhookDispatcher != nil {
+			a.WebhookDispatcher.Stop()
+		}
+
 		if a.ClientRegistry != nil {
 			a.ClientRegistry.Shutdown()
 		}

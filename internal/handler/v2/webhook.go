@@ -42,16 +42,11 @@ func (h *WebhookHandler) CreateWebhook(
 	ctx context.Context,
 	req *connect.Request[webhookv1.CreateWebhookRequest],
 ) (*connect.Response[webhookv1.CreateWebhookResponse], error) {
-	events := make([]domain.WebhookEventType, 0, len(req.Msg.GetEvents()))
-	for _, e := range req.Msg.GetEvents() {
-		events = append(events, protoEventToDomain(e))
-	}
-
 	w := &domain.Webhook{
 		URL:             req.Msg.GetUrl(),
 		NamespaceFilter: req.Msg.GetNamespaceFilter(),
 		PathPrefix:      req.Msg.GetPathPrefix(),
-		Events:          events,
+		Events:          protoEventsToDomain(req.Msg.GetEvents()),
 		Secret:          req.Msg.GetSecret(),
 		Enabled:         req.Msg.GetEnabled(),
 	}
@@ -84,16 +79,11 @@ func (h *WebhookHandler) UpdateWebhook(
 	ctx context.Context,
 	req *connect.Request[webhookv1.UpdateWebhookRequest],
 ) (*connect.Response[webhookv1.UpdateWebhookResponse], error) {
-	events := make([]domain.WebhookEventType, 0, len(req.Msg.GetEvents()))
-	for _, e := range req.Msg.GetEvents() {
-		events = append(events, protoEventToDomain(e))
-	}
-
 	params := webhookuc.UpdateParams{
 		URL:             req.Msg.GetUrl(),
 		NamespaceFilter: req.Msg.GetNamespaceFilter(),
 		PathPrefix:      req.Msg.GetPathPrefix(),
-		Events:          events,
+		Events:          protoEventsToDomain(req.Msg.GetEvents()),
 		Secret:          req.Msg.GetSecret(),
 		Enabled:         req.Msg.GetEnabled(),
 	}
@@ -181,6 +171,15 @@ func domainWebhookToProto(w *domain.Webhook) *webhookv1.Webhook {
 		CreatedAt:       timestamppb.New(w.CreatedAt),
 		UpdatedAt:       timestamppb.New(w.UpdatedAt),
 	}
+}
+
+func protoEventsToDomain(events []webhookv1.WebhookEvent) []domain.WebhookEventType {
+	out := make([]domain.WebhookEventType, 0, len(events))
+	for _, e := range events {
+		out = append(out, protoEventToDomain(e))
+	}
+
+	return out
 }
 
 func protoEventToDomain(e webhookv1.WebhookEvent) domain.WebhookEventType {

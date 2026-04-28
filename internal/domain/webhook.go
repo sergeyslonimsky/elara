@@ -38,13 +38,8 @@ type DeliveryAttempt struct {
 }
 
 func (w *Webhook) Validate() error {
-	if w.URL == "" {
-		return NewValidationError("url", "url is required")
-	}
-
-	u, err := url.Parse(w.URL)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
-		return NewValidationError("url", fmt.Sprintf("url must be a valid http or https URL, got %q", w.URL))
+	if err := w.validateURL(); err != nil {
+		return err
 	}
 
 	if len(w.Events) == 0 {
@@ -91,9 +86,29 @@ func (w *Webhook) MatchesEvent(event WatchEvent) bool {
 		return false
 	}
 
-	if w.PathPrefix != "" && !strings.HasPrefix(event.Path, w.PathPrefix) {
-		return false
+	if w.PathPrefix != "" {
+		if !strings.HasPrefix(event.Path, w.PathPrefix) {
+			return false
+		}
+
+		rest := event.Path[len(w.PathPrefix):]
+		if rest != "" && !strings.HasPrefix(rest, "/") {
+			return false
+		}
 	}
 
 	return true
+}
+
+func (w *Webhook) validateURL() error {
+	if w.URL == "" {
+		return NewValidationError("url", "url is required")
+	}
+
+	u, err := url.ParseRequestURI(w.URL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return NewValidationError("url", fmt.Sprintf("url must be a valid http or https URL, got %q", w.URL))
+	}
+
+	return nil
 }

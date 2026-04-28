@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"sync"
@@ -17,10 +18,11 @@ import (
 )
 
 const (
-	httpRequestTimeout  = 10 * time.Second
-	deliveryHistorySize = 50
-	successStatusMin    = 200
-	successStatusMax    = 300
+	httpRequestTimeout      = 10 * time.Second
+	deliveryHistorySize     = 50
+	successStatusMin        = 200
+	successStatusMax        = 300
+	maxConcurrentDeliveries = 100
 )
 
 type webhookLister interface {
@@ -47,18 +49,30 @@ type Dispatcher struct {
 
 	mu      sync.RWMutex
 	history map[string]*deliveryRingBuffer
+
+	deliverySem chan struct{}
+	stopOnce    sync.Once
+	stopCh      chan struct{}
 }
 
 func NewDispatcher(repo webhookLister, publisher eventPublisher) *Dispatcher {
 	return &Dispatcher{
-		repo:      repo,
-		publisher: publisher,
-		client:    &http.Client{Timeout: httpRequestTimeout},
-		history:   make(map[string]*deliveryRingBuffer),
+		repo:        repo,
+		publisher:   publisher,
+		client:      &http.Client{Timeout: httpRequestTimeout},
+		history:     make(map[string]*deliveryRingBuffer),
+		deliverySem: make(chan struct{}, maxConcurrentDeliveries),
+		stopCh:      make(chan struct{}),
 	}
 }
 
 func (d *Dispatcher) Start(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("dispatcher: recovered from panic", "panic", r)
+		}
+	}()
+
 	events, cleanup := d.publisher.Subscribe(ctx, "", "")
 	defer cleanup()
 
@@ -72,8 +86,14 @@ func (d *Dispatcher) Start(ctx context.Context) {
 			go d.dispatch(ctx, event)
 		case <-ctx.Done():
 			return
+		case <-d.stopCh:
+			return
 		}
 	}
+}
+
+func (d *Dispatcher) Stop() {
+	d.stopOnce.Do(func() { close(d.stopCh) })
 }
 
 func (d *Dispatcher) GetDeliveryHistory(webhookID string) []domain.DeliveryAttempt {
@@ -98,12 +118,23 @@ func (d *Dispatcher) ClearHistory(webhookID string) {
 func (d *Dispatcher) dispatch(ctx context.Context, event domain.WatchEvent) {
 	webhooks, err := d.repo.List(ctx)
 	if err != nil {
+		slog.Error("dispatcher: failed to list webhooks", "error", err)
+
 		return
 	}
 
 	for _, wh := range webhooks {
 		if wh.MatchesEvent(event) {
-			go d.deliver(ctx, wh, event)
+			select {
+			case d.deliverySem <- struct{}{}:
+				go func(w *domain.Webhook) {
+					defer func() { <-d.deliverySem }()
+					d.deliver(ctx, w, event)
+				}(wh)
+			default:
+				slog.Warn("dispatcher: max concurrent deliveries reached, dropping",
+					"webhook_id", wh.ID)
+			}
 		}
 	}
 }
@@ -198,7 +229,7 @@ func (d *Dispatcher) sendRequest(
 
 	if wh.Secret != "" {
 		mac := hmac.New(sha256.New, []byte(wh.Secret))
-		mac.Write(body)
+		_, _ = mac.Write(body) // hash.Hash.Write never returns an error
 		sig := hex.EncodeToString(mac.Sum(nil))
 		req.Header.Set("X-Elara-Signature", "sha256="+sig)
 	}

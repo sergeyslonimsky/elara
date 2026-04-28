@@ -97,6 +97,10 @@ func (r *WebhookRepo) Update(_ context.Context, w *domain.Webhook) error {
 		w.CreatedAt = existing.CreatedAt
 		w.UpdatedAt = time.Now()
 
+		if w.Secret == "" {
+			w.Secret = existing.Secret
+		}
+
 		newData, err := json.Marshal( //nolint:gosec // G117: intentionally storing secret in bbolt
 			domainToWebhookMeta(w),
 		)

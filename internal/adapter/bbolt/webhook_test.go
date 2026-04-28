@@ -138,3 +138,50 @@ func TestWebhookRepo_Create_DuplicateID(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, domain.ErrAlreadyExists)
 }
+
+func TestWebhookRepo_Update_NotFound(t *testing.T) {
+	t.Parallel()
+	store := newTestStore(t)
+	repo := bboltadapter.NewWebhookRepo(store)
+	ctx := t.Context()
+
+	w := &domain.Webhook{
+		ID:      "nonexistent-id",
+		URL:     "https://example.com/hook",
+		Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+		Enabled: true,
+	}
+
+	err := repo.Update(ctx, w)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestWebhookRepo_Delete_NotFound(t *testing.T) {
+	t.Parallel()
+	store := newTestStore(t)
+	repo := bboltadapter.NewWebhookRepo(store)
+	ctx := t.Context()
+
+	err := repo.Delete(ctx, "nonexistent-id")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestWebhookRepo_Update_PreservesSecretWhenEmpty(t *testing.T) {
+	t.Parallel()
+	store := newTestStore(t)
+	repo := bboltadapter.NewWebhookRepo(store)
+	ctx := t.Context()
+
+	w := newTestWebhook("https://example.com/hook")
+	w.Secret = "original-secret"
+	require.NoError(t, repo.Create(ctx, w))
+
+	w.Secret = ""
+	require.NoError(t, repo.Update(ctx, w))
+
+	got, err := repo.Get(ctx, w.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "original-secret", got.Secret)
+}

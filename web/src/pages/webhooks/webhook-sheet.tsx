@@ -1,6 +1,6 @@
 import { useMutation } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,9 +62,16 @@ export function WebhookSheet({
 	const isEdit = !!webhook;
 	const queryClient = useQueryClient();
 	const [form, setForm] = useState<FormState>(defaultForm());
+	const openedWithIdRef = useRef<string | undefined>(undefined);
 
 	useEffect(() => {
-		if (!open) return;
+		if (!open) {
+			openedWithIdRef.current = undefined;
+			return;
+		}
+		const currentId = webhook?.id;
+		if (openedWithIdRef.current === currentId) return;
+		openedWithIdRef.current = currentId;
 		if (webhook) {
 			setForm({
 				url: webhook.url,

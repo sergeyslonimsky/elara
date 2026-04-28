@@ -16,6 +16,7 @@ Thumbs.db
 config.yaml
 data/
 coverage.out
+coverage.txt
 *.log
 
 # Go vendor tree — pulled via `go mod download` (go.sum pins integrity).

@@ -70,6 +70,7 @@ func TestUpdateUseCase_Execute_MergesCorrectly(t *testing.T) {
 				Enabled: true,
 			},
 			params: webhookuc.UpdateParams{
+				URL:     "https://example.com/hook",
 				Events:  []domain.WebhookEventType{domain.WebhookEventUpdated, domain.WebhookEventDeleted},
 				Enabled: false,
 			},
@@ -86,6 +87,7 @@ func TestUpdateUseCase_Execute_MergesCorrectly(t *testing.T) {
 				Enabled: true,
 			},
 			params: webhookuc.UpdateParams{
+				URL:             "https://example.com/hook",
 				NamespaceFilter: "production",
 				Events:          []domain.WebhookEventType{domain.WebhookEventCreated},
 				Enabled:         true,
@@ -93,6 +95,55 @@ func TestUpdateUseCase_Execute_MergesCorrectly(t *testing.T) {
 			wantURL:     "https://example.com/hook",
 			wantEnabled: true,
 			wantNSF:     "production",
+			wantEvents:  []domain.WebhookEventType{domain.WebhookEventCreated},
+		},
+		{
+			name: "empty URL triggers validation error",
+			existing: &domain.Webhook{
+				ID:      "wh-4",
+				URL:     "https://example.com/hook",
+				Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+				Enabled: true,
+			},
+			params: webhookuc.UpdateParams{
+				URL:     "",
+				Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+				Enabled: true,
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty events list triggers validation error",
+			existing: &domain.Webhook{
+				ID:      "wh-5",
+				URL:     "https://example.com/hook",
+				Events:  []domain.WebhookEventType{domain.WebhookEventDeleted},
+				Enabled: true,
+			},
+			params: webhookuc.UpdateParams{
+				URL:     "https://example.com/hook",
+				Events:  nil,
+				Enabled: true,
+			},
+			wantErr: true,
+		},
+		{
+			name: "secret updated when non-empty",
+			existing: &domain.Webhook{
+				ID:      "wh-6",
+				URL:     "https://example.com/hook",
+				Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+				Secret:  "old-secret",
+				Enabled: true,
+			},
+			params: webhookuc.UpdateParams{
+				URL:     "https://example.com/hook",
+				Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+				Secret:  "new-secret",
+				Enabled: true,
+			},
+			wantURL:     "https://example.com/hook",
+			wantEnabled: true,
 			wantEvents:  []domain.WebhookEventType{domain.WebhookEventCreated},
 		},
 	}
@@ -117,4 +168,61 @@ func TestUpdateUseCase_Execute_MergesCorrectly(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateUseCase_Execute_ValidationError(t *testing.T) {
+	t.Parallel()
+
+	m := &mockUpdater{webhook: &domain.Webhook{
+		ID:     "wh-1",
+		URL:    "https://example.com/hook",
+		Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+	}}
+	uc := webhookuc.NewUpdateUseCase(m)
+
+	// Setting URL to an invalid value triggers a validation error.
+	_, err := uc.Execute(t.Context(), "wh-1", webhookuc.UpdateParams{
+		URL:    "not-a-valid-url",
+		Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+	})
+
+	require.Error(t, err)
+	assert.True(t, domain.IsValidationError(err))
+}
+
+func TestUpdateUseCase_Execute_GetError(t *testing.T) {
+	t.Parallel()
+
+	m := &mockUpdater{getErr: domain.ErrNotFound}
+	uc := webhookuc.NewUpdateUseCase(m)
+
+	_, err := uc.Execute(t.Context(), "missing", webhookuc.UpdateParams{
+		URL:    "https://example.com/hook",
+		Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+	})
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestUpdateUseCase_Execute_UpdateError(t *testing.T) {
+	t.Parallel()
+
+	m := &mockUpdater{
+		webhook: &domain.Webhook{
+			ID:     "wh-1",
+			URL:    "https://example.com/hook",
+			Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+		},
+		upErr: domain.ErrNotFound,
+	}
+	uc := webhookuc.NewUpdateUseCase(m)
+
+	_, err := uc.Execute(t.Context(), "wh-1", webhookuc.UpdateParams{
+		URL:    "https://example.com/hook",
+		Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+	})
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrNotFound)
 }

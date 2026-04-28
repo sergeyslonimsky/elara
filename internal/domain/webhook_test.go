@@ -53,6 +53,24 @@ func TestWebhook_Validate(t *testing.T) {
 			errMsg:  "url",
 		},
 		{
+			name: "URL with no host rejected",
+			webhook: domain.Webhook{
+				URL:    "http://",
+				Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+			},
+			wantErr: true,
+			errMsg:  "url",
+		},
+		{
+			name: "relative URL rejected",
+			webhook: domain.Webhook{
+				URL:    "http:no-host",
+				Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+			},
+			wantErr: true,
+			errMsg:  "url",
+		},
+		{
 			name: "no events",
 			webhook: domain.Webhook{
 				URL:    "https://example.com/hook",
@@ -211,6 +229,28 @@ func TestWebhook_MatchesEvent(t *testing.T) {
 			}(),
 			event: baseEvent,
 			want:  false,
+		},
+		{
+			name: "path prefix does not match partial segment",
+			webhook: func() domain.Webhook {
+				w := baseWebhook
+				w.PathPrefix = "/services/ap"
+
+				return w
+			}(),
+			event: baseEvent, // path: /services/api/config.json
+			want:  false,
+		},
+		{
+			name: "path prefix exact segment boundary match",
+			webhook: func() domain.Webhook {
+				w := baseWebhook
+				w.PathPrefix = "/services/api"
+
+				return w
+			}(),
+			event: baseEvent,
+			want:  true,
 		},
 		{
 			name:    "all match case",
