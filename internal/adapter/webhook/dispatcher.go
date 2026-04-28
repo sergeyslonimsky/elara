@@ -151,7 +151,7 @@ func (d *Dispatcher) deliver(ctx context.Context, wh *domain.Webhook, event doma
 		delay := retryDelays[attempt-1]
 
 		if delay > 0 {
-			jitter := float64(delay) * (1 + 0.2*(rand.Float64()*2-1)) //nolint:gosec // jitter, not security
+			jitter := float64(delay) * (1 + 0.2*(rand.Float64()*2-1)) //nolint:gosec // jitter, not security // NOSONAR
 
 			select {
 			case <-time.After(time.Duration(jitter)):

@@ -19,8 +19,8 @@ import { invalidate } from "@/lib/queries";
 import { toastError } from "@/lib/toast";
 
 interface DeleteDialogProps {
-	webhookId: string;
-	webhookUrl: string;
+	readonly webhookId: string;
+	readonly webhookUrl: string;
 }
 
 export function DeleteDialog({ webhookId, webhookUrl }: DeleteDialogProps) {

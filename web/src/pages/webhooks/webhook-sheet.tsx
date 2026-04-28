@@ -49,9 +49,9 @@ function defaultForm(): FormState {
 }
 
 interface WebhookSheetProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	webhook?: Webhook;
+	readonly open: boolean;
+	readonly onOpenChange: (open: boolean) => void;
+	readonly webhook?: Webhook;
 }
 
 export function WebhookSheet({
@@ -106,6 +106,8 @@ export function WebhookSheet({
 
 	const isPending = createMutation.isPending || updateMutation.isPending;
 	const canSubmit = form.url.trim() !== "" && form.events.length > 0;
+	const pendingLabel = isEdit ? "Saving..." : "Creating...";
+	const idleLabel = isEdit ? "Save changes" : "Create webhook";
 
 	function toggleEvent(event: WebhookEvent) {
 		setForm((f) => ({
@@ -226,13 +228,7 @@ export function WebhookSheet({
 							disabled={isPending || !canSubmit}
 							className="w-full"
 						>
-							{isPending
-								? isEdit
-									? "Saving..."
-									: "Creating..."
-								: isEdit
-									? "Save changes"
-									: "Create webhook"}
+							{isPending ? pendingLabel : idleLabel}
 						</Button>
 					</SheetFooter>
 				</form>
