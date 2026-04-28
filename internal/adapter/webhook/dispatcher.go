@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"math/rand"
+	"math/big"
 	"net/http"
 	"sync"
 	"time"
@@ -23,6 +24,8 @@ const (
 	successStatusMin        = 200
 	successStatusMax        = 300
 	maxConcurrentDeliveries = 100
+	jitterRange             = 5 // base = 4/5 of delay, window = 2/5 → ±20%
+	jitterWindowFactor      = 2 // window = delay/jitterRange * jitterWindowFactor
 )
 
 type webhookLister interface {
@@ -151,10 +154,10 @@ func (d *Dispatcher) deliver(ctx context.Context, wh *domain.Webhook, event doma
 		delay := retryDelays[attempt-1]
 
 		if delay > 0 {
-			jitter := float64(delay) * (1 + 0.2*(rand.Float64()*2-1)) //nolint:gosec // jitter, not security // NOSONAR
+			jitter := cryptoJitter(delay)
 
 			select {
-			case <-time.After(time.Duration(jitter)):
+			case <-time.After(jitter):
 			case <-ctx.Done():
 				return
 			}
@@ -281,4 +284,19 @@ func (d *Dispatcher) getOrCreateBuffer(webhookID string) *deliveryRingBuffer {
 	d.history[webhookID] = buf
 
 	return buf
+}
+
+// cryptoJitter returns delay ±20% using a cryptographically secure source.
+func cryptoJitter(delay time.Duration) time.Duration {
+	window := int64(delay) / jitterRange * jitterWindowFactor
+	if window < 1 {
+		return delay
+	}
+
+	n, err := rand.Int(rand.Reader, big.NewInt(window))
+	if err != nil {
+		return delay
+	}
+
+	return time.Duration(int64(delay)*4/jitterRange + n.Int64())
 }
