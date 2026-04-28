@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import App from "./App";
 import { MemoryRouter } from "react-router";
+import { describe, expect, it } from "vitest";
 import { TestProviders } from "@/test/test-utils";
+import App from "./App";
 
 describe("App", () => {
 	it("renders the dashboard page at root route", () => {
