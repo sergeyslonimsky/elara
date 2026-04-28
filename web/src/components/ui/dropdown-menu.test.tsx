@@ -42,7 +42,6 @@ describe("DropdownMenu", () => {
 	});
 
 	it("handles checkbox and radio items", async () => {
-		const user = userEvent.setup();
 		render(
 			<DropdownMenu open>
 				<DropdownMenuContent>

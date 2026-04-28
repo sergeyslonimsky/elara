@@ -49,7 +49,6 @@ describe("AlertDialog", () => {
 	});
 
 	it("renders media section if provided", async () => {
-		const user = userEvent.setup();
 		const { AlertDialogMedia } = await import("./alert-dialog");
 		render(
 			<AlertDialog open>
