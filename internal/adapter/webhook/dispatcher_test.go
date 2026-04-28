@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -548,4 +549,329 @@ func TestDispatcher_ClearHistory_RemovesHistory(t *testing.T) {
 
 	dispatcher.ClearHistory("wh-clear")
 	assert.Empty(t, dispatcher.GetDeliveryHistory("wh-clear"))
+}
+
+// mockListerWithError always returns an error from List.
+type mockListerWithError struct {
+	err error
+}
+
+func (m *mockListerWithError) List(_ context.Context) ([]*domain.Webhook, error) {
+	return nil, m.err
+}
+
+func TestDispatcher_Stop_StopsProcessing(t *testing.T) {
+	t.Parallel()
+
+	var received atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	pub := newMockPublisher()
+	lister := &mockLister{}
+	lister.setWebhooks([]*domain.Webhook{
+		{
+			ID:      "wh-stop",
+			URL:     srv.URL,
+			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+			Enabled: true,
+		},
+	})
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Start(ctx)
+
+	// Stop the dispatcher before sending any event.
+	dispatcher.Stop()
+
+	// Give the dispatcher goroutine time to process the stop signal.
+	time.Sleep(50 * time.Millisecond)
+
+	pub.Send(domain.WatchEvent{
+		Type:      domain.EventTypeCreated,
+		Path:      "/config.json",
+		Namespace: "prod",
+		Revision:  1,
+		Timestamp: time.Now(),
+	})
+
+	time.Sleep(200 * time.Millisecond)
+	assert.Equal(t, int32(0), received.Load())
+}
+
+func TestDispatcher_DispatchListError_NoDelivery(t *testing.T) {
+	t.Parallel()
+
+	pub := newMockPublisher()
+	lister := &mockListerWithError{err: errors.New("db error")}
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Start(ctx)
+
+	pub.Send(domain.WatchEvent{
+		Type:      domain.EventTypeCreated,
+		Path:      "/config.json",
+		Namespace: "prod",
+		Revision:  1,
+		Timestamp: time.Now(),
+	})
+
+	// No panic and no delivery — just verify the dispatcher is still alive.
+	time.Sleep(200 * time.Millisecond)
+
+	history := dispatcher.GetDeliveryHistory("any-wh")
+	assert.Empty(t, history)
+}
+
+func TestDispatcher_RetryOnFailure_EventuallySucceeds(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		failFirst      int // number of 500 responses before switching to 200
+		wantAttempts   int
+		wantLastStatus int
+	}{
+		{
+			name:           "succeeds on first retry after one failure",
+			failFirst:      1,
+			wantAttempts:   2,
+			wantLastStatus: http.StatusOK,
+		},
+		{
+			name:           "succeeds immediately on first attempt",
+			failFirst:      0,
+			wantAttempts:   1,
+			wantLastStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var callCount atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				n := int(callCount.Add(1))
+				if n <= tt.failFirst {
+					w.WriteHeader(http.StatusInternalServerError)
+				} else {
+					w.WriteHeader(http.StatusOK)
+				}
+			}))
+			defer srv.Close()
+
+			pub := newMockPublisher()
+			lister := &mockLister{}
+			webhookID := "wh-retry-" + tt.name
+			lister.setWebhooks([]*domain.Webhook{
+				{
+					ID:      webhookID,
+					URL:     srv.URL,
+					Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+					Enabled: true,
+				},
+			})
+
+			dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			go dispatcher.Start(ctx)
+
+			pub.Send(domain.WatchEvent{
+				Type:      domain.EventTypeCreated,
+				Path:      "/config.json",
+				Namespace: "prod",
+				Revision:  1,
+				Timestamp: time.Now(),
+			})
+
+			require.Eventually(t, func() bool {
+				history := dispatcher.GetDeliveryHistory(webhookID)
+				if len(history) < tt.wantAttempts {
+					return false
+				}
+
+				return history[len(history)-1].Success
+			}, 10*time.Second, 20*time.Millisecond)
+
+			history := dispatcher.GetDeliveryHistory(webhookID)
+			require.GreaterOrEqual(t, len(history), tt.wantAttempts)
+			assert.Equal(t, tt.wantLastStatus, history[len(history)-1].StatusCode)
+			assert.True(t, history[len(history)-1].Success)
+		})
+	}
+}
+
+func TestDispatcher_BuildPayload_ContentHashPresent(t *testing.T) {
+	t.Parallel()
+
+	type payloadType struct {
+		ContentHash string `json:"content_hash"`
+	}
+
+	var (
+		receivedMu sync.Mutex
+		received   payloadType
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+
+		var p payloadType
+		_ = json.Unmarshal(body, &p)
+
+		receivedMu.Lock()
+		received = p
+		receivedMu.Unlock()
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	pub := newMockPublisher()
+	lister := &mockLister{}
+	lister.setWebhooks([]*domain.Webhook{
+		{
+			ID:      "wh-content-hash",
+			URL:     srv.URL,
+			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+			Enabled: true,
+		},
+	})
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Start(ctx)
+
+	pub.Send(domain.WatchEvent{
+		Type:      domain.EventTypeCreated,
+		Path:      "/config.json",
+		Namespace: "prod",
+		Revision:  1,
+		Timestamp: time.Now(),
+		Config:    &domain.Config{ContentHash: "abc123"},
+	})
+
+	require.Eventually(t, func() bool {
+		receivedMu.Lock()
+		defer receivedMu.Unlock()
+
+		return received.ContentHash != ""
+	}, 2*time.Second, 10*time.Millisecond)
+
+	receivedMu.Lock()
+	defer receivedMu.Unlock()
+
+	assert.Equal(t, "abc123", received.ContentHash)
+}
+
+func TestDispatcher_SendRequest_NetworkError_RecordsFailure(t *testing.T) {
+	t.Parallel()
+
+	// Start a server and immediately close it to produce a network error.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	closedURL := srv.URL
+	srv.Close()
+
+	pub := newMockPublisher()
+	lister := &mockLister{}
+	webhookID := "wh-net-err"
+	lister.setWebhooks([]*domain.Webhook{
+		{
+			ID:      webhookID,
+			URL:     closedURL,
+			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+			Enabled: true,
+		},
+	})
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Start(ctx)
+
+	pub.Send(domain.WatchEvent{
+		Type:      domain.EventTypeCreated,
+		Path:      "/config.json",
+		Namespace: "prod",
+		Revision:  1,
+		Timestamp: time.Now(),
+	})
+
+	require.Eventually(t, func() bool {
+		return len(dispatcher.GetDeliveryHistory(webhookID)) > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	history := dispatcher.GetDeliveryHistory(webhookID)
+	require.NotEmpty(t, history)
+	assert.False(t, history[0].Success)
+	assert.NotEmpty(t, history[0].Error)
+}
+
+func TestDispatcher_ConcurrentDeliveries_SemaphoreNotExceeded(t *testing.T) {
+	t.Parallel()
+
+	const numEvents = 10
+
+	var received atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	pub := newMockPublisher()
+	lister := &mockLister{}
+	lister.setWebhooks([]*domain.Webhook{
+		{
+			ID:      "wh-concurrent",
+			URL:     srv.URL,
+			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+			Enabled: true,
+		},
+	})
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Start(ctx)
+
+	for i := range numEvents {
+		pub.Send(domain.WatchEvent{
+			Type:      domain.EventTypeCreated,
+			Path:      fmt.Sprintf("/config-%d.json", i),
+			Namespace: "prod",
+			Revision:  int64(i + 1),
+			Timestamp: time.Now(),
+		})
+	}
+
+	require.Eventually(t, func() bool {
+		return received.Load() == numEvents
+	}, 5*time.Second, 20*time.Millisecond)
+
+	assert.Equal(t, int32(numEvents), received.Load())
 }

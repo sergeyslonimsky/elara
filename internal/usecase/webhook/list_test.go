@@ -2,6 +2,7 @@ package webhook_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,6 +34,11 @@ func TestListUseCase_Execute(t *testing.T) {
 		{
 			name:    "empty list",
 			wantLen: 0,
+		},
+		{
+			name:    "repo error",
+			err:     errors.New("db error"),
+			wantErr: true,
 		},
 		{
 			name: "populated list",
