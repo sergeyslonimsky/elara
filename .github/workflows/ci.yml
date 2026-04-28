@@ -84,6 +84,9 @@ jobs:
       - name: Test (race)
         run: go test -race -count=1 -coverprofile=coverage.txt ./...
 
+      - name: Filter generated files from coverage
+        run: grep -vE "\.pb\.go:|\.connect\.go:" coverage.txt > coverage_filtered.txt && mv coverage_filtered.txt coverage.txt
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:

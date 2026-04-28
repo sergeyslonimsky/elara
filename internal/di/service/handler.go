@@ -13,6 +13,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/dashboard/v1/dashboardv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/namespace/v1/namespacev1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1/transferv1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/webhook/v1/webhookv1connect"
 )
 
 type V2Handlers struct {
@@ -22,6 +23,7 @@ type V2Handlers struct {
 	Dashboard *v2.DashboardHandler
 	Transfer  *v2.TransferHandler
 	Schema    *v2.SchemaHandler
+	Webhook   *v2.WebhookHandler
 }
 
 func NewV2Handlers(uc *UseCases) *V2Handlers {
@@ -60,6 +62,14 @@ func NewV2Handlers(uc *UseCases) *V2Handlers {
 			uc.GetEffectiveSchema,
 			uc.ListSchemas,
 		),
+		Webhook: v2.NewWebhookHandler(
+			uc.CreateWebhook,
+			uc.GetWebhook,
+			uc.UpdateWebhook,
+			uc.DeleteWebhook,
+			uc.ListWebhooks,
+			uc.WebhookHistory,
+		),
 	}
 }
 
@@ -90,5 +100,8 @@ func V2Routes(server server, handlers *V2Handlers) {
 	server.Mount(path, handler)
 
 	path, handler = configv1connect.NewSchemaServiceHandler(handlers.Schema, opts)
+	server.Mount(path, handler)
+
+	path, handler = webhookv1connect.NewWebhookServiceHandler(handlers.Webhook, opts)
 	server.Mount(path, handler)
 }

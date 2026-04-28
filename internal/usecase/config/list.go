@@ -12,6 +12,8 @@ import (
 
 const defaultListLimit = 20
 
+//go:generate mockgen -destination=mocks/mock_list.go -package=config_mock . configLister
+
 type configLister interface {
 	ListSummariesByPrefix(ctx context.Context, pathPrefix, namespace string) ([]*domain.ConfigSummary, error)
 }

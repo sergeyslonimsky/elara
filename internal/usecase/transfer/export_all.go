@@ -11,6 +11,8 @@ import (
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
 )
 
+//go:generate mockgen -destination=mocks/mock_export_all.go -package=transfer_mock . exportAllConfigLister,exportAllNSLister
+
 type exportAllConfigLister interface {
 	ListAllByNamespace(ctx context.Context, namespace string) ([]*domain.Config, error)
 }

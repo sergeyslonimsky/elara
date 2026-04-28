@@ -7,6 +7,7 @@ import (
 	nsuc "github.com/sergeyslonimsky/elara/internal/usecase/namespace"
 	schemauc "github.com/sergeyslonimsky/elara/internal/usecase/schema"
 	transferuc "github.com/sergeyslonimsky/elara/internal/usecase/transfer"
+	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
 )
 
 type UseCases struct {
@@ -44,6 +45,13 @@ type UseCases struct {
 	ExportNamespace *transferuc.ExportNamespaceUseCase
 	ExportAll       *transferuc.ExportAllUseCase
 	ImportNamespace *transferuc.ImportNamespaceUseCase
+
+	CreateWebhook  *webhookuc.CreateUseCase
+	GetWebhook     *webhookuc.GetUseCase
+	UpdateWebhook  *webhookuc.UpdateUseCase
+	DeleteWebhook  *webhookuc.DeleteUseCase
+	ListWebhooks   *webhookuc.ListUseCase
+	WebhookHistory *webhookuc.HistoryUseCase
 }
 
 func NewUseCases(a *Adapters) *UseCases {
@@ -107,5 +115,12 @@ func NewUseCases(a *Adapters) *UseCases {
 			a.ConfigRepo,
 			a.ClientRegistry,
 		),
+
+		CreateWebhook:  webhookuc.NewCreateUseCase(a.WebhookRepo),
+		GetWebhook:     webhookuc.NewGetUseCase(a.WebhookRepo),
+		UpdateWebhook:  webhookuc.NewUpdateUseCase(a.WebhookRepo),
+		DeleteWebhook:  webhookuc.NewDeleteUseCase(a.WebhookRepo, a.WebhookDispatcher),
+		ListWebhooks:   webhookuc.NewListUseCase(a.WebhookRepo),
+		WebhookHistory: webhookuc.NewHistoryUseCase(a.WebhookDispatcher),
 	}
 }

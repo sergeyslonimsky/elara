@@ -1,52 +1,20 @@
 package transfer_test
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"gopkg.in/yaml.v3"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
 	"github.com/sergeyslonimsky/elara/internal/usecase/transfer"
+	transfer_mock "github.com/sergeyslonimsky/elara/internal/usecase/transfer/mocks"
 )
-
-// ---------------------------------------------------------------------------
-// Mocks for ExportNamespaceUseCase
-// ---------------------------------------------------------------------------
-
-type mockExportNSConfigLister struct {
-	configs []*domain.Config
-	err     error
-}
-
-func (m *mockExportNSConfigLister) ListAllByNamespace(_ context.Context, _ string) ([]*domain.Config, error) {
-	return m.configs, m.err
-}
-
-type mockExportNSChecker struct {
-	namespace *domain.Namespace
-	err       error
-}
-
-func (m *mockExportNSChecker) Get(_ context.Context, _ string) (*domain.Namespace, error) {
-	return m.namespace, m.err
-}
-
-// ---------------------------------------------------------------------------
-// Helper
-// ---------------------------------------------------------------------------
-
-func newExportNSUC(
-	lister *mockExportNSConfigLister,
-	checker *mockExportNSChecker,
-) *transfer.ExportNamespaceUseCase {
-	return transfer.NewExportNamespaceUseCase(lister, checker)
-}
 
 // ---------------------------------------------------------------------------
 // Tests: happy path
@@ -55,19 +23,21 @@ func newExportNSUC(
 func TestExportNamespaceUseCase_JSONEncoding(t *testing.T) {
 	t.Parallel()
 
-	ctx := t.Context()
-
 	ns := &domain.Namespace{Name: "my-ns", Description: "my description"}
 	configs := []*domain.Config{
 		{Path: "/config.json", Content: `{"key":"value"}`, Format: domain.FormatJSON, Namespace: "my-ns"},
 	}
 
-	uc := newExportNSUC(
-		&mockExportNSConfigLister{configs: configs},
-		&mockExportNSChecker{namespace: ns},
-	)
+	ctrl := gomock.NewController(t)
+	lister := transfer_mock.NewMockexportNSConfigLister(ctrl)
+	checker := transfer_mock.NewMockexportNSChecker(ctrl)
 
-	payload, ct, fname, err := uc.Execute(ctx, "my-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
+	checker.EXPECT().Get(gomock.Any(), "my-ns").Return(ns, nil)
+	lister.EXPECT().ListAllByNamespace(gomock.Any(), "my-ns").Return(configs, nil)
+
+	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+
+	payload, ct, fname, err := uc.Execute(t.Context(), "my-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
 
 	require.NoError(t, err)
 	assert.Equal(t, "application/json", ct)
@@ -84,19 +54,21 @@ func TestExportNamespaceUseCase_JSONEncoding(t *testing.T) {
 func TestExportNamespaceUseCase_YAMLEncoding(t *testing.T) {
 	t.Parallel()
 
-	ctx := t.Context()
-
 	ns := &domain.Namespace{Name: "yaml-ns", Description: "yaml ns description"}
 	configs := []*domain.Config{
 		{Path: "/config.yaml", Content: "key: value", Format: domain.FormatYAML, Namespace: "yaml-ns"},
 	}
 
-	uc := newExportNSUC(
-		&mockExportNSConfigLister{configs: configs},
-		&mockExportNSChecker{namespace: ns},
-	)
+	ctrl := gomock.NewController(t)
+	lister := transfer_mock.NewMockexportNSConfigLister(ctrl)
+	checker := transfer_mock.NewMockexportNSChecker(ctrl)
 
-	payload, ct, fname, err := uc.Execute(ctx, "yaml-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_YAML)
+	checker.EXPECT().Get(gomock.Any(), "yaml-ns").Return(ns, nil)
+	lister.EXPECT().ListAllByNamespace(gomock.Any(), "yaml-ns").Return(configs, nil)
+
+	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+
+	payload, ct, fname, err := uc.Execute(t.Context(), "yaml-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_YAML)
 
 	require.NoError(t, err)
 	assert.Equal(t, "application/yaml", ct)
@@ -110,15 +82,23 @@ func TestExportNamespaceUseCase_YAMLEncoding(t *testing.T) {
 func TestExportNamespaceUseCase_UnspecifiedEncoding_DefaultsToJSON(t *testing.T) {
 	t.Parallel()
 
-	ctx := t.Context()
-
 	ns := &domain.Namespace{Name: "my-ns"}
-	uc := newExportNSUC(
-		&mockExportNSConfigLister{configs: []*domain.Config{}},
-		&mockExportNSChecker{namespace: ns},
-	)
 
-	payload, ct, fname, err := uc.Execute(ctx, "my-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_UNSPECIFIED)
+	ctrl := gomock.NewController(t)
+	lister := transfer_mock.NewMockexportNSConfigLister(ctrl)
+	checker := transfer_mock.NewMockexportNSChecker(ctrl)
+
+	checker.EXPECT().Get(gomock.Any(), "my-ns").Return(ns, nil)
+	lister.EXPECT().ListAllByNamespace(gomock.Any(), "my-ns").Return([]*domain.Config{}, nil)
+
+	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+
+	payload, ct, fname, err := uc.Execute(
+		t.Context(),
+		"my-ns",
+		false,
+		transferv1.BundleEncoding_BUNDLE_ENCODING_UNSPECIFIED,
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, "application/json", ct)
@@ -136,15 +116,18 @@ func TestExportNamespaceUseCase_UnspecifiedEncoding_DefaultsToJSON(t *testing.T)
 func TestExportNamespaceUseCase_AsZip_JSON(t *testing.T) {
 	t.Parallel()
 
-	ctx := t.Context()
-
 	ns := &domain.Namespace{Name: "zip-ns"}
-	uc := newExportNSUC(
-		&mockExportNSConfigLister{configs: []*domain.Config{}},
-		&mockExportNSChecker{namespace: ns},
-	)
 
-	payload, ct, fname, err := uc.Execute(ctx, "zip-ns", true, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
+	ctrl := gomock.NewController(t)
+	lister := transfer_mock.NewMockexportNSConfigLister(ctrl)
+	checker := transfer_mock.NewMockexportNSChecker(ctrl)
+
+	checker.EXPECT().Get(gomock.Any(), "zip-ns").Return(ns, nil)
+	lister.EXPECT().ListAllByNamespace(gomock.Any(), "zip-ns").Return([]*domain.Config{}, nil)
+
+	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+
+	payload, ct, fname, err := uc.Execute(t.Context(), "zip-ns", true, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
 
 	require.NoError(t, err)
 	assert.Equal(t, "application/zip", ct)
@@ -158,15 +141,23 @@ func TestExportNamespaceUseCase_AsZip_JSON(t *testing.T) {
 func TestExportNamespaceUseCase_AsZip_YAML(t *testing.T) {
 	t.Parallel()
 
-	ctx := t.Context()
-
 	ns := &domain.Namespace{Name: "zip-yaml-ns"}
-	uc := newExportNSUC(
-		&mockExportNSConfigLister{configs: []*domain.Config{}},
-		&mockExportNSChecker{namespace: ns},
-	)
 
-	payload, ct, fname, err := uc.Execute(ctx, "zip-yaml-ns", true, transferv1.BundleEncoding_BUNDLE_ENCODING_YAML)
+	ctrl := gomock.NewController(t)
+	lister := transfer_mock.NewMockexportNSConfigLister(ctrl)
+	checker := transfer_mock.NewMockexportNSChecker(ctrl)
+
+	checker.EXPECT().Get(gomock.Any(), "zip-yaml-ns").Return(ns, nil)
+	lister.EXPECT().ListAllByNamespace(gomock.Any(), "zip-yaml-ns").Return([]*domain.Config{}, nil)
+
+	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+
+	payload, ct, fname, err := uc.Execute(
+		t.Context(),
+		"zip-yaml-ns",
+		true,
+		transferv1.BundleEncoding_BUNDLE_ENCODING_YAML,
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, "application/zip", ct)
@@ -182,15 +173,23 @@ func TestExportNamespaceUseCase_AsZip_YAML(t *testing.T) {
 func TestExportNamespaceUseCase_EmptyConfigs(t *testing.T) {
 	t.Parallel()
 
-	ctx := t.Context()
-
 	ns := &domain.Namespace{Name: "empty-ns", Description: "no configs here"}
-	uc := newExportNSUC(
-		&mockExportNSConfigLister{configs: []*domain.Config{}},
-		&mockExportNSChecker{namespace: ns},
-	)
 
-	payload, ct, fname, err := uc.Execute(ctx, "empty-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
+	ctrl := gomock.NewController(t)
+	lister := transfer_mock.NewMockexportNSConfigLister(ctrl)
+	checker := transfer_mock.NewMockexportNSChecker(ctrl)
+
+	checker.EXPECT().Get(gomock.Any(), "empty-ns").Return(ns, nil)
+	lister.EXPECT().ListAllByNamespace(gomock.Any(), "empty-ns").Return([]*domain.Config{}, nil)
+
+	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+
+	payload, ct, fname, err := uc.Execute(
+		t.Context(),
+		"empty-ns",
+		false,
+		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, "application/json", ct)
@@ -209,15 +208,16 @@ func TestExportNamespaceUseCase_EmptyConfigs(t *testing.T) {
 func TestExportNamespaceUseCase_NamespaceNotFound_Error(t *testing.T) {
 	t.Parallel()
 
-	ctx := t.Context()
+	ctrl := gomock.NewController(t)
+	lister := transfer_mock.NewMockexportNSConfigLister(ctrl)
+	checker := transfer_mock.NewMockexportNSChecker(ctrl)
 
-	uc := newExportNSUC(
-		&mockExportNSConfigLister{},
-		&mockExportNSChecker{err: domain.ErrNotFound},
-	)
+	checker.EXPECT().Get(gomock.Any(), "missing-ns").Return(nil, domain.ErrNotFound)
+
+	uc := transfer.NewExportNamespaceUseCase(lister, checker)
 
 	_, _, _, err := uc.Execute(
-		ctx,
+		t.Context(),
 		"missing-ns",
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
@@ -231,16 +231,19 @@ func TestExportNamespaceUseCase_NamespaceNotFound_Error(t *testing.T) {
 func TestExportNamespaceUseCase_ConfigListerError_Propagated(t *testing.T) {
 	t.Parallel()
 
-	ctx := t.Context()
-
 	ns := &domain.Namespace{Name: "my-ns"}
-	uc := newExportNSUC(
-		&mockExportNSConfigLister{err: errors.New("db connection lost")},
-		&mockExportNSChecker{namespace: ns},
-	)
+
+	ctrl := gomock.NewController(t)
+	lister := transfer_mock.NewMockexportNSConfigLister(ctrl)
+	checker := transfer_mock.NewMockexportNSChecker(ctrl)
+
+	checker.EXPECT().Get(gomock.Any(), "my-ns").Return(ns, nil)
+	lister.EXPECT().ListAllByNamespace(gomock.Any(), "my-ns").Return(nil, errors.New("db connection lost"))
+
+	uc := transfer.NewExportNamespaceUseCase(lister, checker)
 
 	_, _, _, err := uc.Execute(
-		ctx,
+		t.Context(),
 		"my-ns",
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
@@ -258,8 +261,6 @@ func TestExportNamespaceUseCase_ConfigListerError_Propagated(t *testing.T) {
 func TestExportNamespaceUseCase_ConfigMetadata_Preserved(t *testing.T) {
 	t.Parallel()
 
-	ctx := t.Context()
-
 	ns := &domain.Namespace{Name: "meta-ns"}
 	configs := []*domain.Config{
 		{
@@ -271,12 +272,16 @@ func TestExportNamespaceUseCase_ConfigMetadata_Preserved(t *testing.T) {
 		},
 	}
 
-	uc := newExportNSUC(
-		&mockExportNSConfigLister{configs: configs},
-		&mockExportNSChecker{namespace: ns},
-	)
+	ctrl := gomock.NewController(t)
+	lister := transfer_mock.NewMockexportNSConfigLister(ctrl)
+	checker := transfer_mock.NewMockexportNSChecker(ctrl)
 
-	payload, _, _, err := uc.Execute(ctx, "meta-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
+	checker.EXPECT().Get(gomock.Any(), "meta-ns").Return(ns, nil)
+	lister.EXPECT().ListAllByNamespace(gomock.Any(), "meta-ns").Return(configs, nil)
+
+	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+
+	payload, _, _, err := uc.Execute(t.Context(), "meta-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
 
 	require.NoError(t, err)
 
@@ -290,8 +295,6 @@ func TestExportNamespaceUseCase_ConfigMetadata_Preserved(t *testing.T) {
 // it, so an import produces fresh, unlocked configs.
 func TestExportNamespaceUseCase_LockState_Stripped(t *testing.T) {
 	t.Parallel()
-
-	ctx := t.Context()
 
 	ns := &domain.Namespace{Name: "locked-ns", Locked: true}
 	configs := []*domain.Config{
@@ -313,12 +316,16 @@ func TestExportNamespaceUseCase_LockState_Stripped(t *testing.T) {
 		},
 	}
 
-	uc := newExportNSUC(
-		&mockExportNSConfigLister{configs: configs},
-		&mockExportNSChecker{namespace: ns},
-	)
+	ctrl := gomock.NewController(t)
+	lister := transfer_mock.NewMockexportNSConfigLister(ctrl)
+	checker := transfer_mock.NewMockexportNSChecker(ctrl)
 
-	payload, _, _, err := uc.Execute(ctx, "locked-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
+	checker.EXPECT().Get(gomock.Any(), "locked-ns").Return(ns, nil)
+	lister.EXPECT().ListAllByNamespace(gomock.Any(), "locked-ns").Return(configs, nil)
+
+	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+
+	payload, _, _, err := uc.Execute(t.Context(), "locked-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
 	require.NoError(t, err)
 
 	// Decode as a generic map so we catch regressions that would add a "locked"

@@ -1,53 +1,44 @@
 package config_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
+	config_mock "github.com/sergeyslonimsky/elara/internal/usecase/config/mocks"
 )
-
-type mockConfigLister struct {
-	summaries []*domain.ConfigSummary
-}
-
-func (m *mockConfigLister) ListSummariesByPrefix(
-	_ context.Context,
-	_, _ string,
-) ([]*domain.ConfigSummary, error) {
-	return m.summaries, nil
-}
 
 func TestListUseCase_DirectoryBrowsing(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
 
-	mock := &mockConfigLister{
-		summaries: []*domain.ConfigSummary{
-			{Path: "/services/api/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
-			{Path: "/services/api/secrets.yaml", Format: domain.FormatYAML, Version: 2, UpdatedAt: now.Add(-time.Hour)},
-			{
-				Path:      "/services/web/config.json",
-				Format:    domain.FormatJSON,
-				Version:   1,
-				UpdatedAt: now.Add(-2 * time.Hour),
-			},
-			{Path: "/databases/pg.json", Format: domain.FormatJSON, Version: 3, UpdatedAt: now},
-			{Path: "/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
+	summaries := []*domain.ConfigSummary{
+		{Path: "/services/api/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
+		{Path: "/services/api/secrets.yaml", Format: domain.FormatYAML, Version: 2, UpdatedAt: now.Add(-time.Hour)},
+		{
+			Path:      "/services/web/config.json",
+			Format:    domain.FormatJSON,
+			Version:   1,
+			UpdatedAt: now.Add(-2 * time.Hour),
 		},
+		{Path: "/databases/pg.json", Format: domain.FormatJSON, Version: 3, UpdatedAt: now},
+		{Path: "/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
 	}
 
+	ctrl := gomock.NewController(t)
+	mock := config_mock.NewMockconfigLister(ctrl)
+	mock.EXPECT().ListSummariesByPrefix(gomock.Any(), gomock.Any(), gomock.Any()).Return(summaries, nil)
+
 	uc := configuc.NewListUseCase(mock)
-	ctx := context.Background()
 
 	// Root level
-	result, err := uc.Execute(ctx, configuc.ListParams{
+	result, err := uc.Execute(t.Context(), configuc.ListParams{
 		Namespace: "default",
 		Path:      "/",
 		Limit:     50,
@@ -78,19 +69,20 @@ func TestListUseCase_SubfolderBrowsing(t *testing.T) {
 
 	now := time.Now()
 
-	mock := &mockConfigLister{
-		summaries: []*domain.ConfigSummary{
-			{Path: "/services/api/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
-			{Path: "/services/api/secrets.yaml", Format: domain.FormatYAML, Version: 2, UpdatedAt: now},
-			{Path: "/services/web/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
-		},
+	summaries := []*domain.ConfigSummary{
+		{Path: "/services/api/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
+		{Path: "/services/api/secrets.yaml", Format: domain.FormatYAML, Version: 2, UpdatedAt: now},
+		{Path: "/services/web/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
 	}
 
+	ctrl := gomock.NewController(t)
+	mock := config_mock.NewMockconfigLister(ctrl)
+	mock.EXPECT().ListSummariesByPrefix(gomock.Any(), gomock.Any(), gomock.Any()).Return(summaries, nil)
+
 	uc := configuc.NewListUseCase(mock)
-	ctx := context.Background()
 
 	// /services level
-	result, err := uc.Execute(ctx, configuc.ListParams{
+	result, err := uc.Execute(t.Context(), configuc.ListParams{
 		Namespace: "default",
 		Path:      "/services",
 		Limit:     50,
@@ -117,17 +109,18 @@ func TestListUseCase_LeafFolder(t *testing.T) {
 
 	now := time.Now()
 
-	mock := &mockConfigLister{
-		summaries: []*domain.ConfigSummary{
-			{Path: "/services/api/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
-			{Path: "/services/api/secrets.yaml", Format: domain.FormatYAML, Version: 2, UpdatedAt: now},
-		},
+	summaries := []*domain.ConfigSummary{
+		{Path: "/services/api/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
+		{Path: "/services/api/secrets.yaml", Format: domain.FormatYAML, Version: 2, UpdatedAt: now},
 	}
 
-	uc := configuc.NewListUseCase(mock)
-	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	mock := config_mock.NewMockconfigLister(ctrl)
+	mock.EXPECT().ListSummariesByPrefix(gomock.Any(), gomock.Any(), gomock.Any()).Return(summaries, nil)
 
-	result, err := uc.Execute(ctx, configuc.ListParams{
+	uc := configuc.NewListUseCase(mock)
+
+	result, err := uc.Execute(t.Context(), configuc.ListParams{
 		Namespace: "default",
 		Path:      "/services/api",
 		Limit:     50,
@@ -152,21 +145,22 @@ func TestListUseCase_Pagination(t *testing.T) {
 
 	now := time.Now()
 
-	mock := &mockConfigLister{
-		summaries: []*domain.ConfigSummary{
-			{Path: "/a/x.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
-			{Path: "/b/x.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
-			{Path: "/c/x.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
-			{Path: "/d.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
-			{Path: "/e.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
-		},
+	summaries := []*domain.ConfigSummary{
+		{Path: "/a/x.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
+		{Path: "/b/x.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
+		{Path: "/c/x.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
+		{Path: "/d.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
+		{Path: "/e.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
 	}
 
+	ctrl := gomock.NewController(t)
+	mock := config_mock.NewMockconfigLister(ctrl)
+	mock.EXPECT().ListSummariesByPrefix(gomock.Any(), gomock.Any(), gomock.Any()).Return(summaries, nil).Times(3)
+
 	uc := configuc.NewListUseCase(mock)
-	ctx := context.Background()
 
 	// First page
-	result, err := uc.Execute(ctx, configuc.ListParams{
+	result, err := uc.Execute(t.Context(), configuc.ListParams{
 		Namespace: "default", Path: "/", Limit: 2, Offset: 0,
 	})
 	require.NoError(t, err)
@@ -176,7 +170,7 @@ func TestListUseCase_Pagination(t *testing.T) {
 	assert.Equal(t, "b", result.Entries[1].Name) // folder
 
 	// Second page
-	result, err = uc.Execute(ctx, configuc.ListParams{
+	result, err = uc.Execute(t.Context(), configuc.ListParams{
 		Namespace: "default", Path: "/", Limit: 2, Offset: 2,
 	})
 	require.NoError(t, err)
@@ -185,7 +179,7 @@ func TestListUseCase_Pagination(t *testing.T) {
 	assert.Equal(t, "d.json", result.Entries[1].Name) // file
 
 	// Third page
-	result, err = uc.Execute(ctx, configuc.ListParams{
+	result, err = uc.Execute(t.Context(), configuc.ListParams{
 		Namespace: "default", Path: "/", Limit: 2, Offset: 4,
 	})
 	require.NoError(t, err)
@@ -196,17 +190,18 @@ func TestListUseCase_Pagination(t *testing.T) {
 func TestListUseCase_EmptyPath(t *testing.T) {
 	t.Parallel()
 
-	mock := &mockConfigLister{
-		summaries: []*domain.ConfigSummary{
-			{Path: "/test.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: time.Now()},
-		},
+	summaries := []*domain.ConfigSummary{
+		{Path: "/test.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: time.Now()},
 	}
 
+	ctrl := gomock.NewController(t)
+	mock := config_mock.NewMockconfigLister(ctrl)
+	mock.EXPECT().ListSummariesByPrefix(gomock.Any(), gomock.Any(), gomock.Any()).Return(summaries, nil)
+
 	uc := configuc.NewListUseCase(mock)
-	ctx := context.Background()
 
 	// Empty path = root
-	result, err := uc.Execute(ctx, configuc.ListParams{
+	result, err := uc.Execute(t.Context(), configuc.ListParams{
 		Namespace: "default", Path: "", Limit: 50,
 	})
 	require.NoError(t, err)

@@ -10,6 +10,7 @@ import (
 
 	bboltadapter "github.com/sergeyslonimsky/elara/internal/adapter/bbolt"
 	watchadapter "github.com/sergeyslonimsky/elara/internal/adapter/watch"
+	webhookadapter "github.com/sergeyslonimsky/elara/internal/adapter/webhook"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/monitor"
 )
@@ -20,7 +21,9 @@ type Adapters struct {
 	NamespaceRepo     *bboltadapter.NamespaceRepo
 	ClientHistoryRepo *bboltadapter.ClientHistoryRepo
 	SchemaRepo        *bboltadapter.SchemaRepo
+	WebhookRepo       *bboltadapter.WebhookRepo
 	Watch             *watchadapter.Publisher
+	WebhookDispatcher *webhookadapter.Dispatcher
 
 	// Connected-clients monitor: history is wired into the registry as a
 	// HistorySink so disconnects are persisted automatically.
@@ -52,6 +55,10 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 		RecentEventsCapacity: cfg.Clients.RecentEventsCapacity,
 	}, clientHistory)
 
+	watchPublisher := watchadapter.NewPublisher()
+	webhookRepo := bboltadapter.NewWebhookRepo(store)
+	webhookDispatcher := webhookadapter.NewDispatcher(webhookRepo, watchPublisher)
+
 	//nolint:exhaustruct // shutdownOnce/shutdownErr have valid zero values
 	return &Adapters{
 		Store:             store,
@@ -59,7 +66,9 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 		NamespaceRepo:     bboltadapter.NewNamespaceRepo(store),
 		ClientHistoryRepo: clientHistoryRepo,
 		SchemaRepo:        bboltadapter.NewSchemaRepo(store),
-		Watch:             watchadapter.NewPublisher(),
+		WebhookRepo:       webhookRepo,
+		Watch:             watchPublisher,
+		WebhookDispatcher: webhookDispatcher,
 		ClientHistory:     clientHistory,
 		ClientRegistry:    clientRegistry,
 	}, nil
@@ -70,6 +79,10 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 // same cached result.
 func (a *Adapters) Shutdown(_ context.Context) error {
 	a.shutdownOnce.Do(func() {
+		if a.WebhookDispatcher != nil {
+			a.WebhookDispatcher.Stop()
+		}
+
 		if a.ClientRegistry != nil {
 			a.ClientRegistry.Shutdown()
 		}
