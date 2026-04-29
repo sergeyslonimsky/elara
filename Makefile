@@ -16,7 +16,7 @@ lint:
 
 .PHONY: test
 test:
-	@gotestsum --format=testname --hide-summary=output -- --race ./...
+	@go tool gotestsum --format=testname --hide-summary=output -- --race ./...
 	@npm --prefix ./web run test
 
 .PHONY: generate

@@ -57,7 +57,7 @@ jobs:
 
       - name: Upload frontend test results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
+        uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: web/test-results/junit.xml
@@ -106,11 +106,8 @@ jobs:
         with:
           version: latest
 
-      - name: Install gotestsum
-        run: go install gotest.tools/gotestsum@latest
-
       - name: Test (race)
-        run: gotestsum --format=testname --hide-summary=output --junitfile junit.xml -- -race -count=1 -shuffle=on -coverprofile=coverage.txt ./...
+        run: go tool gotestsum --format=testname --hide-summary=output --junitfile junit.xml -- -race -count=1 -shuffle=on -coverprofile=coverage.txt ./...
 
       - name: Filter generated files from coverage
         run: grep -vE "\.pb\.go:|\.connect\.go:" coverage.txt > coverage_filtered.txt && mv coverage_filtered.txt coverage.txt
@@ -124,7 +121,7 @@ jobs:
 
       - name: Upload Go test results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
+        uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: junit.xml
