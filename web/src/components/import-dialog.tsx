@@ -162,8 +162,11 @@ export function ImportDialog({ namespace }: Readonly<ImportDialogProps>) {
 
 				<div className="grid gap-4 py-4">
 					<Field>
-						<FieldLabel>Upload file (.json, .yaml, .yml, .zip)</FieldLabel>
+						<FieldLabel htmlFor="import-file">
+							Upload file (.json, .yaml, .yml, .zip)
+						</FieldLabel>
 						<input
+							id="import-file"
 							ref={inputRef}
 							type="file"
 							accept=".json,.yaml,.yml,.zip"

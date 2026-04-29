@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   frontend:
-    name: Frontend lint & build
+    name: Frontend test, lint & build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -37,6 +37,23 @@ jobs:
       - name: Lint frontend
         working-directory: web
         run: npm run lint
+
+      - name: Test frontend
+        working-directory: web
+        run: npm run test:coverage
+
+      - name: Upload frontend coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage
+          path: web/coverage/lcov.info
+
+      - name: Upload frontend coverage to Codecov
+        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: web/coverage/lcov.info
+          flags: frontend
 
       - name: Build frontend
         working-directory: web
@@ -87,15 +104,17 @@ jobs:
       - name: Filter generated files from coverage
         run: grep -vE "\.pb\.go:|\.connect\.go:" coverage.txt > coverage_filtered.txt && mv coverage_filtered.txt coverage.txt
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+      - name: Upload Go coverage to Codecov
+        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.txt
+          flags: backend
 
-      - name: Upload coverage report
+      - name: Upload Go coverage report
         uses: actions/upload-artifact@v7
         with:
-          name: coverage
+          name: go-coverage
           path: coverage.txt
 
   proto:
@@ -153,17 +172,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: github.actor != 'dependabot[bot]'
-    needs: [go]
+    needs: [go, frontend]
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Download coverage report
+      - name: Download Go coverage report
         uses: actions/download-artifact@v4
         with:
-          name: coverage
+          name: go-coverage
+      - name: Download frontend coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage
+          path: web/coverage
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@ba3875ecf642b2129de2b589510c81a8b53dbf4e # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

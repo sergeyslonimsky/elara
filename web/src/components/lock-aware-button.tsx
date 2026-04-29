@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 interface LockAwareButtonProps {
 	/** Whether the action is blocked because something is locked. */
@@ -50,14 +50,9 @@ export function LockAwareButton({
 
 	if (to) {
 		return (
-			<Button
-				variant={variant}
-				size={size}
-				className={className}
-				render={<Link to={to} />}
-			>
+			<Link to={to} className={buttonVariants({ variant, size, className })}>
 				{children}
-			</Button>
+			</Link>
 		);
 	}
 

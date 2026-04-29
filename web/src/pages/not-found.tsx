@@ -1,6 +1,6 @@
 import { FileQuestion } from "lucide-react";
 import { Link } from "react-router";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 export function NotFoundPage() {
 	return (
@@ -10,7 +10,9 @@ export function NotFoundPage() {
 			<p className="text-muted-foreground">
 				The page you're looking for doesn't exist.
 			</p>
-			<Button render={<Link to="/" />}>Go Home</Button>
+			<Link to="/" className={buttonVariants()}>
+				Go Home
+			</Link>
 		</div>
 	);
 }

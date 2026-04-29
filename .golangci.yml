@@ -79,6 +79,8 @@ linters:
           - wrapcheck
           - dogsled
 
+    paths:
+      - web/
   settings:
     exhaustive:
       default-signifies-exhaustive: true

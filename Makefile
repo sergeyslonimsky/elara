@@ -17,6 +17,7 @@ lint:
 .PHONY: test
 test:
 	@go test --race ./...
+	@npm --prefix ./web run test
 
 .PHONY: generate
 generate:
