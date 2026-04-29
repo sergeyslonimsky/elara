@@ -17,6 +17,8 @@ config.yaml
 data/
 coverage.out
 coverage.txt
+junit.xml
+web/test-results/
 *.log
 
 # Go vendor tree — pulled via `go mod download` (go.sum pins integrity).
