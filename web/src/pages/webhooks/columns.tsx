@@ -2,10 +2,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { History, Pencil } from "lucide-react";
 import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Webhook } from "@/gen/elara/webhook/v1/webhook_pb";
 import { WebhookEvent } from "@/gen/elara/webhook/v1/webhook_pb";
+import { cn } from "@/lib/utils";
 import { DeleteDialog } from "./delete-dialog";
 
 const EVENT_LABELS: Record<WebhookEvent, string> = {
@@ -95,14 +96,15 @@ export function makeColumns({
 			header: "",
 			cell: ({ row }) => (
 				<div className="flex items-center justify-end gap-1">
-					<Button
-						variant="ghost"
-						size="icon-xs"
+					<Link
+						to={`/webhooks/${row.original.id}/history`}
 						title="Delivery history"
-						render={<Link to={`/webhooks/${row.original.id}/history`} />}
+						className={cn(
+							buttonVariants({ variant: "ghost", size: "icon-xs" }),
+						)}
 					>
 						<History className="h-3.5 w-3.5" />
-					</Button>
+					</Link>
 					<Button
 						variant="ghost"
 						size="icon-xs"
