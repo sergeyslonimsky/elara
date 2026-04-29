@@ -15,6 +15,9 @@
   <a href="https://github.com/sergeyslonimsky/elara/actions/workflows/github-code-scanning/codeql">
     <img src="https://github.com/sergeyslonimsky/elara/actions/workflows/github-code-scanning/codeql/badge.svg" alt="CodeQL"/>
   </a>
+  <a href="https://codecov.io/gh/sergeyslonimsky/elara" >
+    <img src="https://codecov.io/gh/sergeyslonimsky/elara/graph/badge.svg?token=7DW6HXEG21"/>
+  </a>
   <a href="https://sonarcloud.io/project/overview?id=sergeyslonimsky_elara">
     <img src="https://sonarcloud.io/api/project_badges/measure?project=sergeyslonimsky_elara&metric=alert_status" alt="Quality Gate"/>
   </a>
@@ -55,14 +58,18 @@ pluggable storage backends (PostgreSQL, S3) are on the roadmap.
 ## Features
 
 - **Web UI** for browsing, creating, editing, and deleting configs across namespaces.
-- **ConnectRPC API** (`elara.config.v1.ConfigService`, `elara.namespace.v1.NamespaceService`, …) — works from Go, TypeScript, Python, etc. with native clients.
-- **etcd-compatible gRPC API** on port 2379 (`KV`, `Watch`, `Maintenance`, `Cluster`) — connect with `etcdctl` or any etcd v3 SDK.
+- **ConnectRPC API** (`elara.config.v1.ConfigService`, `elara.namespace.v1.NamespaceService`, …) — works from Go,
+  TypeScript, Python, etc. with native clients.
+- **etcd-compatible gRPC API** on port 2379 (`KV`, `Watch`, `Maintenance`, `Cluster`) — connect with `etcdctl` or any
+  etcd v3 SDK.
 - **Config history** — every version stored, retrievable by revision.
 - **Global revision counter** — monotonic, etcd-style semantics.
 - **Format-aware validation** for JSON and YAML; pass-through for everything else (ini, toml, plain text).
-- **JSON Schema validation** — attach a JSON Schema (draft-07) to a path pattern; every `CreateConfig`/`UpdateConfig` call is validated before storage, with structured violation details in the error response.
+- **JSON Schema validation** — attach a JSON Schema (draft-07) to a path pattern; every `CreateConfig`/`UpdateConfig`
+  call is validated before storage, with structured violation details in the error response.
 - **Single bbolt file storage** — ACID transactions, no external DB required.
-- **Webhooks** — HTTP push notifications on every config change (create / update / delete). Filter by namespace and path prefix, sign payloads with HMAC-SHA256, and inspect per-webhook delivery history from the UI.
+- **Webhooks** — HTTP push notifications on every config change (create / update / delete). Filter by namespace and path
+  prefix, sign payloads with HMAC-SHA256, and inspect per-webhook delivery history from the UI.
 - **Observability** — optional Prometheus `/metrics` and OTLP tracing.
 - **Kube-native Helm chart** with StatefulSet, ServiceMonitor, NetworkPolicy, JSON Schema validation, and a smoke test.
 
@@ -130,11 +137,11 @@ the `prod` namespace is stored under the etcd key
 import clientv3 "go.etcd.io/etcd/client/v3"
 
 cli, err := clientv3.New(clientv3.Config{
-    Endpoints:   []string{"localhost:2379"},
-    DialTimeout: 5 * time.Second,
+Endpoints:   []string{"localhost:2379"},
+DialTimeout: 5 * time.Second,
 })
 if err != nil {
-    log.Fatal(err)
+log.Fatal(err)
 }
 defer cli.Close()
 ```
@@ -144,12 +151,12 @@ defer cli.Close()
 ```go
 resp, err := cli.Get(ctx, "/prod/services/billing/config.yaml")
 if err != nil {
-    log.Fatal(err)
+log.Fatal(err)
 }
 if len(resp.Kvs) == 0 {
-    log.Println("key not found")
+log.Println("key not found")
 } else {
-    fmt.Printf("value: %s\n", resp.Kvs[0].Value)
+fmt.Printf("value: %s\n", resp.Kvs[0].Value)
 }
 ```
 
@@ -159,10 +166,10 @@ if len(resp.Kvs) == 0 {
 // clientv3.WithPrefix() expands "/prod/" into the range ["/prod/", "/prod0").
 resp, err := cli.Get(ctx, "/prod/", clientv3.WithPrefix())
 if err != nil {
-    log.Fatal(err)
+log.Fatal(err)
 }
 for _, kv := range resp.Kvs {
-    fmt.Printf("%s = %s\n", kv.Key, kv.Value)
+fmt.Printf("%s = %s\n", kv.Key, kv.Value)
 }
 ```
 
@@ -171,14 +178,14 @@ for _, kv := range resp.Kvs {
 ```go
 watchCh := cli.Watch(ctx, "/prod/services/billing/config.yaml")
 for wresp := range watchCh {
-    for _, ev := range wresp.Events {
-        switch ev.Type {
-        case clientv3.EventTypePut:
-            fmt.Printf("updated: %s\n", ev.Kv.Value)
-        case clientv3.EventTypeDelete:
-            fmt.Println("deleted")
-        }
-    }
+for _, ev := range wresp.Events {
+switch ev.Type {
+case clientv3.EventTypePut:
+fmt.Printf("updated: %s\n", ev.Kv.Value)
+case clientv3.EventTypeDelete:
+fmt.Println("deleted")
+}
+}
 }
 ```
 
@@ -187,9 +194,9 @@ for wresp := range watchCh {
 ```go
 watchCh := cli.Watch(ctx, "/prod/", clientv3.WithPrefix())
 for wresp := range watchCh {
-    for _, ev := range wresp.Events {
-        fmt.Printf("[%s] %s\n", ev.Type, ev.Kv.Key)
-    }
+for _, ev := range wresp.Events {
+fmt.Printf("[%s] %s\n", ev.Type, ev.Kv.Key)
+}
 }
 ```
 
@@ -206,13 +213,13 @@ startRev := resp.Header.Revision
 
 // On restart: watch from the saved revision so no events are missed.
 watchCh := cli.Watch(ctx, "/prod/",
-    clientv3.WithPrefix(),
-    clientv3.WithRev(startRev+1),
+clientv3.WithPrefix(),
+clientv3.WithRev(startRev+1),
 )
 for wresp := range watchCh {
-    for _, ev := range wresp.Events {
-        fmt.Printf("[rev %d] [%s] %s\n", ev.Kv.ModRevision, ev.Type, ev.Kv.Key)
-    }
+for _, ev := range wresp.Events {
+fmt.Printf("[rev %d] [%s] %s\n", ev.Kv.ModRevision, ev.Type, ev.Kv.Key)
+}
 }
 ```
 
@@ -285,15 +292,15 @@ schemaClient := configv1connect.NewSchemaServiceClient(http.DefaultClient, "http
 
 // Attach a schema to every YAML file in the "prod" namespace
 schemaClient.AttachSchema(ctx, connect.NewRequest(&configv1.AttachSchemaRequest{
-    Namespace:   "prod",
-    PathPattern: "/**/*.yaml",
-    JsonSchema:  `{"type":"object","required":["host"],"properties":{"host":{"type":"string"}}}`,
+Namespace:   "prod",
+PathPattern: "/**/*.yaml",
+JsonSchema:  `{"type":"object","required":["host"],"properties":{"host":{"type":"string"}}}`,
 }))
 
 // Detach
 schemaClient.DetachSchema(ctx, connect.NewRequest(&configv1.DetachSchemaRequest{
-    Namespace:   "prod",
-    PathPattern: "/**/*.yaml",
+Namespace:   "prod",
+PathPattern: "/**/*.yaml",
 }))
 ```
 
@@ -316,12 +323,12 @@ Every delivery is a JSON `POST` with the `Content-Type: application/json` header
 
 ```json
 {
-  "event":        "updated",
-  "namespace":    "prod",
-  "path":         "/services/billing/config.yaml",
-  "revision":     42,
+  "event": "updated",
+  "namespace": "prod",
+  "path": "/services/billing/config.yaml",
+  "revision": 42,
   "content_hash": "sha256:<hex>",
-  "timestamp":    "2024-06-01T12:00:00Z"
+  "timestamp": "2024-06-01T12:00:00Z"
 }
 ```
 
@@ -337,14 +344,14 @@ mac := hmac.New(sha256.New, []byte(secret))
 mac.Write(body)
 expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
 if !hmac.Equal([]byte(r.Header.Get("X-Elara-Signature")), []byte(expected)) {
-    http.Error(w, "invalid signature", http.StatusUnauthorized)
+http.Error(w, "invalid signature", http.StatusUnauthorized)
 }
 ```
 
 **Filtering**
 
 | Field              | Behaviour                                                  |
-| ------------------ | ---------------------------------------------------------- |
+|--------------------|------------------------------------------------------------|
 | `namespace_filter` | If set, only events from that namespace are delivered.     |
 | `path_prefix`      | If set, only events whose path starts with the prefix.     |
 | `events`           | Subset of `created`, `updated`, `deleted` to subscribe to. |
@@ -362,47 +369,47 @@ attempts per webhook).
 
 ```go
 import (
-    webhookv1 "github.com/sergeyslonimsky/elara/gen/elara/webhook/v1"
-    "github.com/sergeyslonimsky/elara/gen/elara/webhook/v1/webhookv1connect"
+webhookv1 "github.com/sergeyslonimsky/elara/gen/elara/webhook/v1"
+"github.com/sergeyslonimsky/elara/gen/elara/webhook/v1/webhookv1connect"
 )
 
 client := webhookv1connect.NewWebhookServiceClient(
-    http.DefaultClient,
-    "http://localhost:8080",
+http.DefaultClient,
+"http://localhost:8080",
 )
 
 // Create a webhook
 resp, _ := client.CreateWebhook(ctx, connect.NewRequest(&webhookv1.CreateWebhookRequest{
-    Url:             "https://my-service.example.com/elara-hook",
-    Events:          []webhookv1.WebhookEvent{
-        webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED,
-        webhookv1.WebhookEvent_WEBHOOK_EVENT_UPDATED,
-    },
-    NamespaceFilter: "prod",          // empty = all namespaces
-    PathPrefix:      "/services/",   // empty = all paths
-    Secret:          "my-hmac-secret",
-    Enabled:         true,
+Url:             "https://my-service.example.com/elara-hook",
+Events:          []webhookv1.WebhookEvent{
+webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED,
+webhookv1.WebhookEvent_WEBHOOK_EVENT_UPDATED,
+},
+NamespaceFilter: "prod",       // empty = all namespaces
+PathPrefix:      "/services/", // empty = all paths
+Secret:          "my-hmac-secret",
+Enabled:         true,
 }))
 fmt.Println("created:", resp.Msg.Webhook.Id)
 
 // List all webhooks
 list, _ := client.ListWebhooks(ctx, connect.NewRequest(&webhookv1.ListWebhooksRequest{}))
 for _, wh := range list.Msg.Webhooks {
-    fmt.Printf("%s  %s  enabled=%v\n", wh.Id, wh.Url, wh.Enabled)
+fmt.Printf("%s  %s  enabled=%v\n", wh.Id, wh.Url, wh.Enabled)
 }
 
 // Inspect delivery history
 history, _ := client.GetDeliveryHistory(ctx, connect.NewRequest(&webhookv1.GetDeliveryHistoryRequest{
-    WebhookId: resp.Msg.Webhook.Id,
+WebhookId: resp.Msg.Webhook.Id,
 }))
 for _, a := range history.Msg.Attempts {
-    fmt.Printf("attempt %d: status=%d latency=%dms ok=%v\n",
-        a.AttemptNumber, a.StatusCode, a.LatencyMs, a.Success)
+fmt.Printf("attempt %d: status=%d latency=%dms ok=%v\n",
+a.AttemptNumber, a.StatusCode, a.LatencyMs, a.Success)
 }
 
 // Delete a webhook
 client.DeleteWebhook(ctx, connect.NewRequest(&webhookv1.DeleteWebhookRequest{
-    Id: resp.Msg.Webhook.Id,
+Id: resp.Msg.Webhook.Id,
 }))
 ```
 
@@ -410,41 +417,41 @@ client.DeleteWebhook(ctx, connect.NewRequest(&webhookv1.DeleteWebhookRequest{
 
 ```go
 import (
-    "connectrpc.com/connect"
-    "net/http"
+"connectrpc.com/connect"
+"net/http"
 
-    configv1 "github.com/sergeyslonimsky/elara/gen/elara/config/v1"
-    "github.com/sergeyslonimsky/elara/gen/elara/config/v1/configv1connect"
+configv1 "github.com/sergeyslonimsky/elara/gen/elara/config/v1"
+"github.com/sergeyslonimsky/elara/gen/elara/config/v1/configv1connect"
 )
 
 client := configv1connect.NewConfigServiceClient(
-    http.DefaultClient,
-    "http://localhost:8080",
+http.DefaultClient,
+"http://localhost:8080",
 )
 
 resp, _ := client.CreateConfig(ctx, connect.NewRequest(&configv1.CreateConfigRequest{
-    Namespace: "default",
-    Path:      "/services/billing/config.yaml",
-    Content:   []byte("retries: 3\n"),
+Namespace: "default",
+Path:      "/services/billing/config.yaml",
+Content:   []byte("retries: 3\n"),
 }))
 ```
 
 ### ConnectRPC client (TypeScript)
 
 ```ts
-import { createClient } from "@connectrpc/connect";
-import { createConnectTransport } from "@connectrpc/connect-web";
-import { ConfigService } from "./gen/elara/config/v1/config_service_pb";
+import {createClient} from "@connectrpc/connect";
+import {createConnectTransport} from "@connectrpc/connect-web";
+import {ConfigService} from "./gen/elara/config/v1/config_service_pb";
 
 const client = createClient(
-  ConfigService,
-  createConnectTransport({ baseUrl: "http://localhost:8080" }),
+    ConfigService,
+    createConnectTransport({baseUrl: "http://localhost:8080"}),
 );
 
 await client.createConfig({
-  namespace: "default",
-  path: "/services/billing/config.yaml",
-  content: new TextEncoder().encode("retries: 3\n"),
+    namespace: "default",
+    path: "/services/billing/config.yaml",
+    content: new TextEncoder().encode("retries: 3\n"),
 });
 ```
 
@@ -482,7 +489,7 @@ image:
 
 resources:
   requests: { cpu: 250m, memory: 256Mi }
-  limits:   { cpu: "2",  memory: 1Gi   }
+  limits: { cpu: "2",  memory: 1Gi }
 
 persistence:
   size: 50Gi
@@ -592,16 +599,16 @@ for the full list.
 
 Key defaults:
 
-| Key                   | Env var                | Default          |
-| --------------------- | ---------------------- | ---------------- |
-| `http.frontend.port`  | `HTTP_FRONTEND_PORT`   | `8080`           |
-| `grpc.etcd.port`      | `GRPC_ETCD_PORT`       | `2379`           |
-| `config.data.path`    | `CONFIG_DATA_PATH`     | `./data`         |
-| `metrics.enabled`     | `METRICS_ENABLED`      | `false`          |
-| `tracing.enabled`     | `TRACING_ENABLED`      | `false`          |
-| `log.level`           | `LOG_LEVEL`            | `info`           |
-| `log.format`          | `LOG_FORMAT`           | `json`           |
-| `log.noSource`        | `LOG_NOSOURCE`         | `false`          |
+| Key                  | Env var              | Default  |
+|----------------------|----------------------|----------|
+| `http.frontend.port` | `HTTP_FRONTEND_PORT` | `8080`   |
+| `grpc.etcd.port`     | `GRPC_ETCD_PORT`     | `2379`   |
+| `config.data.path`   | `CONFIG_DATA_PATH`   | `./data` |
+| `metrics.enabled`    | `METRICS_ENABLED`    | `false`  |
+| `tracing.enabled`    | `TRACING_ENABLED`    | `false`  |
+| `log.level`          | `LOG_LEVEL`          | `info`   |
+| `log.format`         | `LOG_FORMAT`         | `json`   |
+| `log.noSource`       | `LOG_NOSOURCE`       | `false`  |
 
 ## Contributing
 
