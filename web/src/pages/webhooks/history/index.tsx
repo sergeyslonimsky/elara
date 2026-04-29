@@ -3,7 +3,7 @@ import { ArrowLeft, CheckCircle2, Clock, XCircle } from "lucide-react";
 import { Link, useParams } from "react-router";
 import { ErrorCard } from "@/components/error-card";
 import { PageShell } from "@/components/page-shell";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
 	Empty,
@@ -25,6 +25,7 @@ import {
 	getWebhook,
 } from "@/gen/elara/webhook/v1/webhook_service-WebhookService_connectquery";
 import { timeAgo, tsToMs } from "@/lib/time";
+import { cn } from "@/lib/utils";
 
 export function WebhookHistoryPage() {
 	const { id = "" } = useParams();
@@ -43,10 +44,13 @@ export function WebhookHistoryPage() {
 	return (
 		<PageShell title="Delivery History">
 			<div>
-				<Button variant="ghost" size="sm" render={<Link to="/webhooks" />}>
+				<Link
+					to="/webhooks"
+					className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+				>
 					<ArrowLeft className="mr-1 h-4 w-4" />
 					Back to webhooks
-				</Button>
+				</Link>
 			</div>
 
 			{webhook && (
