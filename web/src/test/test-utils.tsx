@@ -1,14 +1,13 @@
+import { createRouterTransport } from "@connectrpc/connect";
 import { TransportProvider } from "@connectrpc/connect-query";
-import { createConnectTransport } from "@connectrpc/connect-web";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const transport = createConnectTransport({
-	baseUrl: "http://localhost:8080",
-});
+// In-process transport — no network calls during tests.
+const transport = createRouterTransport(() => {});
 
 const testQueryClient = new QueryClient({
 	defaultOptions: {

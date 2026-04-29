@@ -92,6 +92,7 @@ export function PaginationControls({
 						size="icon-xs"
 						disabled={!hasPrev}
 						onClick={() => onOffsetChange(Math.max(0, offset - pageSize))}
+						aria-label="Previous page"
 					>
 						<ChevronLeft className="h-4 w-4" />
 					</Button>
@@ -111,6 +112,8 @@ export function PaginationControls({
 								variant={page === currentPage ? "default" : "outline"}
 								size="icon-xs"
 								onClick={() => onOffsetChange((page - 1) * pageSize)}
+								aria-label={`Page ${page}`}
+								aria-current={page === currentPage ? "page" : undefined}
 							>
 								{page}
 							</Button>
@@ -122,6 +125,7 @@ export function PaginationControls({
 						size="icon-xs"
 						disabled={!hasNext}
 						onClick={() => onOffsetChange(offset + pageSize)}
+						aria-label="Next page"
 					>
 						<ChevronRight className="h-4 w-4" />
 					</Button>

@@ -80,10 +80,15 @@ describe("Button", () => {
 		expect(screen.getByTestId("test-button")).toBeInTheDocument();
 	});
 
-	it("renders as link when render prop is provided", () => {
-		render(<Button render={<a href="/test" />}>Link Button</Button>);
-		const link = screen.getByRole("link");
-		expect(link).toHaveAttribute("href", "/test");
-		expect(link).toHaveClass("group/button");
+	it("renders as a custom element when render prop is provided", () => {
+		render(
+			<Button nativeButton={false} render={<a href="/test" />}>
+				Link Button
+			</Button>,
+		);
+		const el = screen.getByRole("button", { name: "Link Button" });
+		expect(el.tagName).toBe("A");
+		expect(el).toHaveAttribute("href", "/test");
+		expect(el).toHaveClass("group/button");
 	});
 });

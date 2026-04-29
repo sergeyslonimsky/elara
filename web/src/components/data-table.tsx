@@ -84,7 +84,6 @@ export function DataTable<TData, TValue>({
 							key={row.id}
 							className={cn(onRowClick && "cursor-pointer")}
 							tabIndex={onRowClick ? 0 : undefined}
-							role={onRowClick ? "link" : undefined}
 							onClick={(e) => onRowClick?.(row.original, e)}
 							onKeyDown={(e) => {
 								if (onRowClick && (e.key === "Enter" || e.key === " ")) {
