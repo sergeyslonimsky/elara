@@ -153,9 +153,9 @@ func writeZipNamespace(zw *zip.Writer, ns *domain.NamespaceBundle, enc transferv
 		return fmt.Errorf("marshal namespace %s: %w", ns.Namespace, err)
 	}
 
-	ext := ".json"
+	ext := extJSON
 	if ct == contentTypeYAML {
-		ext = ".yaml"
+		ext = extYAML
 	}
 
 	fname := "namespaces/" + ns.Namespace + ext
