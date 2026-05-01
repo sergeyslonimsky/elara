@@ -7,10 +7,6 @@ import (
 
 const providerOIDC = "oidc"
 
-var validProviders = map[string]struct{}{
-	providerOIDC: {},
-}
-
 type User struct {
 	Email       string
 	Name        string
@@ -33,6 +29,7 @@ func (u *User) Validate() error {
 		return NewValidationError("name", "name is required")
 	}
 
+	validProviders := map[string]struct{}{providerOIDC: {}}
 	if _, ok := validProviders[u.Provider]; !ok {
 		return NewValidationError("provider", "provider must be one of: oidc")
 	}

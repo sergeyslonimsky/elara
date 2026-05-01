@@ -22,6 +22,10 @@ type Adapters struct {
 	ClientHistoryRepo *bboltadapter.ClientHistoryRepo
 	SchemaRepo        *bboltadapter.SchemaRepo
 	WebhookRepo       *bboltadapter.WebhookRepo
+	AuthUsers         *bboltadapter.UserRepo
+	AuthGroups        *bboltadapter.GroupRepo
+	AuthTokens        *bboltadapter.PATRepo
+	AuthPolicy        *bboltadapter.PolicyRepo
 	Watch             *watchadapter.Publisher
 	WebhookDispatcher *webhookadapter.Dispatcher
 
@@ -67,6 +71,10 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 		ClientHistoryRepo: clientHistoryRepo,
 		SchemaRepo:        bboltadapter.NewSchemaRepo(store),
 		WebhookRepo:       webhookRepo,
+		AuthUsers:         bboltadapter.NewUserRepo(store),
+		AuthGroups:        bboltadapter.NewGroupRepo(store),
+		AuthTokens:        bboltadapter.NewPATRepo(store),
+		AuthPolicy:        bboltadapter.NewPolicyRepo(store),
 		Watch:             watchPublisher,
 		WebhookDispatcher: webhookDispatcher,
 		ClientHistory:     clientHistory,

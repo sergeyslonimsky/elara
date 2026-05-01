@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"slices"
 	"strings"
 	"time"
 )
@@ -42,10 +43,8 @@ func (g *Group) AddMember(email string) error {
 		return NewValidationError("email", "email must be a valid email address")
 	}
 
-	for _, m := range g.Members {
-		if m == email {
-			return NewAlreadyExistsError("member", email)
-		}
+	if slices.Contains(g.Members, email) {
+		return NewAlreadyExistsError("member", email)
 	}
 
 	g.Members = append(g.Members, email)

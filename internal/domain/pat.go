@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"slices"
 	"strings"
 	"time"
 )
@@ -60,11 +61,5 @@ func (p *PAT) HasNamespaceAccess(namespace string) bool {
 		return true
 	}
 
-	for _, ns := range p.Namespaces {
-		if ns == namespace {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(p.Namespaces, namespace)
 }

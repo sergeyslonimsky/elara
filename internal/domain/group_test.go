@@ -1,7 +1,6 @@
 package domain_test
 
 import (
-	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -169,7 +168,7 @@ func TestGroup_AddMember(t *testing.T) {
 				require.Error(t, err)
 
 				if tt.wantErrIs != nil {
-					assert.True(t, errors.Is(err, tt.wantErrIs))
+					require.ErrorIs(t, err, tt.wantErrIs)
 				}
 			} else {
 				require.NoError(t, err)
@@ -222,7 +221,7 @@ func TestGroup_RemoveMember(t *testing.T) {
 				require.Error(t, err)
 
 				if tt.wantErrIs != nil {
-					assert.True(t, errors.Is(err, tt.wantErrIs))
+					require.ErrorIs(t, err, tt.wantErrIs)
 				}
 			} else {
 				require.NoError(t, err)
