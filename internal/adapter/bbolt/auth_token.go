@@ -23,6 +23,7 @@ func NewPATRepo(store *Store) *PATRepo {
 }
 
 // Create stores a new PAT. The caller must set all fields including TokenHash.
+// Also writes a secondary index entry (id → hash) for O(1) lookup by ID.
 func (r *PATRepo) Create(_ context.Context, pat *domain.PAT) error {
 	err := r.store.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthTokens))
@@ -32,7 +33,13 @@ func (r *PATRepo) Create(_ context.Context, pat *domain.PAT) error {
 			return fmt.Errorf("marshal token: %w", err)
 		}
 
-		return b.Put([]byte(pat.TokenHash), data)
+		if err = b.Put([]byte(pat.TokenHash), data); err != nil {
+			return fmt.Errorf("put token: %w", err)
+		}
+
+		idx := tx.Bucket([]byte(bucketAuthTokenByID))
+
+		return idx.Put([]byte(pat.ID), []byte(pat.TokenHash))
 	})
 	if err != nil {
 		return fmt.Errorf("create token: %w", err)
@@ -54,12 +61,12 @@ func (r *PATRepo) GetByHash(_ context.Context, tokenHash string) (*domain.PAT, e
 			return domain.NewNotFoundError("token", tokenHash)
 		}
 
-		var m authTokenMeta
-		if err := json.Unmarshal(data, &m); err != nil {
-			return fmt.Errorf("unmarshal token: %w", err)
+		m, err := authTokenMetaFromBytes(data)
+		if err != nil {
+			return err
 		}
 
-		pat = authTokenMetaToDomain(&m)
+		pat = authTokenMetaToDomain(m)
 
 		return nil
 	})
@@ -78,16 +85,16 @@ func (r *PATRepo) List(_ context.Context, userEmail string) ([]*domain.PAT, erro
 		b := tx.Bucket([]byte(bucketAuthTokens))
 
 		return b.ForEach(func(_, v []byte) error {
-			var m authTokenMeta
-			if err := json.Unmarshal(v, &m); err != nil {
-				return fmt.Errorf("unmarshal token: %w", err)
+			m, err := authTokenMetaFromBytes(v)
+			if err != nil {
+				return err
 			}
 
 			if userEmail != "" && m.UserEmail != userEmail {
 				return nil
 			}
 
-			tokens = append(tokens, authTokenMetaToDomain(&m))
+			tokens = append(tokens, authTokenMetaToDomain(m))
 
 			return nil
 		})
@@ -99,37 +106,64 @@ func (r *PATRepo) List(_ context.Context, userEmail string) ([]*domain.PAT, erro
 	return tokens, nil
 }
 
-// Delete removes the PAT with the given ID. Iterates all tokens to find it.
-// Returns domain.ErrNotFound if no token with that ID exists.
-func (r *PATRepo) Delete(_ context.Context, id string) error {
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucketAuthTokens))
+// GetByID returns the PAT identified by its ID using the secondary index.
+// Returns domain.ErrNotFound if no such token exists.
+func (r *PATRepo) GetByID(_ context.Context, id string) (*domain.PAT, error) {
+	var pat *domain.PAT
 
-		var foundKey []byte
+	err := r.store.db.View(func(tx *bolt.Tx) error {
+		idx := tx.Bucket([]byte(bucketAuthTokenByID))
+		hashBytes := idx.Get([]byte(id))
 
-		err := b.ForEach(func(k, v []byte) error {
-			var m authTokenMeta
-			if err := json.Unmarshal(v, &m); err != nil {
-				return fmt.Errorf("unmarshal token: %w", err)
-			}
-
-			if m.ID == id {
-				// Copy the key because it is only valid inside the transaction.
-				foundKey = make([]byte, len(k))
-				copy(foundKey, k)
-			}
-
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("iterate tokens: %w", err)
-		}
-
-		if foundKey == nil {
+		if hashBytes == nil {
 			return domain.NewNotFoundError("token", id)
 		}
 
-		return b.Delete(foundKey)
+		b := tx.Bucket([]byte(bucketAuthTokens))
+		data := b.Get(hashBytes)
+
+		if data == nil {
+			return domain.NewNotFoundError("token", id)
+		}
+
+		m, err := authTokenMetaFromBytes(data)
+		if err != nil {
+			return err
+		}
+
+		pat = authTokenMetaToDomain(m)
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get token by id: %w", err)
+	}
+
+	return pat, nil
+}
+
+// Delete removes the PAT with the given ID using the secondary index.
+// Returns domain.ErrNotFound if no token with that ID exists.
+func (r *PATRepo) Delete(_ context.Context, id string) error {
+	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		idx := tx.Bucket([]byte(bucketAuthTokenByID))
+		hashBytes := idx.Get([]byte(id))
+
+		if hashBytes == nil {
+			return domain.NewNotFoundError("token", id)
+		}
+
+		// Copy hash before deleting from the index bucket.
+		tokenHash := make([]byte, len(hashBytes))
+		copy(tokenHash, hashBytes)
+
+		if err := idx.Delete([]byte(id)); err != nil {
+			return fmt.Errorf("delete token id index: %w", err)
+		}
+
+		b := tx.Bucket([]byte(bucketAuthTokens))
+
+		return b.Delete(tokenHash)
 	})
 	if err != nil {
 		return fmt.Errorf("delete token: %w", err)
@@ -149,15 +183,15 @@ func (r *PATRepo) UpdateLastUsed(_ context.Context, tokenHash, ip string, at tim
 			return domain.NewNotFoundError("token", tokenHash)
 		}
 
-		var m authTokenMeta
-		if err := json.Unmarshal(data, &m); err != nil {
-			return fmt.Errorf("unmarshal token: %w", err)
+		m, err := authTokenMetaFromBytes(data)
+		if err != nil {
+			return err
 		}
 
 		m.LastUsedAt = &at
 		m.LastUsedIP = ip
 
-		newData, err := json.Marshal(&m)
+		newData, err := json.Marshal(m)
 		if err != nil {
 			return fmt.Errorf("marshal token: %w", err)
 		}

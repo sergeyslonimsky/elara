@@ -1,6 +1,8 @@
 package bbolt
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
@@ -115,4 +117,24 @@ func authTokenMetaToDomain(m *authTokenMeta) *domain.PAT {
 		LastUsedIP: m.LastUsedIP,
 		CreatedAt:  m.CreatedAt,
 	}
+}
+
+func authTokenMetaFromBytes(data []byte) (*authTokenMeta, error) {
+	var token authTokenMeta
+
+	if err := json.Unmarshal(data, &token); err != nil {
+		return nil, fmt.Errorf("unmarshal token: %w", err)
+	}
+
+	return &token, nil
+}
+
+func authGroupMetaFromBytes(data []byte) (*authGroupMeta, error) {
+	var group authGroupMeta
+
+	if err := json.Unmarshal(data, &group); err != nil {
+		return nil, fmt.Errorf("unmarshal group: %w", err)
+	}
+
+	return &group, nil
 }

@@ -61,12 +61,12 @@ func (r *GroupRepo) Get(_ context.Context, id string) (*domain.Group, error) {
 			return domain.NewNotFoundError("group", id)
 		}
 
-		var m authGroupMeta
-		if err := json.Unmarshal(data, &m); err != nil {
-			return fmt.Errorf("unmarshal group: %w", err)
+		m, err := authGroupMetaFromBytes(data)
+		if err != nil {
+			return err
 		}
 
-		group = authGroupMetaToDomain(&m)
+		group = authGroupMetaToDomain(m)
 
 		return nil
 	})
@@ -88,9 +88,9 @@ func (r *GroupRepo) Update(_ context.Context, group *domain.Group) error {
 			return domain.NewNotFoundError("group", group.ID)
 		}
 
-		var existing authGroupMeta
-		if err := json.Unmarshal(data, &existing); err != nil {
-			return fmt.Errorf("unmarshal group: %w", err)
+		existing, err := authGroupMetaFromBytes(data)
+		if err != nil {
+			return err
 		}
 
 		existing.Name = group.Name
@@ -141,12 +141,12 @@ func (r *GroupRepo) List(_ context.Context) ([]*domain.Group, error) {
 		b := tx.Bucket([]byte(bucketAuthGroups))
 
 		return b.ForEach(func(_, v []byte) error {
-			var m authGroupMeta
-			if err := json.Unmarshal(v, &m); err != nil {
-				return fmt.Errorf("unmarshal group: %w", err)
+			m, err := authGroupMetaFromBytes(v)
+			if err != nil {
+				return err
 			}
 
-			groups = append(groups, authGroupMetaToDomain(&m))
+			groups = append(groups, authGroupMetaToDomain(m))
 
 			return nil
 		})

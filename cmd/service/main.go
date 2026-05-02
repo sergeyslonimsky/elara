@@ -19,6 +19,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/di"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/di/service"
+	etcdinterceptor "github.com/sergeyslonimsky/elara/internal/handler/etcdv3/interceptor"
 	"github.com/sergeyslonimsky/elara/internal/handler/ui"
 	grpctransport "github.com/sergeyslonimsky/elara/internal/transport/grpc"
 	"github.com/sergeyslonimsky/elara/web"
@@ -80,7 +81,7 @@ func run() error {
 	a.AddResource(svc.Adapters)
 
 	frontendServer := corehttp.NewServer(cfg.FrontendServer, frontendServerOptions(a, cfg, promMetrics)...)
-	service.V2Routes(frontendServer, svc.V2Handlers)
+	service.V2Routes(frontendServer, svc.V2Handlers, svc.SessionManager, cfg)
 
 	// Mount UI static file handler (serves frontend, fallback to index.html).
 	if distFS := web.DistFS(); distFS != nil {
@@ -93,7 +94,7 @@ func run() error {
 	// same port as the etcd API — the response is driven by a.Healthcheck,
 	// same as the HTTP /readyz above.
 	statsHandler := grpctransport.NewStatsHandler(svc.Adapters.ClientRegistry)
-	etcdServer := coregrpc.NewServer(cfg.EtcdServer, etcdServerOptions(a, cfg, statsHandler)...)
+	etcdServer := coregrpc.NewServer(cfg.EtcdServer, etcdServerOptions(a, cfg, svc.Adapters, statsHandler)...)
 	service.EtcdRoutes(etcdServer, svc.EtcdHandlers)
 
 	// frontendServer registered LAST → drains FIRST on SIGTERM.
@@ -205,6 +206,7 @@ func frontendServerOptions(
 func etcdServerOptions(
 	a *coreapp.App,
 	cfg config.Config,
+	adapters *service.Adapters,
 	statsHandler *grpctransport.StatsHandler,
 ) []coregrpc.Option {
 	opts := []coregrpc.Option{
@@ -215,6 +217,14 @@ func etcdServerOptions(
 
 	if cfg.Tracing.Enabled {
 		opts = append(opts, coregrpc.WithOtel())
+	}
+
+	if cfg.Auth.Enabled {
+		patInterceptor := etcdinterceptor.NewPATInterceptor(adapters.AuthTokens)
+		opts = append(opts,
+			coregrpc.WithUnaryInterceptor(patInterceptor.Unary()),
+			coregrpc.WithStreamInterceptor(patInterceptor.Stream()),
+		)
 	}
 
 	return opts

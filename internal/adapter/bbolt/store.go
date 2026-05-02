@@ -25,6 +25,7 @@ var buckets = [][]byte{
 	[]byte("auth_users"),
 	[]byte("auth_groups"),
 	[]byte("auth_tokens"),
+	[]byte("auth_token_by_id"),
 	[]byte("auth_policy"),
 }
 
@@ -42,7 +43,8 @@ const (
 	bucketWebhooks      = "webhooks"
 	bucketAuthUsers     = "auth_users"
 	bucketAuthGroups    = "auth_groups"
-	bucketAuthTokens    = "auth_tokens" //nolint:gosec // bucket name, not a credential
+	bucketAuthTokens    = "auth_tokens"      //nolint:gosec // bucket name, not a credential
+	bucketAuthTokenByID = "auth_token_by_id" //nolint:gosec // bucket name, not a credential
 	bucketAuthPolicy    = "auth_policy"
 
 	sysRevisionKey = "revision"
