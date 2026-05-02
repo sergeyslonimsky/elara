@@ -124,7 +124,7 @@ func extractPeerIP(ctx context.Context) string {
 // wrappedStream replaces the context of a gRPC ServerStream.
 type wrappedStream struct {
 	grpc.ServerStream
-	ctx context.Context //nolint:containedctx // standard gRPC pattern for propagating context through a wrapped stream // NOSONAR
+	ctx context.Context //nolint:containedctx //NOSONAR standard gRPC pattern: context stored to override ServerStream.Context()
 }
 
 func (w *wrappedStream) Context() context.Context {
