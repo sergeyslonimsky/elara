@@ -49,7 +49,7 @@ jobs:
           path: web/coverage/lcov.info
 
       - name: Upload frontend coverage to Codecov
-        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: web/coverage/lcov.info
@@ -113,7 +113,7 @@ jobs:
         run: grep -vE "\.pb\.go:|\.connect\.go:" coverage.txt > coverage_filtered.txt && mv coverage_filtered.txt coverage.txt
 
       - name: Upload Go coverage to Codecov
-        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.txt
