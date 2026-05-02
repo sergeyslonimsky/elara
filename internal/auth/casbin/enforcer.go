@@ -24,6 +24,16 @@ e = some(where (p.eft == allow))
 m = g(r.sub, p.sub, r.dom) && (r.dom == p.dom || p.dom == "*") && keyMatch(r.obj, p.obj) && (r.act == p.act || p.act == "*")
 `
 
+const (
+	casbinObjectAll       = "*"
+	casbinObjectConfig    = "config"
+	casbinObjectNamespace = "namespace"
+
+	casbinActionAll   = "*"
+	casbinActionRead  = "read"
+	casbinActionWrite = "write"
+)
+
 // pRuleLen is the number of elements in a serialized p rule: [type, sub, dom, obj, act].
 const pRuleLen = 5
 
@@ -219,12 +229,12 @@ func (e *Enforcer) SavePolicy(loader PolicyLoader) error {
 
 func (e *Enforcer) seedBuiltinPolicies() error {
 	policies := [][]string{
-		{"role:admin", "*", "*", "*"},
-		{"role:editor", "*", "config", "read"},
-		{"role:editor", "*", "config", "write"},
-		{"role:viewer", "*", "config", "read"},
-		{"role:editor", "*", "namespace", "read"},
-		{"role:viewer", "*", "namespace", "read"},
+		{"role:admin", "*", casbinObjectAll, casbinActionAll},
+		{"role:editor", "*", casbinObjectConfig, casbinActionRead},
+		{"role:editor", "*", casbinObjectConfig, casbinActionWrite},
+		{"role:viewer", "*", casbinObjectConfig, casbinActionRead},
+		{"role:editor", "*", casbinObjectNamespace, casbinActionRead},
+		{"role:viewer", "*", casbinObjectNamespace, casbinActionRead},
 	}
 
 	for _, p := range policies {
