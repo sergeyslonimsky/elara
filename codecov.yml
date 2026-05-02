@@ -1,0 +1,13 @@
+coverage:
+  status:
+    patch:
+      default:
+        target: 80%
+        threshold: 2%
+
+ignore:
+  - "**/mocks/**"
+  - "internal/proto/**"
+  - "web/src/gen/**"
+  - "internal/di/**"
+  - "cmd/**"

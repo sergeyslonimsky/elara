@@ -4,14 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 )
 
 type Manager struct {
-	Adapters     *Adapters
-	UseCases     *UseCases
-	V2Handlers   *V2Handlers
-	EtcdHandlers *EtcdHandlers
+	Adapters       *Adapters
+	UseCases       *UseCases
+	V2Handlers     *V2Handlers
+	EtcdHandlers   *EtcdHandlers
+	SessionManager *auth.SessionManager
 }
 
 // NewServiceManager implements core/di.ServicesInit. On partial-failure
@@ -35,14 +37,18 @@ func NewServiceManager(
 		return adapters.Shutdown(ctx)
 	}
 
-	useCases := NewUseCases(adapters)
+	useCases, sessionManager, err := NewUseCases(ctx, adapters, cfg)
+	if err != nil {
+		return nil, cleanup, fmt.Errorf("init use cases: %w", err)
+	}
 
 	go adapters.WebhookDispatcher.Start(ctx)
 
 	return &Manager{
-		Adapters:     adapters,
-		UseCases:     useCases,
-		V2Handlers:   NewV2Handlers(useCases),
-		EtcdHandlers: NewEtcdHandlers(adapters),
+		Adapters:       adapters,
+		UseCases:       useCases,
+		V2Handlers:     NewV2Handlers(useCases, cfg, sessionManager),
+		EtcdHandlers:   NewEtcdHandlers(adapters),
+		SessionManager: sessionManager,
 	}, cleanup, nil
 }

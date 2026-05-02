@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package elara.auth.v1;
+
+option go_package = "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1;authv1";
+
+message LoginRequest {}
+
+message LoginResponse {
+  string redirect_url = 1;
+}
+
+message CallbackRequest {
+  string code = 1;
+  string state = 2;
+}
+
+message CallbackResponse {}
+
+message LogoutRequest {}
+
+message LogoutResponse {}
+
+message MeRequest {}
+
+message MeResponse {
+  string email = 1;
+  string name = 2;
+  string picture = 3;
+  repeated string roles = 4;
+}
+
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Callback(CallbackRequest) returns (CallbackResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc Me(MeRequest) returns (MeResponse);
+}

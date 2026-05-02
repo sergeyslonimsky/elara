@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package elara.auth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1;authv1";
+
+message PAT {
+  string id = 1;
+  string name = 2;
+  string user_email = 3;
+  repeated string namespaces = 4;
+  optional google.protobuf.Timestamp expires_at = 5;
+  optional google.protobuf.Timestamp last_used_at = 6;
+  string last_used_ip = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message CreateTokenRequest {
+  string name = 1;
+  repeated string namespaces = 2;
+  optional google.protobuf.Timestamp expires_at = 3;
+}
+
+message CreateTokenResponse {
+  PAT token = 1;
+  string raw_token = 2;
+}
+
+message ListTokensRequest {
+  string user_email = 1;
+}
+
+message ListTokensResponse {
+  repeated PAT tokens = 1;
+}
+
+message GetTokenRequest {
+  string id = 1;
+}
+
+message GetTokenResponse {
+  PAT token = 1;
+}
+
+message RevokeTokenRequest {
+  string id = 1;
+}
+
+message RevokeTokenResponse {}
+
+service TokenService {
+  rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse);
+  rpc ListTokens(ListTokensRequest) returns (ListTokensResponse);
+  rpc GetToken(GetTokenRequest) returns (GetTokenResponse);
+  rpc RevokeToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+}

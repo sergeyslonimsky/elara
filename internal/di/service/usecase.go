@@ -1,6 +1,13 @@
 package service
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/di/config"
+	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 	clientsuc "github.com/sergeyslonimsky/elara/internal/usecase/clients"
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 	dashboarduc "github.com/sergeyslonimsky/elara/internal/usecase/dashboard"
@@ -52,9 +59,51 @@ type UseCases struct {
 	DeleteWebhook  *webhookuc.DeleteUseCase
 	ListWebhooks   *webhookuc.ListUseCase
 	WebhookHistory *webhookuc.HistoryUseCase
+
+	AuthLogin    *authuc.LoginUseCase
+	AuthCallback *authuc.CallbackUseCase
+	AuthMe       *authuc.MeUseCase
+
+	AuthListUsers *authuc.ListUsersUseCase
+	AuthGetUser   *authuc.GetUserUseCase
+
+	AuthCreateGroup  *authuc.CreateGroupUseCase
+	AuthGetGroup     *authuc.GetGroupUseCase
+	AuthUpdateGroup  *authuc.UpdateGroupUseCase
+	AuthDeleteGroup  *authuc.DeleteGroupUseCase
+	AuthListGroups   *authuc.ListGroupsUseCase
+	AuthAddMember    *authuc.AddMemberUseCase
+	AuthRemoveMember *authuc.RemoveMemberUseCase
+
+	AuthAssignRole   *authuc.AssignRoleUseCase
+	AuthRevokeRole   *authuc.RevokeRoleUseCase
+	AuthListPolicies *authuc.ListPoliciesUseCase
+
+	AuthCreateToken *authuc.CreateTokenUseCase
+	AuthListTokens  *authuc.ListTokensUseCase
+	AuthGetToken    *authuc.GetTokenUseCase
+	AuthRevokeToken *authuc.RevokeTokenUseCase
 }
 
-func NewUseCases(a *Adapters) *UseCases {
+// NewUseCases creates all application use cases and returns the session manager separately
+// so the handler layer can wire it without mixing infrastructure into UseCases.
+func NewUseCases(ctx context.Context, a *Adapters, cfg config.Config) (*UseCases, *auth.SessionManager, error) {
+	uc := newCoreUseCases(a)
+
+	sessionManager := auth.NewSessionManager(cfg.Auth.Session.Secret, cfg.Auth.Session.TTL)
+
+	if !cfg.Auth.Enabled {
+		return uc, sessionManager, nil
+	}
+
+	if err := wireAuthUseCases(ctx, uc, a, cfg, sessionManager); err != nil {
+		return nil, nil, err
+	}
+
+	return uc, sessionManager, nil
+}
+
+func newCoreUseCases(a *Adapters) *UseCases {
 	schemaValidator := schemauc.NewValidateContentUseCase(a.SchemaRepo)
 
 	return &UseCases{
@@ -123,4 +172,61 @@ func NewUseCases(a *Adapters) *UseCases {
 		ListWebhooks:   webhookuc.NewListUseCase(a.WebhookRepo),
 		WebhookHistory: webhookuc.NewHistoryUseCase(a.WebhookDispatcher),
 	}
+}
+
+func wireAuthUseCases(
+	ctx context.Context,
+	uc *UseCases,
+	a *Adapters,
+	cfg config.Config,
+	sessionManager *auth.SessionManager,
+) error {
+	enforcer, err := casbin.NewEnforcer(ctx, a.AuthPolicy)
+	if err != nil {
+		return fmt.Errorf("create casbin enforcer: %w", err)
+	}
+
+	oidcProvider, err := auth.NewOIDCProvider(ctx, auth.OIDCConfig{
+		IssuerURL:    cfg.Auth.OIDC.IssuerURL,
+		ClientID:     cfg.Auth.OIDC.ClientID,
+		ClientSecret: cfg.Auth.OIDC.ClientSecret,
+		RedirectURL:  cfg.Auth.OIDC.RedirectURL,
+		Scopes:       cfg.Auth.OIDC.Scopes,
+	})
+	if err != nil {
+		return fmt.Errorf("create oidc provider: %w", err)
+	}
+
+	uc.AuthLogin = authuc.NewLoginUseCase(oidcProvider)
+	uc.AuthCallback = authuc.NewCallbackUseCase(
+		oidcProvider,
+		a.AuthUsers,
+		sessionManager,
+		enforcer,
+		a.AuthPolicy,
+		cfg.Auth.AdminEmails,
+	)
+	uc.AuthMe = authuc.NewMeUseCase(enforcer)
+
+	uc.AuthListUsers = authuc.NewListUsersUseCase(a.AuthUsers)
+	uc.AuthGetUser = authuc.NewGetUserUseCase(a.AuthUsers)
+
+	uc.AuthCreateGroup = authuc.NewCreateGroupUseCase(a.AuthGroups)
+	uc.AuthGetGroup = authuc.NewGetGroupUseCase(a.AuthGroups)
+	uc.AuthUpdateGroup = authuc.NewUpdateGroupUseCase(a.AuthGroups)
+	uc.AuthDeleteGroup = authuc.NewDeleteGroupUseCase(a.AuthGroups)
+	uc.AuthListGroups = authuc.NewListGroupsUseCase(a.AuthGroups)
+	uc.AuthAddMember = authuc.NewAddMemberUseCase(a.AuthGroups)
+	uc.AuthRemoveMember = authuc.NewRemoveMemberUseCase(a.AuthGroups)
+
+	uc.AuthAssignRole = authuc.NewAssignRoleUseCase(enforcer, a.AuthPolicy)
+	uc.AuthRevokeRole = authuc.NewRevokeRoleUseCase(enforcer, a.AuthPolicy)
+	uc.AuthListPolicies = authuc.NewListPoliciesUseCase(enforcer)
+
+	uc.AuthCreateToken = authuc.NewCreateTokenUseCase(a.AuthTokens)
+	uc.AuthListTokens = authuc.NewListTokensUseCase(a.AuthTokens)
+	uc.AuthGetToken = authuc.NewGetTokenUseCase(a.AuthTokens)
+	uc.AuthRevokeToken = authuc.NewRevokeTokenUseCase(a.AuthTokens)
+
+	return nil
 }

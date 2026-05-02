@@ -9,6 +9,7 @@ import (
 	configv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
 )
 
+//nolint:cyclop // error-mapping switch is intentionally exhaustive; splitting would obscure the mapping
 func toConnectError(err error) error {
 	if err == nil {
 		return nil
@@ -25,6 +26,12 @@ func toConnectError(err error) error {
 		return connect.NewError(connect.CodeFailedPrecondition, err)
 	case errors.Is(err, domain.ErrInvalidFormat):
 		return connect.NewError(connect.CodeInvalidArgument, err)
+	case errors.Is(err, domain.ErrUnauthorized):
+		return connect.NewError(connect.CodeUnauthenticated, err)
+	case errors.Is(err, domain.ErrForbidden):
+		return connect.NewError(connect.CodePermissionDenied, err)
+	case errors.Is(err, domain.ErrInvalidToken):
+		return connect.NewError(connect.CodeUnauthenticated, err)
 	case domain.IsSchemaValidationError(err):
 		return schemaValidationConnectError(err)
 	case domain.IsValidationError(err):

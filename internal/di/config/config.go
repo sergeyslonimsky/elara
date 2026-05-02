@@ -31,6 +31,8 @@ const (
 	// defaultServiceName is embedded in Prometheus/OTLP resource labels
 	// when operators don't override it.
 	defaultServiceName = "elara"
+
+	defaultSessionTTL = 24 * time.Hour
 )
 
 type Config struct {
@@ -49,6 +51,30 @@ type Config struct {
 	Metrics MetricsConfig
 	Tracing TracingConfig
 	Log     LogConfig
+	Auth    AuthConfig
+}
+
+// AuthConfig controls authentication and session management.
+type AuthConfig struct {
+	Enabled     bool
+	AdminEmails []string
+	OIDC        OIDCConfig
+	Session     SessionConfig
+}
+
+// OIDCConfig holds OpenID Connect provider settings.
+type OIDCConfig struct {
+	IssuerURL    string
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+	Scopes       []string
+}
+
+// SessionConfig controls JWT session token signing and lifetime.
+type SessionConfig struct {
+	Secret string
+	TTL    time.Duration
 }
 
 // LogConfig controls structured-log verbosity, output format, and source location.
@@ -132,6 +158,27 @@ func NewConfig(ctx context.Context) (Config, error) {
 			Format:   cfg.GetStringOrDefault("log.format", defaultLogFormat),
 			NoSource: cfg.GetBool("log.noSource"),
 		},
+		Auth: AuthConfig{
+			Enabled:     cfg.GetBool("auth.enabled"),
+			AdminEmails: cfg.GetStringSlice("auth.adminEmails"),
+			OIDC: OIDCConfig{
+				IssuerURL:    cfg.GetString("auth.oidc.issuerUrl"),
+				ClientID:     cfg.GetString("auth.oidc.clientId"),
+				ClientSecret: cfg.GetString("auth.oidc.clientSecret"),
+				RedirectURL:  cfg.GetString("auth.oidc.redirectUrl"),
+				Scopes: stringsOrDefault(
+					cfg.GetStringSlice("auth.oidc.scopes"),
+					[]string{"openid", "email", "profile"},
+				),
+			},
+			Session: SessionConfig{
+				Secret: cfg.GetString("auth.session.secret"),
+				TTL: durOrDefault(
+					cfg.GetDuration("auth.session.ttl"),
+					defaultSessionTTL,
+				),
+			},
+		},
 	}, nil
 }
 
@@ -145,6 +192,14 @@ func intOrDefault(v, d int) int {
 
 func durOrDefault(v, d time.Duration) time.Duration {
 	if v <= 0 {
+		return d
+	}
+
+	return v
+}
+
+func stringsOrDefault(v, d []string) []string {
+	if len(v) == 0 {
 		return d
 	}
 

@@ -15,6 +15,9 @@ var (
 	// ErrNamespaceLocked wraps ErrLocked so callers can attribute the cause
 	// (e.g. for metrics) while still matching errors.Is(err, ErrLocked).
 	ErrNamespaceLocked = fmt.Errorf("namespace is locked: %w", ErrLocked)
+	ErrUnauthorized    = errors.New("unauthorized")
+	ErrForbidden       = errors.New("forbidden")
+	ErrInvalidToken    = errors.New("invalid token")
 )
 
 type ValidationError struct {
