@@ -10,6 +10,7 @@
 package casbin_mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -40,30 +41,30 @@ func (m *MockPolicyLoader) EXPECT() *MockPolicyLoaderMockRecorder {
 }
 
 // Load mocks base method.
-func (m *MockPolicyLoader) Load() ([][]string, error) {
+func (m *MockPolicyLoader) Load(ctx context.Context) ([][]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Load")
+	ret := m.ctrl.Call(m, "Load", ctx)
 	ret0, _ := ret[0].([][]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Load indicates an expected call of Load.
-func (mr *MockPolicyLoaderMockRecorder) Load() *gomock.Call {
+func (mr *MockPolicyLoaderMockRecorder) Load(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockPolicyLoader)(nil).Load))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockPolicyLoader)(nil).Load), ctx)
 }
 
 // Save mocks base method.
-func (m *MockPolicyLoader) Save(rules [][]string) error {
+func (m *MockPolicyLoader) Save(ctx context.Context, rules [][]string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Save", rules)
+	ret := m.ctrl.Call(m, "Save", ctx, rules)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Save indicates an expected call of Save.
-func (mr *MockPolicyLoaderMockRecorder) Save(rules any) *gomock.Call {
+func (mr *MockPolicyLoaderMockRecorder) Save(ctx, rules any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockPolicyLoader)(nil).Save), rules)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockPolicyLoader)(nil).Save), ctx, rules)
 }

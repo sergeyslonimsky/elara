@@ -14,29 +14,29 @@ import (
 func TestAssignRevokeRoleUseCase_Execute(t *testing.T) {
 	t.Parallel()
 
-	type ucExec interface {
+	type executor interface {
 		Execute(ctx context.Context, subject, domain, role string) error
 	}
 
 	tests := []struct {
 		name      string
-		buildUC   func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec
+		buildUC   func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) executor
 		setupMock func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader)
 		wantErr   bool
 	}{
 		{
 			name: "assigns role and saves policy",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec {
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) executor {
 				return authuc.NewAssignRoleUseCase(e, p)
 			},
 			setupMock: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) {
 				e.EXPECT().AddRoleForUser("user@example.com", "role:admin", "*").Return(nil)
-				e.EXPECT().SavePolicy(gomock.Any()).Return(nil)
+				e.EXPECT().SavePolicy(gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 		{
 			name: "assign: enforcer add error propagated",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec {
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) executor {
 				return authuc.NewAssignRoleUseCase(e, p)
 			},
 			setupMock: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) {
@@ -46,28 +46,28 @@ func TestAssignRevokeRoleUseCase_Execute(t *testing.T) {
 		},
 		{
 			name: "assign: save policy error propagated",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec {
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) executor {
 				return authuc.NewAssignRoleUseCase(e, p)
 			},
 			setupMock: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) {
 				e.EXPECT().AddRoleForUser(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-				e.EXPECT().SavePolicy(gomock.Any()).Return(errors.New("save error"))
+				e.EXPECT().SavePolicy(gomock.Any(), gomock.Any()).Return(errors.New("save error"))
 			},
 			wantErr: true,
 		},
 		{
 			name: "revokes role and saves policy",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec {
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) executor {
 				return authuc.NewRevokeRoleUseCase(e, p)
 			},
 			setupMock: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) {
 				e.EXPECT().RemoveRoleForUser("user@example.com", "role:admin", "*").Return(nil)
-				e.EXPECT().SavePolicy(gomock.Any()).Return(nil)
+				e.EXPECT().SavePolicy(gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
 		{
 			name: "revoke: enforcer remove error propagated",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec {
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) executor {
 				return authuc.NewRevokeRoleUseCase(e, p)
 			},
 			setupMock: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) {

@@ -12,6 +12,11 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+const (
+	errGetGroup    = "get group: %w"
+	errUpdateGroup = "update group: %w"
+)
+
 type groupCreator interface {
 	Create(ctx context.Context, group *domain.Group) error
 }
@@ -74,7 +79,7 @@ func NewGetGroupUseCase(groups groupGetter) *GetGroupUseCase {
 func (uc *GetGroupUseCase) Execute(ctx context.Context, id string) (*domain.Group, error) {
 	group, err := uc.groups.Get(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("get group: %w", err)
+		return nil, fmt.Errorf(errGetGroup, err)
 	}
 
 	return group, nil
@@ -101,14 +106,14 @@ func NewUpdateGroupUseCase(groups interface {
 func (uc *UpdateGroupUseCase) Execute(ctx context.Context, id, name string) (*domain.Group, error) {
 	group, err := uc.groups.Get(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("get group: %w", err)
+		return nil, fmt.Errorf(errGetGroup, err)
 	}
 
 	group.Name = name
 	group.UpdatedAt = time.Now().UTC()
 
 	if err = uc.groups.Update(ctx, group); err != nil {
-		return nil, fmt.Errorf("update group: %w", err)
+		return nil, fmt.Errorf(errUpdateGroup, err)
 	}
 
 	return group, nil
@@ -174,7 +179,7 @@ func NewAddMemberUseCase(groups interface {
 func (uc *AddMemberUseCase) Execute(ctx context.Context, groupID, email string) (*domain.Group, error) {
 	group, err := uc.groups.Get(ctx, groupID)
 	if err != nil {
-		return nil, fmt.Errorf("get group: %w", err)
+		return nil, fmt.Errorf(errGetGroup, err)
 	}
 
 	if err = group.AddMember(email); err != nil {
@@ -182,7 +187,7 @@ func (uc *AddMemberUseCase) Execute(ctx context.Context, groupID, email string) 
 	}
 
 	if err = uc.groups.Update(ctx, group); err != nil {
-		return nil, fmt.Errorf("update group: %w", err)
+		return nil, fmt.Errorf(errUpdateGroup, err)
 	}
 
 	return group, nil
@@ -209,7 +214,7 @@ func NewRemoveMemberUseCase(groups interface {
 func (uc *RemoveMemberUseCase) Execute(ctx context.Context, groupID, email string) (*domain.Group, error) {
 	group, err := uc.groups.Get(ctx, groupID)
 	if err != nil {
-		return nil, fmt.Errorf("get group: %w", err)
+		return nil, fmt.Errorf(errGetGroup, err)
 	}
 
 	if err = group.RemoveMember(email); err != nil {
@@ -217,7 +222,7 @@ func (uc *RemoveMemberUseCase) Execute(ctx context.Context, groupID, email strin
 	}
 
 	if err = uc.groups.Update(ctx, group); err != nil {
-		return nil, fmt.Errorf("update group: %w", err)
+		return nil, fmt.Errorf(errUpdateGroup, err)
 	}
 
 	return group, nil

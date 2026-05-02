@@ -79,8 +79,7 @@ func (uc *CallbackUseCase) Execute(ctx context.Context, code, nonce string) (str
 		return "", nil, fmt.Errorf("upsert user: %w", err)
 	}
 
-	adapter := casbin.NewContextPolicyLoader(uc.loader, ctx)
-	if err = casbin.CheckBootstrapAdmin(identity.Email, uc.adminEmails, uc.enforcer, adapter); err != nil {
+	if err = casbin.CheckBootstrapAdmin(ctx, identity.Email, uc.adminEmails, uc.enforcer, uc.loader); err != nil {
 		return "", nil, fmt.Errorf("bootstrap admin: %w", err)
 	}
 

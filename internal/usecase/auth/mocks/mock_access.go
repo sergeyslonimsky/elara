@@ -84,17 +84,17 @@ func (mr *MockpolicyEnforcerMockRecorder) RemoveRoleForUser(user, role, domain a
 }
 
 // SavePolicy mocks base method.
-func (m *MockpolicyEnforcer) SavePolicy(loader casbin.PolicyLoader) error {
+func (m *MockpolicyEnforcer) SavePolicy(ctx context.Context, loader casbin.PolicyLoader) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SavePolicy", loader)
+	ret := m.ctrl.Call(m, "SavePolicy", ctx, loader)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SavePolicy indicates an expected call of SavePolicy.
-func (mr *MockpolicyEnforcerMockRecorder) SavePolicy(loader any) *gomock.Call {
+func (mr *MockpolicyEnforcerMockRecorder) SavePolicy(ctx, loader any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SavePolicy", reflect.TypeOf((*MockpolicyEnforcer)(nil).SavePolicy), loader)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SavePolicy", reflect.TypeOf((*MockpolicyEnforcer)(nil).SavePolicy), ctx, loader)
 }
 
 // MockaccessPolicyLoader is a mock of accessPolicyLoader interface.

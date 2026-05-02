@@ -11,6 +11,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+const errUnmarshalUser = "unmarshal user: %w"
+
 // UserRepo stores and retrieves auth users in bbolt.
 type UserRepo struct {
 	store *Store
@@ -36,7 +38,7 @@ func (r *UserRepo) Upsert(_ context.Context, user *domain.User) error {
 			// Existing user — preserve CreatedAt from storage.
 			var m authUserMeta
 			if err := json.Unmarshal(existing, &m); err != nil {
-				return fmt.Errorf("unmarshal user: %w", err)
+				return fmt.Errorf(errUnmarshalUser, err)
 			}
 
 			user.CreatedAt = m.CreatedAt
@@ -71,7 +73,7 @@ func (r *UserRepo) Get(_ context.Context, email string) (*domain.User, error) {
 
 		var m authUserMeta
 		if err := json.Unmarshal(data, &m); err != nil {
-			return fmt.Errorf("unmarshal user: %w", err)
+			return fmt.Errorf(errUnmarshalUser, err)
 		}
 
 		user = authUserMetaToDomain(&m)
@@ -95,7 +97,7 @@ func (r *UserRepo) List(_ context.Context) ([]*domain.User, error) {
 		return b.ForEach(func(_, v []byte) error {
 			var m authUserMeta
 			if err := json.Unmarshal(v, &m); err != nil {
-				return fmt.Errorf("unmarshal user: %w", err)
+				return fmt.Errorf(errUnmarshalUser, err)
 			}
 
 			users = append(users, authUserMetaToDomain(&m))

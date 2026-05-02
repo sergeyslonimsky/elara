@@ -3,6 +3,7 @@ package casbin
 //go:generate mockgen -destination=mocks/mock_enforcer.go -package=casbin_mock github.com/sergeyslonimsky/elara/internal/auth/casbin PolicyLoader
 
 import (
+	"context"
 	"fmt"
 
 	gocasbin "github.com/casbin/casbin/v2"
@@ -54,8 +55,8 @@ const domainIdx = 2
 
 // PolicyLoader is satisfied by bbolt.PolicyRepo (already implemented).
 type PolicyLoader interface {
-	Load() ([][]string, error)
-	Save(rules [][]string) error
+	Load(ctx context.Context) ([][]string, error)
+	Save(ctx context.Context, rules [][]string) error
 }
 
 // Enforcer wraps the Casbin enforcer with domain-aware RBAC.
@@ -65,7 +66,7 @@ type Enforcer struct {
 
 // NewEnforcer creates a new Enforcer using the given PolicyLoader.
 // If the loaded policy is empty, built-in role policies are seeded and saved.
-func NewEnforcer(loader PolicyLoader) (*Enforcer, error) {
+func NewEnforcer(ctx context.Context, loader PolicyLoader) (*Enforcer, error) {
 	m, err := model.NewModelFromString(casbinModel)
 	if err != nil {
 		return nil, fmt.Errorf("build casbin model: %w", err)
@@ -80,7 +81,7 @@ func NewEnforcer(loader PolicyLoader) (*Enforcer, error) {
 
 	e.EnableAutoSave(false)
 
-	rules, err := loader.Load()
+	rules, err := loader.Load(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load policy: %w", err)
 	}
@@ -92,7 +93,7 @@ func NewEnforcer(loader PolicyLoader) (*Enforcer, error) {
 			return nil, err
 		}
 
-		if err := enforcer.SavePolicy(loader); err != nil {
+		if err := enforcer.SavePolicy(ctx, loader); err != nil {
 			return nil, err
 		}
 
@@ -205,7 +206,7 @@ func (e *Enforcer) GetGroupingPolicy() [][]string {
 }
 
 // SavePolicy persists the current in-memory policy state to the given loader.
-func (e *Enforcer) SavePolicy(loader PolicyLoader) error {
+func (e *Enforcer) SavePolicy(ctx context.Context, loader PolicyLoader) error {
 	pRules, err := e.e.GetPolicy()
 	if err != nil {
 		return fmt.Errorf("get policy for save: %w", err)
@@ -226,7 +227,7 @@ func (e *Enforcer) SavePolicy(loader PolicyLoader) error {
 		rules = append(rules, append([]string{"g"}, r...))
 	}
 
-	if err = loader.Save(rules); err != nil {
+	if err = loader.Save(ctx, rules); err != nil {
 		return fmt.Errorf("save policy: %w", err)
 	}
 
@@ -254,28 +255,48 @@ func (e *Enforcer) seedBuiltinPolicies() error {
 
 func (e *Enforcer) loadRules(rules [][]string) error {
 	for _, rule := range rules {
-		if len(rule) == 0 {
-			continue
+		if err := e.loadRule(rule); err != nil {
+			return err
 		}
+	}
 
-		switch rule[0] {
-		case "p":
-			if len(rule) < pRuleLen {
-				continue
-			}
+	return nil
+}
 
-			if _, err := e.e.AddPolicy(rule[1], rule[2], rule[3], rule[4]); err != nil {
-				return fmt.Errorf("load policy rule %v: %w", rule, err)
-			}
-		case "g":
-			if len(rule) < gRuleLen {
-				continue
-			}
+func (e *Enforcer) loadRule(rule []string) error {
+	if len(rule) == 0 {
+		return nil
+	}
 
-			if _, err := e.e.AddGroupingPolicy(rule[1], rule[2], rule[3]); err != nil {
-				return fmt.Errorf("load grouping rule %v: %w", rule, err)
-			}
-		}
+	switch rule[0] {
+	case "p":
+		return e.loadPolicyRule(rule)
+	case "g":
+		return e.loadGroupingRule(rule)
+	}
+
+	return nil
+}
+
+func (e *Enforcer) loadPolicyRule(rule []string) error {
+	if len(rule) < pRuleLen {
+		return nil
+	}
+
+	if _, err := e.e.AddPolicy(rule[1], rule[2], rule[3], rule[4]); err != nil {
+		return fmt.Errorf("load policy rule %v: %w", rule, err)
+	}
+
+	return nil
+}
+
+func (e *Enforcer) loadGroupingRule(rule []string) error {
+	if len(rule) < gRuleLen {
+		return nil
+	}
+
+	if _, err := e.e.AddGroupingPolicy(rule[1], rule[2], rule[3]); err != nil {
+		return fmt.Errorf("load grouping rule %v: %w", rule, err)
 	}
 
 	return nil

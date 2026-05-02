@@ -181,7 +181,7 @@ func wireAuthUseCases(
 	cfg config.Config,
 	sessionManager *auth.SessionManager,
 ) error {
-	enforcer, err := casbin.NewEnforcer(casbin.NewContextPolicyLoader(a.AuthPolicy, ctx))
+	enforcer, err := casbin.NewEnforcer(ctx, a.AuthPolicy)
 	if err != nil {
 		return fmt.Errorf("create casbin enforcer: %w", err)
 	}

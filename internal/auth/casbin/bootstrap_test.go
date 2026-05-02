@@ -19,8 +19,8 @@ func newBootstrapLoader(t *testing.T, ctrl *gomock.Controller, initRules [][]str
 	t.Helper()
 
 	loader := casbin_mock.NewMockPolicyLoader(ctrl)
-	loader.EXPECT().Load().Return(initRules, nil).AnyTimes()
-	loader.EXPECT().Save(gomock.Any()).Return(nil).AnyTimes()
+	loader.EXPECT().Load(gomock.Any()).Return(initRules, nil).AnyTimes()
+	loader.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	return loader
 }
@@ -65,14 +65,14 @@ func TestCheckBootstrapAdmin(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			loader := newBootstrapLoader(t, ctrl, nil)
 
-			e, err := casbin.NewEnforcer(loader)
+			e, err := casbin.NewEnforcer(t.Context(), loader)
 			require.NoError(t, err)
 
 			if tc.setup != nil {
 				tc.setup(e)
 			}
 
-			err = casbin.CheckBootstrapAdmin(tc.email, tc.adminEmails, e, loader)
+			err = casbin.CheckBootstrapAdmin(t.Context(), tc.email, tc.adminEmails, e, loader)
 			require.NoError(t, err)
 
 			roles, err := e.GetRolesForUser(tc.email, "*")
@@ -91,14 +91,14 @@ func TestCheckBootstrapAdmin_NoDuplicateAssignment(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	loader := newBootstrapLoader(t, ctrl, nil)
 
-	e, err := casbin.NewEnforcer(loader)
+	e, err := casbin.NewEnforcer(t.Context(), loader)
 	require.NoError(t, err)
 
 	email := "admin@example.com"
 	adminEmails := []string{email}
 
-	require.NoError(t, casbin.CheckBootstrapAdmin(email, adminEmails, e, loader))
-	require.NoError(t, casbin.CheckBootstrapAdmin(email, adminEmails, e, loader))
+	require.NoError(t, casbin.CheckBootstrapAdmin(t.Context(), email, adminEmails, e, loader))
+	require.NoError(t, casbin.CheckBootstrapAdmin(t.Context(), email, adminEmails, e, loader))
 
 	roles, err := e.GetRolesForUser(email, "*")
 	require.NoError(t, err)

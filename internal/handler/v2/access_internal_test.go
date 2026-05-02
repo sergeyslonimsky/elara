@@ -53,7 +53,7 @@ func TestAccessHandler_AssignRole(t *testing.T) {
 
 			enforcer.EXPECT().AddRoleForUser(tc.subject, tc.role, tc.domain).Return(tc.addErr)
 			if tc.addErr == nil {
-				enforcer.EXPECT().SavePolicy(gomock.Any()).Return(tc.savePolicyErr)
+				enforcer.EXPECT().SavePolicy(gomock.Any(), gomock.Any()).Return(tc.savePolicyErr)
 			}
 
 			h := NewAccessHandler(
@@ -115,7 +115,7 @@ func TestAccessHandler_RevokeRole(t *testing.T) {
 
 			enforcer.EXPECT().RemoveRoleForUser(tc.subject, tc.role, tc.domain).Return(tc.removeErr)
 			if tc.removeErr == nil {
-				enforcer.EXPECT().SavePolicy(gomock.Any()).Return(nil)
+				enforcer.EXPECT().SavePolicy(gomock.Any(), gomock.Any()).Return(nil)
 			}
 
 			h := NewAccessHandler(

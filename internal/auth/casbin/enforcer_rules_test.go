@@ -109,9 +109,9 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			loader := casbin_mock.NewMockPolicyLoader(ctrl)
-			loader.EXPECT().Load().Return(tt.rules, nil)
+			loader.EXPECT().Load(gomock.Any()).Return(tt.rules, nil)
 
-			e, err := casbin.NewEnforcer(loader)
+			e, err := casbin.NewEnforcer(t.Context(), loader)
 			require.NoError(t, err)
 
 			tt.verify(t, e)

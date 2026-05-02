@@ -163,7 +163,7 @@ func TestAuthHandler_Callback_InvalidState(t *testing.T) {
 	assert.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 }
 
-func TestAuthHandler_Callback(t *testing.T) {
+func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 	t.Parallel()
 
 	tests := []struct {

@@ -1,6 +1,7 @@
 package casbin_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,13 +23,13 @@ func newTestEnforcer(t *testing.T, rules [][]string) *casbin.Enforcer {
 
 	if len(rules) == 0 {
 		// Empty storage: enforcer will seed built-ins and call Save once.
-		loader.EXPECT().Load().Return(nil, nil)
-		loader.EXPECT().Save(gomock.Any()).Return(nil)
+		loader.EXPECT().Load(gomock.Any()).Return(nil, nil)
+		loader.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil)
 	} else {
-		loader.EXPECT().Load().Return(rules, nil)
+		loader.EXPECT().Load(gomock.Any()).Return(rules, nil)
 	}
 
-	e, err := casbin.NewEnforcer(loader)
+	e, err := casbin.NewEnforcer(t.Context(), loader)
 	require.NoError(t, err)
 
 	return e
@@ -41,14 +42,14 @@ func TestNewEnforcer_SeedsBuiltinPoliciesOnEmpty(t *testing.T) {
 	loader := casbin_mock.NewMockPolicyLoader(ctrl)
 
 	var savedRules [][]string
-	loader.EXPECT().Load().Return(nil, nil)
-	loader.EXPECT().Save(gomock.Any()).DoAndReturn(func(rules [][]string) error {
+	loader.EXPECT().Load(gomock.Any()).Return(nil, nil)
+	loader.EXPECT().Save(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, rules [][]string) error {
 		savedRules = rules
 
 		return nil
 	})
 
-	_, err := casbin.NewEnforcer(loader)
+	_, err := casbin.NewEnforcer(t.Context(), loader)
 	require.NoError(t, err)
 
 	assert.NotEmpty(t, savedRules, "built-in policies should be saved when storage is empty")
@@ -201,7 +202,7 @@ func TestRemoveRoleForUser(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestEnforcer_Methods(t *testing.T) {
+func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 	t.Parallel()
 
 	t.Run("GetAllRoles returns roles in domain", func(t *testing.T) {
@@ -259,13 +260,15 @@ func TestEnforcer_Methods(t *testing.T) {
 		require.NoError(t, e.AddRoleForUser("henry", "role:admin", "*"))
 
 		var capturedRules [][]string
-		saveLoader.EXPECT().Save(gomock.Any()).DoAndReturn(func(rules [][]string) error {
-			capturedRules = rules
+		saveLoader.EXPECT().
+			Save(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, rules [][]string) error {
+				capturedRules = rules
 
-			return nil
-		})
+				return nil
+			})
 
-		require.NoError(t, e.SavePolicy(saveLoader))
+		require.NoError(t, e.SavePolicy(t.Context(), saveLoader))
 
 		var pCount, gCount int
 		for _, r := range capturedRules {

@@ -18,7 +18,7 @@ func ctxWithClaims(email string) context.Context {
 	return auth.WithClaims(context.Background(), &auth.Claims{Email: email})
 }
 
-func TestCreateTokenUseCase_Execute(t *testing.T) {
+func TestCreateTokenUseCase_Execute(t *testing.T) { // NOSONAR
 	t.Parallel()
 
 	tests := []struct {

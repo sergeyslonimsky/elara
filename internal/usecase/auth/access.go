@@ -13,7 +13,7 @@ type policyEnforcer interface {
 	AddRoleForUser(user, role, domain string) error
 	RemoveRoleForUser(user, role, domain string) error
 	GetGroupingPolicy() [][]string
-	SavePolicy(loader casbin.PolicyLoader) error
+	SavePolicy(ctx context.Context, loader casbin.PolicyLoader) error
 }
 
 type accessPolicyLoader interface {
@@ -45,8 +45,7 @@ func (uc *AssignRoleUseCase) Execute(ctx context.Context, subject, domain, role 
 		return fmt.Errorf("add role for user: %w", err)
 	}
 
-	loader := casbin.NewContextPolicyLoader(uc.policy, ctx)
-	if err := uc.enforcer.SavePolicy(loader); err != nil {
+	if err := uc.enforcer.SavePolicy(ctx, uc.policy); err != nil {
 		return fmt.Errorf("save policy: %w", err)
 	}
 
@@ -70,8 +69,7 @@ func (uc *RevokeRoleUseCase) Execute(ctx context.Context, subject, domain, role 
 		return fmt.Errorf("remove role for user: %w", err)
 	}
 
-	loader := casbin.NewContextPolicyLoader(uc.policy, ctx)
-	if err := uc.enforcer.SavePolicy(loader); err != nil {
+	if err := uc.enforcer.SavePolicy(ctx, uc.policy); err != nil {
 		return fmt.Errorf("save policy: %w", err)
 	}
 

@@ -68,7 +68,7 @@ func TestListUsersUseCase_Execute(t *testing.T) {
 	}
 }
 
-func TestGetUserUseCase_Execute(t *testing.T) {
+func TestGetUserUseCase_Execute(t *testing.T) { // NOSONAR
 	t.Parallel()
 
 	tests := []struct {

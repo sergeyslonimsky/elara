@@ -20,7 +20,7 @@ type groupGetterUpdater struct {
 	*auth_mock.MockgroupUpdater
 }
 
-func TestCreateGroupUseCase_Execute(t *testing.T) {
+func TestCreateGroupUseCase_Execute(t *testing.T) { // NOSONAR
 	t.Parallel()
 
 	tests := []struct {
@@ -133,7 +133,7 @@ func TestGetGroupUseCase_Execute(t *testing.T) {
 	}
 }
 
-func TestUpdateGroupUseCase_Execute(t *testing.T) {
+func TestUpdateGroupUseCase_Execute(t *testing.T) { // NOSONAR
 	t.Parallel()
 
 	tests := []struct {
@@ -202,7 +202,7 @@ func TestUpdateGroupUseCase_Execute(t *testing.T) {
 	}
 }
 
-func TestAddMemberUseCase_Execute(t *testing.T) {
+func TestAddMemberUseCase_Execute(t *testing.T) { // NOSONAR
 	t.Parallel()
 
 	tests := []struct {
@@ -279,7 +279,7 @@ func TestAddMemberUseCase_Execute(t *testing.T) {
 	}
 }
 
-func TestRemoveMemberUseCase_Execute(t *testing.T) {
+func TestRemoveMemberUseCase_Execute(t *testing.T) { // NOSONAR
 	t.Parallel()
 
 	tests := []struct {

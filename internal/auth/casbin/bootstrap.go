@@ -1,6 +1,7 @@
 package casbin
 
 import (
+	"context"
 	"fmt"
 	"slices"
 )
@@ -9,12 +10,18 @@ import (
 type BootstrapEnforcer interface {
 	GetRolesForUser(user, domain string) ([]string, error)
 	AddRoleForUser(user, role, domain string) error
-	SavePolicy(loader PolicyLoader) error
+	SavePolicy(ctx context.Context, loader PolicyLoader) error
 }
 
 // CheckBootstrapAdmin checks if email is in adminEmails and has no role:admin assignment yet.
 // If both conditions are true, it grants role:admin in domain "*" and saves the policy.
-func CheckBootstrapAdmin(email string, adminEmails []string, enforcer BootstrapEnforcer, loader PolicyLoader) error {
+func CheckBootstrapAdmin(
+	ctx context.Context,
+	email string,
+	adminEmails []string,
+	enforcer BootstrapEnforcer,
+	loader PolicyLoader,
+) error {
 	if !isAdminEmail(email, adminEmails) {
 		return nil
 	}
@@ -32,7 +39,7 @@ func CheckBootstrapAdmin(email string, adminEmails []string, enforcer BootstrapE
 		return fmt.Errorf("assign admin role: %w", err)
 	}
 
-	if err = enforcer.SavePolicy(loader); err != nil {
+	if err = enforcer.SavePolicy(ctx, loader); err != nil {
 		return fmt.Errorf("save policy after bootstrap: %w", err)
 	}
 
