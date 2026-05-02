@@ -2,7 +2,9 @@ package v2
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -159,4 +161,184 @@ func TestAuthHandler_Callback_InvalidState(t *testing.T) {
 	_, err := h.Callback(context.Background(), req)
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+}
+
+func TestAuthHandler_Callback(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		requestState string
+		stateCookie  string
+		nonceCookie  string
+		setupMocks   func(
+			provider *auth_mock.MockcallbackProvider,
+			users *auth_mock.MockuserUpserter,
+			loader *auth_mock.MockpolicyLoader,
+		)
+		wantErr  bool
+		wantCode connect.Code
+		// verifyCookies checks that elara_session is set in the response header.
+		verifyCookies bool
+	}{
+		{
+			name:          "happy path: valid state cookie sets session cookie",
+			requestState:  "test-state",
+			stateCookie:   "test-state",
+			nonceCookie:   "test-nonce",
+			verifyCookies: true,
+			setupMocks: func(
+				provider *auth_mock.MockcallbackProvider,
+				users *auth_mock.MockuserUpserter,
+				loader *auth_mock.MockpolicyLoader,
+			) {
+				provider.EXPECT().
+					Exchange(gomock.Any(), "auth-code", "test-nonce").
+					Return(&internalauth.Identity{
+						Email: "user@example.com",
+						Name:  "Test User",
+					}, nil)
+				users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
+				loader.EXPECT().Load(gomock.Any()).Return([][]string{}, nil).AnyTimes()
+				loader.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+			},
+		},
+		{
+			name:         "state mismatch returns CodeUnauthenticated",
+			requestState: "correct-state",
+			stateCookie:  "wrong-state",
+			nonceCookie:  "nonce-val",
+			wantErr:      true,
+			wantCode:     connect.CodeUnauthenticated,
+			setupMocks: func(
+				_ *auth_mock.MockcallbackProvider,
+				_ *auth_mock.MockuserUpserter,
+				_ *auth_mock.MockpolicyLoader,
+			) {
+			},
+		},
+		{
+			name:         "missing state cookie returns CodeUnauthenticated",
+			requestState: "some-state",
+			stateCookie:  "",
+			nonceCookie:  "nonce-val",
+			wantErr:      true,
+			wantCode:     connect.CodeUnauthenticated,
+			setupMocks: func(
+				_ *auth_mock.MockcallbackProvider,
+				_ *auth_mock.MockuserUpserter,
+				_ *auth_mock.MockpolicyLoader,
+			) {
+			},
+		},
+		{
+			name:         "missing nonce cookie returns CodeUnauthenticated",
+			requestState: "test-state",
+			stateCookie:  "test-state",
+			nonceCookie:  "",
+			wantErr:      true,
+			wantCode:     connect.CodeUnauthenticated,
+			setupMocks: func(
+				_ *auth_mock.MockcallbackProvider,
+				_ *auth_mock.MockuserUpserter,
+				_ *auth_mock.MockpolicyLoader,
+			) {
+			},
+		},
+		{
+			name:         "callback.Execute exchange error maps to connect error",
+			requestState: "test-state",
+			stateCookie:  "test-state",
+			nonceCookie:  "test-nonce",
+			wantErr:      true,
+			setupMocks: func(
+				provider *auth_mock.MockcallbackProvider,
+				_ *auth_mock.MockuserUpserter,
+				_ *auth_mock.MockpolicyLoader,
+			) {
+				provider.EXPECT().
+					Exchange(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil, errors.New("provider error"))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			provider := auth_mock.NewMockcallbackProvider(ctrl)
+			users := auth_mock.NewMockuserUpserter(ctrl)
+			loader := auth_mock.NewMockpolicyLoader(ctrl)
+
+			tt.setupMocks(provider, users, loader)
+
+			session := internalauth.NewSessionManager("test-secret", 0)
+			callbackUC := authuc.NewCallbackUseCase(
+				provider, users, session,
+				nil,
+				loader,
+				[]string{},
+			)
+
+			h := newTestAuthHandler(nil, callbackUC, nil)
+
+			req := connect.NewRequest(&authv1.CallbackRequest{
+				State: tt.requestState,
+				Code:  "auth-code",
+			})
+
+			// Build cookie header.
+			var cookieParts []string
+			if tt.stateCookie != "" {
+				cookieParts = append(cookieParts, (&http.Cookie{
+					Name:  oauthStateCookieName,
+					Value: tt.stateCookie,
+				}).String())
+			}
+			if tt.nonceCookie != "" {
+				cookieParts = append(cookieParts, (&http.Cookie{
+					Name:  oauthNonceCookieName,
+					Value: tt.nonceCookie,
+				}).String())
+			}
+			if len(cookieParts) > 0 {
+				req.Header().Set("Cookie", joinCookies(cookieParts))
+			}
+
+			resp, err := h.Callback(t.Context(), req)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.wantCode != 0 {
+					assert.Equal(t, tt.wantCode, connect.CodeOf(err))
+				}
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			if tt.verifyCookies {
+				setCookies := resp.Header().Values(cookieHeader)
+				require.NotEmpty(t, setCookies, "expected Set-Cookie header in response")
+
+				found := false
+				for _, c := range setCookies {
+					if strings.Contains(c, sessionCookieName) {
+						found = true
+
+						break
+					}
+				}
+				assert.True(t, found, "elara_session cookie should be set in response")
+			}
+		})
+	}
+}
+
+// joinCookies joins multiple cookie strings with "; " for use in the Cookie header.
+func joinCookies(parts []string) string {
+	return strings.Join(parts, "; ")
 }

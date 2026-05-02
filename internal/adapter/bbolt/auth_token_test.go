@@ -132,6 +132,96 @@ func TestPATRepo_Delete_Missing(t *testing.T) {
 	assert.ErrorIs(t, err, domain.ErrNotFound)
 }
 
+func TestPATRepo_GetByID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		setup   func(t *testing.T, repo *bboltadapter.PATRepo)
+		id      string
+		wantErr error
+		verify  func(t *testing.T, got *domain.PAT)
+	}{
+		{
+			name: "happy path returns correct PAT",
+			setup: func(t *testing.T, repo *bboltadapter.PATRepo) {
+				t.Helper()
+
+				pat := newTestPAT("pat-id-1", "getbyid@example.com", "hash-getbyid-1")
+				require.NoError(t, repo.Create(t.Context(), pat))
+			},
+			id: "pat-id-1",
+			verify: func(t *testing.T, got *domain.PAT) {
+				t.Helper()
+
+				assert.Equal(t, "pat-id-1", got.ID)
+				assert.Equal(t, "getbyid@example.com", got.UserEmail)
+				assert.Equal(t, "hash-getbyid-1", got.TokenHash)
+			},
+		},
+		{
+			name:    "not found returns ErrNotFound",
+			setup:   func(_ *testing.T, _ *bboltadapter.PATRepo) {},
+			id:      "nonexistent-id",
+			wantErr: domain.ErrNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			store := newTestStore(t)
+			repo := bboltadapter.NewPATRepo(store)
+
+			tt.setup(t, repo)
+
+			got, err := repo.GetByID(t.Context(), tt.id)
+
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				require.ErrorIs(t, err, tt.wantErr)
+
+				return
+			}
+
+			require.NoError(t, err)
+			tt.verify(t, got)
+		})
+	}
+}
+
+func TestPATRepo_Delete_RemovesSecondaryIndex(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t)
+	repo := bboltadapter.NewPATRepo(store)
+	ctx := t.Context()
+
+	pat := newTestPAT("pat-sidx-del", "sidx@example.com", "hash-sidx-del")
+	require.NoError(t, repo.Create(ctx, pat))
+
+	// Confirm both lookups work before deletion.
+	_, err := repo.GetByID(ctx, "pat-sidx-del")
+	require.NoError(t, err)
+
+	_, err = repo.GetByHash(ctx, "hash-sidx-del")
+	require.NoError(t, err)
+
+	// Delete via ID.
+	require.NoError(t, repo.Delete(ctx, "pat-sidx-del"))
+
+	// Secondary index must be gone.
+	_, err = repo.GetByID(ctx, "pat-sidx-del")
+	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrNotFound)
+
+	// Primary key must also be gone.
+	_, err = repo.GetByHash(ctx, "hash-sidx-del")
+	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrNotFound)
+}
+
 func TestPATRepo_UpdateLastUsed(t *testing.T) {
 	t.Parallel()
 

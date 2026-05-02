@@ -1,5 +1,7 @@
 package casbin
 
+//go:generate mockgen -destination=mocks/mock_adapter.go -package=casbin_mock github.com/sergeyslonimsky/elara/internal/auth/casbin ContextPolicyRepo
+
 import (
 	"context"
 	"fmt"

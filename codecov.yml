@@ -6,8 +6,8 @@ coverage:
         threshold: 2%
 
 ignore:
-  - "internal/usecase/*/mocks/**"
+  - "**/mocks/**"
   - "internal/proto/**"
   - "web/src/gen/**"
-  - "internal/di/service/**"
+  - "internal/di/**"
   - "cmd/**"
