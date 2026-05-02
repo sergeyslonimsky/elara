@@ -5,44 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/sergeyslonimsky/elara/internal/auth/casbin"
+	"go.uber.org/mock/gomock"
+
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
+	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
-
-type fakePolicyEnforcer struct {
-	gRules    [][]string
-	addErr    error
-	removeErr error
-	saveErr   error
-}
-
-func (f *fakePolicyEnforcer) AddRoleForUser(_, _, _ string) error {
-	return f.addErr
-}
-
-func (f *fakePolicyEnforcer) RemoveRoleForUser(_, _, _ string) error {
-	return f.removeErr
-}
-
-func (f *fakePolicyEnforcer) GetGroupingPolicy() [][]string {
-	return f.gRules
-}
-
-func (f *fakePolicyEnforcer) SavePolicy(_ casbin.PolicyLoader) error {
-	return f.saveErr
-}
-
-type fakePolicyPersister struct {
-	err error
-}
-
-func (f *fakePolicyPersister) Load(_ context.Context) ([][]string, error) {
-	return nil, nil
-}
-
-func (f *fakePolicyPersister) Save(_ context.Context, _ [][]string) error {
-	return f.err
-}
 
 func TestAssignRevokeRoleUseCase_Execute(t *testing.T) {
 	t.Parallel()
@@ -53,36 +20,62 @@ func TestAssignRevokeRoleUseCase_Execute(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		buildUC   func(e *fakePolicyEnforcer, p *fakePolicyPersister) ucExec
-		enforcer  *fakePolicyEnforcer
-		persister *fakePolicyPersister
+		buildUC   func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec
+		setupMock func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader)
 		wantErr   bool
 	}{
 		{
-			name:      "assigns role and saves policy",
-			buildUC:   func(e *fakePolicyEnforcer, p *fakePolicyPersister) ucExec { return authuc.NewAssignRoleUseCase(e, p) },
-			enforcer:  &fakePolicyEnforcer{},
-			persister: &fakePolicyPersister{},
+			name: "assigns role and saves policy",
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec {
+				return authuc.NewAssignRoleUseCase(e, p)
+			},
+			setupMock: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) {
+				e.EXPECT().AddRoleForUser("user@example.com", "role:admin", "*").Return(nil)
+				e.EXPECT().SavePolicy(gomock.Any()).Return(nil)
+			},
 		},
 		{
-			name:      "assign: enforcer error propagated",
-			buildUC:   func(e *fakePolicyEnforcer, p *fakePolicyPersister) ucExec { return authuc.NewAssignRoleUseCase(e, p) },
-			enforcer:  &fakePolicyEnforcer{addErr: errors.New("enforcer error")},
-			persister: &fakePolicyPersister{},
-			wantErr:   true,
+			name: "assign: enforcer add error propagated",
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec {
+				return authuc.NewAssignRoleUseCase(e, p)
+			},
+			setupMock: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) {
+				e.EXPECT().AddRoleForUser(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("enforcer error"))
+			},
+			wantErr: true,
 		},
 		{
-			name:      "revokes role and saves policy",
-			buildUC:   func(e *fakePolicyEnforcer, p *fakePolicyPersister) ucExec { return authuc.NewRevokeRoleUseCase(e, p) },
-			enforcer:  &fakePolicyEnforcer{},
-			persister: &fakePolicyPersister{},
+			name: "assign: save policy error propagated",
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec {
+				return authuc.NewAssignRoleUseCase(e, p)
+			},
+			setupMock: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) {
+				e.EXPECT().AddRoleForUser(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				e.EXPECT().SavePolicy(gomock.Any()).Return(errors.New("save error"))
+			},
+			wantErr: true,
 		},
 		{
-			name:      "revoke: enforcer error propagated",
-			buildUC:   func(e *fakePolicyEnforcer, p *fakePolicyPersister) ucExec { return authuc.NewRevokeRoleUseCase(e, p) },
-			enforcer:  &fakePolicyEnforcer{removeErr: errors.New("enforcer error")},
-			persister: &fakePolicyPersister{},
-			wantErr:   true,
+			name: "revokes role and saves policy",
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec {
+				return authuc.NewRevokeRoleUseCase(e, p)
+			},
+			setupMock: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) {
+				e.EXPECT().RemoveRoleForUser("user@example.com", "role:admin", "*").Return(nil)
+				e.EXPECT().SavePolicy(gomock.Any()).Return(nil)
+			},
+		},
+		{
+			name: "revoke: enforcer remove error propagated",
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) ucExec {
+				return authuc.NewRevokeRoleUseCase(e, p)
+			},
+			setupMock: func(e *auth_mock.MockpolicyEnforcer, p *auth_mock.MockaccessPolicyLoader) {
+				e.EXPECT().
+					RemoveRoleForUser(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("enforcer error"))
+			},
+			wantErr: true,
 		},
 	}
 
@@ -90,7 +83,13 @@ func TestAssignRevokeRoleUseCase_Execute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			uc := tc.buildUC(tc.enforcer, tc.persister)
+			ctrl := gomock.NewController(t)
+			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+			persister := auth_mock.NewMockaccessPolicyLoader(ctrl)
+
+			tc.setupMock(enforcer, persister)
+
+			uc := tc.buildUC(enforcer, persister)
 			err := uc.Execute(t.Context(), "user@example.com", "*", "role:admin")
 
 			if tc.wantErr {
@@ -137,7 +136,11 @@ func TestListPoliciesUseCase_Execute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			uc := authuc.NewListPoliciesUseCase(&fakePolicyEnforcer{gRules: tc.rules})
+			ctrl := gomock.NewController(t)
+			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+			enforcer.EXPECT().GetGroupingPolicy().Return(tc.rules)
+
+			uc := authuc.NewListPoliciesUseCase(enforcer)
 			got, err := uc.Execute(t.Context())
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)

@@ -6,9 +6,24 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/auth/casbin"
+	casbin_mock "github.com/sergeyslonimsky/elara/internal/auth/casbin/mocks"
 )
+
+// newBootstrapLoader creates a PolicyLoader mock that:
+//   - returns the given initial rules on Load()
+//   - accepts any number of Save() calls (seeding + CheckBootstrapAdmin persistence)
+func newBootstrapLoader(t *testing.T, ctrl *gomock.Controller, initRules [][]string) *casbin_mock.MockPolicyLoader {
+	t.Helper()
+
+	loader := casbin_mock.NewMockPolicyLoader(ctrl)
+	loader.EXPECT().Load().Return(initRules, nil).AnyTimes()
+	loader.EXPECT().Save(gomock.Any()).Return(nil).AnyTimes()
+
+	return loader
+}
 
 func TestCheckBootstrapAdmin(t *testing.T) {
 	t.Parallel()
@@ -47,7 +62,8 @@ func TestCheckBootstrapAdmin(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			loader := &mockLoader{}
+			ctrl := gomock.NewController(t)
+			loader := newBootstrapLoader(t, ctrl, nil)
 
 			e, err := casbin.NewEnforcer(loader)
 			require.NoError(t, err)
@@ -72,7 +88,8 @@ func TestCheckBootstrapAdmin(t *testing.T) {
 func TestCheckBootstrapAdmin_NoDuplicateAssignment(t *testing.T) {
 	t.Parallel()
 
-	loader := &mockLoader{}
+	ctrl := gomock.NewController(t)
+	loader := newBootstrapLoader(t, ctrl, nil)
 
 	e, err := casbin.NewEnforcer(loader)
 	require.NoError(t, err)

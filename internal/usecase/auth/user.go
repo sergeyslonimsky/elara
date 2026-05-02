@@ -1,5 +1,7 @@
 package auth
 
+//go:generate mockgen -destination=mocks/mock_user.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth userLister,userGetter
+
 import (
 	"context"
 	"fmt"

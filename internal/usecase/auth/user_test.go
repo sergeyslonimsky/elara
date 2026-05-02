@@ -1,31 +1,15 @@
 package auth_test
 
 import (
-	"context"
 	"errors"
 	"testing"
 
+	"go.uber.org/mock/gomock"
+
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
+	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
-
-type fakeUserLister struct {
-	users []*domain.User
-	err   error
-}
-
-func (f *fakeUserLister) List(_ context.Context) ([]*domain.User, error) {
-	return f.users, f.err
-}
-
-type fakeUserGetter struct {
-	user *domain.User
-	err  error
-}
-
-func (f *fakeUserGetter) Get(_ context.Context, _ string) (*domain.User, error) {
-	return f.user, f.err
-}
 
 func TestListUsersUseCase_Execute(t *testing.T) {
 	t.Parallel()
@@ -58,7 +42,11 @@ func TestListUsersUseCase_Execute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			uc := authuc.NewListUsersUseCase(&fakeUserLister{users: tc.users, err: tc.repoErr})
+			ctrl := gomock.NewController(t)
+			lister := auth_mock.NewMockuserLister(ctrl)
+			lister.EXPECT().List(gomock.Any()).Return(tc.users, tc.repoErr)
+
+			uc := authuc.NewListUsersUseCase(lister)
 			got, err := uc.Execute(t.Context())
 
 			if tc.wantErr {
@@ -107,7 +95,11 @@ func TestGetUserUseCase_Execute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			uc := authuc.NewGetUserUseCase(&fakeUserGetter{user: tc.user, err: tc.repoErr})
+			ctrl := gomock.NewController(t)
+			getter := auth_mock.NewMockuserGetter(ctrl)
+			getter.EXPECT().Get(gomock.Any(), tc.email).Return(tc.user, tc.repoErr)
+
+			uc := authuc.NewGetUserUseCase(getter)
 			got, err := uc.Execute(t.Context(), tc.email)
 
 			if tc.wantErr {

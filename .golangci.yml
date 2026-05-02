@@ -74,8 +74,9 @@ linters:
           - unparam
           - goconst
           - gosec
-          - err113   # test fakes use errors.New("boom") idiomatically; sentinel errors add noise
-          - funlen   # table-driven tests are naturally longer
+          - err113    # test fakes use errors.New("boom") idiomatically; sentinel errors add noise
+          - funlen    # table-driven tests are naturally longer
+          - cyclop    # table-driven tests with multiple cases are naturally more complex
           - wrapcheck
           - dogsled
 

@@ -1,5 +1,7 @@
 package casbin
 
+//go:generate mockgen -destination=mocks/mock_enforcer.go -package=casbin_mock github.com/sergeyslonimsky/elara/internal/auth/casbin PolicyLoader
+
 import (
 	"fmt"
 

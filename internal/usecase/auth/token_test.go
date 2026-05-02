@@ -2,72 +2,17 @@ package auth_test
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
+
+	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
+	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
-
-type fakeTokenRepo struct {
-	tokens []*domain.PAT
-	err    error
-}
-
-func (f *fakeTokenRepo) Create(_ context.Context, pat *domain.PAT) error {
-	if f.err != nil {
-		return f.err
-	}
-	f.tokens = append(f.tokens, pat)
-
-	return nil
-}
-
-func (f *fakeTokenRepo) List(_ context.Context, userEmail string) ([]*domain.PAT, error) {
-	if f.err != nil {
-		return nil, f.err
-	}
-	if userEmail == "" {
-		return f.tokens, nil
-	}
-	var result []*domain.PAT
-	for _, t := range f.tokens {
-		if t.UserEmail == userEmail {
-			result = append(result, t)
-		}
-	}
-
-	return result, nil
-}
-
-func (f *fakeTokenRepo) GetByID(_ context.Context, id string) (*domain.PAT, error) {
-	if f.err != nil {
-		return nil, f.err
-	}
-	for _, t := range f.tokens {
-		if t.ID == id {
-			return t, nil
-		}
-	}
-
-	return nil, domain.NewNotFoundError("token", id)
-}
-
-func (f *fakeTokenRepo) Delete(_ context.Context, id string) error {
-	if f.err != nil {
-		return f.err
-	}
-	for i, t := range f.tokens {
-		if t.ID == id {
-			f.tokens = append(f.tokens[:i], f.tokens[i+1:]...)
-
-			return nil
-		}
-	}
-
-	return domain.NewNotFoundError("token", id)
-}
 
 func ctxWithClaims(email string) context.Context {
 	return auth.WithClaims(context.Background(), &auth.Claims{Email: email})
@@ -92,14 +37,26 @@ func TestCreateTokenUseCase_Execute(t *testing.T) {
 			noAuth:  true,
 			wantErr: true,
 		},
+		{
+			name:    "repo create error propagated",
+			email:   "user@example.com",
+			repoErr: errors.New("storage error"),
+			wantErr: true,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo := &fakeTokenRepo{err: tc.repoErr}
-			uc := authuc.NewCreateTokenUseCase(repo)
+			ctrl := gomock.NewController(t)
+			creator := auth_mock.NewMocktokenCreator(ctrl)
+
+			if !tc.noAuth {
+				creator.EXPECT().Create(gomock.Any(), gomock.Any()).Return(tc.repoErr)
+			}
+
+			uc := authuc.NewCreateTokenUseCase(creator)
 
 			ctx := t.Context()
 			if !tc.noAuth {
@@ -150,17 +107,33 @@ func TestListTokensUseCase_Execute(t *testing.T) {
 	tests := []struct {
 		name      string
 		userEmail string
+		retTokens []*domain.PAT
+		retErr    error
 		wantLen   int
+		wantErr   bool
 	}{
 		{
 			name:      "filters by user email",
 			userEmail: "user@example.com",
+			retTokens: tokens[:1],
 			wantLen:   1,
 		},
 		{
 			name:      "empty email returns all tokens",
 			userEmail: "",
+			retTokens: tokens,
 			wantLen:   2,
+		},
+		{
+			name:      "returns empty slice",
+			userEmail: "nobody@example.com",
+			retTokens: []*domain.PAT{},
+			wantLen:   0,
+		},
+		{
+			name:    "repo error propagated",
+			retErr:  errors.New("storage error"),
+			wantErr: true,
 		},
 	}
 
@@ -168,9 +141,21 @@ func TestListTokensUseCase_Execute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo := &fakeTokenRepo{tokens: tokens}
-			uc := authuc.NewListTokensUseCase(repo)
+			ctrl := gomock.NewController(t)
+			lister := auth_mock.NewMocktokenLister(ctrl)
+			lister.EXPECT().List(gomock.Any(), tc.userEmail).Return(tc.retTokens, tc.retErr)
+
+			uc := authuc.NewListTokensUseCase(lister)
 			got, err := uc.Execute(t.Context(), tc.userEmail)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+
+				return
+			}
+
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -190,18 +175,19 @@ func TestGetTokenUseCase_Execute(t *testing.T) {
 	tests := []struct {
 		name    string
 		id      string
-		tokens  []*domain.PAT
+		retPAT  *domain.PAT
+		retErr  error
 		wantErr bool
 	}{
 		{
 			name:   "returns existing token",
 			id:     "t1",
-			tokens: []*domain.PAT{existing},
+			retPAT: existing,
 		},
 		{
 			name:    "not found returns error",
 			id:      "missing",
-			tokens:  []*domain.PAT{},
+			retErr:  domain.NewNotFoundError("token", "missing"),
 			wantErr: true,
 		},
 	}
@@ -210,8 +196,11 @@ func TestGetTokenUseCase_Execute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo := &fakeTokenRepo{tokens: tc.tokens}
-			uc := authuc.NewGetTokenUseCase(repo)
+			ctrl := gomock.NewController(t)
+			getter := auth_mock.NewMocktokenIDGetter(ctrl)
+			getter.EXPECT().GetByID(gomock.Any(), tc.id).Return(tc.retPAT, tc.retErr)
+
+			uc := authuc.NewGetTokenUseCase(getter)
 			got, err := uc.Execute(t.Context(), tc.id)
 
 			if tc.wantErr {
@@ -239,18 +228,23 @@ func TestRevokeTokenUseCase_Execute(t *testing.T) {
 	tests := []struct {
 		name    string
 		id      string
-		tokens  []*domain.PAT
+		retErr  error
 		wantErr bool
 	}{
 		{
-			name:   "revokes existing token",
-			id:     "t1",
-			tokens: []*domain.PAT{{ID: "t1", UserEmail: "user@example.com"}},
+			name: "revokes existing token",
+			id:   "t1",
 		},
 		{
 			name:    "not found returns error",
 			id:      "missing",
-			tokens:  []*domain.PAT{},
+			retErr:  domain.NewNotFoundError("token", "missing"),
+			wantErr: true,
+		},
+		{
+			name:    "storage error propagated",
+			id:      "t1",
+			retErr:  errors.New("storage error"),
 			wantErr: true,
 		},
 	}
@@ -259,8 +253,11 @@ func TestRevokeTokenUseCase_Execute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo := &fakeTokenRepo{tokens: tc.tokens}
-			uc := authuc.NewRevokeTokenUseCase(repo)
+			ctrl := gomock.NewController(t)
+			deleter := auth_mock.NewMocktokenDeleter(ctrl)
+			deleter.EXPECT().Delete(gomock.Any(), tc.id).Return(tc.retErr)
+
+			uc := authuc.NewRevokeTokenUseCase(deleter)
 			err := uc.Execute(t.Context(), tc.id)
 
 			if tc.wantErr {

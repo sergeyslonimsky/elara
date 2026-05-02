@@ -1,5 +1,7 @@
 package auth
 
+//go:generate mockgen -destination=mocks/mock_token.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth tokenCreator,tokenLister,tokenDeleter,tokenIDGetter
+
 import (
 	"context"
 	"crypto/rand"
