@@ -27,10 +27,11 @@ type authGroupMeta struct {
 
 type authTokenMeta struct {
 	ID         string     `json:"id"`
-	UserEmail  string     `json:"user_email"`
+	IssuedBy   string     `json:"issued_by"`
 	Name       string     `json:"name"`
 	TokenHash  string     `json:"token_hash"`
 	Namespaces []string   `json:"namespaces"`
+	Role       string     `json:"role"`
 	ExpiresAt  *time.Time `json:"expires_at,omitempty"`
 	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
 	LastUsedIP string     `json:"last_used_ip"`
@@ -85,33 +86,35 @@ func authGroupMetaToDomain(m *authGroupMeta) *domain.Group {
 	}
 }
 
-func domainToAuthTokenMeta(p *domain.PAT) *authTokenMeta {
-	namespaces := make([]string, len(p.Namespaces))
-	copy(namespaces, p.Namespaces)
+func domainToAuthTokenMeta(t *domain.Token) *authTokenMeta {
+	namespaces := make([]string, len(t.Namespaces))
+	copy(namespaces, t.Namespaces)
 
 	return &authTokenMeta{
-		ID:         p.ID,
-		UserEmail:  p.UserEmail,
-		Name:       p.Name,
-		TokenHash:  p.TokenHash,
+		ID:         t.ID,
+		IssuedBy:   t.IssuedBy,
+		Name:       t.Name,
+		TokenHash:  t.TokenHash,
 		Namespaces: namespaces,
-		ExpiresAt:  p.ExpiresAt,
-		LastUsedAt: p.LastUsedAt,
-		LastUsedIP: p.LastUsedIP,
-		CreatedAt:  p.CreatedAt,
+		Role:       t.Role,
+		ExpiresAt:  t.ExpiresAt,
+		LastUsedAt: t.LastUsedAt,
+		LastUsedIP: t.LastUsedIP,
+		CreatedAt:  t.CreatedAt,
 	}
 }
 
-func authTokenMetaToDomain(m *authTokenMeta) *domain.PAT {
+func authTokenMetaToDomain(m *authTokenMeta) *domain.Token {
 	namespaces := make([]string, len(m.Namespaces))
 	copy(namespaces, m.Namespaces)
 
-	return &domain.PAT{
+	return &domain.Token{
 		ID:         m.ID,
-		UserEmail:  m.UserEmail,
+		IssuedBy:   m.IssuedBy,
 		Name:       m.Name,
 		TokenHash:  m.TokenHash,
 		Namespaces: namespaces,
+		Role:       m.Role,
 		ExpiresAt:  m.ExpiresAt,
 		LastUsedAt: m.LastUsedAt,
 		LastUsedIP: m.LastUsedIP,

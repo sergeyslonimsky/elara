@@ -5,8 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
+
+type lockEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type LockStore interface {
 	LockConfig(ctx context.Context, namespace, path string) error
@@ -18,15 +23,30 @@ type LockNotifier interface {
 }
 
 type LockUseCase struct {
+	enforcer lockEnforcer
 	store    LockStore
 	notifier LockNotifier
 }
 
-func NewLockUseCase(store LockStore, notifier LockNotifier) *LockUseCase {
-	return &LockUseCase{store: store, notifier: notifier}
+func NewLockUseCase(enforcer lockEnforcer, store LockStore, notifier LockNotifier) *LockUseCase {
+	return &LockUseCase{enforcer: enforcer, store: store, notifier: notifier}
 }
 
 func (uc *LockUseCase) Execute(ctx context.Context, namespace, path string) error {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return domain.ErrUnauthorized
+	}
+
+	allowed, err := uc.enforcer.Enforce(claims.Email, namespace, "config", "write")
+	if err != nil {
+		return fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return domain.ErrForbidden
+	}
+
 	if err := uc.store.LockConfig(ctx, namespace, path); err != nil {
 		return fmt.Errorf("lock config: %w", err)
 	}

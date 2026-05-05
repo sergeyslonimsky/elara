@@ -22,34 +22,35 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type PAT struct {
+type Token struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	UserEmail     string                 `protobuf:"bytes,3,opt,name=user_email,json=userEmail,proto3" json:"user_email,omitempty"`
+	IssuedBy      string                 `protobuf:"bytes,3,opt,name=issued_by,json=issuedBy,proto3" json:"issued_by,omitempty"`
 	Namespaces    []string               `protobuf:"bytes,4,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
-	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
-	LastUsedAt    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_used_at,json=lastUsedAt,proto3,oneof" json:"last_used_at,omitempty"`
-	LastUsedIp    string                 `protobuf:"bytes,7,opt,name=last_used_ip,json=lastUsedIp,proto3" json:"last_used_ip,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Role          string                 `protobuf:"bytes,5,opt,name=role,proto3" json:"role,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
+	LastUsedAt    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_used_at,json=lastUsedAt,proto3,oneof" json:"last_used_at,omitempty"`
+	LastUsedIp    string                 `protobuf:"bytes,8,opt,name=last_used_ip,json=lastUsedIp,proto3" json:"last_used_ip,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *PAT) Reset() {
-	*x = PAT{}
+func (x *Token) Reset() {
+	*x = Token{}
 	mi := &file_elara_auth_v1_token_service_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *PAT) String() string {
+func (x *Token) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PAT) ProtoMessage() {}
+func (*Token) ProtoMessage() {}
 
-func (x *PAT) ProtoReflect() protoreflect.Message {
+func (x *Token) ProtoReflect() protoreflect.Message {
 	mi := &file_elara_auth_v1_token_service_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -61,61 +62,68 @@ func (x *PAT) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PAT.ProtoReflect.Descriptor instead.
-func (*PAT) Descriptor() ([]byte, []int) {
+// Deprecated: Use Token.ProtoReflect.Descriptor instead.
+func (*Token) Descriptor() ([]byte, []int) {
 	return file_elara_auth_v1_token_service_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PAT) GetId() string {
+func (x *Token) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *PAT) GetName() string {
+func (x *Token) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *PAT) GetUserEmail() string {
+func (x *Token) GetIssuedBy() string {
 	if x != nil {
-		return x.UserEmail
+		return x.IssuedBy
 	}
 	return ""
 }
 
-func (x *PAT) GetNamespaces() []string {
+func (x *Token) GetNamespaces() []string {
 	if x != nil {
 		return x.Namespaces
 	}
 	return nil
 }
 
-func (x *PAT) GetExpiresAt() *timestamppb.Timestamp {
+func (x *Token) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *Token) GetExpiresAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ExpiresAt
 	}
 	return nil
 }
 
-func (x *PAT) GetLastUsedAt() *timestamppb.Timestamp {
+func (x *Token) GetLastUsedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.LastUsedAt
 	}
 	return nil
 }
 
-func (x *PAT) GetLastUsedIp() string {
+func (x *Token) GetLastUsedIp() string {
 	if x != nil {
 		return x.LastUsedIp
 	}
 	return ""
 }
 
-func (x *PAT) GetCreatedAt() *timestamppb.Timestamp {
+func (x *Token) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
@@ -126,7 +134,8 @@ type CreateTokenRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Namespaces    []string               `protobuf:"bytes,2,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
-	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
+	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -175,6 +184,13 @@ func (x *CreateTokenRequest) GetNamespaces() []string {
 	return nil
 }
 
+func (x *CreateTokenRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
 func (x *CreateTokenRequest) GetExpiresAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ExpiresAt
@@ -184,7 +200,7 @@ func (x *CreateTokenRequest) GetExpiresAt() *timestamppb.Timestamp {
 
 type CreateTokenResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         *PAT                   `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Token         *Token                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	RawToken      string                 `protobuf:"bytes,2,opt,name=raw_token,json=rawToken,proto3" json:"raw_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -220,7 +236,7 @@ func (*CreateTokenResponse) Descriptor() ([]byte, []int) {
 	return file_elara_auth_v1_token_service_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *CreateTokenResponse) GetToken() *PAT {
+func (x *CreateTokenResponse) GetToken() *Token {
 	if x != nil {
 		return x.Token
 	}
@@ -236,7 +252,7 @@ func (x *CreateTokenResponse) GetRawToken() string {
 
 type ListTokensRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserEmail     string                 `protobuf:"bytes,1,opt,name=user_email,json=userEmail,proto3" json:"user_email,omitempty"`
+	IssuedBy      string                 `protobuf:"bytes,1,opt,name=issued_by,json=issuedBy,proto3" json:"issued_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -271,16 +287,16 @@ func (*ListTokensRequest) Descriptor() ([]byte, []int) {
 	return file_elara_auth_v1_token_service_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ListTokensRequest) GetUserEmail() string {
+func (x *ListTokensRequest) GetIssuedBy() string {
 	if x != nil {
-		return x.UserEmail
+		return x.IssuedBy
 	}
 	return ""
 }
 
 type ListTokensResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Tokens        []*PAT                 `protobuf:"bytes,1,rep,name=tokens,proto3" json:"tokens,omitempty"`
+	Tokens        []*Token               `protobuf:"bytes,1,rep,name=tokens,proto3" json:"tokens,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -315,7 +331,7 @@ func (*ListTokensResponse) Descriptor() ([]byte, []int) {
 	return file_elara_auth_v1_token_service_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *ListTokensResponse) GetTokens() []*PAT {
+func (x *ListTokensResponse) GetTokens() []*Token {
 	if x != nil {
 		return x.Tokens
 	}
@@ -368,7 +384,7 @@ func (x *GetTokenRequest) GetId() string {
 
 type GetTokenResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         *PAT                   `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Token         *Token                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -403,7 +419,7 @@ func (*GetTokenResponse) Descriptor() ([]byte, []int) {
 	return file_elara_auth_v1_token_service_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GetTokenResponse) GetToken() *PAT {
+func (x *GetTokenResponse) GetToken() *Token {
 	if x != nil {
 		return x.Token
 	}
@@ -494,45 +510,45 @@ var File_elara_auth_v1_token_service_proto protoreflect.FileDescriptor
 
 const file_elara_auth_v1_token_service_proto_rawDesc = "" +
 	"\n" +
-	"!elara/auth/v1/token_service.proto\x12\relara.auth.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe8\x02\n" +
-	"\x03PAT\x12\x0e\n" +
+	"!elara/auth/v1/token_service.proto\x12\relara.auth.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfc\x02\n" +
+	"\x05Token\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1d\n" +
-	"\n" +
-	"user_email\x18\x03 \x01(\tR\tuserEmail\x12\x1e\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1b\n" +
+	"\tissued_by\x18\x03 \x01(\tR\bissuedBy\x12\x1e\n" +
 	"\n" +
 	"namespaces\x18\x04 \x03(\tR\n" +
-	"namespaces\x12>\n" +
+	"namespaces\x12\x12\n" +
+	"\x04role\x18\x05 \x01(\tR\x04role\x12>\n" +
 	"\n" +
-	"expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\texpiresAt\x88\x01\x01\x12A\n" +
-	"\flast_used_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampH\x01R\n" +
+	"expires_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\texpiresAt\x88\x01\x01\x12A\n" +
+	"\flast_used_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampH\x01R\n" +
 	"lastUsedAt\x88\x01\x01\x12 \n" +
-	"\flast_used_ip\x18\a \x01(\tR\n" +
+	"\flast_used_ip\x18\b \x01(\tR\n" +
 	"lastUsedIp\x129\n" +
 	"\n" +
-	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB\r\n" +
+	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB\r\n" +
 	"\v_expires_atB\x0f\n" +
-	"\r_last_used_at\"\x97\x01\n" +
+	"\r_last_used_at\"\xab\x01\n" +
 	"\x12CreateTokenRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
 	"namespaces\x18\x02 \x03(\tR\n" +
-	"namespaces\x12>\n" +
+	"namespaces\x12\x12\n" +
+	"\x04role\x18\x03 \x01(\tR\x04role\x12>\n" +
 	"\n" +
-	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\texpiresAt\x88\x01\x01B\r\n" +
-	"\v_expires_at\"\\\n" +
-	"\x13CreateTokenResponse\x12(\n" +
-	"\x05token\x18\x01 \x01(\v2\x12.elara.auth.v1.PATR\x05token\x12\x1b\n" +
-	"\traw_token\x18\x02 \x01(\tR\brawToken\"2\n" +
-	"\x11ListTokensRequest\x12\x1d\n" +
-	"\n" +
-	"user_email\x18\x01 \x01(\tR\tuserEmail\"@\n" +
-	"\x12ListTokensResponse\x12*\n" +
-	"\x06tokens\x18\x01 \x03(\v2\x12.elara.auth.v1.PATR\x06tokens\"!\n" +
+	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\texpiresAt\x88\x01\x01B\r\n" +
+	"\v_expires_at\"^\n" +
+	"\x13CreateTokenResponse\x12*\n" +
+	"\x05token\x18\x01 \x01(\v2\x14.elara.auth.v1.TokenR\x05token\x12\x1b\n" +
+	"\traw_token\x18\x02 \x01(\tR\brawToken\"0\n" +
+	"\x11ListTokensRequest\x12\x1b\n" +
+	"\tissued_by\x18\x01 \x01(\tR\bissuedBy\"B\n" +
+	"\x12ListTokensResponse\x12,\n" +
+	"\x06tokens\x18\x01 \x03(\v2\x14.elara.auth.v1.TokenR\x06tokens\"!\n" +
 	"\x0fGetTokenRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"<\n" +
-	"\x10GetTokenResponse\x12(\n" +
-	"\x05token\x18\x01 \x01(\v2\x12.elara.auth.v1.PATR\x05token\"$\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\">\n" +
+	"\x10GetTokenResponse\x12*\n" +
+	"\x05token\x18\x01 \x01(\v2\x14.elara.auth.v1.TokenR\x05token\"$\n" +
 	"\x12RevokeTokenRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
 	"\x13RevokeTokenResponse2\xda\x02\n" +
@@ -558,7 +574,7 @@ func file_elara_auth_v1_token_service_proto_rawDescGZIP() []byte {
 
 var file_elara_auth_v1_token_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_elara_auth_v1_token_service_proto_goTypes = []any{
-	(*PAT)(nil),                   // 0: elara.auth.v1.PAT
+	(*Token)(nil),                 // 0: elara.auth.v1.Token
 	(*CreateTokenRequest)(nil),    // 1: elara.auth.v1.CreateTokenRequest
 	(*CreateTokenResponse)(nil),   // 2: elara.auth.v1.CreateTokenResponse
 	(*ListTokensRequest)(nil),     // 3: elara.auth.v1.ListTokensRequest
@@ -570,13 +586,13 @@ var file_elara_auth_v1_token_service_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_elara_auth_v1_token_service_proto_depIdxs = []int32{
-	9,  // 0: elara.auth.v1.PAT.expires_at:type_name -> google.protobuf.Timestamp
-	9,  // 1: elara.auth.v1.PAT.last_used_at:type_name -> google.protobuf.Timestamp
-	9,  // 2: elara.auth.v1.PAT.created_at:type_name -> google.protobuf.Timestamp
+	9,  // 0: elara.auth.v1.Token.expires_at:type_name -> google.protobuf.Timestamp
+	9,  // 1: elara.auth.v1.Token.last_used_at:type_name -> google.protobuf.Timestamp
+	9,  // 2: elara.auth.v1.Token.created_at:type_name -> google.protobuf.Timestamp
 	9,  // 3: elara.auth.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
-	0,  // 4: elara.auth.v1.CreateTokenResponse.token:type_name -> elara.auth.v1.PAT
-	0,  // 5: elara.auth.v1.ListTokensResponse.tokens:type_name -> elara.auth.v1.PAT
-	0,  // 6: elara.auth.v1.GetTokenResponse.token:type_name -> elara.auth.v1.PAT
+	0,  // 4: elara.auth.v1.CreateTokenResponse.token:type_name -> elara.auth.v1.Token
+	0,  // 5: elara.auth.v1.ListTokensResponse.tokens:type_name -> elara.auth.v1.Token
+	0,  // 6: elara.auth.v1.GetTokenResponse.token:type_name -> elara.auth.v1.Token
 	1,  // 7: elara.auth.v1.TokenService.CreateToken:input_type -> elara.auth.v1.CreateTokenRequest
 	3,  // 8: elara.auth.v1.TokenService.ListTokens:input_type -> elara.auth.v1.ListTokensRequest
 	5,  // 9: elara.auth.v1.TokenService.GetToken:input_type -> elara.auth.v1.GetTokenRequest

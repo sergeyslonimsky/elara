@@ -1,15 +1,25 @@
 package auth_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
+
+type allowAllUserEnforcer struct{}
+
+func (allowAllUserEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
+
+func userTestCtx() context.Context {
+	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+}
 
 func TestListUsersUseCase_Execute(t *testing.T) {
 	t.Parallel()
@@ -46,8 +56,8 @@ func TestListUsersUseCase_Execute(t *testing.T) {
 			lister := auth_mock.NewMockuserLister(ctrl)
 			lister.EXPECT().List(gomock.Any()).Return(tc.users, tc.repoErr)
 
-			uc := authuc.NewListUsersUseCase(lister)
-			got, err := uc.Execute(t.Context())
+			uc := authuc.NewListUsersUseCase(allowAllUserEnforcer{}, lister)
+			got, err := uc.Execute(userTestCtx())
 
 			if tc.wantErr {
 				if err == nil {
@@ -99,8 +109,8 @@ func TestGetUserUseCase_Execute(t *testing.T) { // NOSONAR
 			getter := auth_mock.NewMockuserGetter(ctrl)
 			getter.EXPECT().Get(gomock.Any(), tc.email).Return(tc.user, tc.repoErr)
 
-			uc := authuc.NewGetUserUseCase(getter)
-			got, err := uc.Execute(t.Context(), tc.email)
+			uc := authuc.NewGetUserUseCase(allowAllUserEnforcer{}, getter)
+			got, err := uc.Execute(userTestCtx(), tc.email)
 
 			if tc.wantErr {
 				if err == nil {

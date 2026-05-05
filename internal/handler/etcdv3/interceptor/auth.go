@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
@@ -23,22 +24,22 @@ const (
 )
 
 type tokenLookup interface {
-	GetByHash(ctx context.Context, hash string) (*domain.PAT, error)
+	GetByHash(ctx context.Context, hash string) (*domain.Token, error)
 	UpdateLastUsed(ctx context.Context, tokenHash, ip string, at time.Time) error
 }
 
-// PATInterceptor validates Bearer PAT tokens from gRPC metadata.
-type PATInterceptor struct {
+// TokenInterceptor validates Bearer service tokens from gRPC metadata.
+type TokenInterceptor struct {
 	tokens tokenLookup
 }
 
-// NewPATInterceptor returns a PATInterceptor that authenticates requests using PATs.
-func NewPATInterceptor(tokens tokenLookup) *PATInterceptor {
-	return &PATInterceptor{tokens: tokens}
+// NewTokenInterceptor returns a TokenInterceptor that authenticates requests using service tokens.
+func NewTokenInterceptor(tokens tokenLookup) *TokenInterceptor {
+	return &TokenInterceptor{tokens: tokens}
 }
 
-// Unary returns a gRPC unary server interceptor that validates PAT tokens.
-func (i *PATInterceptor) Unary() grpc.UnaryServerInterceptor {
+// Unary returns a gRPC unary server interceptor that validates service tokens.
+func (i *TokenInterceptor) Unary() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		authedCtx, err := i.authenticate(ctx)
 		if err != nil {
@@ -49,8 +50,8 @@ func (i *PATInterceptor) Unary() grpc.UnaryServerInterceptor {
 	}
 }
 
-// Stream returns a gRPC streaming server interceptor that validates PAT tokens.
-func (i *PATInterceptor) Stream() grpc.StreamServerInterceptor {
+// Stream returns a gRPC streaming server interceptor that validates service tokens.
+func (i *TokenInterceptor) Stream() grpc.StreamServerInterceptor {
 	return func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		authedCtx, err := i.authenticate(ss.Context())
 		if err != nil {
@@ -61,8 +62,10 @@ func (i *PATInterceptor) Stream() grpc.StreamServerInterceptor {
 	}
 }
 
+// authenticate extracts and validates the bearer token, injecting claims into the context.
+//
 //nolint:wrapcheck // gRPC status errors are terminal; wrapping corrupts the status code
-func (i *PATInterceptor) authenticate(ctx context.Context) (context.Context, error) {
+func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, error) {
 	rawToken, err := extractBearerToken(ctx)
 	if err != nil {
 		return ctx, err
@@ -70,12 +73,12 @@ func (i *PATInterceptor) authenticate(ctx context.Context) (context.Context, err
 
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(rawToken)))
 
-	pat, err := i.tokens.GetByHash(ctx, hash)
+	token, err := i.tokens.GetByHash(ctx, hash)
 	if err != nil {
 		return ctx, status.Error(codes.Unauthenticated, "invalid token")
 	}
 
-	if pat.IsExpired() {
+	if token.IsExpired() {
 		return ctx, status.Error(codes.Unauthenticated, "token expired")
 	}
 
@@ -84,7 +87,13 @@ func (i *PATInterceptor) authenticate(ctx context.Context) (context.Context, err
 		_ = i.tokens.UpdateLastUsed(context.Background(), hash, peerIP, time.Now())
 	}()
 
-	return ctx, nil
+	// Inject claims so usecases/handlers can check namespace/role scope.
+	claims := &auth.Claims{
+		Email: token.IssuedBy,
+		Name:  token.Name,
+	}
+
+	return auth.WithClaims(ctx, claims), nil
 }
 
 //nolint:wrapcheck // gRPC status errors are terminal; wrapping corrupts the status code

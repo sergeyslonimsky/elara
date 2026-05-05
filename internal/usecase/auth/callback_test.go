@@ -20,7 +20,6 @@ func TestCallbackUseCase_Execute_Success(t *testing.T) {
 
 	mockProvider := authmock.NewMockcallbackProvider(ctrl)
 	mockUsers := authmock.NewMockuserUpserter(ctrl)
-	mockLoader := authmock.NewMockpolicyLoader(ctrl)
 
 	identity := &auth.Identity{
 		Email:   "user@example.com",
@@ -29,11 +28,9 @@ func TestCallbackUseCase_Execute_Success(t *testing.T) {
 	}
 	mockProvider.EXPECT().Exchange(gomock.Any(), "auth-code", gomock.Any()).Return(identity, nil)
 	mockUsers.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
-	mockLoader.EXPECT().Load(gomock.Any()).Return([][]string{}, nil).AnyTimes()
-	mockLoader.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	session := auth.NewSessionManager("test-secret", 0)
-	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, mockLoader, []string{})
+	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, []string{})
 
 	token, user, err := uc.Execute(t.Context(), "auth-code", "test-nonce")
 
@@ -50,12 +47,11 @@ func TestCallbackUseCase_Execute_ExchangeError(t *testing.T) {
 
 	mockProvider := authmock.NewMockcallbackProvider(ctrl)
 	mockUsers := authmock.NewMockuserUpserter(ctrl)
-	mockLoader := authmock.NewMockpolicyLoader(ctrl)
 
 	mockProvider.EXPECT().Exchange(gomock.Any(), "bad-code", gomock.Any()).Return(nil, errors.New("exchange failed"))
 
 	session := auth.NewSessionManager("test-secret", 0)
-	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, mockLoader, []string{})
+	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, []string{})
 
 	_, _, err := uc.Execute(t.Context(), "bad-code", "test-nonce")
 
@@ -70,14 +66,13 @@ func TestCallbackUseCase_Execute_UpsertError(t *testing.T) {
 
 	mockProvider := authmock.NewMockcallbackProvider(ctrl)
 	mockUsers := authmock.NewMockuserUpserter(ctrl)
-	mockLoader := authmock.NewMockpolicyLoader(ctrl)
 
 	identity := &auth.Identity{Email: "user@example.com", Name: "User"}
 	mockProvider.EXPECT().Exchange(gomock.Any(), "auth-code", gomock.Any()).Return(identity, nil)
 	mockUsers.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 
 	session := auth.NewSessionManager("test-secret", 0)
-	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, mockLoader, []string{})
+	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, []string{})
 
 	_, _, err := uc.Execute(t.Context(), "auth-code", "test-nonce")
 

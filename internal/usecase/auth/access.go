@@ -1,24 +1,20 @@
 package auth
 
-//go:generate mockgen -destination=mocks/mock_access.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth policyEnforcer,accessPolicyLoader
+//go:generate mockgen -destination=mocks/mock_access.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth policyEnforcer
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/sergeyslonimsky/elara/internal/auth/casbin"
+	authpkg "github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 type policyEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
 	AddRoleForUser(user, role, domain string) error
 	RemoveRoleForUser(user, role, domain string) error
 	GetGroupingPolicy() [][]string
-	SavePolicy(ctx context.Context, loader casbin.PolicyLoader) error
-}
-
-type accessPolicyLoader interface {
-	Load(ctx context.Context) ([][]string, error)
-	Save(ctx context.Context, rules [][]string) error
 }
 
 // PolicyRule is a usecase-level value type representing a role assignment.
@@ -31,22 +27,31 @@ type PolicyRule struct {
 // AssignRoleUseCase assigns a role to a subject within a domain.
 type AssignRoleUseCase struct {
 	enforcer policyEnforcer
-	policy   accessPolicyLoader
 }
 
 // NewAssignRoleUseCase returns a new AssignRoleUseCase.
-func NewAssignRoleUseCase(enforcer policyEnforcer, policy accessPolicyLoader) *AssignRoleUseCase {
-	return &AssignRoleUseCase{enforcer: enforcer, policy: policy}
+func NewAssignRoleUseCase(enforcer policyEnforcer) *AssignRoleUseCase {
+	return &AssignRoleUseCase{enforcer: enforcer}
 }
 
-// Execute assigns the role and persists the updated policy.
-func (uc *AssignRoleUseCase) Execute(ctx context.Context, subject, domain, role string) error {
-	if err := uc.enforcer.AddRoleForUser(subject, role, domain); err != nil {
-		return fmt.Errorf("add role for user: %w", err)
+// Execute assigns the role. AutoSave on the enforcer's adapter handles persistence.
+func (uc *AssignRoleUseCase) Execute(ctx context.Context, subject, dom, role string) error {
+	claims, ok := authpkg.ClaimsFromContext(ctx)
+	if !ok {
+		return domain.ErrUnauthorized
 	}
 
-	if err := uc.enforcer.SavePolicy(ctx, uc.policy); err != nil {
-		return fmt.Errorf("save policy: %w", err)
+	allowed, err := uc.enforcer.Enforce(claims.Email, authpkg.ObjectAll, authpkg.ObjectPolicy, authpkg.ActionWrite)
+	if err != nil {
+		return fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return domain.ErrForbidden
+	}
+
+	if err := uc.enforcer.AddRoleForUser(subject, role, dom); err != nil {
+		return fmt.Errorf("add role for user: %w", err)
 	}
 
 	return nil
@@ -55,22 +60,31 @@ func (uc *AssignRoleUseCase) Execute(ctx context.Context, subject, domain, role 
 // RevokeRoleUseCase revokes a role from a subject within a domain.
 type RevokeRoleUseCase struct {
 	enforcer policyEnforcer
-	policy   accessPolicyLoader
 }
 
 // NewRevokeRoleUseCase returns a new RevokeRoleUseCase.
-func NewRevokeRoleUseCase(enforcer policyEnforcer, policy accessPolicyLoader) *RevokeRoleUseCase {
-	return &RevokeRoleUseCase{enforcer: enforcer, policy: policy}
+func NewRevokeRoleUseCase(enforcer policyEnforcer) *RevokeRoleUseCase {
+	return &RevokeRoleUseCase{enforcer: enforcer}
 }
 
-// Execute revokes the role and persists the updated policy.
-func (uc *RevokeRoleUseCase) Execute(ctx context.Context, subject, domain, role string) error {
-	if err := uc.enforcer.RemoveRoleForUser(subject, role, domain); err != nil {
-		return fmt.Errorf("remove role for user: %w", err)
+// Execute revokes the role. AutoSave on the enforcer's adapter handles persistence.
+func (uc *RevokeRoleUseCase) Execute(ctx context.Context, subject, dom, role string) error {
+	claims, ok := authpkg.ClaimsFromContext(ctx)
+	if !ok {
+		return domain.ErrUnauthorized
 	}
 
-	if err := uc.enforcer.SavePolicy(ctx, uc.policy); err != nil {
-		return fmt.Errorf("save policy: %w", err)
+	allowed, err := uc.enforcer.Enforce(claims.Email, authpkg.ObjectAll, authpkg.ObjectPolicy, authpkg.ActionWrite)
+	if err != nil {
+		return fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return domain.ErrForbidden
+	}
+
+	if err := uc.enforcer.RemoveRoleForUser(subject, role, dom); err != nil {
+		return fmt.Errorf("remove role for user: %w", err)
 	}
 
 	return nil
@@ -87,7 +101,21 @@ func NewListPoliciesUseCase(enforcer policyEnforcer) *ListPoliciesUseCase {
 }
 
 // Execute returns all role assignment (g) rules as PolicyRule values.
-func (uc *ListPoliciesUseCase) Execute(_ context.Context) ([]PolicyRule, error) {
+func (uc *ListPoliciesUseCase) Execute(ctx context.Context) ([]PolicyRule, error) {
+	claims, ok := authpkg.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
+	}
+
+	allowed, err := uc.enforcer.Enforce(claims.Email, authpkg.ObjectAll, authpkg.ObjectPolicy, authpkg.ActionRead)
+	if err != nil {
+		return nil, fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return nil, domain.ErrForbidden
+	}
+
 	rules := uc.enforcer.GetGroupingPolicy()
 
 	result := make([]PolicyRule, 0, len(rules))

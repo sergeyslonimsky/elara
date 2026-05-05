@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/etcdv3/interceptor"
 )
@@ -31,26 +32,26 @@ func tokenHash(raw string) string {
 // stubTokenLookup is a test double for tokenLookup.
 type stubTokenLookup struct {
 	mu             sync.Mutex
-	tokens         map[string]*domain.PAT
+	tokens         map[string]*domain.Token
 	updateLastUsed []string // hashes that were updated
 }
 
-func newStubTokenLookup(pats ...*domain.PAT) *stubTokenLookup {
-	m := make(map[string]*domain.PAT, len(pats))
-	for _, p := range pats {
+func newStubTokenLookup(tokens ...*domain.Token) *stubTokenLookup {
+	m := make(map[string]*domain.Token, len(tokens))
+	for _, p := range tokens {
 		m[p.TokenHash] = p
 	}
 
 	return &stubTokenLookup{tokens: m}
 }
 
-func (s *stubTokenLookup) GetByHash(_ context.Context, hash string) (*domain.PAT, error) {
-	pat, ok := s.tokens[hash]
+func (s *stubTokenLookup) GetByHash(_ context.Context, hash string) (*domain.Token, error) {
+	token, ok := s.tokens[hash]
 	if !ok {
 		return nil, domain.NewNotFoundError("token", hash)
 	}
 
-	return pat, nil
+	return token, nil
 }
 
 func (s *stubTokenLookup) UpdateLastUsed(_ context.Context, tokenHash, _ string, _ time.Time) error {
@@ -71,27 +72,31 @@ func (s *stubTokenLookup) updatedHashes() []string {
 	return result
 }
 
-func validPAT() *domain.PAT {
+func validToken() *domain.Token {
 	future := time.Now().Add(time.Hour)
 
-	return &domain.PAT{
-		ID:        "pat-1",
-		UserEmail: "user@example.com",
-		Name:      "test token",
-		TokenHash: tokenHash(testRawToken),
-		ExpiresAt: &future,
+	return &domain.Token{
+		ID:         "token-1",
+		IssuedBy:   "user@example.com",
+		Name:       "test token",
+		TokenHash:  tokenHash(testRawToken),
+		Namespaces: []string{"prod"},
+		Role:       "writer",
+		ExpiresAt:  &future,
 	}
 }
 
-func expiredPAT() *domain.PAT {
+func expiredToken() *domain.Token {
 	past := time.Now().Add(-time.Hour)
 
-	return &domain.PAT{
-		ID:        "pat-expired",
-		UserEmail: "user@example.com",
-		Name:      "expired token",
-		TokenHash: tokenHash(testRawToken),
-		ExpiresAt: &past,
+	return &domain.Token{
+		ID:         "token-expired",
+		IssuedBy:   "user@example.com",
+		Name:       "expired token",
+		TokenHash:  tokenHash(testRawToken),
+		Namespaces: []string{"prod"},
+		Role:       "writer",
+		ExpiresAt:  &past,
 	}
 }
 
@@ -99,25 +104,23 @@ func contextWithBearer(ctx context.Context, token string) context.Context {
 	return metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", "Bearer "+token))
 }
 
-func noopUnaryHandler(_ context.Context, _ any) (any, error) {
-	return struct{}{}, nil
-}
-
-func TestPATInterceptor_Unary(t *testing.T) {
+func TestTokenInterceptor_Unary(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name        string
 		buildCtx    func(context.Context) context.Context
-		tokens      []*domain.PAT
+		tokens      []*domain.Token
 		wantCode    codes.Code
 		wantUpdated bool
+		wantClaims  bool
 	}{
 		{
-			name:        "valid bearer PAT calls handler and fires update",
+			name:        "valid bearer token calls handler and fires update",
 			buildCtx:    func(ctx context.Context) context.Context { return contextWithBearer(ctx, testRawToken) },
-			tokens:      []*domain.PAT{validPAT()},
+			tokens:      []*domain.Token{validToken()},
 			wantUpdated: true,
+			wantClaims:  true,
 		},
 		{
 			name:     "missing authorization header returns unauthenticated",
@@ -134,19 +137,19 @@ func TestPATInterceptor_Unary(t *testing.T) {
 		{
 			name:     "token not found returns unauthenticated",
 			buildCtx: func(ctx context.Context) context.Context { return contextWithBearer(ctx, testRawToken) },
-			tokens:   []*domain.PAT{},
+			tokens:   []*domain.Token{},
 			wantCode: codes.Unauthenticated,
 		},
 		{
 			name:     "expired token returns unauthenticated",
 			buildCtx: func(ctx context.Context) context.Context { return contextWithBearer(ctx, testRawToken) },
-			tokens:   []*domain.PAT{expiredPAT()},
+			tokens:   []*domain.Token{expiredToken()},
 			wantCode: codes.Unauthenticated,
 		},
 		{
 			name:     "token without elara_ prefix returns unauthenticated",
 			buildCtx: func(ctx context.Context) context.Context { return contextWithBearer(ctx, testInvalidFmt) },
-			tokens:   []*domain.PAT{validPAT()},
+			tokens:   []*domain.Token{validToken()},
 			wantCode: codes.Unauthenticated,
 		},
 		{
@@ -154,7 +157,7 @@ func TestPATInterceptor_Unary(t *testing.T) {
 			buildCtx: func(ctx context.Context) context.Context {
 				return metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", testRawToken))
 			},
-			tokens:   []*domain.PAT{validPAT()},
+			tokens:   []*domain.Token{validToken()},
 			wantCode: codes.Unauthenticated,
 		},
 	}
@@ -164,10 +167,17 @@ func TestPATInterceptor_Unary(t *testing.T) {
 			t.Parallel()
 
 			store := newStubTokenLookup(tc.tokens...)
-			i := interceptor.NewPATInterceptor(store)
+			i := interceptor.NewTokenInterceptor(store)
 
 			ctx := tc.buildCtx(t.Context())
-			_, err := i.Unary()(ctx, struct{}{}, &grpc.UnaryServerInfo{}, noopUnaryHandler)
+			var capturedCtx *context.Context
+			handler := func(handlerCtx context.Context, req any) (any, error) {
+				capturedCtx = &handlerCtx
+
+				return struct{}{}, nil
+			}
+
+			_, err := i.Unary()(ctx, struct{}{}, &grpc.UnaryServerInfo{}, handler)
 
 			if tc.wantCode != 0 {
 				st, ok := status.FromError(err)
@@ -178,6 +188,13 @@ func TestPATInterceptor_Unary(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+
+			if tc.wantClaims {
+				require.NotNil(t, capturedCtx)
+				claims, ok := auth.ClaimsFromContext(*capturedCtx)
+				require.True(t, ok)
+				assert.Equal(t, "user@example.com", claims.Email)
+			}
 
 			if tc.wantUpdated {
 				// UpdateLastUsed is fire-and-forget; wait briefly for the goroutine.
@@ -199,21 +216,23 @@ type stubServerStream struct {
 
 func (s *stubServerStream) Context() context.Context { return s.ctx }
 
-func TestPATInterceptor_Stream(t *testing.T) {
+func TestTokenInterceptor_Stream(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name        string
 		buildCtx    func(context.Context) context.Context
-		tokens      []*domain.PAT
+		tokens      []*domain.Token
 		wantCode    codes.Code
 		wantUpdated bool
+		wantClaims  bool
 	}{
 		{
-			name:        "valid bearer PAT calls streaming handler and fires update",
+			name:        "valid bearer token calls streaming handler and fires update",
 			buildCtx:    func(ctx context.Context) context.Context { return contextWithBearer(ctx, testRawToken) },
-			tokens:      []*domain.PAT{validPAT()},
+			tokens:      []*domain.Token{validToken()},
 			wantUpdated: true,
+			wantClaims:  true,
 		},
 		{
 			name:     "missing header on stream returns unauthenticated",
@@ -223,7 +242,7 @@ func TestPATInterceptor_Stream(t *testing.T) {
 		{
 			name:     "expired token on stream returns unauthenticated",
 			buildCtx: func(ctx context.Context) context.Context { return contextWithBearer(ctx, testRawToken) },
-			tokens:   []*domain.PAT{expiredPAT()},
+			tokens:   []*domain.Token{expiredToken()},
 			wantCode: codes.Unauthenticated,
 		},
 	}
@@ -233,14 +252,17 @@ func TestPATInterceptor_Stream(t *testing.T) {
 			t.Parallel()
 
 			store := newStubTokenLookup(tc.tokens...)
-			i := interceptor.NewPATInterceptor(store)
+			i := interceptor.NewTokenInterceptor(store)
 
 			ctx := tc.buildCtx(t.Context())
 			ss := &stubServerStream{ctx: ctx}
 
 			handlerCalled := false
-			handler := func(_ any, _ grpc.ServerStream) error {
+			var capturedCtx *context.Context
+			handler := func(_ any, stream grpc.ServerStream) error {
 				handlerCalled = true
+				streamCtx := stream.Context()
+				capturedCtx = &streamCtx
 
 				return nil
 			}
@@ -258,6 +280,13 @@ func TestPATInterceptor_Stream(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.True(t, handlerCalled)
+
+			if tc.wantClaims {
+				require.NotNil(t, capturedCtx)
+				claims, ok := auth.ClaimsFromContext(*capturedCtx)
+				require.True(t, ok)
+				assert.Equal(t, "user@example.com", claims.Email)
+			}
 
 			if tc.wantUpdated {
 				require.Eventually(t, func() bool {

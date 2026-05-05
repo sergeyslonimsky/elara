@@ -34,7 +34,7 @@ type V2Handlers struct {
 	Tokens    *v2.TokenHandler
 }
 
-func NewV2Handlers(uc *UseCases, cfg config.Config, sessionManager *auth.SessionManager) *V2Handlers {
+func NewV2Handlers(uc *UseCases, cfg config.Config) *V2Handlers {
 	handlers := &V2Handlers{
 		Config: v2.NewConfigHandler(
 			uc.CreateConfig,
@@ -80,8 +80,9 @@ func NewV2Handlers(uc *UseCases, cfg config.Config, sessionManager *auth.Session
 		),
 	}
 
+	handlers.Auth = v2.NewAuthHandler(uc.AuthLogin, uc.AuthCallback, uc.AuthMe)
+
 	if cfg.Auth.Enabled {
-		handlers.Auth = v2.NewAuthHandler(uc.AuthLogin, uc.AuthCallback, uc.AuthMe)
 		handlers.Users = v2.NewUserHandler(uc.AuthListUsers, uc.AuthGetUser)
 		handlers.Groups = v2.NewGroupHandler(
 			uc.AuthCreateGroup,
@@ -122,6 +123,8 @@ func V2Routes(server server, handlers *V2Handlers, sessionManager *auth.SessionM
 			"/elara.auth.v1.AuthService/Logout",
 		}
 		baseInterceptors = append(baseInterceptors, interceptor.NewAuthInterceptor(sessionManager, publicProcedures))
+	} else {
+		baseInterceptors = append(baseInterceptors, &interceptor.PassthroughInterceptor{})
 	}
 
 	opts := connect.WithInterceptors(baseInterceptors...)
@@ -147,10 +150,8 @@ func V2Routes(server server, handlers *V2Handlers, sessionManager *auth.SessionM
 	path, handler = webhookv1connect.NewWebhookServiceHandler(handlers.Webhook, opts)
 	server.Mount(path, handler)
 
-	if handlers.Auth != nil {
-		path, handler = authv1connect.NewAuthServiceHandler(handlers.Auth, opts)
-		server.Mount(path, handler)
-	}
+	path, handler = authv1connect.NewAuthServiceHandler(handlers.Auth, opts)
+	server.Mount(path, handler)
 
 	if handlers.Users != nil {
 		path, handler = authv1connect.NewUserServiceHandler(handlers.Users, opts)

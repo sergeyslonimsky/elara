@@ -5,10 +5,15 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 const defaultSearchLimit = 20
+
+type searchEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type configSearcher interface {
 	SearchByPath(ctx context.Context, query, namespace string) ([]*domain.ConfigSummary, error)
@@ -30,14 +35,20 @@ type SearchResult struct {
 }
 
 type SearchUseCase struct {
-	configs configSearcher
+	enforcer searchEnforcer
+	configs  configSearcher
 }
 
-func NewSearchUseCase(configs configSearcher) *SearchUseCase {
-	return &SearchUseCase{configs: configs}
+func NewSearchUseCase(enforcer searchEnforcer, configs configSearcher) *SearchUseCase {
+	return &SearchUseCase{enforcer: enforcer, configs: configs}
 }
 
 func (uc *SearchUseCase) Execute(ctx context.Context, params SearchParams) (*SearchResult, error) {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
+	}
+
 	limit := params.Limit
 	if limit <= 0 {
 		limit = defaultSearchLimit
@@ -48,6 +59,17 @@ func (uc *SearchUseCase) Execute(ctx context.Context, params SearchParams) (*Sea
 	if err != nil {
 		return nil, fmt.Errorf("search configs: %w", err)
 	}
+
+	// Filter silently by namespace access.
+	filtered := results[:0]
+	for _, r := range results {
+		allowed, _ := uc.enforcer.Enforce(claims.Email, r.Namespace, "config", "read")
+		if allowed {
+			filtered = append(filtered, r)
+		}
+	}
+
+	results = filtered
 
 	// Sort.
 	sortSummaries(results, params.Sort)

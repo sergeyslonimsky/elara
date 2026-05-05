@@ -297,19 +297,74 @@ func (*MeRequest) Descriptor() ([]byte, []int) {
 	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{6}
 }
 
-type MeResponse struct {
+type NamespaceAccess struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Picture       string                 `protobuf:"bytes,3,opt,name=picture,proto3" json:"picture,omitempty"`
-	Roles         []string               `protobuf:"bytes,4,rep,name=roles,proto3" json:"roles,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	CanWrite      bool                   `protobuf:"varint,2,opt,name=can_write,json=canWrite,proto3" json:"can_write,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *NamespaceAccess) Reset() {
+	*x = NamespaceAccess{}
+	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NamespaceAccess) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NamespaceAccess) ProtoMessage() {}
+
+func (x *NamespaceAccess) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NamespaceAccess.ProtoReflect.Descriptor instead.
+func (*NamespaceAccess) Descriptor() ([]byte, []int) {
+	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *NamespaceAccess) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *NamespaceAccess) GetCanWrite() bool {
+	if x != nil {
+		return x.CanWrite
+	}
+	return false
+}
+
+type MeResponse struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Email             string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Name              string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Picture           string                 `protobuf:"bytes,3,opt,name=picture,proto3" json:"picture,omitempty"`
+	IsAdmin           bool                   `protobuf:"varint,4,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
+	Namespaces        []*NamespaceAccess     `protobuf:"bytes,5,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
+	CanViewWebhooks   bool                   `protobuf:"varint,6,opt,name=can_view_webhooks,json=canViewWebhooks,proto3" json:"can_view_webhooks,omitempty"`
+	CanManageWebhooks bool                   `protobuf:"varint,7,opt,name=can_manage_webhooks,json=canManageWebhooks,proto3" json:"can_manage_webhooks,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
 func (x *MeResponse) Reset() {
 	*x = MeResponse{}
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[7]
+	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -321,7 +376,7 @@ func (x *MeResponse) String() string {
 func (*MeResponse) ProtoMessage() {}
 
 func (x *MeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[7]
+	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -334,7 +389,7 @@ func (x *MeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeResponse.ProtoReflect.Descriptor instead.
 func (*MeResponse) Descriptor() ([]byte, []int) {
-	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{7}
+	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *MeResponse) GetEmail() string {
@@ -358,11 +413,32 @@ func (x *MeResponse) GetPicture() string {
 	return ""
 }
 
-func (x *MeResponse) GetRoles() []string {
+func (x *MeResponse) GetIsAdmin() bool {
 	if x != nil {
-		return x.Roles
+		return x.IsAdmin
+	}
+	return false
+}
+
+func (x *MeResponse) GetNamespaces() []*NamespaceAccess {
+	if x != nil {
+		return x.Namespaces
 	}
 	return nil
+}
+
+func (x *MeResponse) GetCanViewWebhooks() bool {
+	if x != nil {
+		return x.CanViewWebhooks
+	}
+	return false
+}
+
+func (x *MeResponse) GetCanManageWebhooks() bool {
+	if x != nil {
+		return x.CanManageWebhooks
+	}
+	return false
 }
 
 var File_elara_auth_v1_auth_service_proto protoreflect.FileDescriptor
@@ -379,13 +455,21 @@ const file_elara_auth_v1_auth_service_proto_rawDesc = "" +
 	"\x10CallbackResponse\"\x0f\n" +
 	"\rLogoutRequest\"\x10\n" +
 	"\x0eLogoutResponse\"\v\n" +
-	"\tMeRequest\"f\n" +
+	"\tMeRequest\"B\n" +
+	"\x0fNamespaceAccess\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
+	"\tcan_write\x18\x02 \x01(\bR\bcanWrite\"\x87\x02\n" +
 	"\n" +
 	"MeResponse\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
-	"\apicture\x18\x03 \x01(\tR\apicture\x12\x14\n" +
-	"\x05roles\x18\x04 \x03(\tR\x05roles2\xa0\x02\n" +
+	"\apicture\x18\x03 \x01(\tR\apicture\x12\x19\n" +
+	"\bis_admin\x18\x04 \x01(\bR\aisAdmin\x12>\n" +
+	"\n" +
+	"namespaces\x18\x05 \x03(\v2\x1e.elara.auth.v1.NamespaceAccessR\n" +
+	"namespaces\x12*\n" +
+	"\x11can_view_webhooks\x18\x06 \x01(\bR\x0fcanViewWebhooks\x12.\n" +
+	"\x13can_manage_webhooks\x18\a \x01(\bR\x11canManageWebhooks2\xa0\x02\n" +
 	"\vAuthService\x12B\n" +
 	"\x05Login\x12\x1b.elara.auth.v1.LoginRequest\x1a\x1c.elara.auth.v1.LoginResponse\x12K\n" +
 	"\bCallback\x12\x1e.elara.auth.v1.CallbackRequest\x1a\x1f.elara.auth.v1.CallbackResponse\x12E\n" +
@@ -405,7 +489,7 @@ func file_elara_auth_v1_auth_service_proto_rawDescGZIP() []byte {
 	return file_elara_auth_v1_auth_service_proto_rawDescData
 }
 
-var file_elara_auth_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_elara_auth_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_elara_auth_v1_auth_service_proto_goTypes = []any{
 	(*LoginRequest)(nil),     // 0: elara.auth.v1.LoginRequest
 	(*LoginResponse)(nil),    // 1: elara.auth.v1.LoginResponse
@@ -414,22 +498,24 @@ var file_elara_auth_v1_auth_service_proto_goTypes = []any{
 	(*LogoutRequest)(nil),    // 4: elara.auth.v1.LogoutRequest
 	(*LogoutResponse)(nil),   // 5: elara.auth.v1.LogoutResponse
 	(*MeRequest)(nil),        // 6: elara.auth.v1.MeRequest
-	(*MeResponse)(nil),       // 7: elara.auth.v1.MeResponse
+	(*NamespaceAccess)(nil),  // 7: elara.auth.v1.NamespaceAccess
+	(*MeResponse)(nil),       // 8: elara.auth.v1.MeResponse
 }
 var file_elara_auth_v1_auth_service_proto_depIdxs = []int32{
-	0, // 0: elara.auth.v1.AuthService.Login:input_type -> elara.auth.v1.LoginRequest
-	2, // 1: elara.auth.v1.AuthService.Callback:input_type -> elara.auth.v1.CallbackRequest
-	4, // 2: elara.auth.v1.AuthService.Logout:input_type -> elara.auth.v1.LogoutRequest
-	6, // 3: elara.auth.v1.AuthService.Me:input_type -> elara.auth.v1.MeRequest
-	1, // 4: elara.auth.v1.AuthService.Login:output_type -> elara.auth.v1.LoginResponse
-	3, // 5: elara.auth.v1.AuthService.Callback:output_type -> elara.auth.v1.CallbackResponse
-	5, // 6: elara.auth.v1.AuthService.Logout:output_type -> elara.auth.v1.LogoutResponse
-	7, // 7: elara.auth.v1.AuthService.Me:output_type -> elara.auth.v1.MeResponse
-	4, // [4:8] is the sub-list for method output_type
-	0, // [0:4] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	7, // 0: elara.auth.v1.MeResponse.namespaces:type_name -> elara.auth.v1.NamespaceAccess
+	0, // 1: elara.auth.v1.AuthService.Login:input_type -> elara.auth.v1.LoginRequest
+	2, // 2: elara.auth.v1.AuthService.Callback:input_type -> elara.auth.v1.CallbackRequest
+	4, // 3: elara.auth.v1.AuthService.Logout:input_type -> elara.auth.v1.LogoutRequest
+	6, // 4: elara.auth.v1.AuthService.Me:input_type -> elara.auth.v1.MeRequest
+	1, // 5: elara.auth.v1.AuthService.Login:output_type -> elara.auth.v1.LoginResponse
+	3, // 6: elara.auth.v1.AuthService.Callback:output_type -> elara.auth.v1.CallbackResponse
+	5, // 7: elara.auth.v1.AuthService.Logout:output_type -> elara.auth.v1.LogoutResponse
+	8, // 8: elara.auth.v1.AuthService.Me:output_type -> elara.auth.v1.MeResponse
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_elara_auth_v1_auth_service_proto_init() }
@@ -443,7 +529,7 @@ func file_elara_auth_v1_auth_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_auth_v1_auth_service_proto_rawDesc), len(file_elara_auth_v1_auth_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

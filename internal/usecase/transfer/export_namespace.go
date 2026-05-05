@@ -5,11 +5,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
 )
 
 //go:generate mockgen -destination=mocks/mock_export_namespace.go -package=transfer_mock . exportNSConfigLister,exportNSChecker
+
+type exportNSEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type exportNSConfigLister interface {
 	ListAllByNamespace(ctx context.Context, namespace string) ([]*domain.Config, error)
@@ -20,12 +25,17 @@ type exportNSChecker interface {
 }
 
 type ExportNamespaceUseCase struct {
+	enforcer   exportNSEnforcer
 	configs    exportNSConfigLister
 	namespaces exportNSChecker
 }
 
-func NewExportNamespaceUseCase(configs exportNSConfigLister, namespaces exportNSChecker) *ExportNamespaceUseCase {
-	return &ExportNamespaceUseCase{configs: configs, namespaces: namespaces}
+func NewExportNamespaceUseCase(
+	enforcer exportNSEnforcer,
+	configs exportNSConfigLister,
+	namespaces exportNSChecker,
+) *ExportNamespaceUseCase {
+	return &ExportNamespaceUseCase{enforcer: enforcer, configs: configs, namespaces: namespaces}
 }
 
 func (uc *ExportNamespaceUseCase) Execute(
@@ -34,6 +44,20 @@ func (uc *ExportNamespaceUseCase) Execute(
 	asZip bool,
 	enc transferv1.BundleEncoding,
 ) ([]byte, string, string, error) {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, "", "", domain.ErrUnauthorized
+	}
+
+	allowed, err := uc.enforcer.Enforce(claims.Email, "*", "transfer", "write")
+	if err != nil {
+		return nil, "", "", fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return nil, "", "", domain.ErrForbidden
+	}
+
 	ns, err := uc.namespaces.Get(ctx, namespace)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("get namespace: %w", err)

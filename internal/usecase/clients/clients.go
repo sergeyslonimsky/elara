@@ -5,10 +5,16 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 //go:generate mockgen -destination=mocks/mock_clients.go -package=clients_mock . ActiveSource,HistorySource
+
+// clientsEnforcer checks authorization for client operations.
+type clientsEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 // ActiveSource is the live in-memory state (typically *monitor.Registry).
 type ActiveSource interface {
@@ -27,23 +33,28 @@ type HistorySource interface {
 
 // UseCase aggregates queries needed by the ClientsService handler.
 type UseCase struct {
-	active  ActiveSource
-	history HistorySource
+	enforcer clientsEnforcer
+	active   ActiveSource
+	history  HistorySource
 }
 
-func NewUseCase(active ActiveSource, history HistorySource) *UseCase {
-	return &UseCase{active: active, history: history}
+func NewUseCase(enforcer clientsEnforcer, active ActiveSource, history HistorySource) *UseCase {
+	return &UseCase{enforcer: enforcer, active: active, history: history}
 }
 
 // ListActive returns all currently-connected clients sorted by ConnectedAt
 // ascending (oldest first — UI typically reverses).
-func (uc *UseCase) ListActive(_ context.Context) []*domain.Client {
+func (uc *UseCase) ListActive(ctx context.Context) ([]*domain.Client, error) {
+	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, auth.ObjectClient, auth.ActionRead); err != nil {
+		return nil, fmt.Errorf("check access: %w", err)
+	}
+
 	clients := uc.active.ListActive()
 	sort.Slice(clients, func(i, j int) bool {
 		return clients[i].ConnectedAt.Before(clients[j].ConnectedAt)
 	})
 
-	return clients
+	return clients, nil
 }
 
 // Get returns one client (active or historical) plus its recent events.
@@ -57,6 +68,10 @@ func (uc *UseCase) Get(
 	ctx context.Context,
 	id string,
 ) (*domain.Client, []domain.ClientEvent, error) {
+	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, auth.ObjectClient, auth.ActionRead); err != nil {
+		return nil, nil, fmt.Errorf("check access: %w", err)
+	}
+
 	if c := uc.active.Get(id); c != nil {
 		return c, uc.active.RecentEvents(id), nil
 	}
@@ -83,6 +98,10 @@ func (uc *UseCase) Get(
 // ListHistorical returns past connections, newest first, capped at limit
 // (0 → server-default cap).
 func (uc *UseCase) ListHistorical(ctx context.Context, limit int) ([]*domain.Client, error) {
+	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, auth.ObjectClient, auth.ActionRead); err != nil {
+		return nil, fmt.Errorf("check access: %w", err)
+	}
+
 	const defaultLimit = 100
 	if limit <= 0 {
 		limit = defaultLimit
@@ -96,15 +115,26 @@ func (uc *UseCase) ListHistorical(ctx context.Context, limit int) ([]*domain.Cli
 	return out, nil
 }
 
-// SubscribeChanges exposes the registry pub/sub for the streaming handler.
-func (uc *UseCase) SubscribeChanges() (<-chan domain.ClientChange, func()) {
-	return uc.active.Subscribe()
+// SubscribeChanges checks authorization and returns the change channel.
+func (uc *UseCase) SubscribeChanges(ctx context.Context) (<-chan domain.ClientChange, func(), error) {
+	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, auth.ObjectClient, auth.ActionRead); err != nil {
+		return nil, nil, fmt.Errorf("check access: %w", err)
+	}
+
+	ch, cancel := uc.active.Subscribe()
+
+	return ch, cancel, nil
 }
 
-// SubscribeClient exposes the per-client pub/sub for the WatchClient detail
-// stream. Returns a closed channel if no such active client.
-func (uc *UseCase) SubscribeClient(connID string) (<-chan domain.ClientChange, func()) {
-	return uc.active.SubscribeClient(connID)
+// SubscribeClient checks authorization and returns the per-client change channel.
+func (uc *UseCase) SubscribeClient(ctx context.Context, connID string) (<-chan domain.ClientChange, func(), error) {
+	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, auth.ObjectClient, auth.ActionRead); err != nil {
+		return nil, nil, fmt.Errorf("check access: %w", err)
+	}
+
+	ch, cancel := uc.active.SubscribeClient(connID)
+
+	return ch, cancel, nil
 }
 
 // ListSessions returns past connections of the same logical client
@@ -118,6 +148,10 @@ func (uc *UseCase) ListSessions(
 	clientName, k8sNamespace, currentID string,
 	limit int,
 ) ([]*domain.Client, error) {
+	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, auth.ObjectClient, auth.ActionRead); err != nil {
+		return nil, fmt.Errorf("check access: %w", err)
+	}
+
 	const defaultLimit = 50
 
 	if clientName == "" {

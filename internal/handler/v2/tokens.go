@@ -36,17 +36,22 @@ func (h *TokenHandler) CreateToken(
 ) (*connect.Response[authv1.CreateTokenResponse], error) {
 	var expiresAt *time.Time
 	if req.Msg.GetExpiresAt() != nil {
-		t := req.Msg.GetExpiresAt().AsTime()
-		expiresAt = &t
+		expiresAt = new(req.Msg.GetExpiresAt().AsTime())
 	}
 
-	pat, rawToken, err := h.create.Execute(ctx, req.Msg.GetName(), req.Msg.GetNamespaces(), expiresAt)
+	token, rawToken, err := h.create.Execute(
+		ctx,
+		req.Msg.GetName(),
+		req.Msg.GetNamespaces(),
+		req.Msg.GetRole(),
+		expiresAt,
+	)
 	if err != nil {
 		return nil, toConnectError(err)
 	}
 
 	return connect.NewResponse(&authv1.CreateTokenResponse{
-		Token:    domainPATToProto(pat),
+		Token:    domainTokenToProto(token),
 		RawToken: rawToken,
 	}), nil
 }
@@ -55,14 +60,14 @@ func (h *TokenHandler) ListTokens(
 	ctx context.Context,
 	req *connect.Request[authv1.ListTokensRequest],
 ) (*connect.Response[authv1.ListTokensResponse], error) {
-	tokens, err := h.list.Execute(ctx, req.Msg.GetUserEmail())
+	tokens, err := h.list.Execute(ctx, req.Msg.GetIssuedBy())
 	if err != nil {
 		return nil, toConnectError(err)
 	}
 
-	protos := make([]*authv1.PAT, 0, len(tokens))
+	protos := make([]*authv1.Token, 0, len(tokens))
 	for _, t := range tokens {
-		protos = append(protos, domainPATToProto(t))
+		protos = append(protos, domainTokenToProto(t))
 	}
 
 	return connect.NewResponse(&authv1.ListTokensResponse{Tokens: protos}), nil
@@ -77,7 +82,7 @@ func (h *TokenHandler) GetToken(
 		return nil, toConnectError(err)
 	}
 
-	return connect.NewResponse(&authv1.GetTokenResponse{Token: domainPATToProto(token)}), nil
+	return connect.NewResponse(&authv1.GetTokenResponse{Token: domainTokenToProto(token)}), nil
 }
 
 func (h *TokenHandler) RevokeToken(
@@ -91,26 +96,27 @@ func (h *TokenHandler) RevokeToken(
 	return connect.NewResponse(&authv1.RevokeTokenResponse{}), nil
 }
 
-func domainPATToProto(p *domain.PAT) *authv1.PAT {
-	if p == nil {
+func domainTokenToProto(t *domain.Token) *authv1.Token {
+	if t == nil {
 		return nil
 	}
 
-	proto := &authv1.PAT{
-		Id:         p.ID,
-		Name:       p.Name,
-		UserEmail:  p.UserEmail,
-		Namespaces: p.Namespaces,
-		LastUsedIp: p.LastUsedIP,
-		CreatedAt:  timestamppb.New(p.CreatedAt),
+	proto := &authv1.Token{
+		Id:         t.ID,
+		Name:       t.Name,
+		IssuedBy:   t.IssuedBy,
+		Namespaces: t.Namespaces,
+		Role:       t.Role,
+		LastUsedIp: t.LastUsedIP,
+		CreatedAt:  timestamppb.New(t.CreatedAt),
 	}
 
-	if p.ExpiresAt != nil {
-		proto.ExpiresAt = timestamppb.New(*p.ExpiresAt)
+	if t.ExpiresAt != nil {
+		proto.ExpiresAt = timestamppb.New(*t.ExpiresAt)
 	}
 
-	if p.LastUsedAt != nil {
-		proto.LastUsedAt = timestamppb.New(*p.LastUsedAt)
+	if t.LastUsedAt != nil {
+		proto.LastUsedAt = timestamppb.New(*t.LastUsedAt)
 	}
 
 	return proto

@@ -3,43 +3,93 @@ package auth
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-//go:generate mockgen -destination=mocks/me_mock.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth roleGetter
-
-type roleGetter interface {
-	GetRolesForUser(user, domain string) ([]string, error)
+// NamespaceAccess describes a namespace the current user can see and whether they can write to it.
+type NamespaceAccess struct {
+	Name     string
+	CanWrite bool
 }
 
-// MeUseCase returns the current authenticated user's identity and roles.
+// MeResult holds the resolved identity and permission summary for the current user.
+type MeResult struct {
+	Email             string
+	Name              string
+	IsAdmin           bool
+	Namespaces        []NamespaceAccess
+	CanViewWebhooks   bool
+	CanManageWebhooks bool
+}
+
+type meEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
+
+type meNamespaceLister interface {
+	List(ctx context.Context) ([]*domain.Namespace, error)
+}
+
+// MeUseCase returns the current authenticated user's identity and permissions.
 type MeUseCase struct {
-	enforcer roleGetter
+	enforcer   meEnforcer
+	namespaces meNamespaceLister
 }
 
-// NewMeUseCase returns a MeUseCase backed by the given role getter.
-func NewMeUseCase(enforcer roleGetter) *MeUseCase {
-	return &MeUseCase{enforcer: enforcer}
+// NewMeUseCase returns a MeUseCase backed by the given enforcer and namespace lister.
+func NewMeUseCase(enforcer meEnforcer, namespaces meNamespaceLister) *MeUseCase {
+	return &MeUseCase{enforcer: enforcer, namespaces: namespaces}
 }
 
-// Execute extracts claims from the context and returns the user with their roles.
-func (uc *MeUseCase) Execute(ctx context.Context) (*domain.User, []string, error) {
+// Execute extracts claims from the context and returns the user's identity and permissions.
+func (uc *MeUseCase) Execute(ctx context.Context) (*MeResult, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
-		return nil, nil, domain.ErrUnauthorized
+		return nil, domain.ErrUnauthorized
 	}
 
-	roles, err := uc.enforcer.GetRolesForUser(claims.Email, "*")
+	allNamespaces, err := uc.namespaces.List(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get roles: %w", err)
+		return nil, fmt.Errorf("list namespaces: %w", err)
 	}
 
-	user := &domain.User{
-		Email: claims.Email,
-		Name:  claims.Name,
+	var accessible []NamespaceAccess
+	for _, ns := range allNamespaces {
+		canRead, _ := uc.enforcer.Enforce(claims.Email, ns.Name, auth.ObjectConfig, auth.ActionRead)
+		if !canRead {
+			continue
+		}
+		canWrite, _ := uc.enforcer.Enforce(claims.Email, ns.Name, auth.ObjectConfig, auth.ActionWrite)
+		accessible = append(accessible, NamespaceAccess{Name: ns.Name, CanWrite: canWrite})
 	}
 
-	return user, roles, nil
+	sort.Slice(accessible, func(i, j int) bool {
+		return accessible[i].Name < accessible[j].Name
+	})
+
+	isAdmin, _ := uc.enforcer.Enforce(claims.Email, auth.ObjectAll, auth.ObjectUser, auth.ActionRead)
+
+	var canViewWebhooks bool
+	for _, ns := range accessible {
+		ok, _ := uc.enforcer.Enforce(claims.Email, ns.Name, auth.ObjectWebhook, auth.ActionRead)
+		if ok {
+			canViewWebhooks = true
+
+			break
+		}
+	}
+
+	canManageWebhooks, _ := uc.enforcer.Enforce(claims.Email, auth.ObjectAll, auth.ObjectWebhook, auth.ActionWrite)
+
+	return &MeResult{
+		Email:             claims.Email,
+		Name:              claims.Name,
+		IsAdmin:           isAdmin,
+		Namespaces:        accessible,
+		CanViewWebhooks:   canViewWebhooks,
+		CanManageWebhooks: canManageWebhooks,
+	}, nil
 }

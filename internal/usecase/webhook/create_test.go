@@ -1,6 +1,7 @@
 package webhook_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -8,10 +9,19 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
 	webhook_mock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
 )
+
+type allowAllWebhookEnforcer struct{}
+
+func (allowAllWebhookEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
+
+func webhookTestCtx() context.Context {
+	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+}
 
 func TestCreateUseCase_Execute(t *testing.T) {
 	t.Parallel()
@@ -70,8 +80,8 @@ func TestCreateUseCase_Execute(t *testing.T) {
 			repo := webhook_mock.NewMockwebhookCreator(ctrl)
 			tt.setupMock(repo)
 
-			uc := webhookuc.NewCreateUseCase(repo)
-			result, err := uc.Execute(t.Context(), tt.webhook)
+			uc := webhookuc.NewCreateUseCase(allowAllWebhookEnforcer{}, repo)
+			result, err := uc.Execute(webhookTestCtx(), tt.webhook)
 
 			if tt.wantErr {
 				require.Error(t, err)

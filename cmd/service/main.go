@@ -220,10 +220,10 @@ func etcdServerOptions(
 	}
 
 	if cfg.Auth.Enabled {
-		patInterceptor := etcdinterceptor.NewPATInterceptor(adapters.AuthTokens)
+		tokenInterceptor := etcdinterceptor.NewTokenInterceptor(adapters.AuthTokens)
 		opts = append(opts,
-			coregrpc.WithUnaryInterceptor(patInterceptor.Unary()),
-			coregrpc.WithStreamInterceptor(patInterceptor.Stream()),
+			coregrpc.WithUnaryInterceptor(tokenInterceptor.Unary()),
+			coregrpc.WithStreamInterceptor(tokenInterceptor.Stream()),
 		)
 	}
 

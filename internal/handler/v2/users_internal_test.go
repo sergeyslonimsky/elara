@@ -1,7 +1,6 @@
 package v2
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -51,9 +50,9 @@ func TestUserHandler_ListUsers(t *testing.T) {
 			lister := auth_mock.NewMockuserLister(ctrl)
 			lister.EXPECT().List(gomock.Any()).Return(tc.users, tc.repoErr)
 
-			h := NewUserHandler(authuc.NewListUsersUseCase(lister), nil)
+			h := NewUserHandler(authuc.NewListUsersUseCase(allowAllClientsHandlerEnforcer{}, lister), nil)
 
-			resp, err := h.ListUsers(context.Background(), connect.NewRequest(&authv1.ListUsersRequest{}))
+			resp, err := h.ListUsers(clientsHandlerTestCtx(), connect.NewRequest(&authv1.ListUsersRequest{}))
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -100,9 +99,9 @@ func TestUserHandler_GetUser(t *testing.T) {
 			getter := auth_mock.NewMockuserGetter(ctrl)
 			getter.EXPECT().Get(gomock.Any(), tc.email).Return(tc.user, tc.repoErr)
 
-			h := NewUserHandler(nil, authuc.NewGetUserUseCase(getter))
+			h := NewUserHandler(nil, authuc.NewGetUserUseCase(allowAllClientsHandlerEnforcer{}, getter))
 
-			resp, err := h.GetUser(context.Background(), connect.NewRequest(&authv1.GetUserRequest{Email: tc.email}))
+			resp, err := h.GetUser(clientsHandlerTestCtx(), connect.NewRequest(&authv1.GetUserRequest{Email: tc.email}))
 
 			if tc.wantErr {
 				require.Error(t, err)

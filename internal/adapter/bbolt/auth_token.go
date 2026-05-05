@@ -11,35 +11,35 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-// PATRepo stores and retrieves Personal Access Tokens in bbolt.
+// TokenRepo stores and retrieves service credentials (Tokens) in bbolt.
 // Tokens are keyed by their SHA-256 hash for O(1) lookup during authentication.
-type PATRepo struct {
+type TokenRepo struct {
 	store *Store
 }
 
-// NewPATRepo creates a new PATRepo backed by the given Store.
-func NewPATRepo(store *Store) *PATRepo {
-	return &PATRepo{store: store}
+// NewTokenRepo creates a new TokenRepo backed by the given Store.
+func NewTokenRepo(store *Store) *TokenRepo {
+	return &TokenRepo{store: store}
 }
 
-// Create stores a new PAT. The caller must set all fields including TokenHash.
+// Create stores a new Token. The caller must set all fields including TokenHash.
 // Also writes a secondary index entry (id → hash) for O(1) lookup by ID.
-func (r *PATRepo) Create(_ context.Context, pat *domain.PAT) error {
+func (r *TokenRepo) Create(_ context.Context, token *domain.Token) error {
 	err := r.store.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthTokens))
 
-		data, err := json.Marshal(domainToAuthTokenMeta(pat))
+		data, err := json.Marshal(domainToAuthTokenMeta(token))
 		if err != nil {
 			return fmt.Errorf("marshal token: %w", err)
 		}
 
-		if err = b.Put([]byte(pat.TokenHash), data); err != nil {
+		if err = b.Put([]byte(token.TokenHash), data); err != nil {
 			return fmt.Errorf("put token: %w", err)
 		}
 
 		idx := tx.Bucket([]byte(bucketAuthTokenByID))
 
-		return idx.Put([]byte(pat.ID), []byte(pat.TokenHash))
+		return idx.Put([]byte(token.ID), []byte(token.TokenHash))
 	})
 	if err != nil {
 		return fmt.Errorf("create token: %w", err)
@@ -48,10 +48,10 @@ func (r *PATRepo) Create(_ context.Context, pat *domain.PAT) error {
 	return nil
 }
 
-// GetByHash returns the PAT identified by its SHA-256 hex hash.
+// GetByHash returns the Token identified by its SHA-256 hex hash.
 // Returns domain.ErrNotFound if no such token exists.
-func (r *PATRepo) GetByHash(_ context.Context, tokenHash string) (*domain.PAT, error) {
-	var pat *domain.PAT
+func (r *TokenRepo) GetByHash(_ context.Context, tokenHash string) (*domain.Token, error) {
+	var token *domain.Token
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthTokens))
@@ -66,7 +66,7 @@ func (r *PATRepo) GetByHash(_ context.Context, tokenHash string) (*domain.PAT, e
 			return err
 		}
 
-		pat = authTokenMetaToDomain(m)
+		token = authTokenMetaToDomain(m)
 
 		return nil
 	})
@@ -74,12 +74,12 @@ func (r *PATRepo) GetByHash(_ context.Context, tokenHash string) (*domain.PAT, e
 		return nil, fmt.Errorf("get token by hash: %w", err)
 	}
 
-	return pat, nil
+	return token, nil
 }
 
-// List returns PATs filtered by userEmail. An empty userEmail returns all tokens (admin view).
-func (r *PATRepo) List(_ context.Context, userEmail string) ([]*domain.PAT, error) {
-	var tokens []*domain.PAT
+// List returns Tokens filtered by issuedBy. An empty issuedBy returns all tokens (admin view).
+func (r *TokenRepo) List(_ context.Context, issuedBy string) ([]*domain.Token, error) {
+	var tokens []*domain.Token
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthTokens))
@@ -90,7 +90,7 @@ func (r *PATRepo) List(_ context.Context, userEmail string) ([]*domain.PAT, erro
 				return err
 			}
 
-			if userEmail != "" && m.UserEmail != userEmail {
+			if issuedBy != "" && m.IssuedBy != issuedBy {
 				return nil
 			}
 
@@ -106,10 +106,10 @@ func (r *PATRepo) List(_ context.Context, userEmail string) ([]*domain.PAT, erro
 	return tokens, nil
 }
 
-// GetByID returns the PAT identified by its ID using the secondary index.
+// GetByID returns the Token identified by its ID using the secondary index.
 // Returns domain.ErrNotFound if no such token exists.
-func (r *PATRepo) GetByID(_ context.Context, id string) (*domain.PAT, error) {
-	var pat *domain.PAT
+func (r *TokenRepo) GetByID(_ context.Context, id string) (*domain.Token, error) {
+	var token *domain.Token
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		idx := tx.Bucket([]byte(bucketAuthTokenByID))
@@ -131,7 +131,7 @@ func (r *PATRepo) GetByID(_ context.Context, id string) (*domain.PAT, error) {
 			return err
 		}
 
-		pat = authTokenMetaToDomain(m)
+		token = authTokenMetaToDomain(m)
 
 		return nil
 	})
@@ -139,12 +139,12 @@ func (r *PATRepo) GetByID(_ context.Context, id string) (*domain.PAT, error) {
 		return nil, fmt.Errorf("get token by id: %w", err)
 	}
 
-	return pat, nil
+	return token, nil
 }
 
-// Delete removes the PAT with the given ID using the secondary index.
+// Delete removes the Token with the given ID using the secondary index.
 // Returns domain.ErrNotFound if no token with that ID exists.
-func (r *PATRepo) Delete(_ context.Context, id string) error {
+func (r *TokenRepo) Delete(_ context.Context, id string) error {
 	err := r.store.db.Update(func(tx *bolt.Tx) error {
 		idx := tx.Bucket([]byte(bucketAuthTokenByID))
 		hashBytes := idx.Get([]byte(id))
@@ -173,7 +173,7 @@ func (r *PATRepo) Delete(_ context.Context, id string) error {
 }
 
 // UpdateLastUsed updates the LastUsedAt and LastUsedIP fields of a token identified by its hash.
-func (r *PATRepo) UpdateLastUsed(_ context.Context, tokenHash, ip string, at time.Time) error {
+func (r *TokenRepo) UpdateLastUsed(_ context.Context, tokenHash, ip string, at time.Time) error {
 	err := r.store.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthTokens))
 		key := []byte(tokenHash)

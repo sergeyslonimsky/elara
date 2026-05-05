@@ -120,12 +120,12 @@ func (d *fakeWebhookDispatcher) ClearHistory(webhookID string) {
 
 func newTestWebhookHandler(repo *fakeWebhookRepo, dispatcher *fakeWebhookDispatcher) *WebhookHandler {
 	return NewWebhookHandler(
-		webhookuc.NewCreateUseCase(repo),
-		webhookuc.NewGetUseCase(repo),
-		webhookuc.NewUpdateUseCase(repo),
-		webhookuc.NewDeleteUseCase(repo, dispatcher),
-		webhookuc.NewListUseCase(repo),
-		webhookuc.NewHistoryUseCase(dispatcher),
+		webhookuc.NewCreateUseCase(allowAllClientsHandlerEnforcer{}, repo),
+		webhookuc.NewGetUseCase(allowAllClientsHandlerEnforcer{}, repo),
+		webhookuc.NewUpdateUseCase(allowAllClientsHandlerEnforcer{}, repo),
+		webhookuc.NewDeleteUseCase(allowAllClientsHandlerEnforcer{}, repo, repo, dispatcher),
+		webhookuc.NewListUseCase(allowAllClientsHandlerEnforcer{}, repo),
+		webhookuc.NewHistoryUseCase(allowAllClientsHandlerEnforcer{}, dispatcher, repo),
 	)
 }
 
@@ -139,7 +139,7 @@ func TestWebhookHandler_CreateWebhook_Success(t *testing.T) {
 	repo := newFakeWebhookRepo()
 	h := newTestWebhookHandler(repo, newFakeWebhookDispatcher())
 
-	resp, err := h.CreateWebhook(context.Background(), connect.NewRequest(&webhookv1.CreateWebhookRequest{
+	resp, err := h.CreateWebhook(clientsHandlerTestCtx(), connect.NewRequest(&webhookv1.CreateWebhookRequest{
 		Url:             "https://example.com/hook",
 		Events:          []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
 		NamespaceFilter: "production",
@@ -165,7 +165,7 @@ func TestWebhookHandler_CreateWebhook_MissingURL_ReturnsInvalidArgument(t *testi
 
 	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
 
-	_, err := h.CreateWebhook(context.Background(), connect.NewRequest(&webhookv1.CreateWebhookRequest{
+	_, err := h.CreateWebhook(clientsHandlerTestCtx(), connect.NewRequest(&webhookv1.CreateWebhookRequest{
 		Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
 	}))
 
@@ -178,7 +178,7 @@ func TestWebhookHandler_CreateWebhook_NoEvents_ReturnsInvalidArgument(t *testing
 
 	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
 
-	_, err := h.CreateWebhook(context.Background(), connect.NewRequest(&webhookv1.CreateWebhookRequest{
+	_, err := h.CreateWebhook(clientsHandlerTestCtx(), connect.NewRequest(&webhookv1.CreateWebhookRequest{
 		Url: "https://example.com/hook",
 	}))
 
@@ -203,7 +203,7 @@ func TestWebhookHandler_GetWebhook_Success(t *testing.T) {
 
 	h := newTestWebhookHandler(repo, newFakeWebhookDispatcher())
 
-	resp, err := h.GetWebhook(context.Background(), connect.NewRequest(&webhookv1.GetWebhookRequest{Id: "wh-1"}))
+	resp, err := h.GetWebhook(clientsHandlerTestCtx(), connect.NewRequest(&webhookv1.GetWebhookRequest{Id: "wh-1"}))
 
 	require.NoError(t, err)
 	assert.Equal(t, "wh-1", resp.Msg.GetWebhook().GetId())
@@ -215,7 +215,7 @@ func TestWebhookHandler_GetWebhook_NotFound(t *testing.T) {
 
 	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
 
-	_, err := h.GetWebhook(context.Background(), connect.NewRequest(&webhookv1.GetWebhookRequest{Id: "missing"}))
+	_, err := h.GetWebhook(clientsHandlerTestCtx(), connect.NewRequest(&webhookv1.GetWebhookRequest{Id: "missing"}))
 
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
@@ -238,7 +238,7 @@ func TestWebhookHandler_UpdateWebhook_Success(t *testing.T) {
 
 	h := newTestWebhookHandler(repo, newFakeWebhookDispatcher())
 
-	resp, err := h.UpdateWebhook(context.Background(), connect.NewRequest(&webhookv1.UpdateWebhookRequest{
+	resp, err := h.UpdateWebhook(clientsHandlerTestCtx(), connect.NewRequest(&webhookv1.UpdateWebhookRequest{
 		Id:      "wh-1",
 		Url:     "https://new.example.com/hook",
 		Events:  []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_UPDATED},
@@ -260,7 +260,7 @@ func TestWebhookHandler_UpdateWebhook_NotFound(t *testing.T) {
 
 	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
 
-	_, err := h.UpdateWebhook(context.Background(), connect.NewRequest(&webhookv1.UpdateWebhookRequest{
+	_, err := h.UpdateWebhook(clientsHandlerTestCtx(), connect.NewRequest(&webhookv1.UpdateWebhookRequest{
 		Id:     "missing",
 		Url:    "https://example.com/hook",
 		Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
@@ -288,7 +288,7 @@ func TestWebhookHandler_DeleteWebhook_Success(t *testing.T) {
 
 	h := newTestWebhookHandler(repo, dispatcher)
 
-	_, err := h.DeleteWebhook(context.Background(), connect.NewRequest(&webhookv1.DeleteWebhookRequest{Id: "wh-1"}))
+	_, err := h.DeleteWebhook(clientsHandlerTestCtx(), connect.NewRequest(&webhookv1.DeleteWebhookRequest{Id: "wh-1"}))
 
 	require.NoError(t, err)
 	assert.Contains(t, dispatcher.clearedIDs, "wh-1")
@@ -299,7 +299,10 @@ func TestWebhookHandler_DeleteWebhook_NotFound(t *testing.T) {
 
 	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
 
-	_, err := h.DeleteWebhook(context.Background(), connect.NewRequest(&webhookv1.DeleteWebhookRequest{Id: "missing"}))
+	_, err := h.DeleteWebhook(
+		clientsHandlerTestCtx(),
+		connect.NewRequest(&webhookv1.DeleteWebhookRequest{Id: "missing"}),
+	)
 
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
@@ -314,7 +317,7 @@ func TestWebhookHandler_ListWebhooks_Empty(t *testing.T) {
 
 	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
 
-	resp, err := h.ListWebhooks(context.Background(), connect.NewRequest(&webhookv1.ListWebhooksRequest{}))
+	resp, err := h.ListWebhooks(clientsHandlerTestCtx(), connect.NewRequest(&webhookv1.ListWebhooksRequest{}))
 
 	require.NoError(t, err)
 	assert.Empty(t, resp.Msg.GetWebhooks())
@@ -339,7 +342,7 @@ func TestWebhookHandler_ListWebhooks_ReturnsAll(t *testing.T) {
 
 	h := newTestWebhookHandler(repo, newFakeWebhookDispatcher())
 
-	resp, err := h.ListWebhooks(context.Background(), connect.NewRequest(&webhookv1.ListWebhooksRequest{}))
+	resp, err := h.ListWebhooks(clientsHandlerTestCtx(), connect.NewRequest(&webhookv1.ListWebhooksRequest{}))
 
 	require.NoError(t, err)
 	assert.Len(t, resp.Msg.GetWebhooks(), 2)
@@ -351,6 +354,15 @@ func TestWebhookHandler_ListWebhooks_ReturnsAll(t *testing.T) {
 
 func TestWebhookHandler_GetDeliveryHistory_ReturnsAttempts(t *testing.T) {
 	t.Parallel()
+
+	repo := newFakeWebhookRepo()
+	repo.seed(
+		&domain.Webhook{
+			ID:     "wh-1",
+			URL:    "https://example.com/hook",
+			Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+		},
+	)
 
 	dispatcher := newFakeWebhookDispatcher()
 	dispatcher.history["wh-1"] = []domain.DeliveryAttempt{
@@ -365,10 +377,10 @@ func TestWebhookHandler_GetDeliveryHistory_ReturnsAttempts(t *testing.T) {
 		},
 	}
 
-	h := newTestWebhookHandler(newFakeWebhookRepo(), dispatcher)
+	h := newTestWebhookHandler(repo, dispatcher)
 
 	resp, err := h.GetDeliveryHistory(
-		context.Background(),
+		clientsHandlerTestCtx(),
 		connect.NewRequest(&webhookv1.GetDeliveryHistoryRequest{WebhookId: "wh-1"}),
 	)
 
@@ -381,18 +393,18 @@ func TestWebhookHandler_GetDeliveryHistory_ReturnsAttempts(t *testing.T) {
 	assert.Equal(t, "server error", resp.Msg.GetAttempts()[1].GetError())
 }
 
-func TestWebhookHandler_GetDeliveryHistory_UnknownWebhook_ReturnsEmpty(t *testing.T) {
+func TestWebhookHandler_GetDeliveryHistory_UnknownWebhook_ReturnsNotFound(t *testing.T) {
 	t.Parallel()
 
 	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
 
-	resp, err := h.GetDeliveryHistory(
-		context.Background(),
+	_, err := h.GetDeliveryHistory(
+		clientsHandlerTestCtx(),
 		connect.NewRequest(&webhookv1.GetDeliveryHistoryRequest{WebhookId: "unknown"}),
 	)
 
-	require.NoError(t, err)
-	assert.Empty(t, resp.Msg.GetAttempts())
+	require.Error(t, err)
+	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
 
 // -----------------------------------------------------------------------------

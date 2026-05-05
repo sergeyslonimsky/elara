@@ -1,0 +1,81 @@
+package domain
+
+import (
+	"slices"
+	"strings"
+	"time"
+)
+
+const maxTokenNameLen = 128
+
+// Token is a service credential issued by a user for use by external etcd clients.
+type Token struct {
+	ID         string
+	IssuedBy   string // email of the user who created this token
+	Name       string
+	TokenHash  string     // SHA-256 hex of raw token
+	Namespaces []string   // explicit list; must be non-empty
+	Role       string     // "writer" or "reader"
+	ExpiresAt  *time.Time // nil = never expires
+	LastUsedAt *time.Time
+	LastUsedIP string
+	CreatedAt  time.Time
+}
+
+func (t *Token) Validate() error {
+	if t.ID == "" {
+		return NewValidationError("id", "id is required")
+	}
+
+	if t.IssuedBy == "" {
+		return NewValidationError("issuedBy", "issued_by is required")
+	}
+
+	if !strings.Contains(t.IssuedBy, "@") {
+		return NewValidationError("issuedBy", "issued_by must be a valid email address")
+	}
+
+	if t.Name == "" {
+		return NewValidationError("name", "name is required")
+	}
+
+	if len(t.Name) > maxTokenNameLen {
+		return NewValidationError("name", "name must be at most 128 characters")
+	}
+
+	if t.TokenHash == "" {
+		return NewValidationError("tokenHash", "token hash is required")
+	}
+
+	if t.Role != "writer" && t.Role != "reader" {
+		return NewValidationError("role", "role must be writer or reader")
+	}
+
+	if len(t.Namespaces) == 0 {
+		return NewValidationError("namespaces", "at least one namespace is required")
+	}
+
+	return nil
+}
+
+// IsExpired returns true if the token has a non-nil expiry that is in the past.
+func (t *Token) IsExpired() bool {
+	return t.ExpiresAt != nil && t.ExpiresAt.Before(time.Now())
+}
+
+// NamespaceAllowed returns true if the token grants access to the given namespace.
+func (t *Token) NamespaceAllowed(namespace string) bool {
+	return slices.Contains(t.Namespaces, namespace)
+}
+
+// ActionAllowed returns true if the token's role permits the given action ("read" or "write").
+func (t *Token) ActionAllowed(action string) bool {
+	switch t.Role {
+	case "writer":
+		return action == "read" || action == "write"
+	case "reader":
+		return action == "read"
+	}
+
+	return false
+}

@@ -1,7 +1,6 @@
 package v2
 
 import (
-	"context"
 	"errors"
 	"slices"
 	"testing"
@@ -53,12 +52,12 @@ func TestGroupHandler_CreateGroup(t *testing.T) {
 			creator.EXPECT().Create(gomock.Any(), gomock.Any()).Return(tc.repoErr)
 
 			h := NewGroupHandler(
-				authuc.NewCreateGroupUseCase(creator),
+				authuc.NewCreateGroupUseCase(allowAllClientsHandlerEnforcer{}, creator),
 				nil, nil, nil, nil, nil, nil,
 			)
 
 			resp, err := h.CreateGroup(
-				context.Background(),
+				clientsHandlerTestCtx(),
 				connect.NewRequest(&authv1.CreateGroupRequest{Name: tc.input}),
 			)
 
@@ -109,11 +108,11 @@ func TestGroupHandler_GetGroup(t *testing.T) {
 
 			h := NewGroupHandler(
 				nil,
-				authuc.NewGetGroupUseCase(getter),
+				authuc.NewGetGroupUseCase(allowAllClientsHandlerEnforcer{}, getter),
 				nil, nil, nil, nil, nil,
 			)
 
-			resp, err := h.GetGroup(context.Background(), connect.NewRequest(&authv1.GetGroupRequest{Id: tc.id}))
+			resp, err := h.GetGroup(clientsHandlerTestCtx(), connect.NewRequest(&authv1.GetGroupRequest{Id: tc.id}))
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -171,11 +170,11 @@ func TestGroupHandler_UpdateGroup(t *testing.T) {
 
 			h := NewGroupHandler(
 				nil, nil,
-				authuc.NewUpdateGroupUseCase(repo),
+				authuc.NewUpdateGroupUseCase(allowAllClientsHandlerEnforcer{}, repo),
 				nil, nil, nil, nil,
 			)
 
-			resp, err := h.UpdateGroup(context.Background(), connect.NewRequest(&authv1.UpdateGroupRequest{
+			resp, err := h.UpdateGroup(clientsHandlerTestCtx(), connect.NewRequest(&authv1.UpdateGroupRequest{
 				Id:   tc.id,
 				Name: tc.newName,
 			}))
@@ -223,11 +222,11 @@ func TestGroupHandler_DeleteGroup(t *testing.T) {
 
 			h := NewGroupHandler(
 				nil, nil, nil,
-				authuc.NewDeleteGroupUseCase(deleter),
+				authuc.NewDeleteGroupUseCase(allowAllClientsHandlerEnforcer{}, deleter),
 				nil, nil, nil,
 			)
 
-			_, err := h.DeleteGroup(context.Background(), connect.NewRequest(&authv1.DeleteGroupRequest{Id: tc.id}))
+			_, err := h.DeleteGroup(clientsHandlerTestCtx(), connect.NewRequest(&authv1.DeleteGroupRequest{Id: tc.id}))
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -277,11 +276,11 @@ func TestGroupHandler_ListGroups(t *testing.T) {
 
 			h := NewGroupHandler(
 				nil, nil, nil, nil,
-				authuc.NewListGroupsUseCase(lister),
+				authuc.NewListGroupsUseCase(allowAllClientsHandlerEnforcer{}, lister),
 				nil, nil,
 			)
 
-			resp, err := h.ListGroups(context.Background(), connect.NewRequest(&authv1.ListGroupsRequest{}))
+			resp, err := h.ListGroups(clientsHandlerTestCtx(), connect.NewRequest(&authv1.ListGroupsRequest{}))
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -337,11 +336,11 @@ func TestGroupHandler_AddMember(t *testing.T) {
 
 			h := NewGroupHandler(
 				nil, nil, nil, nil, nil,
-				authuc.NewAddMemberUseCase(repo),
+				authuc.NewAddMemberUseCase(allowAllClientsHandlerEnforcer{}, repo),
 				nil,
 			)
 
-			resp, err := h.AddMember(context.Background(), connect.NewRequest(&authv1.AddMemberRequest{
+			resp, err := h.AddMember(clientsHandlerTestCtx(), connect.NewRequest(&authv1.AddMemberRequest{
 				GroupId: tc.groupID,
 				Email:   tc.email,
 			}))
@@ -403,10 +402,10 @@ func TestGroupHandler_RemoveMember(t *testing.T) {
 
 			h := NewGroupHandler(
 				nil, nil, nil, nil, nil, nil,
-				authuc.NewRemoveMemberUseCase(repo),
+				authuc.NewRemoveMemberUseCase(allowAllClientsHandlerEnforcer{}, repo),
 			)
 
-			resp, err := h.RemoveMember(context.Background(), connect.NewRequest(&authv1.RemoveMemberRequest{
+			resp, err := h.RemoveMember(clientsHandlerTestCtx(), connect.NewRequest(&authv1.RemoveMemberRequest{
 				GroupId: tc.groupID,
 				Email:   tc.email,
 			}))

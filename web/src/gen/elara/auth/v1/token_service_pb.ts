@@ -12,12 +12,12 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/auth/v1/token_service.proto.
  */
 export const file_elara_auth_v1_token_service: GenFile = /*@__PURE__*/
-  fileDesc("CiFlbGFyYS9hdXRoL3YxL3Rva2VuX3NlcnZpY2UucHJvdG8SDWVsYXJhLmF1dGgudjEimQIKA1BBVBIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEhIKCnVzZXJfZW1haWwYAyABKAkSEgoKbmFtZXNwYWNlcxgEIAMoCRIzCgpleHBpcmVzX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAiAEBEjUKDGxhc3RfdXNlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAYgBARIUCgxsYXN0X3VzZWRfaXAYByABKAkSLgoKY3JlYXRlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDQoLX2V4cGlyZXNfYXRCDwoNX2xhc3RfdXNlZF9hdCJ6ChJDcmVhdGVUb2tlblJlcXVlc3QSDAoEbmFtZRgBIAEoCRISCgpuYW1lc3BhY2VzGAIgAygJEjMKCmV4cGlyZXNfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSACIAQFCDQoLX2V4cGlyZXNfYXQiSwoTQ3JlYXRlVG9rZW5SZXNwb25zZRIhCgV0b2tlbhgBIAEoCzISLmVsYXJhLmF1dGgudjEuUEFUEhEKCXJhd190b2tlbhgCIAEoCSInChFMaXN0VG9rZW5zUmVxdWVzdBISCgp1c2VyX2VtYWlsGAEgASgJIjgKEkxpc3RUb2tlbnNSZXNwb25zZRIiCgZ0b2tlbnMYASADKAsyEi5lbGFyYS5hdXRoLnYxLlBBVCIdCg9HZXRUb2tlblJlcXVlc3QSCgoCaWQYASABKAkiNQoQR2V0VG9rZW5SZXNwb25zZRIhCgV0b2tlbhgBIAEoCzISLmVsYXJhLmF1dGgudjEuUEFUIiAKElJldm9rZVRva2VuUmVxdWVzdBIKCgJpZBgBIAEoCSIVChNSZXZva2VUb2tlblJlc3BvbnNlMtoCCgxUb2tlblNlcnZpY2USVAoLQ3JlYXRlVG9rZW4SIS5lbGFyYS5hdXRoLnYxLkNyZWF0ZVRva2VuUmVxdWVzdBoiLmVsYXJhLmF1dGgudjEuQ3JlYXRlVG9rZW5SZXNwb25zZRJRCgpMaXN0VG9rZW5zEiAuZWxhcmEuYXV0aC52MS5MaXN0VG9rZW5zUmVxdWVzdBohLmVsYXJhLmF1dGgudjEuTGlzdFRva2Vuc1Jlc3BvbnNlEksKCEdldFRva2VuEh4uZWxhcmEuYXV0aC52MS5HZXRUb2tlblJlcXVlc3QaHy5lbGFyYS5hdXRoLnYxLkdldFRva2VuUmVzcG9uc2USVAoLUmV2b2tlVG9rZW4SIS5lbGFyYS5hdXRoLnYxLlJldm9rZVRva2VuUmVxdWVzdBoiLmVsYXJhLmF1dGgudjEuUmV2b2tlVG9rZW5SZXNwb25zZULCAQoRY29tLmVsYXJhLmF1dGgudjFCEVRva2VuU2VydmljZVByb3RvUAFaRGdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL2F1dGgvdjE7YXV0aHYxogIDRUFYqgINRWxhcmEuQXV0aC5WMcoCDUVsYXJhXEF1dGhcVjHiAhlFbGFyYVxBdXRoXFYxXEdQQk1ldGFkYXRh6gIPRWxhcmE6OkF1dGg6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("CiFlbGFyYS9hdXRoL3YxL3Rva2VuX3NlcnZpY2UucHJvdG8SDWVsYXJhLmF1dGgudjEiqAIKBVRva2VuEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEQoJaXNzdWVkX2J5GAMgASgJEhIKCm5hbWVzcGFjZXMYBCADKAkSDAoEcm9sZRgFIAEoCRIzCgpleHBpcmVzX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAiAEBEjUKDGxhc3RfdXNlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAYgBARIUCgxsYXN0X3VzZWRfaXAYCCABKAkSLgoKY3JlYXRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDQoLX2V4cGlyZXNfYXRCDwoNX2xhc3RfdXNlZF9hdCKIAQoSQ3JlYXRlVG9rZW5SZXF1ZXN0EgwKBG5hbWUYASABKAkSEgoKbmFtZXNwYWNlcxgCIAMoCRIMCgRyb2xlGAMgASgJEjMKCmV4cGlyZXNfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSACIAQFCDQoLX2V4cGlyZXNfYXQiTQoTQ3JlYXRlVG9rZW5SZXNwb25zZRIjCgV0b2tlbhgBIAEoCzIULmVsYXJhLmF1dGgudjEuVG9rZW4SEQoJcmF3X3Rva2VuGAIgASgJIiYKEUxpc3RUb2tlbnNSZXF1ZXN0EhEKCWlzc3VlZF9ieRgBIAEoCSI6ChJMaXN0VG9rZW5zUmVzcG9uc2USJAoGdG9rZW5zGAEgAygLMhQuZWxhcmEuYXV0aC52MS5Ub2tlbiIdCg9HZXRUb2tlblJlcXVlc3QSCgoCaWQYASABKAkiNwoQR2V0VG9rZW5SZXNwb25zZRIjCgV0b2tlbhgBIAEoCzIULmVsYXJhLmF1dGgudjEuVG9rZW4iIAoSUmV2b2tlVG9rZW5SZXF1ZXN0EgoKAmlkGAEgASgJIhUKE1Jldm9rZVRva2VuUmVzcG9uc2Uy2gIKDFRva2VuU2VydmljZRJUCgtDcmVhdGVUb2tlbhIhLmVsYXJhLmF1dGgudjEuQ3JlYXRlVG9rZW5SZXF1ZXN0GiIuZWxhcmEuYXV0aC52MS5DcmVhdGVUb2tlblJlc3BvbnNlElEKCkxpc3RUb2tlbnMSIC5lbGFyYS5hdXRoLnYxLkxpc3RUb2tlbnNSZXF1ZXN0GiEuZWxhcmEuYXV0aC52MS5MaXN0VG9rZW5zUmVzcG9uc2USSwoIR2V0VG9rZW4SHi5lbGFyYS5hdXRoLnYxLkdldFRva2VuUmVxdWVzdBofLmVsYXJhLmF1dGgudjEuR2V0VG9rZW5SZXNwb25zZRJUCgtSZXZva2VUb2tlbhIhLmVsYXJhLmF1dGgudjEuUmV2b2tlVG9rZW5SZXF1ZXN0GiIuZWxhcmEuYXV0aC52MS5SZXZva2VUb2tlblJlc3BvbnNlQsIBChFjb20uZWxhcmEuYXV0aC52MUIRVG9rZW5TZXJ2aWNlUHJvdG9QAVpEZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvYXV0aC92MTthdXRodjGiAgNFQViqAg1FbGFyYS5BdXRoLlYxygINRWxhcmFcQXV0aFxWMeICGUVsYXJhXEF1dGhcVjFcR1BCTWV0YWRhdGHqAg9FbGFyYTo6QXV0aDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
- * @generated from message elara.auth.v1.PAT
+ * @generated from message elara.auth.v1.Token
  */
-export type PAT = Message<"elara.auth.v1.PAT"> & {
+export type Token = Message<"elara.auth.v1.Token"> & {
   /**
    * @generated from field: string id = 1;
    */
@@ -29,9 +29,9 @@ export type PAT = Message<"elara.auth.v1.PAT"> & {
   name: string;
 
   /**
-   * @generated from field: string user_email = 3;
+   * @generated from field: string issued_by = 3;
    */
-  userEmail: string;
+  issuedBy: string;
 
   /**
    * @generated from field: repeated string namespaces = 4;
@@ -39,31 +39,36 @@ export type PAT = Message<"elara.auth.v1.PAT"> & {
   namespaces: string[];
 
   /**
-   * @generated from field: optional google.protobuf.Timestamp expires_at = 5;
+   * @generated from field: string role = 5;
+   */
+  role: string;
+
+  /**
+   * @generated from field: optional google.protobuf.Timestamp expires_at = 6;
    */
   expiresAt?: Timestamp;
 
   /**
-   * @generated from field: optional google.protobuf.Timestamp last_used_at = 6;
+   * @generated from field: optional google.protobuf.Timestamp last_used_at = 7;
    */
   lastUsedAt?: Timestamp;
 
   /**
-   * @generated from field: string last_used_ip = 7;
+   * @generated from field: string last_used_ip = 8;
    */
   lastUsedIp: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp created_at = 8;
+   * @generated from field: google.protobuf.Timestamp created_at = 9;
    */
   createdAt?: Timestamp;
 };
 
 /**
- * Describes the message elara.auth.v1.PAT.
- * Use `create(PATSchema)` to create a new message.
+ * Describes the message elara.auth.v1.Token.
+ * Use `create(TokenSchema)` to create a new message.
  */
-export const PATSchema: GenMessage<PAT> = /*@__PURE__*/
+export const TokenSchema: GenMessage<Token> = /*@__PURE__*/
   messageDesc(file_elara_auth_v1_token_service, 0);
 
 /**
@@ -81,7 +86,12 @@ export type CreateTokenRequest = Message<"elara.auth.v1.CreateTokenRequest"> & {
   namespaces: string[];
 
   /**
-   * @generated from field: optional google.protobuf.Timestamp expires_at = 3;
+   * @generated from field: string role = 3;
+   */
+  role: string;
+
+  /**
+   * @generated from field: optional google.protobuf.Timestamp expires_at = 4;
    */
   expiresAt?: Timestamp;
 };
@@ -98,9 +108,9 @@ export const CreateTokenRequestSchema: GenMessage<CreateTokenRequest> = /*@__PUR
  */
 export type CreateTokenResponse = Message<"elara.auth.v1.CreateTokenResponse"> & {
   /**
-   * @generated from field: elara.auth.v1.PAT token = 1;
+   * @generated from field: elara.auth.v1.Token token = 1;
    */
-  token?: PAT;
+  token?: Token;
 
   /**
    * @generated from field: string raw_token = 2;
@@ -120,9 +130,9 @@ export const CreateTokenResponseSchema: GenMessage<CreateTokenResponse> = /*@__P
  */
 export type ListTokensRequest = Message<"elara.auth.v1.ListTokensRequest"> & {
   /**
-   * @generated from field: string user_email = 1;
+   * @generated from field: string issued_by = 1;
    */
-  userEmail: string;
+  issuedBy: string;
 };
 
 /**
@@ -137,9 +147,9 @@ export const ListTokensRequestSchema: GenMessage<ListTokensRequest> = /*@__PURE_
  */
 export type ListTokensResponse = Message<"elara.auth.v1.ListTokensResponse"> & {
   /**
-   * @generated from field: repeated elara.auth.v1.PAT tokens = 1;
+   * @generated from field: repeated elara.auth.v1.Token tokens = 1;
    */
-  tokens: PAT[];
+  tokens: Token[];
 };
 
 /**
@@ -171,9 +181,9 @@ export const GetTokenRequestSchema: GenMessage<GetTokenRequest> = /*@__PURE__*/
  */
 export type GetTokenResponse = Message<"elara.auth.v1.GetTokenResponse"> & {
   /**
-   * @generated from field: elara.auth.v1.PAT token = 1;
+   * @generated from field: elara.auth.v1.Token token = 1;
    */
-  token?: PAT;
+  token?: Token;
 };
 
 /**

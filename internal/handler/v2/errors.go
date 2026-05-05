@@ -43,8 +43,7 @@ func toConnectError(err error) error {
 
 func schemaValidationConnectError(err error) *connect.Error {
 	connectErr := connect.NewError(connect.CodeInvalidArgument, err)
-	var sve *domain.SchemaValidationError
-	if errors.As(err, &sve) {
+	if sve, ok := errors.AsType[*domain.SchemaValidationError](err); ok {
 		failure := &configv1.SchemaValidationFailure{}
 		for _, v := range sve.Violations {
 			failure.Violations = append(failure.Violations, &configv1.SchemaViolation{

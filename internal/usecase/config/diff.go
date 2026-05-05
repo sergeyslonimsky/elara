@@ -8,6 +8,7 @@ import (
 
 	"github.com/pmezard/go-difflib/difflib"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
@@ -17,16 +18,21 @@ const diffContextLines = 3
 
 //go:generate mockgen -destination=mocks/mock_diff.go -package=config_mock . configDiffReader
 
+type diffEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
+
 type configDiffReader interface {
 	GetAtRevision(ctx context.Context, path, namespace string, revision int64) (*domain.HistoryEntry, error)
 }
 
 type DiffUseCase struct {
-	configs configDiffReader
+	enforcer diffEnforcer
+	configs  configDiffReader
 }
 
-func NewDiffUseCase(configs configDiffReader) *DiffUseCase {
-	return &DiffUseCase{configs: configs}
+func NewDiffUseCase(enforcer diffEnforcer, configs configDiffReader) *DiffUseCase {
+	return &DiffUseCase{enforcer: enforcer, configs: configs}
 }
 
 func (uc *DiffUseCase) GetDiff(
@@ -36,6 +42,10 @@ func (uc *DiffUseCase) GetDiff(
 ) (*domain.ConfigDiff, error) {
 	if err := uc.validate(path, namespace, fromRevision, toRevision); err != nil {
 		return nil, fmt.Errorf("validate: %w", err)
+	}
+
+	if err := auth.CheckAccess(ctx, uc.enforcer, namespace, auth.ObjectConfig, auth.ActionRead); err != nil {
+		return nil, fmt.Errorf("check access: %w", err)
 	}
 
 	toEntry, err := uc.configs.GetAtRevision(ctx, path, namespace, toRevision)

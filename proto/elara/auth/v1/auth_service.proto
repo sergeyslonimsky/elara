@@ -23,11 +23,19 @@ message LogoutResponse {}
 
 message MeRequest {}
 
+message NamespaceAccess {
+  string name = 1;
+  bool can_write = 2;
+}
+
 message MeResponse {
   string email = 1;
   string name = 2;
   string picture = 3;
-  repeated string roles = 4;
+  bool is_admin = 4;
+  repeated NamespaceAccess namespaces = 5;
+  bool can_view_webhooks = 6;
+  bool can_manage_webhooks = 7;
 }
 
 service AuthService {

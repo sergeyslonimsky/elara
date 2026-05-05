@@ -4,8 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
+
+type updateEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type configUpdater interface {
 	Update(ctx context.Context, cfg *domain.Config) error
@@ -28,6 +33,7 @@ type updateSchemaValidator interface {
 }
 
 type UpdateUseCase struct {
+	enforcer        updateEnforcer
 	configs         configUpdater
 	getter          updateConfigGetter
 	watch           updateWatchNotifier
@@ -36,6 +42,7 @@ type UpdateUseCase struct {
 }
 
 func NewUpdateUseCase(
+	enforcer updateEnforcer,
 	configs configUpdater,
 	getter updateConfigGetter,
 	watch updateWatchNotifier,
@@ -43,6 +50,7 @@ func NewUpdateUseCase(
 	schemaValidator updateSchemaValidator,
 ) *UpdateUseCase {
 	return &UpdateUseCase{
+		enforcer:        enforcer,
 		configs:         configs,
 		getter:          getter,
 		watch:           watch,
@@ -52,6 +60,10 @@ func NewUpdateUseCase(
 }
 
 func (uc *UpdateUseCase) Execute(ctx context.Context, cfg *domain.Config) (*domain.Config, error) {
+	if err := auth.CheckAccess(ctx, uc.enforcer, cfg.Namespace, auth.ObjectConfig, auth.ActionWrite); err != nil {
+		return nil, fmt.Errorf("check access: %w", err)
+	}
+
 	if err := domain.ValidatePath(cfg.Path); err != nil {
 		return nil, fmt.Errorf("validate path: %w", err)
 	}

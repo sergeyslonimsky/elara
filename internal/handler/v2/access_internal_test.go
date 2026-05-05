@@ -1,7 +1,6 @@
 package v2
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -19,13 +18,12 @@ func TestAccessHandler_AssignRole(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name          string
-		subject       string
-		domain        string
-		role          string
-		addErr        error
-		savePolicyErr error
-		wantErr       bool
+		name    string
+		subject string
+		domain  string
+		role    string
+		addErr  error
+		wantErr bool
 	}{
 		{
 			name:    "assigns role successfully",
@@ -49,19 +47,16 @@ func TestAccessHandler_AssignRole(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
-			loader := auth_mock.NewMockaccessPolicyLoader(ctrl)
 
+			enforcer.EXPECT().Enforce(gomock.Any(), "*", "policy", "write").Return(true, nil)
 			enforcer.EXPECT().AddRoleForUser(tc.subject, tc.role, tc.domain).Return(tc.addErr)
-			if tc.addErr == nil {
-				enforcer.EXPECT().SavePolicy(gomock.Any(), gomock.Any()).Return(tc.savePolicyErr)
-			}
 
 			h := NewAccessHandler(
-				authuc.NewAssignRoleUseCase(enforcer, loader),
+				authuc.NewAssignRoleUseCase(enforcer),
 				nil, nil,
 			)
 
-			_, err := h.AssignRole(context.Background(), connect.NewRequest(&authv1.AssignRoleRequest{
+			_, err := h.AssignRole(clientsHandlerTestCtx(), connect.NewRequest(&authv1.AssignRoleRequest{
 				Subject: tc.subject,
 				Domain:  tc.domain,
 				Role:    tc.role,
@@ -111,20 +106,17 @@ func TestAccessHandler_RevokeRole(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
-			loader := auth_mock.NewMockaccessPolicyLoader(ctrl)
 
+			enforcer.EXPECT().Enforce(gomock.Any(), "*", "policy", "write").Return(true, nil)
 			enforcer.EXPECT().RemoveRoleForUser(tc.subject, tc.role, tc.domain).Return(tc.removeErr)
-			if tc.removeErr == nil {
-				enforcer.EXPECT().SavePolicy(gomock.Any(), gomock.Any()).Return(nil)
-			}
 
 			h := NewAccessHandler(
 				nil,
-				authuc.NewRevokeRoleUseCase(enforcer, loader),
+				authuc.NewRevokeRoleUseCase(enforcer),
 				nil,
 			)
 
-			_, err := h.RevokeRole(context.Background(), connect.NewRequest(&authv1.RevokeRoleRequest{
+			_, err := h.RevokeRole(clientsHandlerTestCtx(), connect.NewRequest(&authv1.RevokeRoleRequest{
 				Subject: tc.subject,
 				Domain:  tc.domain,
 				Role:    tc.role,
@@ -172,6 +164,7 @@ func TestAccessHandler_ListPolicies(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+			enforcer.EXPECT().Enforce(gomock.Any(), "*", "policy", "read").Return(true, nil)
 			enforcer.EXPECT().GetGroupingPolicy().Return(tc.rules)
 
 			h := NewAccessHandler(
@@ -179,7 +172,7 @@ func TestAccessHandler_ListPolicies(t *testing.T) {
 				authuc.NewListPoliciesUseCase(enforcer),
 			)
 
-			resp, err := h.ListPolicies(context.Background(), connect.NewRequest(&authv1.ListPoliciesRequest{}))
+			resp, err := h.ListPolicies(clientsHandlerTestCtx(), connect.NewRequest(&authv1.ListPoliciesRequest{}))
 			require.NoError(t, err)
 			assert.Len(t, resp.Msg.GetRules(), tc.wantLen)
 		})

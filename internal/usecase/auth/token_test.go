@@ -22,15 +22,24 @@ func TestCreateTokenUseCase_Execute(t *testing.T) { // NOSONAR
 	t.Parallel()
 
 	tests := []struct {
-		name    string
-		email   string
-		noAuth  bool
-		repoErr error
-		wantErr bool
+		name       string
+		email      string
+		namespaces []string
+		role       string
+		noAuth     bool
+		mock       func(enforcer *auth_mock.MocktokenEnforcer, creator *auth_mock.MocktokenCreator)
+		wantErr    bool
 	}{
 		{
-			name:  "creates token with elara_ prefix",
-			email: "user@example.com",
+			name:       "creates token with elara_ prefix",
+			email:      "user@example.com",
+			namespaces: []string{"ns1"},
+			role:       "writer",
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, creator *auth_mock.MocktokenCreator) {
+				enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(true, nil)
+				enforcer.EXPECT().Enforce("user@example.com", "ns1", "config", "write").Return(true, nil)
+				creator.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+			},
 		},
 		{
 			name:    "no auth context returns unauthorized",
@@ -38,9 +47,29 @@ func TestCreateTokenUseCase_Execute(t *testing.T) { // NOSONAR
 			wantErr: true,
 		},
 		{
-			name:    "repo create error propagated",
-			email:   "user@example.com",
-			repoErr: errors.New("storage error"),
+			name:       "empty namespaces returns error",
+			email:      "user@example.com",
+			namespaces: []string{},
+			wantErr:    true,
+		},
+		{
+			name:       "forbidden namespace returns error",
+			email:      "user@example.com",
+			namespaces: []string{"ns1"},
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, creator *auth_mock.MocktokenCreator) {
+				enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(false, nil)
+			},
+			wantErr: true,
+		},
+		{
+			name:       "repo create error propagated",
+			email:      "user@example.com",
+			namespaces: []string{"ns1"},
+			role:       "reader",
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, creator *auth_mock.MocktokenCreator) {
+				enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(true, nil)
+				creator.EXPECT().Create(gomock.Any(), gomock.Any()).Return(errors.New("storage error"))
+			},
 			wantErr: true,
 		},
 	}
@@ -50,20 +79,21 @@ func TestCreateTokenUseCase_Execute(t *testing.T) { // NOSONAR
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
+			enforcer := auth_mock.NewMocktokenEnforcer(ctrl)
 			creator := auth_mock.NewMocktokenCreator(ctrl)
 
-			if !tc.noAuth {
-				creator.EXPECT().Create(gomock.Any(), gomock.Any()).Return(tc.repoErr)
+			if tc.mock != nil {
+				tc.mock(enforcer, creator)
 			}
 
-			uc := authuc.NewCreateTokenUseCase(creator)
+			uc := authuc.NewCreateTokenUseCase(enforcer, creator)
 
 			ctx := t.Context()
 			if !tc.noAuth {
 				ctx = ctxWithClaims(tc.email)
 			}
 
-			pat, rawToken, err := uc.Execute(ctx, "my-token", []string{"ns1"}, nil)
+			token, rawToken, err := uc.Execute(ctx, "my-token", tc.namespaces, tc.role, nil)
 
 			if tc.wantErr {
 				if err == nil {
@@ -77,11 +107,11 @@ func TestCreateTokenUseCase_Execute(t *testing.T) { // NOSONAR
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if pat.ID == "" {
-				t.Error("expected non-empty PAT ID")
+			if token.ID == "" {
+				t.Error("expected non-empty token ID")
 			}
 
-			if pat.TokenHash == "" {
+			if token.TokenHash == "" {
 				t.Error("expected non-empty token hash")
 			}
 
@@ -89,8 +119,8 @@ func TestCreateTokenUseCase_Execute(t *testing.T) { // NOSONAR
 				t.Errorf("raw token %q must start with elara_", rawToken)
 			}
 
-			if pat.UserEmail != tc.email {
-				t.Errorf("got user email %q, want %q", pat.UserEmail, tc.email)
+			if token.IssuedBy != tc.email {
+				t.Errorf("got issued by %q, want %q", token.IssuedBy, tc.email)
 			}
 		})
 	}
@@ -99,41 +129,55 @@ func TestCreateTokenUseCase_Execute(t *testing.T) { // NOSONAR
 func TestListTokensUseCase_Execute(t *testing.T) {
 	t.Parallel()
 
-	tokens := []*domain.PAT{
-		{ID: "t1", UserEmail: "user@example.com"},
-		{ID: "t2", UserEmail: "other@example.com"},
+	tokens := []*domain.Token{
+		{ID: "t1", IssuedBy: "other@example.com", Namespaces: []string{"ns1"}},
+		{ID: "t2", IssuedBy: "user@example.com", Namespaces: []string{"ns2"}},
+		{ID: "t3", IssuedBy: "stranger@example.com", Namespaces: []string{"secret"}},
 	}
 
 	tests := []struct {
-		name      string
-		userEmail string
-		retTokens []*domain.PAT
-		retErr    error
-		wantLen   int
-		wantErr   bool
+		name    string
+		email   string
+		target  string
+		mock    func(enforcer *auth_mock.MocktokenEnforcer, lister *auth_mock.MocktokenLister)
+		wantLen int
+		wantErr bool
 	}{
 		{
-			name:      "filters by user email",
-			userEmail: "user@example.com",
-			retTokens: tokens[:1],
-			wantLen:   1,
+			name:   "admin can see any user tokens",
+			email:  "admin@example.com",
+			target: "other@example.com",
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, lister *auth_mock.MocktokenLister) {
+				enforcer.EXPECT().Enforce("admin@example.com", "*", "token", "read").Return(true, nil)
+				lister.EXPECT().List(gomock.Any(), "other@example.com").Return(tokens[:1], nil)
+			},
+			wantLen: 1,
 		},
 		{
-			name:      "empty email returns all tokens",
-			userEmail: "",
-			retTokens: tokens,
-			wantLen:   2,
+			name:   "user can see own tokens and tokens for their namespaces",
+			email:  "user@example.com",
+			target: "", // list all they can see
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, lister *auth_mock.MocktokenLister) {
+				enforcer.EXPECT().Enforce("user@example.com", "*", "token", "read").Return(false, nil)
+				lister.EXPECT().List(gomock.Any(), "").Return(tokens, nil)
+				// Access to t1's ns1 -> yes
+				enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(true, nil)
+				// t2 is own -> yes (no Enforce call needed due to IssuedBy check)
+				// Access to t3's secret -> no
+				enforcer.EXPECT().Enforce("user@example.com", "secret", "namespace", "read").Return(false, nil)
+			},
+			wantLen: 2, // t1 (accessible ns) + t2 (own)
 		},
 		{
-			name:      "returns empty slice",
-			userEmail: "nobody@example.com",
-			retTokens: []*domain.PAT{},
-			wantLen:   0,
-		},
-		{
-			name:    "repo error propagated",
-			retErr:  errors.New("storage error"),
-			wantErr: true,
+			name:   "user can filter other's tokens if they have namespace access",
+			email:  "user@example.com",
+			target: "other@example.com",
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, lister *auth_mock.MocktokenLister) {
+				enforcer.EXPECT().Enforce("user@example.com", "*", "token", "read").Return(false, nil)
+				lister.EXPECT().List(gomock.Any(), "other@example.com").Return(tokens[:1], nil)
+				enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(true, nil)
+			},
+			wantLen: 1,
 		},
 	}
 
@@ -142,11 +186,15 @@ func TestListTokensUseCase_Execute(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
+			enforcer := auth_mock.NewMocktokenEnforcer(ctrl)
 			lister := auth_mock.NewMocktokenLister(ctrl)
-			lister.EXPECT().List(gomock.Any(), tc.userEmail).Return(tc.retTokens, tc.retErr)
 
-			uc := authuc.NewListTokensUseCase(lister)
-			got, err := uc.Execute(t.Context(), tc.userEmail)
+			if tc.mock != nil {
+				tc.mock(enforcer, lister)
+			}
+
+			uc := authuc.NewListTokensUseCase(enforcer, lister)
+			got, err := uc.Execute(ctxWithClaims(tc.email), tc.target)
 
 			if tc.wantErr {
 				if err == nil {
@@ -170,24 +218,51 @@ func TestListTokensUseCase_Execute(t *testing.T) {
 func TestGetTokenUseCase_Execute(t *testing.T) {
 	t.Parallel()
 
-	existing := &domain.PAT{ID: "t1", UserEmail: "user@example.com"}
+	existing := &domain.Token{ID: "t1", IssuedBy: "other@example.com", Namespaces: []string{"ns1"}}
 
 	tests := []struct {
 		name    string
+		email   string
 		id      string
-		retPAT  *domain.PAT
-		retErr  error
+		mock    func(enforcer *auth_mock.MocktokenEnforcer, getter *auth_mock.MocktokenIDGetter)
 		wantErr bool
 	}{
 		{
-			name:   "returns existing token",
-			id:     "t1",
-			retPAT: existing,
+			name:  "owner can get token",
+			email: "other@example.com",
+			id:    "t1",
+			mock: func(_ *auth_mock.MocktokenEnforcer, getter *auth_mock.MocktokenIDGetter) {
+				getter.EXPECT().GetByID(gomock.Any(), "t1").Return(existing, nil)
+			},
 		},
 		{
-			name:    "not found returns error",
-			id:      "missing",
-			retErr:  domain.NewNotFoundError("token", "missing"),
+			name:  "admin can get any token",
+			email: "admin@example.com",
+			id:    "t1",
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, getter *auth_mock.MocktokenIDGetter) {
+				getter.EXPECT().GetByID(gomock.Any(), "t1").Return(existing, nil)
+				enforcer.EXPECT().Enforce("admin@example.com", "*", "token", "read").Return(true, nil)
+			},
+		},
+		{
+			name:  "user with namespace access can get token",
+			email: "user@example.com",
+			id:    "t1",
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, getter *auth_mock.MocktokenIDGetter) {
+				getter.EXPECT().GetByID(gomock.Any(), "t1").Return(existing, nil)
+				enforcer.EXPECT().Enforce("user@example.com", "*", "token", "read").Return(false, nil)
+				enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(true, nil)
+			},
+		},
+		{
+			name:  "stranger without namespace access cannot get token",
+			email: "stranger@example.com",
+			id:    "t1",
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, getter *auth_mock.MocktokenIDGetter) {
+				getter.EXPECT().GetByID(gomock.Any(), "t1").Return(existing, nil)
+				enforcer.EXPECT().Enforce("stranger@example.com", "*", "token", "read").Return(false, nil)
+				enforcer.EXPECT().Enforce("stranger@example.com", "ns1", "namespace", "read").Return(false, nil)
+			},
 			wantErr: true,
 		},
 	}
@@ -197,11 +272,15 @@ func TestGetTokenUseCase_Execute(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
+			enforcer := auth_mock.NewMocktokenEnforcer(ctrl)
 			getter := auth_mock.NewMocktokenIDGetter(ctrl)
-			getter.EXPECT().GetByID(gomock.Any(), tc.id).Return(tc.retPAT, tc.retErr)
 
-			uc := authuc.NewGetTokenUseCase(getter)
-			got, err := uc.Execute(t.Context(), tc.id)
+			if tc.mock != nil {
+				tc.mock(enforcer, getter)
+			}
+
+			uc := authuc.NewGetTokenUseCase(enforcer, getter)
+			got, err := uc.Execute(ctxWithClaims(tc.email), tc.id)
 
 			if tc.wantErr {
 				if err == nil {
@@ -225,26 +304,42 @@ func TestGetTokenUseCase_Execute(t *testing.T) {
 func TestRevokeTokenUseCase_Execute(t *testing.T) {
 	t.Parallel()
 
+	existing := &domain.Token{ID: "t1", IssuedBy: "user@example.com"}
+
 	tests := []struct {
 		name    string
+		email   string
 		id      string
-		retErr  error
+		mock    func(enforcer *auth_mock.MocktokenEnforcer, deleter *auth_mock.MocktokenDeleter, getter *auth_mock.MocktokenIDGetter)
 		wantErr bool
 	}{
 		{
-			name: "revokes existing token",
-			id:   "t1",
+			name:  "owner can revoke token",
+			email: "user@example.com",
+			id:    "t1",
+			mock: func(_ *auth_mock.MocktokenEnforcer, deleter *auth_mock.MocktokenDeleter, getter *auth_mock.MocktokenIDGetter) {
+				getter.EXPECT().GetByID(gomock.Any(), "t1").Return(existing, nil)
+				deleter.EXPECT().Delete(gomock.Any(), "t1").Return(nil)
+			},
 		},
 		{
-			name:    "not found returns error",
-			id:      "missing",
-			retErr:  domain.NewNotFoundError("token", "missing"),
-			wantErr: true,
+			name:  "admin can revoke any token",
+			email: "admin@example.com",
+			id:    "t1",
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, deleter *auth_mock.MocktokenDeleter, getter *auth_mock.MocktokenIDGetter) {
+				getter.EXPECT().GetByID(gomock.Any(), "t1").Return(existing, nil)
+				enforcer.EXPECT().Enforce("admin@example.com", "*", "token", "write").Return(true, nil)
+				deleter.EXPECT().Delete(gomock.Any(), "t1").Return(nil)
+			},
 		},
 		{
-			name:    "storage error propagated",
-			id:      "t1",
-			retErr:  errors.New("storage error"),
+			name:  "stranger cannot revoke token",
+			email: "other@example.com",
+			id:    "t1",
+			mock: func(enforcer *auth_mock.MocktokenEnforcer, _ *auth_mock.MocktokenDeleter, getter *auth_mock.MocktokenIDGetter) {
+				getter.EXPECT().GetByID(gomock.Any(), "t1").Return(existing, nil)
+				enforcer.EXPECT().Enforce("other@example.com", "*", "token", "write").Return(false, nil)
+			},
 			wantErr: true,
 		},
 	}
@@ -254,11 +349,16 @@ func TestRevokeTokenUseCase_Execute(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
+			enforcer := auth_mock.NewMocktokenEnforcer(ctrl)
 			deleter := auth_mock.NewMocktokenDeleter(ctrl)
-			deleter.EXPECT().Delete(gomock.Any(), tc.id).Return(tc.retErr)
+			getter := auth_mock.NewMocktokenIDGetter(ctrl)
 
-			uc := authuc.NewRevokeTokenUseCase(deleter)
-			err := uc.Execute(t.Context(), tc.id)
+			if tc.mock != nil {
+				tc.mock(enforcer, deleter, getter)
+			}
+
+			uc := authuc.NewRevokeTokenUseCase(enforcer, deleter, getter)
+			err := uc.Execute(ctxWithClaims(tc.email), tc.id)
 
 			if tc.wantErr {
 				if err == nil {

@@ -43,7 +43,10 @@ func (h *ClientsHandler) ListActiveClients(
 	ctx context.Context,
 	_ *connect.Request[clientsv2.ListActiveClientsRequest],
 ) (*connect.Response[clientsv2.ListActiveClientsResponse], error) {
-	clients := h.uc.ListActive(ctx)
+	clients, err := h.uc.ListActive(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list active clients: %w", err)
+	}
 
 	resp := &clientsv2.ListActiveClientsResponse{
 		Clients: make([]*clientsv2.Client, 0, len(clients)),
@@ -186,7 +189,11 @@ func (h *ClientsHandler) runWatch(ctx context.Context, sender watchSender) error
 		interval = defaultWatchSnapshotInterval
 	}
 
-	changes, cancel := h.uc.SubscribeChanges()
+	changes, cancel, err := h.uc.SubscribeChanges(ctx)
+	if err != nil {
+		return toConnectError(err)
+	}
+
 	defer cancel()
 
 	ticker := time.NewTicker(interval)
@@ -197,6 +204,15 @@ func (h *ClientsHandler) runWatch(ctx context.Context, sender watchSender) error
 		return err
 	}
 
+	return h.watchLoop(ctx, sender, changes, ticker)
+}
+
+func (h *ClientsHandler) watchLoop(
+	ctx context.Context,
+	sender watchSender,
+	changes <-chan domain.ClientChange,
+	ticker *time.Ticker,
+) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -220,7 +236,11 @@ func (h *ClientsHandler) runWatch(ctx context.Context, sender watchSender) error
 }
 
 func (h *ClientsHandler) sendSnapshot(ctx context.Context, sender watchSender) error {
-	clients := h.uc.ListActive(ctx)
+	clients, err := h.uc.ListActive(ctx)
+	if err != nil {
+		return fmt.Errorf("list active clients: %w", err)
+	}
+
 	protoClients := make([]*clientsv2.Client, 0, len(clients))
 
 	for _, c := range clients {
@@ -243,7 +263,11 @@ func (h *ClientsHandler) runWatchClient(ctx context.Context, id string, sender w
 		return err
 	}
 
-	changes, cancel := h.uc.SubscribeClient(id)
+	changes, cancel, err := h.uc.SubscribeClient(ctx, id)
+	if err != nil {
+		return toConnectError(err)
+	}
+
 	defer cancel()
 
 	interval := h.snapshotInterval

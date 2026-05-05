@@ -13,10 +13,29 @@ import (
 	"go.uber.org/mock/gomock"
 
 	internalauth "github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	authv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
+
+// stubEnforcer is a minimal meEnforcer stub for handler tests.
+type stubEnforcer struct {
+	allowAll bool
+}
+
+func (s *stubEnforcer) Enforce(_, _, _, _ string) (bool, error) {
+	return s.allowAll, nil
+}
+
+// stubNamespaceLister returns a fixed list of namespaces.
+type stubNamespaceLister struct {
+	namespaces []*domain.Namespace
+}
+
+func (s *stubNamespaceLister) List(_ context.Context) ([]*domain.Namespace, error) {
+	return s.namespaces, nil
+}
 
 func newTestAuthHandler(
 	loginUC *authuc.LoginUseCase,
@@ -90,16 +109,13 @@ func TestAuthHandler_Me(t *testing.T) {
 		name     string
 		email    string
 		authCtx  bool
-		roles    []string
-		roleErr  error
 		wantErr  bool
 		wantCode connect.Code
 	}{
 		{
-			name:    "returns user and roles",
+			name:    "returns user identity",
 			email:   "alice@example.com",
 			authCtx: true,
-			roles:   []string{"role:admin"},
 		},
 		{
 			name:     "no auth context returns unauthenticated",
@@ -113,14 +129,9 @@ func TestAuthHandler_Me(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			roleGetter := auth_mock.NewMockroleGetter(ctrl)
-
-			if tc.authCtx {
-				roleGetter.EXPECT().GetRolesForUser(tc.email, "*").Return(tc.roles, tc.roleErr)
-			}
-
-			meUC := authuc.NewMeUseCase(roleGetter)
+			enforcer := &stubEnforcer{allowAll: false}
+			nsList := &stubNamespaceLister{namespaces: nil}
+			meUC := authuc.NewMeUseCase(enforcer, nsList)
 			h := newTestAuthHandler(nil, nil, meUC)
 
 			ctx := context.Background()
@@ -139,7 +150,6 @@ func TestAuthHandler_Me(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, tc.email, resp.Msg.GetEmail())
-			assert.Equal(t, tc.roles, resp.Msg.GetRoles())
 		})
 	}
 }
@@ -174,7 +184,6 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 		setupMocks   func(
 			provider *auth_mock.MockcallbackProvider,
 			users *auth_mock.MockuserUpserter,
-			loader *auth_mock.MockpolicyLoader,
 		)
 		wantErr  bool
 		wantCode connect.Code
@@ -190,7 +199,6 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			setupMocks: func(
 				provider *auth_mock.MockcallbackProvider,
 				users *auth_mock.MockuserUpserter,
-				loader *auth_mock.MockpolicyLoader,
 			) {
 				provider.EXPECT().
 					Exchange(gomock.Any(), "auth-code", "test-nonce").
@@ -199,8 +207,6 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 						Name:  "Test User",
 					}, nil)
 				users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
-				loader.EXPECT().Load(gomock.Any()).Return([][]string{}, nil).AnyTimes()
-				loader.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 			},
 		},
 		{
@@ -213,7 +219,6 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			setupMocks: func(
 				_ *auth_mock.MockcallbackProvider,
 				_ *auth_mock.MockuserUpserter,
-				_ *auth_mock.MockpolicyLoader,
 			) {
 			},
 		},
@@ -227,7 +232,6 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			setupMocks: func(
 				_ *auth_mock.MockcallbackProvider,
 				_ *auth_mock.MockuserUpserter,
-				_ *auth_mock.MockpolicyLoader,
 			) {
 			},
 		},
@@ -241,7 +245,6 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			setupMocks: func(
 				_ *auth_mock.MockcallbackProvider,
 				_ *auth_mock.MockuserUpserter,
-				_ *auth_mock.MockpolicyLoader,
 			) {
 			},
 		},
@@ -254,7 +257,6 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			setupMocks: func(
 				provider *auth_mock.MockcallbackProvider,
 				_ *auth_mock.MockuserUpserter,
-				_ *auth_mock.MockpolicyLoader,
 			) {
 				provider.EXPECT().
 					Exchange(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -270,15 +272,13 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			ctrl := gomock.NewController(t)
 			provider := auth_mock.NewMockcallbackProvider(ctrl)
 			users := auth_mock.NewMockuserUpserter(ctrl)
-			loader := auth_mock.NewMockpolicyLoader(ctrl)
 
-			tt.setupMocks(provider, users, loader)
+			tt.setupMocks(provider, users)
 
 			session := internalauth.NewSessionManager("test-secret", 0)
 			callbackUC := authuc.NewCallbackUseCase(
 				provider, users, session,
 				nil,
-				loader,
 				[]string{},
 			)
 

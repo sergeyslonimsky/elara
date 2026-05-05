@@ -11,50 +11,52 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-func newTestPAT(id, email, hash string) *domain.PAT {
-	return &domain.PAT{
-		ID:        id,
-		UserEmail: email,
-		Name:      "Test Token " + id,
-		TokenHash: hash,
-		CreatedAt: time.Now(),
+func newTestToken(id, issuedBy, hash string) *domain.Token {
+	return &domain.Token{
+		ID:         id,
+		IssuedBy:   issuedBy,
+		Name:       "Test Token " + id,
+		TokenHash:  hash,
+		Namespaces: []string{"prod"},
+		Role:       "writer",
+		CreatedAt:  time.Now(),
 	}
 }
 
-func TestPATRepo_Create(t *testing.T) {
+func TestTokenRepo_Create(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
-	repo := bboltadapter.NewPATRepo(store)
+	repo := bboltadapter.NewTokenRepo(store)
 	ctx := t.Context()
 
-	pat := newTestPAT("pat-1", "alice@example.com", "hash-abc123")
-	err := repo.Create(ctx, pat)
+	token := newTestToken("token-1", "alice@example.com", "hash-abc123")
+	err := repo.Create(ctx, token)
 	require.NoError(t, err)
 }
 
-func TestPATRepo_GetByHash(t *testing.T) {
+func TestTokenRepo_GetByHash(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
-	repo := bboltadapter.NewPATRepo(store)
+	repo := bboltadapter.NewTokenRepo(store)
 	ctx := t.Context()
 
-	pat := newTestPAT("pat-2", "bob@example.com", "hash-def456")
-	require.NoError(t, repo.Create(ctx, pat))
+	token := newTestToken("token-2", "bob@example.com", "hash-def456")
+	require.NoError(t, repo.Create(ctx, token))
 
 	got, err := repo.GetByHash(ctx, "hash-def456")
 	require.NoError(t, err)
-	assert.Equal(t, "pat-2", got.ID)
-	assert.Equal(t, "bob@example.com", got.UserEmail)
+	assert.Equal(t, "token-2", got.ID)
+	assert.Equal(t, "bob@example.com", got.IssuedBy)
 	assert.Equal(t, "hash-def456", got.TokenHash)
 }
 
-func TestPATRepo_GetByHash_Missing(t *testing.T) {
+func TestTokenRepo_GetByHash_Missing(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
-	repo := bboltadapter.NewPATRepo(store)
+	repo := bboltadapter.NewTokenRepo(store)
 	ctx := t.Context()
 
 	_, err := repo.GetByHash(ctx, "nonexistent-hash")
@@ -62,16 +64,16 @@ func TestPATRepo_GetByHash_Missing(t *testing.T) {
 	assert.ErrorIs(t, err, domain.ErrNotFound)
 }
 
-func TestPATRepo_List_ByUser(t *testing.T) {
+func TestTokenRepo_List_ByIssuedBy(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
-	repo := bboltadapter.NewPATRepo(store)
+	repo := bboltadapter.NewTokenRepo(store)
 	ctx := t.Context()
 
-	require.NoError(t, repo.Create(ctx, newTestPAT("pat-u1", "carol@example.com", "hash-u1")))
-	require.NoError(t, repo.Create(ctx, newTestPAT("pat-u2", "carol@example.com", "hash-u2")))
-	require.NoError(t, repo.Create(ctx, newTestPAT("pat-u3", "dave@example.com", "hash-u3")))
+	require.NoError(t, repo.Create(ctx, newTestToken("token-u1", "carol@example.com", "hash-u1")))
+	require.NoError(t, repo.Create(ctx, newTestToken("token-u2", "carol@example.com", "hash-u2")))
+	require.NoError(t, repo.Create(ctx, newTestToken("token-u3", "dave@example.com", "hash-u3")))
 
 	carolTokens, err := repo.List(ctx, "carol@example.com")
 	require.NoError(t, err)
@@ -82,11 +84,11 @@ func TestPATRepo_List_ByUser(t *testing.T) {
 	assert.Len(t, daveTokens, 1)
 }
 
-func TestPATRepo_List_All(t *testing.T) {
+func TestTokenRepo_List_All(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
-	repo := bboltadapter.NewPATRepo(store)
+	repo := bboltadapter.NewTokenRepo(store)
 	ctx := t.Context()
 
 	// Empty list.
@@ -95,36 +97,36 @@ func TestPATRepo_List_All(t *testing.T) {
 	assert.Empty(t, all)
 
 	// Populate with tokens for different users.
-	require.NoError(t, repo.Create(ctx, newTestPAT("pat-a1", "eve@example.com", "hash-a1")))
-	require.NoError(t, repo.Create(ctx, newTestPAT("pat-a2", "frank@example.com", "hash-a2")))
-	require.NoError(t, repo.Create(ctx, newTestPAT("pat-a3", "grace@example.com", "hash-a3")))
+	require.NoError(t, repo.Create(ctx, newTestToken("token-a1", "eve@example.com", "hash-a1")))
+	require.NoError(t, repo.Create(ctx, newTestToken("token-a2", "frank@example.com", "hash-a2")))
+	require.NoError(t, repo.Create(ctx, newTestToken("token-a3", "grace@example.com", "hash-a3")))
 
 	all, err = repo.List(ctx, "")
 	require.NoError(t, err)
 	assert.Len(t, all, 3)
 }
 
-func TestPATRepo_Delete_ByID(t *testing.T) {
+func TestTokenRepo_Delete_ByID(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
-	repo := bboltadapter.NewPATRepo(store)
+	repo := bboltadapter.NewTokenRepo(store)
 	ctx := t.Context()
 
-	pat := newTestPAT("pat-del1", "henry@example.com", "hash-del1")
-	require.NoError(t, repo.Create(ctx, pat))
+	token := newTestToken("token-del1", "henry@example.com", "hash-del1")
+	require.NoError(t, repo.Create(ctx, token))
 
-	require.NoError(t, repo.Delete(ctx, "pat-del1"))
+	require.NoError(t, repo.Delete(ctx, "token-del1"))
 
 	_, err := repo.GetByHash(ctx, "hash-del1")
 	require.ErrorIs(t, err, domain.ErrNotFound)
 }
 
-func TestPATRepo_Delete_Missing(t *testing.T) {
+func TestTokenRepo_Delete_Missing(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
-	repo := bboltadapter.NewPATRepo(store)
+	repo := bboltadapter.NewTokenRepo(store)
 	ctx := t.Context()
 
 	err := repo.Delete(ctx, "nonexistent-id")
@@ -132,36 +134,36 @@ func TestPATRepo_Delete_Missing(t *testing.T) {
 	assert.ErrorIs(t, err, domain.ErrNotFound)
 }
 
-func TestPATRepo_GetByID(t *testing.T) {
+func TestTokenRepo_GetByID(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name    string
-		setup   func(t *testing.T, repo *bboltadapter.PATRepo)
+		setup   func(t *testing.T, repo *bboltadapter.TokenRepo)
 		id      string
 		wantErr error
-		verify  func(t *testing.T, got *domain.PAT)
+		verify  func(t *testing.T, got *domain.Token)
 	}{
 		{
-			name: "happy path returns correct PAT",
-			setup: func(t *testing.T, repo *bboltadapter.PATRepo) {
+			name: "happy path returns correct Token",
+			setup: func(t *testing.T, repo *bboltadapter.TokenRepo) {
 				t.Helper()
 
-				pat := newTestPAT("pat-id-1", "getbyid@example.com", "hash-getbyid-1")
-				require.NoError(t, repo.Create(t.Context(), pat))
+				token := newTestToken("token-id-1", "getbyid@example.com", "hash-getbyid-1")
+				require.NoError(t, repo.Create(t.Context(), token))
 			},
-			id: "pat-id-1",
-			verify: func(t *testing.T, got *domain.PAT) {
+			id: "token-id-1",
+			verify: func(t *testing.T, got *domain.Token) {
 				t.Helper()
 
-				assert.Equal(t, "pat-id-1", got.ID)
-				assert.Equal(t, "getbyid@example.com", got.UserEmail)
+				assert.Equal(t, "token-id-1", got.ID)
+				assert.Equal(t, "getbyid@example.com", got.IssuedBy)
 				assert.Equal(t, "hash-getbyid-1", got.TokenHash)
 			},
 		},
 		{
 			name:    "not found returns ErrNotFound",
-			setup:   func(_ *testing.T, _ *bboltadapter.PATRepo) {},
+			setup:   func(_ *testing.T, _ *bboltadapter.TokenRepo) {},
 			id:      "nonexistent-id",
 			wantErr: domain.ErrNotFound,
 		},
@@ -172,7 +174,7 @@ func TestPATRepo_GetByID(t *testing.T) {
 			t.Parallel()
 
 			store := newTestStore(t)
-			repo := bboltadapter.NewPATRepo(store)
+			repo := bboltadapter.NewTokenRepo(store)
 
 			tt.setup(t, repo)
 
@@ -191,28 +193,28 @@ func TestPATRepo_GetByID(t *testing.T) {
 	}
 }
 
-func TestPATRepo_Delete_RemovesSecondaryIndex(t *testing.T) {
+func TestTokenRepo_Delete_RemovesSecondaryIndex(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
-	repo := bboltadapter.NewPATRepo(store)
+	repo := bboltadapter.NewTokenRepo(store)
 	ctx := t.Context()
 
-	pat := newTestPAT("pat-sidx-del", "sidx@example.com", "hash-sidx-del")
-	require.NoError(t, repo.Create(ctx, pat))
+	token := newTestToken("token-sidx-del", "sidx@example.com", "hash-sidx-del")
+	require.NoError(t, repo.Create(ctx, token))
 
 	// Confirm both lookups work before deletion.
-	_, err := repo.GetByID(ctx, "pat-sidx-del")
+	_, err := repo.GetByID(ctx, "token-sidx-del")
 	require.NoError(t, err)
 
 	_, err = repo.GetByHash(ctx, "hash-sidx-del")
 	require.NoError(t, err)
 
 	// Delete via ID.
-	require.NoError(t, repo.Delete(ctx, "pat-sidx-del"))
+	require.NoError(t, repo.Delete(ctx, "token-sidx-del"))
 
 	// Secondary index must be gone.
-	_, err = repo.GetByID(ctx, "pat-sidx-del")
+	_, err = repo.GetByID(ctx, "token-sidx-del")
 	require.Error(t, err)
 	require.ErrorIs(t, err, domain.ErrNotFound)
 
@@ -222,15 +224,15 @@ func TestPATRepo_Delete_RemovesSecondaryIndex(t *testing.T) {
 	require.ErrorIs(t, err, domain.ErrNotFound)
 }
 
-func TestPATRepo_UpdateLastUsed(t *testing.T) {
+func TestTokenRepo_UpdateLastUsed(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
-	repo := bboltadapter.NewPATRepo(store)
+	repo := bboltadapter.NewTokenRepo(store)
 	ctx := t.Context()
 
-	pat := newTestPAT("pat-upd1", "ivan@example.com", "hash-upd1")
-	require.NoError(t, repo.Create(ctx, pat))
+	token := newTestToken("token-upd1", "ivan@example.com", "hash-upd1")
+	require.NoError(t, repo.Create(ctx, token))
 
 	usedAt := time.Now().Add(time.Minute)
 	require.NoError(t, repo.UpdateLastUsed(ctx, "hash-upd1", "192.168.1.1", usedAt))

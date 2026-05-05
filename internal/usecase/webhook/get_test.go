@@ -51,8 +51,8 @@ func TestGetUseCase_Execute(t *testing.T) {
 			repo := webhook_mock.NewMockwebhookGetter(ctrl)
 			tt.setupMock(repo)
 
-			uc := webhookuc.NewGetUseCase(repo)
-			result, err := uc.Execute(t.Context(), "wh-1")
+			uc := webhookuc.NewGetUseCase(allowAllWebhookEnforcer{}, repo)
+			result, err := uc.Execute(webhookTestCtx(), "wh-1")
 
 			if tt.wantErr {
 				require.Error(t, err)

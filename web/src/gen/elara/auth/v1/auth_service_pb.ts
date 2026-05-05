@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/auth/v1/auth_service.proto.
  */
 export const file_elara_auth_v1_auth_service: GenFile = /*@__PURE__*/
-  fileDesc("CiBlbGFyYS9hdXRoL3YxL2F1dGhfc2VydmljZS5wcm90bxINZWxhcmEuYXV0aC52MSIOCgxMb2dpblJlcXVlc3QiJQoNTG9naW5SZXNwb25zZRIUCgxyZWRpcmVjdF91cmwYASABKAkiLgoPQ2FsbGJhY2tSZXF1ZXN0EgwKBGNvZGUYASABKAkSDQoFc3RhdGUYAiABKAkiEgoQQ2FsbGJhY2tSZXNwb25zZSIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIgsKCU1lUmVxdWVzdCJJCgpNZVJlc3BvbnNlEg0KBWVtYWlsGAEgASgJEgwKBG5hbWUYAiABKAkSDwoHcGljdHVyZRgDIAEoCRINCgVyb2xlcxgEIAMoCTKgAgoLQXV0aFNlcnZpY2USQgoFTG9naW4SGy5lbGFyYS5hdXRoLnYxLkxvZ2luUmVxdWVzdBocLmVsYXJhLmF1dGgudjEuTG9naW5SZXNwb25zZRJLCghDYWxsYmFjaxIeLmVsYXJhLmF1dGgudjEuQ2FsbGJhY2tSZXF1ZXN0Gh8uZWxhcmEuYXV0aC52MS5DYWxsYmFja1Jlc3BvbnNlEkUKBkxvZ291dBIcLmVsYXJhLmF1dGgudjEuTG9nb3V0UmVxdWVzdBodLmVsYXJhLmF1dGgudjEuTG9nb3V0UmVzcG9uc2USOQoCTWUSGC5lbGFyYS5hdXRoLnYxLk1lUmVxdWVzdBoZLmVsYXJhLmF1dGgudjEuTWVSZXNwb25zZULBAQoRY29tLmVsYXJhLmF1dGgudjFCEEF1dGhTZXJ2aWNlUHJvdG9QAVpEZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvYXV0aC92MTthdXRodjGiAgNFQViqAg1FbGFyYS5BdXRoLlYxygINRWxhcmFcQXV0aFxWMeICGUVsYXJhXEF1dGhcVjFcR1BCTWV0YWRhdGHqAg9FbGFyYTo6QXV0aDo6VjFiBnByb3RvMw");
+  fileDesc("CiBlbGFyYS9hdXRoL3YxL2F1dGhfc2VydmljZS5wcm90bxINZWxhcmEuYXV0aC52MSIOCgxMb2dpblJlcXVlc3QiJQoNTG9naW5SZXNwb25zZRIUCgxyZWRpcmVjdF91cmwYASABKAkiLgoPQ2FsbGJhY2tSZXF1ZXN0EgwKBGNvZGUYASABKAkSDQoFc3RhdGUYAiABKAkiEgoQQ2FsbGJhY2tSZXNwb25zZSIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIgsKCU1lUmVxdWVzdCIyCg9OYW1lc3BhY2VBY2Nlc3MSDAoEbmFtZRgBIAEoCRIRCgljYW5fd3JpdGUYAiABKAgiuAEKCk1lUmVzcG9uc2USDQoFZW1haWwYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdwaWN0dXJlGAMgASgJEhAKCGlzX2FkbWluGAQgASgIEjIKCm5hbWVzcGFjZXMYBSADKAsyHi5lbGFyYS5hdXRoLnYxLk5hbWVzcGFjZUFjY2VzcxIZChFjYW5fdmlld193ZWJob29rcxgGIAEoCBIbChNjYW5fbWFuYWdlX3dlYmhvb2tzGAcgASgIMqACCgtBdXRoU2VydmljZRJCCgVMb2dpbhIbLmVsYXJhLmF1dGgudjEuTG9naW5SZXF1ZXN0GhwuZWxhcmEuYXV0aC52MS5Mb2dpblJlc3BvbnNlEksKCENhbGxiYWNrEh4uZWxhcmEuYXV0aC52MS5DYWxsYmFja1JlcXVlc3QaHy5lbGFyYS5hdXRoLnYxLkNhbGxiYWNrUmVzcG9uc2USRQoGTG9nb3V0EhwuZWxhcmEuYXV0aC52MS5Mb2dvdXRSZXF1ZXN0Gh0uZWxhcmEuYXV0aC52MS5Mb2dvdXRSZXNwb25zZRI5CgJNZRIYLmVsYXJhLmF1dGgudjEuTWVSZXF1ZXN0GhkuZWxhcmEuYXV0aC52MS5NZVJlc3BvbnNlQsEBChFjb20uZWxhcmEuYXV0aC52MUIQQXV0aFNlcnZpY2VQcm90b1ABWkRnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9hdXRoL3YxO2F1dGh2MaICA0VBWKoCDUVsYXJhLkF1dGguVjHKAg1FbGFyYVxBdXRoXFYx4gIZRWxhcmFcQXV0aFxWMVxHUEJNZXRhZGF0YeoCD0VsYXJhOjpBdXRoOjpWMWIGcHJvdG8z");
 
 /**
  * @generated from message elara.auth.v1.LoginRequest
@@ -117,6 +117,28 @@ export const MeRequestSchema: GenMessage<MeRequest> = /*@__PURE__*/
   messageDesc(file_elara_auth_v1_auth_service, 6);
 
 /**
+ * @generated from message elara.auth.v1.NamespaceAccess
+ */
+export type NamespaceAccess = Message<"elara.auth.v1.NamespaceAccess"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: bool can_write = 2;
+   */
+  canWrite: boolean;
+};
+
+/**
+ * Describes the message elara.auth.v1.NamespaceAccess.
+ * Use `create(NamespaceAccessSchema)` to create a new message.
+ */
+export const NamespaceAccessSchema: GenMessage<NamespaceAccess> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_auth_service, 7);
+
+/**
  * @generated from message elara.auth.v1.MeResponse
  */
 export type MeResponse = Message<"elara.auth.v1.MeResponse"> & {
@@ -136,9 +158,24 @@ export type MeResponse = Message<"elara.auth.v1.MeResponse"> & {
   picture: string;
 
   /**
-   * @generated from field: repeated string roles = 4;
+   * @generated from field: bool is_admin = 4;
    */
-  roles: string[];
+  isAdmin: boolean;
+
+  /**
+   * @generated from field: repeated elara.auth.v1.NamespaceAccess namespaces = 5;
+   */
+  namespaces: NamespaceAccess[];
+
+  /**
+   * @generated from field: bool can_view_webhooks = 6;
+   */
+  canViewWebhooks: boolean;
+
+  /**
+   * @generated from field: bool can_manage_webhooks = 7;
+   */
+  canManageWebhooks: boolean;
 };
 
 /**
@@ -146,7 +183,7 @@ export type MeResponse = Message<"elara.auth.v1.MeResponse"> & {
  * Use `create(MeResponseSchema)` to create a new message.
  */
 export const MeResponseSchema: GenMessage<MeResponse> = /*@__PURE__*/
-  messageDesc(file_elara_auth_v1_auth_service, 7);
+  messageDesc(file_elara_auth_v1_auth_service, 8);
 
 /**
  * @generated from service elara.auth.v1.AuthService

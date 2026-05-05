@@ -134,16 +134,26 @@ func (h *AuthHandler) Me(
 	ctx context.Context,
 	_ *connect.Request[authv1.MeRequest],
 ) (*connect.Response[authv1.MeResponse], error) {
-	user, roles, err := h.me.Execute(ctx)
+	result, err := h.me.Execute(ctx)
 	if err != nil {
 		return nil, toConnectError(err)
 	}
 
+	namespaces := make([]*authv1.NamespaceAccess, 0, len(result.Namespaces))
+	for _, ns := range result.Namespaces {
+		namespaces = append(namespaces, &authv1.NamespaceAccess{
+			Name:     ns.Name,
+			CanWrite: ns.CanWrite,
+		})
+	}
+
 	return connect.NewResponse(&authv1.MeResponse{
-		Email:   user.Email,
-		Name:    user.Name,
-		Picture: user.Picture,
-		Roles:   roles,
+		Email:             result.Email,
+		Name:              result.Name,
+		IsAdmin:           result.IsAdmin,
+		Namespaces:        namespaces,
+		CanViewWebhooks:   result.CanViewWebhooks,
+		CanManageWebhooks: result.CanManageWebhooks,
 	}), nil
 }
 

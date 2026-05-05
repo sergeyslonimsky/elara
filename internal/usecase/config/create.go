@@ -5,8 +5,13 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
+
+type createEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type configCreator interface {
 	Create(ctx context.Context, cfg *domain.Config) error
@@ -29,6 +34,7 @@ type createSchemaValidator interface {
 }
 
 type CreateUseCase struct {
+	enforcer        createEnforcer
 	configs         configCreator
 	watch           createWatchNotifier
 	namespaces      createNSTimestampUpdater
@@ -37,6 +43,7 @@ type CreateUseCase struct {
 }
 
 func NewCreateUseCase(
+	enforcer createEnforcer,
 	configs configCreator,
 	watch createWatchNotifier,
 	namespaces createNSTimestampUpdater,
@@ -44,6 +51,7 @@ func NewCreateUseCase(
 	schemaValidator createSchemaValidator,
 ) *CreateUseCase {
 	return &CreateUseCase{
+		enforcer:        enforcer,
 		configs:         configs,
 		watch:           watch,
 		namespaces:      namespaces,
@@ -53,6 +61,10 @@ func NewCreateUseCase(
 }
 
 func (uc *CreateUseCase) Execute(ctx context.Context, cfg *domain.Config) (*domain.Config, error) {
+	if err := auth.CheckAccess(ctx, uc.enforcer, cfg.Namespace, auth.ObjectConfig, auth.ActionWrite); err != nil {
+		return nil, fmt.Errorf("check access: %w", err)
+	}
+
 	if err := domain.ValidatePath(cfg.Path); err != nil {
 		return nil, fmt.Errorf("validate path: %w", err)
 	}

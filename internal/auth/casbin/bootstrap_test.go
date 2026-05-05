@@ -12,17 +12,21 @@ import (
 	casbin_mock "github.com/sergeyslonimsky/elara/internal/auth/casbin/mocks"
 )
 
-// newBootstrapLoader creates a PolicyLoader mock that:
-//   - returns the given initial rules on Load()
-//   - accepts any number of Save() calls (seeding + CheckBootstrapAdmin persistence)
-func newBootstrapLoader(t *testing.T, ctrl *gomock.Controller, initRules [][]string) *casbin_mock.MockPolicyLoader {
+// newBootstrapAdapter creates a MockAdapter that:
+//   - returns nil from LoadPolicy (empty storage), triggering built-in seeding
+//   - accepts SavePolicy (seed save)
+//   - allows any AddPolicy/RemovePolicy/RemoveFilteredPolicy calls from AutoSave
+func newBootstrapAdapter(t *testing.T, ctrl *gomock.Controller) *casbin_mock.MockAdapter {
 	t.Helper()
 
-	loader := casbin_mock.NewMockPolicyLoader(ctrl)
-	loader.EXPECT().Load(gomock.Any()).Return(initRules, nil).AnyTimes()
-	loader.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	adapter := casbin_mock.NewMockAdapter(ctrl)
+	adapter.EXPECT().LoadPolicy(gomock.Any()).Return(nil)
+	adapter.EXPECT().SavePolicy(gomock.Any()).Return(nil)
+	adapter.EXPECT().AddPolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	adapter.EXPECT().RemovePolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	adapter.EXPECT().RemoveFilteredPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	return loader
+	return adapter
 }
 
 func TestCheckBootstrapAdmin(t *testing.T) {
@@ -46,7 +50,7 @@ func TestCheckBootstrapAdmin(t *testing.T) {
 			email:       "admin@example.com",
 			adminEmails: []string{"admin@example.com"},
 			setup: func(e *casbin.Enforcer) {
-				require.NoError(t, e.AddRoleForUser("admin@example.com", "role:admin", "*"))
+				require.NoError(t, e.AddRoleForUser("admin@example.com", "admin", "*"))
 			},
 			wantAdmin: true,
 		},
@@ -63,22 +67,22 @@ func TestCheckBootstrapAdmin(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			loader := newBootstrapLoader(t, ctrl, nil)
+			adapter := newBootstrapAdapter(t, ctrl)
 
-			e, err := casbin.NewEnforcer(t.Context(), loader)
+			e, err := casbin.NewEnforcer(adapter)
 			require.NoError(t, err)
 
 			if tc.setup != nil {
 				tc.setup(e)
 			}
 
-			err = casbin.CheckBootstrapAdmin(t.Context(), tc.email, tc.adminEmails, e, loader)
+			err = casbin.CheckBootstrapAdmin(t.Context(), tc.email, tc.adminEmails, e)
 			require.NoError(t, err)
 
 			roles, err := e.GetRolesForUser(tc.email, "*")
 			require.NoError(t, err)
 
-			hasAdmin := slices.Contains(roles, "role:admin")
+			hasAdmin := slices.Contains(roles, "admin")
 
 			assert.Equal(t, tc.wantAdmin, hasAdmin)
 		})
@@ -89,16 +93,16 @@ func TestCheckBootstrapAdmin_NoDuplicateAssignment(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	loader := newBootstrapLoader(t, ctrl, nil)
+	adapter := newBootstrapAdapter(t, ctrl)
 
-	e, err := casbin.NewEnforcer(t.Context(), loader)
+	e, err := casbin.NewEnforcer(adapter)
 	require.NoError(t, err)
 
 	email := "admin@example.com"
 	adminEmails := []string{email}
 
-	require.NoError(t, casbin.CheckBootstrapAdmin(t.Context(), email, adminEmails, e, loader))
-	require.NoError(t, casbin.CheckBootstrapAdmin(t.Context(), email, adminEmails, e, loader))
+	require.NoError(t, casbin.CheckBootstrapAdmin(t.Context(), email, adminEmails, e))
+	require.NoError(t, casbin.CheckBootstrapAdmin(t.Context(), email, adminEmails, e))
 
 	roles, err := e.GetRolesForUser(email, "*")
 	require.NoError(t, err)
@@ -106,7 +110,7 @@ func TestCheckBootstrapAdmin_NoDuplicateAssignment(t *testing.T) {
 	count := 0
 
 	for _, r := range roles {
-		if r == "role:admin" {
+		if r == "admin" {
 			count++
 		}
 	}

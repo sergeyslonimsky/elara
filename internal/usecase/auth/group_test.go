@@ -1,16 +1,26 @@
 package auth_test
 
 import (
+	"context"
 	"errors"
 	"slices"
 	"testing"
 
 	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
+
+type allowAllGroupEnforcer struct{}
+
+func (allowAllGroupEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
+
+func groupTestCtx() context.Context {
+	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+}
 
 // groupGetterUpdater wraps separate getter and updater mocks into a single type
 // that satisfies the anonymous interface{ groupGetter; groupUpdater } used by
@@ -49,8 +59,8 @@ func TestCreateGroupUseCase_Execute(t *testing.T) { // NOSONAR
 			creator := auth_mock.NewMockgroupCreator(ctrl)
 			creator.EXPECT().Create(gomock.Any(), gomock.Any()).Return(tc.repoErr)
 
-			uc := authuc.NewCreateGroupUseCase(creator)
-			got, err := uc.Execute(t.Context(), tc.input)
+			uc := authuc.NewCreateGroupUseCase(allowAllGroupEnforcer{}, creator)
+			got, err := uc.Execute(groupTestCtx(), tc.input)
 
 			if tc.wantErr {
 				if err == nil {
@@ -111,8 +121,8 @@ func TestGetGroupUseCase_Execute(t *testing.T) {
 			getter := auth_mock.NewMockgroupGetter(ctrl)
 			getter.EXPECT().Get(gomock.Any(), "g1").Return(tc.group, tc.repoErr)
 
-			uc := authuc.NewGetGroupUseCase(getter)
-			got, err := uc.Execute(t.Context(), "g1")
+			uc := authuc.NewGetGroupUseCase(allowAllGroupEnforcer{}, getter)
+			got, err := uc.Execute(groupTestCtx(), "g1")
 
 			if tc.wantErr {
 				if err == nil {
@@ -180,8 +190,8 @@ func TestUpdateGroupUseCase_Execute(t *testing.T) { // NOSONAR
 				updater.EXPECT().Update(gomock.Any(), gomock.Any()).Return(tc.updateErr)
 			}
 
-			uc := authuc.NewUpdateGroupUseCase(repo)
-			got, err := uc.Execute(t.Context(), "g1", tc.newName)
+			uc := authuc.NewUpdateGroupUseCase(allowAllGroupEnforcer{}, repo)
+			got, err := uc.Execute(groupTestCtx(), "g1", tc.newName)
 
 			if tc.wantErr {
 				if err == nil {
@@ -255,8 +265,8 @@ func TestAddMemberUseCase_Execute(t *testing.T) { // NOSONAR
 				updater.EXPECT().Update(gomock.Any(), gomock.Any()).Return(tc.updateErr)
 			}
 
-			uc := authuc.NewAddMemberUseCase(repo)
-			got, err := uc.Execute(t.Context(), "g1", tc.email)
+			uc := authuc.NewAddMemberUseCase(allowAllGroupEnforcer{}, repo)
+			got, err := uc.Execute(groupTestCtx(), "g1", tc.email)
 
 			if tc.wantErr {
 				if err == nil {
@@ -330,8 +340,8 @@ func TestRemoveMemberUseCase_Execute(t *testing.T) { // NOSONAR
 				updater.EXPECT().Update(gomock.Any(), gomock.Any()).Return(tc.updateErr)
 			}
 
-			uc := authuc.NewRemoveMemberUseCase(repo)
-			got, err := uc.Execute(t.Context(), "g1", tc.email)
+			uc := authuc.NewRemoveMemberUseCase(allowAllGroupEnforcer{}, repo)
+			got, err := uc.Execute(groupTestCtx(), "g1", tc.email)
 
 			if tc.wantErr {
 				if err == nil {

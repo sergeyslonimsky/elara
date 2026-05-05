@@ -7,9 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
+
+type allowAllCopyEnforcer struct{}
+
+func (allowAllCopyEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
 
 type stubCopyGetter struct {
 	cfg *domain.Config
@@ -56,6 +61,10 @@ type stubCopyNSTimestamp struct{}
 
 func (stubCopyNSTimestamp) UpdateTimestamp(_ context.Context, _ string) error { return nil }
 
+func copyTestCtx() context.Context {
+	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+}
+
 func TestCopy_DestinationNamespaceLocked(t *testing.T) {
 	t.Parallel()
 
@@ -65,6 +74,7 @@ func TestCopy_DestinationNamespaceLocked(t *testing.T) {
 	creator := &stubCopyCreator{}
 
 	uc := config.NewCopyUseCase(
+		allowAllCopyEnforcer{},
 		&stubCopyGetter{cfg: source},
 		creator,
 		stubCopyNotifier{},
@@ -72,7 +82,7 @@ func TestCopy_DestinationNamespaceLocked(t *testing.T) {
 		stubCopyNSTimestamp{},
 	)
 
-	_, err := uc.Execute(context.Background(), "/a.json", "src", "/b.json", "dst")
+	_, err := uc.Execute(copyTestCtx(), "/a.json", "src", "/b.json", "dst")
 	require.ErrorIs(t, err, domain.ErrLocked)
 	assert.False(t, creator.called, "creator must not be called when destination namespace is locked")
 }
@@ -81,6 +91,7 @@ func TestCopy_DestinationNamespaceNotFound(t *testing.T) {
 	t.Parallel()
 
 	uc := config.NewCopyUseCase(
+		allowAllCopyEnforcer{},
 		&stubCopyGetter{cfg: &domain.Config{Path: "/a.json", Namespace: "src"}},
 		&stubCopyCreator{},
 		stubCopyNotifier{},
@@ -88,7 +99,7 @@ func TestCopy_DestinationNamespaceNotFound(t *testing.T) {
 		stubCopyNSTimestamp{},
 	)
 
-	_, err := uc.Execute(context.Background(), "/a.json", "src", "/b.json", "dst")
+	_, err := uc.Execute(copyTestCtx(), "/a.json", "src", "/b.json", "dst")
 	require.Error(t, err)
 
 	var ve *domain.ValidationError

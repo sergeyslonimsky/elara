@@ -1,9 +1,10 @@
 package casbin_test
 
 import (
-	"context"
 	"testing"
 
+	casbinmodel "github.com/casbin/casbin/v2/model"
+	"github.com/casbin/casbin/v2/persist"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -13,23 +14,39 @@ import (
 )
 
 // newTestEnforcer creates an Enforcer seeded with built-in policies.
-// When rules is nil/empty the loader will seed built-ins and persist them.
-// When rules is non-nil the loader returns them directly (pre-existing policy).
+// When rules is nil/empty the adapter will seed built-ins and persist them.
+// When rules is non-nil the adapter loads them via LoadPolicy (simulating pre-existing policy).
 func newTestEnforcer(t *testing.T, rules [][]string) *casbin.Enforcer {
 	t.Helper()
 
 	ctrl := gomock.NewController(t)
-	loader := casbin_mock.NewMockPolicyLoader(ctrl)
+	adapter := casbin_mock.NewMockAdapter(ctrl)
 
 	if len(rules) == 0 {
-		// Empty storage: enforcer will seed built-ins and call Save once.
-		loader.EXPECT().Load(gomock.Any()).Return(nil, nil)
-		loader.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil)
+		// Empty storage: enforcer will seed built-ins and call SavePolicy once.
+		adapter.EXPECT().LoadPolicy(gomock.Any()).Return(nil)
+		adapter.EXPECT().SavePolicy(gomock.Any()).Return(nil)
 	} else {
-		loader.EXPECT().Load(gomock.Any()).Return(rules, nil)
+		// Pre-existing rules: populate the model inside LoadPolicy.
+		adapter.EXPECT().LoadPolicy(gomock.Any()).DoAndReturn(func(m casbinmodel.Model) error {
+			for _, rule := range rules {
+				if len(rule) == 0 {
+					continue
+				}
+
+				require.NoError(t, persist.LoadPolicyArray(rule, m))
+			}
+
+			return nil
+		})
 	}
 
-	e, err := casbin.NewEnforcer(t.Context(), loader)
+	// AutoSave will call AddPolicy/RemovePolicy on the adapter for runtime mutations.
+	adapter.EXPECT().AddPolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	adapter.EXPECT().RemovePolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	adapter.EXPECT().RemoveFilteredPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	e, err := casbin.NewEnforcer(adapter)
 	require.NoError(t, err)
 
 	return e
@@ -39,30 +56,27 @@ func TestNewEnforcer_SeedsBuiltinPoliciesOnEmpty(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	loader := casbin_mock.NewMockPolicyLoader(ctrl)
+	adapter := casbin_mock.NewMockAdapter(ctrl)
 
-	var savedRules [][]string
-	loader.EXPECT().Load(gomock.Any()).Return(nil, nil)
-	loader.EXPECT().Save(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, rules [][]string) error {
-		savedRules = rules
+	var savedModel casbinmodel.Model
+	adapter.EXPECT().LoadPolicy(gomock.Any()).Return(nil)
+	adapter.EXPECT().SavePolicy(gomock.Any()).DoAndReturn(func(m casbinmodel.Model) error {
+		savedModel = m
 
 		return nil
 	})
+	adapter.EXPECT().AddPolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	adapter.EXPECT().RemovePolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	adapter.EXPECT().RemoveFilteredPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-	_, err := casbin.NewEnforcer(t.Context(), loader)
+	_, err := casbin.NewEnforcer(adapter)
 	require.NoError(t, err)
 
-	assert.NotEmpty(t, savedRules, "built-in policies should be saved when storage is empty")
+	assert.NotNil(t, savedModel, "built-in policies should be saved when storage is empty")
 
-	var pRules [][]string
-
-	for _, r := range savedRules {
-		if len(r) > 0 && r[0] == "p" {
-			pRules = append(pRules, r)
-		}
-	}
-
-	assert.Len(t, pRules, 6, "expected 6 built-in p rules")
+	pAssert, hasPType := savedModel["p"]["p"]
+	require.True(t, hasPType, "expected 'p' policy type in saved model")
+	assert.Len(t, pAssert.Policy, 16, "expected 16 built-in p rules")
 }
 
 func TestEnforce_AdminCanDoAnything(t *testing.T) {
@@ -70,7 +84,7 @@ func TestEnforce_AdminCanDoAnything(t *testing.T) {
 
 	e := newTestEnforcer(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("alice", "role:admin", "*"))
+	require.NoError(t, e.AddRoleForUser("alice", "admin", "*"))
 
 	tests := []struct {
 		name   string
@@ -100,7 +114,7 @@ func TestEnforce_ViewerCanReadConfigButNotWrite(t *testing.T) {
 
 	e := newTestEnforcer(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("bob", "role:viewer", "*"))
+	require.NoError(t, e.AddRoleForUser("bob", "reader", "*"))
 
 	t.Run("read config allowed", func(t *testing.T) {
 		t.Parallel()
@@ -124,7 +138,7 @@ func TestEnforce_EditorCanReadAndWriteConfig(t *testing.T) {
 
 	e := newTestEnforcer(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("carol", "role:editor", "*"))
+	require.NoError(t, e.AddRoleForUser("carol", "writer", "*"))
 
 	tests := []struct {
 		name    string
@@ -153,7 +167,7 @@ func TestEnforce_NamespaceScoping(t *testing.T) {
 	e := newTestEnforcer(t, nil)
 
 	// dave has role:viewer only in domain "prod"
-	require.NoError(t, e.AddRoleForUser("dave", "role:viewer", "prod"))
+	require.NoError(t, e.AddRoleForUser("dave", "reader", "prod"))
 
 	t.Run("can read config in prod", func(t *testing.T) {
 		t.Parallel()
@@ -177,7 +191,7 @@ func TestAddRoleForUser_ThenEnforce(t *testing.T) {
 
 	e := newTestEnforcer(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("eve", "role:editor", "*"))
+	require.NoError(t, e.AddRoleForUser("eve", "writer", "*"))
 
 	ok, err := e.Enforce("eve", "*", "namespace", "read")
 	require.NoError(t, err)
@@ -189,13 +203,13 @@ func TestRemoveRoleForUser(t *testing.T) {
 
 	e := newTestEnforcer(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("frank", "role:editor", "*"))
+	require.NoError(t, e.AddRoleForUser("frank", "writer", "*"))
 
 	ok, err := e.Enforce("frank", "*", "config", "write")
 	require.NoError(t, err)
 	require.True(t, ok)
 
-	require.NoError(t, e.RemoveRoleForUser("frank", "role:editor", "*"))
+	require.NoError(t, e.RemoveRoleForUser("frank", "writer", "*"))
 
 	ok, err = e.Enforce("frank", "*", "config", "write")
 	require.NoError(t, err)
@@ -209,13 +223,13 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 		t.Parallel()
 
 		e := newTestEnforcer(t, nil)
-		require.NoError(t, e.AddRoleForUser("alice", "role:admin", "*"))
-		require.NoError(t, e.AddRoleForUser("bob", "role:viewer", "*"))
+		require.NoError(t, e.AddRoleForUser("alice", "admin", "*"))
+		require.NoError(t, e.AddRoleForUser("bob", "reader", "*"))
 
 		roles, err := e.GetAllRoles("*")
 		require.NoError(t, err)
-		assert.Contains(t, roles, "role:admin")
-		assert.Contains(t, roles, "role:viewer")
+		assert.Contains(t, roles, "admin")
+		assert.Contains(t, roles, "reader")
 	})
 
 	t.Run("GetPolicy returns builtin p rules", func(t *testing.T) {
@@ -224,21 +238,21 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 		e := newTestEnforcer(t, nil)
 		rules := e.GetPolicy()
 		assert.NotEmpty(t, rules, "built-in p rules should be present after init")
-		assert.Len(t, rules, 6, "expected 6 built-in p rules")
+		assert.Len(t, rules, 16, "expected 16 built-in p rules")
 	})
 
 	t.Run("GetGroupingPolicy returns added g rules", func(t *testing.T) {
 		t.Parallel()
 
 		e := newTestEnforcer(t, nil)
-		require.NoError(t, e.AddRoleForUser("grace", "role:viewer", "ns1"))
+		require.NoError(t, e.AddRoleForUser("grace", "reader", "ns1"))
 
 		gRules := e.GetGroupingPolicy()
 		assert.NotEmpty(t, gRules)
 
 		found := false
 		for _, r := range gRules {
-			if len(r) >= 3 && r[0] == "grace" && r[1] == "role:viewer" && r[2] == "ns1" {
+			if len(r) >= 3 && r[0] == "grace" && r[1] == "reader" && r[2] == "ns1" {
 				found = true
 
 				break
@@ -246,41 +260,6 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 		}
 
 		assert.True(t, found, "expected g rule for grace not found")
-	})
-
-	t.Run("SavePolicy calls loader.Save with all rules", func(t *testing.T) {
-		t.Parallel()
-
-		ctrl := gomock.NewController(t)
-		saveLoader := casbin_mock.NewMockPolicyLoader(ctrl)
-
-		// Initial creation (empty storage) uses its own mock.
-		e := newTestEnforcer(t, nil)
-
-		require.NoError(t, e.AddRoleForUser("henry", "role:admin", "*"))
-
-		var capturedRules [][]string
-		saveLoader.EXPECT().
-			Save(gomock.Any(), gomock.Any()).
-			DoAndReturn(func(_ context.Context, rules [][]string) error {
-				capturedRules = rules
-
-				return nil
-			})
-
-		require.NoError(t, e.SavePolicy(t.Context(), saveLoader))
-
-		var pCount, gCount int
-		for _, r := range capturedRules {
-			if len(r) > 0 && r[0] == "p" {
-				pCount++
-			}
-			if len(r) > 0 && r[0] == "g" {
-				gCount++
-			}
-		}
-		assert.Equal(t, 6, pCount, "expected 6 p rules in saved output")
-		assert.Equal(t, 1, gCount, "expected 1 g rule for henry in saved output")
 	})
 
 	t.Run("RemovePolicy removes a p rule", func(t *testing.T) {
@@ -314,13 +293,13 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 		t.Parallel()
 
 		e := newTestEnforcer(t, nil)
-		require.NoError(t, e.AddRoleForUser("ivan", "role:editor", "*"))
+		require.NoError(t, e.AddRoleForUser("ivan", "writer", "*"))
 
 		ok, err := e.Enforce("ivan", "*", "config", "write")
 		require.NoError(t, err)
 		require.True(t, ok, "ivan should be able to write before role removal")
 
-		require.NoError(t, e.RemoveRoleForUser("ivan", "role:editor", "*"))
+		require.NoError(t, e.RemoveRoleForUser("ivan", "writer", "*"))
 
 		ok, err = e.Enforce("ivan", "*", "config", "write")
 		require.NoError(t, err)

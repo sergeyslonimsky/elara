@@ -47,7 +47,7 @@ func NewServiceManager(
 	return &Manager{
 		Adapters:       adapters,
 		UseCases:       useCases,
-		V2Handlers:     NewV2Handlers(useCases, cfg, sessionManager),
+		V2Handlers:     NewV2Handlers(useCases, cfg),
 		EtcdHandlers:   NewEtcdHandlers(adapters),
 		SessionManager: sessionManager,
 	}, cleanup, nil

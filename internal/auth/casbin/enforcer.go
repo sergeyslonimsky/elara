@@ -1,13 +1,13 @@
 package casbin
 
-//go:generate mockgen -destination=mocks/mock_enforcer.go -package=casbin_mock github.com/sergeyslonimsky/elara/internal/auth/casbin PolicyLoader
-
 import (
-	"context"
 	"fmt"
 
 	gocasbin "github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
+	"github.com/casbin/casbin/v2/persist"
+
+	authpkg "github.com/sergeyslonimsky/elara/internal/auth"
 )
 
 const casbinModel = `
@@ -24,28 +24,8 @@ g = _, _, _
 e = some(where (p.eft == allow))
 
 [matchers]
-m = g(r.sub, p.sub, r.dom) && (r.dom == p.dom || p.dom == "*") && keyMatch(r.obj, p.obj) && (r.act == p.act || p.act == "*")
+m = (g(r.sub, p.sub, r.dom) || g(r.sub, p.sub, "*")) && (r.dom == p.dom || p.dom == "*") && keyMatch(r.obj, p.obj) && (r.act == p.act || p.act == "*")
 `
-
-const (
-	roleAdmin  = "role:admin"
-	roleEditor = "role:editor"
-	roleViewer = "role:viewer"
-
-	objectAll       = "*"
-	objectConfig    = "config"
-	objectNamespace = "namespace"
-
-	actionAll   = "*"
-	actionRead  = "read"
-	actionWrite = "write"
-)
-
-// pRuleLen is the number of elements in a serialized p rule: [type, sub, dom, obj, act].
-const pRuleLen = 5
-
-// gRuleLen is the number of elements in a serialized g rule (with type prefix): [type, user, role, domain].
-const gRuleLen = 4
 
 // gRuleNativeLen is the number of elements returned by GetGroupingPolicy() (without type prefix): [user, role, domain].
 const gRuleNativeLen = 3
@@ -53,56 +33,48 @@ const gRuleNativeLen = 3
 // domainIdx is the index of the domain field in a native g rule [user, role, domain].
 const domainIdx = 2
 
-// PolicyLoader is satisfied by bbolt.PolicyRepo (already implemented).
-type PolicyLoader interface {
-	Load(ctx context.Context) ([][]string, error)
-	Save(ctx context.Context, rules [][]string) error
-}
-
 // Enforcer wraps the Casbin enforcer with domain-aware RBAC.
 type Enforcer struct {
 	e *gocasbin.Enforcer
 }
 
-// NewEnforcer creates a new Enforcer using the given PolicyLoader.
-// If the loaded policy is empty, built-in role policies are seeded and saved.
-func NewEnforcer(ctx context.Context, loader PolicyLoader) (*Enforcer, error) {
+// NewEnforcer creates a new Enforcer using the given persist.Adapter.
+// If the policy is empty after loading, built-in role policies are seeded and saved.
+func NewEnforcer(adapter persist.Adapter) (*Enforcer, error) {
 	m, err := model.NewModelFromString(casbinModel)
 	if err != nil {
 		return nil, fmt.Errorf("build casbin model: %w", err)
 	}
 
-	// Pass only the model — casbin skips LoadPolicy when no adapter is provided.
-	// We populate rules manually from the PolicyLoader below.
-	e, err := gocasbin.NewEnforcer(m)
+	// Disable AutoSave before creating so no incremental writes happen during initial load/seed.
+	// We build without an adapter first, then re-initialize to control the flow.
+	// Instead: create with adapter (LoadPolicy is called internally by NewEnforcer),
+	// then disable AutoSave only for the seeding phase.
+	e, err := gocasbin.NewEnforcer(m, adapter)
 	if err != nil {
 		return nil, fmt.Errorf("create casbin enforcer: %w", err)
 	}
 
+	// Disable AutoSave during initial seeding so we can do a single atomic save.
 	e.EnableAutoSave(false)
-
-	rules, err := loader.Load(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("load policy: %w", err)
-	}
 
 	enforcer := &Enforcer{e: e}
 
-	if len(rules) == 0 {
+	pRules, _ := e.GetPolicy()
+	gRules, _ := e.GetGroupingPolicy()
+
+	if len(pRules) == 0 && len(gRules) == 0 {
 		if err := enforcer.seedBuiltinPolicies(); err != nil {
 			return nil, err
 		}
 
-		if err := enforcer.SavePolicy(ctx, loader); err != nil {
-			return nil, err
+		if err := e.SavePolicy(); err != nil {
+			return nil, fmt.Errorf("save seeded policy: %w", err)
 		}
-
-		return enforcer, nil
 	}
 
-	if err := enforcer.loadRules(rules); err != nil {
-		return nil, err
-	}
+	// Enable AutoSave for all runtime mutations.
+	e.EnableAutoSave(true)
 
 	return enforcer, nil
 }
@@ -179,7 +151,7 @@ func (e *Enforcer) GetAllRoles(domain string) ([]string, error) {
 			continue
 		}
 
-		if rule[domainIdx] == domain || domain == "*" {
+		if rule[domainIdx] == domain || domain == authpkg.ObjectAll {
 			role := rule[1]
 			if _, exists := seen[role]; !exists {
 				seen[role] = struct{}{}
@@ -205,30 +177,10 @@ func (e *Enforcer) GetGroupingPolicy() [][]string {
 	return rules
 }
 
-// SavePolicy persists the current in-memory policy state to the given loader.
-func (e *Enforcer) SavePolicy(ctx context.Context, loader PolicyLoader) error {
-	pRules, err := e.e.GetPolicy()
-	if err != nil {
-		return fmt.Errorf("get policy for save: %w", err)
-	}
-
-	gRules, err := e.e.GetGroupingPolicy()
-	if err != nil {
-		return fmt.Errorf("get grouping policy for save: %w", err)
-	}
-
-	rules := make([][]string, 0, len(pRules)+len(gRules))
-
-	for _, r := range pRules {
-		rules = append(rules, append([]string{"p"}, r...))
-	}
-
-	for _, r := range gRules {
-		rules = append(rules, append([]string{"g"}, r...))
-	}
-
-	if err = loader.Save(ctx, rules); err != nil {
-		return fmt.Errorf("save policy: %w", err)
+// SeedPassthroughAdmin adds the g-rule for the passthrough user used when auth is disabled.
+func (e *Enforcer) SeedPassthroughAdmin() error {
+	if _, err := e.e.AddGroupingPolicy("local-admin@elara.internal", authpkg.RoleAdmin, authpkg.ObjectAll); err != nil {
+		return fmt.Errorf("seed passthrough admin: %w", err)
 	}
 
 	return nil
@@ -236,67 +188,33 @@ func (e *Enforcer) SavePolicy(ctx context.Context, loader PolicyLoader) error {
 
 func (e *Enforcer) seedBuiltinPolicies() error {
 	policies := [][]string{
-		{roleAdmin, "*", objectAll, actionAll},
-		{roleEditor, "*", objectConfig, actionRead},
-		{roleEditor, "*", objectConfig, actionWrite},
-		{roleViewer, "*", objectConfig, actionRead},
-		{roleEditor, "*", objectNamespace, actionRead},
-		{roleViewer, "*", objectNamespace, actionRead},
+		// admin — wildcard covers everything
+		{authpkg.RoleAdmin, authpkg.ObjectAll, authpkg.ObjectAll, authpkg.ActionAll},
+
+		// writer
+		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectConfig, authpkg.ActionRead},
+		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectConfig, authpkg.ActionWrite},
+		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectNamespace, authpkg.ActionRead},
+		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectWebhook, authpkg.ActionRead},
+		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectSchema, authpkg.ActionRead},
+		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectClient, authpkg.ActionRead},
+		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectDashboard, authpkg.ActionRead},
+		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectToken, authpkg.ActionRead},
+		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectToken, authpkg.ActionWrite},
+
+		// reader
+		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectConfig, authpkg.ActionRead},
+		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectNamespace, authpkg.ActionRead},
+		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectClient, authpkg.ActionRead},
+		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectDashboard, authpkg.ActionRead},
+		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectToken, authpkg.ActionRead},
+		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectToken, authpkg.ActionWrite},
 	}
 
 	for _, p := range policies {
 		if _, err := e.e.AddPolicy(p[0], p[1], p[2], p[3]); err != nil {
 			return fmt.Errorf("seed built-in policy %v: %w", p, err)
 		}
-	}
-
-	return nil
-}
-
-func (e *Enforcer) loadRules(rules [][]string) error {
-	for _, rule := range rules {
-		if err := e.loadRule(rule); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (e *Enforcer) loadRule(rule []string) error {
-	if len(rule) == 0 {
-		return nil
-	}
-
-	switch rule[0] {
-	case "p":
-		return e.loadPolicyRule(rule)
-	case "g":
-		return e.loadGroupingRule(rule)
-	}
-
-	return nil
-}
-
-func (e *Enforcer) loadPolicyRule(rule []string) error {
-	if len(rule) < pRuleLen {
-		return nil
-	}
-
-	if _, err := e.e.AddPolicy(rule[1], rule[2], rule[3], rule[4]); err != nil {
-		return fmt.Errorf("load policy rule %v: %w", rule, err)
-	}
-
-	return nil
-}
-
-func (e *Enforcer) loadGroupingRule(rule []string) error {
-	if len(rule) < gRuleLen {
-		return nil
-	}
-
-	if _, err := e.e.AddGroupingPolicy(rule[1], rule[2], rule[3]); err != nil {
-		return fmt.Errorf("load grouping rule %v: %w", rule, err)
 	}
 
 	return nil

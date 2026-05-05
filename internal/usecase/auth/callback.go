@@ -10,7 +10,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-//go:generate mockgen -destination=mocks/callback_mock.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth callbackProvider,userUpserter,policyLoader,sessionCreator
+//go:generate mockgen -destination=mocks/callback_mock.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth callbackProvider,userUpserter,sessionCreator
 
 type callbackProvider interface {
 	Exchange(ctx context.Context, code, nonce string) (*auth.Identity, error)
@@ -18,11 +18,6 @@ type callbackProvider interface {
 
 type userUpserter interface {
 	Upsert(ctx context.Context, user *domain.User) error
-}
-
-type policyLoader interface {
-	Load(ctx context.Context) ([][]string, error)
-	Save(ctx context.Context, rules [][]string) error
 }
 
 type sessionCreator interface {
@@ -37,7 +32,6 @@ type CallbackUseCase struct {
 	session     sessionCreator
 	enforcer    casbin.BootstrapEnforcer
 	adminEmails []string
-	loader      policyLoader
 }
 
 // NewCallbackUseCase returns a CallbackUseCase wired with all required dependencies.
@@ -46,7 +40,6 @@ func NewCallbackUseCase(
 	users userUpserter,
 	session sessionCreator,
 	enforcer casbin.BootstrapEnforcer,
-	loader policyLoader,
 	adminEmails []string,
 ) *CallbackUseCase {
 	return &CallbackUseCase{
@@ -54,7 +47,6 @@ func NewCallbackUseCase(
 		users:       users,
 		session:     session,
 		enforcer:    enforcer,
-		loader:      loader,
 		adminEmails: adminEmails,
 	}
 }
@@ -79,7 +71,7 @@ func (uc *CallbackUseCase) Execute(ctx context.Context, code, nonce string) (str
 		return "", nil, fmt.Errorf("upsert user: %w", err)
 	}
 
-	if err = casbin.CheckBootstrapAdmin(ctx, identity.Email, uc.adminEmails, uc.enforcer, uc.loader); err != nil {
+	if err = casbin.CheckBootstrapAdmin(ctx, identity.Email, uc.adminEmails, uc.enforcer); err != nil {
 		return "", nil, fmt.Errorf("bootstrap admin: %w", err)
 	}
 

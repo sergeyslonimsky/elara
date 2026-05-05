@@ -8,8 +8,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/namespace"
 )
+
+type allowAllNSEnforcer struct{}
+
+func (allowAllNSEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
+
+func nsTestCtx() context.Context {
+	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+}
 
 type stubNSLocker struct {
 	locked bool
@@ -53,9 +62,9 @@ func TestNamespaceLockUseCase_EmitsWatchEvent(t *testing.T) {
 	store := &stubNSLocker{}
 	notifier := &captureNSNotifier{}
 
-	uc := namespace.NewLockUseCase(store, notifier)
+	uc := namespace.NewLockUseCase(allowAllNSEnforcer{}, store, notifier)
 
-	require.NoError(t, uc.Execute(context.Background(), "prod"))
+	require.NoError(t, uc.Execute(nsTestCtx(), "prod"))
 	assert.True(t, store.locked)
 	assert.Equal(t, "prod", notifier.locked, "publisher must be notified with the namespace name")
 }
@@ -66,9 +75,9 @@ func TestNamespaceLockUseCase_SkipsNotifyOnError(t *testing.T) {
 	store := &stubNSLocker{err: errors.New("boom")}
 	notifier := &captureNSNotifier{}
 
-	uc := namespace.NewLockUseCase(store, notifier)
+	uc := namespace.NewLockUseCase(allowAllNSEnforcer{}, store, notifier)
 
-	require.Error(t, uc.Execute(context.Background(), "prod"))
+	require.Error(t, uc.Execute(nsTestCtx(), "prod"))
 	assert.Empty(t, notifier.locked)
 }
 
@@ -78,8 +87,8 @@ func TestNamespaceUnlockUseCase_EmitsWatchEvent(t *testing.T) {
 	store := &stubNSUnlocker{}
 	notifier := &captureNSNotifier{}
 
-	uc := namespace.NewUnlockUseCase(store, notifier)
+	uc := namespace.NewUnlockUseCase(allowAllNSEnforcer{}, store, notifier)
 
-	require.NoError(t, uc.Execute(context.Background(), "prod"))
+	require.NoError(t, uc.Execute(nsTestCtx(), "prod"))
 	assert.Equal(t, "prod", notifier.unlocked)
 }

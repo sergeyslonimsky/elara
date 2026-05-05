@@ -7,12 +7,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 const defaultListLimit = 20
 
 //go:generate mockgen -destination=mocks/mock_list.go -package=config_mock . configLister
+
+type listEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type configLister interface {
 	ListSummariesByPrefix(ctx context.Context, pathPrefix, namespace string) ([]*domain.ConfigSummary, error)
@@ -48,14 +53,31 @@ type ListResult struct {
 }
 
 type ListUseCase struct {
-	configs configLister
+	enforcer listEnforcer
+	configs  configLister
 }
 
-func NewListUseCase(configs configLister) *ListUseCase {
-	return &ListUseCase{configs: configs}
+func NewListUseCase(enforcer listEnforcer, configs configLister) *ListUseCase {
+	return &ListUseCase{enforcer: enforcer, configs: configs}
 }
 
 func (uc *ListUseCase) Execute(ctx context.Context, params ListParams) (*ListResult, error) {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
+	}
+
+	// config/list silently filters: only return results for namespaces the caller can read.
+	allowed, _ := uc.enforcer.Enforce(claims.Email, params.Namespace, "config", "read")
+	if !allowed {
+		return &ListResult{
+			Entries: nil,
+			Total:   0,
+			Limit:   params.Limit,
+			Offset:  params.Offset,
+		}, nil
+	}
+
 	path := normalizePath(params.Path)
 
 	prefix := path
