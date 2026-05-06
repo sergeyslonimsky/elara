@@ -50,6 +50,7 @@ func TestListUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_schema.NewMockschemaListEnforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(false, nil)
+
 				return schema.NewListUseCase(enforcer, nil), ctx
 			},
 			want: nil,
@@ -71,6 +72,7 @@ func TestListUseCase_Execute(t *testing.T) {
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(true, nil)
 				store := mock_schema.NewMockschemaLister(ctrl)
 				store.EXPECT().List(ctx, "prod").Return(nil, errors.New("db error"))
+
 				return schema.NewListUseCase(enforcer, store), ctx
 			},
 			wantErr: "list schemas: db error",
@@ -88,10 +90,12 @@ func TestListUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

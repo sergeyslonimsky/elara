@@ -57,6 +57,7 @@ func TestDeleteUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_namespace.NewMockdeleteEnforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "namespace", "write").Return(false, nil)
+
 				return namespace.NewDeleteUseCase(enforcer, nil, nil), ctx
 			},
 			errIs: domain.ErrForbidden,
@@ -109,10 +110,12 @@ func TestDeleteUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

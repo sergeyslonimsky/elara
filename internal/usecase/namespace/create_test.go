@@ -62,6 +62,7 @@ func TestCreateUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_namespace.NewMockcreateEnforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "*", "namespace", "write").Return(false, nil)
+
 				return namespace.NewCreateUseCase(enforcer, nil, nil), ctx
 			},
 			errIs: domain.ErrForbidden,
@@ -73,6 +74,7 @@ func TestCreateUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
 				enforcer := mock_namespace.NewMockcreateEnforcer(ctrl)
 				enforcer.EXPECT().Enforce("admin@example.com", "*", "namespace", "write").Return(true, nil)
+
 				return namespace.NewCreateUseCase(enforcer, nil, nil), ctx
 			},
 			wantErr: "validate namespace",
@@ -105,10 +107,12 @@ func TestCreateUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

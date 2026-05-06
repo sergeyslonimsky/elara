@@ -66,6 +66,7 @@ func TestUseCase_GetStats(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_dashboard.NewMockdashboardEnforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "*", "dashboard", "read").Return(false, nil)
+
 				return dashboard.NewUseCase(enforcer, nil, nil, nil, nil), ctx
 			},
 			errIs: domain.ErrForbidden,
@@ -101,10 +102,12 @@ func TestUseCase_GetStats(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)
@@ -151,6 +154,7 @@ func TestUseCase_ListActivity(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			require.NoError(t, err)

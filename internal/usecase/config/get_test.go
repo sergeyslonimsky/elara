@@ -82,7 +82,9 @@ func TestGetUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
 				enforcer := mock_config.NewMockgetEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", "config", "read").Return(false, errors.New("enforcer error"))
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", "config", "read").
+					Return(false, errors.New("enforcer error"))
 
 				return config.NewGetUseCase(enforcer, nil), ctx
 			},
@@ -136,10 +138,12 @@ func TestGetUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

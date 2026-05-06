@@ -40,10 +40,14 @@ func TestUpdateUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
 				enforcer := mock_config.NewMockupdateEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Return(true, nil)
 
 				schemaValidator := mock_config.NewMockupdateSchemaValidator(ctrl)
-				schemaValidator.EXPECT().Execute(ctx, "prod", "/app/config.json", normalizedJSON, domain.FormatJSON).Return(nil)
+				schemaValidator.EXPECT().
+					Execute(ctx, "prod", "/app/config.json", normalizedJSON, domain.FormatJSON).
+					Return(nil)
 
 				configs := mock_config.NewMockconfigUpdater(ctrl)
 				configs.EXPECT().Update(ctx, gomock.Any()).Return(nil)
@@ -74,13 +78,19 @@ func TestUpdateUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
 				enforcer := mock_config.NewMockupdateEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Return(true, nil)
 
 				getter := mock_config.NewMockupdateConfigGetter(ctrl)
-				getter.EXPECT().Get(ctx, "/app/config.json", "prod").Return(&domain.Config{Format: domain.FormatJSON}, nil)
+				getter.EXPECT().
+					Get(ctx, "/app/config.json", "prod").
+					Return(&domain.Config{Format: domain.FormatJSON}, nil)
 
 				schemaValidator := mock_config.NewMockupdateSchemaValidator(ctrl)
-				schemaValidator.EXPECT().Execute(ctx, "prod", "/app/config.json", normalizedJSON, domain.FormatJSON).Return(nil)
+				schemaValidator.EXPECT().
+					Execute(ctx, "prod", "/app/config.json", normalizedJSON, domain.FormatJSON).
+					Return(nil)
 
 				configs := mock_config.NewMockconfigUpdater(ctrl)
 				configs.EXPECT().Update(ctx, gomock.Any()).Return(nil)
@@ -119,7 +129,9 @@ func TestUpdateUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
 				enforcer := mock_config.NewMockupdateEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Return(true, nil)
 
 				getter := mock_config.NewMockupdateConfigGetter(ctrl)
 				getter.EXPECT().Get(ctx, "/app/config.json", "prod").Return(nil, errors.New("not found"))
@@ -140,10 +152,14 @@ func TestUpdateUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
 				enforcer := mock_config.NewMockupdateEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Return(true, nil)
 
 				schemaValidator := mock_config.NewMockupdateSchemaValidator(ctrl)
-				schemaValidator.EXPECT().Execute(ctx, "prod", "/app/config.json", normalizedJSON, domain.FormatJSON).Return(nil)
+				schemaValidator.EXPECT().
+					Execute(ctx, "prod", "/app/config.json", normalizedJSON, domain.FormatJSON).
+					Return(nil)
 
 				configs := mock_config.NewMockconfigUpdater(ctrl)
 				configs.EXPECT().Update(ctx, gomock.Any()).Return(errors.New("db error"))
@@ -165,10 +181,12 @@ func TestUpdateUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

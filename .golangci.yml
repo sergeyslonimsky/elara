@@ -79,6 +79,8 @@ linters:
           - cyclop    # table-driven tests with multiple cases are naturally more complex
           - wrapcheck
           - dogsled
+          - dupl
+          - ireturn
 
     paths:
       - web/

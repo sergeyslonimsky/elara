@@ -35,8 +35,12 @@ func TestListUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
 				enforcer := mock_namespace.NewMocklistEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectNamespace, auth.ActionRead).Return(true, nil)
-				enforcer.EXPECT().Enforce("user@example.com", "dev", auth.ObjectNamespace, auth.ActionRead).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectNamespace, auth.ActionRead).
+					Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "dev", auth.ObjectNamespace, auth.ActionRead).
+					Return(true, nil)
 
 				namespaces := mock_namespace.NewMocknsLister(ctrl)
 				list := []*domain.Namespace{
@@ -67,8 +71,12 @@ func TestListUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
 				enforcer := mock_namespace.NewMocklistEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectNamespace, auth.ActionRead).Return(true, nil)
-				enforcer.EXPECT().Enforce("user@example.com", "dev", auth.ObjectNamespace, auth.ActionRead).Return(false, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectNamespace, auth.ActionRead).
+					Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "dev", auth.ObjectNamespace, auth.ActionRead).
+					Return(false, nil)
 
 				namespaces := mock_namespace.NewMocknsLister(ctrl)
 				list := []*domain.Namespace{
@@ -103,6 +111,7 @@ func TestListUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				namespaces := mock_namespace.NewMocknsLister(ctrl)
 				namespaces.EXPECT().List(ctx).Return(nil, errors.New("db error"))
+
 				return namespace.NewListUseCase(nil, namespaces, nil), ctx
 			},
 			wantErr: "list namespaces: db error",
@@ -120,10 +129,12 @@ func TestListUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

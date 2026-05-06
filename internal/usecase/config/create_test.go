@@ -37,14 +37,18 @@ func TestCreateUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
 				enforcer := mock_config.NewMockcreateEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Return(true, nil)
 
 				nsChecker := mock_config.NewMockcreateNSChecker(ctrl)
 				nsChecker.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
 
 				schemaValidator := mock_config.NewMockcreateSchemaValidator(ctrl)
 				normalized := "{\n  \"key\": \"value\"\n}"
-				schemaValidator.EXPECT().Execute(ctx, "prod", "/app/config.json", normalized, domain.FormatJSON).Return(nil)
+				schemaValidator.EXPECT().
+					Execute(ctx, "prod", "/app/config.json", normalized, domain.FormatJSON).
+					Return(nil)
 
 				configs := mock_config.NewMockconfigCreator(ctrl)
 				configs.EXPECT().Create(ctx, gomock.Any()).Return(nil)
@@ -79,7 +83,10 @@ func TestCreateUseCase_Execute(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*config.CreateUseCase, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_config.NewMockcreateEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Return(true, nil)
+
 				return config.NewCreateUseCase(enforcer, nil, nil, nil, nil, nil), ctx
 			},
 			wantErr: "validate path",
@@ -90,7 +97,9 @@ func TestCreateUseCase_Execute(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*config.CreateUseCase, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_config.NewMockcreateEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Return(true, nil)
 
 				nsChecker := mock_config.NewMockcreateNSChecker(ctrl)
 				nsChecker.EXPECT().Get(ctx, "prod").Return(nil, domain.ErrNotFound)
@@ -109,7 +118,9 @@ func TestCreateUseCase_Execute(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*config.CreateUseCase, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_config.NewMockcreateEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Return(true, nil)
 
 				nsChecker := mock_config.NewMockcreateNSChecker(ctrl)
 				nsChecker.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
@@ -128,14 +139,18 @@ func TestCreateUseCase_Execute(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*config.CreateUseCase, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_config.NewMockcreateEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Return(true, nil)
 
 				nsChecker := mock_config.NewMockcreateNSChecker(ctrl)
 				nsChecker.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
 
 				schemaValidator := mock_config.NewMockcreateSchemaValidator(ctrl)
 				normalized := "{\n  \"key\": \"value\"\n}"
-				schemaValidator.EXPECT().Execute(ctx, "prod", "/app/config.json", normalized, domain.FormatJSON).Return(errors.New("schema error"))
+				schemaValidator.EXPECT().
+					Execute(ctx, "prod", "/app/config.json", normalized, domain.FormatJSON).
+					Return(errors.New("schema error"))
 
 				return config.NewCreateUseCase(enforcer, nil, nil, nil, nsChecker, schemaValidator), ctx
 			},
@@ -151,14 +166,18 @@ func TestCreateUseCase_Execute(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*config.CreateUseCase, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_config.NewMockcreateEnforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
+				enforcer.EXPECT().
+					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Return(true, nil)
 
 				nsChecker := mock_config.NewMockcreateNSChecker(ctrl)
 				nsChecker.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
 
 				schemaValidator := mock_config.NewMockcreateSchemaValidator(ctrl)
 				normalized := "{\n  \"key\": \"value\"\n}"
-				schemaValidator.EXPECT().Execute(ctx, "prod", "/app/config.json", normalized, domain.FormatJSON).Return(nil)
+				schemaValidator.EXPECT().
+					Execute(ctx, "prod", "/app/config.json", normalized, domain.FormatJSON).
+					Return(nil)
 
 				configs := mock_config.NewMockconfigCreator(ctrl)
 				configs.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("db error"))
@@ -180,10 +199,12 @@ func TestCreateUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

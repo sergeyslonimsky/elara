@@ -33,7 +33,9 @@ func TestUnlockUseCase_Execute(t *testing.T) {
 
 				store := mock_config.NewMockUnlockStore(ctrl)
 				store.EXPECT().UnlockConfig(ctx, "prod", "/app/config.json").Return(nil)
-				store.EXPECT().Get(ctx, "/app/config.json", "prod").Return(&domain.Config{Path: "/app/config.json", Namespace: "prod"}, nil)
+				store.EXPECT().
+					Get(ctx, "/app/config.json", "prod").
+					Return(&domain.Config{Path: "/app/config.json", Namespace: "prod"}, nil)
 
 				notifier := mock_config.NewMockUnlockNotifier(ctrl)
 				notifier.EXPECT().NotifyConfigUnlocked(ctx, gomock.Any())
@@ -107,10 +109,12 @@ func TestUnlockUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

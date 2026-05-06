@@ -40,6 +40,7 @@ func TestHistoryUseCase_GetHistory(t *testing.T) {
 				configs := mock_config.NewMockconfigHistoryReader(ctrl)
 				entries := []*domain.HistoryEntry{{Revision: 1}}
 				configs.EXPECT().GetConfigHistory(ctx, "/a.json", "prod", 10).Return(entries, nil)
+
 				return config.NewHistoryUseCase(enforcer, configs), ctx
 			},
 			want: []*domain.HistoryEntry{{Revision: 1}},
@@ -70,6 +71,7 @@ func TestHistoryUseCase_GetHistory(t *testing.T) {
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "config", "read").Return(true, nil)
 				configs := mock_config.NewMockconfigHistoryReader(ctrl)
 				configs.EXPECT().GetConfigHistory(ctx, "/a.json", "prod", 10).Return(nil, errors.New("db error"))
+
 				return config.NewHistoryUseCase(enforcer, configs), ctx
 			},
 			wantErr: "get config history: db error",
@@ -84,10 +86,12 @@ func TestHistoryUseCase_GetHistory(t *testing.T) {
 			got, err := sut.GetHistory(ctx, tt.path, tt.ns, tt.limit)
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)
@@ -121,6 +125,7 @@ func TestHistoryUseCase_GetAtRevision(t *testing.T) {
 				configs := mock_config.NewMockconfigHistoryReader(ctrl)
 				entry := &domain.HistoryEntry{Revision: 5}
 				configs.EXPECT().GetAtRevision(ctx, "/a.json", "prod", int64(5)).Return(entry, nil)
+
 				return config.NewHistoryUseCase(enforcer, configs), ctx
 			},
 			want: &domain.HistoryEntry{Revision: 5},
@@ -134,6 +139,7 @@ func TestHistoryUseCase_GetAtRevision(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_config.NewMockhistoryEnforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "config", "read").Return(false, nil)
+
 				return config.NewHistoryUseCase(enforcer, nil), ctx
 			},
 			errIs: domain.ErrForbidden,
@@ -148,10 +154,12 @@ func TestHistoryUseCase_GetAtRevision(t *testing.T) {
 			got, err := sut.GetAtRevision(ctx, tt.path, tt.ns, tt.rev)
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

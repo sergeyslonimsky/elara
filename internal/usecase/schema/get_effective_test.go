@@ -55,6 +55,7 @@ func TestGetEffectiveUseCase_Execute(t *testing.T) {
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(true, nil)
 				repo := mock_schema.NewMockschemaContentLister(ctrl)
 				repo.EXPECT().List(ctx, "prod").Return([]*domain.SchemaAttachment{}, nil)
+
 				return schema.NewGetEffectiveUseCase(enforcer, repo), ctx
 			},
 			want: nil,
@@ -72,6 +73,7 @@ func TestGetEffectiveUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			require.NoError(t, err)

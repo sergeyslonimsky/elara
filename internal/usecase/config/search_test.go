@@ -71,6 +71,7 @@ func TestSearchUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				configs := mock_config.NewMockconfigSearcher(ctrl)
 				configs.EXPECT().SearchByPath(ctx, "app", "").Return(nil, errors.New("search error"))
+
 				return config.NewSearchUseCase(nil, configs), ctx
 			},
 			wantErr: "search configs: search error",
@@ -115,10 +116,12 @@ func TestSearchUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

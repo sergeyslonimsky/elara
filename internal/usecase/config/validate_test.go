@@ -59,6 +59,7 @@ func TestValidateUseCase_Execute(t *testing.T) {
 			format:  domain.FormatJSON,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*config.ValidateUseCase, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+
 				return config.NewValidateUseCase(nil, nil), ctx
 			},
 			want: &domain.ValidationResult{
@@ -81,12 +82,15 @@ func TestValidateUseCase_Execute(t *testing.T) {
 			format:  domain.FormatJSON,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*config.ValidateUseCase, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+
 				return config.NewValidateUseCase(nil, nil), ctx
 			},
 			want: &domain.ValidationResult{
 				Valid:          false,
 				DetectedFormat: domain.FormatJSON,
-				Errors:         []string{"unmarshal JSON: invalid character 'i' looking for beginning of object key string"},
+				Errors: []string{
+					"unmarshal JSON: invalid character 'i' looking for beginning of object key string",
+				},
 			},
 		},
 		{
@@ -129,10 +133,12 @@ func TestValidateUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)

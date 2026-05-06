@@ -57,6 +57,7 @@ func TestWatchUseCase_Execute(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				enforcer := mock_config.NewMockwatchEnforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "config", "read").Return(false, nil)
+
 				return config.NewWatchUseCase(enforcer, nil), ctx
 			},
 			errIs: domain.ErrForbidden,
@@ -74,10 +75,12 @@ func TestWatchUseCase_Execute(t *testing.T) {
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+
 				return
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+
 				return
 			}
 			require.NoError(t, err)
