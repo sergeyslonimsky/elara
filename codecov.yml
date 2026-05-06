@@ -11,3 +11,4 @@ ignore:
   - "web/src/gen/**"
   - "internal/di/**"
   - "cmd/**"
+  - "examples/**"
