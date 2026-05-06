@@ -7,6 +7,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_access.go -package=mock_auth -source=access.go
+
 // AccessEnforcer is satisfied by any enforcer that can check a permission.
 type AccessEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)

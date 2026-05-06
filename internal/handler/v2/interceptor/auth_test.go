@@ -46,14 +46,21 @@ func newExpiredToken(t *testing.T) string {
 // testConfigServer implements a minimal configv1connect.ConfigServiceHandler for testing.
 type testConfigServer struct {
 	configv1connect.UnimplementedConfigServiceHandler
-	capturedCtx context.Context //nolint:containedctx // test helper; context captured for assertion only
+	called     bool
+	wantClaims bool
+	t          *testing.T
 }
 
 func (s *testConfigServer) GetConfig(
 	ctx context.Context,
 	_ *connect.Request[configv1.GetConfigRequest],
 ) (*connect.Response[configv1.GetConfigResponse], error) {
-	s.capturedCtx = ctx
+	s.called = true
+	if s.wantClaims {
+		claims, ok := auth.ClaimsFromContext(ctx)
+		require.True(s.t, ok)
+		assert.Equal(s.t, "user@example.com", claims.Email)
+	}
 
 	return connect.NewResponse(&configv1.GetConfigResponse{}), nil
 }
@@ -63,10 +70,11 @@ func setupTestServer(
 	t *testing.T,
 	sm *auth.SessionManager,
 	publicProcs []string,
+	wantClaims bool,
 ) (*httptest.Server, *testConfigServer) {
 	t.Helper()
 
-	srv := &testConfigServer{}
+	srv := &testConfigServer{t: t, wantClaims: wantClaims}
 	authI := interceptor.NewAuthInterceptor(sm, publicProcs)
 
 	mux := http.NewServeMux()
@@ -121,7 +129,7 @@ func TestAuthInterceptor_WrapUnary(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			ts, srv := setupTestServer(t, sm, tc.publicProcs)
+			ts, srv := setupTestServer(t, sm, tc.publicProcs, tc.wantClaims)
 			client := configv1connect.NewConfigServiceClient(http.DefaultClient, ts.URL)
 
 			req := connect.NewRequest(&configv1.GetConfigRequest{
@@ -138,17 +146,13 @@ func TestAuthInterceptor_WrapUnary(t *testing.T) {
 				var connectErr *connect.Error
 				require.ErrorAs(t, err, &connectErr)
 				assert.Equal(t, tc.wantCode, connectErr.Code())
+				assert.False(t, srv.called)
 
 				return
 			}
 
 			require.NoError(t, err)
-
-			if tc.wantClaims {
-				claims, ok := auth.ClaimsFromContext(srv.capturedCtx)
-				require.True(t, ok)
-				assert.Equal(t, "user@example.com", claims.Email)
-			}
+			assert.True(t, srv.called)
 		})
 	}
 }
@@ -237,9 +241,14 @@ func TestAuthInterceptor_WrapStreamingHandler(t *testing.T) {
 				ctx:       t.Context(),
 			}
 
-			var capturedCtx context.Context
+			called := false
 			handler := func(ctx context.Context, c connect.StreamingHandlerConn) error {
-				capturedCtx = ctx //nolint:fatcontext // test helper; context captured for assertion only
+				called = true
+				if tc.wantClaims {
+					claims, ok := auth.ClaimsFromContext(ctx)
+					require.True(t, ok)
+					assert.Equal(t, "user@example.com", claims.Email)
+				}
 
 				return nil
 			}
@@ -250,17 +259,13 @@ func TestAuthInterceptor_WrapStreamingHandler(t *testing.T) {
 				var connectErr *connect.Error
 				require.ErrorAs(t, err, &connectErr)
 				assert.Equal(t, tc.wantCode, connectErr.Code())
+				assert.False(t, called)
 
 				return
 			}
 
 			require.NoError(t, err)
-
-			if tc.wantClaims {
-				claims, ok := auth.ClaimsFromContext(capturedCtx)
-				require.True(t, ok)
-				assert.Equal(t, "user@example.com", claims.Email)
-			}
+			assert.True(t, called)
 		})
 	}
 }
