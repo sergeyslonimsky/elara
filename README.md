@@ -599,16 +599,16 @@ for the full list.
 
 Key defaults:
 
-| Key                  | Env var              | Default  |
-|----------------------|----------------------|----------|
-| `http.frontend.port` | `HTTP_FRONTEND_PORT` | `8080`   |
-| `grpc.etcd.port`     | `GRPC_ETCD_PORT`     | `2379`   |
-| `config.data.path`   | `CONFIG_DATA_PATH`   | `./data` |
-| `metrics.enabled`    | `METRICS_ENABLED`    | `false`  |
-| `tracing.enabled`    | `TRACING_ENABLED`    | `false`  |
-| `log.level`          | `LOG_LEVEL`          | `info`   |
-| `log.format`         | `LOG_FORMAT`         | `json`   |
-| `log.noSource`       | `LOG_NOSOURCE`       | `false`  |
+| Key                    | Env var                  | Default  |
+|------------------------|--------------------------|----------|
+| `ui.server.port`       | `UI_SERVER_PORT`         | `8080`   |
+| `client.etcd.port`     | `CLIENT_ETCD_PORT`       | `2379`   |
+| `config.data.path`     | `CONFIG_DATA_PATH`       | `./data` |
+| `metrics.enabled`      | `METRICS_ENABLED`        | `false`  |
+| `tracing.enabled`      | `TRACING_ENABLED`        | `false`  |
+| `log.level`            | `LOG_LEVEL`              | `info`   |
+| `log.format`           | `LOG_FORMAT`             | `json`   |
+| `log.noSource`         | `LOG_NOSOURCE`           | `false`  |
 
 ## Contributing
 

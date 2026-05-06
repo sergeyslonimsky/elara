@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_detach.go -package=schema_mock . detachEnforcer,schemaDetacher,detachNSChecker
+
 type detachEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

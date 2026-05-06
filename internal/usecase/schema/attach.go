@@ -11,6 +11,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_attach.go -package=schema_mock . attachEnforcer,schemaAttacher,attachNSChecker
+
 type attachEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

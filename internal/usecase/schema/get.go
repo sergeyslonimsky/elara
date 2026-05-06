@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_get.go -package=schema_mock . schemaGetEnforcer,schemaGetter
+
 type schemaGetEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

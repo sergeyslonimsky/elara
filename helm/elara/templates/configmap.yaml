@@ -5,27 +5,26 @@ metadata:
   labels:
     {{- include "elara.labels" . | nindent 4 }}
 data:
-  # Env-var names are derived from viper config keys by the core library's
-  # SetEnvKeyReplacer(".", "_") rule: dotted path → uppercased underscores,
-  # WITHOUT splitting camelCase tokens. So http.frontend.readTimeout is
-  # HTTP_FRONTEND_READTIMEOUT (not HTTP_FRONTEND_READ_TIMEOUT).
+  # Env-var names follow Viper's SetEnvKeyReplacer(".", "_") rule:
+  # dotted config key → uppercased underscores (camelCase tokens are NOT split).
+  # e.g. ui.server.readTimeout → UI_SERVER_READTIMEOUT
 
   # HTTP/2 server (ConnectRPC + Web UI)
-  HTTP_FRONTEND_PORT: {{ .Values.config.http.port | quote }}
-  HTTP_FRONTEND_READTIMEOUT: {{ .Values.config.http.readTimeout | quote }}
-  HTTP_FRONTEND_WRITETIMEOUT: {{ .Values.config.http.writeTimeout | quote }}
+  UI_SERVER_PORT: {{ .Values.config.ui.server.port | quote }}
+  UI_SERVER_READTIMEOUT: {{ .Values.config.ui.server.readTimeout | quote }}
+  UI_SERVER_WRITETIMEOUT: {{ .Values.config.ui.server.writeTimeout | quote }}
 
   # gRPC server (etcd-compatible API)
-  GRPC_ETCD_PORT: {{ .Values.config.grpc.port | quote }}
+  CLIENT_ETCD_PORT: {{ .Values.config.client.etcd.port | quote }}
 
   # Service identity (used as Prometheus / OTel resource labels)
   SERVICE_NAME: {{ include "elara.serviceName" . | quote }}
   SERVICE_VERSION: {{ .Chart.AppVersion | quote }}
 
   # Connected-clients monitor (in-memory, etcd API)
-  CLIENTS_HISTORY_MAX_RECORDS: {{ .Values.config.clients.historyMaxRecords | quote }}
-  CLIENTS_HISTORY_MAX_AGE: {{ .Values.config.clients.historyMaxAge | quote }}
-  CLIENTS_RECENT_EVENTS_CAPACITY: {{ .Values.config.clients.recentEventsCapacity | quote }}
+  CLIENT_HISTORY_MAX_RECORDS: {{ .Values.config.client.history.maxRecords | quote }}
+  CLIENT_HISTORY_MAX_AGE: {{ .Values.config.client.history.maxAge | quote }}
+  CLIENT_RECENT_EVENTS_CAPACITY: {{ .Values.config.client.recentEvents.capacity | quote }}
 
   # Observability (opt-in)
   METRICS_ENABLED: {{ .Values.metrics.enabled | quote }}

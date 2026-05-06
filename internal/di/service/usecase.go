@@ -88,7 +88,7 @@ type UseCases struct {
 // NewUseCases creates all application use cases and returns the session manager separately
 // so the handler layer can wire it without mixing infrastructure into UseCases.
 func NewUseCases(ctx context.Context, a *Adapters, cfg config.Config) (*UseCases, *auth.SessionManager, error) {
-	sessionManager := auth.NewSessionManager(cfg.Auth.Session.Secret, cfg.Auth.Session.TTL)
+	sessionManager := auth.NewSessionManager(cfg.UI.Auth.Session.Secret, cfg.UI.Auth.Session.TTL)
 
 	enforcer, err := casbin.NewEnforcer(a.AuthPolicy)
 	if err != nil {
@@ -100,19 +100,47 @@ func NewUseCases(ctx context.Context, a *Adapters, cfg config.Config) (*UseCases
 	// MeUseCase is always available — it uses the enforcer to resolve per-user permissions.
 	uc.AuthMe = authuc.NewMeUseCase(enforcer, a.NamespaceRepo)
 
-	if !cfg.Auth.Enabled {
+	if !cfg.UI.Auth.Enabled {
 		if err := enforcer.SeedPassthroughAdmin(); err != nil {
 			return nil, nil, fmt.Errorf("seed passthrough admin: %w", err)
 		}
-
-		return uc, sessionManager, nil
 	}
 
-	if err := wireAuthUseCases(ctx, uc, a, cfg, sessionManager, enforcer); err != nil {
-		return nil, nil, err
+	if cfg.UI.Auth.Enabled {
+		if err := wireUIAuth(ctx, uc, a, cfg, sessionManager, enforcer); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	if cfg.UI.Auth.Enabled || cfg.Client.Auth.Enabled {
+		wireTokenUseCases(uc, a, enforcer)
 	}
 
 	return uc, sessionManager, nil
+}
+
+func wireUIAuth(
+	ctx context.Context,
+	uc *UseCases,
+	a *Adapters,
+	cfg config.Config,
+	sessionManager *auth.SessionManager,
+	enforcer *casbin.Enforcer,
+) error {
+	if err := wireUIAuthUseCases(ctx, uc, a, cfg, sessionManager, enforcer); err != nil {
+		return err
+	}
+
+	for _, email := range cfg.UI.Auth.AdminEmails {
+		if err := enforcer.AddRoleForUser(email, auth.RoleAdmin, auth.ObjectAll); err != nil {
+			return fmt.Errorf("bootstrap admin role %q: %w", email, err)
+		}
+		if err := enforcer.AddPolicy(email, auth.ObjectAll, auth.ObjectAll, auth.ActionAll); err != nil {
+			return fmt.Errorf("bootstrap admin policy %q: %w", email, err)
+		}
+	}
+
+	return nil
 }
 
 func newCoreUseCases(a *Adapters, enforcer *casbin.Enforcer) *UseCases {
@@ -197,7 +225,7 @@ func newCoreUseCases(a *Adapters, enforcer *casbin.Enforcer) *UseCases {
 	}
 }
 
-func wireAuthUseCases(
+func wireUIAuthUseCases(
 	ctx context.Context,
 	uc *UseCases,
 	a *Adapters,
@@ -206,11 +234,11 @@ func wireAuthUseCases(
 	enforcer *casbin.Enforcer,
 ) error {
 	oidcProvider, err := auth.NewOIDCProvider(ctx, auth.OIDCConfig{
-		IssuerURL:    cfg.Auth.OIDC.IssuerURL,
-		ClientID:     cfg.Auth.OIDC.ClientID,
-		ClientSecret: cfg.Auth.OIDC.ClientSecret,
-		RedirectURL:  cfg.Auth.OIDC.RedirectURL,
-		Scopes:       cfg.Auth.OIDC.Scopes,
+		IssuerURL:    cfg.UI.Auth.OIDC.IssuerURL,
+		ClientID:     cfg.UI.Auth.OIDC.ClientID,
+		ClientSecret: cfg.UI.Auth.OIDC.ClientSecret,
+		RedirectURL:  cfg.UI.Auth.OIDC.RedirectURL,
+		Scopes:       cfg.UI.Auth.OIDC.Scopes,
 	})
 	if err != nil {
 		return fmt.Errorf("create oidc provider: %w", err)
@@ -222,7 +250,7 @@ func wireAuthUseCases(
 		a.AuthUsers,
 		sessionManager,
 		enforcer,
-		cfg.Auth.AdminEmails,
+		cfg.UI.Auth.AdminEmails,
 	)
 
 	uc.AuthListUsers = authuc.NewListUsersUseCase(enforcer, a.AuthUsers)
@@ -240,10 +268,12 @@ func wireAuthUseCases(
 	uc.AuthRevokeRole = authuc.NewRevokeRoleUseCase(enforcer)
 	uc.AuthListPolicies = authuc.NewListPoliciesUseCase(enforcer)
 
+	return nil
+}
+
+func wireTokenUseCases(uc *UseCases, a *Adapters, enforcer *casbin.Enforcer) {
 	uc.AuthCreateToken = authuc.NewCreateTokenUseCase(enforcer, a.AuthTokens)
 	uc.AuthListTokens = authuc.NewListTokensUseCase(enforcer, a.AuthTokens)
 	uc.AuthGetToken = authuc.NewGetTokenUseCase(enforcer, a.AuthTokens)
 	uc.AuthRevokeToken = authuc.NewRevokeTokenUseCase(enforcer, a.AuthTokens, a.AuthTokens)
-
-	return nil
 }

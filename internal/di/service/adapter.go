@@ -51,12 +51,12 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 
 	clientHistoryRepo := bboltadapter.NewClientHistoryRepo(store)
 	clientHistory := monitor.NewHistoryStore(ctx, monitor.HistoryConfig{
-		MaxRecords: cfg.Clients.HistoryMaxRecords,
-		MaxAge:     cfg.Clients.HistoryMaxAge,
+		MaxRecords: cfg.Client.History.MaxRecords,
+		MaxAge:     cfg.Client.History.MaxAge,
 	}, clientHistoryRepo)
 
 	clientRegistry := monitor.NewRegistry(monitor.Config{
-		RecentEventsCapacity: cfg.Clients.RecentEventsCapacity,
+		RecentEventsCapacity: cfg.Client.RecentEvents.Capacity,
 	}, clientHistory)
 
 	watchPublisher := watchadapter.NewPublisher()

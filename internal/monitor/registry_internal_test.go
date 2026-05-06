@@ -9,31 +9,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	mock_monitor "github.com/sergeyslonimsky/elara/internal/monitor/mocks"
 )
-
-// recordingSink captures every disconnect snapshot for assertions.
-type recordingSink struct {
-	mu       sync.Mutex
-	captured []*domain.Client
-}
-
-func (s *recordingSink) Record(c *domain.Client) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.captured = append(s.captured, c)
-}
-
-func (s *recordingSink) snapshot() []*domain.Client {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	out := make([]*domain.Client, len(s.captured))
-	copy(out, s.captured)
-
-	return out
-}
 
 // drainEvents reads up to n change events from ch, with timeout.
 func drainEvents(t *testing.T, ch <-chan domain.ClientChange, n int) []domain.ClientChange {
@@ -297,7 +277,8 @@ func TestRegistry_ActiveWatches(t *testing.T) {
 func TestRegistry_Unregister_RecordsToHistorySinkWithDisconnectedAt(t *testing.T) {
 	t.Parallel()
 
-	sink := &recordingSink{}
+	ctrl := gomock.NewController(t)
+	sink := mock_monitor.NewMockHistorySink(ctrl)
 	r := NewRegistry(Config{}, sink)
 
 	id := r.RegisterConnection(domain.ConnectionInfo{
@@ -305,23 +286,20 @@ func TestRegistry_Unregister_RecordsToHistorySinkWithDisconnectedAt(t *testing.T
 	})
 	r.RecordRequest(id, "Put", "", 0, 0, nil)
 
+	sink.EXPECT().Record(gomock.Any()).Do(func(c *domain.Client) {
+		assert.Equal(t, "svc", c.ClientName)
+		assert.Equal(t, int64(1), c.RequestCounts["Put"])
+		require.NotNil(t, c.DisconnectedAt, "DisconnectedAt set in history snapshot")
+		assert.False(t, c.IsActive())
+	})
+
 	r.UnregisterConnection(id)
-
-	captured := sink.snapshot()
-	require.Len(t, captured, 1)
-
-	c := captured[0]
-	assert.Equal(t, "svc", c.ClientName)
-	assert.Equal(t, int64(1), c.RequestCounts["Put"])
-	require.NotNil(t, c.DisconnectedAt, "DisconnectedAt set in history snapshot")
-	assert.False(t, c.IsActive())
 
 	// Subsequent Get returns nil — no longer active
 	assert.Nil(t, r.Get(id))
 
-	// Idempotent — second unregister is a no-op
+	// Idempotent — second unregister is a no-op (no Record expectation set for 2nd call)
 	r.UnregisterConnection(id)
-	assert.Len(t, sink.snapshot(), 1, "no duplicate history record on double-unregister")
 }
 
 func TestRegistry_NilHistorySink_Safe(t *testing.T) {

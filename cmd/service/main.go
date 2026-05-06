@@ -80,7 +80,7 @@ func run() error {
 
 	a.AddResource(svc.Adapters)
 
-	frontendServer := corehttp.NewServer(cfg.FrontendServer, frontendServerOptions(a, cfg, promMetrics)...)
+	frontendServer := corehttp.NewServer(cfg.UI.Server, frontendServerOptions(a, cfg, promMetrics)...)
 	service.V2Routes(frontendServer, svc.V2Handlers, svc.SessionManager, cfg)
 
 	// Mount UI static file handler (serves frontend, fallback to index.html).
@@ -94,7 +94,7 @@ func run() error {
 	// same port as the etcd API — the response is driven by a.Healthcheck,
 	// same as the HTTP /readyz above.
 	statsHandler := grpctransport.NewStatsHandler(svc.Adapters.ClientRegistry)
-	etcdServer := coregrpc.NewServer(cfg.EtcdServer, etcdServerOptions(a, cfg, svc.Adapters, statsHandler)...)
+	etcdServer := coregrpc.NewServer(cfg.Client.EtcdServer, etcdServerOptions(a, cfg, svc.Adapters, statsHandler)...)
 	service.EtcdRoutes(etcdServer, svc.EtcdHandlers)
 
 	// frontendServer registered LAST → drains FIRST on SIGTERM.
@@ -219,7 +219,7 @@ func etcdServerOptions(
 		opts = append(opts, coregrpc.WithOtel())
 	}
 
-	if cfg.Auth.Enabled {
+	if cfg.Client.Auth.Enabled {
 		tokenInterceptor := etcdinterceptor.NewTokenInterceptor(adapters.AuthTokens)
 		opts = append(opts,
 			coregrpc.WithUnaryInterceptor(tokenInterceptor.Unary()),

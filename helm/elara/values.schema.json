@@ -55,36 +55,51 @@
 
     "config": {
       "type": "object",
-      "required": ["http", "grpc"],
+      "required": ["ui", "client"],
       "properties": {
-        "http": {
+        "ui": {
           "type": "object",
           "properties": {
-            "port":         { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "readTimeout":  { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" },
-            "writeTimeout": { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" }
+            "server": {
+              "type": "object",
+              "properties": {
+                "port":         { "type": "integer", "minimum": 1, "maximum": 65535 },
+                "readTimeout":  { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" },
+                "writeTimeout": { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" }
+              }
+            }
           }
         },
-        "grpc": {
+        "client": {
           "type": "object",
           "properties": {
-            "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+            "etcd": {
+              "type": "object",
+              "properties": {
+                "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+              }
+            },
+            "history": {
+              "type": "object",
+              "properties": {
+                "maxRecords": { "type": "integer", "minimum": 0 },
+                "maxAge":     { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" }
+              }
+            },
+            "recentEvents": {
+              "type": "object",
+              "properties": {
+                "capacity": { "type": "integer", "minimum": 0 }
+              }
+            }
           }
         },
         "serviceName": { "type": "string" },
-        "clients": {
-          "type": "object",
-          "properties": {
-            "historyMaxRecords":    { "type": "integer", "minimum": 0 },
-            "historyMaxAge":        { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" },
-            "recentEventsCapacity": { "type": "integer", "minimum": 0 }
-          }
-        },
         "log": {
           "type": "object",
           "properties": {
-            "level":     { "enum": ["debug", "info", "warn", "error"] },
-            "format":    { "enum": ["json", "text"] },
+            "level":    { "enum": ["debug", "info", "warn", "error"] },
+            "format":   { "enum": ["json", "text"] },
             "noSource": { "type": "boolean" }
           }
         }

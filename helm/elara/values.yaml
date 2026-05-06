@@ -90,33 +90,36 @@ containerSecurityContext:
 # -----------------------------------------------------------------------
 # Elara service configuration (→ env vars via ConfigMap)
 # -----------------------------------------------------------------------
-# Each key maps 1:1 to a viper config path in the service. Viper
-# uppercases dots to underscores, so http.frontend.readTimeout is
-# exposed as HTTP_FRONTEND_READTIMEOUT (no underscore inside camelCase
-# tokens — this is the core library's SetEnvKeyReplacer(".", "_") rule).
+# Keys are grouped by domain: `ui` (HTTP server + OIDC auth) and `client`
+# (gRPC server + token auth + connected-client monitor). The ConfigMap
+# template maps each value to its canonical env-var name via Viper's
+# SetEnvKeyReplacer(".", "_") rule: dots → underscores, uppercased.
 config:
-  http:
-    # -- HTTP/2 port serving ConnectRPC + static UI.
-    port: 8080
-    # -- Max duration for reading the request body. `0s` = library default.
-    readTimeout: "0s"
-    # -- Max duration for writing the response. Must be long because the
-    # service hosts server-streaming RPCs (WatchConfigs, WatchClients).
-    # Default in-code is 24h; overriding below 5m will cut streams.
-    writeTimeout: "24h"
-  grpc:
-    # -- etcd-compatible gRPC API port.
-    port: 2379
+  ui:
+    server:
+      # -- HTTP/2 port serving ConnectRPC + static UI.
+      port: 8080
+      # -- Max duration for reading the request body. `0s` = library default.
+      readTimeout: "0s"
+      # -- Max duration for writing the response. Must be long because the
+      # service hosts server-streaming RPCs (WatchConfigs, WatchClients).
+      # Default in-code is 24h; overriding below 5m will cut streams.
+      writeTimeout: "24h"
+  client:
+    etcd:
+      # -- etcd-compatible gRPC API port.
+      port: 2379
+    history:
+      # -- Max historical client events retained in memory.
+      maxRecords: 1000
+      # -- Retention window for client history (Go duration).
+      maxAge: "720h"
+    recentEvents:
+      # -- Capacity of the recent-events ring buffer.
+      capacity: 100
   # -- Overrides the resolved service name used in Prometheus / OTel
   # resource labels. Leave empty to derive from the chart name.
   serviceName: ""
-  clients:
-    # -- Max historical client events retained in memory.
-    historyMaxRecords: 1000
-    # -- Retention window for client history (Go duration).
-    historyMaxAge: "720h"
-    # -- Capacity of the recent-events ring buffer.
-    recentEventsCapacity: 100
   log:
     # -- Log verbosity. One of: debug, info, warn, error.
     level: "info"

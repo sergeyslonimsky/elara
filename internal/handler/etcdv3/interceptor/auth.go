@@ -89,8 +89,10 @@ func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, e
 
 	// Inject claims so usecases/handlers can check namespace/role scope.
 	claims := &auth.Claims{
-		Email: token.IssuedBy,
-		Name:  token.Name,
+		Email:      token.IssuedBy,
+		Name:       token.Name,
+		Namespaces: token.Namespaces,
+		Role:       token.Role,
 	}
 
 	return auth.WithClaims(ctx, claims), nil

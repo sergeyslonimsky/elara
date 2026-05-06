@@ -82,7 +82,7 @@ func NewV2Handlers(uc *UseCases, cfg config.Config) *V2Handlers {
 
 	handlers.Auth = v2.NewAuthHandler(uc.AuthLogin, uc.AuthCallback, uc.AuthMe)
 
-	if cfg.Auth.Enabled {
+	if cfg.UI.Auth.Enabled {
 		handlers.Users = v2.NewUserHandler(uc.AuthListUsers, uc.AuthGetUser)
 		handlers.Groups = v2.NewGroupHandler(
 			uc.AuthCreateGroup,
@@ -94,6 +94,9 @@ func NewV2Handlers(uc *UseCases, cfg config.Config) *V2Handlers {
 			uc.AuthRemoveMember,
 		)
 		handlers.Access = v2.NewAccessHandler(uc.AuthAssignRole, uc.AuthRevokeRole, uc.AuthListPolicies)
+	}
+
+	if cfg.UI.Auth.Enabled || cfg.Client.Auth.Enabled {
 		handlers.Tokens = v2.NewTokenHandler(
 			uc.AuthCreateToken,
 			uc.AuthListTokens,
@@ -116,7 +119,7 @@ func V2Routes(server server, handlers *V2Handlers, sessionManager *auth.SessionM
 		validate.NewInterceptor(),
 	}
 
-	if cfg.Auth.Enabled && sessionManager != nil {
+	if cfg.UI.Auth.Enabled && sessionManager != nil {
 		publicProcedures := []string{
 			"/elara.auth.v1.AuthService/Login",
 			"/elara.auth.v1.AuthService/Callback",

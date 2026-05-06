@@ -106,30 +106,31 @@ helm install elara ./helm/elara -f values-prod.yaml
 Full list with descriptions lives in [`values.yaml`](values.yaml). Key
 sections:
 
-| Key                       | Default                         | Purpose                                                |
-| ------------------------- |---------------------------------| ------------------------------------------------------ |
-| `image.repository`        | `ghcr.io/sergeyslonimsky/elara` | Container image                                        |
-| `image.tag`               | Chart `appVersion`              | Pin a specific version                                 |
-| `image.digest`            | `""`                            | Overrides `tag` for immutable deploys                  |
-| `replicaCount`            | `1`                             | **Invariant**: schema pins to `1` until raft HA lands  |
-| `config.http.port`        | `8080`                          | HTTP/2, ConnectRPC, Web UI                             |
-| `config.http.writeTimeout`| `24h`                           | Server-streaming RPCs need a long write timeout        |
-| `config.grpc.port`        | `2379`                          | etcd-compatible gRPC API                               |
-| `config.clients.*`        | see `values.yaml`               | Connected-clients monitor tuning                       |
-| `storage.type`            | `bbolt`                         | Schema enum: `[bbolt]` today                           |
-| `storage.bbolt.path`      | `/var/lib/elara`                | Directory inside the PVC mount                         |
-| `persistence.size`        | `2Gi`                           | PVC size via `volumeClaimTemplates`                    |
-| `persistence.accessMode`  | `ReadWriteOnce`                 | bbolt requires exclusive lock                          |
-| `metrics.enabled`         | `false`                         | Exposes `/metrics` on the HTTP port                    |
-| `metrics.serviceMonitor.enabled` | `false`                         | Requires Prometheus Operator CRDs                      |
-| `tracing.enabled`         | `false`                         | OTLP push                                              |
-| `tracing.otlpEndpoint`    | `""`                            | Required when `tracing.enabled=true`                   |
-| `config.log.level`        | `info`                          | One of: `debug`, `info`, `warn`, `error`               |
-| `config.log.format`       | `json`                          | One of: `json`, `text`                                 |
-| `config.log.noSource`     | `false`                         | Set `true` to omit source file/line from log entries   |
-| `service.type`            | `ClusterIP`                     | `NodePort`/`LoadBalancer` supported                    |
-| `ingress.enabled`         | `false`                         | Exposes HTTP port only                                 |
-| `networkPolicy.enabled`   | `false`                         | Optional; CNI-dependent                                |
+| Key                              | Default                         | Purpose                                               |
+| -------------------------------- |---------------------------------| ----------------------------------------------------- |
+| `image.repository`               | `ghcr.io/sergeyslonimsky/elara` | Container image                                       |
+| `image.tag`                      | Chart `appVersion`              | Pin a specific version                                |
+| `image.digest`                   | `""`                            | Overrides `tag` for immutable deploys                 |
+| `replicaCount`                   | `1`                             | **Invariant**: schema pins to `1` until raft HA lands |
+| `config.ui.server.port`          | `8080`                          | HTTP/2, ConnectRPC, Web UI                            |
+| `config.ui.server.writeTimeout`  | `24h`                           | Server-streaming RPCs need a long write timeout       |
+| `config.client.etcd.port`        | `2379`                          | etcd-compatible gRPC API                              |
+| `config.client.history.*`        | see `values.yaml`               | Connected-clients history tuning                      |
+| `config.client.recentEvents.*`   | see `values.yaml`               | Recent-events ring buffer tuning                      |
+| `storage.type`                   | `bbolt`                         | Schema enum: `[bbolt]` today                          |
+| `storage.bbolt.path`             | `/var/lib/elara`                | Directory inside the PVC mount                        |
+| `persistence.size`               | `2Gi`                           | PVC size via `volumeClaimTemplates`                   |
+| `persistence.accessMode`         | `ReadWriteOnce`                 | bbolt requires exclusive lock                         |
+| `metrics.enabled`                | `false`                         | Exposes `/metrics` on the HTTP port                   |
+| `metrics.serviceMonitor.enabled` | `false`                         | Requires Prometheus Operator CRDs                     |
+| `tracing.enabled`                | `false`                         | OTLP push                                             |
+| `tracing.otlpEndpoint`           | `""`                            | Required when `tracing.enabled=true`                  |
+| `config.log.level`               | `info`                          | One of: `debug`, `info`, `warn`, `error`              |
+| `config.log.format`              | `json`                          | One of: `json`, `text`                                |
+| `config.log.noSource`            | `false`                         | Set `true` to omit source file/line from log entries  |
+| `service.type`                   | `ClusterIP`                     | `NodePort`/`LoadBalancer` supported                   |
+| `ingress.enabled`                | `false`                         | Exposes HTTP port only                                |
+| `networkPolicy.enabled`          | `false`                         | Optional; CNI-dependent                               |
 
 ## How configuration reaches the service
 
@@ -139,20 +140,22 @@ Viper uses the core library's `SetEnvKeyReplacer(".", "_")`, so every viper
 key maps to an env var by **uppercasing and replacing dots with underscores
 — camelCase tokens are not split**. For example:
 
-| Config key (viper)             | Env var (ConfigMap)           |
-| ------------------------------ | ----------------------------- |
-| `http.frontend.port`           | `HTTP_FRONTEND_PORT`          |
-| `http.frontend.readTimeout`    | `HTTP_FRONTEND_READTIMEOUT`   |
-| `http.frontend.writeTimeout`   | `HTTP_FRONTEND_WRITETIMEOUT`  |
-| `grpc.etcd.port`               | `GRPC_ETCD_PORT`              |
-| `config.data.path`             | `CONFIG_DATA_PATH`            |
-| `service.name`                 | `SERVICE_NAME`                |
-| `metrics.enabled`              | `METRICS_ENABLED`             |
-| `tracing.otlp.endpoint`        | `TRACING_OTLP_ENDPOINT`       |
-| `clients.history.max_records`  | `CLIENTS_HISTORY_MAX_RECORDS` |
-| `log.level`                    | `LOG_LEVEL`                   |
-| `log.format`                   | `LOG_FORMAT`                  |
-| `log.noSource`                 | `LOG_NOSOURCE`                |
+| Config key (viper)              | Env var (ConfigMap)            |
+| ------------------------------- | ------------------------------ |
+| `ui.server.port`                | `UI_SERVER_PORT`               |
+| `ui.server.readTimeout`         | `UI_SERVER_READTIMEOUT`        |
+| `ui.server.writeTimeout`        | `UI_SERVER_WRITETIMEOUT`       |
+| `client.etcd.port`              | `CLIENT_ETCD_PORT`             |
+| `client.history.max_records`    | `CLIENT_HISTORY_MAX_RECORDS`   |
+| `client.history.max_age`        | `CLIENT_HISTORY_MAX_AGE`       |
+| `client.recent_events.capacity` | `CLIENT_RECENT_EVENTS_CAPACITY`|
+| `config.data.path`              | `CONFIG_DATA_PATH`             |
+| `service.name`                  | `SERVICE_NAME`                 |
+| `metrics.enabled`               | `METRICS_ENABLED`              |
+| `tracing.otlp.endpoint`         | `TRACING_OTLP_ENDPOINT`        |
+| `log.level`                     | `LOG_LEVEL`                    |
+| `log.format`                    | `LOG_FORMAT`                   |
+| `log.noSource`                  | `LOG_NOSOURCE`                 |
 
 Add extra env-vars via `extraEnv` or wire a Secret with `extraEnvFrom`.
 

@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/sergeyslonimsky/core/di"
-	coregrpc "github.com/sergeyslonimsky/core/grpc"
-	"github.com/sergeyslonimsky/core/http2"
 )
 
 const (
@@ -36,14 +34,14 @@ const (
 )
 
 type Config struct {
-	FrontendServer http2.Config
-	EtcdServer     coregrpc.Config
-	DataPath       string
-	Clients        ClientsConfig
+	UI     UI
+	Client Client
 
 	// Service identity — propagated to OTel / Prometheus resource labels.
 	ServiceName    string
 	ServiceVersion string
+
+	DataPath string
 
 	// Observability is opt-in. Default for both Metrics and Tracing is
 	// OFF so operators deploying elara into a cluster without Prometheus
@@ -51,30 +49,6 @@ type Config struct {
 	Metrics MetricsConfig
 	Tracing TracingConfig
 	Log     LogConfig
-	Auth    AuthConfig
-}
-
-// AuthConfig controls authentication and session management.
-type AuthConfig struct {
-	Enabled     bool
-	AdminEmails []string
-	OIDC        OIDCConfig
-	Session     SessionConfig
-}
-
-// OIDCConfig holds OpenID Connect provider settings.
-type OIDCConfig struct {
-	IssuerURL    string
-	ClientID     string
-	ClientSecret string
-	RedirectURL  string
-	Scopes       []string
-}
-
-// SessionConfig controls JWT session token signing and lifetime.
-type SessionConfig struct {
-	Secret string
-	TTL    time.Duration
 }
 
 // LogConfig controls structured-log verbosity, output format, and source location.
@@ -82,13 +56,6 @@ type LogConfig struct {
 	Level    string // "debug" | "info" | "warn" | "error"
 	Format   string // "json" | "text"
 	NoSource bool
-}
-
-// ClientsConfig is the in-process config for the connected-clients monitor.
-type ClientsConfig struct {
-	HistoryMaxRecords    int
-	HistoryMaxAge        time.Duration
-	RecentEventsCapacity int
 }
 
 // MetricsConfig controls the Prometheus /metrics pull endpoint. When
@@ -113,35 +80,12 @@ func NewConfig(ctx context.Context) (Config, error) {
 	}
 
 	return Config{
-		FrontendServer: http2.Config{
-			Port:        cfg.GetStringOrDefault("http.frontend.port", defaultHTTPPort),
-			ReadTimeout: cfg.GetDuration("http.frontend.readTimeout"),
-			// Streaming-friendly default — see defaultFrontendWriteTimeout.
-			WriteTimeout: durOrDefault(
-				cfg.GetDuration("http.frontend.writeTimeout"),
-				defaultFrontendWriteTimeout,
-			),
-		},
-		EtcdServer: coregrpc.Config{
-			Port: cfg.GetStringOrDefault("grpc.etcd.port", defaultGRPCPort),
-		},
+		UI:     newUIConfig(cfg),
+		Client: newClientConfig(cfg),
+
 		DataPath:       cfg.GetStringOrDefault("config.data.path", defaultDataPath),
 		ServiceName:    cfg.GetStringOrDefault("service.name", defaultServiceName),
 		ServiceVersion: cfg.GetString("service.version"),
-		Clients: ClientsConfig{
-			HistoryMaxRecords: intOrDefault(
-				cfg.GetInt("clients.history.max_records"),
-				defaultClientHistoryMaxRecords,
-			),
-			HistoryMaxAge: durOrDefault(
-				cfg.GetDuration("clients.history.max_age"),
-				defaultClientHistoryMaxAge,
-			),
-			RecentEventsCapacity: intOrDefault(
-				cfg.GetInt("clients.recent_events.capacity"),
-				defaultClientRecentEventsCap,
-			),
-		},
 		Metrics: MetricsConfig{
 			// Reads metrics.enabled / METRICS_ENABLED. Default: false.
 			Enabled: cfg.GetBool("metrics.enabled"),
@@ -157,27 +101,6 @@ func NewConfig(ctx context.Context) (Config, error) {
 			Level:    cfg.GetStringOrDefault("log.level", defaultLogLevel),
 			Format:   cfg.GetStringOrDefault("log.format", defaultLogFormat),
 			NoSource: cfg.GetBool("log.noSource"),
-		},
-		Auth: AuthConfig{
-			Enabled:     cfg.GetBool("auth.enabled"),
-			AdminEmails: cfg.GetStringSlice("auth.adminEmails"),
-			OIDC: OIDCConfig{
-				IssuerURL:    cfg.GetString("auth.oidc.issuerUrl"),
-				ClientID:     cfg.GetString("auth.oidc.clientId"),
-				ClientSecret: cfg.GetString("auth.oidc.clientSecret"),
-				RedirectURL:  cfg.GetString("auth.oidc.redirectUrl"),
-				Scopes: stringsOrDefault(
-					cfg.GetStringSlice("auth.oidc.scopes"),
-					[]string{"openid", "email", "profile"},
-				),
-			},
-			Session: SessionConfig{
-				Secret: cfg.GetString("auth.session.secret"),
-				TTL: durOrDefault(
-					cfg.GetDuration("auth.session.ttl"),
-					defaultSessionTTL,
-				),
-			},
 		},
 	}, nil
 }
