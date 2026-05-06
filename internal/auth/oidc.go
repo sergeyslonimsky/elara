@@ -7,6 +7,8 @@ import (
 
 	gooidc "github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
+
+	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 var (
@@ -43,7 +45,7 @@ func NewOIDCProvider(ctx context.Context, cfg OIDCConfig) (*OIDCProvider, error)
 	}
 
 	return &OIDCProvider{
-		name:     "oidc",
+		name:     domain.ProviderOIDC,
 		verifier: provider.Verifier(&gooidc.Config{ClientID: cfg.ClientID}),
 		oauth2: oauth2.Config{
 			ClientID:     cfg.ClientID,

@@ -70,6 +70,10 @@ pluggable storage backends (PostgreSQL, S3) are on the roadmap.
 - **Single bbolt file storage** — ACID transactions, no external DB required.
 - **Webhooks** — HTTP push notifications on every config change (create / update / delete). Filter by namespace and path
   prefix, sign payloads with HMAC-SHA256, and inspect per-webhook delivery history from the UI.
+- **Authentication** — optional Web UI and API authentication. Choose between
+  username/password (`basic-auth`) and OpenID Connect (`oidc`). Session tokens
+  are signed JWTs stored in HttpOnly cookies. First login forces a password
+  change; admins can reset any user's password without an email flow.
 - **Observability** — optional Prometheus `/metrics` and OTLP tracing.
 - **Kube-native Helm chart** with StatefulSet, ServiceMonitor, NetworkPolicy, JSON Schema validation, and a smoke test.
 
@@ -561,6 +565,61 @@ README](helm/elara/README.md#grpc-exposure).
 The full values reference, extensibility hooks, and examples live in
 [`helm/elara/README.md`](helm/elara/README.md).
 
+## Authentication
+
+Authentication is opt-in. When disabled (default) all RPCs are public. Enable
+it by setting `ui.auth.enabled: true` in your config, then choose a mode.
+
+### Basic auth (username + password)
+
+```yaml
+# config.yaml
+ui:
+  auth:
+    enabled: true
+    type: basic-auth
+    adminEmail: admin@example.com
+    basicAuth:
+      adminInitialPassword: ChangeMe123
+    session:
+      secret: a-long-random-string
+```
+
+On first boot Elara creates the admin user and forces a password change on the
+first login. Admins can create additional users and reset passwords from the
+Web UI or via the `UserService` API.
+
+### OIDC
+
+```yaml
+# config.yaml
+ui:
+  auth:
+    enabled: true
+    type: oidc
+    adminEmail: admin@example.com
+    oidc:
+      issuerUrl: https://accounts.google.com
+      clientId: MY_CLIENT_ID
+      clientSecret: MY_CLIENT_SECRET
+      redirectUrl: https://elara.example.com/auth/callback
+    session:
+      secret: a-long-random-string
+```
+
+### Session behaviour
+
+| Claim                    | Effect                                                                 |
+|--------------------------|------------------------------------------------------------------------|
+| `PasswordChangeRequired` | All RPCs blocked except `ChangePassword`, `Me`, and `Logout`           |
+| Session TTL              | Default 24 h; configure via `ui.auth.session.ttl`                     |
+| Cookie                   | HttpOnly, Secure, SameSite=Strict; name `elara_session`               |
+
+### Kubernetes / Helm
+
+See [helm/elara/README.md](helm/elara/README.md#with-basic-auth-username--password)
+for Helm install examples including the `existingSecret` pattern for production.
+
 ## Local development
 
 ```bash
@@ -599,16 +658,26 @@ for the full list.
 
 Key defaults:
 
-| Key                    | Env var                  | Default  |
-|------------------------|--------------------------|----------|
-| `ui.server.port`       | `UI_SERVER_PORT`         | `8080`   |
-| `client.etcd.port`     | `CLIENT_ETCD_PORT`       | `2379`   |
-| `config.data.path`     | `CONFIG_DATA_PATH`       | `./data` |
-| `metrics.enabled`      | `METRICS_ENABLED`        | `false`  |
-| `tracing.enabled`      | `TRACING_ENABLED`        | `false`  |
-| `log.level`            | `LOG_LEVEL`              | `info`   |
-| `log.format`           | `LOG_FORMAT`             | `json`   |
-| `log.noSource`         | `LOG_NOSOURCE`           | `false`  |
+| Key                                      | Env var                                    | Default        |
+|------------------------------------------|--------------------------------------------|----------------|
+| `ui.server.port`                         | `UI_SERVER_PORT`                           | `8080`         |
+| `ui.auth.enabled`                        | `UI_AUTH_ENABLED`                          | `false`        |
+| `ui.auth.type`                           | `UI_AUTH_TYPE`                             | `basic-auth`   |
+| `ui.auth.adminEmail`                     | `UI_AUTH_ADMINEMAIL`                       | `""`           |
+| `ui.auth.basicAuth.adminInitialPassword` | `UI_AUTH_BASICAUTH_ADMININITIALPASSWORD`   | `""`           |
+| `ui.auth.oidc.issuerUrl`                 | `UI_AUTH_OIDC_ISSUERURL`                   | `""`           |
+| `ui.auth.oidc.clientId`                  | `UI_AUTH_OIDC_CLIENTID`                    | `""`           |
+| `ui.auth.oidc.clientSecret`              | `UI_AUTH_OIDC_CLIENTSECRET`               | `""`           |
+| `ui.auth.oidc.redirectUrl`               | `UI_AUTH_OIDC_REDIRECTURL`                 | `""`           |
+| `ui.auth.session.secret`                 | `UI_AUTH_SESSION_SECRET`                   | `""`           |
+| `ui.auth.session.ttl`                    | `UI_AUTH_SESSION_TTL`                      | `24h`          |
+| `client.etcd.port`                       | `CLIENT_ETCD_PORT`                         | `2379`         |
+| `config.data.path`                       | `CONFIG_DATA_PATH`                         | `./data`       |
+| `metrics.enabled`                        | `METRICS_ENABLED`                          | `false`        |
+| `tracing.enabled`                        | `TRACING_ENABLED`                          | `false`        |
+| `log.level`                              | `LOG_LEVEL`                                | `info`         |
+| `log.format`                             | `LOG_FORMAT`                               | `json`         |
+| `log.noSource`                           | `LOG_NOSOURCE`                             | `false`        |
 
 ## Contributing
 

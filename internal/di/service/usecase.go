@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 	clientsuc "github.com/sergeyslonimsky/elara/internal/usecase/clients"
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
@@ -60,9 +62,13 @@ type UseCases struct {
 	ListWebhooks   *webhookuc.ListUseCase
 	WebhookHistory *webhookuc.HistoryUseCase
 
-	AuthLogin    *authuc.LoginUseCase
-	AuthCallback *authuc.CallbackUseCase
-	AuthMe       *authuc.MeUseCase
+	AuthLogin          *authuc.LoginUseCase
+	AuthCallback       *authuc.CallbackUseCase
+	AuthMe             *authuc.MeUseCase
+	AuthBasicLogin     *authuc.BasicLoginUseCase
+	AuthChangePassword *authuc.ChangePasswordUseCase
+	AuthResetPassword  *authuc.ResetPasswordUseCase
+	AuthCreateUser     *authuc.CreateUserUseCase
 
 	AuthListUsers *authuc.ListUsersUseCase
 	AuthGetUser   *authuc.GetUserUseCase
@@ -131,13 +137,61 @@ func wireUIAuth(
 		return err
 	}
 
-	for _, email := range cfg.UI.Auth.AdminEmails {
+	if cfg.UI.Auth.Type == config.AuthTypeBasicAuth {
+		if err := bootstrapBasicAuthAdmin(ctx, a, cfg); err != nil {
+			return err
+		}
+	}
+
+	if email := cfg.UI.Auth.AdminEmail; email != "" {
 		if err := enforcer.AddRoleForUser(email, auth.RoleAdmin, auth.ObjectAll); err != nil {
 			return fmt.Errorf("bootstrap admin role %q: %w", email, err)
 		}
 		if err := enforcer.AddPolicy(email, auth.ObjectAll, auth.ObjectAll, auth.ActionAll); err != nil {
 			return fmt.Errorf("bootstrap admin policy %q: %w", email, err)
 		}
+	}
+
+	return nil
+}
+
+func bootstrapBasicAuthAdmin(
+	ctx context.Context,
+	a *Adapters,
+	cfg config.Config,
+) error {
+	email := cfg.UI.Auth.AdminEmail
+	if email == "" {
+		return nil
+	}
+
+	_, err := a.AuthUsers.Get(ctx, email)
+	if err == nil {
+		return nil // Already exists
+	}
+
+	if !errors.Is(err, domain.ErrNotFound) {
+		return fmt.Errorf("check admin user existence: %w", err)
+	}
+
+	// Create initial admin user
+	user := &domain.User{
+		Email:    email,
+		Name:     "Administrator",
+		Provider: domain.ProviderBasicAuth,
+	}
+
+	if err := a.AuthUsers.Upsert(ctx, user); err != nil {
+		return fmt.Errorf("bootstrap admin upsert: %w", err)
+	}
+
+	hash, err := auth.HashPassword(cfg.UI.Auth.BasicAuth.AdminInitialPassword)
+	if err != nil {
+		return fmt.Errorf("bootstrap admin hash: %w", err)
+	}
+
+	if err := a.AuthUsers.SetPassword(ctx, email, hash, true); err != nil {
+		return fmt.Errorf("bootstrap admin set password: %w", err)
 	}
 
 	return nil
@@ -233,25 +287,33 @@ func wireUIAuthUseCases(
 	sessionManager *auth.SessionManager,
 	enforcer *casbin.Enforcer,
 ) error {
-	oidcProvider, err := auth.NewOIDCProvider(ctx, auth.OIDCConfig{
-		IssuerURL:    cfg.UI.Auth.OIDC.IssuerURL,
-		ClientID:     cfg.UI.Auth.OIDC.ClientID,
-		ClientSecret: cfg.UI.Auth.OIDC.ClientSecret,
-		RedirectURL:  cfg.UI.Auth.OIDC.RedirectURL,
-		Scopes:       cfg.UI.Auth.OIDC.Scopes,
-	})
-	if err != nil {
-		return fmt.Errorf("create oidc provider: %w", err)
-	}
+	switch cfg.UI.Auth.Type {
+	case config.AuthTypeOIDC:
+		oidcProvider, err := auth.NewOIDCProvider(ctx, auth.OIDCConfig{
+			IssuerURL:    cfg.UI.Auth.OIDC.IssuerURL,
+			ClientID:     cfg.UI.Auth.OIDC.ClientID,
+			ClientSecret: cfg.UI.Auth.OIDC.ClientSecret,
+			RedirectURL:  cfg.UI.Auth.OIDC.RedirectURL,
+			Scopes:       cfg.UI.Auth.OIDC.Scopes,
+		})
+		if err != nil {
+			return fmt.Errorf("create oidc provider: %w", err)
+		}
 
-	uc.AuthLogin = authuc.NewLoginUseCase(oidcProvider)
-	uc.AuthCallback = authuc.NewCallbackUseCase(
-		oidcProvider,
-		a.AuthUsers,
-		sessionManager,
-		enforcer,
-		cfg.UI.Auth.AdminEmails,
-	)
+		uc.AuthLogin = authuc.NewLoginUseCase(oidcProvider)
+		uc.AuthCallback = authuc.NewCallbackUseCase(
+			oidcProvider,
+			a.AuthUsers,
+			sessionManager,
+			enforcer,
+			cfg.UI.Auth.AdminEmail,
+		)
+	case config.AuthTypeBasicAuth:
+		uc.AuthBasicLogin = authuc.NewBasicLoginUseCase(a.AuthUsers, sessionManager, enforcer, cfg.UI.Auth.AdminEmail)
+		uc.AuthChangePassword = authuc.NewChangePasswordUseCase(a.AuthUsers, a.AuthUsers)
+		uc.AuthResetPassword = authuc.NewResetPasswordUseCase(enforcer, a.AuthUsers)
+		uc.AuthCreateUser = authuc.NewCreateUserUseCase(enforcer, a.AuthUsers)
+	}
 
 	uc.AuthListUsers = authuc.NewListUsersUseCase(enforcer, a.AuthUsers)
 	uc.AuthGetUser = authuc.NewGetUserUseCase(enforcer, a.AuthUsers)

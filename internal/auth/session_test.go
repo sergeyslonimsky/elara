@@ -15,7 +15,11 @@ func TestSessionManager_Create_And_Validate(t *testing.T) {
 	t.Parallel()
 
 	mgr := auth.NewSessionManager("super-secret", time.Hour)
-	user := &domain.User{Email: "alice@example.com", Name: "Alice"}
+	user := &domain.User{
+		Email:                  "alice@example.com",
+		Name:                   "Alice",
+		PasswordChangeRequired: true,
+	}
 
 	token, err := mgr.Create(user)
 	require.NoError(t, err)
@@ -25,6 +29,7 @@ func TestSessionManager_Create_And_Validate(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, user.Email, claims.Email)
 	assert.Equal(t, user.Name, claims.Name)
+	assert.True(t, claims.PasswordChangeRequired)
 }
 
 func TestSessionManager_Validate_WrongSecret(t *testing.T) {

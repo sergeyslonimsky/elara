@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	authv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
@@ -50,7 +51,13 @@ func TestUserHandler_ListUsers(t *testing.T) {
 			lister := auth_mock.NewMockuserLister(ctrl)
 			lister.EXPECT().List(gomock.Any()).Return(tc.users, tc.repoErr)
 
-			h := NewUserHandler(authuc.NewListUsersUseCase(allowAllClientsHandlerEnforcer{}, lister), nil)
+			h := NewUserHandler(
+				authuc.NewListUsersUseCase(allowAllClientsHandlerEnforcer{}, lister),
+				nil,
+				nil,
+				nil,
+				config.AuthTypeOIDC,
+			)
 
 			resp, err := h.ListUsers(clientsHandlerTestCtx(), connect.NewRequest(&authv1.ListUsersRequest{}))
 
@@ -99,7 +106,13 @@ func TestUserHandler_GetUser(t *testing.T) {
 			getter := auth_mock.NewMockuserGetter(ctrl)
 			getter.EXPECT().Get(gomock.Any(), tc.email).Return(tc.user, tc.repoErr)
 
-			h := NewUserHandler(nil, authuc.NewGetUserUseCase(allowAllClientsHandlerEnforcer{}, getter))
+			h := NewUserHandler(
+				nil,
+				authuc.NewGetUserUseCase(allowAllClientsHandlerEnforcer{}, getter),
+				nil,
+				nil,
+				config.AuthTypeOIDC,
+			)
 
 			resp, err := h.GetUser(clientsHandlerTestCtx(), connect.NewRequest(&authv1.GetUserRequest{Email: tc.email}))
 

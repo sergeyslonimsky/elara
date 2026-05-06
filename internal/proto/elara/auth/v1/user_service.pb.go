@@ -274,6 +274,200 @@ func (x *GetUserResponse) GetUser() *User {
 	return nil
 }
 
+// Admin-only, basic-auth mode only
+type CreateUserRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Email           string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	InitialPassword string                 `protobuf:"bytes,3,opt,name=initial_password,json=initialPassword,proto3" json:"initial_password,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CreateUserRequest) Reset() {
+	*x = CreateUserRequest{}
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateUserRequest) ProtoMessage() {}
+
+func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateUserRequest.ProtoReflect.Descriptor instead.
+func (*CreateUserRequest) Descriptor() ([]byte, []int) {
+	return file_elara_auth_v1_user_service_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CreateUserRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *CreateUserRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateUserRequest) GetInitialPassword() string {
+	if x != nil {
+		return x.InitialPassword
+	}
+	return ""
+}
+
+type CreateUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateUserResponse) Reset() {
+	*x = CreateUserResponse{}
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateUserResponse) ProtoMessage() {}
+
+func (x *CreateUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateUserResponse.ProtoReflect.Descriptor instead.
+func (*CreateUserResponse) Descriptor() ([]byte, []int) {
+	return file_elara_auth_v1_user_service_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CreateUserResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+// Admin-only — resets the target user's password and sets password_change_required
+type ResetUserPasswordRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	NewPassword   string                 `protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetUserPasswordRequest) Reset() {
+	*x = ResetUserPasswordRequest{}
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetUserPasswordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetUserPasswordRequest) ProtoMessage() {}
+
+func (x *ResetUserPasswordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetUserPasswordRequest.ProtoReflect.Descriptor instead.
+func (*ResetUserPasswordRequest) Descriptor() ([]byte, []int) {
+	return file_elara_auth_v1_user_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ResetUserPasswordRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *ResetUserPasswordRequest) GetNewPassword() string {
+	if x != nil {
+		return x.NewPassword
+	}
+	return ""
+}
+
+type ResetUserPasswordResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetUserPasswordResponse) Reset() {
+	*x = ResetUserPasswordResponse{}
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetUserPasswordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetUserPasswordResponse) ProtoMessage() {}
+
+func (x *ResetUserPasswordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetUserPasswordResponse.ProtoReflect.Descriptor instead.
+func (*ResetUserPasswordResponse) Descriptor() ([]byte, []int) {
+	return file_elara_auth_v1_user_service_proto_rawDescGZIP(), []int{8}
+}
+
 var File_elara_auth_v1_user_service_proto protoreflect.FileDescriptor
 
 const file_elara_auth_v1_user_service_proto_rawDesc = "" +
@@ -293,10 +487,23 @@ const file_elara_auth_v1_user_service_proto_rawDesc = "" +
 	"\x0eGetUserRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\":\n" +
 	"\x0fGetUserResponse\x12'\n" +
-	"\x04user\x18\x01 \x01(\v2\x13.elara.auth.v1.UserR\x04user2\xa7\x01\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.elara.auth.v1.UserR\x04user\"h\n" +
+	"\x11CreateUserRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12)\n" +
+	"\x10initial_password\x18\x03 \x01(\tR\x0finitialPassword\"=\n" +
+	"\x12CreateUserResponse\x12'\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.elara.auth.v1.UserR\x04user\"S\n" +
+	"\x18ResetUserPasswordRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12!\n" +
+	"\fnew_password\x18\x02 \x01(\tR\vnewPassword\"\x1b\n" +
+	"\x19ResetUserPasswordResponse2\xe2\x02\n" +
 	"\vUserService\x12N\n" +
 	"\tListUsers\x12\x1f.elara.auth.v1.ListUsersRequest\x1a .elara.auth.v1.ListUsersResponse\x12H\n" +
-	"\aGetUser\x12\x1d.elara.auth.v1.GetUserRequest\x1a\x1e.elara.auth.v1.GetUserResponseB\xc1\x01\n" +
+	"\aGetUser\x12\x1d.elara.auth.v1.GetUserRequest\x1a\x1e.elara.auth.v1.GetUserResponse\x12Q\n" +
+	"\n" +
+	"CreateUser\x12 .elara.auth.v1.CreateUserRequest\x1a!.elara.auth.v1.CreateUserResponse\x12f\n" +
+	"\x11ResetUserPassword\x12'.elara.auth.v1.ResetUserPasswordRequest\x1a(.elara.auth.v1.ResetUserPasswordResponseB\xc1\x01\n" +
 	"\x11com.elara.auth.v1B\x10UserServiceProtoP\x01ZDgithub.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1;authv1\xa2\x02\x03EAX\xaa\x02\rElara.Auth.V1\xca\x02\rElara\\Auth\\V1\xe2\x02\x19Elara\\Auth\\V1\\GPBMetadata\xea\x02\x0fElara::Auth::V1b\x06proto3"
 
 var (
@@ -311,29 +518,38 @@ func file_elara_auth_v1_user_service_proto_rawDescGZIP() []byte {
 	return file_elara_auth_v1_user_service_proto_rawDescData
 }
 
-var file_elara_auth_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_elara_auth_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_elara_auth_v1_user_service_proto_goTypes = []any{
-	(*User)(nil),                  // 0: elara.auth.v1.User
-	(*ListUsersRequest)(nil),      // 1: elara.auth.v1.ListUsersRequest
-	(*ListUsersResponse)(nil),     // 2: elara.auth.v1.ListUsersResponse
-	(*GetUserRequest)(nil),        // 3: elara.auth.v1.GetUserRequest
-	(*GetUserResponse)(nil),       // 4: elara.auth.v1.GetUserResponse
-	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(*User)(nil),                      // 0: elara.auth.v1.User
+	(*ListUsersRequest)(nil),          // 1: elara.auth.v1.ListUsersRequest
+	(*ListUsersResponse)(nil),         // 2: elara.auth.v1.ListUsersResponse
+	(*GetUserRequest)(nil),            // 3: elara.auth.v1.GetUserRequest
+	(*GetUserResponse)(nil),           // 4: elara.auth.v1.GetUserResponse
+	(*CreateUserRequest)(nil),         // 5: elara.auth.v1.CreateUserRequest
+	(*CreateUserResponse)(nil),        // 6: elara.auth.v1.CreateUserResponse
+	(*ResetUserPasswordRequest)(nil),  // 7: elara.auth.v1.ResetUserPasswordRequest
+	(*ResetUserPasswordResponse)(nil), // 8: elara.auth.v1.ResetUserPasswordResponse
+	(*timestamppb.Timestamp)(nil),     // 9: google.protobuf.Timestamp
 }
 var file_elara_auth_v1_user_service_proto_depIdxs = []int32{
-	5, // 0: elara.auth.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	5, // 1: elara.auth.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
+	9, // 0: elara.auth.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	9, // 1: elara.auth.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
 	0, // 2: elara.auth.v1.ListUsersResponse.users:type_name -> elara.auth.v1.User
 	0, // 3: elara.auth.v1.GetUserResponse.user:type_name -> elara.auth.v1.User
-	1, // 4: elara.auth.v1.UserService.ListUsers:input_type -> elara.auth.v1.ListUsersRequest
-	3, // 5: elara.auth.v1.UserService.GetUser:input_type -> elara.auth.v1.GetUserRequest
-	2, // 6: elara.auth.v1.UserService.ListUsers:output_type -> elara.auth.v1.ListUsersResponse
-	4, // 7: elara.auth.v1.UserService.GetUser:output_type -> elara.auth.v1.GetUserResponse
-	6, // [6:8] is the sub-list for method output_type
-	4, // [4:6] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	0, // 4: elara.auth.v1.CreateUserResponse.user:type_name -> elara.auth.v1.User
+	1, // 5: elara.auth.v1.UserService.ListUsers:input_type -> elara.auth.v1.ListUsersRequest
+	3, // 6: elara.auth.v1.UserService.GetUser:input_type -> elara.auth.v1.GetUserRequest
+	5, // 7: elara.auth.v1.UserService.CreateUser:input_type -> elara.auth.v1.CreateUserRequest
+	7, // 8: elara.auth.v1.UserService.ResetUserPassword:input_type -> elara.auth.v1.ResetUserPasswordRequest
+	2, // 9: elara.auth.v1.UserService.ListUsers:output_type -> elara.auth.v1.ListUsersResponse
+	4, // 10: elara.auth.v1.UserService.GetUser:output_type -> elara.auth.v1.GetUserResponse
+	6, // 11: elara.auth.v1.UserService.CreateUser:output_type -> elara.auth.v1.CreateUserResponse
+	8, // 12: elara.auth.v1.UserService.ResetUserPassword:output_type -> elara.auth.v1.ResetUserPasswordResponse
+	9, // [9:13] is the sub-list for method output_type
+	5, // [5:9] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_elara_auth_v1_user_service_proto_init() }
@@ -347,7 +563,7 @@ func file_elara_auth_v1_user_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_auth_v1_user_service_proto_rawDesc), len(file_elara_auth_v1_user_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -2,33 +2,63 @@
 // @generated from file elara/auth/v1/auth_service.proto (package elara.auth.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file elara/auth/v1/auth_service.proto.
  */
 export const file_elara_auth_v1_auth_service: GenFile = /*@__PURE__*/
-  fileDesc("CiBlbGFyYS9hdXRoL3YxL2F1dGhfc2VydmljZS5wcm90bxINZWxhcmEuYXV0aC52MSIOCgxMb2dpblJlcXVlc3QiJQoNTG9naW5SZXNwb25zZRIUCgxyZWRpcmVjdF91cmwYASABKAkiLgoPQ2FsbGJhY2tSZXF1ZXN0EgwKBGNvZGUYASABKAkSDQoFc3RhdGUYAiABKAkiEgoQQ2FsbGJhY2tSZXNwb25zZSIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIgsKCU1lUmVxdWVzdCIyCg9OYW1lc3BhY2VBY2Nlc3MSDAoEbmFtZRgBIAEoCRIRCgljYW5fd3JpdGUYAiABKAgiuAEKCk1lUmVzcG9uc2USDQoFZW1haWwYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdwaWN0dXJlGAMgASgJEhAKCGlzX2FkbWluGAQgASgIEjIKCm5hbWVzcGFjZXMYBSADKAsyHi5lbGFyYS5hdXRoLnYxLk5hbWVzcGFjZUFjY2VzcxIZChFjYW5fdmlld193ZWJob29rcxgGIAEoCBIbChNjYW5fbWFuYWdlX3dlYmhvb2tzGAcgASgIMqACCgtBdXRoU2VydmljZRJCCgVMb2dpbhIbLmVsYXJhLmF1dGgudjEuTG9naW5SZXF1ZXN0GhwuZWxhcmEuYXV0aC52MS5Mb2dpblJlc3BvbnNlEksKCENhbGxiYWNrEh4uZWxhcmEuYXV0aC52MS5DYWxsYmFja1JlcXVlc3QaHy5lbGFyYS5hdXRoLnYxLkNhbGxiYWNrUmVzcG9uc2USRQoGTG9nb3V0EhwuZWxhcmEuYXV0aC52MS5Mb2dvdXRSZXF1ZXN0Gh0uZWxhcmEuYXV0aC52MS5Mb2dvdXRSZXNwb25zZRI5CgJNZRIYLmVsYXJhLmF1dGgudjEuTWVSZXF1ZXN0GhkuZWxhcmEuYXV0aC52MS5NZVJlc3BvbnNlQsEBChFjb20uZWxhcmEuYXV0aC52MUIQQXV0aFNlcnZpY2VQcm90b1ABWkRnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9hdXRoL3YxO2F1dGh2MaICA0VBWKoCDUVsYXJhLkF1dGguVjHKAg1FbGFyYVxBdXRoXFYx4gIZRWxhcmFcQXV0aFxWMVxHUEJNZXRhZGF0YeoCD0VsYXJhOjpBdXRoOjpWMWIGcHJvdG8z");
+  fileDesc("CiBlbGFyYS9hdXRoL3YxL2F1dGhfc2VydmljZS5wcm90bxINZWxhcmEuYXV0aC52MSIUChJHZXRBdXRoSW5mb1JlcXVlc3QiQQoTR2V0QXV0aEluZm9SZXNwb25zZRIqCglhdXRoX3R5cGUYASABKA4yFy5lbGFyYS5hdXRoLnYxLkF1dGhUeXBlIhIKEE9JRENMb2dpblJlcXVlc3QiKQoRT0lEQ0xvZ2luUmVzcG9uc2USFAoMcmVkaXJlY3RfdXJsGAEgASgJIjIKE09JRENDYWxsYmFja1JlcXVlc3QSDAoEY29kZRgBIAEoCRINCgVzdGF0ZRgCIAEoCSIWChRPSURDQ2FsbGJhY2tSZXNwb25zZSI0ChFCYXNpY0xvZ2luUmVxdWVzdBINCgVlbWFpbBgBIAEoCRIQCghwYXNzd29yZBgCIAEoCSI2ChJCYXNpY0xvZ2luUmVzcG9uc2USIAoYcGFzc3dvcmRfY2hhbmdlX3JlcXVpcmVkGAEgASgIImEKFUNoYW5nZVBhc3N3b3JkUmVxdWVzdBIdChBjdXJyZW50X3Bhc3N3b3JkGAEgASgJSACIAQESFAoMbmV3X3Bhc3N3b3JkGAIgASgJQhMKEV9jdXJyZW50X3Bhc3N3b3JkIhgKFkNoYW5nZVBhc3N3b3JkUmVzcG9uc2UiDwoNTG9nb3V0UmVxdWVzdCIQCg5Mb2dvdXRSZXNwb25zZSILCglNZVJlcXVlc3QiMgoPTmFtZXNwYWNlQWNjZXNzEgwKBG5hbWUYASABKAkSEQoJY2FuX3dyaXRlGAIgASgIItoBCgpNZVJlc3BvbnNlEg0KBWVtYWlsGAEgASgJEgwKBG5hbWUYAiABKAkSDwoHcGljdHVyZRgDIAEoCRIQCghpc19hZG1pbhgEIAEoCBIyCgpuYW1lc3BhY2VzGAUgAygLMh4uZWxhcmEuYXV0aC52MS5OYW1lc3BhY2VBY2Nlc3MSGQoRY2FuX3ZpZXdfd2ViaG9va3MYBiABKAgSGwoTY2FuX21hbmFnZV93ZWJob29rcxgHIAEoCBIgChhwYXNzd29yZF9jaGFuZ2VfcmVxdWlyZWQYCCABKAgqYgoIQXV0aFR5cGUSGQoVQVVUSF9UWVBFX1VOU1BFQ0lGSUVEEAASEgoOQVVUSF9UWVBFX09JREMQARITCg9BVVRIX1RZUEVfQkFTSUMQAhISCg5BVVRIX1RZUEVfTk9ORRADMsAECgtBdXRoU2VydmljZRJUCgtHZXRBdXRoSW5mbxIhLmVsYXJhLmF1dGgudjEuR2V0QXV0aEluZm9SZXF1ZXN0GiIuZWxhcmEuYXV0aC52MS5HZXRBdXRoSW5mb1Jlc3BvbnNlEk4KCU9JRENMb2dpbhIfLmVsYXJhLmF1dGgudjEuT0lEQ0xvZ2luUmVxdWVzdBogLmVsYXJhLmF1dGgudjEuT0lEQ0xvZ2luUmVzcG9uc2USVwoMT0lEQ0NhbGxiYWNrEiIuZWxhcmEuYXV0aC52MS5PSURDQ2FsbGJhY2tSZXF1ZXN0GiMuZWxhcmEuYXV0aC52MS5PSURDQ2FsbGJhY2tSZXNwb25zZRJRCgpCYXNpY0xvZ2luEiAuZWxhcmEuYXV0aC52MS5CYXNpY0xvZ2luUmVxdWVzdBohLmVsYXJhLmF1dGgudjEuQmFzaWNMb2dpblJlc3BvbnNlEl0KDkNoYW5nZVBhc3N3b3JkEiQuZWxhcmEuYXV0aC52MS5DaGFuZ2VQYXNzd29yZFJlcXVlc3QaJS5lbGFyYS5hdXRoLnYxLkNoYW5nZVBhc3N3b3JkUmVzcG9uc2USRQoGTG9nb3V0EhwuZWxhcmEuYXV0aC52MS5Mb2dvdXRSZXF1ZXN0Gh0uZWxhcmEuYXV0aC52MS5Mb2dvdXRSZXNwb25zZRI5CgJNZRIYLmVsYXJhLmF1dGgudjEuTWVSZXF1ZXN0GhkuZWxhcmEuYXV0aC52MS5NZVJlc3BvbnNlQsEBChFjb20uZWxhcmEuYXV0aC52MUIQQXV0aFNlcnZpY2VQcm90b1ABWkRnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9hdXRoL3YxO2F1dGh2MaICA0VBWKoCDUVsYXJhLkF1dGguVjHKAg1FbGFyYVxBdXRoXFYx4gIZRWxhcmFcQXV0aFxWMVxHUEJNZXRhZGF0YeoCD0VsYXJhOjpBdXRoOjpWMWIGcHJvdG8z");
 
 /**
- * @generated from message elara.auth.v1.LoginRequest
+ * @generated from message elara.auth.v1.GetAuthInfoRequest
  */
-export type LoginRequest = Message<"elara.auth.v1.LoginRequest"> & {
+export type GetAuthInfoRequest = Message<"elara.auth.v1.GetAuthInfoRequest"> & {
 };
 
 /**
- * Describes the message elara.auth.v1.LoginRequest.
- * Use `create(LoginRequestSchema)` to create a new message.
+ * Describes the message elara.auth.v1.GetAuthInfoRequest.
+ * Use `create(GetAuthInfoRequestSchema)` to create a new message.
  */
-export const LoginRequestSchema: GenMessage<LoginRequest> = /*@__PURE__*/
+export const GetAuthInfoRequestSchema: GenMessage<GetAuthInfoRequest> = /*@__PURE__*/
   messageDesc(file_elara_auth_v1_auth_service, 0);
 
 /**
- * @generated from message elara.auth.v1.LoginResponse
+ * @generated from message elara.auth.v1.GetAuthInfoResponse
  */
-export type LoginResponse = Message<"elara.auth.v1.LoginResponse"> & {
+export type GetAuthInfoResponse = Message<"elara.auth.v1.GetAuthInfoResponse"> & {
+  /**
+   * @generated from field: elara.auth.v1.AuthType auth_type = 1;
+   */
+  authType: AuthType;
+};
+
+/**
+ * Describes the message elara.auth.v1.GetAuthInfoResponse.
+ * Use `create(GetAuthInfoResponseSchema)` to create a new message.
+ */
+export const GetAuthInfoResponseSchema: GenMessage<GetAuthInfoResponse> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_auth_service, 1);
+
+/**
+ * @generated from message elara.auth.v1.OIDCLoginRequest
+ */
+export type OIDCLoginRequest = Message<"elara.auth.v1.OIDCLoginRequest"> & {
+};
+
+/**
+ * Describes the message elara.auth.v1.OIDCLoginRequest.
+ * Use `create(OIDCLoginRequestSchema)` to create a new message.
+ */
+export const OIDCLoginRequestSchema: GenMessage<OIDCLoginRequest> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_auth_service, 2);
+
+/**
+ * @generated from message elara.auth.v1.OIDCLoginResponse
+ */
+export type OIDCLoginResponse = Message<"elara.auth.v1.OIDCLoginResponse"> & {
   /**
    * @generated from field: string redirect_url = 1;
    */
@@ -36,16 +66,16 @@ export type LoginResponse = Message<"elara.auth.v1.LoginResponse"> & {
 };
 
 /**
- * Describes the message elara.auth.v1.LoginResponse.
- * Use `create(LoginResponseSchema)` to create a new message.
+ * Describes the message elara.auth.v1.OIDCLoginResponse.
+ * Use `create(OIDCLoginResponseSchema)` to create a new message.
  */
-export const LoginResponseSchema: GenMessage<LoginResponse> = /*@__PURE__*/
-  messageDesc(file_elara_auth_v1_auth_service, 1);
+export const OIDCLoginResponseSchema: GenMessage<OIDCLoginResponse> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_auth_service, 3);
 
 /**
- * @generated from message elara.auth.v1.CallbackRequest
+ * @generated from message elara.auth.v1.OIDCCallbackRequest
  */
-export type CallbackRequest = Message<"elara.auth.v1.CallbackRequest"> & {
+export type OIDCCallbackRequest = Message<"elara.auth.v1.OIDCCallbackRequest"> & {
   /**
    * @generated from field: string code = 1;
    */
@@ -58,24 +88,98 @@ export type CallbackRequest = Message<"elara.auth.v1.CallbackRequest"> & {
 };
 
 /**
- * Describes the message elara.auth.v1.CallbackRequest.
- * Use `create(CallbackRequestSchema)` to create a new message.
+ * Describes the message elara.auth.v1.OIDCCallbackRequest.
+ * Use `create(OIDCCallbackRequestSchema)` to create a new message.
  */
-export const CallbackRequestSchema: GenMessage<CallbackRequest> = /*@__PURE__*/
-  messageDesc(file_elara_auth_v1_auth_service, 2);
+export const OIDCCallbackRequestSchema: GenMessage<OIDCCallbackRequest> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_auth_service, 4);
 
 /**
- * @generated from message elara.auth.v1.CallbackResponse
+ * @generated from message elara.auth.v1.OIDCCallbackResponse
  */
-export type CallbackResponse = Message<"elara.auth.v1.CallbackResponse"> & {
+export type OIDCCallbackResponse = Message<"elara.auth.v1.OIDCCallbackResponse"> & {
 };
 
 /**
- * Describes the message elara.auth.v1.CallbackResponse.
- * Use `create(CallbackResponseSchema)` to create a new message.
+ * Describes the message elara.auth.v1.OIDCCallbackResponse.
+ * Use `create(OIDCCallbackResponseSchema)` to create a new message.
  */
-export const CallbackResponseSchema: GenMessage<CallbackResponse> = /*@__PURE__*/
-  messageDesc(file_elara_auth_v1_auth_service, 3);
+export const OIDCCallbackResponseSchema: GenMessage<OIDCCallbackResponse> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_auth_service, 5);
+
+/**
+ * @generated from message elara.auth.v1.BasicLoginRequest
+ */
+export type BasicLoginRequest = Message<"elara.auth.v1.BasicLoginRequest"> & {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email: string;
+
+  /**
+   * @generated from field: string password = 2;
+   */
+  password: string;
+};
+
+/**
+ * Describes the message elara.auth.v1.BasicLoginRequest.
+ * Use `create(BasicLoginRequestSchema)` to create a new message.
+ */
+export const BasicLoginRequestSchema: GenMessage<BasicLoginRequest> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_auth_service, 6);
+
+/**
+ * @generated from message elara.auth.v1.BasicLoginResponse
+ */
+export type BasicLoginResponse = Message<"elara.auth.v1.BasicLoginResponse"> & {
+  /**
+   * @generated from field: bool password_change_required = 1;
+   */
+  passwordChangeRequired: boolean;
+};
+
+/**
+ * Describes the message elara.auth.v1.BasicLoginResponse.
+ * Use `create(BasicLoginResponseSchema)` to create a new message.
+ */
+export const BasicLoginResponseSchema: GenMessage<BasicLoginResponse> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_auth_service, 7);
+
+/**
+ * @generated from message elara.auth.v1.ChangePasswordRequest
+ */
+export type ChangePasswordRequest = Message<"elara.auth.v1.ChangePasswordRequest"> & {
+  /**
+   * @generated from field: optional string current_password = 1;
+   */
+  currentPassword?: string;
+
+  /**
+   * @generated from field: string new_password = 2;
+   */
+  newPassword: string;
+};
+
+/**
+ * Describes the message elara.auth.v1.ChangePasswordRequest.
+ * Use `create(ChangePasswordRequestSchema)` to create a new message.
+ */
+export const ChangePasswordRequestSchema: GenMessage<ChangePasswordRequest> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_auth_service, 8);
+
+/**
+ * @generated from message elara.auth.v1.ChangePasswordResponse
+ */
+export type ChangePasswordResponse = Message<"elara.auth.v1.ChangePasswordResponse"> & {
+};
+
+/**
+ * Describes the message elara.auth.v1.ChangePasswordResponse.
+ * Use `create(ChangePasswordResponseSchema)` to create a new message.
+ */
+export const ChangePasswordResponseSchema: GenMessage<ChangePasswordResponse> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_auth_service, 9);
 
 /**
  * @generated from message elara.auth.v1.LogoutRequest
@@ -88,7 +192,7 @@ export type LogoutRequest = Message<"elara.auth.v1.LogoutRequest"> & {
  * Use `create(LogoutRequestSchema)` to create a new message.
  */
 export const LogoutRequestSchema: GenMessage<LogoutRequest> = /*@__PURE__*/
-  messageDesc(file_elara_auth_v1_auth_service, 4);
+  messageDesc(file_elara_auth_v1_auth_service, 10);
 
 /**
  * @generated from message elara.auth.v1.LogoutResponse
@@ -101,7 +205,7 @@ export type LogoutResponse = Message<"elara.auth.v1.LogoutResponse"> & {
  * Use `create(LogoutResponseSchema)` to create a new message.
  */
 export const LogoutResponseSchema: GenMessage<LogoutResponse> = /*@__PURE__*/
-  messageDesc(file_elara_auth_v1_auth_service, 5);
+  messageDesc(file_elara_auth_v1_auth_service, 11);
 
 /**
  * @generated from message elara.auth.v1.MeRequest
@@ -114,7 +218,7 @@ export type MeRequest = Message<"elara.auth.v1.MeRequest"> & {
  * Use `create(MeRequestSchema)` to create a new message.
  */
 export const MeRequestSchema: GenMessage<MeRequest> = /*@__PURE__*/
-  messageDesc(file_elara_auth_v1_auth_service, 6);
+  messageDesc(file_elara_auth_v1_auth_service, 12);
 
 /**
  * @generated from message elara.auth.v1.NamespaceAccess
@@ -136,7 +240,7 @@ export type NamespaceAccess = Message<"elara.auth.v1.NamespaceAccess"> & {
  * Use `create(NamespaceAccessSchema)` to create a new message.
  */
 export const NamespaceAccessSchema: GenMessage<NamespaceAccess> = /*@__PURE__*/
-  messageDesc(file_elara_auth_v1_auth_service, 7);
+  messageDesc(file_elara_auth_v1_auth_service, 13);
 
 /**
  * @generated from message elara.auth.v1.MeResponse
@@ -176,6 +280,11 @@ export type MeResponse = Message<"elara.auth.v1.MeResponse"> & {
    * @generated from field: bool can_manage_webhooks = 7;
    */
   canManageWebhooks: boolean;
+
+  /**
+   * @generated from field: bool password_change_required = 8;
+   */
+  passwordChangeRequired: boolean;
 };
 
 /**
@@ -183,27 +292,93 @@ export type MeResponse = Message<"elara.auth.v1.MeResponse"> & {
  * Use `create(MeResponseSchema)` to create a new message.
  */
 export const MeResponseSchema: GenMessage<MeResponse> = /*@__PURE__*/
-  messageDesc(file_elara_auth_v1_auth_service, 8);
+  messageDesc(file_elara_auth_v1_auth_service, 14);
+
+/**
+ * @generated from enum elara.auth.v1.AuthType
+ */
+export enum AuthType {
+  /**
+   * @generated from enum value: AUTH_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: AUTH_TYPE_OIDC = 1;
+   */
+  OIDC = 1,
+
+  /**
+   * @generated from enum value: AUTH_TYPE_BASIC = 2;
+   */
+  BASIC = 2,
+
+  /**
+   * @generated from enum value: AUTH_TYPE_NONE = 3;
+   */
+  NONE = 3,
+}
+
+/**
+ * Describes the enum elara.auth.v1.AuthType.
+ */
+export const AuthTypeSchema: GenEnum<AuthType> = /*@__PURE__*/
+  enumDesc(file_elara_auth_v1_auth_service, 0);
 
 /**
  * @generated from service elara.auth.v1.AuthService
  */
 export const AuthService: GenService<{
   /**
-   * @generated from rpc elara.auth.v1.AuthService.Login
+   * Public — returns the configured auth type so the frontend knows which UI to render
+   *
+   * @generated from rpc elara.auth.v1.AuthService.GetAuthInfo
    */
-  login: {
+  getAuthInfo: {
     methodKind: "unary";
-    input: typeof LoginRequestSchema;
-    output: typeof LoginResponseSchema;
+    input: typeof GetAuthInfoRequestSchema;
+    output: typeof GetAuthInfoResponseSchema;
   },
   /**
-   * @generated from rpc elara.auth.v1.AuthService.Callback
+   * OIDC flow — returns redirect URL to the identity provider
+   *
+   * @generated from rpc elara.auth.v1.AuthService.OIDCLogin
    */
-  callback: {
+  oIDCLogin: {
     methodKind: "unary";
-    input: typeof CallbackRequestSchema;
-    output: typeof CallbackResponseSchema;
+    input: typeof OIDCLoginRequestSchema;
+    output: typeof OIDCLoginResponseSchema;
+  },
+  /**
+   * OIDC flow — exchanges the provider callback code for a session cookie
+   *
+   * @generated from rpc elara.auth.v1.AuthService.OIDCCallback
+   */
+  oIDCCallback: {
+    methodKind: "unary";
+    input: typeof OIDCCallbackRequestSchema;
+    output: typeof OIDCCallbackResponseSchema;
+  },
+  /**
+   * Basic-auth flow — verifies email/password and sets a session cookie
+   *
+   * @generated from rpc elara.auth.v1.AuthService.BasicLogin
+   */
+  basicLogin: {
+    methodKind: "unary";
+    input: typeof BasicLoginRequestSchema;
+    output: typeof BasicLoginResponseSchema;
+  },
+  /**
+   * Basic-auth flow — changes the current user's password
+   * current_password is required unless password_change_required is true in the session
+   *
+   * @generated from rpc elara.auth.v1.AuthService.ChangePassword
+   */
+  changePassword: {
+    methodKind: "unary";
+    input: typeof ChangePasswordRequestSchema;
+    output: typeof ChangePasswordResponseSchema;
   },
   /**
    * @generated from rpc elara.auth.v1.AuthService.Logout

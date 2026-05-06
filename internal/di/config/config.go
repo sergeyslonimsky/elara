@@ -79,8 +79,13 @@ func NewConfig(ctx context.Context) (Config, error) {
 		return Config{}, fmt.Errorf("init di config: %w", err)
 	}
 
+	ui, err := newUIConfig(cfg)
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
-		UI:     newUIConfig(cfg),
+		UI:     ui,
 		Client: newClientConfig(cfg),
 
 		DataPath:       cfg.GetStringOrDefault("config.data.path", defaultDataPath),

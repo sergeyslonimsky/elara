@@ -7,6 +7,8 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	authv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
@@ -22,9 +24,12 @@ const (
 
 // AuthHandler implements authv1connect.AuthServiceHandler.
 type AuthHandler struct {
-	login    *authuc.LoginUseCase
-	callback *authuc.CallbackUseCase
-	me       *authuc.MeUseCase
+	login          *authuc.LoginUseCase
+	callback       *authuc.CallbackUseCase
+	me             *authuc.MeUseCase
+	basicLogin     *authuc.BasicLoginUseCase
+	changePassword *authuc.ChangePasswordUseCase
+	authType       config.AuthType
 }
 
 // NewAuthHandler returns a new AuthHandler wired with all auth use cases.
@@ -32,24 +37,58 @@ func NewAuthHandler(
 	login *authuc.LoginUseCase,
 	callback *authuc.CallbackUseCase,
 	me *authuc.MeUseCase,
+	basicLogin *authuc.BasicLoginUseCase,
+	changePassword *authuc.ChangePasswordUseCase,
+	authType config.AuthType,
 ) *AuthHandler {
 	return &AuthHandler{
-		login:    login,
-		callback: callback,
-		me:       me,
+		login:          login,
+		callback:       callback,
+		me:             me,
+		basicLogin:     basicLogin,
+		changePassword: changePassword,
+		authType:       authType,
 	}
 }
 
-func (h *AuthHandler) Login(
+func (h *AuthHandler) GetAuthInfo(
+	_ context.Context,
+	_ *connect.Request[authv1.GetAuthInfoRequest],
+) (*connect.Response[authv1.GetAuthInfoResponse], error) {
+	var authType authv1.AuthType
+	switch h.authType {
+	case config.AuthTypeOIDC:
+		authType = authv1.AuthType_AUTH_TYPE_OIDC
+	case config.AuthTypeBasicAuth:
+		authType = authv1.AuthType_AUTH_TYPE_BASIC
+	case config.AuthTypeNone:
+		authType = authv1.AuthType_AUTH_TYPE_NONE
+	default:
+		authType = authv1.AuthType_AUTH_TYPE_UNSPECIFIED
+	}
+
+	return connect.NewResponse(&authv1.GetAuthInfoResponse{
+		AuthType: authType,
+	}), nil
+}
+
+func (h *AuthHandler) OIDCLogin(
 	ctx context.Context,
-	_ *connect.Request[authv1.LoginRequest],
-) (*connect.Response[authv1.LoginResponse], error) {
+	_ *connect.Request[authv1.OIDCLoginRequest],
+) (*connect.Response[authv1.OIDCLoginResponse], error) {
+	if h.authType != config.AuthTypeOIDC {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf("OIDC login is not available: auth type is %s: %w", h.authType, domain.ErrFeatureNotAvailable),
+		)
+	}
+
 	redirectURL, state, nonce, err := h.login.Execute(ctx)
 	if err != nil {
 		return nil, toConnectError(err)
 	}
 
-	resp := connect.NewResponse(&authv1.LoginResponse{
+	resp := connect.NewResponse(&authv1.OIDCLoginResponse{
 		RedirectUrl: redirectURL,
 	})
 
@@ -76,10 +115,17 @@ func (h *AuthHandler) Login(
 	return resp, nil
 }
 
-func (h *AuthHandler) Callback(
+func (h *AuthHandler) OIDCCallback(
 	ctx context.Context,
-	req *connect.Request[authv1.CallbackRequest],
-) (*connect.Response[authv1.CallbackResponse], error) {
+	req *connect.Request[authv1.OIDCCallbackRequest],
+) (*connect.Response[authv1.OIDCCallbackResponse], error) {
+	if h.authType != config.AuthTypeOIDC {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf("OIDC login is not available: auth type is %s: %w", h.authType, domain.ErrFeatureNotAvailable),
+		)
+	}
+
 	expectedState, err := extractCookieFromRequest(req.Header(), oauthStateCookieName)
 	if err != nil || expectedState != req.Msg.GetState() {
 		return nil, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
@@ -95,7 +141,7 @@ func (h *AuthHandler) Callback(
 		return nil, toConnectError(err)
 	}
 
-	resp := connect.NewResponse(&authv1.CallbackResponse{})
+	resp := connect.NewResponse(&authv1.OIDCCallbackResponse{})
 
 	cookie := &http.Cookie{
 		Name:     sessionCookieName,
@@ -108,6 +154,62 @@ func (h *AuthHandler) Callback(
 	resp.Header().Add(cookieHeader, cookie.String())
 
 	return resp, nil
+}
+
+func (h *AuthHandler) BasicLogin(
+	ctx context.Context,
+	req *connect.Request[authv1.BasicLoginRequest],
+) (*connect.Response[authv1.BasicLoginResponse], error) {
+	if h.authType != config.AuthTypeBasicAuth {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf("basic login is not available: auth type is %s: %w", h.authType, domain.ErrFeatureNotAvailable),
+		)
+	}
+
+	sessionToken, user, err := h.basicLogin.Execute(ctx, req.Msg.GetEmail(), req.Msg.GetPassword())
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+
+	resp := connect.NewResponse(&authv1.BasicLoginResponse{
+		PasswordChangeRequired: user.PasswordChangeRequired,
+	})
+
+	cookie := &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    sessionToken,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+	}
+	resp.Header().Add(cookieHeader, cookie.String())
+
+	return resp, nil
+}
+
+func (h *AuthHandler) ChangePassword(
+	ctx context.Context,
+	req *connect.Request[authv1.ChangePasswordRequest],
+) (*connect.Response[authv1.ChangePasswordResponse], error) {
+	if h.authType != config.AuthTypeBasicAuth {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf(
+				"change password is not available: auth type is %s: %w",
+				h.authType,
+				domain.ErrFeatureNotAvailable,
+			),
+		)
+	}
+
+	err := h.changePassword.Execute(ctx, req.Msg.GetCurrentPassword(), req.Msg.GetNewPassword())
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+
+	return connect.NewResponse(&authv1.ChangePasswordResponse{}), nil
 }
 
 func (h *AuthHandler) Logout(
@@ -147,13 +249,16 @@ func (h *AuthHandler) Me(
 		})
 	}
 
+	claims, _ := auth.ClaimsFromContext(ctx)
+
 	return connect.NewResponse(&authv1.MeResponse{
-		Email:             result.Email,
-		Name:              result.Name,
-		IsAdmin:           result.IsAdmin,
-		Namespaces:        namespaces,
-		CanViewWebhooks:   result.CanViewWebhooks,
-		CanManageWebhooks: result.CanManageWebhooks,
+		Email:                  result.Email,
+		Name:                   result.Name,
+		IsAdmin:                result.IsAdmin,
+		Namespaces:             namespaces,
+		CanViewWebhooks:        result.CanViewWebhooks,
+		CanManageWebhooks:      result.CanManageWebhooks,
+		PasswordChangeRequired: claims.PasswordChangeRequired,
 	}), nil
 }
 

@@ -9,12 +9,14 @@ import (
 )
 
 type authUserMeta struct {
-	Email       string    `json:"email"`
-	Name        string    `json:"name"`
-	Picture     string    `json:"picture"`
-	Provider    string    `json:"provider"`
-	CreatedAt   time.Time `json:"created_at"`
-	LastLoginAt time.Time `json:"last_login_at"`
+	Email                  string    `json:"email"`
+	Name                   string    `json:"name"`
+	Picture                string    `json:"picture"`
+	Provider               string    `json:"provider"`
+	CreatedAt              time.Time `json:"created_at"`
+	LastLoginAt            time.Time `json:"last_login_at"`
+	PasswordHash           string    `json:"password_hash,omitempty"`
+	PasswordChangeRequired bool      `json:"password_change_required,omitempty"`
 }
 
 type authGroupMeta struct {
@@ -40,23 +42,27 @@ type authTokenMeta struct {
 
 func domainToAuthUserMeta(u *domain.User) *authUserMeta {
 	return &authUserMeta{
-		Email:       u.Email,
-		Name:        u.Name,
-		Picture:     u.Picture,
-		Provider:    u.Provider,
-		CreatedAt:   u.CreatedAt,
-		LastLoginAt: u.LastLoginAt,
+		Email:                  u.Email,
+		Name:                   u.Name,
+		Picture:                u.Picture,
+		Provider:               u.Provider,
+		CreatedAt:              u.CreatedAt,
+		LastLoginAt:            u.LastLoginAt,
+		PasswordHash:           u.PasswordHash,
+		PasswordChangeRequired: u.PasswordChangeRequired,
 	}
 }
 
 func authUserMetaToDomain(m *authUserMeta) *domain.User {
 	return &domain.User{
-		Email:       m.Email,
-		Name:        m.Name,
-		Picture:     m.Picture,
-		Provider:    m.Provider,
-		CreatedAt:   m.CreatedAt,
-		LastLoginAt: m.LastLoginAt,
+		Email:                  m.Email,
+		Name:                   m.Name,
+		Picture:                m.Picture,
+		Provider:               m.Provider,
+		CreatedAt:              m.CreatedAt,
+		LastLoginAt:            m.LastLoginAt,
+		PasswordHash:           m.PasswordHash,
+		PasswordChangeRequired: m.PasswordChangeRequired,
 	}
 }
 

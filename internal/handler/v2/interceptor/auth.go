@@ -12,6 +12,13 @@ import (
 
 const sessionCookieName = "elara_session"
 
+//nolint:gochecknoglobals // explicitly requested by code review CR-5 to optimize allocations
+var passwordChangeAllowedProcedures = map[string]struct{}{
+	"/elara.auth.v1.AuthService/ChangePassword": {},
+	"/elara.auth.v1.AuthService/Logout":         {},
+	"/elara.auth.v1.AuthService/Me":             {},
+}
+
 // AuthInterceptor validates the elara_session cookie and injects *auth.Claims into context.
 // Procedures listed in publicProc bypass the auth check entirely.
 type AuthInterceptor struct {
@@ -42,6 +49,10 @@ func (i *AuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 			return nil, err
 		}
 
+		if err := i.checkPasswordChangeRequired(ctx, req.Spec().Procedure); err != nil {
+			return nil, err
+		}
+
 		return next(ctx, req)
 	}
 }
@@ -61,6 +72,10 @@ func (i *AuthInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc
 			return err
 		}
 
+		if err := i.checkPasswordChangeRequired(ctx, conn.Spec().Procedure); err != nil {
+			return err
+		}
+
 		return next(ctx, conn)
 	}
 }
@@ -77,6 +92,21 @@ func (i *AuthInterceptor) authenticate(ctx context.Context, header http.Header) 
 	}
 
 	return auth.WithClaims(ctx, claims), nil
+}
+
+func (i *AuthInterceptor) checkPasswordChangeRequired(ctx context.Context, procedure string) error {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil
+	}
+
+	if claims.PasswordChangeRequired {
+		if _, ok := passwordChangeAllowedProcedures[procedure]; !ok {
+			return connect.NewError(connect.CodePermissionDenied, domain.ErrPasswordChangeRequired)
+		}
+	}
+
+	return nil
 }
 
 //nolint:wrapcheck // caller converts this to a connect error; wrapping the stdlib http error adds no value

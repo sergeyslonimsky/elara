@@ -13,3 +13,15 @@ export const listUsers = UserService.method.listUsers;
  * @generated from rpc elara.auth.v1.UserService.GetUser
  */
 export const getUser = UserService.method.getUser;
+
+/**
+ * basic-auth only
+ *
+ * @generated from rpc elara.auth.v1.UserService.CreateUser
+ */
+export const createUser = UserService.method.createUser;
+
+/**
+ * @generated from rpc elara.auth.v1.UserService.ResetUserPassword
+ */
+export const resetUserPassword = UserService.method.resetUserPassword;

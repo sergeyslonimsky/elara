@@ -13,6 +13,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	internalauth "github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	authv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
@@ -42,7 +43,7 @@ func newTestAuthHandler(
 	callbackUC *authuc.CallbackUseCase,
 	meUC *authuc.MeUseCase,
 ) *AuthHandler {
-	return NewAuthHandler(loginUC, callbackUC, meUC)
+	return NewAuthHandler(loginUC, callbackUC, meUC, nil, nil, config.AuthTypeOIDC)
 }
 
 func TestAuthHandler_Login(t *testing.T) {
@@ -70,7 +71,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			loginUC := authuc.NewLoginUseCase(provider)
 			h := newTestAuthHandler(loginUC, nil, nil)
 
-			resp, err := h.Login(context.Background(), connect.NewRequest(&authv1.LoginRequest{}))
+			resp, err := h.OIDCLogin(context.Background(), connect.NewRequest(&authv1.OIDCLoginRequest{}))
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -87,10 +88,53 @@ func TestAuthHandler_Login(t *testing.T) {
 	}
 }
 
+func TestAuthHandler_GetAuthInfo(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		authType config.AuthType
+		expected authv1.AuthType
+	}{
+		{
+			name:     "reports OIDC",
+			authType: config.AuthTypeOIDC,
+			expected: authv1.AuthType_AUTH_TYPE_OIDC,
+		},
+		{
+			name:     "reports basic-auth",
+			authType: config.AuthTypeBasicAuth,
+			expected: authv1.AuthType_AUTH_TYPE_BASIC,
+		},
+		{
+			name:     "reports none",
+			authType: config.AuthTypeNone,
+			expected: authv1.AuthType_AUTH_TYPE_NONE,
+		},
+		{
+			name:     "reports unspecified for unknown type",
+			authType: "invalid",
+			expected: authv1.AuthType_AUTH_TYPE_UNSPECIFIED,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			h := NewAuthHandler(nil, nil, nil, nil, nil, tc.authType)
+			resp, err := h.GetAuthInfo(context.Background(), connect.NewRequest(&authv1.GetAuthInfoRequest{}))
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, resp.Msg.GetAuthType())
+		})
+	}
+}
+
 func TestAuthHandler_Logout(t *testing.T) {
 	t.Parallel()
 
-	h := NewAuthHandler(nil, nil, nil)
+	h := NewAuthHandler(nil, nil, nil, nil, nil, config.AuthTypeOIDC)
 
 	resp, err := h.Logout(context.Background(), connect.NewRequest(&authv1.LogoutRequest{}))
 	require.NoError(t, err)
@@ -157,9 +201,9 @@ func TestAuthHandler_Me(t *testing.T) {
 func TestAuthHandler_Callback_InvalidState(t *testing.T) {
 	t.Parallel()
 
-	h := NewAuthHandler(nil, nil, nil)
+	h := NewAuthHandler(nil, nil, nil, nil, nil, config.AuthTypeOIDC)
 
-	req := connect.NewRequest(&authv1.CallbackRequest{
+	req := connect.NewRequest(&authv1.OIDCCallbackRequest{
 		State: "valid-state",
 		Code:  "auth-code",
 	})
@@ -168,7 +212,7 @@ func TestAuthHandler_Callback_InvalidState(t *testing.T) {
 	nonceCookie := &http.Cookie{Name: oauthNonceCookieName, Value: "nonce-val"}
 	req.Header().Set("Cookie", stateCookie.String()+"; "+nonceCookie.String())
 
-	_, err := h.Callback(context.Background(), req)
+	_, err := h.OIDCCallback(context.Background(), req)
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 }
@@ -279,12 +323,12 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			callbackUC := authuc.NewCallbackUseCase(
 				provider, users, session,
 				nil,
-				[]string{},
+				"",
 			)
 
 			h := newTestAuthHandler(nil, callbackUC, nil)
 
-			req := connect.NewRequest(&authv1.CallbackRequest{
+			req := connect.NewRequest(&authv1.OIDCCallbackRequest{
 				State: tt.requestState,
 				Code:  "auth-code",
 			})
@@ -307,7 +351,7 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 				req.Header().Set("Cookie", joinCookies(cookieParts))
 			}
 
-			resp, err := h.Callback(t.Context(), req)
+			resp, err := h.OIDCCallback(t.Context(), req)
 
 			if tt.wantErr {
 				require.Error(t, err)

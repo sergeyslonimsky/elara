@@ -2,10 +2,12 @@ package v2
 
 import (
 	"context"
+	"fmt"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	authv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
@@ -13,13 +15,28 @@ import (
 
 // UserHandler implements authv1connect.UserServiceHandler.
 type UserHandler struct {
-	list *authuc.ListUsersUseCase
-	get  *authuc.GetUserUseCase
+	list          *authuc.ListUsersUseCase
+	get           *authuc.GetUserUseCase
+	createUser    *authuc.CreateUserUseCase
+	resetPassword *authuc.ResetPasswordUseCase
+	authType      config.AuthType
 }
 
 // NewUserHandler returns a new UserHandler.
-func NewUserHandler(list *authuc.ListUsersUseCase, get *authuc.GetUserUseCase) *UserHandler {
-	return &UserHandler{list: list, get: get}
+func NewUserHandler(
+	list *authuc.ListUsersUseCase,
+	get *authuc.GetUserUseCase,
+	createUser *authuc.CreateUserUseCase,
+	resetPassword *authuc.ResetPasswordUseCase,
+	authType config.AuthType,
+) *UserHandler {
+	return &UserHandler{
+		list:          list,
+		get:           get,
+		createUser:    createUser,
+		resetPassword: resetPassword,
+		authType:      authType,
+	}
 }
 
 func (h *UserHandler) ListUsers(
@@ -49,6 +66,52 @@ func (h *UserHandler) GetUser(
 	}
 
 	return connect.NewResponse(&authv1.GetUserResponse{User: domainUserToProto(user)}), nil
+}
+
+func (h *UserHandler) CreateUser(
+	ctx context.Context,
+	req *connect.Request[authv1.CreateUserRequest],
+) (*connect.Response[authv1.CreateUserResponse], error) {
+	if h.authType != config.AuthTypeBasicAuth {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf(
+				"user creation is not available: auth type is %s: %w",
+				h.authType,
+				domain.ErrFeatureNotAvailable,
+			),
+		)
+	}
+
+	user, err := h.createUser.Execute(ctx, req.Msg.GetEmail(), req.Msg.GetName(), req.Msg.GetInitialPassword())
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+
+	return connect.NewResponse(&authv1.CreateUserResponse{User: domainUserToProto(user)}), nil
+}
+
+func (h *UserHandler) ResetUserPassword(
+	ctx context.Context,
+	req *connect.Request[authv1.ResetUserPasswordRequest],
+) (*connect.Response[authv1.ResetUserPasswordResponse], error) {
+	if h.authType != config.AuthTypeBasicAuth {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf(
+				"password reset is not available: auth type is %s: %w",
+				h.authType,
+				domain.ErrFeatureNotAvailable,
+			),
+		)
+	}
+
+	err := h.resetPassword.Execute(ctx, req.Msg.GetEmail(), req.Msg.GetNewPassword())
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+
+	return connect.NewResponse(&authv1.ResetUserPasswordResponse{}), nil
 }
 
 func domainUserToProto(u *domain.User) *authv1.User {

@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 // oidcServer is a minimal OIDC provider for testing.
@@ -143,7 +144,7 @@ func TestNewOIDCProvider_ValidIssuer(t *testing.T) {
 
 	p, err := auth.NewOIDCProvider(t.Context(), cfg)
 	require.NoError(t, err)
-	assert.Equal(t, "oidc", p.Name())
+	assert.Equal(t, domain.ProviderOIDC, p.Name())
 }
 
 func TestNewOIDCProvider_InvalidIssuer(t *testing.T) {

@@ -29,7 +29,30 @@ message GetUserResponse {
   User user = 1;
 }
 
+// Admin-only, basic-auth mode only
+message CreateUserRequest {
+  string email = 1;
+  string name = 2;
+  string initial_password = 3;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+// Admin-only — resets the target user's password and sets password_change_required
+message ResetUserPasswordRequest {
+  string email = 1;
+  string new_password = 2;
+}
+
+message ResetUserPasswordResponse {}
+
 service UserService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
+
+  // basic-auth only
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc ResetUserPassword(ResetUserPasswordRequest) returns (ResetUserPasswordResponse);
 }

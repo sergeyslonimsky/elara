@@ -33,10 +33,18 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// AuthServiceLoginProcedure is the fully-qualified name of the AuthService's Login RPC.
-	AuthServiceLoginProcedure = "/elara.auth.v1.AuthService/Login"
-	// AuthServiceCallbackProcedure is the fully-qualified name of the AuthService's Callback RPC.
-	AuthServiceCallbackProcedure = "/elara.auth.v1.AuthService/Callback"
+	// AuthServiceGetAuthInfoProcedure is the fully-qualified name of the AuthService's GetAuthInfo RPC.
+	AuthServiceGetAuthInfoProcedure = "/elara.auth.v1.AuthService/GetAuthInfo"
+	// AuthServiceOIDCLoginProcedure is the fully-qualified name of the AuthService's OIDCLogin RPC.
+	AuthServiceOIDCLoginProcedure = "/elara.auth.v1.AuthService/OIDCLogin"
+	// AuthServiceOIDCCallbackProcedure is the fully-qualified name of the AuthService's OIDCCallback
+	// RPC.
+	AuthServiceOIDCCallbackProcedure = "/elara.auth.v1.AuthService/OIDCCallback"
+	// AuthServiceBasicLoginProcedure is the fully-qualified name of the AuthService's BasicLogin RPC.
+	AuthServiceBasicLoginProcedure = "/elara.auth.v1.AuthService/BasicLogin"
+	// AuthServiceChangePasswordProcedure is the fully-qualified name of the AuthService's
+	// ChangePassword RPC.
+	AuthServiceChangePasswordProcedure = "/elara.auth.v1.AuthService/ChangePassword"
 	// AuthServiceLogoutProcedure is the fully-qualified name of the AuthService's Logout RPC.
 	AuthServiceLogoutProcedure = "/elara.auth.v1.AuthService/Logout"
 	// AuthServiceMeProcedure is the fully-qualified name of the AuthService's Me RPC.
@@ -45,8 +53,17 @@ const (
 
 // AuthServiceClient is a client for the elara.auth.v1.AuthService service.
 type AuthServiceClient interface {
-	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
-	Callback(context.Context, *connect.Request[v1.CallbackRequest]) (*connect.Response[v1.CallbackResponse], error)
+	// Public — returns the configured auth type so the frontend knows which UI to render
+	GetAuthInfo(context.Context, *connect.Request[v1.GetAuthInfoRequest]) (*connect.Response[v1.GetAuthInfoResponse], error)
+	// OIDC flow — returns redirect URL to the identity provider
+	OIDCLogin(context.Context, *connect.Request[v1.OIDCLoginRequest]) (*connect.Response[v1.OIDCLoginResponse], error)
+	// OIDC flow — exchanges the provider callback code for a session cookie
+	OIDCCallback(context.Context, *connect.Request[v1.OIDCCallbackRequest]) (*connect.Response[v1.OIDCCallbackResponse], error)
+	// Basic-auth flow — verifies email/password and sets a session cookie
+	BasicLogin(context.Context, *connect.Request[v1.BasicLoginRequest]) (*connect.Response[v1.BasicLoginResponse], error)
+	// Basic-auth flow — changes the current user's password
+	// current_password is required unless password_change_required is true in the session
+	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	Me(context.Context, *connect.Request[v1.MeRequest]) (*connect.Response[v1.MeResponse], error)
 }
@@ -62,16 +79,34 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 	baseURL = strings.TrimRight(baseURL, "/")
 	authServiceMethods := v1.File_elara_auth_v1_auth_service_proto.Services().ByName("AuthService").Methods()
 	return &authServiceClient{
-		login: connect.NewClient[v1.LoginRequest, v1.LoginResponse](
+		getAuthInfo: connect.NewClient[v1.GetAuthInfoRequest, v1.GetAuthInfoResponse](
 			httpClient,
-			baseURL+AuthServiceLoginProcedure,
-			connect.WithSchema(authServiceMethods.ByName("Login")),
+			baseURL+AuthServiceGetAuthInfoProcedure,
+			connect.WithSchema(authServiceMethods.ByName("GetAuthInfo")),
 			connect.WithClientOptions(opts...),
 		),
-		callback: connect.NewClient[v1.CallbackRequest, v1.CallbackResponse](
+		oIDCLogin: connect.NewClient[v1.OIDCLoginRequest, v1.OIDCLoginResponse](
 			httpClient,
-			baseURL+AuthServiceCallbackProcedure,
-			connect.WithSchema(authServiceMethods.ByName("Callback")),
+			baseURL+AuthServiceOIDCLoginProcedure,
+			connect.WithSchema(authServiceMethods.ByName("OIDCLogin")),
+			connect.WithClientOptions(opts...),
+		),
+		oIDCCallback: connect.NewClient[v1.OIDCCallbackRequest, v1.OIDCCallbackResponse](
+			httpClient,
+			baseURL+AuthServiceOIDCCallbackProcedure,
+			connect.WithSchema(authServiceMethods.ByName("OIDCCallback")),
+			connect.WithClientOptions(opts...),
+		),
+		basicLogin: connect.NewClient[v1.BasicLoginRequest, v1.BasicLoginResponse](
+			httpClient,
+			baseURL+AuthServiceBasicLoginProcedure,
+			connect.WithSchema(authServiceMethods.ByName("BasicLogin")),
+			connect.WithClientOptions(opts...),
+		),
+		changePassword: connect.NewClient[v1.ChangePasswordRequest, v1.ChangePasswordResponse](
+			httpClient,
+			baseURL+AuthServiceChangePasswordProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ChangePassword")),
 			connect.WithClientOptions(opts...),
 		),
 		logout: connect.NewClient[v1.LogoutRequest, v1.LogoutResponse](
@@ -91,20 +126,38 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	login    *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	callback *connect.Client[v1.CallbackRequest, v1.CallbackResponse]
-	logout   *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
-	me       *connect.Client[v1.MeRequest, v1.MeResponse]
+	getAuthInfo    *connect.Client[v1.GetAuthInfoRequest, v1.GetAuthInfoResponse]
+	oIDCLogin      *connect.Client[v1.OIDCLoginRequest, v1.OIDCLoginResponse]
+	oIDCCallback   *connect.Client[v1.OIDCCallbackRequest, v1.OIDCCallbackResponse]
+	basicLogin     *connect.Client[v1.BasicLoginRequest, v1.BasicLoginResponse]
+	changePassword *connect.Client[v1.ChangePasswordRequest, v1.ChangePasswordResponse]
+	logout         *connect.Client[v1.LogoutRequest, v1.LogoutResponse]
+	me             *connect.Client[v1.MeRequest, v1.MeResponse]
 }
 
-// Login calls elara.auth.v1.AuthService.Login.
-func (c *authServiceClient) Login(ctx context.Context, req *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
-	return c.login.CallUnary(ctx, req)
+// GetAuthInfo calls elara.auth.v1.AuthService.GetAuthInfo.
+func (c *authServiceClient) GetAuthInfo(ctx context.Context, req *connect.Request[v1.GetAuthInfoRequest]) (*connect.Response[v1.GetAuthInfoResponse], error) {
+	return c.getAuthInfo.CallUnary(ctx, req)
 }
 
-// Callback calls elara.auth.v1.AuthService.Callback.
-func (c *authServiceClient) Callback(ctx context.Context, req *connect.Request[v1.CallbackRequest]) (*connect.Response[v1.CallbackResponse], error) {
-	return c.callback.CallUnary(ctx, req)
+// OIDCLogin calls elara.auth.v1.AuthService.OIDCLogin.
+func (c *authServiceClient) OIDCLogin(ctx context.Context, req *connect.Request[v1.OIDCLoginRequest]) (*connect.Response[v1.OIDCLoginResponse], error) {
+	return c.oIDCLogin.CallUnary(ctx, req)
+}
+
+// OIDCCallback calls elara.auth.v1.AuthService.OIDCCallback.
+func (c *authServiceClient) OIDCCallback(ctx context.Context, req *connect.Request[v1.OIDCCallbackRequest]) (*connect.Response[v1.OIDCCallbackResponse], error) {
+	return c.oIDCCallback.CallUnary(ctx, req)
+}
+
+// BasicLogin calls elara.auth.v1.AuthService.BasicLogin.
+func (c *authServiceClient) BasicLogin(ctx context.Context, req *connect.Request[v1.BasicLoginRequest]) (*connect.Response[v1.BasicLoginResponse], error) {
+	return c.basicLogin.CallUnary(ctx, req)
+}
+
+// ChangePassword calls elara.auth.v1.AuthService.ChangePassword.
+func (c *authServiceClient) ChangePassword(ctx context.Context, req *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error) {
+	return c.changePassword.CallUnary(ctx, req)
 }
 
 // Logout calls elara.auth.v1.AuthService.Logout.
@@ -119,8 +172,17 @@ func (c *authServiceClient) Me(ctx context.Context, req *connect.Request[v1.MeRe
 
 // AuthServiceHandler is an implementation of the elara.auth.v1.AuthService service.
 type AuthServiceHandler interface {
-	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
-	Callback(context.Context, *connect.Request[v1.CallbackRequest]) (*connect.Response[v1.CallbackResponse], error)
+	// Public — returns the configured auth type so the frontend knows which UI to render
+	GetAuthInfo(context.Context, *connect.Request[v1.GetAuthInfoRequest]) (*connect.Response[v1.GetAuthInfoResponse], error)
+	// OIDC flow — returns redirect URL to the identity provider
+	OIDCLogin(context.Context, *connect.Request[v1.OIDCLoginRequest]) (*connect.Response[v1.OIDCLoginResponse], error)
+	// OIDC flow — exchanges the provider callback code for a session cookie
+	OIDCCallback(context.Context, *connect.Request[v1.OIDCCallbackRequest]) (*connect.Response[v1.OIDCCallbackResponse], error)
+	// Basic-auth flow — verifies email/password and sets a session cookie
+	BasicLogin(context.Context, *connect.Request[v1.BasicLoginRequest]) (*connect.Response[v1.BasicLoginResponse], error)
+	// Basic-auth flow — changes the current user's password
+	// current_password is required unless password_change_required is true in the session
+	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 	Me(context.Context, *connect.Request[v1.MeRequest]) (*connect.Response[v1.MeResponse], error)
 }
@@ -132,16 +194,34 @@ type AuthServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	authServiceMethods := v1.File_elara_auth_v1_auth_service_proto.Services().ByName("AuthService").Methods()
-	authServiceLoginHandler := connect.NewUnaryHandler(
-		AuthServiceLoginProcedure,
-		svc.Login,
-		connect.WithSchema(authServiceMethods.ByName("Login")),
+	authServiceGetAuthInfoHandler := connect.NewUnaryHandler(
+		AuthServiceGetAuthInfoProcedure,
+		svc.GetAuthInfo,
+		connect.WithSchema(authServiceMethods.ByName("GetAuthInfo")),
 		connect.WithHandlerOptions(opts...),
 	)
-	authServiceCallbackHandler := connect.NewUnaryHandler(
-		AuthServiceCallbackProcedure,
-		svc.Callback,
-		connect.WithSchema(authServiceMethods.ByName("Callback")),
+	authServiceOIDCLoginHandler := connect.NewUnaryHandler(
+		AuthServiceOIDCLoginProcedure,
+		svc.OIDCLogin,
+		connect.WithSchema(authServiceMethods.ByName("OIDCLogin")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceOIDCCallbackHandler := connect.NewUnaryHandler(
+		AuthServiceOIDCCallbackProcedure,
+		svc.OIDCCallback,
+		connect.WithSchema(authServiceMethods.ByName("OIDCCallback")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceBasicLoginHandler := connect.NewUnaryHandler(
+		AuthServiceBasicLoginProcedure,
+		svc.BasicLogin,
+		connect.WithSchema(authServiceMethods.ByName("BasicLogin")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServiceChangePasswordHandler := connect.NewUnaryHandler(
+		AuthServiceChangePasswordProcedure,
+		svc.ChangePassword,
+		connect.WithSchema(authServiceMethods.ByName("ChangePassword")),
 		connect.WithHandlerOptions(opts...),
 	)
 	authServiceLogoutHandler := connect.NewUnaryHandler(
@@ -158,10 +238,16 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 	)
 	return "/elara.auth.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case AuthServiceLoginProcedure:
-			authServiceLoginHandler.ServeHTTP(w, r)
-		case AuthServiceCallbackProcedure:
-			authServiceCallbackHandler.ServeHTTP(w, r)
+		case AuthServiceGetAuthInfoProcedure:
+			authServiceGetAuthInfoHandler.ServeHTTP(w, r)
+		case AuthServiceOIDCLoginProcedure:
+			authServiceOIDCLoginHandler.ServeHTTP(w, r)
+		case AuthServiceOIDCCallbackProcedure:
+			authServiceOIDCCallbackHandler.ServeHTTP(w, r)
+		case AuthServiceBasicLoginProcedure:
+			authServiceBasicLoginHandler.ServeHTTP(w, r)
+		case AuthServiceChangePasswordProcedure:
+			authServiceChangePasswordHandler.ServeHTTP(w, r)
 		case AuthServiceLogoutProcedure:
 			authServiceLogoutHandler.ServeHTTP(w, r)
 		case AuthServiceMeProcedure:
@@ -175,12 +261,24 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 // UnimplementedAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthServiceHandler struct{}
 
-func (UnimplementedAuthServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.Login is not implemented"))
+func (UnimplementedAuthServiceHandler) GetAuthInfo(context.Context, *connect.Request[v1.GetAuthInfoRequest]) (*connect.Response[v1.GetAuthInfoResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.GetAuthInfo is not implemented"))
 }
 
-func (UnimplementedAuthServiceHandler) Callback(context.Context, *connect.Request[v1.CallbackRequest]) (*connect.Response[v1.CallbackResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.Callback is not implemented"))
+func (UnimplementedAuthServiceHandler) OIDCLogin(context.Context, *connect.Request[v1.OIDCLoginRequest]) (*connect.Response[v1.OIDCLoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.OIDCLogin is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) OIDCCallback(context.Context, *connect.Request[v1.OIDCCallbackRequest]) (*connect.Response[v1.OIDCCallbackResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.OIDCCallback is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) BasicLogin(context.Context, *connect.Request[v1.BasicLoginRequest]) (*connect.Response[v1.BasicLoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.BasicLogin is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.ChangePassword is not implemented"))
 }
 
 func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error) {

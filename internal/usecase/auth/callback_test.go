@@ -30,7 +30,7 @@ func TestCallbackUseCase_Execute_Success(t *testing.T) {
 	mockUsers.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
 
 	session := auth.NewSessionManager("test-secret", 0)
-	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, []string{})
+	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, "")
 
 	token, user, err := uc.Execute(t.Context(), "auth-code", "test-nonce")
 
@@ -51,7 +51,7 @@ func TestCallbackUseCase_Execute_ExchangeError(t *testing.T) {
 	mockProvider.EXPECT().Exchange(gomock.Any(), "bad-code", gomock.Any()).Return(nil, errors.New("exchange failed"))
 
 	session := auth.NewSessionManager("test-secret", 0)
-	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, []string{})
+	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, "")
 
 	_, _, err := uc.Execute(t.Context(), "bad-code", "test-nonce")
 
@@ -72,7 +72,7 @@ func TestCallbackUseCase_Execute_UpsertError(t *testing.T) {
 	mockUsers.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 
 	session := auth.NewSessionManager("test-secret", 0)
-	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, []string{})
+	uc := authuc.NewCallbackUseCase(mockProvider, mockUsers, session, nil, "")
 
 	_, _, err := uc.Execute(t.Context(), "auth-code", "test-nonce")
 

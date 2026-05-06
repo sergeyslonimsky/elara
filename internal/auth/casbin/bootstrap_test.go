@@ -33,32 +33,32 @@ func TestCheckBootstrapAdmin(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name        string
-		email       string
-		adminEmails []string
-		setup       func(e *casbin.Enforcer)
-		wantAdmin   bool
+		name       string
+		email      string
+		adminEmail string
+		setup      func(e *casbin.Enforcer)
+		wantAdmin  bool
 	}{
 		{
-			name:        "email in adminEmails without existing role assigns admin",
-			email:       "admin@example.com",
-			adminEmails: []string{"admin@example.com"},
-			wantAdmin:   true,
+			name:       "email matches adminEmail without existing role assigns admin",
+			email:      "admin@example.com",
+			adminEmail: "admin@example.com",
+			wantAdmin:  true,
 		},
 		{
-			name:        "email in adminEmails already has role:admin is idempotent",
-			email:       "admin@example.com",
-			adminEmails: []string{"admin@example.com"},
+			name:       "email matches adminEmail already has role:admin is idempotent",
+			email:      "admin@example.com",
+			adminEmail: "admin@example.com",
 			setup: func(e *casbin.Enforcer) {
 				require.NoError(t, e.AddRoleForUser("admin@example.com", "admin", "*"))
 			},
 			wantAdmin: true,
 		},
 		{
-			name:        "email not in adminEmails does not assign role",
-			email:       "user@example.com",
-			adminEmails: []string{"admin@example.com"},
-			wantAdmin:   false,
+			name:       "email does not match adminEmail does not assign role",
+			email:      "user@example.com",
+			adminEmail: "admin@example.com",
+			wantAdmin:  false,
 		},
 	}
 
@@ -76,7 +76,7 @@ func TestCheckBootstrapAdmin(t *testing.T) {
 				tc.setup(e)
 			}
 
-			err = casbin.CheckBootstrapAdmin(t.Context(), tc.email, tc.adminEmails, e)
+			err = casbin.CheckBootstrapAdmin(t.Context(), tc.email, tc.adminEmail, e)
 			require.NoError(t, err)
 
 			roles, err := e.GetRolesForUser(tc.email, "*")
@@ -99,10 +99,10 @@ func TestCheckBootstrapAdmin_NoDuplicateAssignment(t *testing.T) {
 	require.NoError(t, err)
 
 	email := "admin@example.com"
-	adminEmails := []string{email}
+	adminEmail := email
 
-	require.NoError(t, casbin.CheckBootstrapAdmin(t.Context(), email, adminEmails, e))
-	require.NoError(t, casbin.CheckBootstrapAdmin(t.Context(), email, adminEmails, e))
+	require.NoError(t, casbin.CheckBootstrapAdmin(t.Context(), email, adminEmail, e))
+	require.NoError(t, casbin.CheckBootstrapAdmin(t.Context(), email, adminEmail, e))
 
 	roles, err := e.GetRolesForUser(email, "*")
 	require.NoError(t, err)

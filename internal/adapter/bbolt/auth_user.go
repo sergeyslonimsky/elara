@@ -42,6 +42,8 @@ func (r *UserRepo) Upsert(_ context.Context, user *domain.User) error {
 			}
 
 			user.CreatedAt = m.CreatedAt
+			user.PasswordHash = m.PasswordHash
+			user.PasswordChangeRequired = m.PasswordChangeRequired
 		}
 
 		data, err := json.Marshal(domainToAuthUserMeta(user))
@@ -53,6 +55,40 @@ func (r *UserRepo) Upsert(_ context.Context, user *domain.User) error {
 	})
 	if err != nil {
 		return fmt.Errorf("upsert user: %w", err)
+	}
+
+	return nil
+}
+
+// SetPassword updates the password hash and password_change_required flag for a user.
+// Returns domain.ErrNotFound if the user does not exist.
+func (r *UserRepo) SetPassword(_ context.Context, email, hash string, changeRequired bool) error {
+	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucketAuthUsers))
+		key := []byte(email)
+
+		existing := b.Get(key)
+		if existing == nil {
+			return domain.NewNotFoundError("user", email)
+		}
+
+		var m authUserMeta
+		if err := json.Unmarshal(existing, &m); err != nil {
+			return fmt.Errorf(errUnmarshalUser, err)
+		}
+
+		m.PasswordHash = hash
+		m.PasswordChangeRequired = changeRequired
+
+		data, err := json.Marshal(m)
+		if err != nil {
+			return fmt.Errorf("marshal user: %w", err)
+		}
+
+		return b.Put(key, data)
+	})
+	if err != nil {
+		return fmt.Errorf("set password: %w", err)
 	}
 
 	return nil

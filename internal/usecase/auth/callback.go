@@ -27,11 +27,11 @@ type sessionCreator interface {
 // CallbackUseCase handles the OIDC callback: exchanges the code for an identity,
 // upserts the user, bootstraps admin if needed, and creates a session token.
 type CallbackUseCase struct {
-	provider    callbackProvider
-	users       userUpserter
-	session     sessionCreator
-	enforcer    casbin.BootstrapEnforcer
-	adminEmails []string
+	provider   callbackProvider
+	users      userUpserter
+	session    sessionCreator
+	enforcer   casbin.BootstrapEnforcer
+	adminEmail string
 }
 
 // NewCallbackUseCase returns a CallbackUseCase wired with all required dependencies.
@@ -40,14 +40,14 @@ func NewCallbackUseCase(
 	users userUpserter,
 	session sessionCreator,
 	enforcer casbin.BootstrapEnforcer,
-	adminEmails []string,
+	adminEmail string,
 ) *CallbackUseCase {
 	return &CallbackUseCase{
-		provider:    provider,
-		users:       users,
-		session:     session,
-		enforcer:    enforcer,
-		adminEmails: adminEmails,
+		provider:   provider,
+		users:      users,
+		session:    session,
+		enforcer:   enforcer,
+		adminEmail: adminEmail,
 	}
 }
 
@@ -63,7 +63,7 @@ func (uc *CallbackUseCase) Execute(ctx context.Context, code, nonce string) (str
 		Email:       identity.Email,
 		Name:        identity.Name,
 		Picture:     identity.Picture,
-		Provider:    "oidc",
+		Provider:    domain.ProviderOIDC,
 		LastLoginAt: time.Now(),
 	}
 
@@ -71,7 +71,7 @@ func (uc *CallbackUseCase) Execute(ctx context.Context, code, nonce string) (str
 		return "", nil, fmt.Errorf("upsert user: %w", err)
 	}
 
-	if err = casbin.CheckBootstrapAdmin(ctx, identity.Email, uc.adminEmails, uc.enforcer); err != nil {
+	if err = casbin.CheckBootstrapAdmin(ctx, identity.Email, uc.adminEmail, uc.enforcer); err != nil {
 		return "", nil, fmt.Errorf("bootstrap admin: %w", err)
 	}
 

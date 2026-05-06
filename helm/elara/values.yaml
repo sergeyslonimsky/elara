@@ -105,6 +105,45 @@ config:
       # service hosts server-streaming RPCs (WatchConfigs, WatchClients).
       # Default in-code is 24h; overriding below 5m will cut streams.
       writeTimeout: "24h"
+    auth:
+      # -- Enable authentication for the Web UI and ConnectRPC API.
+      # When false all RPCs are public (default dev behaviour).
+      enabled: false
+      # -- Authentication type: basic-auth or oidc.
+      type: basic-auth
+      # -- Email of the initial admin user. Required when auth.enabled=true.
+      adminEmail: ""
+      basicAuth:
+        # -- Initial password for the bootstrap admin on first boot.
+        # The admin is forced to change it on first login.
+        # Stored in a Kubernetes Secret. Use existingSecret in production.
+        adminInitialPassword: ""
+      oidc:
+        # -- OIDC issuer URL (e.g. https://accounts.google.com).
+        issuerUrl: ""
+        # -- OIDC client ID.
+        clientId: ""
+        # -- OIDC client secret. Stored in a Kubernetes Secret.
+        # Use existingSecret in production.
+        clientSecret: ""
+        # -- Callback URL registered with the OIDC provider.
+        redirectUrl: ""
+        # -- Scopes to request. Leave empty to use defaults: [openid, email, profile].
+        scopes: []
+      session:
+        # -- HS256 JWT signing secret. Must be stable across pod restarts.
+        # If empty the service will fail to start when auth is enabled.
+        # Use existingSecret in production.
+        secret: ""
+        # -- JWT session lifetime (Go duration).
+        ttl: "24h"
+      # -- Name of a pre-existing Secret that supplies sensitive env vars:
+      #    UI_AUTH_SESSION_SECRET
+      #    UI_AUTH_BASICAUTH_ADMININITIALPASSWORD  (basic-auth mode)
+      #    UI_AUTH_OIDC_CLIENTSECRET              (oidc mode)
+      # When set the chart does NOT create its own auth Secret.
+      existingSecret: ""
+
   client:
     etcd:
       # -- etcd-compatible gRPC API port.

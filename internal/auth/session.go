@@ -14,10 +14,11 @@ var errUnexpectedSigningMethod = errors.New("unexpected signing method")
 
 // Claims holds the user identity extracted from a JWT session token.
 type Claims struct {
-	Email      string   `json:"email"`
-	Name       string   `json:"name"`
-	Namespaces []string `json:"namespaces,omitempty"`
-	Role       string   `json:"role,omitempty"`
+	Email                  string   `json:"email"`
+	Name                   string   `json:"name"`
+	Namespaces             []string `json:"namespaces,omitempty"`
+	Role                   string   `json:"role,omitempty"`
+	PasswordChangeRequired bool     `json:"password_change_required,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -36,8 +37,9 @@ func NewSessionManager(secret string, ttl time.Duration) *SessionManager {
 func (m *SessionManager) Create(user *domain.User) (string, error) {
 	now := time.Now()
 	claims := Claims{
-		Email: user.Email,
-		Name:  user.Name,
+		Email:                  user.Email,
+		Name:                   user.Name,
+		PasswordChangeRequired: user.PasswordChangeRequired,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(m.ttl)),

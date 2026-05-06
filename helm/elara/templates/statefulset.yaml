@@ -18,6 +18,9 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if and .Values.config.ui.auth.enabled (not .Values.config.ui.auth.existingSecret) }}
+        checksum/auth-secret: {{ include (print $.Template.BasePath "/secret-auth.yaml") . | sha256sum }}
+        {{- end }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -86,6 +89,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "elara.configMapName" . }}
+            {{- if .Values.config.ui.auth.enabled }}
+            - secretRef:
+                name: {{ .Values.config.ui.auth.existingSecret | default (include "elara.authSecretName" .) }}
+            {{- end }}
             {{- with .Values.extraEnvFrom }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

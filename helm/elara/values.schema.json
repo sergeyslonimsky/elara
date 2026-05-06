@@ -67,6 +67,38 @@
                 "readTimeout":  { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" },
                 "writeTimeout": { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" }
               }
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "enabled":        { "type": "boolean" },
+                "type":           { "enum": ["basic-auth", "oidc"] },
+                "adminEmail":     { "type": "string" },
+                "existingSecret": { "type": "string" },
+                "basicAuth": {
+                  "type": "object",
+                  "properties": {
+                    "adminInitialPassword": { "type": "string" }
+                  }
+                },
+                "oidc": {
+                  "type": "object",
+                  "properties": {
+                    "issuerUrl":    { "type": "string" },
+                    "clientId":     { "type": "string" },
+                    "clientSecret": { "type": "string" },
+                    "redirectUrl":  { "type": "string" },
+                    "scopes":       { "type": "array", "items": { "type": "string" } }
+                  }
+                },
+                "session": {
+                  "type": "object",
+                  "properties": {
+                    "secret": { "type": "string" },
+                    "ttl":    { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" }
+                  }
+                }
+              }
             }
           }
         },

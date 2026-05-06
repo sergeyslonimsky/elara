@@ -14,18 +14,18 @@ type BootstrapEnforcer interface {
 	AddRoleForUser(user, role, domain string) error
 }
 
-// CheckBootstrapAdmin checks if email is in adminEmails and has no role:admin assignment yet.
+// CheckBootstrapAdmin checks if email matches adminEmail and has no role:admin assignment yet.
 // If both conditions are true, it grants role:admin in domain "*".
 // AutoSave on the enforcer's adapter handles persistence automatically.
 func CheckBootstrapAdmin(
 	ctx context.Context,
 	email string,
-	adminEmails []string,
+	adminEmail string,
 	enforcer BootstrapEnforcer,
 ) error {
 	_ = ctx
 
-	if !isAdminEmail(email, adminEmails) {
+	if email != adminEmail {
 		return nil
 	}
 
@@ -43,8 +43,4 @@ func CheckBootstrapAdmin(
 	}
 
 	return nil
-}
-
-func isAdminEmail(email string, adminEmails []string) bool {
-	return slices.Contains(adminEmails, email)
 }
