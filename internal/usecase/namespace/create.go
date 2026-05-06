@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_create.go -package=mock_namespace . createEnforcer,nsCreator,nsGetterForCreate
+
 type createEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

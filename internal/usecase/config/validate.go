@@ -9,6 +9,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_validate.go -package=config_mock . validateEnforcer,validateSchemaChecker
+
 type validateEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

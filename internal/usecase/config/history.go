@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_history.go -package=config_mock . historyEnforcer,configHistoryReader
+
 const defaultHistoryLimit = 20
 
 type historyEnforcer interface {

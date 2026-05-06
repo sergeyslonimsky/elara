@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_update.go -package=config_mock . updateEnforcer,configUpdater,updateConfigGetter,updateWatchNotifier,updateNSTimestampUpdater,updateSchemaValidator
+
 type updateEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

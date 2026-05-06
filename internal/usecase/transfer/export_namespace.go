@@ -10,7 +10,7 @@ import (
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
 )
 
-//go:generate mockgen -destination=mocks/mock_export_namespace.go -package=transfer_mock . exportNSConfigLister,exportNSChecker
+//go:generate mockgen -destination=mocks/mock_export_namespace.go -package=transfer_mock . exportNSEnforcer,exportNSConfigLister,exportNSChecker
 
 type exportNSEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)

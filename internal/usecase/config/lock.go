@@ -9,6 +9,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_lock.go -package=config_mock . lockEnforcer,LockStore,LockNotifier
+
 type lockEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

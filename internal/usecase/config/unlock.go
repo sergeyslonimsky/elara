@@ -9,6 +9,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_unlock.go -package=config_mock . unlockEnforcer,UnlockStore,UnlockNotifier
+
 type unlockEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

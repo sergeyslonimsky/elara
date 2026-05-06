@@ -10,6 +10,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_list.go -package=mock_namespace . listEnforcer,nsLister,listConfigCounter
+
 const defaultListLimit = 20
 
 type listEnforcer interface {

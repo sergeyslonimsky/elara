@@ -9,6 +9,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_search.go -package=config_mock . searchEnforcer,configSearcher
+
 const defaultSearchLimit = 20
 
 type searchEnforcer interface {

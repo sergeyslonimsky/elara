@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_watch.go -package=config_mock . watchEnforcer,watchSubscriber
+
 type watchEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

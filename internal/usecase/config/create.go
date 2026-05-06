@@ -9,6 +9,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_create.go -package=config_mock . createEnforcer,configCreator,createWatchNotifier,createNSTimestampUpdater,createNSChecker,createSchemaValidator
+
 type createEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

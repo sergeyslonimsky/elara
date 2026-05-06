@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_usecase.go -package=mock_dashboard . dashboardEnforcer,nsLister,configCounter,activitySource,activeClientsSource
+
 // dashboardEnforcer checks authorization for dashboard operations.
 type dashboardEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)

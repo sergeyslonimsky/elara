@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_delete.go -package=mock_namespace . deleteEnforcer,nsDeleter,nsConfigCounter
+
 type deleteEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_get_effective.go -package=schema_mock . getEffectiveEnforcer
+
 type getEffectiveEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }
