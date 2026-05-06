@@ -66,10 +66,10 @@ func TestExportAllUseCase_JSONEncoding_SingleBundle(t *testing.T) {
 	nsLister.EXPECT().List(gomock.Any()).Return(namespaces, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "ns1").Return(configsByNS["ns1"], nil)
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	payload, ct, fname, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
 		transferv1.ZipLayout_ZIP_LAYOUT_UNSPECIFIED,
@@ -105,10 +105,10 @@ func TestExportAllUseCase_YAMLEncoding_SingleBundle(t *testing.T) {
 	nsLister.EXPECT().List(gomock.Any()).Return(namespaces, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "yaml-ns").Return(configsByNS["yaml-ns"], nil)
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	payload, ct, fname, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_YAML,
 		transferv1.ZipLayout_ZIP_LAYOUT_UNSPECIFIED,
@@ -133,10 +133,10 @@ func TestExportAllUseCase_UnspecifiedEncoding_DefaultsToJSON(t *testing.T) {
 
 	nsLister.EXPECT().List(gomock.Any()).Return([]*domain.Namespace{}, nil)
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	_, ct, fname, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_UNSPECIFIED,
 		transferv1.ZipLayout_ZIP_LAYOUT_UNSPECIFIED,
@@ -166,10 +166,10 @@ func TestExportAllUseCase_AsZip_JSONEncoding(t *testing.T) {
 	nsLister.EXPECT().List(gomock.Any()).Return(namespaces, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "ns1").Return(configsByNS["ns1"], nil)
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	payload, ct, fname, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		true,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
 		transferv1.ZipLayout_ZIP_LAYOUT_UNSPECIFIED,
@@ -202,10 +202,10 @@ func TestExportAllUseCase_AsZip_YAMLEncoding(t *testing.T) {
 
 	nsLister.EXPECT().List(gomock.Any()).Return([]*domain.Namespace{}, nil)
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	payload, ct, fname, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		true,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_YAML,
 		transferv1.ZipLayout_ZIP_LAYOUT_UNSPECIFIED,
@@ -246,10 +246,10 @@ func TestExportAllUseCase_PerNamespaceZip_JSON(t *testing.T) {
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "ns1").Return(configsByNS["ns1"], nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "ns2").Return(configsByNS["ns2"], nil)
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	payload, ct, fname, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		true,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
 		transferv1.ZipLayout_ZIP_LAYOUT_PER_NAMESPACE,
@@ -301,10 +301,10 @@ func TestExportAllUseCase_PerNamespaceZip_YAML(t *testing.T) {
 	nsLister.EXPECT().List(gomock.Any()).Return(namespaces, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "ns1").Return(configsByNS["ns1"], nil)
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	payload, ct, _, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		true,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_YAML,
 		transferv1.ZipLayout_ZIP_LAYOUT_PER_NAMESPACE,
@@ -335,10 +335,10 @@ func TestExportAllUseCase_EmptyNamespaces(t *testing.T) {
 
 	nsLister.EXPECT().List(gomock.Any()).Return([]*domain.Namespace{}, nil)
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	payload, ct, fname, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
 		transferv1.ZipLayout_ZIP_LAYOUT_UNSPECIFIED,
@@ -366,10 +366,10 @@ func TestExportAllUseCase_NSListerError_Propagated(t *testing.T) {
 
 	nsLister.EXPECT().List(gomock.Any()).Return(nil, errors.New("storage unavailable"))
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	_, _, _, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
 		transferv1.ZipLayout_ZIP_LAYOUT_UNSPECIFIED,
@@ -392,10 +392,10 @@ func TestExportAllUseCase_ConfigListerError_Propagated(t *testing.T) {
 	nsLister.EXPECT().List(gomock.Any()).Return(namespaces, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "failing-ns").Return(nil, errors.New("timeout"))
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	_, _, _, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
 		transferv1.ZipLayout_ZIP_LAYOUT_UNSPECIFIED,
@@ -433,10 +433,10 @@ func TestExportAllUseCase_ConfigMetadata_Preserved(t *testing.T) {
 	nsLister.EXPECT().List(gomock.Any()).Return(namespaces, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "meta-ns").Return(configsByNS["meta-ns"], nil)
 
-	uc := transfer.NewExportAllUseCase(lister, nsLister)
+	uc := transfer.NewExportAllUseCase(allowAllTransferEnforcer{}, lister, nsLister)
 
 	payload, _, _, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
 		transferv1.ZipLayout_ZIP_LAYOUT_UNSPECIFIED,

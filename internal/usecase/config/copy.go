@@ -6,8 +6,15 @@ import (
 	"fmt"
 	"maps"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
+
+//go:generate mockgen -destination=mocks/mock_copy.go -package=config_mock . copyEnforcer,copyConfigGetter,copyConfigCreator,copyWatchNotifier,copyNSChecker,copyNSTimestampUpdater
+
+type copyEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type copyConfigGetter interface {
 	Get(ctx context.Context, path, namespace string) (*domain.Config, error)
@@ -30,6 +37,7 @@ type copyNSTimestampUpdater interface {
 }
 
 type CopyUseCase struct {
+	enforcer   copyEnforcer
 	getter     copyConfigGetter
 	creator    copyConfigCreator
 	watch      copyWatchNotifier
@@ -38,6 +46,7 @@ type CopyUseCase struct {
 }
 
 func NewCopyUseCase(
+	enforcer copyEnforcer,
 	getter copyConfigGetter,
 	creator copyConfigCreator,
 	watch copyWatchNotifier,
@@ -45,6 +54,7 @@ func NewCopyUseCase(
 	namespaces copyNSTimestampUpdater,
 ) *CopyUseCase {
 	return &CopyUseCase{
+		enforcer:   enforcer,
 		getter:     getter,
 		creator:    creator,
 		watch:      watch,
@@ -67,6 +77,11 @@ func (uc *CopyUseCase) Execute(
 
 	if dstNamespace == "" {
 		return nil, domain.NewValidationError("destination_namespace", "namespace is required")
+	}
+
+	// Check write permission on destination namespace.
+	if err := auth.CheckAccess(ctx, uc.enforcer, dstNamespace, auth.ObjectConfig, auth.ActionWrite); err != nil {
+		return nil, fmt.Errorf("check access: %w", err)
 	}
 
 	// Get source config.

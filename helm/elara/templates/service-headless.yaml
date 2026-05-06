@@ -15,12 +15,12 @@ spec:
   publishNotReadyAddresses: true
   ports:
     - name: http
-      port: {{ .Values.config.http.port }}
+      port: {{ .Values.config.ui.server.port }}
       targetPort: http
       protocol: TCP
       appProtocol: http2
     - name: grpc
-      port: {{ .Values.config.grpc.port }}
+      port: {{ .Values.config.client.etcd.port }}
       targetPort: grpc
       protocol: TCP
       appProtocol: grpc

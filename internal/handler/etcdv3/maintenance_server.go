@@ -6,6 +6,8 @@ import (
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 )
 
+//go:generate mockgen -destination=mocks/mock_maintenance.go -package=etcdv3_mock . MaintenanceRepo
+
 // MaintenanceRepo exposes the minimum needed for Status responses.
 type MaintenanceRepo interface {
 	CurrentRevisionValue(ctx context.Context) (int64, error)

@@ -13,10 +13,11 @@ lint:
 	@golangci-lint run --fix
 	@npm --prefix ./web run format
 	@npm --prefix ./web run lint:fix
+	@helm lint helm/elara
 
 .PHONY: test
 test:
-	@go tool gotestsum --format=testname --hide-summary=output -- --race ./...
+	@go tool gotestsum --hide-summary=output -- -race -count=1 -shuffle=on ./...
 	@npm --prefix ./web run test
 
 .PHONY: generate

@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
@@ -61,6 +62,10 @@ func (s *KVServer) Range(ctx context.Context, req *etcdserverpb.RangeRequest) (*
 		return nil, status.Errorf(codes.InvalidArgument, "invalid key encoding: %q", string(req.Key))
 	}
 
+	if err := s.checkRangeAccess(ctx, startNS, endNS, "read"); err != nil {
+		return nil, err
+	}
+
 	kvs, more, err := s.repo.RangeQuery(
 		ctx,
 		startNS, startPath,
@@ -104,6 +109,10 @@ func (s *KVServer) Put(ctx context.Context, req *etcdserverpb.PutRequest) (*etcd
 		return nil, status.Errorf(codes.InvalidArgument, "invalid key encoding: %q", string(req.Key))
 	}
 
+	if err := s.checkAccess(ctx, namespace, "write"); err != nil {
+		return nil, err
+	}
+
 	if req.IgnoreValue {
 		return nil, status.Errorf(codes.Unimplemented, "ignore_value is not supported")
 	}
@@ -137,6 +146,10 @@ func (s *KVServer) DeleteRange(
 		return nil, status.Errorf(codes.InvalidArgument, "invalid key encoding: %q", string(req.Key))
 	}
 
+	if err := s.checkRangeAccess(ctx, startNS, endNS, "write"); err != nil {
+		return nil, err
+	}
+
 	deleted, newRev, err := s.repo.DeleteRangeKeys(ctx, startNS, startPath, endNS, endPath, req.PrevKv)
 	if err != nil {
 		s.recordRejectedWrite(ctx, "delete", startNS, err)
@@ -158,19 +171,7 @@ func (s *KVServer) DeleteRange(
 		}
 	}
 
-	resp := &etcdserverpb.DeleteRangeResponse{
-		Header:  newHeader(newRev),
-		Deleted: int64(len(deleted)),
-	}
-
-	if req.PrevKv {
-		resp.PrevKvs = make([]*mvccpb.KeyValue, 0, len(deleted))
-		for _, kv := range deleted {
-			resp.PrevKvs = append(resp.PrevKvs, kvPairToProto(kv))
-		}
-	}
-
-	return resp, nil
+	return s.buildDeleteRangeResponse(newRev, deleted, req.PrevKv), nil
 }
 
 // Txn implements a best-effort transaction. NOTE: not strictly atomic —
@@ -242,6 +243,40 @@ func (s *KVServer) Compact(
 	}
 
 	return &etcdserverpb.CompactionResponse{Header: newHeader(rev)}, nil
+}
+
+func (s *KVServer) checkRangeAccess(ctx context.Context, startNS, endNS, action string) error {
+	if err := s.checkAccess(ctx, startNS, action); err != nil {
+		return err
+	}
+
+	if endNS != "" && endNS != "\x00" {
+		if err := s.checkAccess(ctx, endNS, action); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *KVServer) buildDeleteRangeResponse(
+	newRev int64,
+	deleted []*domain.KVPair,
+	prevKv bool,
+) *etcdserverpb.DeleteRangeResponse {
+	resp := &etcdserverpb.DeleteRangeResponse{
+		Header:  newHeader(newRev),
+		Deleted: int64(len(deleted)),
+	}
+
+	if prevKv {
+		resp.PrevKvs = make([]*mvccpb.KeyValue, 0, len(deleted))
+		for _, kv := range deleted {
+			resp.PrevKvs = append(resp.PrevKvs, kvPairToProto(kv))
+		}
+	}
+
+	return resp
 }
 
 func (s *KVServer) notifyPut(
@@ -488,4 +523,36 @@ func toKVStatus(err error, op, path string) error {
 	}
 
 	return status.Errorf(codes.Internal, "%s: %v", op, err)
+}
+
+func (s *KVServer) checkAccess(ctx context.Context, namespace, action string) error {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		// If auth is disabled, allow all.
+		return nil
+	}
+
+	// Service tokens have explicit Namespaces and Role.
+	if len(claims.Namespaces) > 0 {
+		allowedNS := false
+		for _, ns := range claims.Namespaces {
+			if ns == namespace || ns == "*" {
+				allowedNS = true
+
+				break
+			}
+		}
+
+		if !allowedNS {
+			return status.Errorf(codes.PermissionDenied, "permission denied for namespace %q", namespace)
+		}
+
+		if action == auth.ActionWrite && claims.Role != "writer" {
+			return status.Errorf(codes.PermissionDenied, "permission denied for action %q", action)
+		}
+
+		return nil
+	}
+
+	return status.Errorf(codes.PermissionDenied, "forbidden")
 }

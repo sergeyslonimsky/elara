@@ -1,5 +1,7 @@
 package monitor
 
+//go:generate mockgen -destination=mocks/mock_history.go -package=mock_monitor -source=history.go
+
 import (
 	"context"
 	"fmt"

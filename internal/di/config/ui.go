@@ -1,0 +1,140 @@
+package config
+
+import (
+	"errors"
+	"time"
+
+	"github.com/sergeyslonimsky/core/di"
+	"github.com/sergeyslonimsky/core/http2"
+)
+
+type AuthType string
+
+const (
+	AuthTypeOIDC      AuthType = "oidc"
+	AuthTypeBasicAuth AuthType = "basic-auth"
+	AuthTypeNone      AuthType = "none"
+)
+
+type UI struct {
+	Server http2.Config
+	Auth   UIAuthConfig
+}
+
+// UIAuthConfig controls authentication and session management.
+type UIAuthConfig struct {
+	Enabled    bool
+	Type       AuthType
+	AdminEmail string
+	BasicAuth  BasicAuthConfig
+	OIDC       OIDCConfig
+	Session    SessionConfig
+}
+
+type BasicAuthConfig struct {
+	AdminInitialPassword string
+}
+
+// OIDCConfig holds OpenID Connect provider settings.
+type OIDCConfig struct {
+	IssuerURL    string
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+	Scopes       []string
+}
+
+// SessionConfig controls JWT session token signing and lifetime.
+type SessionConfig struct {
+	Secret string
+	TTL    time.Duration
+}
+
+var (
+	ErrBasicAuthAdminEmailRequired           = errors.New("basic-auth requires ui.auth.adminEmail to be set")
+	ErrBasicAuthAdminInitialPasswordRequired = errors.New(
+		"basic-auth requires ui.auth.basicAuth.adminInitialPassword to be set",
+	)
+)
+
+// Validate returns an error if the configuration is invalid.
+func (c UIAuthConfig) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
+
+	if c.Type == AuthTypeBasicAuth {
+		if c.AdminEmail == "" {
+			return ErrBasicAuthAdminEmailRequired
+		}
+		if c.BasicAuth.AdminInitialPassword == "" {
+			return ErrBasicAuthAdminInitialPasswordRequired
+		}
+	}
+
+	return nil
+}
+
+func newUIConfig(cfg *di.Config) (UI, error) {
+	ui := UI{
+		Server: http2.Config{
+			Port:        cfg.GetStringOrDefault("ui.server.port", defaultHTTPPort),
+			ReadTimeout: cfg.GetDuration("ui.server.readTimeout"),
+			// Streaming-friendly default — see defaultFrontendWriteTimeout.
+			WriteTimeout: durOrDefault(
+				cfg.GetDuration("ui.server.writeTimeout"),
+				defaultFrontendWriteTimeout,
+			),
+		},
+		Auth: UIAuthConfig{
+			Enabled:    cfg.GetBool("ui.auth.enabled"),
+			Type:       getAuthType(cfg),
+			AdminEmail: cfg.GetString("ui.auth.adminEmail"),
+			BasicAuth: BasicAuthConfig{
+				AdminInitialPassword: cfg.GetString("ui.auth.basicAuth.adminInitialPassword"),
+			},
+			OIDC: OIDCConfig{
+				IssuerURL:    cfg.GetString("ui.auth.oidc.issuerUrl"),
+				ClientID:     cfg.GetString("ui.auth.oidc.clientId"),
+				ClientSecret: cfg.GetString("ui.auth.oidc.clientSecret"),
+				RedirectURL:  cfg.GetString("ui.auth.oidc.redirectUrl"),
+				Scopes: stringsOrDefault(
+					cfg.GetStringSlice("ui.auth.oidc.scopes"),
+					[]string{"openid", "email", "profile"},
+				),
+			},
+			Session: SessionConfig{
+				Secret: cfg.GetString("ui.auth.session.secret"),
+				TTL: durOrDefault(
+					cfg.GetDuration("ui.auth.session.ttl"),
+					defaultSessionTTL,
+				),
+			},
+		},
+	}
+
+	if err := ui.Auth.Validate(); err != nil {
+		return UI{}, err
+	}
+
+	return ui, nil
+}
+
+func getAuthType(cfg *di.Config) AuthType {
+	if !cfg.GetBool("ui.auth.enabled") {
+		return AuthTypeNone
+	}
+
+	authType := cfg.GetString("ui.auth.type")
+
+	switch authType {
+	case "oidc":
+		return AuthTypeOIDC
+	case "basic-auth":
+		return AuthTypeBasicAuth
+	case "none":
+		return AuthTypeNone
+	default:
+		return AuthTypeNone
+	}
+}

@@ -70,6 +70,43 @@ helm install elara ./helm/elara \
   --set tracing.otlpEndpoint=http://otel-collector.observability:4318
 ```
 
+### With basic-auth (username + password)
+```bash
+helm install elara ./helm/elara \
+  --set config.ui.auth.enabled=true \
+  --set config.ui.auth.type=basic-auth \
+  --set config.ui.auth.adminEmail=admin@example.com \
+  --set config.ui.auth.basicAuth.adminInitialPassword=ChangeMe123 \
+  --set config.ui.auth.session.secret=a-long-random-string
+```
+The chart creates a `{release}-auth` Secret holding the sensitive values.
+The admin is forced to change their password on first login.
+
+For production, supply credentials from a pre-existing Secret (e.g. managed by
+external-secrets or Vault) and omit the plaintext values:
+```bash
+helm install elara ./helm/elara \
+  --set config.ui.auth.enabled=true \
+  --set config.ui.auth.type=basic-auth \
+  --set config.ui.auth.adminEmail=admin@example.com \
+  --set config.ui.auth.existingSecret=my-elara-auth-secret
+```
+The existing Secret must contain keys: `UI_AUTH_SESSION_SECRET` and
+`UI_AUTH_BASICAUTH_ADMININITIALPASSWORD`.
+
+### With OIDC
+```bash
+helm install elara ./helm/elara \
+  --set config.ui.auth.enabled=true \
+  --set config.ui.auth.type=oidc \
+  --set config.ui.auth.adminEmail=admin@example.com \
+  --set config.ui.auth.oidc.issuerUrl=https://accounts.google.com \
+  --set config.ui.auth.oidc.clientId=MY_CLIENT_ID \
+  --set config.ui.auth.oidc.clientSecret=MY_CLIENT_SECRET \
+  --set "config.ui.auth.oidc.redirectUrl=https://elara.example.com/auth/callback" \
+  --set config.ui.auth.session.secret=a-long-random-string
+```
+
 ### With production-grade resources + persistence
 ```yaml
 # values-prod.yaml
@@ -106,30 +143,43 @@ helm install elara ./helm/elara -f values-prod.yaml
 Full list with descriptions lives in [`values.yaml`](values.yaml). Key
 sections:
 
-| Key                       | Default                         | Purpose                                                |
-| ------------------------- |---------------------------------| ------------------------------------------------------ |
-| `image.repository`        | `ghcr.io/sergeyslonimsky/elara` | Container image                                        |
-| `image.tag`               | Chart `appVersion`              | Pin a specific version                                 |
-| `image.digest`            | `""`                            | Overrides `tag` for immutable deploys                  |
-| `replicaCount`            | `1`                             | **Invariant**: schema pins to `1` until raft HA lands  |
-| `config.http.port`        | `8080`                          | HTTP/2, ConnectRPC, Web UI                             |
-| `config.http.writeTimeout`| `24h`                           | Server-streaming RPCs need a long write timeout        |
-| `config.grpc.port`        | `2379`                          | etcd-compatible gRPC API                               |
-| `config.clients.*`        | see `values.yaml`               | Connected-clients monitor tuning                       |
-| `storage.type`            | `bbolt`                         | Schema enum: `[bbolt]` today                           |
-| `storage.bbolt.path`      | `/var/lib/elara`                | Directory inside the PVC mount                         |
-| `persistence.size`        | `2Gi`                           | PVC size via `volumeClaimTemplates`                    |
-| `persistence.accessMode`  | `ReadWriteOnce`                 | bbolt requires exclusive lock                          |
-| `metrics.enabled`         | `false`                         | Exposes `/metrics` on the HTTP port                    |
-| `metrics.serviceMonitor.enabled` | `false`                         | Requires Prometheus Operator CRDs                      |
-| `tracing.enabled`         | `false`                         | OTLP push                                              |
-| `tracing.otlpEndpoint`    | `""`                            | Required when `tracing.enabled=true`                   |
-| `config.log.level`        | `info`                          | One of: `debug`, `info`, `warn`, `error`               |
-| `config.log.format`       | `json`                          | One of: `json`, `text`                                 |
-| `config.log.noSource`     | `false`                         | Set `true` to omit source file/line from log entries   |
-| `service.type`            | `ClusterIP`                     | `NodePort`/`LoadBalancer` supported                    |
-| `ingress.enabled`         | `false`                         | Exposes HTTP port only                                 |
-| `networkPolicy.enabled`   | `false`                         | Optional; CNI-dependent                                |
+| Key                                              | Default                         | Purpose                                                              |
+| ------------------------------------------------ |---------------------------------| -------------------------------------------------------------------- |
+| `image.repository`                               | `ghcr.io/sergeyslonimsky/elara` | Container image                                                      |
+| `image.tag`                                      | Chart `appVersion`              | Pin a specific version                                               |
+| `image.digest`                                   | `""`                            | Overrides `tag` for immutable deploys                                |
+| `replicaCount`                                   | `1`                             | **Invariant**: schema pins to `1` until raft HA lands                |
+| `config.ui.server.port`                          | `8080`                          | HTTP/2, ConnectRPC, Web UI                                           |
+| `config.ui.server.writeTimeout`                  | `24h`                           | Server-streaming RPCs need a long write timeout                      |
+| `config.ui.auth.enabled`                         | `false`                         | Enable authentication; all RPCs are public when false                |
+| `config.ui.auth.type`                            | `basic-auth`                    | `basic-auth` or `oidc`                                               |
+| `config.ui.auth.adminEmail`                      | `""`                            | Bootstrap admin email (required when auth enabled)                   |
+| `config.ui.auth.basicAuth.adminInitialPassword`  | `""`                            | Bootstrap admin password (basic-auth); stored in chart Secret        |
+| `config.ui.auth.oidc.issuerUrl`                  | `""`                            | OIDC issuer (e.g. `https://accounts.google.com`)                     |
+| `config.ui.auth.oidc.clientId`                   | `""`                            | OIDC client ID                                                       |
+| `config.ui.auth.oidc.clientSecret`               | `""`                            | OIDC client secret; stored in chart Secret                           |
+| `config.ui.auth.oidc.redirectUrl`                | `""`                            | OIDC callback URL                                                    |
+| `config.ui.auth.oidc.scopes`                     | `[]`                            | OIDC scopes; defaults to `[openid, email, profile]`                  |
+| `config.ui.auth.session.secret`                  | `""`                            | HS256 JWT signing secret; stored in chart Secret                     |
+| `config.ui.auth.session.ttl`                     | `24h`                           | JWT session lifetime                                                 |
+| `config.ui.auth.existingSecret`                  | `""`                            | Use a pre-existing Secret instead of the chart-managed one           |
+| `config.client.etcd.port`                        | `2379`                          | etcd-compatible gRPC API                                             |
+| `config.client.history.*`                        | see `values.yaml`               | Connected-clients history tuning                                     |
+| `config.client.recentEvents.*`                   | see `values.yaml`               | Recent-events ring buffer tuning                                     |
+| `storage.type`                                   | `bbolt`                         | Schema enum: `[bbolt]` today                                         |
+| `storage.bbolt.path`                             | `/var/lib/elara`                | Directory inside the PVC mount                                       |
+| `persistence.size`                               | `2Gi`                           | PVC size via `volumeClaimTemplates`                                  |
+| `persistence.accessMode`                         | `ReadWriteOnce`                 | bbolt requires exclusive lock                                        |
+| `metrics.enabled`                                | `false`                         | Exposes `/metrics` on the HTTP port                                  |
+| `metrics.serviceMonitor.enabled`                 | `false`                         | Requires Prometheus Operator CRDs                                    |
+| `tracing.enabled`                                | `false`                         | OTLP push                                                            |
+| `tracing.otlpEndpoint`                           | `""`                            | Required when `tracing.enabled=true`                                 |
+| `config.log.level`                               | `info`                          | One of: `debug`, `info`, `warn`, `error`                             |
+| `config.log.format`                              | `json`                          | One of: `json`, `text`                                               |
+| `config.log.noSource`                            | `false`                         | Set `true` to omit source file/line from log entries                 |
+| `service.type`                                   | `ClusterIP`                     | `NodePort`/`LoadBalancer` supported                                  |
+| `ingress.enabled`                                | `false`                         | Exposes HTTP port only                                               |
+| `networkPolicy.enabled`                          | `false`                         | Optional; CNI-dependent                                              |
 
 ## How configuration reaches the service
 
@@ -139,20 +189,33 @@ Viper uses the core library's `SetEnvKeyReplacer(".", "_")`, so every viper
 key maps to an env var by **uppercasing and replacing dots with underscores
 — camelCase tokens are not split**. For example:
 
-| Config key (viper)             | Env var (ConfigMap)           |
-| ------------------------------ | ----------------------------- |
-| `http.frontend.port`           | `HTTP_FRONTEND_PORT`          |
-| `http.frontend.readTimeout`    | `HTTP_FRONTEND_READTIMEOUT`   |
-| `http.frontend.writeTimeout`   | `HTTP_FRONTEND_WRITETIMEOUT`  |
-| `grpc.etcd.port`               | `GRPC_ETCD_PORT`              |
-| `config.data.path`             | `CONFIG_DATA_PATH`            |
-| `service.name`                 | `SERVICE_NAME`                |
-| `metrics.enabled`              | `METRICS_ENABLED`             |
-| `tracing.otlp.endpoint`        | `TRACING_OTLP_ENDPOINT`       |
-| `clients.history.max_records`  | `CLIENTS_HISTORY_MAX_RECORDS` |
-| `log.level`                    | `LOG_LEVEL`                   |
-| `log.format`                   | `LOG_FORMAT`                  |
-| `log.noSource`                 | `LOG_NOSOURCE`                |
+| Config key (viper)                              | Env var (ConfigMap / Secret)                     | Source    |
+| ----------------------------------------------- | ------------------------------------------------ | --------- |
+| `ui.server.port`                                | `UI_SERVER_PORT`                                 | ConfigMap |
+| `ui.server.readTimeout`                         | `UI_SERVER_READTIMEOUT`                          | ConfigMap |
+| `ui.server.writeTimeout`                        | `UI_SERVER_WRITETIMEOUT`                         | ConfigMap |
+| `ui.auth.enabled`                               | `UI_AUTH_ENABLED`                                | ConfigMap |
+| `ui.auth.type`                                  | `UI_AUTH_TYPE`                                   | ConfigMap |
+| `ui.auth.adminEmail`                            | `UI_AUTH_ADMINEMAIL`                             | ConfigMap |
+| `ui.auth.session.ttl`                           | `UI_AUTH_SESSION_TTL`                            | ConfigMap |
+| `ui.auth.oidc.issuerUrl`                        | `UI_AUTH_OIDC_ISSUERURL`                         | ConfigMap |
+| `ui.auth.oidc.clientId`                         | `UI_AUTH_OIDC_CLIENTID`                          | ConfigMap |
+| `ui.auth.oidc.redirectUrl`                      | `UI_AUTH_OIDC_REDIRECTURL`                       | ConfigMap |
+| `ui.auth.oidc.scopes`                           | `UI_AUTH_OIDC_SCOPES`                            | ConfigMap |
+| `ui.auth.session.secret`                        | `UI_AUTH_SESSION_SECRET`                         | **Secret** |
+| `ui.auth.basicAuth.adminInitialPassword`        | `UI_AUTH_BASICAUTH_ADMININITIALPASSWORD`          | **Secret** |
+| `ui.auth.oidc.clientSecret`                     | `UI_AUTH_OIDC_CLIENTSECRET`                      | **Secret** |
+| `client.etcd.port`                              | `CLIENT_ETCD_PORT`                               | ConfigMap |
+| `client.history.max_records`                    | `CLIENT_HISTORY_MAX_RECORDS`                     | ConfigMap |
+| `client.history.max_age`                        | `CLIENT_HISTORY_MAX_AGE`                         | ConfigMap |
+| `client.recent_events.capacity`                 | `CLIENT_RECENT_EVENTS_CAPACITY`                  | ConfigMap |
+| `config.data.path`                              | `CONFIG_DATA_PATH`                               | ConfigMap |
+| `service.name`                                  | `SERVICE_NAME`                                   | ConfigMap |
+| `metrics.enabled`                               | `METRICS_ENABLED`                                | ConfigMap |
+| `tracing.otlp.endpoint`                         | `TRACING_OTLP_ENDPOINT`                          | ConfigMap |
+| `log.level`                                     | `LOG_LEVEL`                                      | ConfigMap |
+| `log.format`                                    | `LOG_FORMAT`                                     | ConfigMap |
+| `log.noSource`                                  | `LOG_NOSOURCE`                                   | ConfigMap |
 
 Add extra env-vars via `extraEnv` or wire a Secret with `extraEnvFrom`.
 

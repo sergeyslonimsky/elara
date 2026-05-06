@@ -129,10 +129,13 @@ func (h *WebhookHandler) ListWebhooks(
 }
 
 func (h *WebhookHandler) GetDeliveryHistory(
-	_ context.Context,
+	ctx context.Context,
 	req *connect.Request[webhookv1.GetDeliveryHistoryRequest],
 ) (*connect.Response[webhookv1.GetDeliveryHistoryResponse], error) {
-	attempts := h.history.Execute(req.Msg.GetWebhookId())
+	attempts, err := h.history.Execute(ctx, req.Msg.GetWebhookId())
+	if err != nil {
+		return nil, toConnectError(err)
+	}
 
 	protos := make([]*webhookv1.DeliveryAttempt, 0, len(attempts))
 	for _, a := range attempts {

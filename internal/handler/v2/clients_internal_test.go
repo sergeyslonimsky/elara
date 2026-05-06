@@ -11,10 +11,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	clientsv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/clients/v1"
 	clientsuc "github.com/sergeyslonimsky/elara/internal/usecase/clients"
 )
+
+type allowAllClientsHandlerEnforcer struct{}
+
+func (allowAllClientsHandlerEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
+
+func clientsHandlerTestCtx() context.Context {
+	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+}
 
 // fakeActiveSource implements clientsuc.ActiveSource.
 type fakeActiveSource struct {
@@ -207,10 +216,10 @@ func TestClientsHandler_ListActiveClients(t *testing.T) {
 			{ID: "conn-1", PeerAddress: "p1", ConnectedAt: now},
 		},
 	}
-	uc := clientsuc.NewUseCase(active, &fakeHistorySource{})
+	uc := clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})
 	h := NewClientsHandler(uc)
 
-	resp, err := h.ListActiveClients(context.Background(), connect.NewRequest(&clientsv1.ListActiveClientsRequest{}))
+	resp, err := h.ListActiveClients(clientsHandlerTestCtx(), connect.NewRequest(&clientsv1.ListActiveClientsRequest{}))
 	require.NoError(t, err)
 	require.Len(t, resp.Msg.GetClients(), 2)
 	// Sorted by ConnectedAt asc
@@ -227,9 +236,9 @@ func TestClientsHandler_GetClient_Active(t *testing.T) {
 			"x": {{Method: "Put", Key: "/k"}},
 		},
 	}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{}))
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{}))
 
-	resp, err := h.GetClient(context.Background(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "x"}))
+	resp, err := h.GetClient(clientsHandlerTestCtx(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "x"}))
 	require.NoError(t, err)
 	assert.Equal(t, "x", resp.Msg.GetClient().GetId())
 	require.Len(t, resp.Msg.GetRecentEvents(), 1)
@@ -246,9 +255,9 @@ func TestClientsHandler_GetClient_FallbackToHistory(t *testing.T) {
 		},
 	}
 	active := &fakeActiveSource{}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, hist))
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, hist))
 
-	resp, err := h.GetClient(context.Background(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "old"}))
+	resp, err := h.GetClient(clientsHandlerTestCtx(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "old"}))
 	require.NoError(t, err)
 	assert.Equal(t, "old", resp.Msg.GetClient().GetId())
 	require.NotNil(t, resp.Msg.GetClient().GetDisconnectedAt())
@@ -258,9 +267,11 @@ func TestClientsHandler_GetClient_FallbackToHistory(t *testing.T) {
 func TestClientsHandler_GetClient_NotFound(t *testing.T) {
 	t.Parallel()
 
-	h := NewClientsHandler(clientsuc.NewUseCase(&fakeActiveSource{}, &fakeHistorySource{}))
+	h := NewClientsHandler(
+		clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, &fakeActiveSource{}, &fakeHistorySource{}),
+	)
 
-	_, err := h.GetClient(context.Background(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "nope"}))
+	_, err := h.GetClient(clientsHandlerTestCtx(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "nope"}))
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
@@ -273,9 +284,9 @@ func TestClientsHandler_ListHistoricalConnections(t *testing.T) {
 		{ID: "a", DisconnectedAt: &now},
 		{ID: "b", DisconnectedAt: &now},
 	}}
-	h := NewClientsHandler(clientsuc.NewUseCase(&fakeActiveSource{}, hist))
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, &fakeActiveSource{}, hist))
 
-	resp, err := h.ListHistoricalConnections(context.Background(),
+	resp, err := h.ListHistoricalConnections(clientsHandlerTestCtx(),
 		connect.NewRequest(&clientsv1.ListHistoricalConnectionsRequest{Limit: 10}))
 	require.NoError(t, err)
 	assert.Len(t, resp.Msg.GetClients(), 2)
@@ -285,9 +296,9 @@ func TestClientsHandler_ListHistoricalConnections_PropagatesError(t *testing.T) 
 	t.Parallel()
 
 	hist := &fakeHistorySource{listErr: errors.New("db down")}
-	h := NewClientsHandler(clientsuc.NewUseCase(&fakeActiveSource{}, hist))
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, &fakeActiveSource{}, hist))
 
-	_, err := h.ListHistoricalConnections(context.Background(),
+	_, err := h.ListHistoricalConnections(clientsHandlerTestCtx(),
 		connect.NewRequest(&clientsv1.ListHistoricalConnectionsRequest{}))
 	require.Error(t, err)
 }
@@ -303,11 +314,11 @@ func TestClientsHandler_runWatch_SendsInitialSnapshot(t *testing.T) {
 	active := &fakeActiveSource{
 		clients: []*domain.Client{{ID: "conn-1", PeerAddress: "p", ConnectedAt: now}},
 	}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour) // effectively disable periodic ticks
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 
@@ -326,11 +337,11 @@ func TestClientsHandler_runWatch_PushesConnectedEvent(t *testing.T) {
 	t.Parallel()
 
 	active := &fakeActiveSource{}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 
@@ -365,11 +376,11 @@ func TestClientsHandler_runWatch_DisconnectedEvent(t *testing.T) {
 	t.Parallel()
 
 	active := &fakeActiveSource{}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 	waitForSent(t, sender, 1)
@@ -398,11 +409,11 @@ func TestClientsHandler_runWatch_ActivityEventsAreSwallowed(t *testing.T) {
 	t.Parallel()
 
 	active := &fakeActiveSource{}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 	waitForSent(t, sender, 1)
@@ -433,11 +444,11 @@ func TestClientsHandler_runWatch_PeriodicSnapshot(t *testing.T) {
 	active := &fakeActiveSource{
 		clients: []*domain.Client{{ID: "c"}},
 	}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(40 * time.Millisecond)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 
@@ -456,11 +467,11 @@ func TestClientsHandler_runWatch_CtxCancel_UnsubscribesAndExits(t *testing.T) {
 	t.Parallel()
 
 	active := &fakeActiveSource{}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 	waitForSent(t, sender, 1)
@@ -493,11 +504,11 @@ func TestClientsHandler_runWatch_SendError_ReleasesSubscription(t *testing.T) {
 	active := &fakeActiveSource{
 		clients: []*domain.Client{{ID: "c"}},
 	}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{sendErr: errors.New("client closed")}
-	ctx := t.Context()
+	ctx := clientsHandlerTestCtx()
 
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
@@ -517,11 +528,11 @@ func TestClientsHandler_runWatch_RegistryShutdown_ExitsCleanly(t *testing.T) {
 	t.Parallel()
 
 	active := &fakeActiveSource{}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx := t.Context()
+	ctx := clientsHandlerTestCtx()
 
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
@@ -564,9 +575,9 @@ func TestClientsHandler_ListClientSessions(t *testing.T) {
 		{ID: "b", ClientName: "order-service", K8sNamespace: "production", DisconnectedAt: &d},
 		{ID: "c", ClientName: "order-service", K8sNamespace: "staging", DisconnectedAt: &d},
 	}}
-	h := NewClientsHandler(clientsuc.NewUseCase(&fakeActiveSource{}, hist))
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, &fakeActiveSource{}, hist))
 
-	resp, err := h.ListClientSessions(context.Background(),
+	resp, err := h.ListClientSessions(clientsHandlerTestCtx(),
 		connect.NewRequest(&clientsv1.ListClientSessionsRequest{
 			ClientName:   "order-service",
 			K8SNamespace: "production",
@@ -583,9 +594,9 @@ func TestClientsHandler_ListClientSessions_ExcludesCurrent(t *testing.T) {
 		{ID: "a", ClientName: "x", K8sNamespace: "p", DisconnectedAt: &d},
 		{ID: "b", ClientName: "x", K8sNamespace: "p", DisconnectedAt: &d},
 	}}
-	h := NewClientsHandler(clientsuc.NewUseCase(&fakeActiveSource{}, hist))
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, &fakeActiveSource{}, hist))
 
-	resp, err := h.ListClientSessions(context.Background(),
+	resp, err := h.ListClientSessions(clientsHandlerTestCtx(),
 		connect.NewRequest(&clientsv1.ListClientSessionsRequest{
 			ClientName:   "x",
 			K8SNamespace: "p",
@@ -645,9 +656,11 @@ func waitForClientSent(t *testing.T, s *fakeWatchClientSender, n int) {
 func TestClientsHandler_runWatchClient_NotFound(t *testing.T) {
 	t.Parallel()
 
-	h := NewClientsHandler(clientsuc.NewUseCase(&fakeActiveSource{}, &fakeHistorySource{}))
+	h := NewClientsHandler(
+		clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, &fakeActiveSource{}, &fakeHistorySource{}),
+	)
 
-	err := h.runWatchClient(context.Background(), "missing", &fakeWatchClientSender{})
+	err := h.runWatchClient(clientsHandlerTestCtx(), "missing", &fakeWatchClientSender{})
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
@@ -659,10 +672,12 @@ func TestClientsHandler_runWatchClient_AlreadyDisconnected_SendsSingleFrameAndEx
 	hist := &fakeHistorySource{saved: []*domain.Client{
 		{ID: "x", DisconnectedAt: new(time.Now()), ClientName: "svc"},
 	}}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, hist)).WithSnapshotInterval(time.Hour)
+	h := NewClientsHandler(
+		clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, hist),
+	).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{}
-	err := h.runWatchClient(context.Background(), "x", sender)
+	err := h.runWatchClient(clientsHandlerTestCtx(), "x", sender)
 	require.NoError(t, err)
 
 	resps := sender.snapshot()
@@ -676,11 +691,11 @@ func TestClientsHandler_runWatchClient_InitialSnapshot(t *testing.T) {
 	active := &fakeActiveSource{
 		clients: []*domain.Client{{ID: "x", ClientName: "svc", ConnectedAt: time.Now()}},
 	}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
 
@@ -699,11 +714,11 @@ func TestClientsHandler_runWatchClient_ForwardsRequestRecorded(t *testing.T) {
 	active := &fakeActiveSource{
 		clients: []*domain.Client{{ID: "x", ConnectedAt: time.Now()}},
 	}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
 	waitForClientSent(t, sender, 1)
@@ -736,11 +751,11 @@ func TestClientsHandler_runWatchClient_DisconnectExitsCleanly(t *testing.T) {
 	t.Parallel()
 
 	active := &fakeActiveSource{clients: []*domain.Client{{ID: "x"}}}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{}
-	ctx := t.Context()
+	ctx := clientsHandlerTestCtx()
 
 	done := make(chan error, 1)
 	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
@@ -776,11 +791,11 @@ func TestClientsHandler_runWatchClient_CtxCancel_ReleasesSubscription(t *testing
 	t.Parallel()
 
 	active := &fakeActiveSource{clients: []*domain.Client{{ID: "x"}}}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 
 	done := make(chan error, 1)
 	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
@@ -812,11 +827,11 @@ func TestClientsHandler_runWatchClient_SendError_ReleasesSubscription(t *testing
 	t.Parallel()
 
 	active := &fakeActiveSource{clients: []*domain.Client{{ID: "x"}}}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{sendErr: errors.New("client closed")}
-	ctx := t.Context()
+	ctx := clientsHandlerTestCtx()
 
 	done := make(chan error, 1)
 	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
@@ -835,11 +850,11 @@ func TestClientsHandler_runWatchClient_PeriodicSnapshot(t *testing.T) {
 	t.Parallel()
 
 	active := &fakeActiveSource{clients: []*domain.Client{{ID: "x"}}}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(40 * time.Millisecond)
 
 	sender := &fakeWatchClientSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
 
@@ -858,11 +873,11 @@ func TestClientsHandler_runWatch_SubscribeOnlyOnce(t *testing.T) {
 
 	// Defensive: each runWatch must Subscribe exactly once and unsubscribe exactly once.
 	active := &fakeActiveSource{}
-	h := NewClientsHandler(clientsuc.NewUseCase(active, &fakeHistorySource{})).
+	h := NewClientsHandler(clientsuc.NewUseCase(allowAllClientsHandlerEnforcer{}, active, &fakeHistorySource{})).
 		WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(clientsHandlerTestCtx())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 	waitForSent(t, sender, 1)

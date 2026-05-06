@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package elara.auth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1;authv1";
+
+message Group {
+  string id = 1;
+  string name = 2;
+  repeated string members = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message CreateGroupRequest {
+  string name = 1;
+}
+
+message CreateGroupResponse {
+  Group group = 1;
+}
+
+message GetGroupRequest {
+  string id = 1;
+}
+
+message GetGroupResponse {
+  Group group = 1;
+}
+
+message UpdateGroupRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message UpdateGroupResponse {
+  Group group = 1;
+}
+
+message DeleteGroupRequest {
+  string id = 1;
+}
+
+message DeleteGroupResponse {}
+
+message ListGroupsRequest {}
+
+message ListGroupsResponse {
+  repeated Group groups = 1;
+}
+
+message AddMemberRequest {
+  string group_id = 1;
+  string email = 2;
+}
+
+message AddMemberResponse {
+  Group group = 1;
+}
+
+message RemoveMemberRequest {
+  string group_id = 1;
+  string email = 2;
+}
+
+message RemoveMemberResponse {
+  Group group = 1;
+}
+
+service GroupService {
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+  rpc GetGroup(GetGroupRequest) returns (GetGroupResponse);
+  rpc UpdateGroup(UpdateGroupRequest) returns (UpdateGroupResponse);
+  rpc DeleteGroup(DeleteGroupRequest) returns (DeleteGroupResponse);
+  rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse);
+  rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+}

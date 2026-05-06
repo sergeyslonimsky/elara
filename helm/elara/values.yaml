@@ -90,33 +90,75 @@ containerSecurityContext:
 # -----------------------------------------------------------------------
 # Elara service configuration (→ env vars via ConfigMap)
 # -----------------------------------------------------------------------
-# Each key maps 1:1 to a viper config path in the service. Viper
-# uppercases dots to underscores, so http.frontend.readTimeout is
-# exposed as HTTP_FRONTEND_READTIMEOUT (no underscore inside camelCase
-# tokens — this is the core library's SetEnvKeyReplacer(".", "_") rule).
+# Keys are grouped by domain: `ui` (HTTP server + OIDC auth) and `client`
+# (gRPC server + token auth + connected-client monitor). The ConfigMap
+# template maps each value to its canonical env-var name via Viper's
+# SetEnvKeyReplacer(".", "_") rule: dots → underscores, uppercased.
 config:
-  http:
-    # -- HTTP/2 port serving ConnectRPC + static UI.
-    port: 8080
-    # -- Max duration for reading the request body. `0s` = library default.
-    readTimeout: "0s"
-    # -- Max duration for writing the response. Must be long because the
-    # service hosts server-streaming RPCs (WatchConfigs, WatchClients).
-    # Default in-code is 24h; overriding below 5m will cut streams.
-    writeTimeout: "24h"
-  grpc:
-    # -- etcd-compatible gRPC API port.
-    port: 2379
+  ui:
+    server:
+      # -- HTTP/2 port serving ConnectRPC + static UI.
+      port: 8080
+      # -- Max duration for reading the request body. `0s` = library default.
+      readTimeout: "0s"
+      # -- Max duration for writing the response. Must be long because the
+      # service hosts server-streaming RPCs (WatchConfigs, WatchClients).
+      # Default in-code is 24h; overriding below 5m will cut streams.
+      writeTimeout: "24h"
+    auth:
+      # -- Enable authentication for the Web UI and ConnectRPC API.
+      # When false all RPCs are public (default dev behaviour).
+      enabled: false
+      # -- Authentication type: basic-auth or oidc.
+      type: basic-auth
+      # -- Email of the initial admin user. Required when auth.enabled=true.
+      adminEmail: ""
+      basicAuth:
+        # -- Initial password for the bootstrap admin on first boot.
+        # The admin is forced to change it on first login.
+        # Stored in a Kubernetes Secret. Use existingSecret in production.
+        adminInitialPassword: ""
+      oidc:
+        # -- OIDC issuer URL (e.g. https://accounts.google.com).
+        issuerUrl: ""
+        # -- OIDC client ID.
+        clientId: ""
+        # -- OIDC client secret. Stored in a Kubernetes Secret.
+        # Use existingSecret in production.
+        clientSecret: ""
+        # -- Callback URL registered with the OIDC provider.
+        redirectUrl: ""
+        # -- Scopes to request. Leave empty to use defaults: [openid, email, profile].
+        scopes: []
+      session:
+        # -- HS256 JWT signing secret. Must be stable across pod restarts.
+        # If empty the service will fail to start when auth is enabled.
+        # Use existingSecret in production.
+        secret: ""
+        # -- JWT session lifetime (Go duration).
+        ttl: "24h"
+      # -- Name of a pre-existing Secret that supplies sensitive env vars:
+      #    UI_AUTH_SESSION_SECRET
+      #    UI_AUTH_BASICAUTH_ADMININITIALPASSWORD  (basic-auth mode)
+      #    UI_AUTH_OIDC_CLIENTSECRET              (oidc mode)
+      # When set the chart does NOT create its own auth Secret.
+      existingSecret: ""
+
+  client:
+    etcd:
+      # -- etcd-compatible gRPC API port.
+      port: 2379
+    history:
+      # -- Max historical client events retained in memory.
+      maxRecords: 1000
+      # -- Retention window for client history (Go duration).
+      maxAge: "720h"
+    recentEvents:
+      # -- Capacity of the recent-events ring buffer.
+      capacity: 100
   # -- Overrides the resolved service name used in Prometheus / OTel
   # resource labels. Leave empty to derive from the chart name.
   serviceName: ""
-  clients:
-    # -- Max historical client events retained in memory.
-    historyMaxRecords: 1000
-    # -- Retention window for client history (Go duration).
-    historyMaxAge: "720h"
-    # -- Capacity of the recent-events ring buffer.
-    recentEventsCapacity: 100
   log:
     # -- Log verbosity. One of: debug, info, warn, error.
     level: "info"

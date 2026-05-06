@@ -69,7 +69,7 @@ func newImportUC(
 	nsGetter *transfer_mock.MockimportNSGetter,
 	nsCreator *transfer_mock.MockimportNSCreator,
 ) *transfer.ImportNamespaceUseCase {
-	return transfer.NewImportNamespaceUseCase(getter, creator, updater, nsGetter, nsCreator)
+	return transfer.NewImportNamespaceUseCase(allowAllTransferEnforcer{}, getter, creator, updater, nsGetter, nsCreator)
 }
 
 // ---------------------------------------------------------------------------
@@ -96,7 +96,7 @@ func TestImportNamespaceUseCase_NamespaceBundleJSON_NewConfigs(t *testing.T) {
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	report, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,
@@ -130,7 +130,7 @@ func TestImportNamespaceUseCase_NamespaceBundleYAML_NewConfigs(t *testing.T) {
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	report, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundleYAML(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,
@@ -162,7 +162,13 @@ func TestImportNamespaceUseCase_NamespaceBundleZIP_NewConfigs(t *testing.T) {
 
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
-	report, err := uc.Execute(t.Context(), zipped, transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP, false, "")
+	report, err := uc.Execute(
+		transferTestCtx(),
+		zipped,
+		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
+		false,
+		"",
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, 1, report.Created)
@@ -214,7 +220,7 @@ func TestImportNamespaceUseCase_AllBundleJSON_MultipleNamespaces(t *testing.T) {
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	report, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalAllBundle(t, allBundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,
@@ -258,7 +264,13 @@ func TestImportNamespaceUseCase_AllBundleYAML(t *testing.T) {
 
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
-	report, err := uc.Execute(t.Context(), yamlData, transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP, false, "")
+	report, err := uc.Execute(
+		transferTestCtx(),
+		yamlData,
+		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
+		false,
+		"",
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, 1, report.Created)
@@ -289,7 +301,7 @@ func TestImportNamespaceUseCase_ConflictResolutionSkip(t *testing.T) {
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	report, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,
@@ -335,7 +347,7 @@ func TestImportNamespaceUseCase_ConflictResolutionOverwrite(t *testing.T) {
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	report, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_OVERWRITE,
 		false,
@@ -375,7 +387,7 @@ func TestImportNamespaceUseCase_ConflictResolutionFail(t *testing.T) {
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	report, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_FAIL,
 		false,
@@ -413,7 +425,7 @@ func TestImportNamespaceUseCase_ConflictResolutionUnspecified_DefaultsToSkip(t *
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	report, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_UNSPECIFIED,
 		false,
@@ -442,7 +454,7 @@ func TestImportNamespaceUseCase_DryRun(t *testing.T) {
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	report, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		true,
@@ -478,7 +490,7 @@ func TestImportNamespaceUseCase_DryRun_OverwriteConflict(t *testing.T) {
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	report, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_OVERWRITE,
 		true,
@@ -510,7 +522,7 @@ func TestImportNamespaceUseCase_EmptyBundleNamespace_ValidationError(t *testing.
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	_, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,
@@ -536,7 +548,7 @@ func TestImportNamespaceUseCase_CorruptJSON_ValidationError(t *testing.T) {
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	_, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		[]byte(`{corrupt json`),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,
@@ -563,7 +575,13 @@ func TestImportNamespaceUseCase_EmptyData_ValidationError(t *testing.T) {
 
 	// Empty data will unmarshal to an AllBundle with empty namespaces,
 	// then fall back to NamespaceBundle with empty namespace field → validation error.
-	_, err := uc.Execute(t.Context(), []byte(`{}`), transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP, false, "")
+	_, err := uc.Execute(
+		transferTestCtx(),
+		[]byte(`{}`),
+		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
+		false,
+		"",
+	)
 
 	require.Error(t, err)
 	var ve *domain.ValidationError
@@ -610,7 +628,7 @@ func TestImportNamespaceUseCase_TargetNamespace_OverridesBundleNamespace(t *test
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	report, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,
@@ -648,7 +666,7 @@ func TestImportNamespaceUseCase_TargetNamespace_NamespaceAlreadyExists(t *testin
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	_, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,
@@ -690,7 +708,7 @@ func TestImportNamespaceUseCase_TargetNamespace_NamespaceNotFound_Creates(t *tes
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	_, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,
@@ -717,7 +735,7 @@ func TestImportNamespaceUseCase_TargetNamespace_CorruptData_ValidationError(t *t
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	_, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		[]byte(`{corrupt`),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,
@@ -751,7 +769,7 @@ func TestImportNamespaceUseCase_NSGetterError_Propagated(t *testing.T) {
 	uc := newImportUC(getter, creator, updater, nsGetter, nsCreator)
 
 	_, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		marshalNamespaceBundle(t, bundle),
 		transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP,
 		false,

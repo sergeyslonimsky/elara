@@ -22,6 +22,10 @@ type Adapters struct {
 	ClientHistoryRepo *bboltadapter.ClientHistoryRepo
 	SchemaRepo        *bboltadapter.SchemaRepo
 	WebhookRepo       *bboltadapter.WebhookRepo
+	AuthUsers         *bboltadapter.UserRepo
+	AuthGroups        *bboltadapter.GroupRepo
+	AuthTokens        *bboltadapter.TokenRepo
+	AuthPolicy        *bboltadapter.PolicyRepo
 	Watch             *watchadapter.Publisher
 	WebhookDispatcher *webhookadapter.Dispatcher
 
@@ -47,12 +51,12 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 
 	clientHistoryRepo := bboltadapter.NewClientHistoryRepo(store)
 	clientHistory := monitor.NewHistoryStore(ctx, monitor.HistoryConfig{
-		MaxRecords: cfg.Clients.HistoryMaxRecords,
-		MaxAge:     cfg.Clients.HistoryMaxAge,
+		MaxRecords: cfg.Client.History.MaxRecords,
+		MaxAge:     cfg.Client.History.MaxAge,
 	}, clientHistoryRepo)
 
 	clientRegistry := monitor.NewRegistry(monitor.Config{
-		RecentEventsCapacity: cfg.Clients.RecentEventsCapacity,
+		RecentEventsCapacity: cfg.Client.RecentEvents.Capacity,
 	}, clientHistory)
 
 	watchPublisher := watchadapter.NewPublisher()
@@ -67,6 +71,10 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 		ClientHistoryRepo: clientHistoryRepo,
 		SchemaRepo:        bboltadapter.NewSchemaRepo(store),
 		WebhookRepo:       webhookRepo,
+		AuthUsers:         bboltadapter.NewUserRepo(store),
+		AuthGroups:        bboltadapter.NewGroupRepo(store),
+		AuthTokens:        bboltadapter.NewTokenRepo(store),
+		AuthPolicy:        bboltadapter.NewPolicyRepo(store),
 		Watch:             watchPublisher,
 		WebhookDispatcher: webhookDispatcher,
 		ClientHistory:     clientHistory,

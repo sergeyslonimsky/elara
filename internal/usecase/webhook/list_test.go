@@ -58,8 +58,8 @@ func TestListUseCase_Execute(t *testing.T) {
 			repo := webhook_mock.NewMockwebhookLister(ctrl)
 			repo.EXPECT().List(gomock.Any()).Return(tt.webhooks, tt.err)
 
-			uc := webhookuc.NewListUseCase(repo)
-			result, err := uc.Execute(t.Context())
+			uc := webhookuc.NewListUseCase(allowAllWebhookEnforcer{}, repo)
+			result, err := uc.Execute(webhookTestCtx())
 
 			if tt.wantErr {
 				require.Error(t, err)

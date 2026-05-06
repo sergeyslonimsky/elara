@@ -1,6 +1,7 @@
 package transfer_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -10,11 +11,20 @@ import (
 	"go.uber.org/mock/gomock"
 	"gopkg.in/yaml.v3"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
 	"github.com/sergeyslonimsky/elara/internal/usecase/transfer"
 	transfer_mock "github.com/sergeyslonimsky/elara/internal/usecase/transfer/mocks"
 )
+
+type allowAllTransferEnforcer struct{}
+
+func (allowAllTransferEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
+
+func transferTestCtx() context.Context {
+	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+}
 
 // ---------------------------------------------------------------------------
 // Tests: happy path
@@ -35,9 +45,14 @@ func TestExportNamespaceUseCase_JSONEncoding(t *testing.T) {
 	checker.EXPECT().Get(gomock.Any(), "my-ns").Return(ns, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "my-ns").Return(configs, nil)
 
-	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+	uc := transfer.NewExportNamespaceUseCase(allowAllTransferEnforcer{}, lister, checker)
 
-	payload, ct, fname, err := uc.Execute(t.Context(), "my-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
+	payload, ct, fname, err := uc.Execute(
+		transferTestCtx(),
+		"my-ns",
+		false,
+		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, "application/json", ct)
@@ -66,9 +81,14 @@ func TestExportNamespaceUseCase_YAMLEncoding(t *testing.T) {
 	checker.EXPECT().Get(gomock.Any(), "yaml-ns").Return(ns, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "yaml-ns").Return(configs, nil)
 
-	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+	uc := transfer.NewExportNamespaceUseCase(allowAllTransferEnforcer{}, lister, checker)
 
-	payload, ct, fname, err := uc.Execute(t.Context(), "yaml-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_YAML)
+	payload, ct, fname, err := uc.Execute(
+		transferTestCtx(),
+		"yaml-ns",
+		false,
+		transferv1.BundleEncoding_BUNDLE_ENCODING_YAML,
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, "application/yaml", ct)
@@ -91,10 +111,10 @@ func TestExportNamespaceUseCase_UnspecifiedEncoding_DefaultsToJSON(t *testing.T)
 	checker.EXPECT().Get(gomock.Any(), "my-ns").Return(ns, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "my-ns").Return([]*domain.Config{}, nil)
 
-	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+	uc := transfer.NewExportNamespaceUseCase(allowAllTransferEnforcer{}, lister, checker)
 
 	payload, ct, fname, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		"my-ns",
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_UNSPECIFIED,
@@ -125,9 +145,14 @@ func TestExportNamespaceUseCase_AsZip_JSON(t *testing.T) {
 	checker.EXPECT().Get(gomock.Any(), "zip-ns").Return(ns, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "zip-ns").Return([]*domain.Config{}, nil)
 
-	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+	uc := transfer.NewExportNamespaceUseCase(allowAllTransferEnforcer{}, lister, checker)
 
-	payload, ct, fname, err := uc.Execute(t.Context(), "zip-ns", true, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
+	payload, ct, fname, err := uc.Execute(
+		transferTestCtx(),
+		"zip-ns",
+		true,
+		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+	)
 
 	require.NoError(t, err)
 	assert.Equal(t, "application/zip", ct)
@@ -150,10 +175,10 @@ func TestExportNamespaceUseCase_AsZip_YAML(t *testing.T) {
 	checker.EXPECT().Get(gomock.Any(), "zip-yaml-ns").Return(ns, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "zip-yaml-ns").Return([]*domain.Config{}, nil)
 
-	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+	uc := transfer.NewExportNamespaceUseCase(allowAllTransferEnforcer{}, lister, checker)
 
 	payload, ct, fname, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		"zip-yaml-ns",
 		true,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_YAML,
@@ -182,10 +207,10 @@ func TestExportNamespaceUseCase_EmptyConfigs(t *testing.T) {
 	checker.EXPECT().Get(gomock.Any(), "empty-ns").Return(ns, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "empty-ns").Return([]*domain.Config{}, nil)
 
-	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+	uc := transfer.NewExportNamespaceUseCase(allowAllTransferEnforcer{}, lister, checker)
 
 	payload, ct, fname, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		"empty-ns",
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
@@ -214,10 +239,10 @@ func TestExportNamespaceUseCase_NamespaceNotFound_Error(t *testing.T) {
 
 	checker.EXPECT().Get(gomock.Any(), "missing-ns").Return(nil, domain.ErrNotFound)
 
-	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+	uc := transfer.NewExportNamespaceUseCase(allowAllTransferEnforcer{}, lister, checker)
 
 	_, _, _, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		"missing-ns",
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
@@ -240,10 +265,10 @@ func TestExportNamespaceUseCase_ConfigListerError_Propagated(t *testing.T) {
 	checker.EXPECT().Get(gomock.Any(), "my-ns").Return(ns, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "my-ns").Return(nil, errors.New("db connection lost"))
 
-	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+	uc := transfer.NewExportNamespaceUseCase(allowAllTransferEnforcer{}, lister, checker)
 
 	_, _, _, err := uc.Execute(
-		t.Context(),
+		transferTestCtx(),
 		"my-ns",
 		false,
 		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
@@ -279,9 +304,14 @@ func TestExportNamespaceUseCase_ConfigMetadata_Preserved(t *testing.T) {
 	checker.EXPECT().Get(gomock.Any(), "meta-ns").Return(ns, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "meta-ns").Return(configs, nil)
 
-	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+	uc := transfer.NewExportNamespaceUseCase(allowAllTransferEnforcer{}, lister, checker)
 
-	payload, _, _, err := uc.Execute(t.Context(), "meta-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
+	payload, _, _, err := uc.Execute(
+		transferTestCtx(),
+		"meta-ns",
+		false,
+		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+	)
 
 	require.NoError(t, err)
 
@@ -323,9 +353,14 @@ func TestExportNamespaceUseCase_LockState_Stripped(t *testing.T) {
 	checker.EXPECT().Get(gomock.Any(), "locked-ns").Return(ns, nil)
 	lister.EXPECT().ListAllByNamespace(gomock.Any(), "locked-ns").Return(configs, nil)
 
-	uc := transfer.NewExportNamespaceUseCase(lister, checker)
+	uc := transfer.NewExportNamespaceUseCase(allowAllTransferEnforcer{}, lister, checker)
 
-	payload, _, _, err := uc.Execute(t.Context(), "locked-ns", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON)
+	payload, _, _, err := uc.Execute(
+		transferTestCtx(),
+		"locked-ns",
+		false,
+		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+	)
 	require.NoError(t, err)
 
 	// Decode as a generic map so we catch regressions that would add a "locked"

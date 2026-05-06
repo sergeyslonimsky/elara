@@ -5,8 +5,15 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
+
+//go:generate mockgen -destination=mocks/mock_unlock.go -package=config_mock . unlockEnforcer,UnlockStore,UnlockNotifier
+
+type unlockEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type UnlockStore interface {
 	UnlockConfig(ctx context.Context, namespace, path string) error
@@ -18,15 +25,30 @@ type UnlockNotifier interface {
 }
 
 type UnlockUseCase struct {
+	enforcer unlockEnforcer
 	store    UnlockStore
 	notifier UnlockNotifier
 }
 
-func NewUnlockUseCase(store UnlockStore, notifier UnlockNotifier) *UnlockUseCase {
-	return &UnlockUseCase{store: store, notifier: notifier}
+func NewUnlockUseCase(enforcer unlockEnforcer, store UnlockStore, notifier UnlockNotifier) *UnlockUseCase {
+	return &UnlockUseCase{enforcer: enforcer, store: store, notifier: notifier}
 }
 
 func (uc *UnlockUseCase) Execute(ctx context.Context, namespace, path string) error {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return domain.ErrUnauthorized
+	}
+
+	allowed, err := uc.enforcer.Enforce(claims.Email, namespace, "config", "write")
+	if err != nil {
+		return fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return domain.ErrForbidden
+	}
+
 	if err := uc.store.UnlockConfig(ctx, namespace, path); err != nil {
 		return fmt.Errorf("unlock config: %w", err)
 	}

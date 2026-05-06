@@ -84,6 +84,13 @@ Name of the Secret (reserved for future use: OTLP auth tokens, TLS certs).
 {{- end }}
 
 {{/*
+Name of the auth Secret created by the chart (sensitive auth env vars).
+*/}}
+{{- define "elara.authSecretName" -}}
+{{- printf "%s-auth" (include "elara.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Container image reference. Prefers digest when set, otherwise tag, otherwise AppVersion.
 */}}
 {{- define "elara.image" -}}

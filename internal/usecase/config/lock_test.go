@@ -8,9 +8,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
+
+type allowAllLockEnforcer struct{}
+
+func (allowAllLockEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
+
+func lockTestCtx() context.Context {
+	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+}
 
 type stubLockStore struct {
 	locked   bool
@@ -61,9 +70,9 @@ func TestLockUseCase_EmitsWatchEvent(t *testing.T) {
 	}
 	notifier := &captureLockNotifier{}
 
-	uc := config.NewLockUseCase(store, notifier)
+	uc := config.NewLockUseCase(allowAllLockEnforcer{}, store, notifier)
 
-	require.NoError(t, uc.Execute(context.Background(), "prod", "/a.json"))
+	require.NoError(t, uc.Execute(lockTestCtx(), "prod", "/a.json"))
 
 	require.NotNil(t, notifier.lockedCfg, "publisher must receive the locked config")
 	assert.True(t, notifier.lockedCfg.Locked)
@@ -77,9 +86,9 @@ func TestLockUseCase_PropagatesLockError(t *testing.T) {
 	store := &stubLockStore{lockErr: errors.New("boom")}
 	notifier := &captureLockNotifier{}
 
-	uc := config.NewLockUseCase(store, notifier)
+	uc := config.NewLockUseCase(allowAllLockEnforcer{}, store, notifier)
 
-	require.Error(t, uc.Execute(context.Background(), "prod", "/a.json"))
+	require.Error(t, uc.Execute(lockTestCtx(), "prod", "/a.json"))
 	assert.Nil(t, notifier.lockedCfg, "publisher must not fire if store rejects")
 }
 
@@ -89,10 +98,10 @@ func TestLockUseCase_GetFailure_StillEmits(t *testing.T) {
 	store := &stubLockStore{getErr: errors.New("read failed")}
 	notifier := &captureLockNotifier{}
 
-	uc := config.NewLockUseCase(store, notifier)
+	uc := config.NewLockUseCase(allowAllLockEnforcer{}, store, notifier)
 
 	// Lock committed → no caller error, degraded event still emitted.
-	require.NoError(t, uc.Execute(context.Background(), "prod", "/a.json"))
+	require.NoError(t, uc.Execute(lockTestCtx(), "prod", "/a.json"))
 	require.NotNil(t, notifier.lockedCfg)
 	assert.True(t, notifier.lockedCfg.Locked)
 }
@@ -123,9 +132,9 @@ func TestUnlockUseCase_EmitsWatchEvent(t *testing.T) {
 	}
 	notifier := &captureLockNotifier{}
 
-	uc := config.NewUnlockUseCase(store, notifier)
+	uc := config.NewUnlockUseCase(allowAllLockEnforcer{}, store, notifier)
 
-	require.NoError(t, uc.Execute(context.Background(), "prod", "/a.json"))
+	require.NoError(t, uc.Execute(lockTestCtx(), "prod", "/a.json"))
 	require.NotNil(t, notifier.unlockedCfg)
 	assert.False(t, notifier.unlockedCfg.Locked)
 }

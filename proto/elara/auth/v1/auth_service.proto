@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package elara.auth.v1;
+
+option go_package = "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1;authv1";
+
+enum AuthType {
+  AUTH_TYPE_UNSPECIFIED = 0;
+  AUTH_TYPE_OIDC = 1;
+  AUTH_TYPE_BASIC = 2;
+  AUTH_TYPE_NONE = 3;
+}
+
+message GetAuthInfoRequest {}
+
+message GetAuthInfoResponse {
+  AuthType auth_type = 1;
+}
+
+// OIDC flow
+
+message OIDCLoginRequest {}
+
+message OIDCLoginResponse {
+  string redirect_url = 1;
+}
+
+message OIDCCallbackRequest {
+  string code = 1;
+  string state = 2;
+}
+
+message OIDCCallbackResponse {}
+
+// Basic-auth flow
+
+message BasicLoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message BasicLoginResponse {
+  bool password_change_required = 1;
+}
+
+message ChangePasswordRequest {
+  optional string current_password = 1;
+  string new_password = 2;
+}
+
+message ChangePasswordResponse {}
+
+// Shared
+
+message LogoutRequest {}
+
+message LogoutResponse {}
+
+message MeRequest {}
+
+message NamespaceAccess {
+  string name = 1;
+  bool can_write = 2;
+}
+
+message MeResponse {
+  string email = 1;
+  string name = 2;
+  string picture = 3;
+  bool is_admin = 4;
+  repeated NamespaceAccess namespaces = 5;
+  bool can_view_webhooks = 6;
+  bool can_manage_webhooks = 7;
+  bool password_change_required = 8;
+}
+
+service AuthService {
+  // Public — returns the configured auth type so the frontend knows which UI to render
+  rpc GetAuthInfo(GetAuthInfoRequest) returns (GetAuthInfoResponse);
+
+  // OIDC flow — returns redirect URL to the identity provider
+  rpc OIDCLogin(OIDCLoginRequest) returns (OIDCLoginResponse);
+
+  // OIDC flow — exchanges the provider callback code for a session cookie
+  rpc OIDCCallback(OIDCCallbackRequest) returns (OIDCCallbackResponse);
+
+  // Basic-auth flow — verifies email/password and sets a session cookie
+  rpc BasicLogin(BasicLoginRequest) returns (BasicLoginResponse);
+
+  // Basic-auth flow — changes the current user's password
+  // current_password is required unless password_change_required is true in the session
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc Me(MeRequest) returns (MeResponse);
+}

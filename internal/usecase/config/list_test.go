@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -8,10 +9,19 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 	config_mock "github.com/sergeyslonimsky/elara/internal/usecase/config/mocks"
 )
+
+type allowEnforcer struct{}
+
+func (allowEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
+
+func testCtx() context.Context {
+	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+}
 
 func TestListUseCase_DirectoryBrowsing(t *testing.T) {
 	t.Parallel()
@@ -35,10 +45,10 @@ func TestListUseCase_DirectoryBrowsing(t *testing.T) {
 	mock := config_mock.NewMockconfigLister(ctrl)
 	mock.EXPECT().ListSummariesByPrefix(gomock.Any(), gomock.Any(), gomock.Any()).Return(summaries, nil)
 
-	uc := configuc.NewListUseCase(mock)
+	uc := configuc.NewListUseCase(allowEnforcer{}, mock)
 
 	// Root level
-	result, err := uc.Execute(t.Context(), configuc.ListParams{
+	result, err := uc.Execute(testCtx(), configuc.ListParams{
 		Namespace: "default",
 		Path:      "/",
 		Limit:     50,
@@ -79,10 +89,10 @@ func TestListUseCase_SubfolderBrowsing(t *testing.T) {
 	mock := config_mock.NewMockconfigLister(ctrl)
 	mock.EXPECT().ListSummariesByPrefix(gomock.Any(), gomock.Any(), gomock.Any()).Return(summaries, nil)
 
-	uc := configuc.NewListUseCase(mock)
+	uc := configuc.NewListUseCase(allowEnforcer{}, mock)
 
 	// /services level
-	result, err := uc.Execute(t.Context(), configuc.ListParams{
+	result, err := uc.Execute(testCtx(), configuc.ListParams{
 		Namespace: "default",
 		Path:      "/services",
 		Limit:     50,
@@ -118,9 +128,9 @@ func TestListUseCase_LeafFolder(t *testing.T) {
 	mock := config_mock.NewMockconfigLister(ctrl)
 	mock.EXPECT().ListSummariesByPrefix(gomock.Any(), gomock.Any(), gomock.Any()).Return(summaries, nil)
 
-	uc := configuc.NewListUseCase(mock)
+	uc := configuc.NewListUseCase(allowEnforcer{}, mock)
 
-	result, err := uc.Execute(t.Context(), configuc.ListParams{
+	result, err := uc.Execute(testCtx(), configuc.ListParams{
 		Namespace: "default",
 		Path:      "/services/api",
 		Limit:     50,
@@ -157,10 +167,10 @@ func TestListUseCase_Pagination(t *testing.T) {
 	mock := config_mock.NewMockconfigLister(ctrl)
 	mock.EXPECT().ListSummariesByPrefix(gomock.Any(), gomock.Any(), gomock.Any()).Return(summaries, nil).Times(3)
 
-	uc := configuc.NewListUseCase(mock)
+	uc := configuc.NewListUseCase(allowEnforcer{}, mock)
 
 	// First page
-	result, err := uc.Execute(t.Context(), configuc.ListParams{
+	result, err := uc.Execute(testCtx(), configuc.ListParams{
 		Namespace: "default", Path: "/", Limit: 2, Offset: 0,
 	})
 	require.NoError(t, err)
@@ -170,7 +180,7 @@ func TestListUseCase_Pagination(t *testing.T) {
 	assert.Equal(t, "b", result.Entries[1].Name) // folder
 
 	// Second page
-	result, err = uc.Execute(t.Context(), configuc.ListParams{
+	result, err = uc.Execute(testCtx(), configuc.ListParams{
 		Namespace: "default", Path: "/", Limit: 2, Offset: 2,
 	})
 	require.NoError(t, err)
@@ -179,7 +189,7 @@ func TestListUseCase_Pagination(t *testing.T) {
 	assert.Equal(t, "d.json", result.Entries[1].Name) // file
 
 	// Third page
-	result, err = uc.Execute(t.Context(), configuc.ListParams{
+	result, err = uc.Execute(testCtx(), configuc.ListParams{
 		Namespace: "default", Path: "/", Limit: 2, Offset: 4,
 	})
 	require.NoError(t, err)
@@ -198,10 +208,10 @@ func TestListUseCase_EmptyPath(t *testing.T) {
 	mock := config_mock.NewMockconfigLister(ctrl)
 	mock.EXPECT().ListSummariesByPrefix(gomock.Any(), gomock.Any(), gomock.Any()).Return(summaries, nil)
 
-	uc := configuc.NewListUseCase(mock)
+	uc := configuc.NewListUseCase(allowEnforcer{}, mock)
 
 	// Empty path = root
-	result, err := uc.Execute(t.Context(), configuc.ListParams{
+	result, err := uc.Execute(testCtx(), configuc.ListParams{
 		Namespace: "default", Path: "", Limit: 50,
 	})
 	require.NoError(t, err)

@@ -142,8 +142,8 @@ func TestUpdateUseCase_Execute_MergesCorrectly(t *testing.T) {
 				repo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
 			}
 
-			uc := webhookuc.NewUpdateUseCase(repo)
-			result, err := uc.Execute(t.Context(), tt.existing.ID, tt.params)
+			uc := webhookuc.NewUpdateUseCase(allowAllWebhookEnforcer{}, repo)
+			result, err := uc.Execute(webhookTestCtx(), tt.existing.ID, tt.params)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -170,10 +170,10 @@ func TestUpdateUseCase_Execute_ValidationError(t *testing.T) {
 		Events: []domain.WebhookEventType{domain.WebhookEventCreated},
 	}, nil)
 
-	uc := webhookuc.NewUpdateUseCase(repo)
+	uc := webhookuc.NewUpdateUseCase(allowAllWebhookEnforcer{}, repo)
 
 	// Setting URL to an invalid value triggers a validation error.
-	_, err := uc.Execute(t.Context(), "wh-1", webhookuc.UpdateParams{
+	_, err := uc.Execute(webhookTestCtx(), "wh-1", webhookuc.UpdateParams{
 		URL:    "not-a-valid-url",
 		Events: []domain.WebhookEventType{domain.WebhookEventCreated},
 	})
@@ -190,9 +190,9 @@ func TestUpdateUseCase_Execute_GetError(t *testing.T) {
 
 	repo.EXPECT().Get(gomock.Any(), "missing").Return(nil, domain.ErrNotFound)
 
-	uc := webhookuc.NewUpdateUseCase(repo)
+	uc := webhookuc.NewUpdateUseCase(allowAllWebhookEnforcer{}, repo)
 
-	_, err := uc.Execute(t.Context(), "missing", webhookuc.UpdateParams{
+	_, err := uc.Execute(webhookTestCtx(), "missing", webhookuc.UpdateParams{
 		URL:    "https://example.com/hook",
 		Events: []domain.WebhookEventType{domain.WebhookEventCreated},
 	})
@@ -214,9 +214,9 @@ func TestUpdateUseCase_Execute_UpdateError(t *testing.T) {
 	}, nil)
 	repo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(domain.ErrNotFound)
 
-	uc := webhookuc.NewUpdateUseCase(repo)
+	uc := webhookuc.NewUpdateUseCase(allowAllWebhookEnforcer{}, repo)
 
-	_, err := uc.Execute(t.Context(), "wh-1", webhookuc.UpdateParams{
+	_, err := uc.Execute(webhookTestCtx(), "wh-1", webhookuc.UpdateParams{
 		URL:    "https://example.com/hook",
 		Events: []domain.WebhookEventType{domain.WebhookEventCreated},
 	})

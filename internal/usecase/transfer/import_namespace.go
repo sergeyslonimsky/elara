@@ -5,11 +5,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
 )
 
 //go:generate mockgen -destination=mocks/mock_import_namespace.go -package=transfer_mock . importConfigGetter,importConfigCreator,importConfigUpdater,importNSGetter,importNSCreator
+
+type importEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type importConfigGetter interface {
 	Get(ctx context.Context, path, namespace string) (*domain.Config, error)
@@ -32,6 +37,7 @@ type importNSCreator interface {
 }
 
 type ImportNamespaceUseCase struct {
+	enforcer  importEnforcer
 	configs   importConfigGetter
 	creator   importConfigCreator
 	updater   importConfigUpdater
@@ -40,6 +46,7 @@ type ImportNamespaceUseCase struct {
 }
 
 func NewImportNamespaceUseCase(
+	enforcer importEnforcer,
 	configs importConfigGetter,
 	creator importConfigCreator,
 	updater importConfigUpdater,
@@ -47,6 +54,7 @@ func NewImportNamespaceUseCase(
 	nsCreator importNSCreator,
 ) *ImportNamespaceUseCase {
 	return &ImportNamespaceUseCase{
+		enforcer:  enforcer,
 		configs:   configs,
 		creator:   creator,
 		updater:   updater,
@@ -62,6 +70,10 @@ func (uc *ImportNamespaceUseCase) Execute(
 	dryRun bool,
 	targetNamespace string,
 ) (*domain.ImportReport, error) {
+	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, auth.ObjectTransfer, auth.ActionWrite); err != nil {
+		return nil, fmt.Errorf("check access: %w", err)
+	}
+
 	if onConflict == transferv1.ConflictResolution_CONFLICT_RESOLUTION_UNSPECIFIED {
 		onConflict = transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP
 	}

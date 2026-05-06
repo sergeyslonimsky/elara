@@ -4,22 +4,44 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
+
+//go:generate mockgen -destination=mocks/mock_get.go -package=schema_mock . schemaGetEnforcer,schemaGetter
+
+type schemaGetEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type schemaGetter interface {
 	Get(ctx context.Context, namespace, pathPattern string) (*domain.SchemaAttachment, error)
 }
 
 type GetUseCase struct {
-	store schemaGetter
+	enforcer schemaGetEnforcer
+	store    schemaGetter
 }
 
-func NewGetUseCase(store schemaGetter) *GetUseCase {
-	return &GetUseCase{store: store}
+func NewGetUseCase(enforcer schemaGetEnforcer, store schemaGetter) *GetUseCase {
+	return &GetUseCase{enforcer: enforcer, store: store}
 }
 
 func (uc *GetUseCase) Execute(ctx context.Context, namespace, pathPattern string) (*domain.SchemaAttachment, error) {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
+	}
+
+	allowed, err := uc.enforcer.Enforce(claims.Email, namespace, "schema", "read")
+	if err != nil {
+		return nil, fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return nil, domain.ErrForbidden
+	}
+
 	s, err := uc.store.Get(ctx, namespace, pathPattern)
 	if err != nil {
 		return nil, fmt.Errorf("get schema: %w", err)

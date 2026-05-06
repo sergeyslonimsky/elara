@@ -4,10 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_history.go -package=config_mock . historyEnforcer,configHistoryReader
+
 const defaultHistoryLimit = 20
+
+type historyEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type configHistoryReader interface {
 	GetConfigHistory(ctx context.Context, path, namespace string, limit int) ([]*domain.HistoryEntry, error)
@@ -15,11 +22,12 @@ type configHistoryReader interface {
 }
 
 type HistoryUseCase struct {
-	configs configHistoryReader
+	enforcer historyEnforcer
+	configs  configHistoryReader
 }
 
-func NewHistoryUseCase(configs configHistoryReader) *HistoryUseCase {
-	return &HistoryUseCase{configs: configs}
+func NewHistoryUseCase(enforcer historyEnforcer, configs configHistoryReader) *HistoryUseCase {
+	return &HistoryUseCase{enforcer: enforcer, configs: configs}
 }
 
 func (uc *HistoryUseCase) GetHistory(
@@ -29,6 +37,20 @@ func (uc *HistoryUseCase) GetHistory(
 ) ([]*domain.HistoryEntry, error) {
 	if namespace == "" {
 		return nil, domain.NewValidationError("namespace", "namespace is required")
+	}
+
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
+	}
+
+	allowed, err := uc.enforcer.Enforce(claims.Email, namespace, "config", "read")
+	if err != nil {
+		return nil, fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return nil, domain.ErrForbidden
 	}
 
 	if limit <= 0 {
@@ -50,6 +72,20 @@ func (uc *HistoryUseCase) GetAtRevision(
 ) (*domain.HistoryEntry, error) {
 	if namespace == "" {
 		return nil, domain.NewValidationError("namespace", "namespace is required")
+	}
+
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
+	}
+
+	allowed, err := uc.enforcer.Enforce(claims.Email, namespace, "config", "read")
+	if err != nil {
+		return nil, fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return nil, domain.ErrForbidden
 	}
 
 	entry, err := uc.configs.GetAtRevision(ctx, path, namespace, revision)

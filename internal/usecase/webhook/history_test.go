@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
@@ -64,8 +65,12 @@ func TestHistoryUseCase_Execute(t *testing.T) {
 				provider.EXPECT().GetDeliveryHistory(tt.webhookID).Return([]domain.DeliveryAttempt{})
 			}
 
-			uc := webhookuc.NewHistoryUseCase(provider)
-			result := uc.Execute(tt.webhookID)
+			getter := webhook_mock.NewMockhistoryWebhookGetter(ctrl)
+			getter.EXPECT().Get(gomock.Any(), tt.webhookID).Return(&domain.Webhook{ID: tt.webhookID}, nil)
+
+			uc := webhookuc.NewHistoryUseCase(allowAllWebhookEnforcer{}, provider, getter)
+			result, err := uc.Execute(webhookTestCtx(), tt.webhookID)
+			require.NoError(t, err)
 
 			assert.Len(t, result, tt.wantLen)
 		})

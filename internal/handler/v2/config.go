@@ -37,7 +37,7 @@ func NewConfigHandler(
 	list *configuc.ListUseCase,
 	history *configuc.HistoryUseCase,
 	search *configuc.SearchUseCase,
-	copyCfg *configuc.CopyUseCase,
+	copyUC *configuc.CopyUseCase,
 	validate *configuc.ValidateUseCase,
 	watch *configuc.WatchUseCase,
 	diff *configuc.DiffUseCase,
@@ -52,7 +52,7 @@ func NewConfigHandler(
 		list:     list,
 		history:  history,
 		search:   search,
-		copy:     copyCfg,
+		copy:     copyUC,
 		validate: validate,
 		watch:    watch,
 		diff:     diff,
@@ -341,7 +341,11 @@ func (h *ConfigHandler) WatchConfigs(
 	req *connect.Request[configv2.WatchConfigsRequest],
 	stream *connect.ServerStream[configv2.WatchConfigsResponse],
 ) error {
-	events, cancel := h.watch.Execute(ctx, req.Msg.GetPathPrefix(), req.Msg.GetNamespace())
+	events, cancel, err := h.watch.Execute(ctx, req.Msg.GetPathPrefix(), req.Msg.GetNamespace())
+	if err != nil {
+		return fmt.Errorf("watch configs: %w", err)
+	}
+
 	defer cancel()
 
 	for {

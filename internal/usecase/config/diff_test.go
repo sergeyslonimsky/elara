@@ -1,16 +1,26 @@
 package config_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 	config_mock "github.com/sergeyslonimsky/elara/internal/usecase/config/mocks"
 )
+
+type allowAllDiffEnforcer struct{}
+
+func (allowAllDiffEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
+
+func diffTestCtx() context.Context {
+	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+}
 
 func TestGetDiff_Validation(t *testing.T) {
 	t.Parallel()
@@ -53,7 +63,7 @@ func TestGetDiff_Validation(t *testing.T) {
 			mock := config_mock.NewMockconfigDiffReader(ctrl)
 			// No mock expectations: validation fails before any repo call.
 
-			uc := config.NewDiffUseCase(mock)
+			uc := config.NewDiffUseCase(allowAllDiffEnforcer{}, mock)
 			_, err := uc.GetDiff(t.Context(), tc.path, tc.namespace, tc.fromRevision, tc.toRevision)
 			require.Error(t, err)
 			var ve *domain.ValidationError
@@ -164,8 +174,8 @@ func TestGetDiff_Success(t *testing.T) {
 			mock := config_mock.NewMockconfigDiffReader(ctrl)
 			tc.setupMock(mock, tc.path)
 
-			uc := config.NewDiffUseCase(mock)
-			result, err := uc.GetDiff(t.Context(), tc.path, "default", tc.fromRevision, tc.toRevision)
+			uc := config.NewDiffUseCase(allowAllDiffEnforcer{}, mock)
+			result, err := uc.GetDiff(diffTestCtx(), tc.path, "default", tc.fromRevision, tc.toRevision)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.wantFromEmpty, result.FromContent == "")
@@ -189,8 +199,8 @@ func TestGetDiff_Error_RevisionNotFound(t *testing.T) {
 	mock := config_mock.NewMockconfigDiffReader(ctrl)
 	mock.EXPECT().GetAtRevision(gomock.Any(), "/app.json", "default", int64(99)).Return(nil, notFoundErr)
 
-	uc := config.NewDiffUseCase(mock)
-	_, err := uc.GetDiff(t.Context(), "/app.json", "default", 0, 99)
+	uc := config.NewDiffUseCase(allowAllDiffEnforcer{}, mock)
+	_, err := uc.GetDiff(diffTestCtx(), "/app.json", "default", 0, 99)
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, domain.ErrNotFound)

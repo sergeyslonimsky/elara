@@ -9,6 +9,8 @@
 // or operations that span multiple locks — violating it risks deadlock.
 package monitor
 
+//go:generate mockgen -destination=mocks/mock_registry.go -package=mock_monitor -source=registry.go
+
 import (
 	"strconv"
 	"sync"

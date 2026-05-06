@@ -18,6 +18,10 @@ const (
 	contentTypeJSON = "application/json"
 	contentTypeYAML = "application/yaml"
 	contentTypeZIP  = "application/zip"
+
+	extJSON = ".json"
+	extYAML = ".yaml"
+	extZIP  = ".zip"
 )
 
 var errEmptyZip = errors.New("zip archive is empty")
@@ -160,13 +164,13 @@ func isYAML(data []byte) bool {
 
 func bundleExtension(ct string, asZip bool) string {
 	if asZip {
-		return ".zip"
+		return extZIP
 	}
 
 	switch ct {
 	case contentTypeYAML:
-		return ".yaml"
+		return extYAML
 	default:
-		return ".json"
+		return extJSON
 	}
 }

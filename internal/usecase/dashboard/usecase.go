@@ -4,8 +4,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
+
+//go:generate mockgen -destination=mocks/mock_usecase.go -package=mock_dashboard . dashboardEnforcer,nsLister,configCounter,activitySource,activeClientsSource
+
+// dashboardEnforcer checks authorization for dashboard operations.
+type dashboardEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 // nsLister returns the flat list of namespaces (names only, no config count needed here).
 type nsLister interface {
@@ -38,6 +46,7 @@ type StatsResult struct {
 
 // UseCase provides data for the dashboard page.
 type UseCase struct {
+	enforcer   dashboardEnforcer
 	namespaces nsLister
 	configs    configCounter
 	activity   activitySource
@@ -45,12 +54,14 @@ type UseCase struct {
 }
 
 func NewUseCase(
+	enforcer dashboardEnforcer,
 	namespaces nsLister,
 	configs configCounter,
 	activity activitySource,
 	clients activeClientsSource,
 ) *UseCase {
 	return &UseCase{
+		enforcer:   enforcer,
 		namespaces: namespaces,
 		configs:    configs,
 		activity:   activity,
@@ -60,6 +71,20 @@ func NewUseCase(
 
 // GetStats collects KPI numbers for the dashboard header.
 func (uc *UseCase) GetStats(ctx context.Context) (*StatsResult, error) {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
+	}
+
+	allowed, err := uc.enforcer.Enforce(claims.Email, "*", "dashboard", "read")
+	if err != nil {
+		return nil, fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return nil, domain.ErrForbidden
+	}
+
 	namespaces, err := uc.namespaces.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list namespaces: %w", err)
@@ -90,6 +115,20 @@ func (uc *UseCase) GetStats(ctx context.Context) (*StatsResult, error) {
 
 // ListActivity returns the most recent changelog entries.
 func (uc *UseCase) ListActivity(ctx context.Context, limit int) ([]*domain.ChangelogEntry, error) {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
+	}
+
+	allowed, err := uc.enforcer.Enforce(claims.Email, "*", "dashboard", "read")
+	if err != nil {
+		return nil, fmt.Errorf("enforce: %w", err)
+	}
+
+	if !allowed {
+		return nil, domain.ErrForbidden
+	}
+
 	entries, err := uc.activity.ListRecentChanges(ctx, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list recent changes: %w", err)

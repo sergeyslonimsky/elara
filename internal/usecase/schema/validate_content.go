@@ -199,11 +199,9 @@ func (uc *ValidateContentUseCase) compileSchema(s *domain.SchemaAttachment) (*js
 }
 
 func collectViolations(err error) *domain.SchemaValidationError {
-	var ve *jsonschema.ValidationError
-
 	violations := []domain.SchemaViolation{}
 
-	if errors.As(err, &ve) {
+	if ve, ok := errors.AsType[*jsonschema.ValidationError](err); ok {
 		violations = walkViolations(ve, violations)
 	}
 

@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
 	webhook_mock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
 )
@@ -38,17 +39,24 @@ func TestDeleteUseCase_Execute(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
+			getter := webhook_mock.NewMockdeleteWebhookGetter(ctrl)
 			repo := webhook_mock.NewMockwebhookDeleter(ctrl)
 			clearer := webhook_mock.NewMockhistoryClearer(ctrl)
 
-			repo.EXPECT().Delete(gomock.Any(), "wh-1").Return(tt.repoErr)
+			getter.EXPECT().Get(gomock.Any(), "wh-1").Return(&domain.Webhook{ID: "wh-1"}, nil)
+
+			if !tt.wantErr {
+				repo.EXPECT().Delete(gomock.Any(), "wh-1").Return(nil)
+			} else {
+				repo.EXPECT().Delete(gomock.Any(), "wh-1").Return(tt.repoErr)
+			}
 
 			if tt.wantHistClears {
 				clearer.EXPECT().ClearHistory("wh-1")
 			}
 
-			uc := webhookuc.NewDeleteUseCase(repo, clearer)
-			err := uc.Execute(t.Context(), "wh-1")
+			uc := webhookuc.NewDeleteUseCase(allowAllWebhookEnforcer{}, getter, repo, clearer)
+			err := uc.Execute(webhookTestCtx(), "wh-1")
 
 			if tt.wantErr {
 				require.Error(t, err)

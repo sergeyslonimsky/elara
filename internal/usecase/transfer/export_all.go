@@ -7,11 +7,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
 )
 
 //go:generate mockgen -destination=mocks/mock_export_all.go -package=transfer_mock . exportAllConfigLister,exportAllNSLister
+
+type exportAllEnforcer interface {
+	Enforce(subject, domain, object, action string) (bool, error)
+}
 
 type exportAllConfigLister interface {
 	ListAllByNamespace(ctx context.Context, namespace string) ([]*domain.Config, error)
@@ -22,12 +27,17 @@ type exportAllNSLister interface {
 }
 
 type ExportAllUseCase struct {
+	enforcer   exportAllEnforcer
 	configs    exportAllConfigLister
 	namespaces exportAllNSLister
 }
 
-func NewExportAllUseCase(configs exportAllConfigLister, namespaces exportAllNSLister) *ExportAllUseCase {
-	return &ExportAllUseCase{configs: configs, namespaces: namespaces}
+func NewExportAllUseCase(
+	enforcer exportAllEnforcer,
+	configs exportAllConfigLister,
+	namespaces exportAllNSLister,
+) *ExportAllUseCase {
+	return &ExportAllUseCase{enforcer: enforcer, configs: configs, namespaces: namespaces}
 }
 
 func (uc *ExportAllUseCase) Execute(
@@ -36,6 +46,10 @@ func (uc *ExportAllUseCase) Execute(
 	enc transferv1.BundleEncoding,
 	layout transferv1.ZipLayout,
 ) ([]byte, string, string, error) {
+	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, auth.ObjectTransfer, auth.ActionWrite); err != nil {
+		return nil, "", "", fmt.Errorf("check access: %w", err)
+	}
+
 	allBundle, err := uc.buildAllBundle(ctx)
 	if err != nil {
 		return nil, "", "", err
@@ -153,9 +167,9 @@ func writeZipNamespace(zw *zip.Writer, ns *domain.NamespaceBundle, enc transferv
 		return fmt.Errorf("marshal namespace %s: %w", ns.Namespace, err)
 	}
 
-	ext := ".json"
+	ext := extJSON
 	if ct == contentTypeYAML {
-		ext = ".yaml"
+		ext = extYAML
 	}
 
 	fname := "namespaces/" + ns.Namespace + ext
