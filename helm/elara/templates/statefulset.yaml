@@ -78,10 +78,10 @@ spec:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           ports:
             - name: http
-              containerPort: {{ .Values.config.http.port }}
+              containerPort: {{ .Values.config.ui.server.port }}
               protocol: TCP
             - name: grpc
-              containerPort: {{ .Values.config.grpc.port }}
+              containerPort: {{ .Values.config.client.etcd.port }}
               protocol: TCP
           envFrom:
             - configMapRef:

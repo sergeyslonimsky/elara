@@ -13,6 +13,7 @@ lint:
 	@golangci-lint run --fix
 	@npm --prefix ./web run format
 	@npm --prefix ./web run lint:fix
+	@helm lint helm/elara
 
 .PHONY: test
 test:

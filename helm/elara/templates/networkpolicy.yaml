@@ -16,9 +16,9 @@ spec:
     {{- end }}
   ingress:
     - ports:
-        - port: {{ .Values.config.http.port }}
+        - port: {{ .Values.config.ui.server.port }}
           protocol: TCP
-        - port: {{ .Values.config.grpc.port }}
+        - port: {{ .Values.config.client.etcd.port }}
           protocol: TCP
       {{- with .Values.networkPolicy.ingress }}
       from:
