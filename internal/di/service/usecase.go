@@ -313,6 +313,8 @@ func wireUIAuthUseCases(
 		uc.AuthChangePassword = authuc.NewChangePasswordUseCase(a.AuthUsers, a.AuthUsers)
 		uc.AuthResetPassword = authuc.NewResetPasswordUseCase(enforcer, a.AuthUsers)
 		uc.AuthCreateUser = authuc.NewCreateUserUseCase(enforcer, a.AuthUsers)
+	case config.AuthTypeNone:
+		// No specific use cases to wire for AuthTypeNone
 	}
 
 	uc.AuthListUsers = authuc.NewListUsersUseCase(enforcer, a.AuthUsers)
