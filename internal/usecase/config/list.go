@@ -13,7 +13,7 @@ import (
 
 const defaultListLimit = 20
 
-//go:generate mockgen -destination=mocks/mock_list.go -package=config_mock . configLister
+//go:generate mockgen -destination=mocks/mock_list.go -package=config_mock . configLister,listEnforcer
 
 type listEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)

@@ -38,6 +38,146 @@ func (s *stubNamespaceLister) List(_ context.Context) ([]*domain.Namespace, erro
 	return s.namespaces, nil
 }
 
+func TestAuthHandler_BasicLogin(t *testing.T) {
+	t.Parallel()
+
+	email := "user@example.com"
+	password := "correct-password"
+	hash, _ := internalauth.HashPassword(password)
+
+	tests := []struct {
+		name       string
+		authType   config.AuthType
+		setupMocks func(
+			users *auth_mock.MockbasicAuthUserGetter,
+			session *auth_mock.MocksessionCreator,
+		)
+		wantErr bool
+	}{
+		{
+			name:     "success sets session cookie",
+			authType: config.AuthTypeBasicAuth,
+			setupMocks: func(users *auth_mock.MockbasicAuthUserGetter, session *auth_mock.MocksessionCreator) {
+				users.EXPECT().Get(gomock.Any(), email).Return(&domain.User{Email: email, PasswordHash: hash}, nil)
+				session.EXPECT().Create(gomock.Any()).Return("signed-token", nil)
+			},
+		},
+		{
+			name:     "returns error when auth type is not basic",
+			authType: config.AuthTypeOIDC,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			users := auth_mock.NewMockbasicAuthUserGetter(ctrl)
+			session := auth_mock.NewMocksessionCreator(ctrl)
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(users, session)
+			}
+
+			basicUC := authuc.NewBasicLoginUseCase(users, session, nil, "")
+			h := NewAuthHandler(nil, nil, nil, basicUC, nil, tt.authType)
+
+			req := connect.NewRequest(&authv1.BasicLoginRequest{
+				Email:    email,
+				Password: password,
+			})
+
+			resp, err := h.BasicLogin(t.Context(), req)
+
+			if tt.wantErr {
+				require.Error(t, err)
+
+				return
+			}
+
+			require.NoError(t, err)
+			cookies := resp.Header().Values(cookieHeader)
+			found := false
+			for _, c := range cookies {
+				if strings.Contains(c, sessionCookieName+"=signed-token") {
+					found = true
+
+					break
+				}
+			}
+			assert.True(t, found, "expected session cookie in response")
+		})
+	}
+}
+
+func TestAuthHandler_ChangePassword(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		authType   config.AuthType
+		setupMocks func(
+			reader *auth_mock.MockpasswordReader,
+			writer *auth_mock.MockpasswordWriter,
+		)
+		wantErr bool
+	}{
+		{
+			name:     "success",
+			authType: config.AuthTypeBasicAuth,
+			setupMocks: func(reader *auth_mock.MockpasswordReader, writer *auth_mock.MockpasswordWriter) {
+				reader.EXPECT().
+					Get(gomock.Any(), "user@example.com").
+					Return(&domain.User{Email: "user@example.com"}, nil)
+				writer.EXPECT().SetPassword(gomock.Any(), "user@example.com", gomock.Any(), false).Return(nil)
+			},
+		},
+		{
+			name:     "returns error when auth type is not basic",
+			authType: config.AuthTypeOIDC,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			reader := auth_mock.NewMockpasswordReader(ctrl)
+			writer := auth_mock.NewMockpasswordWriter(ctrl)
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(reader, writer)
+			}
+
+			changeUC := authuc.NewChangePasswordUseCase(reader, writer)
+			h := NewAuthHandler(nil, nil, nil, nil, changeUC, tt.authType)
+
+			ctx := internalauth.WithClaims(t.Context(), &internalauth.Claims{
+				Email:                  "user@example.com",
+				PasswordChangeRequired: true,
+			})
+
+			req := connect.NewRequest(&authv1.ChangePasswordRequest{
+				NewPassword: "new-password",
+			})
+
+			_, err := h.ChangePassword(ctx, req)
+
+			if tt.wantErr {
+				require.Error(t, err)
+
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
 func newTestAuthHandler(
 	loginUC *authuc.LoginUseCase,
 	callbackUC *authuc.CallbackUseCase,

@@ -123,3 +123,33 @@ func TestUserRepo_List_Multiple(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, users, len(emails))
 }
+
+func TestUserRepo_SetPassword(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t)
+	repo := bboltadapter.NewUserRepo(store)
+	ctx := t.Context()
+
+	email := "user@example.com"
+	user := &domain.User{Email: email, Name: "User", Provider: "basic"}
+	require.NoError(t, repo.Upsert(ctx, user))
+
+	hash := "some-hash"
+	err := repo.SetPassword(ctx, email, hash, true)
+	require.NoError(t, err)
+
+	got, err := repo.Get(ctx, email)
+	require.NoError(t, err)
+	assert.Equal(t, hash, got.PasswordHash)
+	assert.True(t, got.PasswordChangeRequired)
+
+	// Update without change required.
+	err = repo.SetPassword(ctx, email, "new-hash", false)
+	require.NoError(t, err)
+
+	got, err = repo.Get(ctx, email)
+	require.NoError(t, err)
+	assert.Equal(t, "new-hash", got.PasswordHash)
+	assert.False(t, got.PasswordChangeRequired)
+}

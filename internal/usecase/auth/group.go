@@ -1,6 +1,6 @@
 package auth
 
-//go:generate mockgen -destination=mocks/mock_group.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth groupCreator,groupGetter,groupUpdater,groupDeleter,groupLister
+//go:generate mockgen -destination=mocks/mock_group.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth groupCreator,groupGetter,groupUpdater,groupDeleter,groupLister,groupEnforcer
 
 import (
 	"context"

@@ -105,3 +105,49 @@ func TestCopy_DestinationNamespaceNotFound(t *testing.T) {
 	var ve *domain.ValidationError
 	require.ErrorAs(t, err, &ve, "expected validation error for missing destination namespace")
 }
+
+func TestCopy_Success_BetweenNamespaces(t *testing.T) {
+	t.Parallel()
+
+	source := &domain.Config{
+		Path: "/a.json", Content: `{"key": "value"}`, Format: domain.FormatJSON, Namespace: "src",
+	}
+	creator := &stubCopyCreator{}
+
+	uc := config.NewCopyUseCase(
+		allowAllCopyEnforcer{},
+		&stubCopyGetter{cfg: source},
+		creator,
+		stubCopyNotifier{},
+		&stubCopyNSChecker{ns: &domain.Namespace{Name: "dst"}},
+		stubCopyNSTimestamp{},
+	)
+
+	got, err := uc.Execute(copyTestCtx(), "/a.json", "src", "/b.json", "dst")
+	require.NoError(t, err)
+	assert.Equal(t, "/b.json", got.Path)
+	assert.Equal(t, "dst", got.Namespace)
+	assert.Equal(t, source.Content, got.Content)
+	assert.True(t, creator.called)
+}
+
+func TestCopy_DestinationAlreadyExists(t *testing.T) {
+	t.Parallel()
+
+	source := &domain.Config{
+		Path: "/a.json", Content: `{}`, Format: domain.FormatJSON, Namespace: "src",
+	}
+	creator := &stubCopyCreator{err: domain.ErrAlreadyExists}
+
+	uc := config.NewCopyUseCase(
+		allowAllCopyEnforcer{},
+		&stubCopyGetter{cfg: source},
+		creator,
+		stubCopyNotifier{},
+		&stubCopyNSChecker{ns: &domain.Namespace{Name: "dst"}},
+		stubCopyNSTimestamp{},
+	)
+
+	_, err := uc.Execute(copyTestCtx(), "/a.json", "src", "/b.json", "dst")
+	require.ErrorIs(t, err, domain.ErrAlreadyExists)
+}

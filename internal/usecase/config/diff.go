@@ -16,7 +16,7 @@ import (
 // matching the standard diff -u default.
 const diffContextLines = 3
 
-//go:generate mockgen -destination=mocks/mock_diff.go -package=config_mock . configDiffReader
+//go:generate mockgen -destination=mocks/mock_diff.go -package=config_mock . configDiffReader,diffEnforcer
 
 type diffEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)

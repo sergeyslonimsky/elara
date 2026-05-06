@@ -2,6 +2,7 @@ package bbolt_test
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -383,4 +384,102 @@ func TestConfigRepo_RevisionMonotonicallyIncreases(t *testing.T) {
 	rev, err = repo.CurrentRevision(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, int64(3), rev)
+}
+
+func TestConfigRepo_ListAllByNamespace(t *testing.T) {
+	t.Parallel()
+	store := newTestStore(t)
+	repo := bboltadapter.NewConfigRepo(store)
+	ctx := t.Context()
+
+	require.NoError(t, repo.Create(ctx, &domain.Config{Path: "/a.json", Namespace: "n1", Content: "{}"}))
+	require.NoError(t, repo.Create(ctx, &domain.Config{Path: "/b.json", Namespace: "n1", Content: "{}"}))
+	require.NoError(t, repo.Create(ctx, &domain.Config{Path: "/c.json", Namespace: "n2", Content: "{}"}))
+
+	list, err := repo.ListAllByNamespace(ctx, "n1")
+	require.NoError(t, err)
+	require.Len(t, list, 2)
+
+	paths := make([]string, len(list))
+	for i, c := range list {
+		paths[i] = c.Path
+	}
+	assert.ElementsMatch(t, []string{"/a.json", "/b.json"}, paths)
+}
+
+func TestConfigRepo_CountByNamespace(t *testing.T) {
+	t.Parallel()
+	store := newTestStore(t)
+	repo := bboltadapter.NewConfigRepo(store)
+	ctx := t.Context()
+
+	require.NoError(t, repo.Create(ctx, &domain.Config{Path: "/a.json", Namespace: "n1", Content: "{}"}))
+	require.NoError(t, repo.Create(ctx, &domain.Config{Path: "/b.json", Namespace: "n1", Content: "{}"}))
+
+	count, err := repo.CountByNamespace(ctx, "n1")
+	require.NoError(t, err)
+	assert.Equal(t, 2, count)
+
+	count, err = repo.CountByNamespace(ctx, "n2")
+	require.NoError(t, err)
+	assert.Equal(t, 0, count)
+}
+
+func TestConfigRepo_ListConfigPage(t *testing.T) {
+	t.Parallel()
+	store := newTestStore(t)
+	repo := bboltadapter.NewConfigRepo(store)
+	ctx := t.Context()
+
+	for i := range 3 {
+		path := fmt.Sprintf("/cfg%d.json", i)
+		require.NoError(t, repo.Create(ctx, &domain.Config{Path: path, Namespace: "ns", Content: "{}"}))
+	}
+
+	// first page: offset 0, limit 2 → cfg0, cfg1
+	page1, total, err := repo.ListConfigPage(ctx, "/", "ns", 2, 0)
+	require.NoError(t, err)
+	assert.Equal(t, 3, total)
+	require.Len(t, page1, 2)
+	assert.Equal(t, "/cfg0.json", page1[0].Path)
+	assert.Equal(t, "/cfg1.json", page1[1].Path)
+
+	// second page: offset 2, limit 2 → cfg2 only
+	page2, total, err := repo.ListConfigPage(ctx, "/", "ns", 2, 2)
+	require.NoError(t, err)
+	assert.Equal(t, 3, total)
+	require.Len(t, page2, 1)
+	assert.Equal(t, "/cfg2.json", page2[0].Path)
+}
+
+func TestConfigRepo_GetAtRevision(t *testing.T) {
+	t.Parallel()
+	store := newTestStore(t)
+	repo := bboltadapter.NewConfigRepo(store)
+	ctx := t.Context()
+
+	cfg := &domain.Config{Path: "/test.json", Namespace: "ns", Content: "v1"}
+	require.NoError(t, repo.Create(ctx, cfg)) // rev 1
+
+	cfg.Content = "v2"
+	require.NoError(t, repo.Update(ctx, cfg)) // rev 2
+
+	entry, err := repo.GetAtRevision(ctx, "/test.json", "ns", 1)
+	require.NoError(t, err)
+	assert.Equal(t, "v1", entry.Content)
+	assert.Equal(t, int64(1), entry.Revision)
+
+	entry, err = repo.GetAtRevision(ctx, "/test.json", "ns", 2)
+	require.NoError(t, err)
+	assert.Equal(t, "v2", entry.Content)
+	assert.Equal(t, int64(2), entry.Revision)
+
+	// Revision 3 (doesn't exist, should return closest earlier, which is 2)
+	entry, err = repo.GetAtRevision(ctx, "/test.json", "ns", 3)
+	require.NoError(t, err)
+	assert.Equal(t, "v2", entry.Content)
+
+	// Revision 0 (invalid)
+	_, err = repo.GetAtRevision(ctx, "/test.json", "ns", 0)
+	require.Error(t, err)
 }

@@ -10,6 +10,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
+//go:generate mockgen -destination=mocks/mock_copy.go -package=config_mock . copyEnforcer,copyConfigGetter,copyConfigCreator,copyWatchNotifier,copyNSChecker,copyNSTimestampUpdater
+
 type copyEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
 }
