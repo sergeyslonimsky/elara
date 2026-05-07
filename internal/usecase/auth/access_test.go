@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/auth"
@@ -13,99 +15,239 @@ import (
 	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
 
-var errTest = errors.New("test error")
-
-func accessTestCtx() context.Context {
-	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
-}
-
-func TestAssignRevokeRoleUseCase_Execute(t *testing.T) {
+func TestAssignRoleUseCase_Execute(t *testing.T) {
 	t.Parallel()
 
-	type executor interface {
-		Execute(ctx context.Context, subject, domain, role string) error
-	}
+	subject := "devops"
+	dom := "prod"
+	role := "role:admin"
+	adminEmail := "admin@example.com"
 
 	tests := []struct {
-		name      string
-		buildUC   func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) executor
-		setupMock func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder)
-		wantErr   bool
+		name     string
+		mockFunc func(context.Context, *gomock.Controller) (*authuc.AssignRoleUseCase, context.Context)
+		errIs    error
+		wantErr  string
 	}{
 		{
-			name: "assigns role successfully - subject is not a group",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) executor {
-				return authuc.NewAssignRoleUseCase(e, g)
-			},
-			setupMock: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) {
-				e.EXPECT().Enforce("test@example.com", "*", "policy", "write").Return(true, nil)
-				e.EXPECT().AddRoleForUser("user@example.com", "role:admin", "*").Return(nil)
-				g.EXPECT().FindByName(gomock.Any(), "user@example.com").
-					Return(nil, domain.NewNotFoundError("group", "user@example.com"))
-			},
-		},
-		{
-			name: "assign: enforcer add error propagated",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) executor {
-				return authuc.NewAssignRoleUseCase(e, g)
-			},
-			setupMock: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) {
-				e.EXPECT().Enforce("test@example.com", "*", "policy", "write").Return(true, nil)
-				e.EXPECT().AddRoleForUser(gomock.Any(), gomock.Any(), gomock.Any()).Return(errTest)
-			},
-			wantErr: true,
-		},
-		{
-			name: "revokes role successfully - subject is not a group",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) executor {
-				return authuc.NewRevokeRoleUseCase(e, g)
-			},
-			setupMock: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) {
-				e.EXPECT().Enforce("test@example.com", "*", "policy", "write").Return(true, nil)
-				e.EXPECT().RemoveRoleForUser("user@example.com", "role:admin", "*").Return(nil)
-				g.EXPECT().FindByName(gomock.Any(), "user@example.com").
-					Return(nil, domain.NewNotFoundError("group", "user@example.com"))
+			name: "assign: subject is a group with 2 members -> members synced",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.AssignRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+
+				enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(true, nil)
+				enforcer.EXPECT().AddRoleForUser(subject, role, dom).Return(nil)
+
+				groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
+					Name: subject, Members: []string{"user1@example.com", "user2@example.com"},
+				}, nil)
+
+				enforcer.EXPECT().AddRoleForUser("user1@example.com", subject, dom).Return(nil)
+				enforcer.EXPECT().AddRoleForUser("user2@example.com", subject, dom).Return(nil)
+
+				return authuc.NewAssignRoleUseCase(enforcer, groups), ctx
 			},
 		},
 		{
-			name: "revoke: enforcer remove error propagated",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) executor {
-				return authuc.NewRevokeRoleUseCase(e, g)
+			name: "assign: subject is a group with no members -> no member calls",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.AssignRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+
+				enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				enforcer.EXPECT().AddRoleForUser(subject, role, dom).Return(nil)
+
+				groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
+					Name: subject, Members: []string{},
+				}, nil)
+
+				return authuc.NewAssignRoleUseCase(enforcer, groups), ctx
 			},
-			setupMock: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) {
-				e.EXPECT().Enforce("test@example.com", "*", "policy", "write").Return(true, nil)
-				e.EXPECT().
-					RemoveRoleForUser(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(errTest)
+		},
+		{
+			name: "assign: FindByName returns ErrNotFound -> success (subject is a user)",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.AssignRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+
+				enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				enforcer.EXPECT().AddRoleForUser(subject, role, dom).Return(nil)
+
+				groups.EXPECT().FindByName(ctx, subject).Return(nil, domain.ErrNotFound)
+
+				return authuc.NewAssignRoleUseCase(enforcer, groups), ctx
 			},
-			wantErr: true,
+		},
+		{
+			name: "assign: FindByName returns unexpected error -> returns error",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.AssignRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+
+				enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				enforcer.EXPECT().AddRoleForUser(subject, role, dom).Return(nil)
+
+				groups.EXPECT().FindByName(ctx, subject).Return(nil, errors.New("db error"))
+
+				return authuc.NewAssignRoleUseCase(enforcer, groups), ctx
+			},
+			wantErr: "find group by name",
+		},
+		{
+			name: "unauthorized",
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*authuc.AssignRoleUseCase, context.Context) {
+				return authuc.NewAssignRoleUseCase(nil, nil), ctx
+			},
+			errIs: domain.ErrUnauthorized,
+		},
+		{
+			name: "forbidden",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.AssignRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(false, nil)
+
+				return authuc.NewAssignRoleUseCase(enforcer, nil), ctx
+			},
+			errIs: domain.ErrForbidden,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
-			groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+			sut, ctx := tt.mockFunc(t.Context(), ctrl)
 
-			tc.setupMock(enforcer, groups)
+			err := sut.Execute(ctx, subject, dom, role)
 
-			uc := tc.buildUC(enforcer, groups)
-			err := uc.Execute(accessTestCtx(), "user@example.com", "*", "role:admin")
-
-			if tc.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
+			if tt.errIs != nil {
+				require.ErrorIs(t, err, tt.errIs)
 
 				return
 			}
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
 
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
+				return
 			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestRevokeRoleUseCase_Execute(t *testing.T) {
+	t.Parallel()
+
+	subject := "devops"
+	dom := "prod"
+	role := "role:admin"
+	adminEmail := "admin@example.com"
+
+	tests := []struct {
+		name     string
+		mockFunc func(context.Context, *gomock.Controller) (*authuc.RevokeRoleUseCase, context.Context)
+		errIs    error
+		wantErr  string
+	}{
+		{
+			name: "revoke: subject is a group with 2 members -> members synced",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.RevokeRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+
+				enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(true, nil)
+				enforcer.EXPECT().RemoveRoleForUser(subject, role, dom).Return(nil)
+
+				groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
+					Name: subject, Members: []string{"user1@example.com", "user2@example.com"},
+				}, nil)
+
+				enforcer.EXPECT().RemoveRoleForUser("user1@example.com", subject, dom).Return(nil)
+				enforcer.EXPECT().RemoveRoleForUser("user2@example.com", subject, dom).Return(nil)
+
+				return authuc.NewRevokeRoleUseCase(enforcer, groups), ctx
+			},
+		},
+		{
+			name: "revoke: subject is a group with no members -> no member calls",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.RevokeRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+
+				enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				enforcer.EXPECT().RemoveRoleForUser(subject, role, dom).Return(nil)
+
+				groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
+					Name: subject, Members: []string{},
+				}, nil)
+
+				return authuc.NewRevokeRoleUseCase(enforcer, groups), ctx
+			},
+		},
+		{
+			name: "revoke: FindByName returns unexpected error -> returns error",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.RevokeRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+
+				enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				enforcer.EXPECT().RemoveRoleForUser(subject, role, dom).Return(nil)
+
+				groups.EXPECT().FindByName(ctx, subject).Return(nil, errors.New("db error"))
+
+				return authuc.NewRevokeRoleUseCase(enforcer, groups), ctx
+			},
+			wantErr: "find group by name",
+		},
+		{
+			name: "unauthorized",
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*authuc.RevokeRoleUseCase, context.Context) {
+				return authuc.NewRevokeRoleUseCase(nil, nil), ctx
+			},
+			errIs: domain.ErrUnauthorized,
+		},
+		{
+			name: "forbidden",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.RevokeRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(false, nil)
+
+				return authuc.NewRevokeRoleUseCase(enforcer, nil), ctx
+			},
+			errIs: domain.ErrForbidden,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			sut, ctx := tt.mockFunc(t.Context(), ctrl)
+
+			err := sut.Execute(ctx, subject, dom, role)
+
+			if tt.errIs != nil {
+				require.ErrorIs(t, err, tt.errIs)
+
+				return
+			}
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
@@ -113,50 +255,97 @@ func TestAssignRevokeRoleUseCase_Execute(t *testing.T) {
 func TestListPoliciesUseCase_Execute(t *testing.T) {
 	t.Parallel()
 
+	adminEmail := "admin@example.com"
+
 	tests := []struct {
-		name    string
-		rules   [][]string
-		wantLen int
+		name     string
+		mockFunc func(context.Context, *gomock.Controller) (*authuc.ListPoliciesUseCase, context.Context)
+		wantLen  int
+		errIs    error
 	}{
 		{
 			name: "filters out membership records, keeps known roles",
-			rules: [][]string{
-				{"user@example.com", "admin", "*"},
-				{"devops", "writer", "prod"},
-				{"user@example.com", "devops", "prod"}, // membership record — filtered out
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.ListPoliciesUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+
+				enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "read").Return(true, nil)
+				rules := [][]string{
+					{"user@example.com", "admin", "*"},
+					{"devops", "writer", "prod"},
+					{"user@example.com", "devops", "prod"}, // membership record — filtered out
+				}
+				enforcer.EXPECT().GetGroupingPolicy().Return(rules)
+
+				return authuc.NewListPoliciesUseCase(enforcer), ctx
 			},
 			wantLen: 2,
 		},
 		{
-			name:    "skips malformed rules",
-			rules:   [][]string{{"user@example.com", "admin"}, {"valid@example.com", "reader", "*"}},
-			wantLen: 1,
+			name: "all rules are membership records -> empty result",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.ListPoliciesUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+
+				enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				enforcer.EXPECT().GetGroupingPolicy().Return([][]string{
+					{"user1@example.com", "devops", "prod"},
+					{"user2@example.com", "devops", "prod"},
+				})
+
+				return authuc.NewListPoliciesUseCase(enforcer), ctx
+			},
+			wantLen: 0,
 		},
 		{
-			name:    "empty rules returns empty slice",
-			rules:   [][]string{},
+			name: "empty rules -> empty result",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.ListPoliciesUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+
+				enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				enforcer.EXPECT().GetGroupingPolicy().Return(nil)
+
+				return authuc.NewListPoliciesUseCase(enforcer), ctx
+			},
 			wantLen: 0,
+		},
+		{
+			name: "unauthorized",
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*authuc.ListPoliciesUseCase, context.Context) {
+				return authuc.NewListPoliciesUseCase(nil), ctx
+			},
+			errIs: domain.ErrUnauthorized,
+		},
+		{
+			name: "forbidden",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.ListPoliciesUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "read").Return(false, nil)
+
+				return authuc.NewListPoliciesUseCase(enforcer), ctx
+			},
+			errIs: domain.ErrForbidden,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
-			enforcer.EXPECT().Enforce("test@example.com", "*", "policy", "read").Return(true, nil)
-			enforcer.EXPECT().GetGroupingPolicy().Return(tc.rules)
+			sut, ctx := tt.mockFunc(t.Context(), ctrl)
 
-			uc := authuc.NewListPoliciesUseCase(enforcer)
-			got, err := uc.Execute(accessTestCtx())
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+			got, err := sut.Execute(ctx)
 
-			if len(got) != tc.wantLen {
-				t.Errorf("got %d rules, want %d", len(got), tc.wantLen)
+			if tt.errIs != nil {
+				require.ErrorIs(t, err, tt.errIs)
+
+				return
 			}
+			require.NoError(t, err)
+			assert.Len(t, got, tt.wantLen)
 		})
 	}
 }
