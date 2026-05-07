@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
@@ -13,12 +14,18 @@ import (
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 )
 
+var (
+	errOIDCWithPassword        = errors.New("initial_password must not be set in OIDC mode")
+	errBasicAuthWithNoPassword = errors.New("initial_password is required in basic-auth mode")
+)
+
 // UserHandler implements authv1connect.UserServiceHandler.
 type UserHandler struct {
 	list          *authuc.ListUsersUseCase
 	get           *authuc.GetUserUseCase
 	createUser    *authuc.CreateUserUseCase
 	resetPassword *authuc.ResetPasswordUseCase
+	deleteUser    *authuc.DeleteUserUseCase
 	authType      config.AuthType
 }
 
@@ -28,6 +35,7 @@ func NewUserHandler(
 	get *authuc.GetUserUseCase,
 	createUser *authuc.CreateUserUseCase,
 	resetPassword *authuc.ResetPasswordUseCase,
+	deleteUser *authuc.DeleteUserUseCase,
 	authType config.AuthType,
 ) *UserHandler {
 	return &UserHandler{
@@ -35,6 +43,7 @@ func NewUserHandler(
 		get:           get,
 		createUser:    createUser,
 		resetPassword: resetPassword,
+		deleteUser:    deleteUser,
 		authType:      authType,
 	}
 }
@@ -72,14 +81,24 @@ func (h *UserHandler) CreateUser(
 	ctx context.Context,
 	req *connect.Request[authv1.CreateUserRequest],
 ) (*connect.Response[authv1.CreateUserResponse], error) {
-	if h.authType != config.AuthTypeBasicAuth {
+	if h.authType == config.AuthTypeNone {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf(
-				"user creation is not available: auth type is %s: %w",
-				h.authType,
-				domain.ErrFeatureNotAvailable,
-			),
+			fmt.Errorf("user creation is not available: auth type is none: %w", domain.ErrFeatureNotAvailable),
+		)
+	}
+
+	if h.authType == config.AuthTypeOIDC && req.Msg.GetInitialPassword() != "" {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			errOIDCWithPassword,
+		)
+	}
+
+	if h.authType == config.AuthTypeBasicAuth && req.Msg.GetInitialPassword() == "" {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			errBasicAuthWithNoPassword,
 		)
 	}
 
@@ -112,6 +131,28 @@ func (h *UserHandler) ResetUserPassword(
 	}
 
 	return connect.NewResponse(&authv1.ResetUserPasswordResponse{}), nil
+}
+
+func (h *UserHandler) DeleteUser(
+	ctx context.Context,
+	req *connect.Request[authv1.DeleteUserRequest],
+) (*connect.Response[authv1.DeleteUserResponse], error) {
+	if h.authType != config.AuthTypeBasicAuth {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf(
+				"user deletion is not available: auth type is %s: %w",
+				h.authType,
+				domain.ErrFeatureNotAvailable,
+			),
+		)
+	}
+
+	if err := h.deleteUser.Execute(ctx, req.Msg.GetEmail()); err != nil {
+		return nil, toConnectError(err)
+	}
+
+	return connect.NewResponse(&authv1.DeleteUserResponse{}), nil
 }
 
 func domainUserToProto(u *domain.User) *authv1.User {

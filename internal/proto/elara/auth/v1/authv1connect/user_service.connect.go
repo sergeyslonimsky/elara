@@ -42,6 +42,8 @@ const (
 	// UserServiceResetUserPasswordProcedure is the fully-qualified name of the UserService's
 	// ResetUserPassword RPC.
 	UserServiceResetUserPasswordProcedure = "/elara.auth.v1.UserService/ResetUserPassword"
+	// UserServiceDeleteUserProcedure is the fully-qualified name of the UserService's DeleteUser RPC.
+	UserServiceDeleteUserProcedure = "/elara.auth.v1.UserService/DeleteUser"
 )
 
 // UserServiceClient is a client for the elara.auth.v1.UserService service.
@@ -51,6 +53,7 @@ type UserServiceClient interface {
 	// basic-auth only
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
 	ResetUserPassword(context.Context, *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error)
+	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 }
 
 // NewUserServiceClient constructs a client for the elara.auth.v1.UserService service. By default,
@@ -88,6 +91,12 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("ResetUserPassword")),
 			connect.WithClientOptions(opts...),
 		),
+		deleteUser: connect.NewClient[v1.DeleteUserRequest, v1.DeleteUserResponse](
+			httpClient,
+			baseURL+UserServiceDeleteUserProcedure,
+			connect.WithSchema(userServiceMethods.ByName("DeleteUser")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -97,6 +106,7 @@ type userServiceClient struct {
 	getUser           *connect.Client[v1.GetUserRequest, v1.GetUserResponse]
 	createUser        *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
 	resetUserPassword *connect.Client[v1.ResetUserPasswordRequest, v1.ResetUserPasswordResponse]
+	deleteUser        *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
 }
 
 // ListUsers calls elara.auth.v1.UserService.ListUsers.
@@ -119,6 +129,11 @@ func (c *userServiceClient) ResetUserPassword(ctx context.Context, req *connect.
 	return c.resetUserPassword.CallUnary(ctx, req)
 }
 
+// DeleteUser calls elara.auth.v1.UserService.DeleteUser.
+func (c *userServiceClient) DeleteUser(ctx context.Context, req *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error) {
+	return c.deleteUser.CallUnary(ctx, req)
+}
+
 // UserServiceHandler is an implementation of the elara.auth.v1.UserService service.
 type UserServiceHandler interface {
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
@@ -126,6 +141,7 @@ type UserServiceHandler interface {
 	// basic-auth only
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
 	ResetUserPassword(context.Context, *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error)
+	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -159,6 +175,12 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("ResetUserPassword")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceDeleteUserHandler := connect.NewUnaryHandler(
+		UserServiceDeleteUserProcedure,
+		svc.DeleteUser,
+		connect.WithSchema(userServiceMethods.ByName("DeleteUser")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/elara.auth.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceListUsersProcedure:
@@ -169,6 +191,8 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 			userServiceCreateUserHandler.ServeHTTP(w, r)
 		case UserServiceResetUserPasswordProcedure:
 			userServiceResetUserPasswordHandler.ServeHTTP(w, r)
+		case UserServiceDeleteUserProcedure:
+			userServiceDeleteUserHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -192,4 +216,8 @@ func (UnimplementedUserServiceHandler) CreateUser(context.Context, *connect.Requ
 
 func (UnimplementedUserServiceHandler) ResetUserPassword(context.Context, *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.UserService.ResetUserPassword is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.UserService.DeleteUser is not implemented"))
 }

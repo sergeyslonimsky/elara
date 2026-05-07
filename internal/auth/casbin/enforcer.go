@@ -177,6 +177,15 @@ func (e *Enforcer) GetGroupingPolicy() [][]string {
 	return rules
 }
 
+// DeleteUser removes all g-rules where the given email appears as subject.
+func (e *Enforcer) DeleteUser(email string) error {
+	if _, err := e.e.DeleteUser(email); err != nil {
+		return fmt.Errorf("delete user from casbin: %w", err)
+	}
+
+	return nil
+}
+
 // GetRulesForSubject returns all [subject, role, domain] g-rules where subject matches.
 func (e *Enforcer) GetRulesForSubject(subject string) [][]string {
 	all, _ := e.e.GetGroupingPolicy()

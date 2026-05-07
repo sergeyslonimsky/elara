@@ -23,16 +23,18 @@ func TestCreateUserUseCase_Execute(t *testing.T) {
 	password := "initial-password"
 
 	tests := []struct {
-		name     string
-		email    string
-		mockFunc func(context.Context, *gomock.Controller) (*authuc.CreateUserUseCase, context.Context)
-		errIs    error
-		wantErr  string
-		want     *domain.User
+		name         string
+		email        string
+		password     string
+		mockFunc     func(context.Context, *gomock.Controller) (*authuc.CreateUserUseCase, context.Context)
+		errIs        error
+		wantErr      string
+		wantProvider string
 	}{
 		{
-			name:  "success",
-			email: email,
+			name:     "success",
+			email:    email,
+			password: password,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.CreateUserUseCase, context.Context) {
 				claims := &auth.Claims{Email: adminEmail}
 				ctx = auth.WithClaims(ctx, claims)
@@ -48,15 +50,41 @@ func TestCreateUserUseCase_Execute(t *testing.T) {
 
 				return authuc.NewCreateUserUseCase(mockEnforcer, mockUsers), ctx
 			},
-			want: &domain.User{
-				Email:    email,
-				Name:     name,
-				Provider: domain.ProviderBasicAuth,
-			},
+			wantProvider: domain.ProviderBasicAuth,
 		},
 		{
-			name:  "validation error",
-			email: "invalid-email",
+			name:     "OIDC pre-create (empty password)",
+			email:    email,
+			password: "",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.CreateUserUseCase, context.Context) {
+				claims := &auth.Claims{Email: adminEmail}
+				ctx = auth.WithClaims(ctx, claims)
+
+				mockEnforcer := mock_auth.NewMockcreateUserEnforcer(ctrl)
+				mockUsers := mock_auth.NewMockuserCreator(ctrl)
+
+				mockEnforcer.EXPECT().
+					Enforce(adminEmail, auth.ObjectAll, auth.ObjectUser, auth.ActionWrite).
+					Return(true, nil)
+
+				mockUsers.EXPECT().
+					Upsert(ctx, gomock.Cond(func(x any) bool {
+						u, ok := x.(*domain.User)
+
+						return ok && u.Provider == domain.ProviderOIDC
+					})).
+					Return(nil)
+
+				// SetPassword NOT called
+
+				return authuc.NewCreateUserUseCase(mockEnforcer, mockUsers), ctx
+			},
+			wantProvider: domain.ProviderOIDC,
+		},
+		{
+			name:     "validation error",
+			email:    "invalid-email",
+			password: password,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.CreateUserUseCase, context.Context) {
 				claims := &auth.Claims{Email: adminEmail}
 				ctx = auth.WithClaims(ctx, claims)
@@ -71,8 +99,9 @@ func TestCreateUserUseCase_Execute(t *testing.T) {
 			wantErr: "validate user",
 		},
 		{
-			name:  "forbidden",
-			email: email,
+			name:     "forbidden",
+			email:    email,
+			password: password,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.CreateUserUseCase, context.Context) {
 				claims := &auth.Claims{Email: "user@example.com"}
 				ctx = auth.WithClaims(ctx, claims)
@@ -87,16 +116,18 @@ func TestCreateUserUseCase_Execute(t *testing.T) {
 			errIs: domain.ErrForbidden,
 		},
 		{
-			name:  "unauthorized",
-			email: email,
+			name:     "unauthorized",
+			email:    email,
+			password: password,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.CreateUserUseCase, context.Context) {
 				return authuc.NewCreateUserUseCase(nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,
 		},
 		{
-			name:  "upsert fails",
-			email: email,
+			name:     "upsert fails",
+			email:    email,
+			password: password,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.CreateUserUseCase, context.Context) {
 				claims := &auth.Claims{Email: adminEmail}
 				ctx = auth.WithClaims(ctx, claims)
@@ -113,6 +144,27 @@ func TestCreateUserUseCase_Execute(t *testing.T) {
 			},
 			wantErr: "upsert user",
 		},
+		{
+			name:     "set password fails",
+			email:    email,
+			password: password,
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.CreateUserUseCase, context.Context) {
+				claims := &auth.Claims{Email: adminEmail}
+				ctx = auth.WithClaims(ctx, claims)
+
+				mockEnforcer := mock_auth.NewMockcreateUserEnforcer(ctrl)
+				mockUsers := mock_auth.NewMockuserCreator(ctrl)
+
+				mockEnforcer.EXPECT().
+					Enforce(adminEmail, auth.ObjectAll, auth.ObjectUser, auth.ActionWrite).
+					Return(true, nil)
+				mockUsers.EXPECT().Upsert(ctx, gomock.Any()).Return(nil)
+				mockUsers.EXPECT().SetPassword(ctx, email, gomock.Any(), true).Return(assert.AnError)
+
+				return authuc.NewCreateUserUseCase(mockEnforcer, mockUsers), ctx
+			},
+			wantErr: "set password",
+		},
 	}
 
 	for _, tt := range tests {
@@ -122,7 +174,7 @@ func TestCreateUserUseCase_Execute(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			sut, ctx := tt.mockFunc(t.Context(), ctrl)
 
-			got, err := sut.Execute(ctx, tt.email, name, password)
+			got, err := sut.Execute(ctx, tt.email, name, tt.password)
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
@@ -135,7 +187,9 @@ func TestCreateUserUseCase_Execute(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.email, got.Email)
+			assert.Equal(t, name, got.Name)
+			assert.Equal(t, tt.wantProvider, got.Provider)
 		})
 	}
 }
