@@ -98,6 +98,38 @@ func TestAssignRoleUseCase_Execute(t *testing.T) {
 			wantErr: "find group by name",
 		},
 		{
+			name: "enforce error",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.AssignRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				enforcer.EXPECT().
+					Enforce(adminEmail, "*", "policy", "write").
+					Return(false, errors.New("enforce failed"))
+
+				return authuc.NewAssignRoleUseCase(enforcer, nil), ctx
+			},
+			wantErr: "enforce",
+		},
+		{
+			name: "sync group member fails",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.AssignRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+
+				enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(true, nil)
+				enforcer.EXPECT().AddRoleForUser(subject, role, dom).Return(nil)
+
+				groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
+					Name: subject, Members: []string{"member@example.com"},
+				}, nil)
+				enforcer.EXPECT().AddRoleForUser("member@example.com", subject, dom).Return(errors.New("casbin error"))
+
+				return authuc.NewAssignRoleUseCase(enforcer, groups), ctx
+			},
+			wantErr: "sync group member",
+		},
+		{
 			name: "unauthorized",
 			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*authuc.AssignRoleUseCase, context.Context) {
 				return authuc.NewAssignRoleUseCase(nil, nil), ctx
@@ -207,6 +239,40 @@ func TestRevokeRoleUseCase_Execute(t *testing.T) {
 				return authuc.NewRevokeRoleUseCase(enforcer, groups), ctx
 			},
 			wantErr: "find group by name",
+		},
+		{
+			name: "enforce error",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.RevokeRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				enforcer.EXPECT().
+					Enforce(adminEmail, "*", "policy", "write").
+					Return(false, errors.New("enforce failed"))
+
+				return authuc.NewRevokeRoleUseCase(enforcer, nil), ctx
+			},
+			wantErr: "enforce",
+		},
+		{
+			name: "sync revoke group member fails",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.RevokeRoleUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
+				enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+				groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+
+				enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(true, nil)
+				enforcer.EXPECT().RemoveRoleForUser(subject, role, dom).Return(nil)
+
+				groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
+					Name: subject, Members: []string{"member@example.com"},
+				}, nil)
+				enforcer.EXPECT().
+					RemoveRoleForUser("member@example.com", subject, dom).
+					Return(errors.New("casbin error"))
+
+				return authuc.NewRevokeRoleUseCase(enforcer, groups), ctx
+			},
+			wantErr: "sync revoke group member",
 		},
 		{
 			name: "unauthorized",

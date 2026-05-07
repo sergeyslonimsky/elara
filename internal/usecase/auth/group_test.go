@@ -214,6 +214,7 @@ func TestUpdateGroupUseCase_Execute(t *testing.T) {
 		name     string
 		newName  string
 		mockFunc func(context.Context, *gomock.Controller) (*authuc.UpdateGroupUseCase, context.Context)
+		errIs    error
 		wantErr  string
 	}{
 		{
@@ -331,6 +332,42 @@ func TestUpdateGroupUseCase_Execute(t *testing.T) {
 			},
 			wantErr: "update group",
 		},
+		{
+			name:    "unauthorized",
+			newName: newName,
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*authuc.UpdateGroupUseCase, context.Context) {
+				return authuc.NewUpdateGroupUseCase(nil, nil, &groupGetterUpdater{}), ctx
+			},
+			errIs: domain.ErrUnauthorized,
+		},
+		{
+			name:    "forbidden",
+			newName: newName,
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.UpdateGroupUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				enforcer := auth_mock.NewMockgroupEnforcer(ctrl)
+				enforcer.EXPECT().
+					Enforce("user@example.com", auth.ObjectAll, "group", auth.ActionWrite).
+					Return(false, nil)
+
+				return authuc.NewUpdateGroupUseCase(enforcer, nil, &groupGetterUpdater{}), ctx
+			},
+			errIs: domain.ErrForbidden,
+		},
+		{
+			name:    "enforce error",
+			newName: newName,
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.UpdateGroupUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
+				enforcer := auth_mock.NewMockgroupEnforcer(ctrl)
+				enforcer.EXPECT().
+					Enforce("admin@example.com", auth.ObjectAll, "group", auth.ActionWrite).
+					Return(false, errors.New("enforcer down"))
+
+				return authuc.NewUpdateGroupUseCase(enforcer, nil, &groupGetterUpdater{}), ctx
+			},
+			wantErr: "enforce",
+		},
 	}
 
 	for _, tt := range tests {
@@ -342,6 +379,11 @@ func TestUpdateGroupUseCase_Execute(t *testing.T) {
 
 			got, err := sut.Execute(ctx, groupID, tt.newName)
 
+			if tt.errIs != nil {
+				require.ErrorIs(t, err, tt.errIs)
+
+				return
+			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
 
@@ -504,6 +546,39 @@ func TestAddMemberUseCase_Execute(t *testing.T) {
 				return authuc.NewAddMemberUseCase(mockEnforcer, mockSync, repo), ctx
 			},
 			wantErr: "sync member role",
+		},
+		{
+			name: "unauthorized",
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*authuc.AddMemberUseCase, context.Context) {
+				return authuc.NewAddMemberUseCase(nil, nil, &groupGetterUpdater{}), ctx
+			},
+			errIs: domain.ErrUnauthorized,
+		},
+		{
+			name: "forbidden",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.AddMemberUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				mockEnforcer := auth_mock.NewMockgroupEnforcer(ctrl)
+				mockEnforcer.EXPECT().
+					Enforce("user@example.com", auth.ObjectAll, "group", auth.ActionWrite).
+					Return(false, nil)
+
+				return authuc.NewAddMemberUseCase(mockEnforcer, nil, &groupGetterUpdater{}), ctx
+			},
+			errIs: domain.ErrForbidden,
+		},
+		{
+			name: "enforce error",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.AddMemberUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
+				mockEnforcer := auth_mock.NewMockgroupEnforcer(ctrl)
+				mockEnforcer.EXPECT().
+					Enforce("admin@example.com", auth.ObjectAll, "group", auth.ActionWrite).
+					Return(false, errors.New("enforcer down"))
+
+				return authuc.NewAddMemberUseCase(mockEnforcer, nil, &groupGetterUpdater{}), ctx
+			},
+			wantErr: "enforce",
 		},
 	}
 
@@ -682,6 +757,39 @@ func TestRemoveMemberUseCase_Execute(t *testing.T) {
 				return authuc.NewRemoveMemberUseCase(mockEnforcer, mockSync, repo), ctx
 			},
 			wantErr: "sync remove member role",
+		},
+		{
+			name: "unauthorized",
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*authuc.RemoveMemberUseCase, context.Context) {
+				return authuc.NewRemoveMemberUseCase(nil, nil, &groupGetterUpdater{}), ctx
+			},
+			errIs: domain.ErrUnauthorized,
+		},
+		{
+			name: "forbidden",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.RemoveMemberUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				mockEnforcer := auth_mock.NewMockgroupEnforcer(ctrl)
+				mockEnforcer.EXPECT().
+					Enforce("user@example.com", auth.ObjectAll, "group", auth.ActionWrite).
+					Return(false, nil)
+
+				return authuc.NewRemoveMemberUseCase(mockEnforcer, nil, &groupGetterUpdater{}), ctx
+			},
+			errIs: domain.ErrForbidden,
+		},
+		{
+			name: "enforce error",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.RemoveMemberUseCase, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
+				mockEnforcer := auth_mock.NewMockgroupEnforcer(ctrl)
+				mockEnforcer.EXPECT().
+					Enforce("admin@example.com", auth.ObjectAll, "group", auth.ActionWrite).
+					Return(false, errors.New("enforcer down"))
+
+				return authuc.NewRemoveMemberUseCase(mockEnforcer, nil, &groupGetterUpdater{}), ctx
+			},
+			wantErr: "enforce",
 		},
 	}
 
