@@ -216,6 +216,30 @@ func TestRemoveRoleForUser(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func TestEnforcer_GetRolesForUser(t *testing.T) {
+	t.Parallel()
+
+	e := newTestEnforcer(t, nil)
+
+	require.NoError(t, e.AddRoleForUser("alice", "admin", "*"))
+
+	roles, err := e.GetRolesForUser("alice", "*")
+	require.NoError(t, err)
+	assert.Contains(t, roles, "admin")
+}
+
+func TestEnforcer_SeedPassthroughAdmin(t *testing.T) {
+	t.Parallel()
+
+	e := newTestEnforcer(t, nil)
+
+	require.NoError(t, e.SeedPassthroughAdmin())
+
+	ok, err := e.Enforce("local-admin@elara.internal", "*", "config", "read")
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
 func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 	t.Parallel()
 

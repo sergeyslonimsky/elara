@@ -56,9 +56,6 @@ func TestAuthTokenMetaRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now().UTC().Truncate(time.Second)
-	exp := now.Add(time.Hour)
-	used := now.Add(time.Minute)
-
 	tkn := &domain.Token{
 		ID:         "token-1",
 		IssuedBy:   "user@example.com",
@@ -66,8 +63,8 @@ func TestAuthTokenMetaRoundTrip(t *testing.T) {
 		TokenHash:  "hash",
 		Namespaces: []string{"ns1", "ns2"},
 		Role:       "writer",
-		ExpiresAt:  &exp,
-		LastUsedAt: &used,
+		ExpiresAt:  new(now.Add(time.Hour)),
+		LastUsedAt: new(now.Add(time.Minute)),
 		LastUsedIP: "1.2.3.4",
 		CreatedAt:  now,
 	}

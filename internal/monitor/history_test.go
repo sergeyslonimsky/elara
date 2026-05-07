@@ -18,8 +18,7 @@ import (
 func TestHistoryStore_Record(t *testing.T) {
 	t.Parallel()
 
-	now := time.Now()
-	snap := &domain.Client{ID: "a", DisconnectedAt: &now}
+	snap := &domain.Client{ID: "a", DisconnectedAt: new(time.Now())}
 
 	tests := []struct {
 		name     string

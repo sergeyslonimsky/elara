@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	authv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
@@ -47,12 +48,17 @@ func TestAccessHandler_AssignRole(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+			groups := auth_mock.NewMockgroupByNameFinder(ctrl)
 
 			enforcer.EXPECT().Enforce(gomock.Any(), "*", "policy", "write").Return(true, nil)
 			enforcer.EXPECT().AddRoleForUser(tc.subject, tc.role, tc.domain).Return(tc.addErr)
+			if tc.addErr == nil {
+				groups.EXPECT().FindByName(gomock.Any(), tc.subject).
+					Return(nil, domain.NewNotFoundError("group", tc.subject))
+			}
 
 			h := NewAccessHandler(
-				authuc.NewAssignRoleUseCase(enforcer),
+				authuc.NewAssignRoleUseCase(enforcer, groups),
 				nil, nil,
 			)
 
@@ -106,13 +112,18 @@ func TestAccessHandler_RevokeRole(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+			groups := auth_mock.NewMockgroupByNameFinder(ctrl)
 
 			enforcer.EXPECT().Enforce(gomock.Any(), "*", "policy", "write").Return(true, nil)
 			enforcer.EXPECT().RemoveRoleForUser(tc.subject, tc.role, tc.domain).Return(tc.removeErr)
+			if tc.removeErr == nil {
+				groups.EXPECT().FindByName(gomock.Any(), tc.subject).
+					Return(nil, domain.NewNotFoundError("group", tc.subject))
+			}
 
 			h := NewAccessHandler(
 				nil,
-				authuc.NewRevokeRoleUseCase(enforcer),
+				authuc.NewRevokeRoleUseCase(enforcer, groups),
 				nil,
 			)
 
@@ -143,7 +154,7 @@ func TestAccessHandler_ListPolicies(t *testing.T) {
 	}{
 		{
 			name:    "returns all policies",
-			rules:   [][]string{{"user@example.com", "role:admin", "*"}, {"bob@example.com", "role:viewer", "ns1"}},
+			rules:   [][]string{{"user@example.com", "admin", "*"}, {"bob@example.com", "reader", "ns1"}},
 			wantLen: 2,
 		},
 		{
@@ -153,7 +164,7 @@ func TestAccessHandler_ListPolicies(t *testing.T) {
 		},
 		{
 			name:    "skips malformed rules",
-			rules:   [][]string{{"only-two", "fields"}, {"user@example.com", "role:admin", "*"}},
+			rules:   [][]string{{"only-two", "fields"}, {"user@example.com", "admin", "*"}},
 			wantLen: 1,
 		},
 	}

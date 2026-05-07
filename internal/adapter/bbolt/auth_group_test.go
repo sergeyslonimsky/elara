@@ -138,6 +138,50 @@ func TestGroupRepo_Delete_Missing(t *testing.T) {
 	assert.ErrorIs(t, err, domain.ErrNotFound)
 }
 
+func TestGroupRepo_FindByName(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t)
+	repo := bboltadapter.NewGroupRepo(store)
+	ctx := t.Context()
+
+	group := &domain.Group{ID: "find-me", Name: "FindMe"}
+	require.NoError(t, repo.Create(ctx, group))
+
+	got, err := repo.FindByName(ctx, "FindMe")
+	require.NoError(t, err)
+	assert.Equal(t, "find-me", got.ID)
+	assert.Equal(t, "FindMe", got.Name)
+}
+
+func TestGroupRepo_FindByName_Missing(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t)
+	repo := bboltadapter.NewGroupRepo(store)
+	ctx := t.Context()
+
+	_, err := repo.FindByName(ctx, "nonexistent-name")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrNotFound)
+}
+
+func TestGroupRepo_FindByName_Multiple(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t)
+	repo := bboltadapter.NewGroupRepo(store)
+	ctx := t.Context()
+
+	require.NoError(t, repo.Create(ctx, &domain.Group{ID: "first", Name: "First Group"}))
+	require.NoError(t, repo.Create(ctx, &domain.Group{ID: "second", Name: "Second Group"}))
+
+	got, err := repo.FindByName(ctx, "Second Group")
+	require.NoError(t, err)
+	assert.Equal(t, "second", got.ID)
+	assert.Equal(t, "Second Group", got.Name)
+}
+
 func TestGroupRepo_List(t *testing.T) {
 	t.Parallel()
 

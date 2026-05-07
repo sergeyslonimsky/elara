@@ -2,6 +2,7 @@
 .idea/
 .vscode/
 .claude/
+.gemini/
 *.swp
 *.swo
 *~

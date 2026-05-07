@@ -1,9 +1,10 @@
 package auth
 
-//go:generate mockgen -destination=mocks/mock_access.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth policyEnforcer
+//go:generate mockgen -destination=mocks/mock_access.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth policyEnforcer,groupByNameFinder
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	authpkg "github.com/sergeyslonimsky/elara/internal/auth"
@@ -27,14 +28,17 @@ type PolicyRule struct {
 // AssignRoleUseCase assigns a role to a subject within a domain.
 type AssignRoleUseCase struct {
 	enforcer policyEnforcer
+	groups   groupByNameFinder
 }
 
 // NewAssignRoleUseCase returns a new AssignRoleUseCase.
-func NewAssignRoleUseCase(enforcer policyEnforcer) *AssignRoleUseCase {
-	return &AssignRoleUseCase{enforcer: enforcer}
+func NewAssignRoleUseCase(enforcer policyEnforcer, groups groupByNameFinder) *AssignRoleUseCase {
+	return &AssignRoleUseCase{enforcer: enforcer, groups: groups}
 }
 
 // Execute assigns the role. AutoSave on the enforcer's adapter handles persistence.
+//
+//nolint:dupl // assign and revoke share the same structure intentionally
 func (uc *AssignRoleUseCase) Execute(ctx context.Context, subject, dom, role string) error {
 	claims, ok := authpkg.ClaimsFromContext(ctx)
 	if !ok {
@@ -54,20 +58,34 @@ func (uc *AssignRoleUseCase) Execute(ctx context.Context, subject, dom, role str
 		return fmt.Errorf("add role for user: %w", err)
 	}
 
+	group, err := uc.groups.FindByName(ctx, subject)
+	if err == nil {
+		for _, member := range group.Members {
+			if err := uc.enforcer.AddRoleForUser(member, subject, dom); err != nil {
+				return fmt.Errorf("sync group member: %w", err)
+			}
+		}
+	} else if !errors.Is(err, domain.ErrNotFound) {
+		return fmt.Errorf("find group by name: %w", err)
+	}
+
 	return nil
 }
 
 // RevokeRoleUseCase revokes a role from a subject within a domain.
 type RevokeRoleUseCase struct {
 	enforcer policyEnforcer
+	groups   groupByNameFinder
 }
 
 // NewRevokeRoleUseCase returns a new RevokeRoleUseCase.
-func NewRevokeRoleUseCase(enforcer policyEnforcer) *RevokeRoleUseCase {
-	return &RevokeRoleUseCase{enforcer: enforcer}
+func NewRevokeRoleUseCase(enforcer policyEnforcer, groups groupByNameFinder) *RevokeRoleUseCase {
+	return &RevokeRoleUseCase{enforcer: enforcer, groups: groups}
 }
 
 // Execute revokes the role. AutoSave on the enforcer's adapter handles persistence.
+//
+//nolint:dupl // assign and revoke share the same structure intentionally
 func (uc *RevokeRoleUseCase) Execute(ctx context.Context, subject, dom, role string) error {
 	claims, ok := authpkg.ClaimsFromContext(ctx)
 	if !ok {
@@ -87,6 +105,17 @@ func (uc *RevokeRoleUseCase) Execute(ctx context.Context, subject, dom, role str
 		return fmt.Errorf("remove role for user: %w", err)
 	}
 
+	group, err := uc.groups.FindByName(ctx, subject)
+	if err == nil {
+		for _, member := range group.Members {
+			if err := uc.enforcer.RemoveRoleForUser(member, subject, dom); err != nil {
+				return fmt.Errorf("sync revoke group member: %w", err)
+			}
+		}
+	} else if !errors.Is(err, domain.ErrNotFound) {
+		return fmt.Errorf("find group by name: %w", err)
+	}
+
 	return nil
 }
 
@@ -100,7 +129,7 @@ func NewListPoliciesUseCase(enforcer policyEnforcer) *ListPoliciesUseCase {
 	return &ListPoliciesUseCase{enforcer: enforcer}
 }
 
-// Execute returns all role assignment (g) rules as PolicyRule values.
+// Execute returns all role assignment (g) rules as PolicyRule values, filtering out membership records.
 func (uc *ListPoliciesUseCase) Execute(ctx context.Context) ([]PolicyRule, error) {
 	claims, ok := authpkg.ClaimsFromContext(ctx)
 	if !ok {
@@ -118,18 +147,21 @@ func (uc *ListPoliciesUseCase) Execute(ctx context.Context) ([]PolicyRule, error
 
 	rules := uc.enforcer.GetGroupingPolicy()
 
+	knownRoles := map[string]bool{
+		authpkg.RoleAdmin: true, authpkg.RoleWriter: true, authpkg.RoleReader: true,
+	}
+
 	result := make([]PolicyRule, 0, len(rules))
 	for _, rule := range rules {
-		// g rules have the form: [user, role, domain]
 		if len(rule) < 3 { //nolint:mnd // 3 is the number of fields in a g rule
 			continue
 		}
 
-		result = append(result, PolicyRule{
-			Subject: rule[0],
-			Role:    rule[1],
-			Domain:  rule[2],
-		})
+		if !knownRoles[rule[1]] {
+			continue // skip membership records (rule[1] = group name)
+		}
+
+		result = append(result, PolicyRule{Subject: rule[0], Role: rule[1], Domain: rule[2]})
 	}
 
 	return result, nil

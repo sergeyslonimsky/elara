@@ -3,6 +3,7 @@ package bbolt
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -131,6 +132,42 @@ func (r *GroupRepo) Delete(_ context.Context, id string) error {
 	}
 
 	return nil
+}
+
+var errFound = errors.New("found") // sentinel for early ForEach exit
+
+// FindByName returns the first group with the given name.
+// Returns domain.ErrNotFound if no group has that name.
+func (r *GroupRepo) FindByName(_ context.Context, name string) (*domain.Group, error) {
+	var found *domain.Group
+
+	err := r.store.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucketAuthGroups))
+
+		return b.ForEach(func(_, v []byte) error {
+			m, err := authGroupMetaFromBytes(v)
+			if err != nil {
+				return err
+			}
+
+			if m.Name == name {
+				found = authGroupMetaToDomain(m)
+
+				return errFound
+			}
+
+			return nil
+		})
+	})
+	if err != nil && !errors.Is(err, errFound) {
+		return nil, fmt.Errorf("find group by name: %w", err)
+	}
+
+	if found == nil {
+		return nil, fmt.Errorf("find group by name: %w", domain.NewNotFoundError("group", name))
+	}
+
+	return found, nil
 }
 
 // List returns all groups sorted by ID (bbolt ForEach iterates keys in byte order).

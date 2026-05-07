@@ -322,14 +322,14 @@ func wireUIAuthUseCases(
 
 	uc.AuthCreateGroup = authuc.NewCreateGroupUseCase(enforcer, a.AuthGroups)
 	uc.AuthGetGroup = authuc.NewGetGroupUseCase(enforcer, a.AuthGroups)
-	uc.AuthUpdateGroup = authuc.NewUpdateGroupUseCase(enforcer, a.AuthGroups)
-	uc.AuthDeleteGroup = authuc.NewDeleteGroupUseCase(enforcer, a.AuthGroups)
+	uc.AuthUpdateGroup = authuc.NewUpdateGroupUseCase(enforcer, enforcer, a.AuthGroups)
+	uc.AuthDeleteGroup = authuc.NewDeleteGroupUseCase(enforcer, enforcer, a.AuthGroups)
 	uc.AuthListGroups = authuc.NewListGroupsUseCase(enforcer, a.AuthGroups)
-	uc.AuthAddMember = authuc.NewAddMemberUseCase(enforcer, a.AuthGroups)
-	uc.AuthRemoveMember = authuc.NewRemoveMemberUseCase(enforcer, a.AuthGroups)
+	uc.AuthAddMember = authuc.NewAddMemberUseCase(enforcer, enforcer, a.AuthGroups)
+	uc.AuthRemoveMember = authuc.NewRemoveMemberUseCase(enforcer, enforcer, a.AuthGroups)
 
-	uc.AuthAssignRole = authuc.NewAssignRoleUseCase(enforcer)
-	uc.AuthRevokeRole = authuc.NewRevokeRoleUseCase(enforcer)
+	uc.AuthAssignRole = authuc.NewAssignRoleUseCase(enforcer, a.AuthGroups)
+	uc.AuthRevokeRole = authuc.NewRevokeRoleUseCase(enforcer, a.AuthGroups)
 	uc.AuthListPolicies = authuc.NewListPoliciesUseCase(enforcer)
 
 	return nil
