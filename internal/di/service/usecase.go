@@ -69,6 +69,7 @@ type UseCases struct {
 	AuthChangePassword *authuc.ChangePasswordUseCase
 	AuthResetPassword  *authuc.ResetPasswordUseCase
 	AuthCreateUser     *authuc.CreateUserUseCase
+	AuthDeleteUser     *authuc.DeleteUserUseCase
 
 	AuthListUsers *authuc.ListUsersUseCase
 	AuthGetUser   *authuc.GetUserUseCase
@@ -312,9 +313,13 @@ func wireUIAuthUseCases(
 		uc.AuthBasicLogin = authuc.NewBasicLoginUseCase(a.AuthUsers, sessionManager, enforcer, cfg.UI.Auth.AdminEmail)
 		uc.AuthChangePassword = authuc.NewChangePasswordUseCase(a.AuthUsers, a.AuthUsers)
 		uc.AuthResetPassword = authuc.NewResetPasswordUseCase(enforcer, a.AuthUsers)
-		uc.AuthCreateUser = authuc.NewCreateUserUseCase(enforcer, a.AuthUsers)
+		uc.AuthDeleteUser = authuc.NewDeleteUserUseCase(enforcer, a.AuthUsers)
 	case config.AuthTypeNone:
 		// No specific use cases to wire for AuthTypeNone
+	}
+
+	if cfg.UI.Auth.Type != config.AuthTypeNone {
+		uc.AuthCreateUser = authuc.NewCreateUserUseCase(enforcer, a.AuthUsers)
 	}
 
 	uc.AuthListUsers = authuc.NewListUsersUseCase(enforcer, a.AuthUsers)

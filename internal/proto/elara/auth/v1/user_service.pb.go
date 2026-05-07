@@ -468,6 +468,87 @@ func (*ResetUserPasswordResponse) Descriptor() ([]byte, []int) {
 	return file_elara_auth_v1_user_service_proto_rawDescGZIP(), []int{8}
 }
 
+// Admin-only, basic-auth mode only
+type DeleteUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUserRequest) Reset() {
+	*x = DeleteUserRequest{}
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserRequest) ProtoMessage() {}
+
+func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserRequest.ProtoReflect.Descriptor instead.
+func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
+	return file_elara_auth_v1_user_service_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *DeleteUserRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type DeleteUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteUserResponse) Reset() {
+	*x = DeleteUserResponse{}
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteUserResponse) ProtoMessage() {}
+
+func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_auth_v1_user_service_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteUserResponse.ProtoReflect.Descriptor instead.
+func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
+	return file_elara_auth_v1_user_service_proto_rawDescGZIP(), []int{10}
+}
+
 var File_elara_auth_v1_user_service_proto protoreflect.FileDescriptor
 
 const file_elara_auth_v1_user_service_proto_rawDesc = "" +
@@ -497,13 +578,18 @@ const file_elara_auth_v1_user_service_proto_rawDesc = "" +
 	"\x18ResetUserPasswordRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12!\n" +
 	"\fnew_password\x18\x02 \x01(\tR\vnewPassword\"\x1b\n" +
-	"\x19ResetUserPasswordResponse2\xe2\x02\n" +
+	"\x19ResetUserPasswordResponse\")\n" +
+	"\x11DeleteUserRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"\x14\n" +
+	"\x12DeleteUserResponse2\xb5\x03\n" +
 	"\vUserService\x12N\n" +
 	"\tListUsers\x12\x1f.elara.auth.v1.ListUsersRequest\x1a .elara.auth.v1.ListUsersResponse\x12H\n" +
 	"\aGetUser\x12\x1d.elara.auth.v1.GetUserRequest\x1a\x1e.elara.auth.v1.GetUserResponse\x12Q\n" +
 	"\n" +
 	"CreateUser\x12 .elara.auth.v1.CreateUserRequest\x1a!.elara.auth.v1.CreateUserResponse\x12f\n" +
-	"\x11ResetUserPassword\x12'.elara.auth.v1.ResetUserPasswordRequest\x1a(.elara.auth.v1.ResetUserPasswordResponseB\xc1\x01\n" +
+	"\x11ResetUserPassword\x12'.elara.auth.v1.ResetUserPasswordRequest\x1a(.elara.auth.v1.ResetUserPasswordResponse\x12Q\n" +
+	"\n" +
+	"DeleteUser\x12 .elara.auth.v1.DeleteUserRequest\x1a!.elara.auth.v1.DeleteUserResponseB\xc1\x01\n" +
 	"\x11com.elara.auth.v1B\x10UserServiceProtoP\x01ZDgithub.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1;authv1\xa2\x02\x03EAX\xaa\x02\rElara.Auth.V1\xca\x02\rElara\\Auth\\V1\xe2\x02\x19Elara\\Auth\\V1\\GPBMetadata\xea\x02\x0fElara::Auth::V1b\x06proto3"
 
 var (
@@ -518,7 +604,7 @@ func file_elara_auth_v1_user_service_proto_rawDescGZIP() []byte {
 	return file_elara_auth_v1_user_service_proto_rawDescData
 }
 
-var file_elara_auth_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_elara_auth_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_elara_auth_v1_user_service_proto_goTypes = []any{
 	(*User)(nil),                      // 0: elara.auth.v1.User
 	(*ListUsersRequest)(nil),          // 1: elara.auth.v1.ListUsersRequest
@@ -529,27 +615,31 @@ var file_elara_auth_v1_user_service_proto_goTypes = []any{
 	(*CreateUserResponse)(nil),        // 6: elara.auth.v1.CreateUserResponse
 	(*ResetUserPasswordRequest)(nil),  // 7: elara.auth.v1.ResetUserPasswordRequest
 	(*ResetUserPasswordResponse)(nil), // 8: elara.auth.v1.ResetUserPasswordResponse
-	(*timestamppb.Timestamp)(nil),     // 9: google.protobuf.Timestamp
+	(*DeleteUserRequest)(nil),         // 9: elara.auth.v1.DeleteUserRequest
+	(*DeleteUserResponse)(nil),        // 10: elara.auth.v1.DeleteUserResponse
+	(*timestamppb.Timestamp)(nil),     // 11: google.protobuf.Timestamp
 }
 var file_elara_auth_v1_user_service_proto_depIdxs = []int32{
-	9, // 0: elara.auth.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	9, // 1: elara.auth.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
-	0, // 2: elara.auth.v1.ListUsersResponse.users:type_name -> elara.auth.v1.User
-	0, // 3: elara.auth.v1.GetUserResponse.user:type_name -> elara.auth.v1.User
-	0, // 4: elara.auth.v1.CreateUserResponse.user:type_name -> elara.auth.v1.User
-	1, // 5: elara.auth.v1.UserService.ListUsers:input_type -> elara.auth.v1.ListUsersRequest
-	3, // 6: elara.auth.v1.UserService.GetUser:input_type -> elara.auth.v1.GetUserRequest
-	5, // 7: elara.auth.v1.UserService.CreateUser:input_type -> elara.auth.v1.CreateUserRequest
-	7, // 8: elara.auth.v1.UserService.ResetUserPassword:input_type -> elara.auth.v1.ResetUserPasswordRequest
-	2, // 9: elara.auth.v1.UserService.ListUsers:output_type -> elara.auth.v1.ListUsersResponse
-	4, // 10: elara.auth.v1.UserService.GetUser:output_type -> elara.auth.v1.GetUserResponse
-	6, // 11: elara.auth.v1.UserService.CreateUser:output_type -> elara.auth.v1.CreateUserResponse
-	8, // 12: elara.auth.v1.UserService.ResetUserPassword:output_type -> elara.auth.v1.ResetUserPasswordResponse
-	9, // [9:13] is the sub-list for method output_type
-	5, // [5:9] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	11, // 0: elara.auth.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	11, // 1: elara.auth.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
+	0,  // 2: elara.auth.v1.ListUsersResponse.users:type_name -> elara.auth.v1.User
+	0,  // 3: elara.auth.v1.GetUserResponse.user:type_name -> elara.auth.v1.User
+	0,  // 4: elara.auth.v1.CreateUserResponse.user:type_name -> elara.auth.v1.User
+	1,  // 5: elara.auth.v1.UserService.ListUsers:input_type -> elara.auth.v1.ListUsersRequest
+	3,  // 6: elara.auth.v1.UserService.GetUser:input_type -> elara.auth.v1.GetUserRequest
+	5,  // 7: elara.auth.v1.UserService.CreateUser:input_type -> elara.auth.v1.CreateUserRequest
+	7,  // 8: elara.auth.v1.UserService.ResetUserPassword:input_type -> elara.auth.v1.ResetUserPasswordRequest
+	9,  // 9: elara.auth.v1.UserService.DeleteUser:input_type -> elara.auth.v1.DeleteUserRequest
+	2,  // 10: elara.auth.v1.UserService.ListUsers:output_type -> elara.auth.v1.ListUsersResponse
+	4,  // 11: elara.auth.v1.UserService.GetUser:output_type -> elara.auth.v1.GetUserResponse
+	6,  // 12: elara.auth.v1.UserService.CreateUser:output_type -> elara.auth.v1.CreateUserResponse
+	8,  // 13: elara.auth.v1.UserService.ResetUserPassword:output_type -> elara.auth.v1.ResetUserPasswordResponse
+	10, // 14: elara.auth.v1.UserService.DeleteUser:output_type -> elara.auth.v1.DeleteUserResponse
+	10, // [10:15] is the sub-list for method output_type
+	5,  // [5:10] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_elara_auth_v1_user_service_proto_init() }
@@ -563,7 +653,7 @@ func file_elara_auth_v1_user_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_auth_v1_user_service_proto_rawDesc), len(file_elara_auth_v1_user_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

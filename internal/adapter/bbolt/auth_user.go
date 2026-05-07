@@ -123,6 +123,26 @@ func (r *UserRepo) Get(_ context.Context, email string) (*domain.User, error) {
 	return user, nil
 }
 
+// Delete removes the user with the given email.
+// Returns domain.ErrNotFound if the user does not exist.
+func (r *UserRepo) Delete(_ context.Context, email string) error {
+	err := r.store.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucketAuthUsers))
+		key := []byte(email)
+
+		if b.Get(key) == nil {
+			return domain.NewNotFoundError("user", email)
+		}
+
+		return b.Delete(key)
+	})
+	if err != nil {
+		return fmt.Errorf("delete user: %w", err)
+	}
+
+	return nil
+}
+
 // List returns all users sorted by email (bbolt ForEach iterates keys in byte order).
 func (r *UserRepo) List(_ context.Context) ([]*domain.User, error) {
 	var users []*domain.User

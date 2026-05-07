@@ -119,6 +119,7 @@ func initIAMHandlers(handlers *V2Handlers, uc *UseCases, cfg config.Config) {
 		uc.AuthGetUser,
 		uc.AuthCreateUser,
 		uc.AuthResetPassword,
+		uc.AuthDeleteUser,
 		cfg.UI.Auth.Type,
 	)
 	handlers.Groups = v2.NewGroupHandler(

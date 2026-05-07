@@ -60,6 +60,10 @@ func (uc *CreateUserUseCase) Execute(ctx context.Context, email, name, initialPa
 		Provider: domain.ProviderBasicAuth,
 	}
 
+	if initialPassword == "" {
+		user.Provider = domain.ProviderOIDC
+	}
+
 	if err := user.Validate(); err != nil {
 		return nil, fmt.Errorf("validate user: %w", err)
 	}
@@ -68,13 +72,15 @@ func (uc *CreateUserUseCase) Execute(ctx context.Context, email, name, initialPa
 		return nil, fmt.Errorf("upsert user: %w", err)
 	}
 
-	hash, err := internalauth.HashPassword(initialPassword)
-	if err != nil {
-		return nil, fmt.Errorf("hash password: %w", err)
-	}
+	if initialPassword != "" {
+		hash, err := internalauth.HashPassword(initialPassword)
+		if err != nil {
+			return nil, fmt.Errorf("hash password: %w", err)
+		}
 
-	if err := uc.users.SetPassword(ctx, email, hash, true); err != nil {
-		return nil, fmt.Errorf("set password: %w", err)
+		if err := uc.users.SetPassword(ctx, email, hash, true); err != nil {
+			return nil, fmt.Errorf("set password: %w", err)
+		}
 	}
 
 	return user, nil

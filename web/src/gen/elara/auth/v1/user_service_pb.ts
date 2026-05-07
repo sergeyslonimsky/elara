@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/auth/v1/user_service.proto.
  */
 export const file_elara_auth_v1_user_service: GenFile = /*@__PURE__*/
-  fileDesc("CiBlbGFyYS9hdXRoL3YxL3VzZXJfc2VydmljZS5wcm90bxINZWxhcmEuYXV0aC52MSKpAQoEVXNlchINCgVlbWFpbBgBIAEoCRIMCgRuYW1lGAIgASgJEg8KB3BpY3R1cmUYAyABKAkSEAoIcHJvdmlkZXIYBCABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNbGFzdF9sb2dpbl9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiEgoQTGlzdFVzZXJzUmVxdWVzdCI3ChFMaXN0VXNlcnNSZXNwb25zZRIiCgV1c2VycxgBIAMoCzITLmVsYXJhLmF1dGgudjEuVXNlciIfCg5HZXRVc2VyUmVxdWVzdBINCgVlbWFpbBgBIAEoCSI0Cg9HZXRVc2VyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLmF1dGgudjEuVXNlciJKChFDcmVhdGVVc2VyUmVxdWVzdBINCgVlbWFpbBgBIAEoCRIMCgRuYW1lGAIgASgJEhgKEGluaXRpYWxfcGFzc3dvcmQYAyABKAkiNwoSQ3JlYXRlVXNlclJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5lbGFyYS5hdXRoLnYxLlVzZXIiPwoYUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIbChlSZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlMuICCgtVc2VyU2VydmljZRJOCglMaXN0VXNlcnMSHy5lbGFyYS5hdXRoLnYxLkxpc3RVc2Vyc1JlcXVlc3QaIC5lbGFyYS5hdXRoLnYxLkxpc3RVc2Vyc1Jlc3BvbnNlEkgKB0dldFVzZXISHS5lbGFyYS5hdXRoLnYxLkdldFVzZXJSZXF1ZXN0Gh4uZWxhcmEuYXV0aC52MS5HZXRVc2VyUmVzcG9uc2USUQoKQ3JlYXRlVXNlchIgLmVsYXJhLmF1dGgudjEuQ3JlYXRlVXNlclJlcXVlc3QaIS5lbGFyYS5hdXRoLnYxLkNyZWF0ZVVzZXJSZXNwb25zZRJmChFSZXNldFVzZXJQYXNzd29yZBInLmVsYXJhLmF1dGgudjEuUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0GiguZWxhcmEuYXV0aC52MS5SZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlQsEBChFjb20uZWxhcmEuYXV0aC52MUIQVXNlclNlcnZpY2VQcm90b1ABWkRnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9hdXRoL3YxO2F1dGh2MaICA0VBWKoCDUVsYXJhLkF1dGguVjHKAg1FbGFyYVxBdXRoXFYx4gIZRWxhcmFcQXV0aFxWMVxHUEJNZXRhZGF0YeoCD0VsYXJhOjpBdXRoOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("CiBlbGFyYS9hdXRoL3YxL3VzZXJfc2VydmljZS5wcm90bxINZWxhcmEuYXV0aC52MSKpAQoEVXNlchINCgVlbWFpbBgBIAEoCRIMCgRuYW1lGAIgASgJEg8KB3BpY3R1cmUYAyABKAkSEAoIcHJvdmlkZXIYBCABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNbGFzdF9sb2dpbl9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiEgoQTGlzdFVzZXJzUmVxdWVzdCI3ChFMaXN0VXNlcnNSZXNwb25zZRIiCgV1c2VycxgBIAMoCzITLmVsYXJhLmF1dGgudjEuVXNlciIfCg5HZXRVc2VyUmVxdWVzdBINCgVlbWFpbBgBIAEoCSI0Cg9HZXRVc2VyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLmF1dGgudjEuVXNlciJKChFDcmVhdGVVc2VyUmVxdWVzdBINCgVlbWFpbBgBIAEoCRIMCgRuYW1lGAIgASgJEhgKEGluaXRpYWxfcGFzc3dvcmQYAyABKAkiNwoSQ3JlYXRlVXNlclJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5lbGFyYS5hdXRoLnYxLlVzZXIiPwoYUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIbChlSZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlIiIKEURlbGV0ZVVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIhQKEkRlbGV0ZVVzZXJSZXNwb25zZTK1AwoLVXNlclNlcnZpY2USTgoJTGlzdFVzZXJzEh8uZWxhcmEuYXV0aC52MS5MaXN0VXNlcnNSZXF1ZXN0GiAuZWxhcmEuYXV0aC52MS5MaXN0VXNlcnNSZXNwb25zZRJICgdHZXRVc2VyEh0uZWxhcmEuYXV0aC52MS5HZXRVc2VyUmVxdWVzdBoeLmVsYXJhLmF1dGgudjEuR2V0VXNlclJlc3BvbnNlElEKCkNyZWF0ZVVzZXISIC5lbGFyYS5hdXRoLnYxLkNyZWF0ZVVzZXJSZXF1ZXN0GiEuZWxhcmEuYXV0aC52MS5DcmVhdGVVc2VyUmVzcG9uc2USZgoRUmVzZXRVc2VyUGFzc3dvcmQSJy5lbGFyYS5hdXRoLnYxLlJlc2V0VXNlclBhc3N3b3JkUmVxdWVzdBooLmVsYXJhLmF1dGgudjEuUmVzZXRVc2VyUGFzc3dvcmRSZXNwb25zZRJRCgpEZWxldGVVc2VyEiAuZWxhcmEuYXV0aC52MS5EZWxldGVVc2VyUmVxdWVzdBohLmVsYXJhLmF1dGgudjEuRGVsZXRlVXNlclJlc3BvbnNlQsEBChFjb20uZWxhcmEuYXV0aC52MUIQVXNlclNlcnZpY2VQcm90b1ABWkRnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9hdXRoL3YxO2F1dGh2MaICA0VBWKoCDUVsYXJhLkF1dGguVjHKAg1FbGFyYVxBdXRoXFYx4gIZRWxhcmFcQXV0aFxWMVxHUEJNZXRhZGF0YeoCD0VsYXJhOjpBdXRoOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message elara.auth.v1.User
@@ -204,6 +204,38 @@ export const ResetUserPasswordResponseSchema: GenMessage<ResetUserPasswordRespon
   messageDesc(file_elara_auth_v1_user_service, 8);
 
 /**
+ * Admin-only, basic-auth mode only
+ *
+ * @generated from message elara.auth.v1.DeleteUserRequest
+ */
+export type DeleteUserRequest = Message<"elara.auth.v1.DeleteUserRequest"> & {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email: string;
+};
+
+/**
+ * Describes the message elara.auth.v1.DeleteUserRequest.
+ * Use `create(DeleteUserRequestSchema)` to create a new message.
+ */
+export const DeleteUserRequestSchema: GenMessage<DeleteUserRequest> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_user_service, 9);
+
+/**
+ * @generated from message elara.auth.v1.DeleteUserResponse
+ */
+export type DeleteUserResponse = Message<"elara.auth.v1.DeleteUserResponse"> & {
+};
+
+/**
+ * Describes the message elara.auth.v1.DeleteUserResponse.
+ * Use `create(DeleteUserResponseSchema)` to create a new message.
+ */
+export const DeleteUserResponseSchema: GenMessage<DeleteUserResponse> = /*@__PURE__*/
+  messageDesc(file_elara_auth_v1_user_service, 10);
+
+/**
  * @generated from service elara.auth.v1.UserService
  */
 export const UserService: GenService<{
@@ -240,6 +272,14 @@ export const UserService: GenService<{
     methodKind: "unary";
     input: typeof ResetUserPasswordRequestSchema;
     output: typeof ResetUserPasswordResponseSchema;
+  },
+  /**
+   * @generated from rpc elara.auth.v1.UserService.DeleteUser
+   */
+  deleteUser: {
+    methodKind: "unary";
+    input: typeof DeleteUserRequestSchema;
+    output: typeof DeleteUserResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_elara_auth_v1_user_service, 0);

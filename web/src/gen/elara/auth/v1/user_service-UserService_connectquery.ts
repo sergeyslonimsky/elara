@@ -25,3 +25,8 @@ export const createUser = UserService.method.createUser;
  * @generated from rpc elara.auth.v1.UserService.ResetUserPassword
  */
 export const resetUserPassword = UserService.method.resetUserPassword;
+
+/**
+ * @generated from rpc elara.auth.v1.UserService.DeleteUser
+ */
+export const deleteUser = UserService.method.deleteUser;

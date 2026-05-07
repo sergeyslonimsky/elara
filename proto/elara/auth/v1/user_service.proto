@@ -48,6 +48,13 @@ message ResetUserPasswordRequest {
 
 message ResetUserPasswordResponse {}
 
+// Admin-only, basic-auth mode only
+message DeleteUserRequest {
+  string email = 1;
+}
+
+message DeleteUserResponse {}
+
 service UserService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
@@ -55,4 +62,5 @@ service UserService {
   // basic-auth only
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
   rpc ResetUserPassword(ResetUserPasswordRequest) returns (ResetUserPasswordResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
