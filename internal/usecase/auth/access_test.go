@@ -8,6 +8,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
@@ -27,47 +28,51 @@ func TestAssignRevokeRoleUseCase_Execute(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		buildUC   func(e *auth_mock.MockpolicyEnforcer) executor
-		setupMock func(e *auth_mock.MockpolicyEnforcer)
+		buildUC   func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) executor
+		setupMock func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder)
 		wantErr   bool
 	}{
 		{
-			name: "assigns role successfully",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer) executor {
-				return authuc.NewAssignRoleUseCase(e)
+			name: "assigns role successfully - subject is not a group",
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) executor {
+				return authuc.NewAssignRoleUseCase(e, g)
 			},
-			setupMock: func(e *auth_mock.MockpolicyEnforcer) {
+			setupMock: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) {
 				e.EXPECT().Enforce("test@example.com", "*", "policy", "write").Return(true, nil)
 				e.EXPECT().AddRoleForUser("user@example.com", "role:admin", "*").Return(nil)
+				g.EXPECT().FindByName(gomock.Any(), "user@example.com").
+					Return(nil, domain.NewNotFoundError("group", "user@example.com"))
 			},
 		},
 		{
 			name: "assign: enforcer add error propagated",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer) executor {
-				return authuc.NewAssignRoleUseCase(e)
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) executor {
+				return authuc.NewAssignRoleUseCase(e, g)
 			},
-			setupMock: func(e *auth_mock.MockpolicyEnforcer) {
+			setupMock: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) {
 				e.EXPECT().Enforce("test@example.com", "*", "policy", "write").Return(true, nil)
 				e.EXPECT().AddRoleForUser(gomock.Any(), gomock.Any(), gomock.Any()).Return(errTest)
 			},
 			wantErr: true,
 		},
 		{
-			name: "revokes role successfully",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer) executor {
-				return authuc.NewRevokeRoleUseCase(e)
+			name: "revokes role successfully - subject is not a group",
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) executor {
+				return authuc.NewRevokeRoleUseCase(e, g)
 			},
-			setupMock: func(e *auth_mock.MockpolicyEnforcer) {
+			setupMock: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) {
 				e.EXPECT().Enforce("test@example.com", "*", "policy", "write").Return(true, nil)
 				e.EXPECT().RemoveRoleForUser("user@example.com", "role:admin", "*").Return(nil)
+				g.EXPECT().FindByName(gomock.Any(), "user@example.com").
+					Return(nil, domain.NewNotFoundError("group", "user@example.com"))
 			},
 		},
 		{
 			name: "revoke: enforcer remove error propagated",
-			buildUC: func(e *auth_mock.MockpolicyEnforcer) executor {
-				return authuc.NewRevokeRoleUseCase(e)
+			buildUC: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) executor {
+				return authuc.NewRevokeRoleUseCase(e, g)
 			},
-			setupMock: func(e *auth_mock.MockpolicyEnforcer) {
+			setupMock: func(e *auth_mock.MockpolicyEnforcer, g *auth_mock.MockgroupByNameFinder) {
 				e.EXPECT().Enforce("test@example.com", "*", "policy", "write").Return(true, nil)
 				e.EXPECT().
 					RemoveRoleForUser(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -83,10 +88,11 @@ func TestAssignRevokeRoleUseCase_Execute(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
+			groups := auth_mock.NewMockgroupByNameFinder(ctrl)
 
-			tc.setupMock(enforcer)
+			tc.setupMock(enforcer, groups)
 
-			uc := tc.buildUC(enforcer)
+			uc := tc.buildUC(enforcer, groups)
 			err := uc.Execute(accessTestCtx(), "user@example.com", "*", "role:admin")
 
 			if tc.wantErr {
@@ -113,13 +119,17 @@ func TestListPoliciesUseCase_Execute(t *testing.T) {
 		wantLen int
 	}{
 		{
-			name:    "converts g rules to PolicyRule slice",
-			rules:   [][]string{{"user@example.com", "role:admin", "*"}, {"user2@example.com", "role:viewer", "ns1"}},
+			name: "filters out membership records, keeps known roles",
+			rules: [][]string{
+				{"user@example.com", "admin", "*"},
+				{"devops", "writer", "prod"},
+				{"user@example.com", "devops", "prod"}, // membership record — filtered out
+			},
 			wantLen: 2,
 		},
 		{
 			name:    "skips malformed rules",
-			rules:   [][]string{{"user@example.com", "role:admin"}, {"valid@example.com", "role:viewer", "*"}},
+			rules:   [][]string{{"user@example.com", "admin"}, {"valid@example.com", "reader", "*"}},
 			wantLen: 1,
 		},
 		{

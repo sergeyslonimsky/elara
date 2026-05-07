@@ -22,6 +22,19 @@ type groupGetUpdater struct {
 	*auth_mock.MockgroupUpdater
 }
 
+// groupGetDeleter combines getter and deleter mocks for DeleteGroupUseCase.
+type groupGetDeleter struct {
+	*auth_mock.MockgroupGetter
+	*auth_mock.MockgroupDeleter
+}
+
+// noopGroupSyncEnforcer is a no-op groupSyncEnforcer for handler tests that don't exercise Casbin sync.
+type noopGroupSyncEnforcer struct{}
+
+func (noopGroupSyncEnforcer) AddRoleForUser(_, _, _ string) error    { return nil }
+func (noopGroupSyncEnforcer) RemoveRoleForUser(_, _, _ string) error { return nil }
+func (noopGroupSyncEnforcer) GetRulesForSubject(_ string) [][]string { return nil }
+
 func TestGroupHandler_CreateGroup(t *testing.T) {
 	t.Parallel()
 
@@ -170,7 +183,7 @@ func TestGroupHandler_UpdateGroup(t *testing.T) {
 
 			h := NewGroupHandler(
 				nil, nil,
-				authuc.NewUpdateGroupUseCase(allowAllClientsHandlerEnforcer{}, repo),
+				authuc.NewUpdateGroupUseCase(allowAllClientsHandlerEnforcer{}, noopGroupSyncEnforcer{}, repo),
 				nil, nil, nil, nil,
 			)
 
@@ -217,12 +230,21 @@ func TestGroupHandler_DeleteGroup(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
+			getter := auth_mock.NewMockgroupGetter(ctrl)
 			deleter := auth_mock.NewMockgroupDeleter(ctrl)
-			deleter.EXPECT().Delete(gomock.Any(), tc.id).Return(tc.repoErr)
+			repo := &groupGetDeleter{getter, deleter}
+
+			getter.EXPECT().Get(gomock.Any(), tc.id).Return(
+				&domain.Group{ID: tc.id, Name: "some-group", Members: []string{}},
+				tc.repoErr,
+			)
+			if tc.repoErr == nil {
+				deleter.EXPECT().Delete(gomock.Any(), tc.id).Return(nil)
+			}
 
 			h := NewGroupHandler(
 				nil, nil, nil,
-				authuc.NewDeleteGroupUseCase(allowAllClientsHandlerEnforcer{}, deleter),
+				authuc.NewDeleteGroupUseCase(allowAllClientsHandlerEnforcer{}, noopGroupSyncEnforcer{}, repo),
 				nil, nil, nil,
 			)
 
@@ -336,7 +358,7 @@ func TestGroupHandler_AddMember(t *testing.T) {
 
 			h := NewGroupHandler(
 				nil, nil, nil, nil, nil,
-				authuc.NewAddMemberUseCase(allowAllClientsHandlerEnforcer{}, repo),
+				authuc.NewAddMemberUseCase(allowAllClientsHandlerEnforcer{}, noopGroupSyncEnforcer{}, repo),
 				nil,
 			)
 
@@ -402,7 +424,7 @@ func TestGroupHandler_RemoveMember(t *testing.T) {
 
 			h := NewGroupHandler(
 				nil, nil, nil, nil, nil, nil,
-				authuc.NewRemoveMemberUseCase(allowAllClientsHandlerEnforcer{}, repo),
+				authuc.NewRemoveMemberUseCase(allowAllClientsHandlerEnforcer{}, noopGroupSyncEnforcer{}, repo),
 			)
 
 			resp, err := h.RemoveMember(clientsHandlerTestCtx(), connect.NewRequest(&authv1.RemoveMemberRequest{

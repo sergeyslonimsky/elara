@@ -18,6 +18,13 @@ type allowAllGroupEnforcer struct{}
 
 func (allowAllGroupEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
 
+// noopSyncEnforcer is a no-op groupSyncEnforcer for tests that don't exercise Casbin sync.
+type noopSyncEnforcer struct{}
+
+func (noopSyncEnforcer) AddRoleForUser(_, _, _ string) error    { return nil }
+func (noopSyncEnforcer) RemoveRoleForUser(_, _, _ string) error { return nil }
+func (noopSyncEnforcer) GetRulesForSubject(_ string) [][]string { return nil }
+
 func groupTestCtx() context.Context {
 	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
 }
@@ -190,7 +197,7 @@ func TestUpdateGroupUseCase_Execute(t *testing.T) { // NOSONAR
 				updater.EXPECT().Update(gomock.Any(), gomock.Any()).Return(tc.updateErr)
 			}
 
-			uc := authuc.NewUpdateGroupUseCase(allowAllGroupEnforcer{}, repo)
+			uc := authuc.NewUpdateGroupUseCase(allowAllGroupEnforcer{}, noopSyncEnforcer{}, repo)
 			got, err := uc.Execute(groupTestCtx(), "g1", tc.newName)
 
 			if tc.wantErr {
@@ -265,7 +272,7 @@ func TestAddMemberUseCase_Execute(t *testing.T) { // NOSONAR
 				updater.EXPECT().Update(gomock.Any(), gomock.Any()).Return(tc.updateErr)
 			}
 
-			uc := authuc.NewAddMemberUseCase(allowAllGroupEnforcer{}, repo)
+			uc := authuc.NewAddMemberUseCase(allowAllGroupEnforcer{}, noopSyncEnforcer{}, repo)
 			got, err := uc.Execute(groupTestCtx(), "g1", tc.email)
 
 			if tc.wantErr {
@@ -340,7 +347,7 @@ func TestRemoveMemberUseCase_Execute(t *testing.T) { // NOSONAR
 				updater.EXPECT().Update(gomock.Any(), gomock.Any()).Return(tc.updateErr)
 			}
 
-			uc := authuc.NewRemoveMemberUseCase(allowAllGroupEnforcer{}, repo)
+			uc := authuc.NewRemoveMemberUseCase(allowAllGroupEnforcer{}, noopSyncEnforcer{}, repo)
 			got, err := uc.Execute(groupTestCtx(), "g1", tc.email)
 
 			if tc.wantErr {

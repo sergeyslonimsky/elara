@@ -1,6 +1,6 @@
 package auth
 
-//go:generate mockgen -destination=mocks/mock_group.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth groupCreator,groupGetter,groupUpdater,groupDeleter,groupLister,groupEnforcer
+//go:generate mockgen -destination=mocks/mock_group.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth groupCreator,groupGetter,groupUpdater,groupDeleter,groupLister,groupEnforcer,groupSyncEnforcer,groupByNameFinder
 
 import (
 	"context"
@@ -20,6 +20,16 @@ const (
 
 type groupEnforcer interface {
 	Enforce(subject, domain, object, action string) (bool, error)
+}
+
+type groupSyncEnforcer interface {
+	AddRoleForUser(user, role, domain string) error
+	RemoveRoleForUser(user, role, domain string) error
+	GetRulesForSubject(subject string) [][]string
+}
+
+type groupByNameFinder interface {
+	FindByName(ctx context.Context, name string) (*domain.Group, error)
 }
 
 type groupCreator interface {
@@ -102,8 +112,9 @@ func (uc *GetGroupUseCase) Execute(ctx context.Context, id string) (*domain.Grou
 
 // UpdateGroupUseCase updates a group's name.
 type UpdateGroupUseCase struct {
-	enforcer groupEnforcer
-	groups   interface {
+	enforcer     groupEnforcer
+	syncEnforcer groupSyncEnforcer
+	groups       interface {
 		groupGetter
 		groupUpdater
 	}
@@ -112,15 +123,16 @@ type UpdateGroupUseCase struct {
 // NewUpdateGroupUseCase returns a new UpdateGroupUseCase.
 func NewUpdateGroupUseCase(
 	enforcer groupEnforcer,
+	syncEnforcer groupSyncEnforcer,
 	groups interface {
 		groupGetter
 		groupUpdater
 	},
 ) *UpdateGroupUseCase {
-	return &UpdateGroupUseCase{enforcer: enforcer, groups: groups}
+	return &UpdateGroupUseCase{enforcer: enforcer, syncEnforcer: syncEnforcer, groups: groups}
 }
 
-// Execute updates the group name.
+// Execute updates the group name and renames Casbin rules if the name changed.
 func (uc *UpdateGroupUseCase) Execute(ctx context.Context, id, name string) (*domain.Group, error) {
 	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, "group", auth.ActionWrite); err != nil {
 		return nil, fmt.Errorf("check access: %w", err)
@@ -131,6 +143,7 @@ func (uc *UpdateGroupUseCase) Execute(ctx context.Context, id, name string) (*do
 		return nil, fmt.Errorf(errGetGroup, err)
 	}
 
+	oldName := group.Name
 	group.Name = name
 	group.UpdatedAt = time.Now().UTC()
 
@@ -138,24 +151,72 @@ func (uc *UpdateGroupUseCase) Execute(ctx context.Context, id, name string) (*do
 		return nil, fmt.Errorf(errUpdateGroup, err)
 	}
 
+	if oldName != name {
+		groupRules := uc.syncEnforcer.GetRulesForSubject(oldName)
+
+		// Rename group's own role rules
+		for _, rule := range groupRules {
+			_ = uc.syncEnforcer.AddRoleForUser(name, rule[1], rule[2])
+			_ = uc.syncEnforcer.RemoveRoleForUser(oldName, rule[1], rule[2])
+		}
+
+		// Rename members' membership records
+		for _, member := range group.Members {
+			for _, rule := range groupRules {
+				_ = uc.syncEnforcer.AddRoleForUser(member, name, rule[2])
+				_ = uc.syncEnforcer.RemoveRoleForUser(member, oldName, rule[2])
+			}
+		}
+	}
+
 	return group, nil
 }
 
 // DeleteGroupUseCase deletes a group.
 type DeleteGroupUseCase struct {
-	enforcer groupEnforcer
-	groups   groupDeleter
+	enforcer     groupEnforcer
+	syncEnforcer groupSyncEnforcer
+	groups       interface {
+		groupGetter
+		groupDeleter
+	}
 }
 
 // NewDeleteGroupUseCase returns a new DeleteGroupUseCase.
-func NewDeleteGroupUseCase(enforcer groupEnforcer, groups groupDeleter) *DeleteGroupUseCase {
-	return &DeleteGroupUseCase{enforcer: enforcer, groups: groups}
+func NewDeleteGroupUseCase(
+	enforcer groupEnforcer,
+	syncEnforcer groupSyncEnforcer,
+	groups interface {
+		groupGetter
+		groupDeleter
+	},
+) *DeleteGroupUseCase {
+	return &DeleteGroupUseCase{enforcer: enforcer, syncEnforcer: syncEnforcer, groups: groups}
 }
 
-// Execute deletes the group with the given ID.
+// Execute deletes the group and removes all associated Casbin rules.
 func (uc *DeleteGroupUseCase) Execute(ctx context.Context, id string) error {
 	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, "group", auth.ActionWrite); err != nil {
 		return fmt.Errorf("check access: %w", err)
+	}
+
+	group, err := uc.groups.Get(ctx, id)
+	if err != nil {
+		return fmt.Errorf(errGetGroup, err)
+	}
+
+	groupRules := uc.syncEnforcer.GetRulesForSubject(group.Name)
+
+	// Remove per-namespace membership records for all members
+	for _, member := range group.Members {
+		for _, rule := range groupRules {
+			_ = uc.syncEnforcer.RemoveRoleForUser(member, group.Name, rule[2])
+		}
+	}
+
+	// Remove the group's own role rules
+	for _, rule := range groupRules {
+		_ = uc.syncEnforcer.RemoveRoleForUser(group.Name, rule[1], rule[2])
 	}
 
 	if err := uc.groups.Delete(ctx, id); err != nil {
@@ -192,8 +253,9 @@ func (uc *ListGroupsUseCase) Execute(ctx context.Context) ([]*domain.Group, erro
 
 // AddMemberUseCase adds a member to a group.
 type AddMemberUseCase struct {
-	enforcer groupEnforcer
-	groups   interface {
+	enforcer     groupEnforcer
+	syncEnforcer groupSyncEnforcer
+	groups       interface {
 		groupGetter
 		groupUpdater
 	}
@@ -202,15 +264,18 @@ type AddMemberUseCase struct {
 // NewAddMemberUseCase returns a new AddMemberUseCase.
 func NewAddMemberUseCase(
 	enforcer groupEnforcer,
+	syncEnforcer groupSyncEnforcer,
 	groups interface {
 		groupGetter
 		groupUpdater
 	},
 ) *AddMemberUseCase {
-	return &AddMemberUseCase{enforcer: enforcer, groups: groups}
+	return &AddMemberUseCase{enforcer: enforcer, syncEnforcer: syncEnforcer, groups: groups}
 }
 
-// Execute adds the given email to the group.
+// Execute adds the given email to the group and syncs Casbin membership records.
+//
+//nolint:dupl // add and remove share the same structure intentionally
 func (uc *AddMemberUseCase) Execute(ctx context.Context, groupID, email string) (*domain.Group, error) {
 	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, "group", auth.ActionWrite); err != nil {
 		return nil, fmt.Errorf("check access: %w", err)
@@ -229,13 +294,20 @@ func (uc *AddMemberUseCase) Execute(ctx context.Context, groupID, email string) 
 		return nil, fmt.Errorf(errUpdateGroup, err)
 	}
 
+	for _, rule := range uc.syncEnforcer.GetRulesForSubject(group.Name) {
+		if err := uc.syncEnforcer.AddRoleForUser(email, group.Name, rule[2]); err != nil {
+			return nil, fmt.Errorf("sync member role: %w", err)
+		}
+	}
+
 	return group, nil
 }
 
 // RemoveMemberUseCase removes a member from a group.
 type RemoveMemberUseCase struct {
-	enforcer groupEnforcer
-	groups   interface {
+	enforcer     groupEnforcer
+	syncEnforcer groupSyncEnforcer
+	groups       interface {
 		groupGetter
 		groupUpdater
 	}
@@ -244,15 +316,18 @@ type RemoveMemberUseCase struct {
 // NewRemoveMemberUseCase returns a new RemoveMemberUseCase.
 func NewRemoveMemberUseCase(
 	enforcer groupEnforcer,
+	syncEnforcer groupSyncEnforcer,
 	groups interface {
 		groupGetter
 		groupUpdater
 	},
 ) *RemoveMemberUseCase {
-	return &RemoveMemberUseCase{enforcer: enforcer, groups: groups}
+	return &RemoveMemberUseCase{enforcer: enforcer, syncEnforcer: syncEnforcer, groups: groups}
 }
 
-// Execute removes the given email from the group.
+// Execute removes the given email from the group and syncs Casbin membership records.
+//
+//nolint:dupl // add and remove share the same structure intentionally
 func (uc *RemoveMemberUseCase) Execute(ctx context.Context, groupID, email string) (*domain.Group, error) {
 	if err := auth.CheckAccess(ctx, uc.enforcer, auth.ObjectAll, "group", auth.ActionWrite); err != nil {
 		return nil, fmt.Errorf("check access: %w", err)
@@ -269,6 +344,12 @@ func (uc *RemoveMemberUseCase) Execute(ctx context.Context, groupID, email strin
 
 	if err = uc.groups.Update(ctx, group); err != nil {
 		return nil, fmt.Errorf(errUpdateGroup, err)
+	}
+
+	for _, rule := range uc.syncEnforcer.GetRulesForSubject(group.Name) {
+		if err := uc.syncEnforcer.RemoveRoleForUser(email, group.Name, rule[2]); err != nil {
+			return nil, fmt.Errorf("sync remove member role: %w", err)
+		}
 	}
 
 	return group, nil

@@ -73,8 +73,6 @@ func (s *stubTokenLookup) updatedHashes() []string {
 }
 
 func validToken() *domain.Token {
-	future := time.Now().Add(time.Hour)
-
 	return &domain.Token{
 		ID:         "token-1",
 		IssuedBy:   "user@example.com",
@@ -82,13 +80,11 @@ func validToken() *domain.Token {
 		TokenHash:  tokenHash(testRawToken),
 		Namespaces: []string{"prod"},
 		Role:       "writer",
-		ExpiresAt:  &future,
+		ExpiresAt:  new(time.Now().Add(time.Hour)),
 	}
 }
 
 func expiredToken() *domain.Token {
-	past := time.Now().Add(-time.Hour)
-
 	return &domain.Token{
 		ID:         "token-expired",
 		IssuedBy:   "user@example.com",
@@ -96,7 +92,7 @@ func expiredToken() *domain.Token {
 		TokenHash:  tokenHash(testRawToken),
 		Namespaces: []string{"prod"},
 		Role:       "writer",
-		ExpiresAt:  &past,
+		ExpiresAt:  new(time.Now().Add(-time.Hour)),
 	}
 }
 
@@ -261,8 +257,7 @@ func TestTokenInterceptor_Stream(t *testing.T) {
 			var capturedCtx *context.Context
 			handler := func(_ any, stream grpc.ServerStream) error {
 				handlerCalled = true
-				streamCtx := stream.Context()
-				capturedCtx = &streamCtx
+				capturedCtx = new(stream.Context())
 
 				return nil
 			}

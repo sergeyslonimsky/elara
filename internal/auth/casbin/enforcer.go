@@ -177,6 +177,21 @@ func (e *Enforcer) GetGroupingPolicy() [][]string {
 	return rules
 }
 
+// GetRulesForSubject returns all [subject, role, domain] g-rules where subject matches.
+func (e *Enforcer) GetRulesForSubject(subject string) [][]string {
+	all, _ := e.e.GetGroupingPolicy()
+
+	var result [][]string
+
+	for _, rule := range all {
+		if len(rule) == gRuleNativeLen && rule[0] == subject {
+			result = append(result, rule)
+		}
+	}
+
+	return result
+}
+
 // SeedPassthroughAdmin adds the g-rule for the passthrough user used when auth is disabled.
 func (e *Enforcer) SeedPassthroughAdmin() error {
 	if _, err := e.e.AddGroupingPolicy("local-admin@elara.internal", authpkg.RoleAdmin, authpkg.ObjectAll); err != nil {
