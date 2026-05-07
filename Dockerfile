@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------
 # Stage 1 — Build the React frontend (static bundle embedded later by Go).
 # -----------------------------------------------------------------------
-FROM node:25.9-alpine3.22 AS frontend
+FROM node:25.9.0-alpine3.22 AS frontend
 
 WORKDIR /app/web
 
@@ -18,7 +18,7 @@ RUN npm run build
 # -----------------------------------------------------------------------
 # Stage 2 — Compile the Go binary with the bundled frontend embedded.
 # -----------------------------------------------------------------------
-FROM golang:1.26-alpine AS backend
+FROM golang:1.26.3-alpine3.23 AS backend
 
 WORKDIR /app
 

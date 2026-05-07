@@ -10,6 +10,7 @@ build-fe:
 lint:
 	@buf format -w
 	@buf lint
+	@govulncheck ./...
 	@golangci-lint run --fix
 	@npm --prefix ./web run format
 	@npm --prefix ./web run lint:fix
