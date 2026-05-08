@@ -42,11 +42,13 @@ func TestChangePasswordUseCase_Execute(t *testing.T) {
 
 				mockReader := mock_auth.NewMockpasswordReader(ctrl)
 				mockWriter := mock_auth.NewMockpasswordWriter(ctrl)
+				mockSession := mock_auth.NewMocksessionCreator(ctrl)
 
 				mockReader.EXPECT().Get(ctx, email).Return(user, nil)
 				mockWriter.EXPECT().SetPassword(ctx, email, gomock.Any(), false).Return(nil)
+				mockSession.EXPECT().Create(gomock.Any()).Return("new-token", nil)
 
-				return authuc.NewChangePasswordUseCase(mockReader, mockWriter, nil), ctx
+				return authuc.NewChangePasswordUseCase(mockReader, mockWriter, mockSession), ctx
 			},
 		},
 		{
@@ -58,11 +60,13 @@ func TestChangePasswordUseCase_Execute(t *testing.T) {
 
 				mockReader := mock_auth.NewMockpasswordReader(ctrl)
 				mockWriter := mock_auth.NewMockpasswordWriter(ctrl)
+				mockSession := mock_auth.NewMocksessionCreator(ctrl)
 
 				mockReader.EXPECT().Get(ctx, email).Return(user, nil)
 				mockWriter.EXPECT().SetPassword(ctx, email, gomock.Any(), false).Return(nil)
+				mockSession.EXPECT().Create(gomock.Any()).Return("new-token", nil)
 
-				return authuc.NewChangePasswordUseCase(mockReader, mockWriter, nil), ctx
+				return authuc.NewChangePasswordUseCase(mockReader, mockWriter, mockSession), ctx
 			},
 		},
 		{

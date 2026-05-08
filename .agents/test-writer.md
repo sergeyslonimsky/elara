@@ -7,6 +7,27 @@ model: inherit
 
 # Test Writer Agent
 
+## Operating discipline (scope, commands, output)
+
+You are typically invoked with an explicit scope (e.g. `internal/usecase/config/`). Stay inside it.
+
+**Commands you run:**
+- ✅ `go test -count=1 ./<scope>/...` — targeted, with `-count=1` to bypass cache.
+- ✅ `golangci-lint run ./<scope>/...` — for the lint check before reporting completion.
+- ✅ `go generate ./<scope>/...` — only if you changed an interface in scope; refresh mocks once before running tests.
+- ❌ `make test` / `make lint` — never. They include frontend (`web/`), e2e, and unrelated packages. Burns context and can cascade-fail on issues outside your scope.
+- ❌ `npm`, `cd web`, anything in `web/` — never. You are not the frontend agent.
+
+**Output discipline:**
+- Pipe long-running commands through `2>&1 | tail -100` (or `tail -50` for `go test`). Full failing-test logs can be thousands of lines and pollute the conversation context for many turns.
+- If you need a specific failure detail, re-run with `go test -run <SpecificTest> ./<pkg>` — don't re-print the whole suite.
+
+**Cross-package failures:**
+If a package outside the scope fails to compile or test (e.g. mocks in a sibling package became stale), do NOT fix it. Add it to a `BLOCKERS:` section in your final report and stop. The user/main agent will sequence the fix.
+
+**Step budget:**
+If you exceed ~30 tool calls without convergence, stop and report. Cycles of "read file → edit → run tests → read log → repeat" are usually a sign of unclear scope or fighting a stale mock — surface that, don't grind through.
+
 ## Mandatory Rules
 
 - Always add `t.Parallel()` at the start of every test function and every sub-test
@@ -27,7 +48,7 @@ import (
     "github.com/stretchr/testify/require"
     "go.uber.org/mock/gomock"
 
-    mock_service "github.com/sergeyslonimsky/elara/internal/<path>/mocks"
+    config_mock "github.com/sergeyslonimsky/elara/internal/usecase/config/mocks"
 )
 ```
 
@@ -35,6 +56,33 @@ import (
 
 - Table-driven tests: `TestType_Method` — scenarios are covered by test cases
 - Single-scenario tests (when table-driven is not applicable): `TestType_Method_Scenario`
+
+## Error assertion: `errIs` / `wantErr` only — no callbacks
+
+The test case struct has exactly two fields for error assertions:
+- `errIs error` — sentinel errors (`domain.ErrUnauthorized`, `domain.ErrForbidden`, etc.) checked with `require.ErrorIs`.
+- `wantErr string` — substring of a wrapped error message (`"enforce: db error"`, `"get config at revision: not found"`) checked with `require.ErrorContains`.
+
+**Never use `assertion: require.ErrorAssertionFunc` callbacks** like `func(t require.TestingT, err error, ...)`. The `modernize` linter in this project flags them, and they let regressions through (a callback that just calls `require.Error` does not check the error message — silent breakage when wrapping changes).
+
+In the test loop, error checks return early so happy-path assertions don't run on error cases:
+
+```go
+got, err := svc.Method(ctx, tt.input)
+
+if tt.errIs != nil {
+    require.ErrorIs(t, err, tt.errIs)
+    return
+}
+if tt.wantErr != "" {
+    require.ErrorContains(t, err, tt.wantErr)
+    return
+}
+require.NoError(t, err)
+assert.Equal(t, tt.want, got)
+```
+
+`wantErr` should match the **wrapped** message at the boundary you actually want to lock in (e.g. `"enforce: db error"` not just `"db error"`) — that pins the wrapping context, so refactoring `fmt.Errorf("enforce: %w", err)` → `fmt.Errorf("authz: %w", err)` is caught by tests, not silently accepted.
 
 ## require vs assert
 
@@ -65,6 +113,16 @@ as `nil`. Never create a mock just to pass it to the constructor when it won't b
 
 If the method under test has no dependencies to mock, omit the `mockFunc` field from the test case struct entirely.
 
+When some cases in a table don't need to set any mock expectations (e.g. early-return validation cases), still keep the same `mockFunc` signature for consistency, but use the blank identifier for the unused mocks parameter:
+
+```go
+mockFunc: func(ctx context.Context, _ mocks) context.Context {
+    return ctx
+},
+```
+
+Don't make `mockFunc` optional / nil-checked in the loop — that branches the runner needlessly.
+
 Test data shared between cases must not be declared outside the test table — except for immutable values
 needed in multiple places (e.g. `now := time.Now()` for consistent timestamps across `mockFunc` and `expected`).
 This avoids field-by-field assertions and keeps `assert.Equal(t, tt.expected, result)` as a single comparison.
@@ -87,7 +145,7 @@ func TestService_Method(t *testing.T) {
             name:  "success",
             input: SomeInput{...},
             mockFunc: func(ctrl *gomock.Controller) *service.Service {
-                dep := mock_service.NewMockDep(ctrl)
+                dep := config_mock.NewMockstorage(ctrl)
                 dep.EXPECT().DoSomething(gomock.Any(), ...).Return(result, nil)
                 return service.NewService(dep)
             },
@@ -97,7 +155,7 @@ func TestService_Method(t *testing.T) {
             name:  "dep returns error",
             input: SomeInput{...},
             mockFunc: func(ctrl *gomock.Controller) *service.Service {
-                dep := mock_service.NewMockDep(ctrl)
+                dep := config_mock.NewMockstorage(ctrl)
                 dep.EXPECT().DoSomething(gomock.Any(), ...).Return(nil, errors.New("db failure"))
                 return service.NewService(dep)
             },
@@ -147,7 +205,7 @@ func TestService_Method(t *testing.T) {
             input: SomeInput{...},
             mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*service.Service, context.Context) {
                 ctx = auth.WithClaims(ctx, adminClaims)
-                dep := mock_service.NewMockDep(ctrl)
+                dep := config_mock.NewMockstorage(ctrl)
                 dep.EXPECT().DoSomething(ctx, ...).Return(result, nil)
                 return service.NewService(dep), ctx
             },
@@ -185,16 +243,19 @@ func TestService_Method(t *testing.T) {
 
 ## Mock Conventions
 
-- Mocks live in `mocks/` subdirectory next to the source file
-- Mock package name: `mock_<pkgname>` (e.g. `mock_service`, `mock_auth`)
-- Mock file name: `mock_<source>.go` (e.g. `mock_service.go`)
-- `//go:generate` directive goes at the top of the **source file** (not the test file), using `-destination` and `-package`:
+- Mocks live in `mocks/` subdirectory next to the source files of the production package
+- Mock package name: `<pkgname>_mock` (e.g. `config_mock`, `webhook_mock`, `auth_mock`)
+- Mock file name: `<source>_mock.go` mirrors the source file (e.g. `service.go` → `mocks/service_mock.go`; if the package generates a single combined mock file, use `<pkgname>_mock.go`)
+- `//go:generate` directive goes at the top of every **source file that declares dependency interfaces** (not in test files), using `-source=` mode so newly added interfaces are picked up automatically:
 
 ```go
-//go:generate mockgen -destination=mocks/mock_<source>.go -package=mock_<pkgname> -source=<source>.go
+//go:generate mockgen -destination=mocks/<source>_mock.go -package=<pkgname>_mock -source=<source>.go
 ```
 
-- Import mocks as `mock_<pkg> "github.com/sergeyslonimsky/elara/internal/<path>/mocks"`
+- One service package may have multiple `//go:generate` directives — one per source file with interfaces (e.g. `service.go` → `service_mock.go`, `model.go` → `model_mock.go`). Each writes to a distinct destination but they all land in the same `<pkgname>_mock` package.
+- Caveat of `-source=` mode: every interface in the file gets a mock. Keep helper interfaces that should not be mocked in a separate file without a `//go:generate` directive.
+- Import mocks as `<pkg>_mock "github.com/sergeyslonimsky/elara/internal/<path>/mocks"`
+- Mock type names follow the source interface name. Private interfaces (`storage`, `enforcer`) generate `Mockstorage`, `Mockenforcer`. Capitalised mock-method names work the same way: `mock.EXPECT().Get(...)`.
 
 ## gomock Argument Matchers
 
@@ -251,6 +312,12 @@ Use `t.Cleanup()` instead of `defer` inside tests — it works correctly with `t
 db := openTestDB(t)
 t.Cleanup(func() { db.Close() })
 ```
+
+Note: Do not explicitly call `defer ctrl.Finish()` on gomock controllers. `gomock.NewController(t)` automatically registers cleanup via `t.Cleanup()`.
+
+## File Naming
+
+- Test file names should use snake_case for multi-word methods (e.g. `service_get_at_revision_test.go`, not `service_getatrevision_test.go`).
 
 ## Error Assertions
 

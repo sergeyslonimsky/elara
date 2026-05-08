@@ -14,36 +14,25 @@ const sessionCookieName = "elara_session"
 
 //nolint:gochecknoglobals // explicitly requested by code review CR-5 to optimize allocations
 var passwordChangeAllowedProcedures = map[string]struct{}{
-	"/elara.auth.v1.AuthService/ChangePassword": {},
-	"/elara.auth.v1.AuthService/Logout":         {},
-	"/elara.auth.v1.AuthService/Me":             {},
+	"/elara.profile.v1.ProfileService/ChangePassword": {},
+	"/elara.profile.v1.ProfileService/Logout":         {},
+	"/elara.profile.v1.ProfileService/Me":             {},
 }
 
 // AuthInterceptor validates the elara_session cookie and injects *auth.Claims into context.
-// Procedures listed in publicProc bypass the auth check entirely.
 type AuthInterceptor struct {
-	session    *auth.SessionManager
-	publicProc map[string]struct{}
+	session *auth.SessionManager
 }
 
 var _ connect.Interceptor = (*AuthInterceptor)(nil)
 
-// NewAuthInterceptor returns an AuthInterceptor that skips auth for the listed public procedures.
-func NewAuthInterceptor(session *auth.SessionManager, publicProcedures []string) *AuthInterceptor {
-	m := make(map[string]struct{}, len(publicProcedures))
-	for _, p := range publicProcedures {
-		m[p] = struct{}{}
-	}
-
-	return &AuthInterceptor{session: session, publicProc: m}
+// NewAuthInterceptor returns an AuthInterceptor that authenticates all requests.
+func NewAuthInterceptor(session *auth.SessionManager) *AuthInterceptor {
+	return &AuthInterceptor{session: session}
 }
 
 func (i *AuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		if _, ok := i.publicProc[req.Spec().Procedure]; ok {
-			return next(ctx, req)
-		}
-
 		ctx, err := i.authenticate(ctx, req.Header())
 		if err != nil {
 			return nil, err
@@ -63,10 +52,6 @@ func (i *AuthInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) 
 
 func (i *AuthInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		if _, ok := i.publicProc[conn.Spec().Procedure]; ok {
-			return next(ctx, conn)
-		}
-
 		ctx, err := i.authenticate(ctx, conn.RequestHeader())
 		if err != nil {
 			return err

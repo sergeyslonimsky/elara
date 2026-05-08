@@ -8,7 +8,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-//go:generate mockgen -destination=mocks/change_password_mock.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth passwordReader,passwordWriter,sessionCreator
+//go:generate mockgen -destination=mocks/change_password_mock.go -package=auth_mock github.com/sergeyslonimsky/elara/internal/usecase/auth passwordReader,passwordWriter
 
 type passwordReader interface {
 	Get(ctx context.Context, email string) (*domain.User, error)

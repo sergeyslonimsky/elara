@@ -9,6 +9,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/schemavalidator"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 	clientsuc "github.com/sergeyslonimsky/elara/internal/usecase/clients"
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
@@ -20,19 +21,7 @@ import (
 )
 
 type UseCases struct {
-	CreateConfig   *configuc.CreateUseCase
-	GetConfig      *configuc.GetUseCase
-	UpdateConfig   *configuc.UpdateUseCase
-	DeleteConfig   *configuc.DeleteUseCase
-	ListConfigs    *configuc.ListUseCase
-	ConfigHistory  *configuc.HistoryUseCase
-	SearchConfigs  *configuc.SearchUseCase
-	CopyConfig     *configuc.CopyUseCase
-	ValidateConfig *configuc.ValidateUseCase
-	WatchConfigs   *configuc.WatchUseCase
-	ConfigDiff     *configuc.DiffUseCase
-	LockConfig     *configuc.LockUseCase
-	UnlockConfig   *configuc.UnlockUseCase
+	Config *configuc.Service
 
 	CreateNamespace *nsuc.CreateUseCase
 	GetNamespace    *nsuc.GetUseCase
@@ -199,43 +188,16 @@ func bootstrapBasicAuthAdmin(
 }
 
 func newCoreUseCases(a *Adapters, enforcer *casbin.Enforcer) *UseCases {
-	schemaValidator := schemauc.NewValidateContentUseCase(a.SchemaRepo)
+	schemaValidator := schemavalidator.New(a.SchemaRepo)
 
 	return &UseCases{
-		CreateConfig: configuc.NewCreateUseCase(
+		Config: configuc.New(
 			enforcer,
-			a.ConfigRepo,
-			a.Watch,
-			a.NamespaceRepo,
-			a.NamespaceRepo,
-			schemaValidator,
-		),
-		GetConfig: configuc.NewGetUseCase(enforcer, a.ConfigRepo),
-		UpdateConfig: configuc.NewUpdateUseCase(
-			enforcer,
-			a.ConfigRepo,
 			a.ConfigRepo,
 			a.Watch,
 			a.NamespaceRepo,
 			schemaValidator,
 		),
-		DeleteConfig:  configuc.NewDeleteUseCase(enforcer, a.ConfigRepo, a.Watch),
-		ListConfigs:   configuc.NewListUseCase(enforcer, a.ConfigRepo),
-		ConfigHistory: configuc.NewHistoryUseCase(enforcer, a.ConfigRepo),
-		SearchConfigs: configuc.NewSearchUseCase(enforcer, a.ConfigRepo),
-		CopyConfig: configuc.NewCopyUseCase(
-			enforcer,
-			a.ConfigRepo,
-			a.ConfigRepo,
-			a.Watch,
-			a.NamespaceRepo,
-			a.NamespaceRepo,
-		),
-		ValidateConfig: configuc.NewValidateUseCase(enforcer, schemaValidator),
-		WatchConfigs:   configuc.NewWatchUseCase(enforcer, a.Watch),
-		ConfigDiff:     configuc.NewDiffUseCase(enforcer, a.ConfigRepo),
-		LockConfig:     configuc.NewLockUseCase(enforcer, a.ConfigRepo, a.Watch),
-		UnlockConfig:   configuc.NewUnlockUseCase(enforcer, a.ConfigRepo, a.Watch),
 
 		CreateNamespace: nsuc.NewCreateUseCase(enforcer, a.NamespaceRepo, a.NamespaceRepo),
 		GetNamespace:    nsuc.NewGetUseCase(enforcer, a.NamespaceRepo, a.NamespaceRepo),

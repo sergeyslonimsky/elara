@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package elara.auth.v1;
+
+enum AuthType {
+  AUTH_TYPE_UNSPECIFIED = 0;
+  AUTH_TYPE_OIDC = 1;
+  AUTH_TYPE_BASIC = 2;
+  AUTH_TYPE_NONE = 3;
+}

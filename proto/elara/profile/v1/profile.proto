@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package elara.profile.v1;
+
+message NamespaceAccess {
+  string name = 1;
+  bool can_write = 2;
+}

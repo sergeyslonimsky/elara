@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package elara.user.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message User {
+  string email = 1;
+  string name = 2;
+  string picture = 3;
+  string provider = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp last_login_at = 6;
+}

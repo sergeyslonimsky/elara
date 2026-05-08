@@ -10,7 +10,7 @@ import (
 )
 
 //nolint:cyclop // error-mapping switch is intentionally exhaustive; splitting would obscure the mapping
-func toConnectError(err error) error {
+func ToConnectError(err error) error {
 	if err == nil {
 		return nil
 	}

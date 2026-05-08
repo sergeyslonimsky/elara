@@ -69,13 +69,12 @@ func (s *testConfigServer) GetConfig(
 func setupTestServer(
 	t *testing.T,
 	sm *auth.SessionManager,
-	publicProcs []string,
 	wantClaims bool,
 ) (*httptest.Server, *testConfigServer) {
 	t.Helper()
 
 	srv := &testConfigServer{t: t, wantClaims: wantClaims}
-	authI := interceptor.NewAuthInterceptor(sm, publicProcs)
+	authI := interceptor.NewAuthInterceptor(sm)
 
 	mux := http.NewServeMux()
 	path, handler := configv1connect.NewConfigServiceHandler(srv, connect.WithInterceptors(authI))
@@ -95,7 +94,6 @@ func TestAuthInterceptor_WrapUnary(t *testing.T) {
 	tests := []struct {
 		name        string
 		cookieValue string
-		publicProcs []string
 		wantCode    connect.Code
 		wantClaims  bool
 	}{
@@ -118,18 +116,13 @@ func TestAuthInterceptor_WrapUnary(t *testing.T) {
 			cookieValue: func() string { return newExpiredToken(t) }(),
 			wantCode:    connect.CodeUnauthenticated,
 		},
-		{
-			name:        "public procedure bypasses auth",
-			publicProcs: []string{configv1connect.ConfigServiceGetConfigProcedure},
-			wantClaims:  false,
-		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			ts, srv := setupTestServer(t, sm, tc.publicProcs, tc.wantClaims)
+			ts, srv := setupTestServer(t, sm, tc.wantClaims)
 			client := configv1connect.NewConfigServiceClient(http.DefaultClient, ts.URL)
 
 			req := connect.NewRequest(&configv1.GetConfigRequest{
@@ -161,7 +154,7 @@ func TestAuthInterceptor_WrapStreamingClient(t *testing.T) {
 	t.Parallel()
 
 	sm := newTestSessionManager()
-	i := interceptor.NewAuthInterceptor(sm, nil)
+	i := interceptor.NewAuthInterceptor(sm)
 
 	called := false
 	next := connect.StreamingClientFunc(func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
@@ -190,7 +183,6 @@ func TestAuthInterceptor_WrapStreamingHandler(t *testing.T) {
 	t.Parallel()
 
 	sm := newTestSessionManager()
-	publicProc := "/some.Service/PublicMethod"
 	protectedProc := "/some.Service/ProtectedMethod"
 
 	tests := []struct {
@@ -200,11 +192,6 @@ func TestAuthInterceptor_WrapStreamingHandler(t *testing.T) {
 		wantCode    connect.Code
 		wantClaims  bool
 	}{
-		{
-			name:       "public procedure bypasses auth",
-			procedure:  publicProc,
-			wantClaims: false,
-		},
 		{
 			name:        "valid cookie injects claims into context",
 			procedure:   protectedProc,
@@ -228,7 +215,7 @@ func TestAuthInterceptor_WrapStreamingHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			i := interceptor.NewAuthInterceptor(sm, []string{publicProc})
+			i := interceptor.NewAuthInterceptor(sm)
 
 			header := make(http.Header)
 			if tc.cookieValue != "" {

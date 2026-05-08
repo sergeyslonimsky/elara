@@ -11,13 +11,13 @@ import (
 func TestNormalizeLimit(t *testing.T) {
 	t.Parallel()
 
-	runPaginationTest(t, "limit", normalizeLimit)
+	runPaginationTest(t, "limit", NormalizeLimit)
 }
 
 func TestNormalizeOffset(t *testing.T) {
 	t.Parallel()
 
-	runPaginationTest(t, "offset", normalizeOffset)
+	runPaginationTest(t, "offset", NormalizeOffset)
 }
 
 func runPaginationTest(t *testing.T, field string, fn func(int32) (int, error)) {

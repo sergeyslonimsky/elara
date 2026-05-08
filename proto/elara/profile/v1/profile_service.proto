@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package elara.profile.v1;
+
+import "elara/profile/v1/profile.proto";
+
+service ProfileService {
+  rpc Me(MeRequest) returns (MeResponse);
+  // Basic-auth flow — changes the current user's password
+  // current_password is required unless password_change_required is true in the session
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+}
+
+message MeRequest {}
+
+message MeResponse {
+  string email = 1;
+  string name = 2;
+  string picture = 3;
+  bool is_admin = 4;
+  repeated NamespaceAccess namespaces = 5;
+  bool can_view_webhooks = 6;
+  bool can_manage_webhooks = 7;
+  bool password_change_required = 8;
+}
+
+message ChangePasswordRequest {
+  optional string current_password = 1;
+  string new_password = 2;
+}
+
+message ChangePasswordResponse {}
+
+message LogoutRequest {}
+
+message LogoutResponse {}

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package elara.token.v1;
+
+import "elara/token/v1/token.proto";
+import "google/protobuf/timestamp.proto";
+
+service TokenService {
+  rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse);
+  rpc ListTokens(ListTokensRequest) returns (ListTokensResponse);
+  rpc GetToken(GetTokenRequest) returns (GetTokenResponse);
+  rpc RevokeToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+}
+
+message CreateTokenRequest {
+  string name = 1;
+  repeated string namespaces = 2;
+  string role = 3;
+  optional google.protobuf.Timestamp expires_at = 4;
+}
+
+message CreateTokenResponse {
+  Token token = 1;
+  string raw_token = 2;
+}
+
+message ListTokensRequest {
+  string issued_by = 1;
+}
+
+message ListTokensResponse {
+  repeated Token tokens = 1;
+}
+
+message GetTokenRequest {
+  string id = 1;
+}
+
+message GetTokenResponse {
+  Token token = 1;
+}
+
+message RevokeTokenRequest {
+  string id = 1;
+}
+
+message RevokeTokenResponse {}

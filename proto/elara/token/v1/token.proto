@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package elara.token.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message Token {
+  string id = 1;
+  string name = 2;
+  string issued_by = 3;
+  repeated string namespaces = 4;
+  string role = 5;
+  optional google.protobuf.Timestamp expires_at = 6;
+  optional google.protobuf.Timestamp last_used_at = 7;
+  string last_used_ip = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
