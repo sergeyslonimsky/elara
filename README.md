@@ -613,7 +613,7 @@ ui:
 |--------------------------|------------------------------------------------------------------------|
 | `PasswordChangeRequired` | All RPCs blocked except `ChangePassword`, `Me`, and `Logout`           |
 | Session TTL              | Default 24 h; configure via `ui.auth.session.ttl`                     |
-| Cookie                   | HttpOnly, Secure, SameSite=Strict; name `elara_session`               |
+| Cookie                   | HttpOnly, SameSite=Strict; name `elara_session`; `Secure` flag controlled by `ui.auth.session.secureCookie` |
 
 ### Kubernetes / Helm
 
@@ -671,6 +671,7 @@ Key defaults:
 | `ui.auth.oidc.redirectUrl`               | `UI_AUTH_OIDC_REDIRECTURL`                 | `""`           |
 | `ui.auth.session.secret`                 | `UI_AUTH_SESSION_SECRET`                   | `""`           |
 | `ui.auth.session.ttl`                    | `UI_AUTH_SESSION_TTL`                      | `24h`          |
+| `ui.auth.session.secureCookie`           | `UI_AUTH_SESSION_SECURECOOKIE`             | `false`        |
 | `client.etcd.port`                       | `CLIENT_ETCD_PORT`                         | `2379`         |
 | `config.data.path`                       | `CONFIG_DATA_PATH`                         | `./data`       |
 | `metrics.enabled`                        | `METRICS_ENABLED`                          | `false`        |

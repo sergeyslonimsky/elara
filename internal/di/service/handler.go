@@ -97,6 +97,7 @@ func initAuthHandlers(handlers *V2Handlers, uc *UseCases, cfg config.Config) {
 		uc.AuthBasicLogin,
 		uc.AuthChangePassword,
 		cfg.UI.Auth.Type,
+		cfg.UI.Auth.Session.SecureCookie,
 	)
 
 	if cfg.UI.Auth.Enabled || cfg.Client.Auth.Enabled {

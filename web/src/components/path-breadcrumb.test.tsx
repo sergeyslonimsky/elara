@@ -1,14 +1,14 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
+import { TestProviders } from "@/test/test-utils";
 import { PathBreadcrumb } from "./path-breadcrumb";
 
 describe("PathBreadcrumb", () => {
 	it("renders correctly with namespace and path", () => {
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<PathBreadcrumb namespace="my-ns" path="foo/bar" />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByRole("link", { name: "Root" })).toBeInTheDocument();
@@ -19,9 +19,9 @@ describe("PathBreadcrumb", () => {
 
 	it("renders only root when no namespace and path provided", () => {
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<PathBreadcrumb path="" />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByRole("link", { name: "Root" })).toBeInTheDocument();
@@ -32,9 +32,9 @@ describe("PathBreadcrumb", () => {
 
 	it("handles deep paths correctly", () => {
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<PathBreadcrumb namespace="ns" path="a/b/c/d" />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByRole("link", { name: "a" })).toHaveAttribute(

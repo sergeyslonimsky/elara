@@ -1,15 +1,15 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { Namespace } from "@/gen/elara/namespace/v1/namespace_pb";
+import { TestProviders } from "@/test/test-utils";
 import { NamespacesCard } from "./namespaces-card";
 
 describe("NamespacesCard", () => {
 	it("renders loading state", () => {
 		const { container } = render(
-			<MemoryRouter>
+			<TestProviders>
 				<NamespacesCard namespaces={undefined} isLoading={true} />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 		const skeletons = container.querySelectorAll('[data-slot="skeleton"]');
 		expect(skeletons.length).toBeGreaterThan(0);
@@ -17,9 +17,9 @@ describe("NamespacesCard", () => {
 
 	it("renders empty state", () => {
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<NamespacesCard namespaces={[]} isLoading={false} />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 		expect(screen.getByText("No namespaces")).toBeInTheDocument();
 	});
@@ -32,12 +32,12 @@ describe("NamespacesCard", () => {
 			},
 		];
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<NamespacesCard
 					namespaces={namespaces as Namespace[]}
 					isLoading={false}
 				/>
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 		expect(screen.getByText("test-ns")).toBeInTheDocument();
 		expect(screen.getByText("5")).toBeInTheDocument();

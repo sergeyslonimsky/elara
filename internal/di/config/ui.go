@@ -48,6 +48,10 @@ type OIDCConfig struct {
 type SessionConfig struct {
 	Secret string
 	TTL    time.Duration
+	// SecureCookie marks the session cookie with the Secure flag.
+	// Set to true only when the service is served over HTTPS.
+	// On plain HTTP (e.g. local dev) the browser drops Secure cookies per RFC 6265.
+	SecureCookie bool
 }
 
 var (
@@ -109,6 +113,7 @@ func newUIConfig(cfg *di.Config) (UI, error) {
 					cfg.GetDuration("ui.auth.session.ttl"),
 					defaultSessionTTL,
 				),
+				SecureCookie: cfg.GetBool("ui.auth.session.secureCookie"),
 			},
 		},
 	}

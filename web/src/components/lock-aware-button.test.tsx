@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
+import { TestProviders } from "@/test/test-utils";
 import { LockAwareButton } from "./lock-aware-button";
 
 describe("LockAwareButton", () => {
@@ -19,11 +19,11 @@ describe("LockAwareButton", () => {
 
 	it("renders as link when 'to' is provided and not locked", () => {
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<LockAwareButton locked={false} to="/target">
 					Go
 				</LockAwareButton>
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		const link = screen.getByRole("link", { name: "Go" });

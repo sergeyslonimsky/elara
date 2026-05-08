@@ -1,11 +1,18 @@
 import {
+	ChevronDown,
 	Database,
 	FolderTree,
+	Key,
 	LayoutDashboard,
 	Network,
+	Shield,
+	Users,
+	UsersRound,
 	Webhook,
 } from "lucide-react";
+import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
+import { useAuth } from "@/components/auth-provider";
 import { Logo } from "@/components/logo";
 import {
 	Sidebar,
@@ -19,10 +26,13 @@ import {
 	SidebarMenuItem,
 	SidebarRail,
 } from "@/components/ui/sidebar";
+import { AuthType } from "@/gen/elara/auth/v1/auth_service_pb";
 
 export function AppSidebar() {
 	const { pathname } = useLocation();
 	const { namespace } = useParams();
+	const { authType, me } = useAuth();
+	const [adminOpen, setAdminOpen] = useState(true);
 
 	const navItems = [
 		{
@@ -30,6 +40,7 @@ export function AppSidebar() {
 			href: "/",
 			icon: LayoutDashboard,
 			isActive: pathname === "/",
+			show: true,
 		},
 		{
 			title: "Configs",
@@ -37,26 +48,60 @@ export function AppSidebar() {
 			icon: FolderTree,
 			isActive:
 				pathname.startsWith("/browse") || pathname.startsWith("/config"),
+			show: true,
 		},
 		{
 			title: "Namespaces",
 			href: "/namespaces",
 			icon: Database,
 			isActive: pathname.startsWith("/namespaces"),
+			show: true,
 		},
 		{
 			title: "Clients",
 			href: "/clients",
 			icon: Network,
 			isActive: pathname.startsWith("/clients"),
+			show: true,
 		},
 		{
 			title: "Webhooks",
 			href: "/webhooks",
 			icon: Webhook,
 			isActive: pathname.startsWith("/webhooks"),
+			show: me?.canViewWebhooks ?? false,
+		},
+		{
+			title: "Tokens",
+			href: "/tokens",
+			icon: Key,
+			isActive: pathname.startsWith("/tokens"),
+			show: !!me,
+		},
+	].filter((item) => item.show);
+
+	const administrationItems = [
+		{
+			title: "Users",
+			href: "/users",
+			icon: Users,
+			isActive: pathname.startsWith("/users"),
+		},
+		{
+			title: "Groups",
+			href: "/groups",
+			icon: UsersRound,
+			isActive: pathname.startsWith("/groups"),
+		},
+		{
+			title: "Access",
+			href: "/access",
+			icon: Shield,
+			isActive: pathname.startsWith("/access"),
 		},
 	];
+
+	const showAdministration = authType !== AuthType.NONE && me?.isAdmin === true;
 
 	return (
 		<Sidebar>
@@ -85,6 +130,39 @@ export function AppSidebar() {
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
+
+				{showAdministration && (
+					<SidebarGroup>
+						<SidebarGroupLabel
+							className="flex cursor-pointer items-center justify-between hover:text-foreground"
+							onClick={() => setAdminOpen(!adminOpen)}
+						>
+							Administration
+							<ChevronDown
+								className={`h-3.5 w-3.5 transition-transform duration-200 ${
+									adminOpen ? "" : "-rotate-90"
+								}`}
+							/>
+						</SidebarGroupLabel>
+						{adminOpen && (
+							<SidebarGroupContent>
+								<SidebarMenu>
+									{administrationItems.map((item) => (
+										<SidebarMenuItem key={item.title}>
+											<SidebarMenuButton
+												isActive={item.isActive}
+												render={<Link to={item.href} />}
+											>
+												<item.icon />
+												<span>{item.title}</span>
+											</SidebarMenuButton>
+										</SidebarMenuItem>
+									))}
+								</SidebarMenu>
+							</SidebarGroupContent>
+						)}
+					</SidebarGroup>
+				)}
 			</SidebarContent>
 			<SidebarRail />
 		</Sidebar>

@@ -137,6 +137,9 @@ config:
         secret: ""
         # -- JWT session lifetime (Go duration).
         ttl: "24h"
+        # -- Add the Secure flag to the session cookie.
+        # Must be true in production (HTTPS). Set to false for local HTTP development.
+        secureCookie: true
       # -- Name of a pre-existing Secret that supplies sensitive env vars:
       #    UI_AUTH_SESSION_SECRET
       #    UI_AUTH_BASICAUTH_ADMININITIALPASSWORD  (basic-auth mode)

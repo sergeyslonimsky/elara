@@ -162,6 +162,7 @@ sections:
 | `config.ui.auth.oidc.scopes`                     | `[]`                            | OIDC scopes; defaults to `[openid, email, profile]`                  |
 | `config.ui.auth.session.secret`                  | `""`                            | HS256 JWT signing secret; stored in chart Secret                     |
 | `config.ui.auth.session.ttl`                     | `24h`                           | JWT session lifetime                                                 |
+| `config.ui.auth.session.secureCookie`            | `true`                          | Add `Secure` flag to session cookie; disable only for HTTP dev       |
 | `config.ui.auth.existingSecret`                  | `""`                            | Use a pre-existing Secret instead of the chart-managed one           |
 | `config.client.etcd.port`                        | `2379`                          | etcd-compatible gRPC API                                             |
 | `config.client.history.*`                        | see `values.yaml`               | Connected-clients history tuning                                     |
@@ -198,6 +199,7 @@ key maps to an env var by **uppercasing and replacing dots with underscores
 | `ui.auth.type`                                  | `UI_AUTH_TYPE`                                   | ConfigMap |
 | `ui.auth.adminEmail`                            | `UI_AUTH_ADMINEMAIL`                             | ConfigMap |
 | `ui.auth.session.ttl`                           | `UI_AUTH_SESSION_TTL`                            | ConfigMap |
+| `ui.auth.session.secureCookie`                  | `UI_AUTH_SESSION_SECURECOOKIE`                   | ConfigMap |
 | `ui.auth.oidc.issuerUrl`                        | `UI_AUTH_OIDC_ISSUERURL`                         | ConfigMap |
 | `ui.auth.oidc.clientId`                         | `UI_AUTH_OIDC_CLIENTID`                          | ConfigMap |
 | `ui.auth.oidc.redirectUrl`                      | `UI_AUTH_OIDC_REDIRECTURL`                       | ConfigMap |

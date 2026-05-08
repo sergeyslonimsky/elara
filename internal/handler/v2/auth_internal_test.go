@@ -82,7 +82,7 @@ func TestAuthHandler_BasicLogin(t *testing.T) {
 			}
 
 			basicUC := authuc.NewBasicLoginUseCase(users, session, nil, "")
-			h := NewAuthHandler(nil, nil, nil, basicUC, nil, tt.authType)
+			h := NewAuthHandler(nil, nil, nil, basicUC, nil, tt.authType, false)
 
 			req := connect.NewRequest(&authv1.BasicLoginRequest{
 				Email:    email,
@@ -153,8 +153,8 @@ func TestAuthHandler_ChangePassword(t *testing.T) {
 				tt.setupMocks(reader, writer)
 			}
 
-			changeUC := authuc.NewChangePasswordUseCase(reader, writer)
-			h := NewAuthHandler(nil, nil, nil, nil, changeUC, tt.authType)
+			changeUC := authuc.NewChangePasswordUseCase(reader, writer, nil)
+			h := NewAuthHandler(nil, nil, nil, nil, changeUC, tt.authType, false)
 
 			ctx := internalauth.WithClaims(t.Context(), &internalauth.Claims{
 				Email:                  "user@example.com",
@@ -183,7 +183,7 @@ func newTestAuthHandler(
 	callbackUC *authuc.CallbackUseCase,
 	meUC *authuc.MeUseCase,
 ) *AuthHandler {
-	return NewAuthHandler(loginUC, callbackUC, meUC, nil, nil, config.AuthTypeOIDC)
+	return NewAuthHandler(loginUC, callbackUC, meUC, nil, nil, config.AuthTypeOIDC, false)
 }
 
 func TestAuthHandler_Login(t *testing.T) {
@@ -262,7 +262,7 @@ func TestAuthHandler_GetAuthInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			h := NewAuthHandler(nil, nil, nil, nil, nil, tc.authType)
+			h := NewAuthHandler(nil, nil, nil, nil, nil, tc.authType, false)
 			resp, err := h.GetAuthInfo(context.Background(), connect.NewRequest(&authv1.GetAuthInfoRequest{}))
 
 			require.NoError(t, err)
@@ -274,7 +274,7 @@ func TestAuthHandler_GetAuthInfo(t *testing.T) {
 func TestAuthHandler_Logout(t *testing.T) {
 	t.Parallel()
 
-	h := NewAuthHandler(nil, nil, nil, nil, nil, config.AuthTypeOIDC)
+	h := NewAuthHandler(nil, nil, nil, nil, nil, config.AuthTypeOIDC, false)
 
 	resp, err := h.Logout(context.Background(), connect.NewRequest(&authv1.LogoutRequest{}))
 	require.NoError(t, err)
@@ -341,7 +341,7 @@ func TestAuthHandler_Me(t *testing.T) {
 func TestAuthHandler_Callback_InvalidState(t *testing.T) {
 	t.Parallel()
 
-	h := NewAuthHandler(nil, nil, nil, nil, nil, config.AuthTypeOIDC)
+	h := NewAuthHandler(nil, nil, nil, nil, nil, config.AuthTypeOIDC, false)
 
 	req := connect.NewRequest(&authv1.OIDCCallbackRequest{
 		State: "valid-state",

@@ -1,9 +1,10 @@
 import { create } from "@bufbuild/protobuf";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DirectoryEntrySchema } from "@/gen/elara/config/v1/config_pb";
+import { TestProviders } from "@/test/test-utils";
 import { DirectoryTable } from "./directory-table";
 
 vi.mock("react-router", async (importOriginal) => {
@@ -46,7 +47,7 @@ describe("DirectoryTable", () => {
 
 	it("renders files and folders correctly", () => {
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<DirectoryTable
 					namespace="default"
 					currentPath="/"
@@ -55,7 +56,7 @@ describe("DirectoryTable", () => {
 					sorting={[]}
 					onSortingChange={() => {}}
 				/>
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("my-config")).toBeInTheDocument();
@@ -69,7 +70,7 @@ describe("DirectoryTable", () => {
 			create(DirectoryEntrySchema, { ...mockEntries[0], locked: true }),
 		];
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<DirectoryTable
 					namespace="default"
 					currentPath="/"
@@ -78,7 +79,7 @@ describe("DirectoryTable", () => {
 					sorting={[]}
 					onSortingChange={() => {}}
 				/>
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByLabelText("Config is locked")).toBeInTheDocument();
@@ -90,7 +91,7 @@ describe("DirectoryTable", () => {
 		const user = userEvent.setup();
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<DirectoryTable
 					namespace="default"
 					currentPath="/"
@@ -99,7 +100,7 @@ describe("DirectoryTable", () => {
 					sorting={[]}
 					onSortingChange={() => {}}
 				/>
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		await user.click(screen.getByText("subfolder"));
@@ -115,7 +116,7 @@ describe("DirectoryTable", () => {
 		const user = userEvent.setup();
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<DirectoryTable
 					namespace="default"
 					currentPath="/"
@@ -124,7 +125,7 @@ describe("DirectoryTable", () => {
 					sorting={[]}
 					onSortingChange={() => {}}
 				/>
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("Empty directory")).toBeInTheDocument();

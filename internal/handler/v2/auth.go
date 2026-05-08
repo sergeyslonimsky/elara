@@ -30,6 +30,7 @@ type AuthHandler struct {
 	basicLogin     *authuc.BasicLoginUseCase
 	changePassword *authuc.ChangePasswordUseCase
 	authType       config.AuthType
+	secureCookie   bool
 }
 
 // NewAuthHandler returns a new AuthHandler wired with all auth use cases.
@@ -40,6 +41,7 @@ func NewAuthHandler(
 	basicLogin *authuc.BasicLoginUseCase,
 	changePassword *authuc.ChangePasswordUseCase,
 	authType config.AuthType,
+	secureCookie bool,
 ) *AuthHandler {
 	return &AuthHandler{
 		login:          login,
@@ -48,6 +50,7 @@ func NewAuthHandler(
 		basicLogin:     basicLogin,
 		changePassword: changePassword,
 		authType:       authType,
+		secureCookie:   secureCookie,
 	}
 }
 
@@ -143,11 +146,11 @@ func (h *AuthHandler) OIDCCallback(
 
 	resp := connect.NewResponse(&authv1.OIDCCallbackResponse{})
 
-	cookie := &http.Cookie{
+	cookie := &http.Cookie{ //nolint:gosec //Secure set from config
 		Name:     sessionCookieName,
 		Value:    sessionToken,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   h.secureCookie,
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 	}
@@ -176,11 +179,11 @@ func (h *AuthHandler) BasicLogin(
 		PasswordChangeRequired: user.PasswordChangeRequired,
 	})
 
-	cookie := &http.Cookie{
+	cookie := &http.Cookie{ //nolint:gosec //Secure set from config
 		Name:     sessionCookieName,
 		Value:    sessionToken,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   h.secureCookie,
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 	}
@@ -204,12 +207,23 @@ func (h *AuthHandler) ChangePassword(
 		)
 	}
 
-	err := h.changePassword.Execute(ctx, req.Msg.GetCurrentPassword(), req.Msg.GetNewPassword())
+	token, err := h.changePassword.Execute(ctx, req.Msg.GetCurrentPassword(), req.Msg.GetNewPassword())
 	if err != nil {
 		return nil, toConnectError(err)
 	}
 
-	return connect.NewResponse(&authv1.ChangePasswordResponse{}), nil
+	resp := connect.NewResponse(&authv1.ChangePasswordResponse{})
+	cookie := &http.Cookie{ //nolint:gosec //Secure set from config
+		Name:     sessionCookieName,
+		Value:    token,
+		HttpOnly: true,
+		Secure:   h.secureCookie,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+	}
+	resp.Header().Add(cookieHeader, cookie.String())
+
+	return resp, nil
 }
 
 func (h *AuthHandler) Logout(
@@ -218,11 +232,11 @@ func (h *AuthHandler) Logout(
 ) (*connect.Response[authv1.LogoutResponse], error) {
 	resp := connect.NewResponse(&authv1.LogoutResponse{})
 
-	cookie := &http.Cookie{
+	cookie := &http.Cookie{ //nolint:gosec //Secure set from config
 		Name:     sessionCookieName,
 		Value:    "",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   h.secureCookie,
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 		MaxAge:   -1,

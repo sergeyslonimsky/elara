@@ -49,6 +49,7 @@ data:
   UI_AUTH_TYPE: {{ .Values.config.ui.auth.type | quote }}
   UI_AUTH_ADMINEMAIL: {{ .Values.config.ui.auth.adminEmail | quote }}
   UI_AUTH_SESSION_TTL: {{ .Values.config.ui.auth.session.ttl | quote }}
+  UI_AUTH_SESSION_SECURECOOKIE: {{ .Values.config.ui.auth.session.secureCookie | quote }}
   {{- if eq .Values.config.ui.auth.type "oidc" }}
   UI_AUTH_OIDC_ISSUERURL: {{ .Values.config.ui.auth.oidc.issuerUrl | quote }}
   UI_AUTH_OIDC_CLIENTID: {{ .Values.config.ui.auth.oidc.clientId | quote }}

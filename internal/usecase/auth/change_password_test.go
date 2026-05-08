@@ -46,7 +46,7 @@ func TestChangePasswordUseCase_Execute(t *testing.T) {
 				mockReader.EXPECT().Get(ctx, email).Return(user, nil)
 				mockWriter.EXPECT().SetPassword(ctx, email, gomock.Any(), false).Return(nil)
 
-				return authuc.NewChangePasswordUseCase(mockReader, mockWriter), ctx
+				return authuc.NewChangePasswordUseCase(mockReader, mockWriter, nil), ctx
 			},
 		},
 		{
@@ -62,14 +62,14 @@ func TestChangePasswordUseCase_Execute(t *testing.T) {
 				mockReader.EXPECT().Get(ctx, email).Return(user, nil)
 				mockWriter.EXPECT().SetPassword(ctx, email, gomock.Any(), false).Return(nil)
 
-				return authuc.NewChangePasswordUseCase(mockReader, mockWriter), ctx
+				return authuc.NewChangePasswordUseCase(mockReader, mockWriter, nil), ctx
 			},
 		},
 		{
 			name:     "unauthorized - no claims",
 			currPass: currentPassword,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authuc.ChangePasswordUseCase, context.Context) {
-				return authuc.NewChangePasswordUseCase(nil, nil), ctx
+				return authuc.NewChangePasswordUseCase(nil, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,
 		},
@@ -83,7 +83,7 @@ func TestChangePasswordUseCase_Execute(t *testing.T) {
 				mockReader := mock_auth.NewMockpasswordReader(ctrl)
 				mockReader.EXPECT().Get(ctx, email).Return(user, nil)
 
-				return authuc.NewChangePasswordUseCase(mockReader, nil), ctx
+				return authuc.NewChangePasswordUseCase(mockReader, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,
 		},
@@ -97,7 +97,7 @@ func TestChangePasswordUseCase_Execute(t *testing.T) {
 				mockReader := mock_auth.NewMockpasswordReader(ctrl)
 				mockReader.EXPECT().Get(ctx, email).Return(nil, assert.AnError)
 
-				return authuc.NewChangePasswordUseCase(mockReader, nil), ctx
+				return authuc.NewChangePasswordUseCase(mockReader, nil, nil), ctx
 			},
 			wantErr: "get user",
 		},
@@ -114,7 +114,7 @@ func TestChangePasswordUseCase_Execute(t *testing.T) {
 				mockReader.EXPECT().Get(ctx, email).Return(user, nil)
 				mockWriter.EXPECT().SetPassword(ctx, email, gomock.Any(), false).Return(assert.AnError)
 
-				return authuc.NewChangePasswordUseCase(mockReader, mockWriter), ctx
+				return authuc.NewChangePasswordUseCase(mockReader, mockWriter, nil), ctx
 			},
 			wantErr: "set password",
 		},
@@ -127,7 +127,7 @@ func TestChangePasswordUseCase_Execute(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			sut, ctx := tt.mockFunc(t.Context(), ctrl)
 
-			err := sut.Execute(ctx, tt.currPass, newPassword)
+			_, err := sut.Execute(ctx, tt.currPass, newPassword)
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)

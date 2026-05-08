@@ -311,7 +311,7 @@ func wireUIAuthUseCases(
 		)
 	case config.AuthTypeBasicAuth:
 		uc.AuthBasicLogin = authuc.NewBasicLoginUseCase(a.AuthUsers, sessionManager, enforcer, cfg.UI.Auth.AdminEmail)
-		uc.AuthChangePassword = authuc.NewChangePasswordUseCase(a.AuthUsers, a.AuthUsers)
+		uc.AuthChangePassword = authuc.NewChangePasswordUseCase(a.AuthUsers, a.AuthUsers, sessionManager)
 		uc.AuthResetPassword = authuc.NewResetPasswordUseCase(enforcer, a.AuthUsers)
 		uc.AuthDeleteUser = authuc.NewDeleteUserUseCase(enforcer, a.AuthUsers)
 	case config.AuthTypeNone:

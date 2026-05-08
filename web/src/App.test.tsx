@@ -1,31 +1,61 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { AuthType, type MeResponse } from "@/gen/elara/auth/v1/auth_service_pb";
 import { TestProviders } from "@/test/test-utils";
 import App from "./App";
 
+// Mock useQuery to return authenticated state
+vi.mock("@connectrpc/connect-query", async (importOriginal) => {
+	const actual =
+		await importOriginal<typeof import("@connectrpc/connect-query")>();
+	return {
+		...actual,
+		useQuery: vi.fn(() => ({
+			isLoading: false,
+			isFetching: false,
+			data: undefined,
+			error: null,
+		})),
+	};
+});
+
 describe("App", () => {
-	it("renders the dashboard page at root route", () => {
+	const authContext = {
+		me: {
+			name: "Anonymous",
+			email: "anonymous@elara.local",
+			isAdmin: true,
+			namespaces: [],
+			passwordChangeRequired: false,
+			picture: "",
+			canViewWebhooks: true,
+			canManageWebhooks: true,
+		} as unknown as MeResponse,
+		authType: AuthType.NONE,
+		isLoading: false,
+		logout: vi.fn(),
+	};
+
+	it("renders the dashboard page at root route", async () => {
 		render(
-			<MemoryRouter initialEntries={["/"]}>
-				<TestProviders>
-					<App />
-				</TestProviders>
-			</MemoryRouter>,
+			<TestProviders initialEntries={["/"]} authContext={authContext}>
+				<App />
+			</TestProviders>,
 		);
 
 		expect(
-			screen.getByRole("heading", { name: "Dashboard" }),
+			await screen.findByRole("heading", { name: "Dashboard" }),
 		).toBeInTheDocument();
 	});
 
 	it("renders the 404 page for unknown routes", () => {
 		render(
-			<MemoryRouter initialEntries={["/unknown-route"]}>
-				<TestProviders>
-					<App />
-				</TestProviders>
-			</MemoryRouter>,
+			<TestProviders
+				initialEntries={["/unknown-route"]}
+				authContext={authContext}
+			>
+				<App />
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("Page not found")).toBeInTheDocument();
@@ -36,11 +66,9 @@ describe("App", () => {
 
 	it("renders navigation sidebar", () => {
 		render(
-			<MemoryRouter initialEntries={["/"]}>
-				<TestProviders>
-					<App />
-				</TestProviders>
-			</MemoryRouter>,
+			<TestProviders initialEntries={["/"]} authContext={authContext}>
+				<App />
+			</TestProviders>,
 		);
 
 		expect(
@@ -50,11 +78,9 @@ describe("App", () => {
 
 	it("renders app header", () => {
 		render(
-			<MemoryRouter initialEntries={["/"]}>
-				<TestProviders>
-					<App />
-				</TestProviders>
-			</MemoryRouter>,
+			<TestProviders initialEntries={["/"]} authContext={authContext}>
+				<App />
+			</TestProviders>,
 		);
 
 		expect(screen.getByRole("banner")).toBeInTheDocument();

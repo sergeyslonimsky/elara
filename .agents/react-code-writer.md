@@ -43,6 +43,9 @@ You are an expert React developer specializing in high-quality, production-ready
     - Use generated hooks from `src/gen/...` via `@connectrpc/connect-query`.
     - Explicitly handle `isLoading`, `error`, and `data` states.
     - Use `PageShell`, `ErrorCard`, and skeletons (e.g., `SkeletonList`) to match the project's UX.
+    - **Cache Invalidation**: To invalidate queries, use `useQueryClient` from `@tanstack/react-query` and create keys using `createConnectQueryKey({ schema: method, ... })` from `@connectrpc/connect-query`. Do NOT attempt to access `typeName` on method descriptors.
+    - **Transport Configuration**: `credentials` is NOT a valid property for `ConnectTransportOptions`. To include credentials (e.g., cookies), you must override the `fetch` option in the transport configuration.
+    - **Imports**: Always verify if a hook/utility comes from `@tanstack/react-query` (e.g., `useQueryClient`) or `@connectrpc/connect-query` (e.g., `useQuery`, `createConnectQueryKey`).
 
 ### 3. Component Design & Accessibility (a11y)
 - **Semantic HTML**: Use proper elements (`<button>`, `<nav>`, `<main>`, etc.).
@@ -70,20 +73,23 @@ export function MyForm() {
 - **Mocking**: 
     - Explicitly mock `useQuery` from `@connectrpc/connect-query` using `vi.mock` to test different states (loading, error, data).
     - Avoid relying on `TestProviders` to provide default empty states for page-level tests.
+    - **Protobuf**: When creating mock data for Protobuf messages, ALWAYS use `create(Schema, { ... })` from `@bufbuild/protobuf` instead of plain objects or `as any`. This ensures compile-time field validation and correct internal metadata ($typeName).
 - **Query Priority**: `getByRole` > `getByLabelText` > `getByText` > `getByDisplayValue` > `getByTestId`.
 - **Interactions**: Use `@testing-library/user-event` (v14+) instead of `fireEvent`.
 - **Robustness**: 
     - Avoid fragile class-based selectors (e.g., `.animate-pulse`). 
     - Prefer `data-slot` (e.g., `container.querySelectorAll('[data-slot="skeleton"]')`), `role`, or `aria-label`.
-- **Type Safety**: Avoid `as any` in tests. Use `Partial<T> as T` or proper mock objects.
+    - If `getByText` fails due to multiple matches (e.g., "Namespaces" as a label and a card title), use `getAllByText(...).length >= 1` or more specific ARIA roles.
+- **Type Safety**: Avoid `as any` in tests. If necessary, use `as unknown as T` only for non-proto objects. For BigInt fields (like revisions), use `0n`.
 - **Abstraction**: Test user-visible behavior, not implementation details.
 
-### 6. Development Workflow
+### 6. Development Workflow & Validation
 - **Surgical Implementation**: Only modify files related to the task.
-- **Verification**: After writing code:
-    1. Run Biome: `npm run lint:fix` (in `web` directory).
-    2. Run Tests: `npm run test` (in `web` directory) for affected files.
-    3. Fix until all checks pass.
+- **Mandatory Verification**: After writing code, you MUST execute the following sequence:
+    1.  **Linter**: `npm run lint:fix` (in `web` directory). Fix all issues.
+    2.  **Tests**: `npm test` (in `web` directory). Ensure all tests pass.
+    3.  **Build**: `npm run build` (in `web` directory). Ensure TypeScript and Vite build succeed.
+- **Definition of Done**: A task is considered complete ONLY if it passes `npm run lint`, `npm test`, AND `npm run build` without errors. Fix any regressions in existing tests immediately.
 
 ## Instruction to Create New Subagent
 To use this agent, invoke it with a detailed prompt. The agent will handle file creation, implementation, styling, and verification according to these professional standards.
