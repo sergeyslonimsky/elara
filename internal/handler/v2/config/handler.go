@@ -14,11 +14,30 @@ import (
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
-type Handler struct {
-	svc *configuc.Service
+//go:generate mockgen -destination=mocks/handler_mock.go -package=config_mock -source=handler.go
+
+type configUsecase interface {
+	Create(ctx context.Context, cfg *domain.Config) (*domain.Config, error)
+	Get(ctx context.Context, in configuc.GetInput) (*domain.Config, error)
+	Update(ctx context.Context, cfg *domain.Config) (*domain.Config, error)
+	Delete(ctx context.Context, in configuc.DeleteInput) error
+	List(ctx context.Context, params configuc.ListParams) (*configuc.ListResult, error)
+	History(ctx context.Context, in configuc.HistoryInput) ([]*domain.HistoryEntry, error)
+	GetAtRevision(ctx context.Context, in configuc.GetAtRevisionInput) (*domain.HistoryEntry, error)
+	Search(ctx context.Context, params configuc.SearchParams) (*configuc.SearchResult, error)
+	Copy(ctx context.Context, in configuc.CopyInput) (*domain.Config, error)
+	Validate(ctx context.Context, in configuc.ValidateInput) (*domain.ValidationResult, error)
+	Diff(ctx context.Context, in configuc.DiffInput) (*domain.ConfigDiff, error)
+	Watch(ctx context.Context, in configuc.WatchInput) (<-chan domain.WatchEvent, func(), error)
+	Lock(ctx context.Context, in configuc.LockInput) error
+	Unlock(ctx context.Context, in configuc.UnlockInput) error
 }
 
-func New(svc *configuc.Service) *Handler {
+type Handler struct {
+	svc configUsecase
+}
+
+func New(svc configUsecase) *Handler {
 	return &Handler{svc: svc}
 }
 
@@ -113,12 +132,12 @@ func (h *Handler) ListConfigs(
 	if p := req.Msg.GetPagination(); p != nil {
 		limit, err := v2.NormalizeLimit(p.GetLimit())
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("normalize limit: %w", err)
 		}
 
 		offset, err := v2.NormalizeOffset(p.GetOffset())
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("normalize offset: %w", err)
 		}
 
 		params.Limit = limit
@@ -151,7 +170,7 @@ func (h *Handler) GetConfigHistory(
 ) (*connect.Response[configv2.GetConfigHistoryResponse], error) {
 	limit, err := v2.NormalizeLimit(req.Msg.GetLimit())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("normalize limit: %w", err)
 	}
 
 	entries, err := h.svc.History(ctx, configuc.HistoryInput{
@@ -204,12 +223,12 @@ func (h *Handler) SearchConfigs(
 	if p := req.Msg.GetPagination(); p != nil {
 		limit, err := v2.NormalizeLimit(p.GetLimit())
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("normalize limit: %w", err)
 		}
 
 		offset, err := v2.NormalizeOffset(p.GetOffset())
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("normalize offset: %w", err)
 		}
 
 		params.Limit = limit

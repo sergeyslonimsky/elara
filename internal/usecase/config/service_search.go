@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/util/sliceutil"
 )
 
 const defaultSearchLimit = 20
@@ -46,11 +47,7 @@ func (s *Service) Search(ctx context.Context, params SearchParams) (*SearchResul
 	offset := params.Offset
 
 	// Paginate.
-	var paginated []*domain.ConfigSummary
-	if offset < total {
-		end := min(offset+limit, total)
-		paginated = results[offset:end]
-	}
+	paginated := sliceutil.Paginate(results, offset, limit)
 
 	return &SearchResult{
 		Results: paginated,

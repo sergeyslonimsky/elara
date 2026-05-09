@@ -1,7 +1,6 @@
 package user
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -10,78 +9,61 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	user_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/user/mocks"
 	userv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
-	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
-
-// allowAllEnforcer is a test enforcer that permits every action.
-type allowAllEnforcer struct{}
-
-func (allowAllEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
-
-// testCtx returns a context with admin claims for handler tests.
-func testCtx() context.Context {
-	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
-}
 
 func TestUserHandler_ListUsers(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name    string
-		users   []*domain.User
-		repoErr error
-		wantLen int
-		wantErr bool
+		name     string
+		mockFunc func(*gomock.Controller) *Handler
+		wantLen  int
+		wantErr  bool
 	}{
 		{
-			name:    "returns all users",
-			users:   []*domain.User{{Email: "a@example.com"}, {Email: "b@example.com"}},
+			name: "returns all users",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
+				uc.EXPECT().List(gomock.Any()).
+					Return([]*domain.User{{Email: "a@example.com"}, {Email: "b@example.com"}}, nil)
+
+				return New(uc, config.AuthTypeOIDC)
+			},
 			wantLen: 2,
 		},
 		{
-			name:    "returns empty list",
-			users:   []*domain.User{},
-			wantLen: 0,
-		},
-		{
-			name:    "storage error returns internal",
-			repoErr: errors.New("db error"),
+			name: "storage error returns internal",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
+				uc.EXPECT().List(gomock.Any()).Return(nil, errors.New("db error"))
+
+				return New(uc, config.AuthTypeOIDC)
+			},
 			wantErr: true,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			lister := auth_mock.NewMockuserLister(ctrl)
-			lister.EXPECT().List(gomock.Any()).Return(tc.users, tc.repoErr)
+			h := tt.mockFunc(ctrl)
 
-			h := New(
-				authuc.NewListUsersUseCase(allowAllEnforcer{}, lister),
-				nil,
-				nil,
-				nil,
-				nil,
-				config.AuthTypeOIDC,
-			)
+			resp, err := h.ListUsers(t.Context(), connect.NewRequest(&userv1.ListUsersRequest{}))
 
-			resp, err := h.ListUsers(testCtx(), connect.NewRequest(&userv1.ListUsersRequest{}))
-
-			if tc.wantErr {
+			if tt.wantErr {
 				require.Error(t, err)
 
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Len(t, resp.Msg.GetUsers(), tc.wantLen)
+			assert.Len(t, resp.Msg.GetUsers(), tt.wantLen)
 		})
 	}
 }
@@ -89,56 +71,55 @@ func TestUserHandler_ListUsers(t *testing.T) {
 func TestUserHandler_GetUser(t *testing.T) {
 	t.Parallel()
 
+	email := "alice@example.com"
+
 	tests := []struct {
 		name     string
-		email    string
-		user     *domain.User
-		repoErr  error
+		mockFunc func(*gomock.Controller) *Handler
 		wantErr  bool
 		wantCode connect.Code
 	}{
 		{
-			name:  "returns user by email",
-			email: "alice@example.com",
-			user:  &domain.User{Email: "alice@example.com", Name: "Alice"},
+			name: "returns user by email",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Get(gomock.Any(), email).
+					Return(&domain.User{Email: email, Name: "Alice"}, nil)
+
+				return New(uc, config.AuthTypeOIDC)
+			},
 		},
 		{
-			name:     "not found returns NotFound code",
-			email:    "ghost@example.com",
-			repoErr:  domain.NewNotFoundError("user", "ghost@example.com"),
+			name: "not found returns NotFound code",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Get(gomock.Any(), email).Return(nil, domain.ErrNotFound)
+
+				return New(uc, config.AuthTypeOIDC)
+			},
 			wantErr:  true,
 			wantCode: connect.CodeNotFound,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			getter := auth_mock.NewMockuserGetter(ctrl)
-			getter.EXPECT().Get(gomock.Any(), tc.email).Return(tc.user, tc.repoErr)
+			h := tt.mockFunc(ctrl)
 
-			h := New(
-				nil,
-				authuc.NewGetUserUseCase(allowAllEnforcer{}, getter),
-				nil,
-				nil,
-				nil,
-				config.AuthTypeOIDC,
-			)
+			resp, err := h.GetUser(t.Context(), connect.NewRequest(&userv1.GetUserRequest{Email: email}))
 
-			resp, err := h.GetUser(testCtx(), connect.NewRequest(&userv1.GetUserRequest{Email: tc.email}))
-
-			if tc.wantErr {
+			if tt.wantErr {
 				require.Error(t, err)
-				assert.Equal(t, tc.wantCode, connect.CodeOf(err))
+				assert.Equal(t, tt.wantCode, connect.CodeOf(err))
 
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tc.email, resp.Msg.GetUser().GetEmail())
+			assert.Equal(t, email, resp.Msg.GetUser().GetEmail())
 		})
 	}
 }
@@ -146,69 +127,54 @@ func TestUserHandler_GetUser(t *testing.T) {
 func TestUserHandler_DeleteUser(t *testing.T) {
 	t.Parallel()
 
+	targetEmail := "target@example.com"
+
 	tests := []struct {
 		name      string
 		authType  config.AuthType
-		mockFunc  func(*gomock.Controller) *authuc.DeleteUserUseCase
+		mockFunc  func(*gomock.Controller) *Handler
 		wantErr   bool
 		wantErrMs string
 		wantCode  connect.Code
 	}{
 		{
-			name:      "authType == OIDC returns ErrFeatureNotAvailable",
-			authType:  config.AuthTypeOIDC,
-			wantErr:   true,
-			wantCode:  connect.CodeInvalidArgument,
-			wantErrMs: "feature not available",
-		},
-		{
-			name:      "authType == None returns ErrFeatureNotAvailable",
-			authType:  config.AuthTypeNone,
-			wantErr:   true,
-			wantCode:  connect.CodeInvalidArgument,
-			wantErrMs: "feature not available",
-		},
-		{
-			name:     "authType == BasicAuth: guard passes, usecase returns error",
-			authType: config.AuthTypeBasicAuth,
-			mockFunc: func(ctrl *gomock.Controller) *authuc.DeleteUserUseCase {
-				enforcer := auth_mock.NewMockdeleteUserEnforcer(ctrl)
-				users := auth_mock.NewMockuserGetterDeleter(ctrl)
+			name:     "authType == OIDC returns ErrFeatureNotAvailable",
+			authType: config.AuthTypeOIDC,
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
 
-				enforcer.EXPECT().
-					Enforce(gomock.Any(), auth.ObjectAll, auth.ObjectUser, auth.ActionWrite).
-					Return(true, nil)
-				users.EXPECT().Get(gomock.Any(), "notfound@example.com").Return(nil, domain.ErrNotFound)
-
-				return authuc.NewDeleteUserUseCase(enforcer, users)
+				return New(uc, config.AuthTypeOIDC)
 			},
-			wantErr:  true,
-			wantCode: connect.CodeNotFound,
+			wantErr:   true,
+			wantCode:  connect.CodeInvalidArgument,
+			wantErrMs: "feature not available",
+		},
+		{
+			name:     "authType == BasicAuth: success",
+			authType: config.AuthTypeBasicAuth,
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Delete(gomock.Any(), targetEmail).Return(nil)
+
+				return New(uc, config.AuthTypeBasicAuth)
+			},
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			var deleteUC *authuc.DeleteUserUseCase
-			if tc.mockFunc != nil {
-				deleteUC = tc.mockFunc(ctrl)
-			}
+			h := tt.mockFunc(ctrl)
 
-			h := New(nil, nil, nil, nil, deleteUC, tc.authType)
+			_, err := h.DeleteUser(t.Context(), connect.NewRequest(&userv1.DeleteUserRequest{Email: targetEmail}))
 
-			_, err := h.DeleteUser(
-				testCtx(),
-				connect.NewRequest(&userv1.DeleteUserRequest{Email: "notfound@example.com"}),
-			)
-
-			if tc.wantErr {
+			if tt.wantErr {
 				require.Error(t, err)
-				assert.Equal(t, tc.wantCode, connect.CodeOf(err))
-				if tc.wantErrMs != "" {
-					assert.Contains(t, err.Error(), tc.wantErrMs)
+				assert.Equal(t, tt.wantCode, connect.CodeOf(err))
+				if tt.wantErrMs != "" {
+					assert.Contains(t, err.Error(), tt.wantErrMs)
 				}
 
 				return
@@ -222,17 +188,24 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 func TestUserHandler_CreateUser(t *testing.T) {
 	t.Parallel()
 
+	email := "user@example.com"
+
 	tests := []struct {
 		name            string
 		authType        config.AuthType
 		initialPassword string
-		mockFunc        func(*gomock.Controller) *authuc.CreateUserUseCase
+		mockFunc        func(*gomock.Controller) *Handler
 		wantErrMs       string
 		wantCode        connect.Code
 	}{
 		{
-			name:      "authType == None returns ErrFeatureNotAvailable",
-			authType:  config.AuthTypeNone,
+			name:     "authType == None returns ErrFeatureNotAvailable",
+			authType: config.AuthTypeNone,
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
+
+				return New(uc, config.AuthTypeNone)
+			},
 			wantCode:  connect.CodeInvalidArgument,
 			wantErrMs: "feature not available",
 		},
@@ -240,79 +213,109 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			name:            "authType == OIDC + initial_password not empty returns error",
 			authType:        config.AuthTypeOIDC,
 			initialPassword: "password",
-			wantCode:        connect.CodeInvalidArgument,
-			wantErrMs:       "initial_password must not be set in OIDC mode",
-		},
-		{
-			name:            "authType == BasicAuth + initial_password empty returns error",
-			authType:        config.AuthTypeBasicAuth,
-			initialPassword: "",
-			wantCode:        connect.CodeInvalidArgument,
-			wantErrMs:       "initial_password is required in basic-auth mode",
-		},
-		{
-			name:            "authType == OIDC + initial_password empty, usecase returns error",
-			authType:        config.AuthTypeOIDC,
-			initialPassword: "",
-			mockFunc: func(ctrl *gomock.Controller) *authuc.CreateUserUseCase {
-				enforcer := auth_mock.NewMockcreateUserEnforcer(ctrl)
-				users := auth_mock.NewMockuserCreator(ctrl)
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
 
-				enforcer.EXPECT().
-					Enforce(gomock.Any(), auth.ObjectAll, auth.ObjectUser, auth.ActionWrite).
-					Return(true, nil)
-				users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(domain.ErrNotFound)
-
-				return authuc.NewCreateUserUseCase(enforcer, users)
+				return New(uc, config.AuthTypeOIDC)
 			},
-			wantCode: connect.CodeNotFound,
+			wantCode:  connect.CodeInvalidArgument,
+			wantErrMs: "initial_password must not be set in OIDC mode",
 		},
 		{
-			name:            "authType == BasicAuth + initial_password not empty, usecase returns error",
+			name:            "authType == BasicAuth + success",
 			authType:        config.AuthTypeBasicAuth,
 			initialPassword: "password",
-			mockFunc: func(ctrl *gomock.Controller) *authuc.CreateUserUseCase {
-				enforcer := auth_mock.NewMockcreateUserEnforcer(ctrl)
-				users := auth_mock.NewMockuserCreator(ctrl)
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
+				uc.EXPECT().
+					Create(gomock.Any(), email, "User", "password").
+					Return(&domain.User{Email: email, Name: "User"}, nil)
 
-				enforcer.EXPECT().
-					Enforce(gomock.Any(), auth.ObjectAll, auth.ObjectUser, auth.ActionWrite).
-					Return(true, nil)
-				users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(domain.ErrAlreadyExists)
-
-				return authuc.NewCreateUserUseCase(enforcer, users)
+				return New(uc, config.AuthTypeBasicAuth)
 			},
-			wantCode: connect.CodeAlreadyExists,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			var createUC *authuc.CreateUserUseCase
-			if tc.mockFunc != nil {
-				createUC = tc.mockFunc(ctrl)
+			h := tt.mockFunc(ctrl)
+
+			_, err := h.CreateUser(t.Context(), connect.NewRequest(&userv1.CreateUserRequest{
+				Email:           email,
+				Name:            "User",
+				InitialPassword: tt.initialPassword,
+			}))
+
+			if tt.wantCode != 0 {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantCode, connect.CodeOf(err))
+				if tt.wantErrMs != "" {
+					assert.Contains(t, err.Error(), tt.wantErrMs)
+				}
+
+				return
 			}
 
-			h := New(nil, nil, createUC, nil, nil, tc.authType)
+			require.NoError(t, err)
+		})
+	}
+}
 
-			_, err := h.CreateUser(
-				testCtx(),
-				connect.NewRequest(&userv1.CreateUserRequest{
-					Email:           "user@example.com",
-					Name:            "User",
-					InitialPassword: tc.initialPassword,
-				}),
-			)
+func TestUserHandler_ResetUserPassword(t *testing.T) {
+	t.Parallel()
 
-			if tc.wantCode != 0 {
+	email := "user@example.com"
+
+	tests := []struct {
+		name     string
+		authType config.AuthType
+		mockFunc func(*gomock.Controller) *Handler
+		wantErr  bool
+		wantCode connect.Code
+	}{
+		{
+			name:     "authType == OIDC returns ErrFeatureNotAvailable",
+			authType: config.AuthTypeOIDC,
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
+
+				return New(uc, config.AuthTypeOIDC)
+			},
+			wantErr:  true,
+			wantCode: connect.CodeInvalidArgument,
+		},
+		{
+			name:     "authType == BasicAuth: success",
+			authType: config.AuthTypeBasicAuth,
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := user_mock.NewMockusecase(ctrl)
+				uc.EXPECT().
+					ResetPassword(gomock.Any(), email, "new-password").
+					Return(nil)
+
+				return New(uc, config.AuthTypeBasicAuth)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			h := tt.mockFunc(ctrl)
+
+			_, err := h.ResetUserPassword(t.Context(), connect.NewRequest(&userv1.ResetUserPasswordRequest{
+				Email:       email,
+				NewPassword: "new-password",
+			}))
+
+			if tt.wantErr {
 				require.Error(t, err)
-				assert.Equal(t, tc.wantCode, connect.CodeOf(err))
-				if tc.wantErrMs != "" {
-					assert.Contains(t, err.Error(), tc.wantErrMs)
-				}
+				assert.Equal(t, tt.wantCode, connect.CodeOf(err))
 
 				return
 			}

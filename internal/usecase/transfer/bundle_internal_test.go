@@ -13,10 +13,11 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
+	"github.com/sergeyslonimsky/elara/internal/util/archive"
 )
 
 // ---------------------------------------------------------------------------
-// isZIP
+// archive.IsZIP
 // ---------------------------------------------------------------------------
 
 func TestIsZIP(t *testing.T) {
@@ -58,7 +59,7 @@ func TestIsZIP(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, tc.expected, isZIP(tc.data))
+			assert.Equal(t, tc.expected, archive.IsZIP(tc.data))
 		})
 	}
 }
@@ -185,7 +186,7 @@ func TestMarshalBundle(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// wrapInZip / unzipIfNeeded roundtrip
+// archive.WrapInZip / archive.UnzipIfNeeded roundtrip
 // ---------------------------------------------------------------------------
 
 func TestWrapInZip_UnzipRoundtrip(t *testing.T) {
@@ -193,11 +194,11 @@ func TestWrapInZip_UnzipRoundtrip(t *testing.T) {
 
 	original := []byte(`{"namespace":"test"}`)
 
-	zipped, err := wrapInZip("bundle.json", original)
+	zipped, err := archive.WrapInZip("bundle.json", original)
 	require.NoError(t, err)
-	assert.True(t, isZIP(zipped))
+	assert.True(t, archive.IsZIP(zipped))
 
-	unzipped, err := unzipIfNeeded(zipped)
+	unzipped, err := archive.UnzipIfNeeded(zipped)
 	require.NoError(t, err)
 	assert.Equal(t, original, unzipped)
 }
@@ -207,7 +208,7 @@ func TestUnzipIfNeeded_NonZIPPassthrough(t *testing.T) {
 
 	data := []byte(`{"namespace":"test"}`)
 
-	result, err := unzipIfNeeded(data)
+	result, err := archive.UnzipIfNeeded(data)
 	require.NoError(t, err)
 	assert.Equal(t, data, result)
 }
@@ -222,8 +223,8 @@ func TestUnzipIfNeeded_EmptyZip(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, zw.Close())
 
-	_, err = unzipIfNeeded(buf.Bytes())
-	require.ErrorIs(t, err, errEmptyZip)
+	_, err = archive.UnzipIfNeeded(buf.Bytes())
+	require.ErrorIs(t, err, archive.ErrEmptyZip)
 }
 
 // ---------------------------------------------------------------------------
@@ -248,7 +249,7 @@ func TestUnmarshalNamespaceBundle(t *testing.T) {
 	yamlData, err := yaml.Marshal(bundle)
 	require.NoError(t, err)
 
-	zipData, err := wrapInZip("bundle.json", jsonData)
+	zipData, err := archive.WrapInZip("bundle.json", jsonData)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -326,7 +327,7 @@ func TestUnmarshalAllBundle(t *testing.T) {
 	yamlData, err := yaml.Marshal(bundle)
 	require.NoError(t, err)
 
-	zipData, err := wrapInZip("all-bundle.json", jsonData)
+	zipData, err := archive.WrapInZip("all-bundle.json", jsonData)
 	require.NoError(t, err)
 
 	tests := []struct {

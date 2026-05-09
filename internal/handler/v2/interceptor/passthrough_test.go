@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/interceptor"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 func TestPassthroughInterceptor_WrapUnary(t *testing.T) {

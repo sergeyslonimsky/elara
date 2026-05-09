@@ -7,39 +7,44 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	profilev1 "github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	profileuc "github.com/sergeyslonimsky/elara/internal/usecase/profile"
 )
+
+//go:generate mockgen -destination=mocks/handler_mock.go -package=profile_mock -source=handler.go
 
 const (
 	cookieHeader      = "Set-Cookie"
 	sessionCookieName = "elara_session"
 )
 
+type usecase interface {
+	Me(ctx context.Context) (*profileuc.MeResult, error)
+	ChangePassword(ctx context.Context, currentPassword, newPassword string) (string, error)
+	Logout(_ context.Context) error
+}
+
 // Handler implements profilev1connect.ProfileServiceHandler.
 type Handler struct {
-	me             *authuc.MeUseCase
-	changePassword *authuc.ChangePasswordUseCase
-	authType       config.AuthType
-	secureCookie   bool
+	uc           usecase
+	authType     config.AuthType
+	secureCookie bool
 }
 
 // New returns a new Handler wired with profile use cases.
 func New(
-	me *authuc.MeUseCase,
-	changePassword *authuc.ChangePasswordUseCase,
+	uc usecase,
 	authType config.AuthType,
 	secureCookie bool,
 ) *Handler {
 	return &Handler{
-		me:             me,
-		changePassword: changePassword,
-		authType:       authType,
-		secureCookie:   secureCookie,
+		uc:           uc,
+		authType:     authType,
+		secureCookie: secureCookie,
 	}
 }
 
@@ -47,7 +52,7 @@ func (h *Handler) Me(
 	ctx context.Context,
 	_ *connect.Request[profilev1.MeRequest],
 ) (*connect.Response[profilev1.MeResponse], error) {
-	result, err := h.me.Execute(ctx)
+	result, err := h.uc.Me(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -88,7 +93,7 @@ func (h *Handler) ChangePassword(
 		)
 	}
 
-	token, err := h.changePassword.Execute(ctx, req.Msg.GetCurrentPassword(), req.Msg.GetNewPassword())
+	token, err := h.uc.ChangePassword(ctx, req.Msg.GetCurrentPassword(), req.Msg.GetNewPassword())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -108,9 +113,10 @@ func (h *Handler) ChangePassword(
 }
 
 func (h *Handler) Logout(
-	_ context.Context,
+	ctx context.Context,
 	_ *connect.Request[profilev1.LogoutRequest],
 ) (*connect.Response[profilev1.LogoutResponse], error) {
+	_ = h.uc.Logout(ctx)
 	resp := connect.NewResponse(&profilev1.LogoutResponse{})
 
 	cookie := &http.Cookie{ //nolint:gosec //Secure set from config

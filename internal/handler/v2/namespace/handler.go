@@ -2,6 +2,7 @@ package namespace
 
 import (
 	"context"
+	"fmt"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -13,34 +14,24 @@ import (
 	nsuc "github.com/sergeyslonimsky/elara/internal/usecase/namespace"
 )
 
-type Handler struct {
-	create *nsuc.CreateUseCase
-	get    *nsuc.GetUseCase
-	update *nsuc.UpdateUseCase
-	list   *nsuc.ListUseCase
-	del    *nsuc.DeleteUseCase
-	lock   *nsuc.LockUseCase
-	unlock *nsuc.UnlockUseCase
+//go:generate mockgen -destination=mocks/handler_mock.go -package=namespace_mock -source=handler.go
+
+type usecase interface {
+	Create(ctx context.Context, ns *domain.Namespace) (*domain.Namespace, error)
+	Get(ctx context.Context, name string) (*domain.Namespace, error)
+	Update(ctx context.Context, name, description string) (*domain.Namespace, error)
+	List(ctx context.Context, params nsuc.ListParams) (*nsuc.ListResult, error)
+	Delete(ctx context.Context, name string) error
+	Lock(ctx context.Context, name string) error
+	Unlock(ctx context.Context, name string) error
 }
 
-func New(
-	create *nsuc.CreateUseCase,
-	get *nsuc.GetUseCase,
-	update *nsuc.UpdateUseCase,
-	list *nsuc.ListUseCase,
-	del *nsuc.DeleteUseCase,
-	lock *nsuc.LockUseCase,
-	unlock *nsuc.UnlockUseCase,
-) *Handler {
-	return &Handler{
-		create: create,
-		get:    get,
-		update: update,
-		list:   list,
-		del:    del,
-		lock:   lock,
-		unlock: unlock,
-	}
+type Handler struct {
+	uc usecase
+}
+
+func New(uc usecase) *Handler {
+	return &Handler{uc: uc}
 }
 
 func (h *Handler) CreateNamespace(
@@ -52,7 +43,7 @@ func (h *Handler) CreateNamespace(
 		Description: req.Msg.GetDescription(),
 	}
 
-	result, err := h.create.Execute(ctx, ns)
+	result, err := h.uc.Create(ctx, ns)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -66,7 +57,7 @@ func (h *Handler) GetNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.GetNamespaceRequest],
 ) (*connect.Response[namespacev2.GetNamespaceResponse], error) {
-	result, err := h.get.Execute(ctx, req.Msg.GetName())
+	result, err := h.uc.Get(ctx, req.Msg.GetName())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -80,7 +71,7 @@ func (h *Handler) UpdateNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.UpdateNamespaceRequest],
 ) (*connect.Response[namespacev2.UpdateNamespaceResponse], error) {
-	result, err := h.update.Execute(ctx, req.Msg.GetName(), req.Msg.GetDescription())
+	result, err := h.uc.Update(ctx, req.Msg.GetName(), req.Msg.GetDescription())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -94,7 +85,7 @@ func (h *Handler) ListNamespaces(
 	ctx context.Context,
 	req *connect.Request[namespacev2.ListNamespacesRequest],
 ) (*connect.Response[namespacev2.ListNamespacesResponse], error) {
-	params := nsuc.NSListParams{
+	params := nsuc.ListParams{
 		Sort:  protoSortToDomain(req.Msg.GetSort()),
 		Query: req.Msg.GetQuery(),
 	}
@@ -102,19 +93,19 @@ func (h *Handler) ListNamespaces(
 	if p := req.Msg.GetPagination(); p != nil {
 		limit, err := v2.NormalizeLimit(p.GetLimit())
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("normalize limit: %w", err)
 		}
 
 		offset, err := v2.NormalizeOffset(p.GetOffset())
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("normalize offset: %w", err)
 		}
 
 		params.Limit = limit
 		params.Offset = offset
 	}
 
-	result, err := h.list.Execute(ctx, params)
+	result, err := h.uc.List(ctx, params)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -138,7 +129,7 @@ func (h *Handler) DeleteNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.DeleteNamespaceRequest],
 ) (*connect.Response[namespacev2.DeleteNamespaceResponse], error) {
-	if err := h.del.Execute(ctx, req.Msg.GetName()); err != nil {
+	if err := h.uc.Delete(ctx, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -149,7 +140,7 @@ func (h *Handler) LockNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.LockNamespaceRequest],
 ) (*connect.Response[namespacev2.LockNamespaceResponse], error) {
-	if err := h.lock.Execute(ctx, req.Msg.GetName()); err != nil {
+	if err := h.uc.Lock(ctx, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -160,7 +151,7 @@ func (h *Handler) UnlockNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.UnlockNamespaceRequest],
 ) (*connect.Response[namespacev2.UnlockNamespaceResponse], error) {
-	if err := h.unlock.Execute(ctx, req.Msg.GetName()); err != nil {
+	if err := h.uc.Unlock(ctx, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

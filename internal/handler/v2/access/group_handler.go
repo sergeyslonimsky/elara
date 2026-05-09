@@ -9,46 +9,35 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	accessv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/access/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 )
+
+//go:generate mockgen -destination=mocks/group_handler_mock.go -package=access_mock -source=group_handler.go
+
+type groupUsecase interface {
+	Create(ctx context.Context, name string) (*domain.Group, error)
+	Get(ctx context.Context, id string) (*domain.Group, error)
+	Update(ctx context.Context, id, name string) (*domain.Group, error)
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context) ([]*domain.Group, error)
+	AddMember(ctx context.Context, groupID, email string) (*domain.Group, error)
+	RemoveMember(ctx context.Context, groupID, email string) (*domain.Group, error)
+}
 
 // GroupHandler implements accessv1connect.GroupServiceHandler.
 type GroupHandler struct {
-	create       *authuc.CreateGroupUseCase
-	get          *authuc.GetGroupUseCase
-	update       *authuc.UpdateGroupUseCase
-	del          *authuc.DeleteGroupUseCase
-	list         *authuc.ListGroupsUseCase
-	addMember    *authuc.AddMemberUseCase
-	removeMember *authuc.RemoveMemberUseCase
+	uc groupUsecase
 }
 
 // NewGroupHandler returns a new GroupHandler.
-func NewGroupHandler(
-	create *authuc.CreateGroupUseCase,
-	get *authuc.GetGroupUseCase,
-	update *authuc.UpdateGroupUseCase,
-	del *authuc.DeleteGroupUseCase,
-	list *authuc.ListGroupsUseCase,
-	addMember *authuc.AddMemberUseCase,
-	removeMember *authuc.RemoveMemberUseCase,
-) *GroupHandler {
-	return &GroupHandler{
-		create:       create,
-		get:          get,
-		update:       update,
-		del:          del,
-		list:         list,
-		addMember:    addMember,
-		removeMember: removeMember,
-	}
+func NewGroupHandler(uc groupUsecase) *GroupHandler {
+	return &GroupHandler{uc: uc}
 }
 
 func (h *GroupHandler) CreateGroup(
 	ctx context.Context,
 	req *connect.Request[accessv1.CreateGroupRequest],
 ) (*connect.Response[accessv1.CreateGroupResponse], error) {
-	group, err := h.create.Execute(ctx, req.Msg.GetName())
+	group, err := h.uc.Create(ctx, req.Msg.GetName())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -60,7 +49,7 @@ func (h *GroupHandler) GetGroup(
 	ctx context.Context,
 	req *connect.Request[accessv1.GetGroupRequest],
 ) (*connect.Response[accessv1.GetGroupResponse], error) {
-	group, err := h.get.Execute(ctx, req.Msg.GetId())
+	group, err := h.uc.Get(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -72,7 +61,7 @@ func (h *GroupHandler) UpdateGroup(
 	ctx context.Context,
 	req *connect.Request[accessv1.UpdateGroupRequest],
 ) (*connect.Response[accessv1.UpdateGroupResponse], error) {
-	group, err := h.update.Execute(ctx, req.Msg.GetId(), req.Msg.GetName())
+	group, err := h.uc.Update(ctx, req.Msg.GetId(), req.Msg.GetName())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -84,7 +73,7 @@ func (h *GroupHandler) DeleteGroup(
 	ctx context.Context,
 	req *connect.Request[accessv1.DeleteGroupRequest],
 ) (*connect.Response[accessv1.DeleteGroupResponse], error) {
-	if err := h.del.Execute(ctx, req.Msg.GetId()); err != nil {
+	if err := h.uc.Delete(ctx, req.Msg.GetId()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -95,7 +84,7 @@ func (h *GroupHandler) ListGroups(
 	ctx context.Context,
 	_ *connect.Request[accessv1.ListGroupsRequest],
 ) (*connect.Response[accessv1.ListGroupsResponse], error) {
-	groups, err := h.list.Execute(ctx)
+	groups, err := h.uc.List(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -112,7 +101,7 @@ func (h *GroupHandler) AddMember(
 	ctx context.Context,
 	req *connect.Request[accessv1.AddMemberRequest],
 ) (*connect.Response[accessv1.AddMemberResponse], error) {
-	group, err := h.addMember.Execute(ctx, req.Msg.GetGroupId(), req.Msg.GetEmail())
+	group, err := h.uc.AddMember(ctx, req.Msg.GetGroupId(), req.Msg.GetEmail())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -124,7 +113,7 @@ func (h *GroupHandler) RemoveMember(
 	ctx context.Context,
 	req *connect.Request[accessv1.RemoveMemberRequest],
 ) (*connect.Response[accessv1.RemoveMemberResponse], error) {
-	group, err := h.removeMember.Execute(ctx, req.Msg.GetGroupId(), req.Msg.GetEmail())
+	group, err := h.uc.RemoveMember(ctx, req.Msg.GetGroupId(), req.Msg.GetEmail())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}

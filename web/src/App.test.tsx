@@ -1,6 +1,9 @@
+import { create } from "@bufbuild/protobuf";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { AuthType, type MeResponse } from "@/gen/elara/auth/v1/auth_service_pb";
+import type { AuthContextType } from "@/components/auth-provider";
+import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import { MeResponseSchema } from "@/gen/elara/profile/v1/profile_service_pb";
 import { TestProviders } from "@/test/test-utils";
 import App from "./App";
 
@@ -20,19 +23,21 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 });
 
 describe("App", () => {
-	const authContext = {
-		me: {
-			name: "Anonymous",
-			email: "anonymous@elara.local",
-			isAdmin: true,
-			namespaces: [],
-			passwordChangeRequired: false,
-			picture: "",
-			canViewWebhooks: true,
-			canManageWebhooks: true,
-		} as unknown as MeResponse,
-		authType: AuthType.NONE,
-		isLoading: false,
+	const authContext: AuthContextType = {
+		state: {
+			status: "authenticated",
+			authType: AuthType.NONE,
+			user: create(MeResponseSchema, {
+				name: "Anonymous",
+				email: "anonymous@elara.local",
+				isAdmin: true,
+				namespaces: [],
+				passwordChangeRequired: false,
+				picture: "",
+				canViewWebhooks: true,
+				canManageWebhooks: true,
+			}),
+		},
 		logout: vi.fn(),
 	};
 

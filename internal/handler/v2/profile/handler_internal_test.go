@@ -1,7 +1,6 @@
 package profile
 
 import (
-	"context"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -9,31 +8,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	internalauth "github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	profile_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/profile/mocks"
 	profilev1 "github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
-	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
+	internalauth "github.com/sergeyslonimsky/elara/internal/service/auth"
+	profileuc "github.com/sergeyslonimsky/elara/internal/usecase/profile"
 )
-
-// stubEnforcer is a minimal meEnforcer stub for handler tests.
-type stubEnforcer struct {
-	allowAll bool
-}
-
-func (s *stubEnforcer) Enforce(_, _, _, _ string) (bool, error) {
-	return s.allowAll, nil
-}
-
-// stubNamespaceLister returns a fixed list of namespaces.
-type stubNamespaceLister struct {
-	namespaces []*domain.Namespace
-}
-
-func (s *stubNamespaceLister) List(_ context.Context) ([]*domain.Namespace, error) {
-	return s.namespaces, nil
-}
 
 func TestProfileHandler_Me(t *testing.T) {
 	t.Parallel()
@@ -41,18 +22,19 @@ func TestProfileHandler_Me(t *testing.T) {
 	tests := []struct {
 		name     string
 		email    string
-		authCtx  bool
+		ucResult *profileuc.MeResult
+		ucErr    error
 		wantErr  bool
 		wantCode connect.Code
 	}{
 		{
-			name:    "returns user identity",
-			email:   "alice@example.com",
-			authCtx: true,
+			name:     "returns user identity",
+			email:    "alice@example.com",
+			ucResult: &profileuc.MeResult{Email: "alice@example.com", Name: "Alice"},
 		},
 		{
 			name:     "no auth context returns unauthenticated",
-			authCtx:  false,
+			ucErr:    domain.ErrUnauthorized,
 			wantErr:  true,
 			wantCode: connect.CodeUnauthenticated,
 		},
@@ -62,13 +44,14 @@ func TestProfileHandler_Me(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			enforcer := &stubEnforcer{allowAll: false}
-			nsList := &stubNamespaceLister{namespaces: nil}
-			meUC := authuc.NewMeUseCase(enforcer, nsList)
-			h := New(meUC, nil, config.AuthTypeOIDC, false)
+			ctrl := gomock.NewController(t)
+			uc := profile_mock.NewMockusecase(ctrl)
+			uc.EXPECT().Me(gomock.Any()).Return(tc.ucResult, tc.ucErr)
 
-			ctx := context.Background()
-			if tc.authCtx {
+			h := New(uc, config.AuthTypeOIDC, false)
+
+			ctx := t.Context()
+			if tc.email != "" {
 				ctx = internalauth.WithClaims(ctx, &internalauth.Claims{Email: tc.email, Name: "Alice"})
 			}
 
@@ -93,18 +76,16 @@ func TestProfileHandler_ChangePassword(t *testing.T) {
 	tests := []struct {
 		name       string
 		authType   config.AuthType
-		setupMocks func(reader *auth_mock.MockpasswordReader, writer *auth_mock.MockpasswordWriter, session *auth_mock.MocksessionCreator)
+		setupMocks func(uc *profile_mock.Mockusecase)
 		wantErr    bool
 	}{
 		{
 			name:     "success",
 			authType: config.AuthTypeBasicAuth,
-			setupMocks: func(reader *auth_mock.MockpasswordReader, writer *auth_mock.MockpasswordWriter, session *auth_mock.MocksessionCreator) {
-				reader.EXPECT().
-					Get(gomock.Any(), "user@example.com").
-					Return(&domain.User{Email: "user@example.com"}, nil)
-				writer.EXPECT().SetPassword(gomock.Any(), "user@example.com", gomock.Any(), false).Return(nil)
-				session.EXPECT().Create(gomock.Any()).Return("mock-token", nil)
+			setupMocks: func(uc *profile_mock.Mockusecase) {
+				uc.EXPECT().
+					ChangePassword(gomock.Any(), "", "new-password").
+					Return("mock-token", nil)
 			},
 		},
 		{
@@ -119,16 +100,12 @@ func TestProfileHandler_ChangePassword(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			reader := auth_mock.NewMockpasswordReader(ctrl)
-			writer := auth_mock.NewMockpasswordWriter(ctrl)
-			session := auth_mock.NewMocksessionCreator(ctrl)
-
+			uc := profile_mock.NewMockusecase(ctrl)
 			if tt.setupMocks != nil {
-				tt.setupMocks(reader, writer, session)
+				tt.setupMocks(uc)
 			}
 
-			changeUC := authuc.NewChangePasswordUseCase(reader, writer, session)
-			h := New(nil, changeUC, tt.authType, false)
+			h := New(uc, tt.authType, false)
 
 			ctx := internalauth.WithClaims(t.Context(), &internalauth.Claims{
 				Email:                  "user@example.com",
@@ -155,9 +132,13 @@ func TestProfileHandler_ChangePassword(t *testing.T) {
 func TestProfileHandler_Logout(t *testing.T) {
 	t.Parallel()
 
-	h := New(nil, nil, config.AuthTypeOIDC, false)
+	ctrl := gomock.NewController(t)
+	uc := profile_mock.NewMockusecase(ctrl)
+	uc.EXPECT().Logout(gomock.Any()).Return(nil)
 
-	resp, err := h.Logout(context.Background(), connect.NewRequest(&profilev1.LogoutRequest{}))
+	h := New(uc, config.AuthTypeOIDC, false)
+
+	resp, err := h.Logout(t.Context(), connect.NewRequest(&profilev1.LogoutRequest{}))
 	require.NoError(t, err)
 
 	cookies := resp.Header().Values(cookieHeader)

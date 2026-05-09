@@ -8,31 +8,31 @@ import (
 
 	"github.com/sergeyslonimsky/core/lifecycle"
 
-	bboltadapter "github.com/sergeyslonimsky/elara/internal/adapter/bbolt"
-	watchadapter "github.com/sergeyslonimsky/elara/internal/adapter/watch"
-	webhookadapter "github.com/sergeyslonimsky/elara/internal/adapter/webhook"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
-	"github.com/sergeyslonimsky/elara/internal/monitor"
+	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
+	watchadapter "github.com/sergeyslonimsky/elara/internal/service/adapter/watch"
+	webhookadapter "github.com/sergeyslonimsky/elara/internal/service/adapter/webhook"
+	monitor2 "github.com/sergeyslonimsky/elara/internal/service/monitor"
 )
 
 type Adapters struct {
-	Store             *bboltadapter.Store
-	ConfigRepo        *bboltadapter.ConfigRepo
-	NamespaceRepo     *bboltadapter.NamespaceRepo
-	ClientHistoryRepo *bboltadapter.ClientHistoryRepo
-	SchemaRepo        *bboltadapter.SchemaRepo
-	WebhookRepo       *bboltadapter.WebhookRepo
-	AuthUsers         *bboltadapter.UserRepo
-	AuthGroups        *bboltadapter.GroupRepo
-	AuthTokens        *bboltadapter.TokenRepo
-	AuthPolicy        *bboltadapter.PolicyRepo
+	Store             *bbolt.Store
+	ConfigRepo        *bbolt.ConfigRepo
+	NamespaceRepo     *bbolt.NamespaceRepo
+	ClientHistoryRepo *bbolt.ClientHistoryRepo
+	SchemaRepo        *bbolt.SchemaRepo
+	WebhookRepo       *bbolt.WebhookRepo
+	AuthUsers         *bbolt.UserRepo
+	AuthGroups        *bbolt.GroupRepo
+	AuthTokens        *bbolt.TokenRepo
+	AuthPolicy        *bbolt.PolicyRepo
 	Watch             *watchadapter.Publisher
 	WebhookDispatcher *webhookadapter.Dispatcher
 
 	// Connected-clients monitor: history is wired into the registry as a
 	// HistorySink so disconnects are persisted automatically.
-	ClientHistory  *monitor.HistoryStore
-	ClientRegistry *monitor.Registry
+	ClientHistory  *monitor2.HistoryStore
+	ClientRegistry *monitor2.Registry
 
 	// shutdownOnce guarantees Shutdown is idempotent even if it's called
 	// from multiple paths (app.App's LIFO teardown + a partial-failure
@@ -44,37 +44,37 @@ type Adapters struct {
 func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 	dbPath := filepath.Join(cfg.DataPath, "elara.db")
 
-	store, err := bboltadapter.Open(dbPath)
+	store, err := bbolt.Open(dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("open bbolt store: %w", err)
 	}
 
-	clientHistoryRepo := bboltadapter.NewClientHistoryRepo(store)
-	clientHistory := monitor.NewHistoryStore(ctx, monitor.HistoryConfig{
+	clientHistoryRepo := bbolt.NewClientHistoryRepo(store)
+	clientHistory := monitor2.NewHistoryStore(ctx, monitor2.HistoryConfig{
 		MaxRecords: cfg.Client.History.MaxRecords,
 		MaxAge:     cfg.Client.History.MaxAge,
 	}, clientHistoryRepo)
 
-	clientRegistry := monitor.NewRegistry(monitor.Config{
+	clientRegistry := monitor2.NewRegistry(monitor2.Config{
 		RecentEventsCapacity: cfg.Client.RecentEvents.Capacity,
 	}, clientHistory)
 
 	watchPublisher := watchadapter.NewPublisher()
-	webhookRepo := bboltadapter.NewWebhookRepo(store)
+	webhookRepo := bbolt.NewWebhookRepo(store)
 	webhookDispatcher := webhookadapter.NewDispatcher(webhookRepo, watchPublisher)
 
 	//nolint:exhaustruct // shutdownOnce/shutdownErr have valid zero values
 	return &Adapters{
 		Store:             store,
-		ConfigRepo:        bboltadapter.NewConfigRepo(store),
-		NamespaceRepo:     bboltadapter.NewNamespaceRepo(store),
+		ConfigRepo:        bbolt.NewConfigRepo(store),
+		NamespaceRepo:     bbolt.NewNamespaceRepo(store),
 		ClientHistoryRepo: clientHistoryRepo,
-		SchemaRepo:        bboltadapter.NewSchemaRepo(store),
+		SchemaRepo:        bbolt.NewSchemaRepo(store),
 		WebhookRepo:       webhookRepo,
-		AuthUsers:         bboltadapter.NewUserRepo(store),
-		AuthGroups:        bboltadapter.NewGroupRepo(store),
-		AuthTokens:        bboltadapter.NewTokenRepo(store),
-		AuthPolicy:        bboltadapter.NewPolicyRepo(store),
+		AuthUsers:         bbolt.NewUserRepo(store),
+		AuthGroups:        bbolt.NewGroupRepo(store),
+		AuthTokens:        bbolt.NewTokenRepo(store),
+		AuthPolicy:        bbolt.NewPolicyRepo(store),
 		Watch:             watchPublisher,
 		WebhookDispatcher: webhookDispatcher,
 		ClientHistory:     clientHistory,

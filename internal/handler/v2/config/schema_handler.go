@@ -12,29 +12,33 @@ import (
 	schemauc "github.com/sergeyslonimsky/elara/internal/usecase/schema"
 )
 
-type SchemaHandler struct {
-	attach       *schemauc.AttachUseCase
-	detach       *schemauc.DetachUseCase
-	get          *schemauc.GetUseCase
-	getEffective *schemauc.GetEffectiveUseCase
-	list         *schemauc.ListUseCase
+//go:generate mockgen -destination=mocks/schema_handler_mock.go -package=config_mock -source=schema_handler.go
+
+type schemaUsecase interface {
+	Attach(ctx context.Context, in schemauc.AttachInput) (*domain.SchemaAttachment, error)
+	Detach(ctx context.Context, namespace, pathPattern string) error
+	Get(ctx context.Context, namespace, pathPattern string) (*domain.SchemaAttachment, error)
+	GetEffective(ctx context.Context, namespace, path string) (*domain.SchemaAttachment, error)
+	List(ctx context.Context, namespace string) ([]*domain.SchemaAttachment, error)
 }
 
-func NewSchemaHandler(
-	attach *schemauc.AttachUseCase,
-	detach *schemauc.DetachUseCase,
-	get *schemauc.GetUseCase,
-	getEffective *schemauc.GetEffectiveUseCase,
-	list *schemauc.ListUseCase,
-) *SchemaHandler {
-	return &SchemaHandler{attach: attach, detach: detach, get: get, getEffective: getEffective, list: list}
+type SchemaHandler struct {
+	uc schemaUsecase
+}
+
+func NewSchemaHandler(uc schemaUsecase) *SchemaHandler {
+	return &SchemaHandler{uc: uc}
 }
 
 func (h *SchemaHandler) AttachSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.AttachSchemaRequest],
 ) (*connect.Response[configv1.AttachSchemaResponse], error) {
-	s, err := h.attach.Execute(ctx, req.Msg.GetNamespace(), req.Msg.GetPathPattern(), req.Msg.GetJsonSchema())
+	s, err := h.uc.Attach(ctx, schemauc.AttachInput{
+		Namespace:   req.Msg.GetNamespace(),
+		PathPattern: req.Msg.GetPathPattern(),
+		JSONSchema:  req.Msg.GetJsonSchema(),
+	})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -48,7 +52,7 @@ func (h *SchemaHandler) DetachSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.DetachSchemaRequest],
 ) (*connect.Response[configv1.DetachSchemaResponse], error) {
-	if err := h.detach.Execute(ctx, req.Msg.GetNamespace(), req.Msg.GetPathPattern()); err != nil {
+	if err := h.uc.Detach(ctx, req.Msg.GetNamespace(), req.Msg.GetPathPattern()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -59,7 +63,7 @@ func (h *SchemaHandler) GetSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.GetSchemaRequest],
 ) (*connect.Response[configv1.GetSchemaResponse], error) {
-	s, err := h.get.Execute(ctx, req.Msg.GetNamespace(), req.Msg.GetPathPattern())
+	s, err := h.uc.Get(ctx, req.Msg.GetNamespace(), req.Msg.GetPathPattern())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -73,7 +77,7 @@ func (h *SchemaHandler) GetEffectiveSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.GetEffectiveSchemaRequest],
 ) (*connect.Response[configv1.GetEffectiveSchemaResponse], error) {
-	s, err := h.getEffective.Execute(ctx, req.Msg.GetNamespace(), req.Msg.GetPath())
+	s, err := h.uc.GetEffective(ctx, req.Msg.GetNamespace(), req.Msg.GetPath())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -87,7 +91,7 @@ func (h *SchemaHandler) ListSchemas(
 	ctx context.Context,
 	req *connect.Request[configv1.ListSchemasRequest],
 ) (*connect.Response[configv1.ListSchemasResponse], error) {
-	schemas, err := h.list.Execute(ctx, req.Msg.GetNamespace())
+	schemas, err := h.uc.List(ctx, req.Msg.GetNamespace())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}

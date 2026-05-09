@@ -7,8 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/util/pathutil"
+	"github.com/sergeyslonimsky/elara/internal/util/sliceutil"
 )
 
 const defaultListLimit = 20
@@ -30,7 +32,7 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 		}, nil
 	}
 
-	path := normalizePath(params.Path)
+	path := pathutil.Normalize(params.Path)
 
 	prefix := path
 	if !strings.HasSuffix(prefix, "/") {
@@ -65,12 +67,7 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 
 	total := len(entries)
 	offset := params.Offset
-
-	var paginated []*DirectoryEntry
-	if offset < total {
-		end := min(offset+limit, total)
-		paginated = entries[offset:end]
-	}
+	paginated := sliceutil.Paginate(entries, offset, limit)
 
 	return &ListResult{
 		Entries: paginated,
@@ -78,18 +75,6 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 		Limit:   limit,
 		Offset:  offset,
 	}, nil
-}
-
-func normalizePath(path string) string {
-	if path == "" {
-		return "/"
-	}
-
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-
-	return strings.TrimSuffix(path, "/")
 }
 
 type folderInfo struct {

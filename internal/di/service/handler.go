@@ -2,11 +2,11 @@ package service
 
 import (
 	"net/http"
+	"slices"
 
 	"connectrpc.com/connect"
 	"connectrpc.com/validate"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	accesshandler "github.com/sergeyslonimsky/elara/internal/handler/v2/access"
 	authhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/auth"
@@ -20,17 +20,18 @@ import (
 	transferhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/transfer"
 	userhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/user"
 	webhookhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/webhook"
-	accessv1connect "github.com/sergeyslonimsky/elara/internal/proto/elara/access/v1/accessv1connect"
-	authv1connect "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1/authv1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/access/v1/accessv1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1/authv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/clients/v1/clientsv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1/configv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/dashboard/v1/dashboardv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/namespace/v1/namespacev1connect"
-	profilev1connect "github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1/profilev1connect"
-	tokenv1connect "github.com/sergeyslonimsky/elara/internal/proto/elara/token/v1/tokenv1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1/profilev1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/token/v1/tokenv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1/transferv1connect"
-	userv1connect "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1/userv1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1/userv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/webhook/v1/webhookv1connect"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 type V2Handlers struct {
@@ -49,95 +50,51 @@ type V2Handlers struct {
 	Tokens    *tokenhandler.Handler
 }
 
-func NewV2Handlers(uc *UseCases, cfg config.Config) *V2Handlers {
+func NewV2Handlers(s *Services, cfg config.Config) *V2Handlers {
 	handlers := &V2Handlers{}
 
-	initCoreHandlers(handlers, uc)
-	initAuthHandlers(handlers, uc, cfg)
-	initIAMHandlers(handlers, uc, cfg)
+	initCoreHandlers(handlers, s)
+	initAuthHandlers(handlers, s, cfg)
+	initIAMHandlers(handlers, s, cfg)
 
 	return handlers
 }
 
-func initCoreHandlers(handlers *V2Handlers, uc *UseCases) {
-	handlers.Config = confighandler.New(uc.Config)
-	handlers.Schema = confighandler.NewSchemaHandler(
-		uc.AttachSchema,
-		uc.DetachSchema,
-		uc.GetSchema,
-		uc.GetEffectiveSchema,
-		uc.ListSchemas,
-	)
-	handlers.Namespace = namespacehandler.New(
-		uc.CreateNamespace,
-		uc.GetNamespace,
-		uc.UpdateNamespace,
-		uc.ListNamespaces,
-		uc.DeleteNamespace,
-		uc.LockNamespace,
-		uc.UnlockNamespace,
-	)
-	handlers.Clients = clientshandler.New(uc.Clients)
-	handlers.Dashboard = dashboardhandler.New(uc.Dashboard)
-	handlers.Transfer = transferhandler.New(uc.ExportNamespace, uc.ExportAll, uc.ImportNamespace)
-	handlers.Webhook = webhookhandler.New(
-		uc.CreateWebhook,
-		uc.GetWebhook,
-		uc.UpdateWebhook,
-		uc.DeleteWebhook,
-		uc.ListWebhooks,
-		uc.WebhookHistory,
-	)
+func initCoreHandlers(handlers *V2Handlers, s *Services) {
+	handlers.Config = confighandler.New(s.Config)
+	handlers.Schema = confighandler.NewSchemaHandler(s.Schema)
+	handlers.Namespace = namespacehandler.New(s.Namespace)
+	handlers.Clients = clientshandler.New(s.Clients)
+	handlers.Dashboard = dashboardhandler.New(s.Dashboard)
+	handlers.Transfer = transferhandler.New(s.Transfer)
+	handlers.Webhook = webhookhandler.New(s.Webhook)
 }
 
-func initAuthHandlers(handlers *V2Handlers, uc *UseCases, cfg config.Config) {
+func initAuthHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
 	handlers.Auth = authhandler.New(
-		uc.AuthLogin,
-		uc.AuthCallback,
-		uc.AuthBasicLogin,
+		s.Auth,
 		cfg.UI.Auth.Type,
 		cfg.UI.Auth.Session.SecureCookie,
 	)
 	handlers.Profile = profilehandler.New(
-		uc.AuthMe,
-		uc.AuthChangePassword,
+		s.Profile,
 		cfg.UI.Auth.Type,
 		cfg.UI.Auth.Session.SecureCookie,
 	)
 
 	if cfg.Client.Auth.Enabled {
-		handlers.Tokens = tokenhandler.New(
-			uc.AuthCreateToken,
-			uc.AuthListTokens,
-			uc.AuthGetToken,
-			uc.AuthRevokeToken,
-		)
+		handlers.Tokens = tokenhandler.New(s.Token)
 	}
 }
 
-func initIAMHandlers(handlers *V2Handlers, uc *UseCases, cfg config.Config) {
+func initIAMHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
 	if !cfg.UI.Auth.Enabled {
 		return
 	}
 
-	handlers.Users = userhandler.New(
-		uc.AuthListUsers,
-		uc.AuthGetUser,
-		uc.AuthCreateUser,
-		uc.AuthResetPassword,
-		uc.AuthDeleteUser,
-		cfg.UI.Auth.Type,
-	)
-	handlers.Groups = accesshandler.NewGroupHandler(
-		uc.AuthCreateGroup,
-		uc.AuthGetGroup,
-		uc.AuthUpdateGroup,
-		uc.AuthDeleteGroup,
-		uc.AuthListGroups,
-		uc.AuthAddMember,
-		uc.AuthRemoveMember,
-	)
-	handlers.Access = accesshandler.NewAccessHandler(uc.AuthAssignRole, uc.AuthRevokeRole, uc.AuthListPolicies)
+	handlers.Users = userhandler.New(s.User, cfg.UI.Auth.Type)
+	handlers.Groups = accesshandler.NewGroupHandler(s.Group)
+	handlers.Access = accesshandler.NewAccessHandler(s.Policy)
 }
 
 type server interface {
@@ -151,18 +108,14 @@ func V2Routes(server server, handlers *V2Handlers, sessionManager *auth.SessionM
 		validate.NewInterceptor(),
 	}
 
-	// AuthService is public — no auth interceptor.
-	privateInterceptors := append(
-		sharedInterceptors[:len(sharedInterceptors):len(sharedInterceptors)],
-		func() []connect.Interceptor {
-			if cfg.UI.Auth.Enabled && sessionManager != nil {
-				return []connect.Interceptor{interceptor.NewAuthInterceptor(sessionManager)}
-			}
+	publicInterceptors := slices.Clone(sharedInterceptors)
+	privateInterceptors := slices.Clone(sharedInterceptors)
 
-			return nil
-		}()...)
+	if cfg.UI.Auth.Enabled && sessionManager != nil {
+		privateInterceptors = append(privateInterceptors, interceptor.NewAuthInterceptor(sessionManager))
+	}
 
-	publicOpts := connect.WithInterceptors(sharedInterceptors...)
+	publicOpts := connect.WithInterceptors(publicInterceptors...)
 	privateOpts := connect.WithInterceptors(privateInterceptors...)
 
 	// Public: auth service (login endpoints).

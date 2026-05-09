@@ -2,8 +2,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { createConnectQueryKey, useMutation } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { LogIn } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,16 +14,15 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { AuthType } from "@/gen/elara/auth/v1/auth_service_pb";
+import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 import {
 	basicLogin,
-	me,
 	oIDCLogin,
 } from "@/gen/elara/auth/v1/auth_service-AuthService_connectquery";
+import { me } from "@/gen/elara/profile/v1/profile_service-ProfileService_connectquery";
 
 export function LoginPage() {
-	const { authType, me: currentUser, isLoading: isAuthLoading } = useAuth();
-	const navigate = useNavigate();
+	const { state } = useAuth();
 	const queryClient = useQueryClient();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -33,25 +31,14 @@ export function LoginPage() {
 	const basicLoginMutation = useMutation(basicLogin);
 	const oidcLoginMutation = useMutation(oIDCLogin);
 
-	useEffect(() => {
-		if (!isAuthLoading) {
-			if (authType === AuthType.NONE) {
-				navigate("/");
-			} else if (currentUser) {
-				navigate("/");
-			}
-		}
-	}, [authType, isAuthLoading, currentUser, navigate]);
-
-	if (isAuthLoading) {
-		return null;
-	}
+	const authType =
+		state.status === "anonymous" ? state.authType : AuthType.UNSPECIFIED;
 
 	const onBasicSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError(null);
 		try {
-			const response = await basicLoginMutation.mutateAsync({
+			await basicLoginMutation.mutateAsync({
 				email,
 				password,
 			});
@@ -59,12 +46,6 @@ export function LoginPage() {
 			await queryClient.invalidateQueries({
 				queryKey: createConnectQueryKey({ schema: me, cardinality: "finite" }),
 			});
-
-			if (response.passwordChangeRequired) {
-				navigate("/change-password");
-			} else {
-				navigate("/");
-			}
 		} catch (err) {
 			const connectErr = ConnectError.from(err);
 			if (connectErr.code === Code.Unauthenticated) {

@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"context"
+	"fmt"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -13,12 +14,19 @@ import (
 	dashboarduc "github.com/sergeyslonimsky/elara/internal/usecase/dashboard"
 )
 
-// Handler implements dashboardv1connect.DashboardServiceHandler.
-type Handler struct {
-	uc *dashboarduc.UseCase
+//go:generate mockgen -destination=mocks/handler_mock.go -package=dashboard_mock -source=handler.go
+
+type usecase interface {
+	GetStats(ctx context.Context) (*dashboarduc.StatsResult, error)
+	ListActivity(ctx context.Context, limit int) ([]*domain.ChangelogEntry, error)
 }
 
-func New(uc *dashboarduc.UseCase) *Handler {
+// Handler implements dashboardv1connect.DashboardServiceHandler.
+type Handler struct {
+	uc usecase
+}
+
+func New(uc usecase) *Handler {
 	return &Handler{uc: uc}
 }
 
@@ -45,7 +53,7 @@ func (h *Handler) ListActivity(
 ) (*connect.Response[dashboardv1.ListActivityResponse], error) {
 	limit, err := v2.NormalizeLimit(req.Msg.GetLimit())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("normalize limit: %w", err)
 	}
 
 	entries, err := h.uc.ListActivity(ctx, limit)

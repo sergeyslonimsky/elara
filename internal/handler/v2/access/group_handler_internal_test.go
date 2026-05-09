@@ -2,7 +2,6 @@ package access
 
 import (
 	"errors"
-	"slices"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -11,29 +10,9 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	access_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/access/mocks"
 	accessv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/access/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
-	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
-
-// groupGetUpdater combines getter and updater mocks for use cases that require both.
-type groupGetUpdater struct {
-	*auth_mock.MockgroupGetter
-	*auth_mock.MockgroupUpdater
-}
-
-// groupGetDeleter combines getter and deleter mocks for DeleteGroupUseCase.
-type groupGetDeleter struct {
-	*auth_mock.MockgroupGetter
-	*auth_mock.MockgroupDeleter
-}
-
-// noopGroupSyncEnforcer is a no-op groupSyncEnforcer for handler tests that don't exercise Casbin sync.
-type noopGroupSyncEnforcer struct{}
-
-func (noopGroupSyncEnforcer) AddRoleForUser(_, _, _ string) error    { return nil }
-func (noopGroupSyncEnforcer) RemoveRoleForUser(_, _, _ string) error { return nil }
-func (noopGroupSyncEnforcer) GetRulesForSubject(_ string) [][]string { return nil }
 
 func TestGroupHandler_CreateGroup(t *testing.T) {
 	t.Parallel()
@@ -41,7 +20,7 @@ func TestGroupHandler_CreateGroup(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		repoErr error
+		ucErr   error
 		wantErr bool
 	}{
 		{
@@ -49,9 +28,9 @@ func TestGroupHandler_CreateGroup(t *testing.T) {
 			input: "my-group",
 		},
 		{
-			name:    "storage error propagated",
+			name:    "usecase error propagated",
 			input:   "bad-group",
-			repoErr: errors.New("storage error"),
+			ucErr:   errors.New("storage error"),
 			wantErr: true,
 		},
 	}
@@ -61,13 +40,15 @@ func TestGroupHandler_CreateGroup(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			creator := auth_mock.NewMockgroupCreator(ctrl)
-			creator.EXPECT().Create(gomock.Any(), gomock.Any()).Return(tc.repoErr)
+			uc := access_mock.NewMockgroupUsecase(ctrl)
+			if tc.ucErr != nil {
+				uc.EXPECT().Create(gomock.Any(), tc.input).Return(nil, tc.ucErr)
+			} else {
+				uc.EXPECT().Create(gomock.Any(), tc.input).
+					Return(&domain.Group{Name: tc.input}, nil)
+			}
 
-			h := NewGroupHandler(
-				authuc.NewCreateGroupUseCase(allowAllEnforcer{}, creator),
-				nil, nil, nil, nil, nil, nil,
-			)
+			h := NewGroupHandler(uc)
 
 			resp, err := h.CreateGroup(
 				testCtx(),
@@ -93,7 +74,7 @@ func TestGroupHandler_GetGroup(t *testing.T) {
 		name     string
 		id       string
 		group    *domain.Group
-		repoErr  error
+		ucErr    error
 		wantErr  bool
 		wantCode connect.Code
 	}{
@@ -105,7 +86,7 @@ func TestGroupHandler_GetGroup(t *testing.T) {
 		{
 			name:     "not found",
 			id:       "missing",
-			repoErr:  domain.NewNotFoundError("group", "missing"),
+			ucErr:    domain.NewNotFoundError("group", "missing"),
 			wantErr:  true,
 			wantCode: connect.CodeNotFound,
 		},
@@ -116,14 +97,10 @@ func TestGroupHandler_GetGroup(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			getter := auth_mock.NewMockgroupGetter(ctrl)
-			getter.EXPECT().Get(gomock.Any(), tc.id).Return(tc.group, tc.repoErr)
+			uc := access_mock.NewMockgroupUsecase(ctrl)
+			uc.EXPECT().Get(gomock.Any(), tc.id).Return(tc.group, tc.ucErr)
 
-			h := NewGroupHandler(
-				nil,
-				authuc.NewGetGroupUseCase(allowAllEnforcer{}, getter),
-				nil, nil, nil, nil, nil,
-			)
+			h := NewGroupHandler(uc)
 
 			resp, err := h.GetGroup(testCtx(), connect.NewRequest(&accessv1.GetGroupRequest{Id: tc.id}))
 
@@ -144,25 +121,24 @@ func TestGroupHandler_UpdateGroup(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		id        string
-		newName   string
-		group     *domain.Group
-		getErr    error
-		updateErr error
-		wantErr   bool
+		name    string
+		id      string
+		newName string
+		group   *domain.Group
+		ucErr   error
+		wantErr bool
 	}{
 		{
 			name:    "updates group name",
 			id:      "g1",
 			newName: "new-name",
-			group:   &domain.Group{ID: "g1", Name: "old-name"},
+			group:   &domain.Group{ID: "g1", Name: "new-name"},
 		},
 		{
 			name:    "not found returns error",
 			id:      "missing",
 			newName: "new-name",
-			getErr:  domain.NewNotFoundError("group", "missing"),
+			ucErr:   domain.NewNotFoundError("group", "missing"),
 			wantErr: true,
 		},
 	}
@@ -172,20 +148,10 @@ func TestGroupHandler_UpdateGroup(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			getter := auth_mock.NewMockgroupGetter(ctrl)
-			updater := auth_mock.NewMockgroupUpdater(ctrl)
-			repo := &groupGetUpdater{getter, updater}
+			uc := access_mock.NewMockgroupUsecase(ctrl)
+			uc.EXPECT().Update(gomock.Any(), tc.id, tc.newName).Return(tc.group, tc.ucErr)
 
-			getter.EXPECT().Get(gomock.Any(), tc.id).Return(tc.group, tc.getErr)
-			if tc.getErr == nil {
-				updater.EXPECT().Update(gomock.Any(), gomock.Any()).Return(tc.updateErr)
-			}
-
-			h := NewGroupHandler(
-				nil, nil,
-				authuc.NewUpdateGroupUseCase(allowAllEnforcer{}, noopGroupSyncEnforcer{}, repo),
-				nil, nil, nil, nil,
-			)
+			h := NewGroupHandler(uc)
 
 			resp, err := h.UpdateGroup(testCtx(), connect.NewRequest(&accessv1.UpdateGroupRequest{
 				Id:   tc.id,
@@ -210,7 +176,7 @@ func TestGroupHandler_DeleteGroup(t *testing.T) {
 	tests := []struct {
 		name    string
 		id      string
-		repoErr error
+		ucErr   error
 		wantErr bool
 	}{
 		{
@@ -220,7 +186,7 @@ func TestGroupHandler_DeleteGroup(t *testing.T) {
 		{
 			name:    "not found returns error",
 			id:      "missing",
-			repoErr: domain.NewNotFoundError("group", "missing"),
+			ucErr:   domain.NewNotFoundError("group", "missing"),
 			wantErr: true,
 		},
 	}
@@ -230,23 +196,10 @@ func TestGroupHandler_DeleteGroup(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			getter := auth_mock.NewMockgroupGetter(ctrl)
-			deleter := auth_mock.NewMockgroupDeleter(ctrl)
-			repo := &groupGetDeleter{getter, deleter}
+			uc := access_mock.NewMockgroupUsecase(ctrl)
+			uc.EXPECT().Delete(gomock.Any(), tc.id).Return(tc.ucErr)
 
-			getter.EXPECT().Get(gomock.Any(), tc.id).Return(
-				&domain.Group{ID: tc.id, Name: "some-group", Members: []string{}},
-				tc.repoErr,
-			)
-			if tc.repoErr == nil {
-				deleter.EXPECT().Delete(gomock.Any(), tc.id).Return(nil)
-			}
-
-			h := NewGroupHandler(
-				nil, nil, nil,
-				authuc.NewDeleteGroupUseCase(allowAllEnforcer{}, noopGroupSyncEnforcer{}, repo),
-				nil, nil, nil,
-			)
+			h := NewGroupHandler(uc)
 
 			_, err := h.DeleteGroup(testCtx(), connect.NewRequest(&accessv1.DeleteGroupRequest{Id: tc.id}))
 
@@ -267,7 +220,7 @@ func TestGroupHandler_ListGroups(t *testing.T) {
 	tests := []struct {
 		name    string
 		groups  []*domain.Group
-		repoErr error
+		ucErr   error
 		wantLen int
 		wantErr bool
 	}{
@@ -282,8 +235,8 @@ func TestGroupHandler_ListGroups(t *testing.T) {
 			wantLen: 0,
 		},
 		{
-			name:    "storage error propagated",
-			repoErr: errors.New("storage error"),
+			name:    "usecase error propagated",
+			ucErr:   errors.New("storage error"),
 			wantErr: true,
 		},
 	}
@@ -293,14 +246,10 @@ func TestGroupHandler_ListGroups(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			lister := auth_mock.NewMockgroupLister(ctrl)
-			lister.EXPECT().List(gomock.Any()).Return(tc.groups, tc.repoErr)
+			uc := access_mock.NewMockgroupUsecase(ctrl)
+			uc.EXPECT().List(gomock.Any()).Return(tc.groups, tc.ucErr)
 
-			h := NewGroupHandler(
-				nil, nil, nil, nil,
-				authuc.NewListGroupsUseCase(allowAllEnforcer{}, lister),
-				nil, nil,
-			)
+			h := NewGroupHandler(uc)
 
 			resp, err := h.ListGroups(testCtx(), connect.NewRequest(&accessv1.ListGroupsRequest{}))
 
@@ -324,20 +273,20 @@ func TestGroupHandler_AddMember(t *testing.T) {
 		groupID string
 		email   string
 		group   *domain.Group
-		getErr  error
+		ucErr   error
 		wantErr bool
 	}{
 		{
 			name:    "adds member to group",
 			groupID: "g1",
 			email:   "alice@example.com",
-			group:   &domain.Group{ID: "g1", Name: "test"},
+			group:   &domain.Group{ID: "g1", Name: "test", Members: []string{"alice@example.com"}},
 		},
 		{
 			name:    "group not found",
 			groupID: "missing",
 			email:   "alice@example.com",
-			getErr:  domain.NewNotFoundError("group", "missing"),
+			ucErr:   domain.NewNotFoundError("group", "missing"),
 			wantErr: true,
 		},
 	}
@@ -347,20 +296,10 @@ func TestGroupHandler_AddMember(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			getter := auth_mock.NewMockgroupGetter(ctrl)
-			updater := auth_mock.NewMockgroupUpdater(ctrl)
-			repo := &groupGetUpdater{getter, updater}
+			uc := access_mock.NewMockgroupUsecase(ctrl)
+			uc.EXPECT().AddMember(gomock.Any(), tc.groupID, tc.email).Return(tc.group, tc.ucErr)
 
-			getter.EXPECT().Get(gomock.Any(), tc.groupID).Return(tc.group, tc.getErr)
-			if tc.getErr == nil {
-				updater.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
-			}
-
-			h := NewGroupHandler(
-				nil, nil, nil, nil, nil,
-				authuc.NewAddMemberUseCase(allowAllEnforcer{}, noopGroupSyncEnforcer{}, repo),
-				nil,
-			)
+			h := NewGroupHandler(uc)
 
 			resp, err := h.AddMember(testCtx(), connect.NewRequest(&accessv1.AddMemberRequest{
 				GroupId: tc.groupID,
@@ -387,20 +326,20 @@ func TestGroupHandler_RemoveMember(t *testing.T) {
 		groupID string
 		email   string
 		group   *domain.Group
-		getErr  error
+		ucErr   error
 		wantErr bool
 	}{
 		{
 			name:    "removes member from group",
 			groupID: "g1",
 			email:   "alice@example.com",
-			group:   &domain.Group{ID: "g1", Name: "test", Members: []string{"alice@example.com"}},
+			group:   &domain.Group{ID: "g1", Name: "test", Members: []string{}},
 		},
 		{
 			name:    "member not in group returns error",
 			groupID: "g1",
 			email:   "ghost@example.com",
-			group:   &domain.Group{ID: "g1", Name: "test", Members: []string{}},
+			ucErr:   errors.New("member not in group"),
 			wantErr: true,
 		},
 	}
@@ -410,21 +349,10 @@ func TestGroupHandler_RemoveMember(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			getter := auth_mock.NewMockgroupGetter(ctrl)
-			updater := auth_mock.NewMockgroupUpdater(ctrl)
-			repo := &groupGetUpdater{getter, updater}
+			uc := access_mock.NewMockgroupUsecase(ctrl)
+			uc.EXPECT().RemoveMember(gomock.Any(), tc.groupID, tc.email).Return(tc.group, tc.ucErr)
 
-			getter.EXPECT().Get(gomock.Any(), tc.groupID).Return(tc.group, tc.getErr)
-			if tc.getErr == nil && tc.group != nil {
-				if slices.Contains(tc.group.Members, tc.email) {
-					updater.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
-				}
-			}
-
-			h := NewGroupHandler(
-				nil, nil, nil, nil, nil, nil,
-				authuc.NewRemoveMemberUseCase(allowAllEnforcer{}, noopGroupSyncEnforcer{}, repo),
-			)
+			h := NewGroupHandler(uc)
 
 			resp, err := h.RemoveMember(testCtx(), connect.NewRequest(&accessv1.RemoveMemberRequest{
 				GroupId: tc.groupID,

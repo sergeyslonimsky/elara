@@ -108,7 +108,7 @@ internal/usecase/config/
 ```go
 package config
 
-//go:generate mockgen -destination=mocks/config_mock.go -package=config_mock -source=service.go
+//go:generate mockgen -destination=mocks/service_mock.go -package=config_mock -source=service.go
 
 type (
     enforcer interface { /* authz methods used here */ }

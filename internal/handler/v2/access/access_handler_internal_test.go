@@ -10,17 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	internalauth "github.com/sergeyslonimsky/elara/internal/auth"
-	"github.com/sergeyslonimsky/elara/internal/domain"
+	access_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/access/mocks"
 	accessv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/access/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
-	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
+	internalauth "github.com/sergeyslonimsky/elara/internal/service/auth"
+	policyuc "github.com/sergeyslonimsky/elara/internal/usecase/policy"
 )
-
-// allowAllEnforcer is a stub enforcer that always allows, used in tests that don't exercise authorization.
-type allowAllEnforcer struct{}
-
-func (allowAllEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
 
 func testCtx() context.Context {
 	return internalauth.WithClaims(context.Background(), &internalauth.Claims{Email: "test@example.com"})
@@ -34,7 +28,7 @@ func TestAccessHandler_AssignRole(t *testing.T) {
 		subject string
 		domain  string
 		role    string
-		addErr  error
+		ucErr   error
 		wantErr bool
 	}{
 		{
@@ -44,11 +38,11 @@ func TestAccessHandler_AssignRole(t *testing.T) {
 			role:    "role:admin",
 		},
 		{
-			name:    "enforcer error propagated",
+			name:    "usecase error propagated",
 			subject: "user@example.com",
 			domain:  "*",
 			role:    "role:admin",
-			addErr:  errors.New("enforcer error"),
+			ucErr:   errors.New("enforcer error"),
 			wantErr: true,
 		},
 	}
@@ -58,22 +52,14 @@ func TestAccessHandler_AssignRole(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
-			groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+			uc := access_mock.NewMockaccessUsecase(ctrl)
+			uc.EXPECT().
+				AssignRole(gomock.Any(), tc.subject, tc.domain, tc.role).
+				Return(tc.ucErr)
 
-			enforcer.EXPECT().Enforce(gomock.Any(), "*", "policy", "write").Return(true, nil)
-			enforcer.EXPECT().AddRoleForUser(tc.subject, tc.role, tc.domain).Return(tc.addErr)
-			if tc.addErr == nil {
-				groups.EXPECT().FindByName(gomock.Any(), tc.subject).
-					Return(nil, domain.NewNotFoundError("group", tc.subject))
-			}
+			h := NewAccessHandler(uc)
 
-			h := NewAccessHandler(
-				authuc.NewAssignRoleUseCase(enforcer, groups),
-				nil, nil,
-			)
-
-			_, err := h.AssignRole(testCtx(), connect.NewRequest(&accessv1.AssignRoleRequest{
+			_, err := h.AssignRole(t.Context(), connect.NewRequest(&accessv1.AssignRoleRequest{
 				Subject: tc.subject,
 				Domain:  tc.domain,
 				Role:    tc.role,
@@ -94,12 +80,12 @@ func TestAccessHandler_RevokeRole(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		subject   string
-		domain    string
-		role      string
-		removeErr error
-		wantErr   bool
+		name    string
+		subject string
+		domain  string
+		role    string
+		ucErr   error
+		wantErr bool
 	}{
 		{
 			name:    "revokes role successfully",
@@ -108,12 +94,12 @@ func TestAccessHandler_RevokeRole(t *testing.T) {
 			role:    "role:admin",
 		},
 		{
-			name:      "enforcer error propagated",
-			subject:   "user@example.com",
-			domain:    "*",
-			role:      "role:admin",
-			removeErr: errors.New("enforcer error"),
-			wantErr:   true,
+			name:    "usecase error propagated",
+			subject: "user@example.com",
+			domain:  "*",
+			role:    "role:admin",
+			ucErr:   errors.New("enforcer error"),
+			wantErr: true,
 		},
 	}
 
@@ -122,23 +108,14 @@ func TestAccessHandler_RevokeRole(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
-			groups := auth_mock.NewMockgroupByNameFinder(ctrl)
+			uc := access_mock.NewMockaccessUsecase(ctrl)
+			uc.EXPECT().
+				RevokeRole(gomock.Any(), tc.subject, tc.domain, tc.role).
+				Return(tc.ucErr)
 
-			enforcer.EXPECT().Enforce(gomock.Any(), "*", "policy", "write").Return(true, nil)
-			enforcer.EXPECT().RemoveRoleForUser(tc.subject, tc.role, tc.domain).Return(tc.removeErr)
-			if tc.removeErr == nil {
-				groups.EXPECT().FindByName(gomock.Any(), tc.subject).
-					Return(nil, domain.NewNotFoundError("group", tc.subject))
-			}
+			h := NewAccessHandler(uc)
 
-			h := NewAccessHandler(
-				nil,
-				authuc.NewRevokeRoleUseCase(enforcer, groups),
-				nil,
-			)
-
-			_, err := h.RevokeRole(testCtx(), connect.NewRequest(&accessv1.RevokeRoleRequest{
+			_, err := h.RevokeRole(t.Context(), connect.NewRequest(&accessv1.RevokeRoleRequest{
 				Subject: tc.subject,
 				Domain:  tc.domain,
 				Role:    tc.role,
@@ -160,23 +137,21 @@ func TestAccessHandler_ListPolicies(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		rules   [][]string
+		rules   []policyuc.PolicyRule
 		wantLen int
 	}{
 		{
-			name:    "returns all policies",
-			rules:   [][]string{{"user@example.com", "admin", "*"}, {"bob@example.com", "reader", "ns1"}},
+			name: "returns all policies",
+			rules: []policyuc.PolicyRule{
+				{Subject: "user@example.com", Role: "admin", Domain: "*"},
+				{Subject: "bob@example.com", Role: "reader", Domain: "ns1"},
+			},
 			wantLen: 2,
 		},
 		{
 			name:    "returns empty list",
-			rules:   [][]string{},
+			rules:   []policyuc.PolicyRule{},
 			wantLen: 0,
-		},
-		{
-			name:    "skips malformed rules",
-			rules:   [][]string{{"only-two", "fields"}, {"user@example.com", "admin", "*"}},
-			wantLen: 1,
 		},
 	}
 
@@ -185,16 +160,12 @@ func TestAccessHandler_ListPolicies(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			enforcer := auth_mock.NewMockpolicyEnforcer(ctrl)
-			enforcer.EXPECT().Enforce(gomock.Any(), "*", "policy", "read").Return(true, nil)
-			enforcer.EXPECT().GetGroupingPolicy().Return(tc.rules)
+			uc := access_mock.NewMockaccessUsecase(ctrl)
+			uc.EXPECT().List(gomock.Any()).Return(tc.rules, nil)
 
-			h := NewAccessHandler(
-				nil, nil,
-				authuc.NewListPoliciesUseCase(enforcer),
-			)
+			h := NewAccessHandler(uc)
 
-			resp, err := h.ListPolicies(testCtx(), connect.NewRequest(&accessv1.ListPoliciesRequest{}))
+			resp, err := h.ListPolicies(t.Context(), connect.NewRequest(&accessv1.ListPoliciesRequest{}))
 			require.NoError(t, err)
 			assert.Len(t, resp.Msg.GetRules(), tc.wantLen)
 		})

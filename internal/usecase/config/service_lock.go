@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 type LockInput struct {

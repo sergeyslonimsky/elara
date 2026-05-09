@@ -8,8 +8,8 @@ import (
 
 	"github.com/pmezard/go-difflib/difflib"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 const diffContextLines = 3

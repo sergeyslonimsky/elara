@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/interceptor"
 	configv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1/configv1connect"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 const testSessionSecret = "test-secret-that-is-long-enough-32b"

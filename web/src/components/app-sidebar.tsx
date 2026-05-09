@@ -26,13 +26,17 @@ import {
 	SidebarMenuItem,
 	SidebarRail,
 } from "@/components/ui/sidebar";
-import { AuthType } from "@/gen/elara/auth/v1/auth_service_pb";
+import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 
 export function AppSidebar() {
 	const { pathname } = useLocation();
 	const { namespace } = useParams();
-	const { authType, me } = useAuth();
+	const { state } = useAuth();
 	const [adminOpen, setAdminOpen] = useState(true);
+
+	const authType =
+		state.status === "authenticated" ? state.authType : undefined;
+	const meUser = state.status === "authenticated" ? state.user : null;
 
 	const navItems = [
 		{
@@ -69,14 +73,14 @@ export function AppSidebar() {
 			href: "/webhooks",
 			icon: Webhook,
 			isActive: pathname.startsWith("/webhooks"),
-			show: me?.canViewWebhooks ?? false,
+			show: meUser?.canViewWebhooks ?? false,
 		},
 		{
 			title: "Tokens",
 			href: "/tokens",
 			icon: Key,
 			isActive: pathname.startsWith("/tokens"),
-			show: !!me,
+			show: !!meUser,
 		},
 	].filter((item) => item.show);
 
@@ -101,7 +105,8 @@ export function AppSidebar() {
 		},
 	];
 
-	const showAdministration = authType !== AuthType.NONE && me?.isAdmin === true;
+	const showAdministration =
+		authType !== AuthType.NONE && meUser?.isAdmin === true;
 
 	return (
 		<Sidebar>

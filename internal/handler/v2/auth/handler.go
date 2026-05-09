@@ -11,8 +11,9 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	authv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 )
+
+//go:generate mockgen -destination=mocks/handler_mock.go -package=auth_mock -source=handler.go
 
 const (
 	cookieHeader = "Set-Cookie"
@@ -22,27 +23,27 @@ const (
 	sessionCookieName    = "elara_session"
 )
 
+type usecase interface {
+	Login(ctx context.Context) (url string, state string, nonce string, err error)
+	Callback(ctx context.Context, code, nonce string) (string, *domain.User, error)
+	BasicLogin(ctx context.Context, email, password string) (string, *domain.User, error)
+}
+
 // Handler implements authv1connect.AuthServiceHandler.
 type Handler struct {
-	login        *authuc.LoginUseCase
-	callback     *authuc.CallbackUseCase
-	basicLogin   *authuc.BasicLoginUseCase
+	uc           usecase
 	authType     config.AuthType
 	secureCookie bool
 }
 
 // New returns a new Handler wired with the login use cases.
 func New(
-	login *authuc.LoginUseCase,
-	callback *authuc.CallbackUseCase,
-	basicLogin *authuc.BasicLoginUseCase,
+	uc usecase,
 	authType config.AuthType,
 	secureCookie bool,
 ) *Handler {
 	return &Handler{
-		login:        login,
-		callback:     callback,
-		basicLogin:   basicLogin,
+		uc:           uc,
 		authType:     authType,
 		secureCookie: secureCookie,
 	}
@@ -80,7 +81,7 @@ func (h *Handler) OIDCLogin(
 		)
 	}
 
-	redirectURL, state, nonce, err := h.login.Execute(ctx)
+	redirectURL, state, nonce, err := h.uc.Login(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -133,7 +134,7 @@ func (h *Handler) OIDCCallback(
 		return nil, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
 	}
 
-	sessionToken, _, err := h.callback.Execute(ctx, req.Msg.GetCode(), nonce)
+	sessionToken, _, err := h.uc.Callback(ctx, req.Msg.GetCode(), nonce)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -164,7 +165,7 @@ func (h *Handler) BasicLogin(
 		)
 	}
 
-	sessionToken, user, err := h.basicLogin.Execute(ctx, req.Msg.GetEmail(), req.Msg.GetPassword())
+	sessionToken, user, err := h.uc.BasicLogin(ctx, req.Msg.GetEmail(), req.Msg.GetPassword())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}

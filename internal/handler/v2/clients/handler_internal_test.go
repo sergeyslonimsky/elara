@@ -10,95 +10,90 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	clients_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/clients/mocks"
 	clientsv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/clients/v1"
-	clientsuc "github.com/sergeyslonimsky/elara/internal/usecase/clients"
 )
 
-type allowAllEnforcer struct{}
+// fakeUsecase implements the handler's usecase interface for streaming tests
+// where gomock with channels is awkward. Captures subscription lifecycle.
+type fakeUsecase struct {
+	mu sync.Mutex
 
-func (allowAllEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
+	activeClients []*domain.Client
+	getClient     *domain.Client
+	getEvents     []domain.ClientEvent
+	getErr        error
 
-func testCtx() context.Context {
-	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
-}
-
-// fakeActiveSource implements clientsuc.ActiveSource.
-type fakeActiveSource struct {
-	mu              sync.Mutex
-	clients         []*domain.Client
-	events          map[string][]domain.ClientEvent
 	subscribersMu   sync.Mutex
 	subscribers     []chan domain.ClientChange
 	subscribeCalls  int
 	subscribeCancel int
 }
 
-func (s *fakeActiveSource) ListActive() []*domain.Client {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := make([]*domain.Client, len(s.clients))
-	copy(out, s.clients)
+func (f *fakeUsecase) ListActive(_ context.Context) ([]*domain.Client, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]*domain.Client, len(f.activeClients))
+	copy(out, f.activeClients)
 
-	return out
+	return out, nil
 }
 
-func (s *fakeActiveSource) Get(id string) *domain.Client {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, c := range s.clients {
-		if c.ID == id {
-			return c
-		}
-	}
-
-	return nil
+func (f *fakeUsecase) ListHistorical(_ context.Context, _ int) ([]*domain.Client, error) {
+	return nil, nil
 }
 
-func (s *fakeActiveSource) RecentEvents(id string) []domain.ClientEvent {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	return s.events[id]
+func (f *fakeUsecase) ListSessions(_ context.Context, _, _, _ string, _ int) ([]*domain.Client, error) {
+	return nil, nil
 }
 
-func (s *fakeActiveSource) Subscribe() (<-chan domain.ClientChange, func()) {
-	s.subscribersMu.Lock()
-	defer s.subscribersMu.Unlock()
+func (f *fakeUsecase) Get(_ context.Context, _ string) (*domain.Client, []domain.ClientEvent, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 
-	s.subscribeCalls++
+	return f.getClient, f.getEvents, f.getErr
+}
+
+func (f *fakeUsecase) SubscribeChanges(_ context.Context) (<-chan domain.ClientChange, func(), error) {
+	return f.subscribe()
+}
+
+func (f *fakeUsecase) SubscribeClient(_ context.Context, _ string) (<-chan domain.ClientChange, func(), error) {
+	return f.subscribe()
+}
+
+func (f *fakeUsecase) subscribe() (<-chan domain.ClientChange, func(), error) {
+	f.subscribersMu.Lock()
+	defer f.subscribersMu.Unlock()
+
+	f.subscribeCalls++
 	ch := make(chan domain.ClientChange, 8)
-	s.subscribers = append(s.subscribers, ch)
+	f.subscribers = append(f.subscribers, ch)
 
 	cleanup := func() {
-		s.subscribersMu.Lock()
-		defer s.subscribersMu.Unlock()
-
-		for i, c := range s.subscribers {
+		f.subscribersMu.Lock()
+		defer f.subscribersMu.Unlock()
+		for i, c := range f.subscribers {
 			if c == ch {
-				s.subscribers = append(s.subscribers[:i], s.subscribers[i+1:]...)
+				f.subscribers = append(f.subscribers[:i], f.subscribers[i+1:]...)
 				close(ch)
-				s.subscribeCancel++
+				f.subscribeCancel++
 
 				return
 			}
 		}
 	}
 
-	return ch, cleanup
+	return ch, cleanup, nil
 }
 
-// SubscribeClient — same channel pool as Subscribe so existing tests aren't affected.
-func (s *fakeActiveSource) SubscribeClient(_ string) (<-chan domain.ClientChange, func()) {
-	return s.Subscribe()
-}
-
-func (s *fakeActiveSource) push(ev domain.ClientChange) {
-	s.subscribersMu.Lock()
-	defer s.subscribersMu.Unlock()
-	for _, c := range s.subscribers {
+func (f *fakeUsecase) push(ev domain.ClientChange) {
+	f.subscribersMu.Lock()
+	defer f.subscribersMu.Unlock()
+	for _, c := range f.subscribers {
 		select {
 		case c <- ev:
 		default:
@@ -106,58 +101,25 @@ func (s *fakeActiveSource) push(ev domain.ClientChange) {
 	}
 }
 
-func (s *fakeActiveSource) activeSubs() int {
-	s.subscribersMu.Lock()
-	defer s.subscribersMu.Unlock()
+func (f *fakeUsecase) activeSubs() int {
+	f.subscribersMu.Lock()
+	defer f.subscribersMu.Unlock()
 
-	return len(s.subscribers)
+	return len(f.subscribers)
 }
 
-// fakeHistorySource implements clientsuc.HistorySource.
-type fakeHistorySource struct {
-	mu      sync.Mutex
-	saved   []*domain.Client
-	listErr error
+func (f *fakeUsecase) setActiveClients(cs []*domain.Client) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.activeClients = cs
 }
 
-func (h *fakeHistorySource) List(_ context.Context, limit int) ([]*domain.Client, error) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	if h.listErr != nil {
-		return nil, h.listErr
-	}
-
-	if limit <= 0 || limit > len(h.saved) {
-		limit = len(h.saved)
-	}
-
-	out := make([]*domain.Client, limit)
-	copy(out, h.saved[:limit])
-
-	return out, nil
-}
-
-func (h *fakeHistorySource) ListByClient(_ context.Context, name, ns string, limit int) ([]*domain.Client, error) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	if h.listErr != nil {
-		return nil, h.listErr
-	}
-
-	var matches []*domain.Client
-	for _, c := range h.saved {
-		if c.ClientName == name && c.K8sNamespace == ns {
-			matches = append(matches, c)
-		}
-	}
-
-	if limit > 0 && limit < len(matches) {
-		matches = matches[:limit]
-	}
-
-	return matches, nil
+func (f *fakeUsecase) setGet(c *domain.Client, events []domain.ClientEvent, err error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.getClient = c
+	f.getEvents = events
+	f.getErr = err
 }
 
 // fakeWatchSender captures sent responses for assertions.
@@ -183,7 +145,6 @@ func (s *fakeWatchSender) Send(r *clientsv1.WatchClientsResponse) error {
 func (s *fakeWatchSender) snapshot() []*clientsv1.WatchClientsResponse {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	out := make([]*clientsv1.WatchClientsResponse, len(s.resps))
 	copy(out, s.resps)
 
@@ -203,26 +164,25 @@ func waitForSent(t *testing.T, s *fakeWatchSender, n int) {
 }
 
 // -----------------------------------------------------------------------------
-// Tests
+// Tests using gomock for non-streaming methods
 // -----------------------------------------------------------------------------
 
 func TestClientsHandler_ListActiveClients(t *testing.T) {
 	t.Parallel()
 
-	now := time.Now()
-	active := &fakeActiveSource{
-		clients: []*domain.Client{
-			{ID: "conn-2", PeerAddress: "p2", ConnectedAt: now.Add(time.Second)},
-			{ID: "conn-1", PeerAddress: "p1", ConnectedAt: now},
-		},
-	}
-	uc := clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})
-	h := New(uc)
+	ctrl := gomock.NewController(t)
+	uc := clients_mock.NewMockusecase(ctrl)
 
-	resp, err := h.ListActiveClients(testCtx(), connect.NewRequest(&clientsv1.ListActiveClientsRequest{}))
+	now := time.Now()
+	uc.EXPECT().ListActive(gomock.Any()).Return([]*domain.Client{
+		{ID: "conn-1", PeerAddress: "p1", ConnectedAt: now},
+		{ID: "conn-2", PeerAddress: "p2", ConnectedAt: now.Add(time.Second)},
+	}, nil)
+
+	h := New(uc)
+	resp, err := h.ListActiveClients(t.Context(), connect.NewRequest(&clientsv1.ListActiveClientsRequest{}))
 	require.NoError(t, err)
 	require.Len(t, resp.Msg.GetClients(), 2)
-	// Sorted by ConnectedAt asc
 	assert.Equal(t, "conn-1", resp.Msg.GetClients()[0].GetId())
 	assert.Equal(t, "conn-2", resp.Msg.GetClients()[1].GetId())
 }
@@ -230,15 +190,16 @@ func TestClientsHandler_ListActiveClients(t *testing.T) {
 func TestClientsHandler_GetClient_Active(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{
-		clients: []*domain.Client{{ID: "x", PeerAddress: "p", ConnectedAt: time.Now()}},
-		events: map[string][]domain.ClientEvent{
-			"x": {{Method: "Put", Key: "/k"}},
-		},
-	}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{}))
+	ctrl := gomock.NewController(t)
+	uc := clients_mock.NewMockusecase(ctrl)
+	uc.EXPECT().Get(gomock.Any(), "x").Return(
+		&domain.Client{ID: "x", PeerAddress: "p", ConnectedAt: time.Now()},
+		[]domain.ClientEvent{{Method: "Put", Key: "/k"}},
+		nil,
+	)
 
-	resp, err := h.GetClient(testCtx(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "x"}))
+	h := New(uc)
+	resp, err := h.GetClient(t.Context(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "x"}))
 	require.NoError(t, err)
 	assert.Equal(t, "x", resp.Msg.GetClient().GetId())
 	require.Len(t, resp.Msg.GetRecentEvents(), 1)
@@ -249,29 +210,31 @@ func TestClientsHandler_GetClient_FallbackToHistory(t *testing.T) {
 	t.Parallel()
 
 	disconn := time.Now()
-	hist := &fakeHistorySource{
-		saved: []*domain.Client{
-			{ID: "old", PeerAddress: "p", ConnectedAt: disconn.Add(-time.Hour), DisconnectedAt: &disconn},
-		},
-	}
-	active := &fakeActiveSource{}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, hist))
+	ctrl := gomock.NewController(t)
+	uc := clients_mock.NewMockusecase(ctrl)
+	uc.EXPECT().Get(gomock.Any(), "old").Return(
+		&domain.Client{ID: "old", PeerAddress: "p", ConnectedAt: disconn.Add(-time.Hour), DisconnectedAt: &disconn},
+		nil,
+		nil,
+	)
 
-	resp, err := h.GetClient(testCtx(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "old"}))
+	h := New(uc)
+	resp, err := h.GetClient(t.Context(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "old"}))
 	require.NoError(t, err)
 	assert.Equal(t, "old", resp.Msg.GetClient().GetId())
 	require.NotNil(t, resp.Msg.GetClient().GetDisconnectedAt())
-	assert.Empty(t, resp.Msg.GetRecentEvents(), "history clients have no recent events")
+	assert.Empty(t, resp.Msg.GetRecentEvents())
 }
 
 func TestClientsHandler_GetClient_NotFound(t *testing.T) {
 	t.Parallel()
 
-	h := New(
-		clientsuc.NewUseCase(allowAllEnforcer{}, &fakeActiveSource{}, &fakeHistorySource{}),
-	)
+	ctrl := gomock.NewController(t)
+	uc := clients_mock.NewMockusecase(ctrl)
+	uc.EXPECT().Get(gomock.Any(), "nope").Return(nil, nil, nil)
 
-	_, err := h.GetClient(testCtx(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "nope"}))
+	h := New(uc)
+	_, err := h.GetClient(t.Context(), connect.NewRequest(&clientsv1.GetClientRequest{Id: "nope"}))
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
@@ -280,13 +243,15 @@ func TestClientsHandler_ListHistoricalConnections(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	hist := &fakeHistorySource{saved: []*domain.Client{
+	ctrl := gomock.NewController(t)
+	uc := clients_mock.NewMockusecase(ctrl)
+	uc.EXPECT().ListHistorical(gomock.Any(), 10).Return([]*domain.Client{
 		{ID: "a", DisconnectedAt: &now},
 		{ID: "b", DisconnectedAt: &now},
-	}}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, &fakeActiveSource{}, hist))
+	}, nil)
 
-	resp, err := h.ListHistoricalConnections(testCtx(),
+	h := New(uc)
+	resp, err := h.ListHistoricalConnections(t.Context(),
 		connect.NewRequest(&clientsv1.ListHistoricalConnectionsRequest{Limit: 10}))
 	require.NoError(t, err)
 	assert.Len(t, resp.Msg.GetClients(), 2)
@@ -295,30 +260,82 @@ func TestClientsHandler_ListHistoricalConnections(t *testing.T) {
 func TestClientsHandler_ListHistoricalConnections_PropagatesError(t *testing.T) {
 	t.Parallel()
 
-	hist := &fakeHistorySource{listErr: errors.New("db down")}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, &fakeActiveSource{}, hist))
+	ctrl := gomock.NewController(t)
+	uc := clients_mock.NewMockusecase(ctrl)
+	uc.EXPECT().ListHistorical(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
 
-	_, err := h.ListHistoricalConnections(testCtx(),
+	h := New(uc)
+	_, err := h.ListHistoricalConnections(t.Context(),
 		connect.NewRequest(&clientsv1.ListHistoricalConnectionsRequest{}))
 	require.Error(t, err)
 }
 
 // -----------------------------------------------------------------------------
-// Watch streaming — memory leak guards
+// ListClientSessions
+// -----------------------------------------------------------------------------
+
+func TestClientsHandler_ListClientSessions(t *testing.T) {
+	t.Parallel()
+
+	d := time.Now()
+	ctrl := gomock.NewController(t)
+	uc := clients_mock.NewMockusecase(ctrl)
+	uc.EXPECT().
+		ListSessions(gomock.Any(), "order-service", "production", "", 0).
+		Return([]*domain.Client{
+			{ID: "a", ClientName: "order-service", K8sNamespace: "production", DisconnectedAt: &d},
+			{ID: "b", ClientName: "order-service", K8sNamespace: "production", DisconnectedAt: &d},
+		}, nil)
+
+	h := New(uc)
+	resp, err := h.ListClientSessions(t.Context(),
+		connect.NewRequest(&clientsv1.ListClientSessionsRequest{
+			ClientName:   "order-service",
+			K8SNamespace: "production",
+		}))
+	require.NoError(t, err)
+	assert.Len(t, resp.Msg.GetSessions(), 2)
+}
+
+func TestClientsHandler_ListClientSessions_ExcludesCurrent(t *testing.T) {
+	t.Parallel()
+
+	d := time.Now()
+	ctrl := gomock.NewController(t)
+	uc := clients_mock.NewMockusecase(ctrl)
+	uc.EXPECT().
+		ListSessions(gomock.Any(), "x", "p", "a", 0).
+		Return([]*domain.Client{
+			{ID: "b", ClientName: "x", K8sNamespace: "p", DisconnectedAt: &d},
+		}, nil)
+
+	h := New(uc)
+	resp, err := h.ListClientSessions(t.Context(),
+		connect.NewRequest(&clientsv1.ListClientSessionsRequest{
+			ClientName:   "x",
+			K8SNamespace: "p",
+			CurrentId:    "a",
+		}))
+	require.NoError(t, err)
+	require.Len(t, resp.Msg.GetSessions(), 1)
+	assert.Equal(t, "b", resp.Msg.GetSessions()[0].GetId())
+}
+
+// -----------------------------------------------------------------------------
+// Watch streaming — uses fakeUsecase (channel-based subscription is awkward in gomock)
 // -----------------------------------------------------------------------------
 
 func TestClientsHandler_runWatch_SendsInitialSnapshot(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	active := &fakeActiveSource{
-		clients: []*domain.Client{{ID: "conn-1", PeerAddress: "p", ConnectedAt: now}},
-	}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour) // effectively disable periodic ticks
+	uc := &fakeUsecase{}
+	uc.setActiveClients([]*domain.Client{{ID: "conn-1", PeerAddress: "p", ConnectedAt: now}})
+
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(testCtx())
+	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 
@@ -336,27 +353,25 @@ func TestClientsHandler_runWatch_SendsInitialSnapshot(t *testing.T) {
 func TestClientsHandler_runWatch_PushesConnectedEvent(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(testCtx())
+	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 
-	waitForSent(t, sender, 1) // initial snapshot
+	waitForSent(t, sender, 1)
 
-	// Need to wait for runWatch to have actually subscribed before pushing.
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if active.activeSubs() > 0 {
+		if uc.activeSubs() > 0 {
 			break
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	active.push(domain.ClientChange{
+	uc.push(domain.ClientChange{
 		Kind:   domain.ClientConnected,
 		Client: &domain.Client{ID: "new"},
 	})
@@ -375,27 +390,27 @@ func TestClientsHandler_runWatch_PushesConnectedEvent(t *testing.T) {
 func TestClientsHandler_runWatch_DisconnectedEvent(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(testCtx())
+	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 	waitForSent(t, sender, 1)
 
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if active.activeSubs() > 0 {
+		if uc.activeSubs() > 0 {
 			break
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	active.push(domain.ClientChange{
+	now := time.Now()
+	uc.push(domain.ClientChange{
 		Kind:   domain.ClientDisconnected,
-		Client: &domain.Client{ID: "gone", DisconnectedAt: new(time.Now())},
+		Client: &domain.Client{ID: "gone", DisconnectedAt: &now},
 	})
 
 	waitForSent(t, sender, 2)
@@ -408,29 +423,27 @@ func TestClientsHandler_runWatch_DisconnectedEvent(t *testing.T) {
 func TestClientsHandler_runWatch_ActivityEventsAreSwallowed(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(testCtx())
+	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 	waitForSent(t, sender, 1)
 
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if active.activeSubs() > 0 {
+		if uc.activeSubs() > 0 {
 			break
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
 
 	for range 5 {
-		active.push(domain.ClientChange{Kind: domain.ClientActivity, Client: &domain.Client{ID: "x"}})
+		uc.push(domain.ClientChange{Kind: domain.ClientActivity, Client: &domain.Client{ID: "x"}})
 	}
 
-	// Give the handler a moment to process — none of these should produce a Send.
 	time.Sleep(50 * time.Millisecond)
 	assert.Len(t, sender.snapshot(), 1, "Activity events must not be sent over the wire")
 
@@ -441,18 +454,16 @@ func TestClientsHandler_runWatch_ActivityEventsAreSwallowed(t *testing.T) {
 func TestClientsHandler_runWatch_PeriodicSnapshot(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{
-		clients: []*domain.Client{{ID: "c"}},
-	}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(40 * time.Millisecond)
+	uc := &fakeUsecase{}
+	uc.setActiveClients([]*domain.Client{{ID: "c"}})
+	h := New(uc).WithSnapshotInterval(40 * time.Millisecond)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(testCtx())
+	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 
-	waitForSent(t, sender, 3) // initial + ≥2 ticks
+	waitForSent(t, sender, 3)
 
 	cancel()
 	require.NoError(t, <-done)
@@ -462,56 +473,50 @@ func TestClientsHandler_runWatch_PeriodicSnapshot(t *testing.T) {
 	}
 }
 
-// LEAK GUARD: ctx cancel must release the subscription.
 func TestClientsHandler_runWatch_CtxCancel_UnsubscribesAndExits(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(testCtx())
+	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatch(ctx, sender) }()
 	waitForSent(t, sender, 1)
 
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if active.activeSubs() == 1 {
+		if uc.activeSubs() == 1 {
 			break
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
-	require.Equal(t, 1, active.activeSubs(), "subscription opened after subscribe")
+	require.Equal(t, 1, uc.activeSubs())
 
 	cancel()
 
 	select {
 	case err := <-done:
-		require.NoError(t, err, "ctx cancel must return nil, not error")
+		require.NoError(t, err)
 	case <-time.After(time.Second):
 		t.Fatal("runWatch did not return after ctx cancel")
 	}
 
-	assert.Equal(t, 0, active.activeSubs(), "subscription released on exit")
+	assert.Equal(t, 0, uc.activeSubs())
 }
 
-// LEAK GUARD: Send error must release the subscription.
 func TestClientsHandler_runWatch_SendError_ReleasesSubscription(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{
-		clients: []*domain.Client{{ID: "c"}},
-	}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	uc.setActiveClients([]*domain.Client{{ID: "c"}})
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{sendErr: errors.New("client closed")}
-	ctx := testCtx()
 
 	done := make(chan error, 1)
-	go func() { done <- h.runWatch(ctx, sender) }()
+	go func() { done <- h.runWatch(t.Context(), sender) }()
 
 	select {
 	case err := <-done:
@@ -520,98 +525,67 @@ func TestClientsHandler_runWatch_SendError_ReleasesSubscription(t *testing.T) {
 		t.Fatal("runWatch did not exit on send error")
 	}
 
-	assert.Equal(t, 0, active.activeSubs(), "subscription released even on send error")
+	assert.Equal(t, 0, uc.activeSubs())
 }
 
-// LEAK GUARD: registry shutdown (subscription channel closes) must exit cleanly.
 func TestClientsHandler_runWatch_RegistryShutdown_ExitsCleanly(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchSender{}
-	ctx := testCtx()
 
 	done := make(chan error, 1)
-	go func() { done <- h.runWatch(ctx, sender) }()
+	go func() { done <- h.runWatch(t.Context(), sender) }()
 	waitForSent(t, sender, 1)
 
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if active.activeSubs() == 1 {
+		if uc.activeSubs() == 1 {
 			break
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	// Simulate registry shutdown by manually closing the subscriber's channel.
-	active.subscribersMu.Lock()
-	for _, ch := range active.subscribers {
+	uc.subscribersMu.Lock()
+	for _, ch := range uc.subscribers {
 		close(ch)
 	}
-	active.subscribers = nil
-	active.subscribersMu.Unlock()
+	uc.subscribers = nil
+	uc.subscribersMu.Unlock()
 
 	select {
 	case err := <-done:
-		require.NoError(t, err, "channel close must exit cleanly")
+		require.NoError(t, err)
 	case <-time.After(time.Second):
 		t.Fatal("runWatch did not exit when subscription channel closed")
 	}
 }
 
-// -----------------------------------------------------------------------------
-// ListClientSessions
-// -----------------------------------------------------------------------------
-
-func TestClientsHandler_ListClientSessions(t *testing.T) {
+func TestClientsHandler_runWatch_SubscribeOnlyOnce(t *testing.T) {
 	t.Parallel()
 
-	d := time.Now()
-	hist := &fakeHistorySource{saved: []*domain.Client{
-		{ID: "a", ClientName: "order-service", K8sNamespace: "production", DisconnectedAt: &d},
-		{ID: "b", ClientName: "order-service", K8sNamespace: "production", DisconnectedAt: &d},
-		{ID: "c", ClientName: "order-service", K8sNamespace: "staging", DisconnectedAt: &d},
-	}}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, &fakeActiveSource{}, hist))
+	uc := &fakeUsecase{}
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
-	resp, err := h.ListClientSessions(testCtx(),
-		connect.NewRequest(&clientsv1.ListClientSessionsRequest{
-			ClientName:   "order-service",
-			K8SNamespace: "production",
-		}))
-	require.NoError(t, err)
-	assert.Len(t, resp.Msg.GetSessions(), 2)
-}
+	sender := &fakeWatchSender{}
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() { done <- h.runWatch(ctx, sender) }()
+	waitForSent(t, sender, 1)
 
-func TestClientsHandler_ListClientSessions_ExcludesCurrent(t *testing.T) {
-	t.Parallel()
+	cancel()
+	<-done
 
-	d := time.Now()
-	hist := &fakeHistorySource{saved: []*domain.Client{
-		{ID: "a", ClientName: "x", K8sNamespace: "p", DisconnectedAt: &d},
-		{ID: "b", ClientName: "x", K8sNamespace: "p", DisconnectedAt: &d},
-	}}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, &fakeActiveSource{}, hist))
-
-	resp, err := h.ListClientSessions(testCtx(),
-		connect.NewRequest(&clientsv1.ListClientSessionsRequest{
-			ClientName:   "x",
-			K8SNamespace: "p",
-			CurrentId:    "a",
-		}))
-	require.NoError(t, err)
-	require.Len(t, resp.Msg.GetSessions(), 1)
-	assert.Equal(t, "b", resp.Msg.GetSessions()[0].GetId())
+	assert.Equal(t, 1, uc.subscribeCalls)
+	assert.Equal(t, 1, uc.subscribeCancel)
 }
 
 // -----------------------------------------------------------------------------
-// WatchClient streaming — leak guards
+// WatchClient streaming
 // -----------------------------------------------------------------------------
 
-// fakeWatchClientSender captures sent responses for assertions.
 type fakeWatchClientSender struct {
 	mu      sync.Mutex
 	resps   []*clientsv1.WatchClientResponse
@@ -634,7 +608,6 @@ func (s *fakeWatchClientSender) Send(r *clientsv1.WatchClientResponse) error {
 func (s *fakeWatchClientSender) snapshot() []*clientsv1.WatchClientResponse {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	out := make([]*clientsv1.WatchClientResponse, len(s.resps))
 	copy(out, s.resps)
 
@@ -656,11 +629,11 @@ func waitForClientSent(t *testing.T, s *fakeWatchClientSender, n int) {
 func TestClientsHandler_runWatchClient_NotFound(t *testing.T) {
 	t.Parallel()
 
-	h := New(
-		clientsuc.NewUseCase(allowAllEnforcer{}, &fakeActiveSource{}, &fakeHistorySource{}),
-	)
+	uc := &fakeUsecase{}
+	uc.setGet(nil, nil, nil)
 
-	err := h.runWatchClient(testCtx(), "missing", &fakeWatchClientSender{})
+	h := New(uc)
+	err := h.runWatchClient(t.Context(), "missing", &fakeWatchClientSender{})
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
@@ -668,16 +641,14 @@ func TestClientsHandler_runWatchClient_NotFound(t *testing.T) {
 func TestClientsHandler_runWatchClient_AlreadyDisconnected_SendsSingleFrameAndExits(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{}
-	hist := &fakeHistorySource{saved: []*domain.Client{
-		{ID: "x", DisconnectedAt: new(time.Now()), ClientName: "svc"},
-	}}
-	h := New(
-		clientsuc.NewUseCase(allowAllEnforcer{}, active, hist),
-	).WithSnapshotInterval(time.Hour)
+	now := time.Now()
+	uc := &fakeUsecase{}
+	uc.setGet(&domain.Client{ID: "x", DisconnectedAt: &now, ClientName: "svc"}, nil, nil)
+
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{}
-	err := h.runWatchClient(testCtx(), "x", sender)
+	err := h.runWatchClient(t.Context(), "x", sender)
 	require.NoError(t, err)
 
 	resps := sender.snapshot()
@@ -688,14 +659,13 @@ func TestClientsHandler_runWatchClient_AlreadyDisconnected_SendsSingleFrameAndEx
 func TestClientsHandler_runWatchClient_InitialSnapshot(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{
-		clients: []*domain.Client{{ID: "x", ClientName: "svc", ConnectedAt: time.Now()}},
-	}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	uc.setGet(&domain.Client{ID: "x", ClientName: "svc", ConnectedAt: time.Now()}, nil, nil)
+
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{}
-	ctx, cancel := context.WithCancel(testCtx())
+	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
 
@@ -711,27 +681,26 @@ func TestClientsHandler_runWatchClient_InitialSnapshot(t *testing.T) {
 func TestClientsHandler_runWatchClient_ForwardsRequestRecorded(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{
-		clients: []*domain.Client{{ID: "x", ConnectedAt: time.Now()}},
-	}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	uc.setGet(&domain.Client{ID: "x", ConnectedAt: time.Now()}, nil, nil)
+
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{}
-	ctx, cancel := context.WithCancel(testCtx())
+	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
 	waitForClientSent(t, sender, 1)
 
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if active.activeSubs() > 0 {
+		if uc.activeSubs() > 0 {
 			break
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	active.push(domain.ClientChange{
+	uc.push(domain.ClientChange{
 		Kind:   domain.ClientRequestRecorded,
 		Client: &domain.Client{ID: "x"},
 		Event:  &domain.ClientEvent{Method: "Put", Key: "/k", Timestamp: time.Now()},
@@ -750,28 +719,29 @@ func TestClientsHandler_runWatchClient_ForwardsRequestRecorded(t *testing.T) {
 func TestClientsHandler_runWatchClient_DisconnectExitsCleanly(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{clients: []*domain.Client{{ID: "x"}}}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	uc.setGet(&domain.Client{ID: "x", ConnectedAt: time.Now()}, nil, nil)
+
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{}
-	ctx := testCtx()
 
 	done := make(chan error, 1)
-	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
+	go func() { done <- h.runWatchClient(t.Context(), "x", sender) }()
 	waitForClientSent(t, sender, 1)
 
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if active.activeSubs() > 0 {
+		if uc.activeSubs() > 0 {
 			break
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	active.push(domain.ClientChange{
+	now := time.Now()
+	uc.push(domain.ClientChange{
 		Kind:   domain.ClientDisconnected,
-		Client: &domain.Client{ID: "x", DisconnectedAt: new(time.Now())},
+		Client: &domain.Client{ID: "x", DisconnectedAt: &now},
 	})
 
 	select {
@@ -786,16 +756,16 @@ func TestClientsHandler_runWatchClient_DisconnectExitsCleanly(t *testing.T) {
 	assert.Equal(t, clientsv1.WatchClientResponse_KIND_DISCONNECTED, resps[1].GetKind())
 }
 
-// LEAK GUARD: ctx cancel must release subscription.
 func TestClientsHandler_runWatchClient_CtxCancel_ReleasesSubscription(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{clients: []*domain.Client{{ID: "x"}}}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	uc.setGet(&domain.Client{ID: "x", ConnectedAt: time.Now()}, nil, nil)
+
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{}
-	ctx, cancel := context.WithCancel(testCtx())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	done := make(chan error, 1)
 	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
@@ -803,12 +773,12 @@ func TestClientsHandler_runWatchClient_CtxCancel_ReleasesSubscription(t *testing
 
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if active.activeSubs() == 1 {
+		if uc.activeSubs() == 1 {
 			break
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
-	require.Equal(t, 1, active.activeSubs())
+	require.Equal(t, 1, uc.activeSubs())
 
 	cancel()
 
@@ -819,22 +789,21 @@ func TestClientsHandler_runWatchClient_CtxCancel_ReleasesSubscription(t *testing
 		t.Fatal("runWatchClient did not exit on ctx cancel")
 	}
 
-	assert.Equal(t, 0, active.activeSubs(), "subscription released on ctx cancel")
+	assert.Equal(t, 0, uc.activeSubs())
 }
 
-// LEAK GUARD: send error must release subscription.
 func TestClientsHandler_runWatchClient_SendError_ReleasesSubscription(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{clients: []*domain.Client{{ID: "x"}}}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
+	uc := &fakeUsecase{}
+	uc.setGet(&domain.Client{ID: "x", ConnectedAt: time.Now()}, nil, nil)
+
+	h := New(uc).WithSnapshotInterval(time.Hour)
 
 	sender := &fakeWatchClientSender{sendErr: errors.New("client closed")}
-	ctx := testCtx()
 
 	done := make(chan error, 1)
-	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
+	go func() { done <- h.runWatchClient(t.Context(), "x", sender) }()
 
 	select {
 	case err := <-done:
@@ -843,22 +812,23 @@ func TestClientsHandler_runWatchClient_SendError_ReleasesSubscription(t *testing
 		t.Fatal("runWatchClient did not exit on send error")
 	}
 
-	assert.Equal(t, 0, active.activeSubs(), "subscription released after send error")
+	assert.Equal(t, 0, uc.activeSubs())
 }
 
 func TestClientsHandler_runWatchClient_PeriodicSnapshot(t *testing.T) {
 	t.Parallel()
 
-	active := &fakeActiveSource{clients: []*domain.Client{{ID: "x"}}}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(40 * time.Millisecond)
+	uc := &fakeUsecase{}
+	uc.setGet(&domain.Client{ID: "x", ConnectedAt: time.Now()}, nil, nil)
+
+	h := New(uc).WithSnapshotInterval(40 * time.Millisecond)
 
 	sender := &fakeWatchClientSender{}
-	ctx, cancel := context.WithCancel(testCtx())
+	ctx, cancel := context.WithCancel(t.Context())
 	done := make(chan error, 1)
 	go func() { done <- h.runWatchClient(ctx, "x", sender) }()
 
-	waitForClientSent(t, sender, 3) // initial + ≥2 ticks
+	waitForClientSent(t, sender, 3)
 
 	cancel()
 	require.NoError(t, <-done)
@@ -866,25 +836,4 @@ func TestClientsHandler_runWatchClient_PeriodicSnapshot(t *testing.T) {
 	for _, r := range sender.snapshot() {
 		assert.Equal(t, clientsv1.WatchClientResponse_KIND_SNAPSHOT, r.GetKind())
 	}
-}
-
-func TestClientsHandler_runWatch_SubscribeOnlyOnce(t *testing.T) {
-	t.Parallel()
-
-	// Defensive: each runWatch must Subscribe exactly once and unsubscribe exactly once.
-	active := &fakeActiveSource{}
-	h := New(clientsuc.NewUseCase(allowAllEnforcer{}, active, &fakeHistorySource{})).
-		WithSnapshotInterval(time.Hour)
-
-	sender := &fakeWatchSender{}
-	ctx, cancel := context.WithCancel(testCtx())
-	done := make(chan error, 1)
-	go func() { done <- h.runWatch(ctx, sender) }()
-	waitForSent(t, sender, 1)
-
-	cancel()
-	<-done
-
-	assert.Equal(t, 1, active.subscribeCalls)
-	assert.Equal(t, 1, active.subscribeCancel)
 }

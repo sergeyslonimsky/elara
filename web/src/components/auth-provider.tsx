@@ -1,25 +1,27 @@
-import { useMutation, useQuery } from "@connectrpc/connect-query";
+import { ConnectError } from "@connectrpc/connect";
+import {
+	createConnectQueryKey,
+	useMutation,
+	useQuery,
+} from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
+import { createContext, useCallback, useContext, useMemo } from "react";
+import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import { getAuthInfo } from "@/gen/elara/auth/v1/auth_service-AuthService_connectquery";
+import type { MeResponse } from "@/gen/elara/profile/v1/profile_service_pb";
 import {
-	createContext,
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
-import { useNavigate } from "react-router";
-import { AuthType, type MeResponse } from "@/gen/elara/auth/v1/auth_service_pb";
-import {
-	getAuthInfo,
 	logout as logoutRpc,
 	me,
-} from "@/gen/elara/auth/v1/auth_service-AuthService_connectquery";
+} from "@/gen/elara/profile/v1/profile_service-ProfileService_connectquery";
+
+export type AuthState =
+	| { status: "loading" }
+	| { status: "error"; error: ConnectError }
+	| { status: "anonymous"; authType: AuthType }
+	| { status: "authenticated"; authType: AuthType; user: MeResponse };
 
 export interface AuthContextType {
-	me: MeResponse | null;
-	authType: AuthType;
-	isLoading: boolean;
+	state: AuthState;
 	logout: () => Promise<void>;
 }
 
@@ -27,11 +29,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function AuthProviderInner({ children }: { children: React.ReactNode }) {
 	const queryClient = useQueryClient();
-	const navigate = useNavigate();
-	const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-	const { data: authInfo, isLoading: isAuthInfoLoading } =
-		useQuery(getAuthInfo);
+	const {
+		data: authInfo,
+		isLoading: isAuthInfoLoading,
+		error: authInfoError,
+	} = useQuery(
+		getAuthInfo,
+		{},
+		{ staleTime: Infinity, gcTime: Infinity, retry: 2 },
+	);
+
 	const authType = authInfo?.authType ?? AuthType.UNSPECIFIED;
 
 	const {
@@ -47,44 +55,51 @@ function AuthProviderInner({ children }: { children: React.ReactNode }) {
 		},
 	);
 
-	const logoutMutation = useMutation(logoutRpc);
+	const { mutateAsync: mutateLogout } = useMutation(logoutRpc);
 
 	const logout = useCallback(async () => {
 		try {
-			await logoutMutation.mutateAsync({});
+			await mutateLogout({});
 		} finally {
-			queryClient.clear();
-			navigate("/login", { replace: true });
+			queryClient.removeQueries({
+				queryKey: createConnectQueryKey({ schema: me, cardinality: undefined }),
+			});
 		}
-	}, [logoutMutation, queryClient, navigate]);
+	}, [mutateLogout, queryClient]);
 
-	useEffect(() => {
-		if (isAuthInfoLoading) return;
+	const state: AuthState = useMemo(() => {
+		if (isAuthInfoLoading) return { status: "loading" };
+		if (authInfoError)
+			return { status: "error", error: ConnectError.from(authInfoError) };
+		if (authType === AuthType.UNSPECIFIED) return { status: "loading" };
 
-		if (authType === AuthType.UNSPECIFIED) {
-			return;
+		if (authType === AuthType.NONE) {
+			if (meData) return { status: "authenticated", authType, user: meData };
+			if (meError)
+				return { status: "error", error: ConnectError.from(meError) };
+			return { status: "loading" };
 		}
 
-		if (!isMeLoading) {
-			if (meError) {
-				setIsInitialLoading(false);
-			} else if (meData) {
-				if (meData.passwordChangeRequired) {
-					navigate("/change-password");
-				}
-				setIsInitialLoading(false);
-			}
-		}
-	}, [isAuthInfoLoading, isMeLoading, meData, meError, authType, navigate]);
+		// BASIC / OIDC
+		if (meData) return { status: "authenticated", authType, user: meData };
+		if (meError) return { status: "anonymous", authType };
+		if (isMeLoading) return { status: "loading" };
+		return { status: "anonymous", authType };
+	}, [
+		isAuthInfoLoading,
+		authInfoError,
+		authType,
+		meData,
+		meError,
+		isMeLoading,
+	]);
 
 	const value = useMemo(
 		() => ({
-			me: meData ?? null,
-			authType,
-			isLoading: isInitialLoading,
+			state,
 			logout,
 		}),
-		[meData, authType, isInitialLoading, logout],
+		[state, logout],
 	);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

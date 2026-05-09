@@ -13,12 +13,14 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserMenu } from "@/components/user-menu";
-import { AuthType } from "@/gen/elara/auth/v1/auth_service_pb";
+import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 
 export function AppHeader() {
 	const { namespace } = useParams();
 	const { setTheme } = useTheme();
-	const { authType } = useAuth();
+	const { state } = useAuth();
+	const authType =
+		state.status === "authenticated" ? state.authType : undefined;
 
 	return (
 		<header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">

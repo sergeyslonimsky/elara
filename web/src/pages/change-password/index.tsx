@@ -1,8 +1,8 @@
 import { ConnectError } from "@connectrpc/connect";
-import { useMutation } from "@connectrpc/connect-query";
+import { createConnectQueryKey, useMutation } from "@connectrpc/connect-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Key, LogOut } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,17 +14,23 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { changePassword } from "@/gen/elara/auth/v1/auth_service-AuthService_connectquery";
+import {
+	changePassword,
+	me,
+} from "@/gen/elara/profile/v1/profile_service-ProfileService_connectquery";
 
 export function ChangePasswordPage() {
-	const { me, logout } = useAuth();
-	const navigate = useNavigate();
+	const { state, logout } = useAuth();
+	const queryClient = useQueryClient();
 	const [currentPassword, setCurrentPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
 
 	const mutation = useMutation(changePassword);
+
+	const meUser = state.status === "authenticated" ? state.user : null;
+	const passwordChangeRequired = meUser?.passwordChangeRequired ?? false;
 
 	const onSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -45,7 +51,9 @@ export function ChangePasswordPage() {
 				currentPassword: currentPassword || undefined,
 				newPassword: newPassword,
 			});
-			navigate("/");
+			await queryClient.invalidateQueries({
+				queryKey: createConnectQueryKey({ schema: me, cardinality: "finite" }),
+			});
 		} catch (err) {
 			const connectErr = ConnectError.from(err);
 			setError(connectErr.message);
@@ -62,7 +70,7 @@ export function ChangePasswordPage() {
 						</div>
 						<CardTitle className="text-xl">Change Password</CardTitle>
 					</div>
-					{!me?.passwordChangeRequired && (
+					{!passwordChangeRequired && (
 						<CardDescription>
 							Update your password to keep your account secure.
 						</CardDescription>
@@ -70,7 +78,7 @@ export function ChangePasswordPage() {
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={onSubmit} className="space-y-4">
-						{!me?.passwordChangeRequired && (
+						{!passwordChangeRequired && (
 							<Field>
 								<FieldLabel>Current Password</FieldLabel>
 								<Input
@@ -78,7 +86,7 @@ export function ChangePasswordPage() {
 									value={currentPassword}
 									onChange={(e) => setCurrentPassword(e.target.value)}
 									autoComplete="current-password"
-									required={!me?.passwordChangeRequired}
+									required={!passwordChangeRequired}
 								/>
 							</Field>
 						)}

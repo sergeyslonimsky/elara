@@ -3,6 +3,7 @@
 .vscode/
 .claude/
 .gemini/
+.agora-code/
 *.swp
 *.swo
 *~

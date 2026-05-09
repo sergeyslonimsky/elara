@@ -4,53 +4,65 @@ import { Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { AuthContextType } from "@/components/auth-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import {
-	AuthType,
-	MeResponseSchema,
-} from "@/gen/elara/auth/v1/auth_service_pb";
+import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import { MeResponseSchema } from "@/gen/elara/profile/v1/profile_service_pb";
 import { TestProviders } from "@/test/test-utils";
 import { AppSidebar } from "./app-sidebar";
 
+const adminUser = create(MeResponseSchema, {
+	name: "Admin",
+	email: "admin@elara.local",
+	isAdmin: true,
+	namespaces: [],
+	passwordChangeRequired: false,
+	picture: "",
+	canViewWebhooks: true,
+	canManageWebhooks: true,
+});
+
 const mockAdminContext: AuthContextType = {
-	me: create(MeResponseSchema, {
-		name: "Admin",
-		email: "admin@elara.local",
-		isAdmin: true,
-		namespaces: [],
-		passwordChangeRequired: false,
-		picture: "",
-		canViewWebhooks: true,
-		canManageWebhooks: true,
-	}),
-	authType: AuthType.BASIC,
-	isLoading: false,
+	state: {
+		status: "authenticated",
+		authType: AuthType.BASIC,
+		user: adminUser,
+	},
 	logout: async () => {},
 };
 
 const mockUserContext: AuthContextType = {
-	me: create(MeResponseSchema, {
-		name: "User",
-		email: "user@elara.local",
-		isAdmin: false,
-		namespaces: [],
-		passwordChangeRequired: false,
-		picture: "",
-		canViewWebhooks: false,
-		canManageWebhooks: false,
-	}),
-	authType: AuthType.BASIC,
-	isLoading: false,
+	state: {
+		status: "authenticated",
+		authType: AuthType.BASIC,
+		user: create(MeResponseSchema, {
+			name: "User",
+			email: "user@elara.local",
+			isAdmin: false,
+			namespaces: [],
+			passwordChangeRequired: false,
+			picture: "",
+			canViewWebhooks: false,
+			canManageWebhooks: false,
+		}),
+	},
 	logout: async () => {},
 };
 
 const mockOidcAdminContext: AuthContextType = {
-	...mockAdminContext,
-	authType: AuthType.OIDC,
+	state: {
+		status: "authenticated",
+		authType: AuthType.OIDC,
+		user: adminUser,
+	},
+	logout: async () => {},
 };
 
 const mockNoneContext: AuthContextType = {
-	...mockAdminContext,
-	authType: AuthType.NONE,
+	state: {
+		status: "authenticated",
+		authType: AuthType.NONE,
+		user: adminUser,
+	},
+	logout: async () => {},
 };
 
 describe("AppSidebar", () => {
@@ -87,17 +99,21 @@ describe("AppSidebar", () => {
 
 	it("shows Webhooks for user with canViewWebhooks permission", () => {
 		const mockUserWithWebhooksContext: AuthContextType = {
-			...mockUserContext,
-			me: create(MeResponseSchema, {
-				name: "User",
-				email: "user@elara.local",
-				isAdmin: false,
-				namespaces: [],
-				passwordChangeRequired: false,
-				picture: "",
-				canViewWebhooks: true,
-				canManageWebhooks: false,
-			}),
+			state: {
+				status: "authenticated",
+				authType: AuthType.BASIC,
+				user: create(MeResponseSchema, {
+					name: "User",
+					email: "user@elara.local",
+					isAdmin: false,
+					namespaces: [],
+					passwordChangeRequired: false,
+					picture: "",
+					canViewWebhooks: true,
+					canManageWebhooks: false,
+				}),
+			},
+			logout: async () => {},
 		};
 		render(
 			<TestProviders authContext={mockUserWithWebhooksContext}>

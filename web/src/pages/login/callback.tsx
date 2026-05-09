@@ -2,18 +2,16 @@ import { createConnectQueryKey, useMutation } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import { ErrorCard } from "@/components/error-card";
-import {
-	me,
-	oIDCCallback,
-} from "@/gen/elara/auth/v1/auth_service-AuthService_connectquery";
+import { oIDCCallback } from "@/gen/elara/auth/v1/auth_service-AuthService_connectquery";
+import { me } from "@/gen/elara/profile/v1/profile_service-ProfileService_connectquery";
 
 export function CallbackPage() {
 	const [searchParams] = useSearchParams();
-	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const mutation = useMutation(oIDCCallback);
+	const { mutate } = mutation;
 	const called = useRef(false);
 
 	const code = searchParams.get("code");
@@ -22,7 +20,7 @@ export function CallbackPage() {
 	useEffect(() => {
 		if (code && state && !called.current) {
 			called.current = true;
-			mutation.mutate(
+			mutate(
 				{ code, state },
 				{
 					onSuccess: async () => {
@@ -32,12 +30,11 @@ export function CallbackPage() {
 								cardinality: "finite",
 							}),
 						});
-						navigate("/");
 					},
 				},
 			);
 		}
-	}, [code, state, navigate, queryClient, mutation]);
+	}, [code, state, queryClient, mutate]);
 
 	if (!code || !state) {
 		return (

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -9,29 +8,33 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	config_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/config/mocks"
 	configv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
 	schemauc "github.com/sergeyslonimsky/elara/internal/usecase/schema"
-	mock_schema "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
 )
 
 func TestSchemaHandler_AttachSchema_Success(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	enforcer := mock_schema.NewMockattachEnforcer(ctrl)
-	store := mock_schema.NewMockschemaAttacher(ctrl)
-	nsChecker := mock_schema.NewMockattachNSChecker(ctrl)
+	uc := config_mock.NewMockschemaUsecase(ctrl)
 
-	enforcer.EXPECT().Enforce("admin@example.com", "prod", "schema", "write").Return(true, nil)
-	nsChecker.EXPECT().Get(gomock.Any(), "prod").Return(&domain.Namespace{Name: "prod"}, nil)
-	store.EXPECT().Attach(gomock.Any(), gomock.Any()).Return(nil)
+	uc.EXPECT().
+		Attach(gomock.Any(), schemauc.AttachInput{
+			Namespace:   "prod",
+			PathPattern: "/*.json",
+			JSONSchema:  "{}",
+		}).
+		Return(&domain.SchemaAttachment{
+			Namespace:   "prod",
+			PathPattern: "/*.json",
+			JSONSchema:  "{}",
+		}, nil)
 
-	h := &SchemaHandler{attach: schemauc.NewAttachUseCase(enforcer, store, nsChecker)}
-	ctx := auth.WithClaims(context.Background(), &auth.Claims{Email: "admin@example.com"})
+	h := NewSchemaHandler(uc)
 
-	resp, err := h.AttachSchema(ctx, connect.NewRequest(&configv1.AttachSchemaRequest{
+	resp, err := h.AttachSchema(t.Context(), connect.NewRequest(&configv1.AttachSchemaRequest{
 		Namespace:   "prod",
 		PathPattern: "/*.json",
 		JsonSchema:  "{}",
@@ -44,9 +47,15 @@ func TestSchemaHandler_AttachSchema_Success(t *testing.T) {
 func TestSchemaHandler_AttachSchema_Unauthorized(t *testing.T) {
 	t.Parallel()
 
-	h := &SchemaHandler{attach: schemauc.NewAttachUseCase(nil, nil, nil)}
+	ctrl := gomock.NewController(t)
+	uc := config_mock.NewMockschemaUsecase(ctrl)
+	uc.EXPECT().
+		Attach(gomock.Any(), gomock.Any()).
+		Return(nil, domain.ErrUnauthorized)
 
-	_, err := h.AttachSchema(context.Background(), connect.NewRequest(&configv1.AttachSchemaRequest{
+	h := NewSchemaHandler(uc)
+
+	_, err := h.AttachSchema(t.Context(), connect.NewRequest(&configv1.AttachSchemaRequest{
 		Namespace:  "prod",
 		JsonSchema: "{}",
 	}))
@@ -58,16 +67,14 @@ func TestSchemaHandler_AttachSchema_NamespaceNotFound(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	enforcer := mock_schema.NewMockattachEnforcer(ctrl)
-	nsChecker := mock_schema.NewMockattachNSChecker(ctrl)
+	uc := config_mock.NewMockschemaUsecase(ctrl)
+	uc.EXPECT().
+		Attach(gomock.Any(), gomock.Any()).
+		Return(nil, domain.ErrNotFound)
 
-	enforcer.EXPECT().Enforce("admin@example.com", "prod", "schema", "write").Return(true, nil)
-	nsChecker.EXPECT().Get(gomock.Any(), "prod").Return(nil, domain.ErrNotFound)
+	h := NewSchemaHandler(uc)
 
-	h := &SchemaHandler{attach: schemauc.NewAttachUseCase(enforcer, nil, nsChecker)}
-	ctx := auth.WithClaims(context.Background(), &auth.Claims{Email: "admin@example.com"})
-
-	_, err := h.AttachSchema(ctx, connect.NewRequest(&configv1.AttachSchemaRequest{
+	_, err := h.AttachSchema(t.Context(), connect.NewRequest(&configv1.AttachSchemaRequest{
 		Namespace:  "prod",
 		JsonSchema: "{}",
 	}))

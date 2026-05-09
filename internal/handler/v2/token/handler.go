@@ -10,25 +10,26 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	tokenv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/token/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
+	tokenuc "github.com/sergeyslonimsky/elara/internal/usecase/token"
 )
+
+//go:generate mockgen -destination=mocks/handler_mock.go -package=token_mock -source=handler.go
+
+type usecase interface {
+	Create(ctx context.Context, in tokenuc.CreateInput) (*domain.Token, string, error)
+	List(ctx context.Context, issuedBy string) ([]*domain.Token, error)
+	Get(ctx context.Context, id string) (*domain.Token, error)
+	Revoke(ctx context.Context, id string) error
+}
 
 // Handler implements tokenv1connect.TokenServiceHandler.
 type Handler struct {
-	create *authuc.CreateTokenUseCase
-	list   *authuc.ListTokensUseCase
-	get    *authuc.GetTokenUseCase
-	revoke *authuc.RevokeTokenUseCase
+	uc usecase
 }
 
 // New returns a new Handler.
-func New(
-	create *authuc.CreateTokenUseCase,
-	list *authuc.ListTokensUseCase,
-	get *authuc.GetTokenUseCase,
-	revoke *authuc.RevokeTokenUseCase,
-) *Handler {
-	return &Handler{create: create, list: list, get: get, revoke: revoke}
+func New(uc usecase) *Handler {
+	return &Handler{uc: uc}
 }
 
 func (h *Handler) CreateToken(
@@ -37,16 +38,16 @@ func (h *Handler) CreateToken(
 ) (*connect.Response[tokenv1.CreateTokenResponse], error) {
 	var expiresAt *time.Time
 	if req.Msg.GetExpiresAt() != nil {
-		expiresAt = new(req.Msg.GetExpiresAt().AsTime())
+		t := req.Msg.GetExpiresAt().AsTime()
+		expiresAt = &t
 	}
 
-	token, rawToken, err := h.create.Execute(
-		ctx,
-		req.Msg.GetName(),
-		req.Msg.GetNamespaces(),
-		req.Msg.GetRole(),
-		expiresAt,
-	)
+	token, rawToken, err := h.uc.Create(ctx, tokenuc.CreateInput{
+		Name:       req.Msg.GetName(),
+		Namespaces: req.Msg.GetNamespaces(),
+		Role:       req.Msg.GetRole(),
+		ExpiresAt:  expiresAt,
+	})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -61,7 +62,7 @@ func (h *Handler) ListTokens(
 	ctx context.Context,
 	req *connect.Request[tokenv1.ListTokensRequest],
 ) (*connect.Response[tokenv1.ListTokensResponse], error) {
-	tokens, err := h.list.Execute(ctx, req.Msg.GetIssuedBy())
+	tokens, err := h.uc.List(ctx, req.Msg.GetIssuedBy())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -78,7 +79,7 @@ func (h *Handler) GetToken(
 	ctx context.Context,
 	req *connect.Request[tokenv1.GetTokenRequest],
 ) (*connect.Response[tokenv1.GetTokenResponse], error) {
-	token, err := h.get.Execute(ctx, req.Msg.GetId())
+	token, err := h.uc.Get(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -90,7 +91,7 @@ func (h *Handler) RevokeToken(
 	ctx context.Context,
 	req *connect.Request[tokenv1.RevokeTokenRequest],
 ) (*connect.Response[tokenv1.RevokeTokenResponse], error) {
-	if err := h.revoke.Execute(ctx, req.Msg.GetId()); err != nil {
+	if err := h.uc.Revoke(ctx, req.Msg.GetId()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

@@ -5,34 +5,48 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
-	transferuc "github.com/sergeyslonimsky/elara/internal/usecase/transfer"
 )
 
-type Handler struct {
-	exportNamespace *transferuc.ExportNamespaceUseCase
-	exportAll       *transferuc.ExportAllUseCase
-	importNamespace *transferuc.ImportNamespaceUseCase
+//go:generate mockgen -destination=mocks/handler_mock.go -package=transfer_mock -source=handler.go
+
+type usecase interface {
+	ExportNamespace(
+		ctx context.Context,
+		namespace string,
+		asZip bool,
+		enc transferv1.BundleEncoding,
+	) ([]byte, string, string, error)
+	ExportAll(
+		ctx context.Context,
+		asZip bool,
+		enc transferv1.BundleEncoding,
+		layout transferv1.ZipLayout,
+	) ([]byte, string, string, error)
+	Import(
+		ctx context.Context,
+		data []byte,
+		onConflict transferv1.ConflictResolution,
+		dryRun bool,
+		targetNamespace string,
+	) (*domain.ImportReport, error)
 }
 
-func New(
-	exportNamespace *transferuc.ExportNamespaceUseCase,
-	exportAll *transferuc.ExportAllUseCase,
-	importNamespace *transferuc.ImportNamespaceUseCase,
-) *Handler {
-	return &Handler{
-		exportNamespace: exportNamespace,
-		exportAll:       exportAll,
-		importNamespace: importNamespace,
-	}
+type Handler struct {
+	uc usecase
+}
+
+func New(uc usecase) *Handler {
+	return &Handler{uc: uc}
 }
 
 func (h *Handler) ExportNamespace(
 	ctx context.Context,
 	req *connect.Request[transferv1.ExportNamespaceRequest],
 ) (*connect.Response[transferv1.ExportNamespaceResponse], error) {
-	data, ct, filename, err := h.exportNamespace.Execute(
+	data, ct, filename, err := h.uc.ExportNamespace(
 		ctx,
 		req.Msg.GetNamespace(),
 		req.Msg.GetZip(),
@@ -53,7 +67,7 @@ func (h *Handler) ExportAll(
 	ctx context.Context,
 	req *connect.Request[transferv1.ExportAllRequest],
 ) (*connect.Response[transferv1.ExportAllResponse], error) {
-	data, ct, filename, err := h.exportAll.Execute(
+	data, ct, filename, err := h.uc.ExportAll(
 		ctx,
 		req.Msg.GetZip(),
 		req.Msg.GetEncoding(),
@@ -74,7 +88,7 @@ func (h *Handler) ImportNamespace(
 	ctx context.Context,
 	req *connect.Request[transferv1.ImportNamespaceRequest],
 ) (*connect.Response[transferv1.ImportNamespaceResponse], error) {
-	report, err := h.importNamespace.Execute(
+	report, err := h.uc.Import(
 		ctx,
 		req.Msg.GetData(),
 		req.Msg.GetOnConflict(),

@@ -1,6 +1,6 @@
 import { Route, Routes } from "react-router";
 import { AppLayout } from "@/components/app-layout";
-import { ProtectedRoute } from "@/components/protected-route";
+import { AuthGuard } from "@/components/auth-guard";
 import { DashboardPage } from "@/pages/dashboard";
 import { NotFoundPage } from "@/pages/not-found";
 import { AuthRoutes } from "@/routes/auth-routes";
@@ -13,11 +13,11 @@ import { WebhooksRoutes } from "@/routes/webhooks-routes";
 function App() {
 	return (
 		<Routes>
-			{/* Public Routes */}
-			{AuthRoutes}
+			<Route element={<AuthGuard />}>
+				{/* Auth Routes (login, change-password, callback) */}
+				{AuthRoutes}
 
-			{/* Protected Routes */}
-			<Route element={<ProtectedRoute />}>
+				{/* Protected Routes */}
 				<Route element={<AppLayout />}>
 					<Route path="/" element={<DashboardPage />} />
 
@@ -33,9 +33,9 @@ function App() {
 					<Route path="/groups" element={<div>Groups Placeholder</div>} />
 					<Route path="/access" element={<div>Access Placeholder</div>} />
 				</Route>
-			</Route>
 
-			<Route path="*" element={<NotFoundPage />} />
+				<Route path="*" element={<NotFoundPage />} />
+			</Route>
 		</Routes>
 	);
 }

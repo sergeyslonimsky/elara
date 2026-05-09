@@ -5,7 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // PassthroughInterceptor injects a local admin identity when auth is disabled.

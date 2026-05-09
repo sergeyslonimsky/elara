@@ -4,23 +4,23 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 )
 
 type Manager struct {
 	Adapters       *Adapters
-	UseCases       *UseCases
+	Services       *Services
 	V2Handlers     *V2Handlers
 	EtcdHandlers   *EtcdHandlers
 	SessionManager *auth.SessionManager
+	Enforcer       *casbin.Enforcer
 }
 
-// NewServiceManager implements core/di.ServicesInit. On partial-failure
-// (adapters ok, later step errors out) it returns a cleanup closure that
-// closes the already-opened resources — otherwise they'd leak. On success,
-// core/di.NewContainer discards the cleanup; runtime teardown is driven
-// by app.App via Adapters' lifecycle.Resource registration in main.
+// NewServiceManager wires the full service tree. On partial failure the
+// returned cleanup closure tears down whatever was already opened — runtime
+// teardown on success is driven separately by app.App.
 func NewServiceManager(
 	ctx context.Context,
 	cfg config.Config,
@@ -30,25 +30,28 @@ func NewServiceManager(
 		return nil, nil, fmt.Errorf("init adapters: %w", err)
 	}
 
-	// Cleanup closes every resource opened so far. Re-assign if subsequent
-	// init steps allocate more resources — callers that grow this function
-	// should keep the chain up to date.
 	cleanup := func(ctx context.Context) error {
 		return adapters.Shutdown(ctx)
 	}
 
-	useCases, sessionManager, err := NewUseCases(ctx, adapters, cfg)
+	enforcer, err := casbin.NewEnforcer(adapters.AuthPolicy)
 	if err != nil {
-		return nil, cleanup, fmt.Errorf("init use cases: %w", err)
+		return nil, cleanup, fmt.Errorf("create casbin enforcer: %w", err)
 	}
 
-	go adapters.WebhookDispatcher.Start(ctx)
+	sessionManager := auth.NewSessionManager(cfg.UI.Auth.Session.Secret, cfg.UI.Auth.Session.TTL)
+
+	services, err := NewServices(ctx, adapters, cfg, enforcer, sessionManager)
+	if err != nil {
+		return nil, cleanup, fmt.Errorf("init services: %w", err)
+	}
 
 	return &Manager{
 		Adapters:       adapters,
-		UseCases:       useCases,
-		V2Handlers:     NewV2Handlers(useCases, cfg),
+		Services:       services,
+		V2Handlers:     NewV2Handlers(services, cfg),
 		EtcdHandlers:   NewEtcdHandlers(adapters),
 		SessionManager: sessionManager,
+		Enforcer:       enforcer,
 	}, cleanup, nil
 }

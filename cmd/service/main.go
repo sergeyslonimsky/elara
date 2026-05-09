@@ -14,7 +14,6 @@ import (
 	coreapp "github.com/sergeyslonimsky/core/app"
 	coregrpc "github.com/sergeyslonimsky/core/grpc"
 	corehttp "github.com/sergeyslonimsky/core/http2"
-	coreotel "github.com/sergeyslonimsky/core/otel"
 
 	"github.com/sergeyslonimsky/elara/internal/di"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
@@ -66,6 +65,18 @@ func run() error {
 		return fmt.Errorf("setup tracing: %w", err)
 	}
 
+	// Idempotent data-plane seeding (admin user, casbin policies). Runs after
+	// the container is wired but before any traffic-serving runners — the
+	// container itself stays a pure constructor.
+	if err := bootstrap(ctx, svc, cfg); err != nil {
+		return fmt.Errorf("bootstrap: %w", err)
+	}
+
+	// Background worker: fan-out webhook delivery. Lives for the lifetime of
+	// ctx — app.App's signal handler cancels ctx on shutdown, the dispatcher
+	// drains and exits.
+	go svc.Adapters.WebhookDispatcher.Start(ctx)
+
 	// Registration order is LIFO for shutdown:
 	//   otelProvider      ← shuts down LAST (telemetry exporters close last)
 	//   promMetrics       ← just before otel (flushes metrics before close)
@@ -107,74 +118,15 @@ func run() error {
 	return nil
 }
 
-func setupLogger(cfg config.Config) {
-	level := parseLogLevel(cfg.Log.Level)
-	opts := &slog.HandlerOptions{AddSource: !cfg.Log.NoSource, Level: level}
-
-	var handler slog.Handler
-	if cfg.Log.Format == "text" {
-		handler = slog.NewTextHandler(os.Stdout, opts)
-	} else {
-		handler = slog.NewJSONHandler(os.Stdout, opts)
+// bootstrap performs idempotent data-plane seeding: passthrough admin policy
+// when auth is disabled, basic-auth admin user, admin role and policy for the
+// configured admin email. Safe to call on every startup.
+func bootstrap(ctx context.Context, svc *service.Manager, cfg config.Config) error {
+	if err := service.Bootstrap(ctx, svc.Adapters, cfg, svc.Enforcer); err != nil {
+		return fmt.Errorf("bootstrap services: %w", err)
 	}
 
-	slog.SetDefault(slog.New(handler))
-}
-
-func parseLogLevel(s string) slog.Level {
-	switch strings.ToLower(s) {
-	case "debug":
-		return slog.LevelDebug
-	case "warn":
-		return slog.LevelWarn
-	case "error":
-		return slog.LevelError
-	default:
-		return slog.LevelInfo
-	}
-}
-
-// setupMetrics initialises a Prometheus pull-based MeterProvider and the
-// /metrics HTTP handler if cfg.Metrics.Enabled is true. Returns nil (no
-// error) when metrics are disabled — callers must check the returned
-// value before using it.
-func setupMetrics(cfg config.Config) (*service.PrometheusMetrics, error) {
-	if !cfg.Metrics.Enabled {
-		return nil, nil //nolint:nilnil // "disabled" is a valid non-error outcome
-	}
-
-	pm, err := service.NewPrometheusMetrics(cfg.ServiceName, cfg.ServiceVersion)
-	if err != nil {
-		return nil, fmt.Errorf("init prometheus metrics: %w", err)
-	}
-
-	return pm, nil
-}
-
-// setupTracing initialises the core/otel tracer with an OTLP HTTP trace
-// exporter when cfg.Tracing.Enabled is true. Metrics and logs are left
-// off: metrics go via Prometheus pull (see setupMetrics), logs go to
-// stdout as JSON and are picked up by the cluster log collector.
-//
-// When tracing is disabled, returns a noop Provider so the lifecycle
-// registration path stays uniform.
-func setupTracing(ctx context.Context, cfg config.Config) (*coreotel.Provider, error) {
-	otelCfg := coreotel.Config{ //nolint:exhaustruct // we intentionally only enable traces
-		Disabled:       !cfg.Tracing.Enabled,
-		OTelHost:       cfg.Tracing.OTLPEndpoint,
-		ServiceName:    cfg.ServiceName,
-		ServiceVersion: cfg.ServiceVersion,
-		EnableTracer:   cfg.Tracing.Enabled,
-		EnableMetrics:  false,
-		EnableLogger:   false,
-	}
-
-	provider, err := coreotel.Setup(ctx, otelCfg)
-	if err != nil {
-		return nil, fmt.Errorf("otel setup: %w", err)
-	}
-
-	return provider, nil
+	return nil
 }
 
 // frontendServerOptions builds the http2.Option list, adding otel + metrics
@@ -228,4 +180,31 @@ func etcdServerOptions(
 	}
 
 	return opts
+}
+
+func setupLogger(cfg config.Config) {
+	level := parseLogLevel(cfg.Log.Level)
+	opts := &slog.HandlerOptions{AddSource: !cfg.Log.NoSource, Level: level}
+
+	var handler slog.Handler
+	if cfg.Log.Format == "text" {
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	} else {
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	}
+
+	slog.SetDefault(slog.New(handler))
+}
+
+func parseLogLevel(s string) slog.Level {
+	switch strings.ToLower(s) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

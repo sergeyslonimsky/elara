@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -12,36 +11,39 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	internalauth "github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	auth_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/auth/mocks"
 	authv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
-	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
 )
+
+func setupHandler(t *testing.T, ctrl *gomock.Controller, authType config.AuthType) (*Handler, *auth_mock.Mockusecase) {
+	t.Helper()
+
+	uc := auth_mock.NewMockusecase(ctrl)
+
+	return New(uc, authType, false), uc
+}
 
 func TestAuthHandler_BasicLogin(t *testing.T) {
 	t.Parallel()
 
 	email := "user@example.com"
 	password := "correct-password"
-	hash, _ := internalauth.HashPassword(password)
 
 	tests := []struct {
 		name       string
 		authType   config.AuthType
-		setupMocks func(
-			users *auth_mock.MockbasicAuthUserGetter,
-			session *auth_mock.MocksessionCreator,
-		)
-		wantErr bool
+		setupMocks func(uc *auth_mock.Mockusecase)
+		wantErr    bool
 	}{
 		{
 			name:     "success sets session cookie",
 			authType: config.AuthTypeBasicAuth,
-			setupMocks: func(users *auth_mock.MockbasicAuthUserGetter, session *auth_mock.MocksessionCreator) {
-				users.EXPECT().Get(gomock.Any(), email).Return(&domain.User{Email: email, PasswordHash: hash}, nil)
-				session.EXPECT().Create(gomock.Any()).Return("signed-token", nil)
+			setupMocks: func(uc *auth_mock.Mockusecase) {
+				uc.EXPECT().
+					BasicLogin(gomock.Any(), email, password).
+					Return("signed-token", &domain.User{Email: email}, nil)
 			},
 		},
 		{
@@ -56,15 +58,11 @@ func TestAuthHandler_BasicLogin(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			users := auth_mock.NewMockbasicAuthUserGetter(ctrl)
-			session := auth_mock.NewMocksessionCreator(ctrl)
+			h, uc := setupHandler(t, ctrl, tt.authType)
 
 			if tt.setupMocks != nil {
-				tt.setupMocks(users, session)
+				tt.setupMocks(uc)
 			}
-
-			basicUC := authuc.NewBasicLoginUseCase(users, session, nil, "")
-			h := New(nil, nil, basicUC, tt.authType, false)
 
 			req := connect.NewRequest(&authv1.BasicLoginRequest{
 				Email:    email,
@@ -94,13 +92,6 @@ func TestAuthHandler_BasicLogin(t *testing.T) {
 	}
 }
 
-func newTestAuthHandler(
-	loginUC *authuc.LoginUseCase,
-	callbackUC *authuc.CallbackUseCase,
-) *Handler {
-	return New(loginUC, callbackUC, nil, config.AuthTypeOIDC, false)
-}
-
 func TestAuthHandler_Login(t *testing.T) {
 	t.Parallel()
 
@@ -120,13 +111,11 @@ func TestAuthHandler_Login(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			provider := auth_mock.NewMockoidcProvider(ctrl)
-			provider.EXPECT().AuthURL(gomock.Any(), gomock.Any()).Return(tc.authURL)
+			h, uc := setupHandler(t, ctrl, config.AuthTypeOIDC)
 
-			loginUC := authuc.NewLoginUseCase(provider)
-			h := newTestAuthHandler(loginUC, nil)
+			uc.EXPECT().Login(gomock.Any()).Return(tc.authURL, "state-val", "nonce-val", nil)
 
-			resp, err := h.OIDCLogin(context.Background(), connect.NewRequest(&authv1.OIDCLoginRequest{}))
+			resp, err := h.OIDCLogin(t.Context(), connect.NewRequest(&authv1.OIDCLoginRequest{}))
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -177,8 +166,8 @@ func TestAuthHandler_GetAuthInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			h := New(nil, nil, nil, tc.authType, false)
-			resp, err := h.GetAuthInfo(context.Background(), connect.NewRequest(&authv1.GetAuthInfoRequest{}))
+			h, _ := setupHandler(t, gomock.NewController(t), tc.authType)
+			resp, err := h.GetAuthInfo(t.Context(), connect.NewRequest(&authv1.GetAuthInfoRequest{}))
 
 			require.NoError(t, err)
 			assert.Equal(t, tc.expected, resp.Msg.GetAuthType())
@@ -186,40 +175,17 @@ func TestAuthHandler_GetAuthInfo(t *testing.T) {
 	}
 }
 
-func TestAuthHandler_Callback_InvalidState(t *testing.T) {
-	t.Parallel()
-
-	h := New(nil, nil, nil, config.AuthTypeOIDC, false)
-
-	req := connect.NewRequest(&authv1.OIDCCallbackRequest{
-		State: "valid-state",
-		Code:  "auth-code",
-	})
-	// Provide mismatched state cookie.
-	stateCookie := &http.Cookie{Name: oauthStateCookieName, Value: "wrong-state"}
-	nonceCookie := &http.Cookie{Name: oauthNonceCookieName, Value: "nonce-val"}
-	req.Header().Set("Cookie", stateCookie.String()+"; "+nonceCookie.String())
-
-	_, err := h.OIDCCallback(context.Background(), req)
-	require.Error(t, err)
-	assert.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
-}
-
-func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
+func TestAuthHandler_Callback(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name         string
-		requestState string
-		stateCookie  string
-		nonceCookie  string
-		setupMocks   func(
-			provider *auth_mock.MockcallbackProvider,
-			users *auth_mock.MockuserUpserter,
-		)
-		wantErr  bool
-		wantCode connect.Code
-		// verifyCookies checks that elara_session is set in the response header.
+		name          string
+		requestState  string
+		stateCookie   string
+		nonceCookie   string
+		setupMocks    func(uc *auth_mock.Mockusecase)
+		wantErr       bool
+		wantCode      connect.Code
 		verifyCookies bool
 	}{
 		{
@@ -228,17 +194,10 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			stateCookie:   "test-state",
 			nonceCookie:   "test-nonce",
 			verifyCookies: true,
-			setupMocks: func(
-				provider *auth_mock.MockcallbackProvider,
-				users *auth_mock.MockuserUpserter,
-			) {
-				provider.EXPECT().
-					Exchange(gomock.Any(), "auth-code", "test-nonce").
-					Return(&internalauth.Identity{
-						Email: "user@example.com",
-						Name:  "Test User",
-					}, nil)
-				users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
+			setupMocks: func(uc *auth_mock.Mockusecase) {
+				uc.EXPECT().
+					Callback(gomock.Any(), "auth-code", "test-nonce").
+					Return("session-token", &domain.User{Email: "user@example.com"}, nil)
 			},
 		},
 		{
@@ -248,11 +207,6 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			nonceCookie:  "nonce-val",
 			wantErr:      true,
 			wantCode:     connect.CodeUnauthenticated,
-			setupMocks: func(
-				_ *auth_mock.MockcallbackProvider,
-				_ *auth_mock.MockuserUpserter,
-			) {
-			},
 		},
 		{
 			name:         "missing state cookie returns CodeUnauthenticated",
@@ -261,11 +215,6 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			nonceCookie:  "nonce-val",
 			wantErr:      true,
 			wantCode:     connect.CodeUnauthenticated,
-			setupMocks: func(
-				_ *auth_mock.MockcallbackProvider,
-				_ *auth_mock.MockuserUpserter,
-			) {
-			},
 		},
 		{
 			name:         "missing nonce cookie returns CodeUnauthenticated",
@@ -274,25 +223,17 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			nonceCookie:  "",
 			wantErr:      true,
 			wantCode:     connect.CodeUnauthenticated,
-			setupMocks: func(
-				_ *auth_mock.MockcallbackProvider,
-				_ *auth_mock.MockuserUpserter,
-			) {
-			},
 		},
 		{
-			name:         "callback.Execute exchange error maps to connect error",
+			name:         "callback exchange error maps to connect error",
 			requestState: "test-state",
 			stateCookie:  "test-state",
 			nonceCookie:  "test-nonce",
 			wantErr:      true,
-			setupMocks: func(
-				provider *auth_mock.MockcallbackProvider,
-				_ *auth_mock.MockuserUpserter,
-			) {
-				provider.EXPECT().
-					Exchange(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, errors.New("provider error"))
+			setupMocks: func(uc *auth_mock.Mockusecase) {
+				uc.EXPECT().
+					Callback(gomock.Any(), "auth-code", "test-nonce").
+					Return("", nil, errors.New("provider error"))
 			},
 		},
 	}
@@ -302,26 +243,17 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			provider := auth_mock.NewMockcallbackProvider(ctrl)
-			users := auth_mock.NewMockuserUpserter(ctrl)
+			h, uc := setupHandler(t, ctrl, config.AuthTypeOIDC)
 
-			tt.setupMocks(provider, users)
-
-			session := internalauth.NewSessionManager("test-secret", 0)
-			callbackUC := authuc.NewCallbackUseCase(
-				provider, users, session,
-				nil,
-				"",
-			)
-
-			h := newTestAuthHandler(nil, callbackUC)
+			if tt.setupMocks != nil {
+				tt.setupMocks(uc)
+			}
 
 			req := connect.NewRequest(&authv1.OIDCCallbackRequest{
 				State: tt.requestState,
 				Code:  "auth-code",
 			})
 
-			// Build cookie header.
 			var cookieParts []string
 			if tt.stateCookie != "" {
 				cookieParts = append(cookieParts, (&http.Cookie{
@@ -336,7 +268,7 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 				}).String())
 			}
 			if len(cookieParts) > 0 {
-				req.Header().Set("Cookie", joinCookies(cookieParts))
+				req.Header().Set("Cookie", strings.Join(cookieParts, "; "))
 			}
 
 			resp, err := h.OIDCCallback(t.Context(), req)
@@ -368,9 +300,4 @@ func TestAuthHandler_Callback(t *testing.T) { // NOSONAR
 			}
 		})
 	}
-}
-
-// joinCookies joins multiple cookie strings with "; " for use in the Cookie header.
-func joinCookies(parts []string) string {
-	return strings.Join(parts, "; ")
 }

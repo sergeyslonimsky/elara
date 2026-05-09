@@ -17,8 +17,14 @@ lint:
 	@helm lint helm/elara
 
 .PHONY: test
-test:
+test: test-go test-react
+
+.PHONY: test-go
+test-go:
 	@go tool gotestsum --hide-summary=output -- -race -count=1 -shuffle=on ./...
+
+.PHONY: test-react
+test-react:
 	@npm --prefix ./web run test
 
 .PHONY: generate

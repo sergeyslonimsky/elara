@@ -6,15 +6,15 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
-	config_mock "github.com/sergeyslonimsky/elara/internal/usecase/config/mocks"
+	configmock "github.com/sergeyslonimsky/elara/internal/usecase/config/mocks"
 )
 
 type mocks struct {
-	enforcer          *config_mock.Mockenforcer
-	storage           *config_mock.Mockstorage
-	watcher           *config_mock.Mockwatcher
-	namespaceProvider *config_mock.MocknamespaceProvider
-	schemaValidator   *config_mock.MockschemaValidator
+	enforcer          *configmock.Mockenforcer
+	storage           *configmock.Mockstorage
+	watcher           *configmock.Mockwatcher
+	namespaceProvider *configmock.MocknamespaceProvider
+	schemaValidator   *configmock.MockschemaValidator
 }
 
 func setupService(t *testing.T) (*config.Service, mocks, *gomock.Controller) {
@@ -22,11 +22,11 @@ func setupService(t *testing.T) (*config.Service, mocks, *gomock.Controller) {
 	ctrl := gomock.NewController(t)
 
 	m := mocks{
-		enforcer:          config_mock.NewMockenforcer(ctrl),
-		storage:           config_mock.NewMockstorage(ctrl),
-		watcher:           config_mock.NewMockwatcher(ctrl),
-		namespaceProvider: config_mock.NewMocknamespaceProvider(ctrl),
-		schemaValidator:   config_mock.NewMockschemaValidator(ctrl),
+		enforcer:          configmock.NewMockenforcer(ctrl),
+		storage:           configmock.NewMockstorage(ctrl),
+		watcher:           configmock.NewMockwatcher(ctrl),
+		namespaceProvider: configmock.NewMocknamespaceProvider(ctrl),
+		schemaValidator:   configmock.NewMockschemaValidator(ctrl),
 	}
 	svc := config.New(m.enforcer, m.storage, m.watcher, m.namespaceProvider, m.schemaValidator)
 

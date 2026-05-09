@@ -12,31 +12,23 @@ import (
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
 )
 
-type Handler struct {
-	create  *webhookuc.CreateUseCase
-	get     *webhookuc.GetUseCase
-	update  *webhookuc.UpdateUseCase
-	del     *webhookuc.DeleteUseCase
-	list    *webhookuc.ListUseCase
-	history *webhookuc.HistoryUseCase
+//go:generate mockgen -destination=mocks/handler_mock.go -package=webhook_mock -source=handler.go
+
+type usecase interface {
+	Create(ctx context.Context, w *domain.Webhook) (*domain.Webhook, error)
+	Get(ctx context.Context, id string) (*domain.Webhook, error)
+	Update(ctx context.Context, id string, params webhookuc.UpdateParams) (*domain.Webhook, error)
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context) ([]*domain.Webhook, error)
+	GetHistory(ctx context.Context, webhookID string) ([]domain.DeliveryAttempt, error)
 }
 
-func New(
-	create *webhookuc.CreateUseCase,
-	get *webhookuc.GetUseCase,
-	update *webhookuc.UpdateUseCase,
-	del *webhookuc.DeleteUseCase,
-	list *webhookuc.ListUseCase,
-	history *webhookuc.HistoryUseCase,
-) *Handler {
-	return &Handler{
-		create:  create,
-		get:     get,
-		update:  update,
-		del:     del,
-		list:    list,
-		history: history,
-	}
+type Handler struct {
+	uc usecase
+}
+
+func New(uc usecase) *Handler {
+	return &Handler{uc: uc}
 }
 
 func (h *Handler) CreateWebhook(
@@ -52,7 +44,7 @@ func (h *Handler) CreateWebhook(
 		Enabled:         req.Msg.GetEnabled(),
 	}
 
-	result, err := h.create.Execute(ctx, w)
+	result, err := h.uc.Create(ctx, w)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -66,7 +58,7 @@ func (h *Handler) GetWebhook(
 	ctx context.Context,
 	req *connect.Request[webhookv1.GetWebhookRequest],
 ) (*connect.Response[webhookv1.GetWebhookResponse], error) {
-	result, err := h.get.Execute(ctx, req.Msg.GetId())
+	result, err := h.uc.Get(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -89,7 +81,7 @@ func (h *Handler) UpdateWebhook(
 		Enabled:         req.Msg.GetEnabled(),
 	}
 
-	result, err := h.update.Execute(ctx, req.Msg.GetId(), params)
+	result, err := h.uc.Update(ctx, req.Msg.GetId(), params)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -103,7 +95,7 @@ func (h *Handler) DeleteWebhook(
 	ctx context.Context,
 	req *connect.Request[webhookv1.DeleteWebhookRequest],
 ) (*connect.Response[webhookv1.DeleteWebhookResponse], error) {
-	if err := h.del.Execute(ctx, req.Msg.GetId()); err != nil {
+	if err := h.uc.Delete(ctx, req.Msg.GetId()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -114,7 +106,7 @@ func (h *Handler) ListWebhooks(
 	ctx context.Context,
 	_ *connect.Request[webhookv1.ListWebhooksRequest],
 ) (*connect.Response[webhookv1.ListWebhooksResponse], error) {
-	results, err := h.list.Execute(ctx)
+	results, err := h.uc.List(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -133,7 +125,7 @@ func (h *Handler) GetDeliveryHistory(
 	ctx context.Context,
 	req *connect.Request[webhookv1.GetDeliveryHistoryRequest],
 ) (*connect.Response[webhookv1.GetDeliveryHistoryResponse], error) {
-	attempts, err := h.history.Execute(ctx, req.Msg.GetWebhookId())
+	attempts, err := h.uc.GetHistory(ctx, req.Msg.GetWebhookId())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}

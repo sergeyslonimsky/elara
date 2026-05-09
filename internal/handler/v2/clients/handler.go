@@ -13,8 +13,9 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	clientsv2 "github.com/sergeyslonimsky/elara/internal/proto/elara/clients/v1"
-	clientsuc "github.com/sergeyslonimsky/elara/internal/usecase/clients"
 )
+
+//go:generate mockgen -destination=mocks/handler_mock.go -package=clients_mock -source=handler.go
 
 // defaultWatchSnapshotInterval is how often WatchClients pushes a periodic
 // snapshot. Connect/Disconnect events are pushed immediately on top of this.
@@ -22,14 +23,27 @@ const defaultWatchSnapshotInterval = 2 * time.Second
 
 var errClientNotFound = errors.New("client not found")
 
+type usecase interface {
+	ListActive(ctx context.Context) ([]*domain.Client, error)
+	ListHistorical(ctx context.Context, limit int) ([]*domain.Client, error)
+	ListSessions(
+		ctx context.Context,
+		clientName, k8sNamespace, currentID string,
+		limit int,
+	) ([]*domain.Client, error)
+	Get(ctx context.Context, id string) (*domain.Client, []domain.ClientEvent, error)
+	SubscribeChanges(ctx context.Context) (<-chan domain.ClientChange, func(), error)
+	SubscribeClient(ctx context.Context, connID string) (<-chan domain.ClientChange, func(), error)
+}
+
 type Handler struct {
-	uc *clientsuc.UseCase
+	uc usecase
 
 	// snapshotInterval is overridable for tests. Zero → defaultWatchSnapshotInterval.
 	snapshotInterval time.Duration
 }
 
-func New(uc *clientsuc.UseCase) *Handler {
+func New(uc usecase) *Handler {
 	return &Handler{uc: uc}
 }
 
@@ -91,7 +105,7 @@ func (h *Handler) ListHistoricalConnections(
 ) (*connect.Response[clientsv2.ListHistoricalConnectionsResponse], error) {
 	limit, err := v2.NormalizeLimit(req.Msg.GetLimit())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("normalize limit: %w", err)
 	}
 
 	hist, err := h.uc.ListHistorical(ctx, limit)
@@ -116,7 +130,7 @@ func (h *Handler) ListClientSessions(
 ) (*connect.Response[clientsv2.ListClientSessionsResponse], error) {
 	limit, err := v2.NormalizeLimit(req.Msg.GetLimit())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("normalize limit: %w", err)
 	}
 
 	sessions, err := h.uc.ListSessions(

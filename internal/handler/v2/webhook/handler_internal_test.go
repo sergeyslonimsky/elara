@@ -1,380 +1,344 @@
 package webhook
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	webhook_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/webhook/mocks"
 	webhookv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/webhook/v1"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
 )
 
-type allowAllEnforcer struct{}
-
-func (allowAllEnforcer) Enforce(_, _, _, _ string) (bool, error) { return true, nil }
-
-func testCtx() context.Context {
-	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
-}
-
-// fakeWebhookRepo satisfies all storage interfaces used by webhook use cases.
-type fakeWebhookRepo struct {
-	webhooks  map[string]*domain.Webhook
-	createErr error
-	getErr    error
-	updateErr error
-	deleteErr error
-	listErr   error
-}
-
-func newFakeWebhookRepo() *fakeWebhookRepo {
-	return &fakeWebhookRepo{webhooks: make(map[string]*domain.Webhook)}
-}
-
-func (r *fakeWebhookRepo) Create(_ context.Context, w *domain.Webhook) error {
-	if r.createErr != nil {
-		return r.createErr
-	}
-
-	w.ID = "gen-id"
-	w.CreatedAt = time.Now()
-	w.UpdatedAt = time.Now()
-	r.webhooks[w.ID] = w
-
-	return nil
-}
-
-func (r *fakeWebhookRepo) Get(_ context.Context, id string) (*domain.Webhook, error) {
-	if r.getErr != nil {
-		return nil, r.getErr
-	}
-
-	w, ok := r.webhooks[id]
-	if !ok {
-		return nil, domain.ErrNotFound
-	}
-
-	return w, nil
-}
-
-func (r *fakeWebhookRepo) Update(_ context.Context, w *domain.Webhook) error {
-	if r.updateErr != nil {
-		return r.updateErr
-	}
-
-	r.webhooks[w.ID] = w
-
-	return nil
-}
-
-func (r *fakeWebhookRepo) Delete(_ context.Context, id string) error {
-	if r.deleteErr != nil {
-		return r.deleteErr
-	}
-
-	if _, ok := r.webhooks[id]; !ok {
-		return domain.ErrNotFound
-	}
-
-	delete(r.webhooks, id)
-
-	return nil
-}
-
-func (r *fakeWebhookRepo) List(_ context.Context) ([]*domain.Webhook, error) {
-	if r.listErr != nil {
-		return nil, r.listErr
-	}
-
-	out := make([]*domain.Webhook, 0, len(r.webhooks))
-	for _, w := range r.webhooks {
-		out = append(out, w)
-	}
-
-	return out, nil
-}
-
-func (r *fakeWebhookRepo) seed(w *domain.Webhook) {
-	if w.ID == "" {
-		w.ID = "seed-id"
-	}
-
-	r.webhooks[w.ID] = w
-}
-
-// fakeWebhookDispatcher satisfies dispatcher interfaces used by delete and history use cases.
-type fakeWebhookDispatcher struct {
-	history    map[string][]domain.DeliveryAttempt
-	clearedIDs []string
-}
-
-func newFakeWebhookDispatcher() *fakeWebhookDispatcher {
-	return &fakeWebhookDispatcher{history: make(map[string][]domain.DeliveryAttempt)}
-}
-
-func (d *fakeWebhookDispatcher) GetDeliveryHistory(webhookID string) []domain.DeliveryAttempt {
-	return d.history[webhookID]
-}
-
-func (d *fakeWebhookDispatcher) ClearHistory(webhookID string) {
-	d.clearedIDs = append(d.clearedIDs, webhookID)
-	delete(d.history, webhookID)
-}
-
-func newTestWebhookHandler(repo *fakeWebhookRepo, dispatcher *fakeWebhookDispatcher) *Handler {
-	return New(
-		webhookuc.NewCreateUseCase(allowAllEnforcer{}, repo),
-		webhookuc.NewGetUseCase(allowAllEnforcer{}, repo),
-		webhookuc.NewUpdateUseCase(allowAllEnforcer{}, repo),
-		webhookuc.NewDeleteUseCase(allowAllEnforcer{}, repo, repo, dispatcher),
-		webhookuc.NewListUseCase(allowAllEnforcer{}, repo),
-		webhookuc.NewHistoryUseCase(allowAllEnforcer{}, dispatcher, repo),
-	)
-}
-
-// -----------------------------------------------------------------------------
-// CreateWebhook
-// -----------------------------------------------------------------------------
-
-func TestWebhookHandler_CreateWebhook_Success(t *testing.T) {
+func TestHandler_CreateWebhook(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeWebhookRepo()
-	h := newTestWebhookHandler(repo, newFakeWebhookDispatcher())
+	tests := []struct {
+		name     string
+		req      *webhookv1.CreateWebhookRequest
+		mockFunc func(*gomock.Controller) *Handler
+		wantErr  connect.Code
+	}{
+		{
+			name: "success",
+			req: &webhookv1.CreateWebhookRequest{
+				Url:             "https://example.com/hook",
+				Events:          []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
+				NamespaceFilter: "production",
+				PathPrefix:      "/app",
+				Enabled:         true,
+			},
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
+					Return(&domain.Webhook{
+						ID:              "gen-id",
+						URL:             "https://example.com/hook",
+						NamespaceFilter: "production",
+						PathPrefix:      "/app",
+						Events:          []domain.WebhookEventType{domain.WebhookEventCreated},
+						Enabled:         true,
+					}, nil)
 
-	resp, err := h.CreateWebhook(testCtx(), connect.NewRequest(&webhookv1.CreateWebhookRequest{
-		Url:             "https://example.com/hook",
-		Events:          []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
-		NamespaceFilter: "production",
-		PathPrefix:      "/app",
-		Enabled:         true,
-	}))
-
-	require.NoError(t, err)
-	assert.Equal(t, "gen-id", resp.Msg.GetWebhook().GetId())
-	assert.Equal(t, "https://example.com/hook", resp.Msg.GetWebhook().GetUrl())
-	assert.Equal(t, "production", resp.Msg.GetWebhook().GetNamespaceFilter())
-	assert.Equal(t, "/app", resp.Msg.GetWebhook().GetPathPrefix())
-	assert.True(t, resp.Msg.GetWebhook().GetEnabled())
-	assert.Equal(
-		t,
-		[]webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
-		resp.Msg.GetWebhook().GetEvents(),
-	)
-}
-
-func TestWebhookHandler_CreateWebhook_MissingURL_ReturnsInvalidArgument(t *testing.T) {
-	t.Parallel()
-
-	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
-
-	_, err := h.CreateWebhook(testCtx(), connect.NewRequest(&webhookv1.CreateWebhookRequest{
-		Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
-	}))
-
-	require.Error(t, err)
-	assert.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-}
-
-func TestWebhookHandler_CreateWebhook_NoEvents_ReturnsInvalidArgument(t *testing.T) {
-	t.Parallel()
-
-	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
-
-	_, err := h.CreateWebhook(testCtx(), connect.NewRequest(&webhookv1.CreateWebhookRequest{
-		Url: "https://example.com/hook",
-	}))
-
-	require.Error(t, err)
-	assert.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-}
-
-// -----------------------------------------------------------------------------
-// GetWebhook
-// -----------------------------------------------------------------------------
-
-func TestWebhookHandler_GetWebhook_Success(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeWebhookRepo()
-	repo.seed(&domain.Webhook{
-		ID:      "wh-1",
-		URL:     "https://example.com/hook",
-		Events:  []domain.WebhookEventType{domain.WebhookEventUpdated},
-		Enabled: true,
-	})
-
-	h := newTestWebhookHandler(repo, newFakeWebhookDispatcher())
-
-	resp, err := h.GetWebhook(testCtx(), connect.NewRequest(&webhookv1.GetWebhookRequest{Id: "wh-1"}))
-
-	require.NoError(t, err)
-	assert.Equal(t, "wh-1", resp.Msg.GetWebhook().GetId())
-	assert.Equal(t, "https://example.com/hook", resp.Msg.GetWebhook().GetUrl())
-}
-
-func TestWebhookHandler_GetWebhook_NotFound(t *testing.T) {
-	t.Parallel()
-
-	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
-
-	_, err := h.GetWebhook(testCtx(), connect.NewRequest(&webhookv1.GetWebhookRequest{Id: "missing"}))
-
-	require.Error(t, err)
-	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
-}
-
-// -----------------------------------------------------------------------------
-// UpdateWebhook
-// -----------------------------------------------------------------------------
-
-func TestWebhookHandler_UpdateWebhook_Success(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeWebhookRepo()
-	repo.seed(&domain.Webhook{
-		ID:      "wh-1",
-		URL:     "https://old.example.com/hook",
-		Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
-		Enabled: true,
-	})
-
-	h := newTestWebhookHandler(repo, newFakeWebhookDispatcher())
-
-	resp, err := h.UpdateWebhook(testCtx(), connect.NewRequest(&webhookv1.UpdateWebhookRequest{
-		Id:      "wh-1",
-		Url:     "https://new.example.com/hook",
-		Events:  []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_UPDATED},
-		Enabled: false,
-	}))
-
-	require.NoError(t, err)
-	assert.Equal(t, "https://new.example.com/hook", resp.Msg.GetWebhook().GetUrl())
-	assert.False(t, resp.Msg.GetWebhook().GetEnabled())
-	assert.Equal(
-		t,
-		[]webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_UPDATED},
-		resp.Msg.GetWebhook().GetEvents(),
-	)
-}
-
-func TestWebhookHandler_UpdateWebhook_NotFound(t *testing.T) {
-	t.Parallel()
-
-	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
-
-	_, err := h.UpdateWebhook(testCtx(), connect.NewRequest(&webhookv1.UpdateWebhookRequest{
-		Id:     "missing",
-		Url:    "https://example.com/hook",
-		Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
-	}))
-
-	require.Error(t, err)
-	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
-}
-
-// -----------------------------------------------------------------------------
-// DeleteWebhook
-// -----------------------------------------------------------------------------
-
-func TestWebhookHandler_DeleteWebhook_Success(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeWebhookRepo()
-	dispatcher := newFakeWebhookDispatcher()
-	repo.seed(&domain.Webhook{
-		ID:      "wh-1",
-		URL:     "https://example.com/hook",
-		Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
-		Enabled: true,
-	})
-
-	h := newTestWebhookHandler(repo, dispatcher)
-
-	_, err := h.DeleteWebhook(testCtx(), connect.NewRequest(&webhookv1.DeleteWebhookRequest{Id: "wh-1"}))
-
-	require.NoError(t, err)
-	assert.Contains(t, dispatcher.clearedIDs, "wh-1")
-}
-
-func TestWebhookHandler_DeleteWebhook_NotFound(t *testing.T) {
-	t.Parallel()
-
-	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
-
-	_, err := h.DeleteWebhook(
-		testCtx(),
-		connect.NewRequest(&webhookv1.DeleteWebhookRequest{Id: "missing"}),
-	)
-
-	require.Error(t, err)
-	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
-}
-
-// -----------------------------------------------------------------------------
-// ListWebhooks
-// -----------------------------------------------------------------------------
-
-func TestWebhookHandler_ListWebhooks_Empty(t *testing.T) {
-	t.Parallel()
-
-	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
-
-	resp, err := h.ListWebhooks(testCtx(), connect.NewRequest(&webhookv1.ListWebhooksRequest{}))
-
-	require.NoError(t, err)
-	assert.Empty(t, resp.Msg.GetWebhooks())
-}
-
-func TestWebhookHandler_ListWebhooks_ReturnsAll(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeWebhookRepo()
-	repo.seed(&domain.Webhook{
-		ID:      "wh-1",
-		URL:     "https://a.example.com/hook",
-		Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
-		Enabled: true,
-	})
-	repo.seed(&domain.Webhook{
-		ID:      "wh-2",
-		URL:     "https://b.example.com/hook",
-		Events:  []domain.WebhookEventType{domain.WebhookEventDeleted},
-		Enabled: false,
-	})
-
-	h := newTestWebhookHandler(repo, newFakeWebhookDispatcher())
-
-	resp, err := h.ListWebhooks(testCtx(), connect.NewRequest(&webhookv1.ListWebhooksRequest{}))
-
-	require.NoError(t, err)
-	assert.Len(t, resp.Msg.GetWebhooks(), 2)
-}
-
-// -----------------------------------------------------------------------------
-// GetDeliveryHistory
-// -----------------------------------------------------------------------------
-
-func TestWebhookHandler_GetDeliveryHistory_ReturnsAttempts(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeWebhookRepo()
-	repo.seed(
-		&domain.Webhook{
-			ID:     "wh-1",
-			URL:    "https://example.com/hook",
-			Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+				return New(uc)
+			},
 		},
-	)
+		{
+			name: "invalid argument missing url",
+			req: &webhookv1.CreateWebhookRequest{
+				Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
+			},
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
+					Return(nil, domain.NewValidationError("url", "url is required"))
 
-	dispatcher := newFakeWebhookDispatcher()
-	dispatcher.history["wh-1"] = []domain.DeliveryAttempt{
+				return New(uc)
+			},
+			wantErr: connect.CodeInvalidArgument,
+		},
+		{
+			name: "invalid argument no events",
+			req: &webhookv1.CreateWebhookRequest{
+				Url: "https://example.com/hook",
+			},
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
+					Return(nil, domain.NewValidationError("events", "at least one event is required"))
+
+				return New(uc)
+			},
+			wantErr: connect.CodeInvalidArgument,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			h := tt.mockFunc(ctrl)
+
+			resp, err := h.CreateWebhook(t.Context(), connect.NewRequest(tt.req))
+
+			if tt.wantErr != 0 {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantErr, connect.CodeOf(err))
+
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, "gen-id", resp.Msg.GetWebhook().GetId())
+			assert.Equal(t, tt.req.GetUrl(), resp.Msg.GetWebhook().GetUrl())
+		})
+	}
+}
+
+func TestHandler_GetWebhook(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		id       string
+		mockFunc func(*gomock.Controller) *Handler
+		wantErr  connect.Code
+	}{
+		{
+			name: "success",
+			id:   "wh-1",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Get(gomock.Any(), "wh-1").Return(&domain.Webhook{
+					ID:              "wh-1",
+					URL:             "https://example.com/hook",
+					NamespaceFilter: "prod",
+				}, nil)
+
+				return New(uc)
+			},
+		},
+		{
+			name: "not found",
+			id:   "missing",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Get(gomock.Any(), "missing").Return(nil, domain.ErrNotFound)
+
+				return New(uc)
+			},
+			wantErr: connect.CodeNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			h := tt.mockFunc(ctrl)
+
+			resp, err := h.GetWebhook(t.Context(), connect.NewRequest(&webhookv1.GetWebhookRequest{Id: tt.id}))
+
+			if tt.wantErr != 0 {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantErr, connect.CodeOf(err))
+
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.id, resp.Msg.GetWebhook().GetId())
+		})
+	}
+}
+
+func TestHandler_UpdateWebhook(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		req      *webhookv1.UpdateWebhookRequest
+		mockFunc func(*gomock.Controller) *Handler
+		wantErr  connect.Code
+	}{
+		{
+			name: "success",
+			req: &webhookv1.UpdateWebhookRequest{
+				Id:      "wh-1",
+				Url:     "https://new.example.com/hook",
+				Events:  []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_UPDATED},
+				Enabled: false,
+			},
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().
+					Update(gomock.Any(), "wh-1", webhookuc.UpdateParams{
+						URL:     "https://new.example.com/hook",
+						Events:  []domain.WebhookEventType{domain.WebhookEventUpdated},
+						Enabled: false,
+					}).
+					Return(&domain.Webhook{
+						ID:      "wh-1",
+						URL:     "https://new.example.com/hook",
+						Events:  []domain.WebhookEventType{domain.WebhookEventUpdated},
+						Enabled: false,
+					}, nil)
+
+				return New(uc)
+			},
+		},
+		{
+			name: "not found",
+			req: &webhookv1.UpdateWebhookRequest{
+				Id:     "missing",
+				Url:    "https://example.com/hook",
+				Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
+			},
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Update(gomock.Any(), "missing", gomock.Any()).Return(nil, domain.ErrNotFound)
+
+				return New(uc)
+			},
+			wantErr: connect.CodeNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			h := tt.mockFunc(ctrl)
+
+			resp, err := h.UpdateWebhook(t.Context(), connect.NewRequest(tt.req))
+
+			if tt.wantErr != 0 {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantErr, connect.CodeOf(err))
+
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.req.GetUrl(), resp.Msg.GetWebhook().GetUrl())
+			assert.False(t, resp.Msg.GetWebhook().GetEnabled())
+		})
+	}
+}
+
+func TestHandler_DeleteWebhook(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		id       string
+		mockFunc func(*gomock.Controller) *Handler
+		wantErr  connect.Code
+	}{
+		{
+			name: "success",
+			id:   "wh-1",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Delete(gomock.Any(), "wh-1").Return(nil)
+
+				return New(uc)
+			},
+		},
+		{
+			name: "not found",
+			id:   "missing",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().Delete(gomock.Any(), "missing").Return(domain.ErrNotFound)
+
+				return New(uc)
+			},
+			wantErr: connect.CodeNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			h := tt.mockFunc(ctrl)
+
+			_, err := h.DeleteWebhook(t.Context(), connect.NewRequest(&webhookv1.DeleteWebhookRequest{Id: tt.id}))
+
+			if tt.wantErr != 0 {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantErr, connect.CodeOf(err))
+
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestHandler_ListWebhooks(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		mockFunc func(*gomock.Controller) *Handler
+		wantLen  int
+	}{
+		{
+			name: "success empty",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{}, nil)
+
+				return New(uc)
+			},
+			wantLen: 0,
+		},
+		{
+			name: "success populated",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
+					{ID: "wh-1", URL: "https://a.com", NamespaceFilter: "prod"},
+					{ID: "wh-2", URL: "https://b.com", NamespaceFilter: "dev"},
+				}, nil)
+
+				return New(uc)
+			},
+			wantLen: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			h := tt.mockFunc(ctrl)
+
+			resp, err := h.ListWebhooks(t.Context(), connect.NewRequest(&webhookv1.ListWebhooksRequest{}))
+
+			require.NoError(t, err)
+			assert.Len(t, resp.Msg.GetWebhooks(), tt.wantLen)
+		})
+	}
+}
+
+func TestHandler_GetDeliveryHistory(t *testing.T) {
+	t.Parallel()
+
+	attempts := []domain.DeliveryAttempt{
 		{AttemptNumber: 1, StatusCode: 200, LatencyMS: 42, Success: true, Timestamp: time.Now()},
 		{
 			AttemptNumber: 2,
@@ -386,34 +350,58 @@ func TestWebhookHandler_GetDeliveryHistory_ReturnsAttempts(t *testing.T) {
 		},
 	}
 
-	h := newTestWebhookHandler(repo, dispatcher)
+	tests := []struct {
+		name     string
+		id       string
+		mockFunc func(*gomock.Controller) *Handler
+		wantErr  connect.Code
+	}{
+		{
+			name: "success",
+			id:   "wh-1",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().GetHistory(gomock.Any(), "wh-1").Return(attempts, nil)
 
-	resp, err := h.GetDeliveryHistory(
-		testCtx(),
-		connect.NewRequest(&webhookv1.GetDeliveryHistoryRequest{WebhookId: "wh-1"}),
-	)
+				return New(uc)
+			},
+		},
+		{
+			name: "not found",
+			id:   "unknown",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				uc := webhook_mock.NewMockusecase(ctrl)
+				uc.EXPECT().GetHistory(gomock.Any(), "unknown").Return(nil, domain.ErrNotFound)
 
-	require.NoError(t, err)
-	require.Len(t, resp.Msg.GetAttempts(), 2)
-	assert.Equal(t, int32(1), resp.Msg.GetAttempts()[0].GetAttemptNumber())
-	assert.Equal(t, int32(200), resp.Msg.GetAttempts()[0].GetStatusCode())
-	assert.True(t, resp.Msg.GetAttempts()[0].GetSuccess())
-	assert.Equal(t, int32(500), resp.Msg.GetAttempts()[1].GetStatusCode())
-	assert.Equal(t, "server error", resp.Msg.GetAttempts()[1].GetError())
-}
+				return New(uc)
+			},
+			wantErr: connect.CodeNotFound,
+		},
+	}
 
-func TestWebhookHandler_GetDeliveryHistory_UnknownWebhook_ReturnsNotFound(t *testing.T) {
-	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	h := newTestWebhookHandler(newFakeWebhookRepo(), newFakeWebhookDispatcher())
+			ctrl := gomock.NewController(t)
+			h := tt.mockFunc(ctrl)
 
-	_, err := h.GetDeliveryHistory(
-		testCtx(),
-		connect.NewRequest(&webhookv1.GetDeliveryHistoryRequest{WebhookId: "unknown"}),
-	)
+			resp, err := h.GetDeliveryHistory(
+				t.Context(),
+				connect.NewRequest(&webhookv1.GetDeliveryHistoryRequest{WebhookId: tt.id}),
+			)
 
-	require.Error(t, err)
-	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
+			if tt.wantErr != 0 {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantErr, connect.CodeOf(err))
+
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Len(t, resp.Msg.GetAttempts(), len(attempts))
+		})
+	}
 }
 
 // -----------------------------------------------------------------------------

@@ -1,8 +1,6 @@
 package token
 
 import (
-	"context"
-	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -10,39 +8,39 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	internalauth "github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	token_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/token/mocks"
 	tokenv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/token/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
-	auth_mock "github.com/sergeyslonimsky/elara/internal/usecase/auth/mocks"
+	tokenuc "github.com/sergeyslonimsky/elara/internal/usecase/token"
 )
-
-func ctxWithClaims(email string) context.Context {
-	return internalauth.WithClaims(context.Background(), &internalauth.Claims{Email: email})
-}
 
 func TestTokenHandler_CreateToken(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name    string
-		email   string
-		noAuth  bool
-		mock    func(enforcer *auth_mock.MocktokenEnforcer, creator *auth_mock.MocktokenCreator)
+		mock    func(uc *token_mock.Mockusecase)
 		wantErr bool
 	}{
 		{
-			name:  "creates token with raw token returned",
-			email: "user@example.com",
-			mock: func(enforcer *auth_mock.MocktokenEnforcer, creator *auth_mock.MocktokenCreator) {
-				enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(true, nil)
-				enforcer.EXPECT().Enforce("user@example.com", "ns1", "config", "write").Return(true, nil)
-				creator.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+			name: "creates token with raw token returned",
+			mock: func(uc *token_mock.Mockusecase) {
+				uc.EXPECT().
+					Create(gomock.Any(), tokenuc.CreateInput{
+						Name:       "my-token",
+						Namespaces: []string{"ns1"},
+						Role:       "writer",
+					}).
+					Return(&domain.Token{ID: "t1", Name: "my-token"}, "elara_secret", nil)
 			},
 		},
 		{
-			name:    "no auth context returns unauthenticated",
-			noAuth:  true,
+			name: "no auth context returns unauthenticated",
+			mock: func(uc *token_mock.Mockusecase) {
+				uc.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
+					Return(nil, "", domain.ErrUnauthorized)
+			},
 			wantErr: true,
 		},
 	}
@@ -52,21 +50,12 @@ func TestTokenHandler_CreateToken(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			enforcer := auth_mock.NewMocktokenEnforcer(ctrl)
-			creator := auth_mock.NewMocktokenCreator(ctrl)
+			uc := token_mock.NewMockusecase(ctrl)
+			tc.mock(uc)
 
-			if tc.mock != nil {
-				tc.mock(enforcer, creator)
-			}
+			h := New(uc)
 
-			h := New(authuc.NewCreateTokenUseCase(enforcer, creator), nil, nil, nil)
-
-			ctx := context.Background()
-			if !tc.noAuth {
-				ctx = ctxWithClaims(tc.email)
-			}
-
-			resp, err := h.CreateToken(ctx, connect.NewRequest(&tokenv1.CreateTokenRequest{
+			resp, err := h.CreateToken(t.Context(), connect.NewRequest(&tokenv1.CreateTokenRequest{
 				Name:       "my-token",
 				Namespaces: []string{"ns1"},
 				Role:       "writer",
@@ -79,7 +68,7 @@ func TestTokenHandler_CreateToken(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.True(t, strings.HasPrefix(resp.Msg.GetRawToken(), "elara_"))
+			assert.Equal(t, "elara_secret", resp.Msg.GetRawToken())
 			assert.NotEmpty(t, resp.Msg.GetToken().GetId())
 		})
 	}
@@ -90,21 +79,16 @@ func TestTokenHandler_ListTokens(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		email    string
 		issuedBy string
-		tokens   []*domain.Token
-		mock     func(enforcer *auth_mock.MocktokenEnforcer, lister *auth_mock.MocktokenLister)
+		mock     func(uc *token_mock.Mockusecase)
 		wantLen  int
 		wantErr  bool
 	}{
 		{
 			name:     "returns tokens for user",
-			email:    "user@example.com",
 			issuedBy: "user@example.com",
-			tokens:   []*domain.Token{{ID: "t1", IssuedBy: "user@example.com"}},
-			mock: func(enforcer *auth_mock.MocktokenEnforcer, lister *auth_mock.MocktokenLister) {
-				enforcer.EXPECT().Enforce("user@example.com", "*", "token", "read").Return(false, nil)
-				lister.EXPECT().
+			mock: func(uc *token_mock.Mockusecase) {
+				uc.EXPECT().
 					List(gomock.Any(), "user@example.com").
 					Return([]*domain.Token{{ID: "t1", IssuedBy: "user@example.com"}}, nil)
 			},
@@ -112,12 +96,9 @@ func TestTokenHandler_ListTokens(t *testing.T) {
 		},
 		{
 			name:     "admin returns all tokens",
-			email:    "admin@example.com",
 			issuedBy: "",
-			tokens:   []*domain.Token{{ID: "t1", IssuedBy: "user@example.com"}},
-			mock: func(enforcer *auth_mock.MocktokenEnforcer, lister *auth_mock.MocktokenLister) {
-				enforcer.EXPECT().Enforce("admin@example.com", "*", "token", "read").Return(true, nil)
-				lister.EXPECT().
+			mock: func(uc *token_mock.Mockusecase) {
+				uc.EXPECT().
 					List(gomock.Any(), "").
 					Return([]*domain.Token{{ID: "t1", IssuedBy: "user@example.com"}}, nil)
 			},
@@ -130,16 +111,12 @@ func TestTokenHandler_ListTokens(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			enforcer := auth_mock.NewMocktokenEnforcer(ctrl)
-			lister := auth_mock.NewMocktokenLister(ctrl)
+			uc := token_mock.NewMockusecase(ctrl)
+			tc.mock(uc)
 
-			if tc.mock != nil {
-				tc.mock(enforcer, lister)
-			}
+			h := New(uc)
 
-			h := New(nil, authuc.NewListTokensUseCase(enforcer, lister), nil, nil)
-
-			resp, err := h.ListTokens(ctxWithClaims(tc.email), connect.NewRequest(&tokenv1.ListTokensRequest{
+			resp, err := h.ListTokens(t.Context(), connect.NewRequest(&tokenv1.ListTokensRequest{
 				IssuedBy: tc.issuedBy,
 			}))
 
@@ -158,31 +135,27 @@ func TestTokenHandler_ListTokens(t *testing.T) {
 func TestTokenHandler_GetToken(t *testing.T) {
 	t.Parallel()
 
-	token := &domain.Token{ID: "t1", IssuedBy: "user@example.com"}
+	tok := &domain.Token{ID: "t1", IssuedBy: "user@example.com"}
 
 	tests := []struct {
 		name     string
-		email    string
 		id       string
-		mock     func(enforcer *auth_mock.MocktokenEnforcer, getter *auth_mock.MocktokenIDGetter)
+		mock     func(uc *token_mock.Mockusecase)
 		wantErr  bool
 		wantCode connect.Code
 	}{
 		{
-			name:  "returns token by ID for owner",
-			email: "user@example.com",
-			id:    "t1",
-			mock: func(_ *auth_mock.MocktokenEnforcer, getter *auth_mock.MocktokenIDGetter) {
-				getter.EXPECT().GetByID(gomock.Any(), "t1").Return(token, nil)
+			name: "returns token by ID for owner",
+			id:   "t1",
+			mock: func(uc *token_mock.Mockusecase) {
+				uc.EXPECT().Get(gomock.Any(), "t1").Return(tok, nil)
 			},
 		},
 		{
-			name:  "forbidden for stranger",
-			email: "other@example.com",
-			id:    "t1",
-			mock: func(enforcer *auth_mock.MocktokenEnforcer, getter *auth_mock.MocktokenIDGetter) {
-				getter.EXPECT().GetByID(gomock.Any(), "t1").Return(token, nil)
-				enforcer.EXPECT().Enforce("other@example.com", "*", "token", "read").Return(false, nil)
+			name: "forbidden for stranger",
+			id:   "t1",
+			mock: func(uc *token_mock.Mockusecase) {
+				uc.EXPECT().Get(gomock.Any(), "t1").Return(nil, domain.ErrForbidden)
 			},
 			wantErr:  true,
 			wantCode: connect.CodePermissionDenied,
@@ -194,17 +167,13 @@ func TestTokenHandler_GetToken(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			enforcer := auth_mock.NewMocktokenEnforcer(ctrl)
-			getter := auth_mock.NewMocktokenIDGetter(ctrl)
+			uc := token_mock.NewMockusecase(ctrl)
+			tc.mock(uc)
 
-			if tc.mock != nil {
-				tc.mock(enforcer, getter)
-			}
-
-			h := New(nil, nil, authuc.NewGetTokenUseCase(enforcer, getter), nil)
+			h := New(uc)
 
 			resp, err := h.GetToken(
-				ctxWithClaims(tc.email),
+				t.Context(),
 				connect.NewRequest(&tokenv1.GetTokenRequest{Id: tc.id}),
 			)
 
@@ -224,22 +193,17 @@ func TestTokenHandler_GetToken(t *testing.T) {
 func TestTokenHandler_RevokeToken(t *testing.T) {
 	t.Parallel()
 
-	token := &domain.Token{ID: "t1", IssuedBy: "user@example.com"}
-
 	tests := []struct {
 		name    string
-		email   string
 		id      string
-		mock    func(enforcer *auth_mock.MocktokenEnforcer, deleter *auth_mock.MocktokenDeleter, getter *auth_mock.MocktokenIDGetter)
+		mock    func(uc *token_mock.Mockusecase)
 		wantErr bool
 	}{
 		{
-			name:  "revokes token for owner",
-			email: "user@example.com",
-			id:    "t1",
-			mock: func(_ *auth_mock.MocktokenEnforcer, deleter *auth_mock.MocktokenDeleter, getter *auth_mock.MocktokenIDGetter) {
-				getter.EXPECT().GetByID(gomock.Any(), "t1").Return(token, nil)
-				deleter.EXPECT().Delete(gomock.Any(), "t1").Return(nil)
+			name: "revokes token for owner",
+			id:   "t1",
+			mock: func(uc *token_mock.Mockusecase) {
+				uc.EXPECT().Revoke(gomock.Any(), "t1").Return(nil)
 			},
 		},
 	}
@@ -249,18 +213,13 @@ func TestTokenHandler_RevokeToken(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			enforcer := auth_mock.NewMocktokenEnforcer(ctrl)
-			deleter := auth_mock.NewMocktokenDeleter(ctrl)
-			getter := auth_mock.NewMocktokenIDGetter(ctrl)
+			uc := token_mock.NewMockusecase(ctrl)
+			tc.mock(uc)
 
-			if tc.mock != nil {
-				tc.mock(enforcer, deleter, getter)
-			}
-
-			h := New(nil, nil, nil, authuc.NewRevokeTokenUseCase(enforcer, deleter, getter))
+			h := New(uc)
 
 			_, err := h.RevokeToken(
-				ctxWithClaims(tc.email),
+				t.Context(),
 				connect.NewRequest(&tokenv1.RevokeTokenRequest{Id: tc.id}),
 			)
 

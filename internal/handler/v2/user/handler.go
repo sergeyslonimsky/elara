@@ -12,40 +12,37 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	userv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1"
-	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 )
+
+//go:generate mockgen -destination=mocks/handler_mock.go -package=user_mock -source=handler.go
 
 var (
 	errOIDCWithPassword        = errors.New("initial_password must not be set in OIDC mode")
 	errBasicAuthWithNoPassword = errors.New("initial_password is required in basic-auth mode")
 )
 
+type usecase interface {
+	List(ctx context.Context) ([]*domain.User, error)
+	Get(ctx context.Context, email string) (*domain.User, error)
+	Create(ctx context.Context, email, name, initialPassword string) (*domain.User, error)
+	ResetPassword(ctx context.Context, targetEmail, newPassword string) error
+	Delete(ctx context.Context, targetEmail string) error
+}
+
 // Handler implements userv1connect.UserServiceHandler.
 type Handler struct {
-	list          *authuc.ListUsersUseCase
-	get           *authuc.GetUserUseCase
-	createUser    *authuc.CreateUserUseCase
-	resetPassword *authuc.ResetPasswordUseCase
-	deleteUser    *authuc.DeleteUserUseCase
-	authType      config.AuthType
+	uc       usecase
+	authType config.AuthType
 }
 
 // New returns a new Handler.
 func New(
-	list *authuc.ListUsersUseCase,
-	get *authuc.GetUserUseCase,
-	createUser *authuc.CreateUserUseCase,
-	resetPassword *authuc.ResetPasswordUseCase,
-	deleteUser *authuc.DeleteUserUseCase,
+	uc usecase,
 	authType config.AuthType,
 ) *Handler {
 	return &Handler{
-		list:          list,
-		get:           get,
-		createUser:    createUser,
-		resetPassword: resetPassword,
-		deleteUser:    deleteUser,
-		authType:      authType,
+		uc:       uc,
+		authType: authType,
 	}
 }
 
@@ -53,7 +50,7 @@ func (h *Handler) ListUsers(
 	ctx context.Context,
 	_ *connect.Request[userv1.ListUsersRequest],
 ) (*connect.Response[userv1.ListUsersResponse], error) {
-	users, err := h.list.Execute(ctx)
+	users, err := h.uc.List(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -70,7 +67,7 @@ func (h *Handler) GetUser(
 	ctx context.Context,
 	req *connect.Request[userv1.GetUserRequest],
 ) (*connect.Response[userv1.GetUserResponse], error) {
-	user, err := h.get.Execute(ctx, req.Msg.GetEmail())
+	user, err := h.uc.Get(ctx, req.Msg.GetEmail())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -103,7 +100,7 @@ func (h *Handler) CreateUser(
 		)
 	}
 
-	user, err := h.createUser.Execute(ctx, req.Msg.GetEmail(), req.Msg.GetName(), req.Msg.GetInitialPassword())
+	user, err := h.uc.Create(ctx, req.Msg.GetEmail(), req.Msg.GetName(), req.Msg.GetInitialPassword())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -126,7 +123,7 @@ func (h *Handler) ResetUserPassword(
 		)
 	}
 
-	err := h.resetPassword.Execute(ctx, req.Msg.GetEmail(), req.Msg.GetNewPassword())
+	err := h.uc.ResetPassword(ctx, req.Msg.GetEmail(), req.Msg.GetNewPassword())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -149,7 +146,7 @@ func (h *Handler) DeleteUser(
 		)
 	}
 
-	if err := h.deleteUser.Execute(ctx, req.Msg.GetEmail()); err != nil {
+	if err := h.uc.Delete(ctx, req.Msg.GetEmail()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

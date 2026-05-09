@@ -1,7 +1,10 @@
+import { create } from "@bufbuild/protobuf";
 import { useQuery } from "@connectrpc/connect-query";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AuthType, type MeResponse } from "@/gen/elara/auth/v1/auth_service_pb";
+import type { AuthContextType } from "@/components/auth-provider";
+import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import { MeResponseSchema } from "@/gen/elara/profile/v1/profile_service_pb";
 import { TestProviders } from "@/test/test-utils";
 import { DashboardPage } from "./index";
 
@@ -30,19 +33,21 @@ describe("DashboardPage", () => {
 		} as unknown as UseQueryResult);
 	});
 
-	const authContext = {
-		me: {
-			name: "Anonymous",
-			email: "anonymous@elara.local",
-			isAdmin: true,
-			namespaces: [],
-			passwordChangeRequired: false,
-			picture: "",
-			canViewWebhooks: true,
-			canManageWebhooks: true,
-		} as unknown as MeResponse,
-		authType: AuthType.NONE,
-		isLoading: false,
+	const authContext: AuthContextType = {
+		state: {
+			status: "authenticated",
+			authType: AuthType.NONE,
+			user: create(MeResponseSchema, {
+				name: "Anonymous",
+				email: "anonymous@elara.local",
+				isAdmin: true,
+				namespaces: [],
+				passwordChangeRequired: false,
+				picture: "",
+				canViewWebhooks: true,
+				canManageWebhooks: true,
+			}),
+		},
 		logout: vi.fn(),
 	};
 

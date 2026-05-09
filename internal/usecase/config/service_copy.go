@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/util/maputil"
 )
 
 type CopyInput struct {
@@ -64,7 +64,7 @@ func (s *Service) Copy(ctx context.Context, in CopyInput) (*domain.Config, error
 		Content:   source.Content,
 		Format:    source.Format,
 		Namespace: in.DestNamespace,
-		Metadata:  copyMetadata(source.Metadata),
+		Metadata:  maputil.Clone(source.Metadata),
 	}
 
 	dest.GenerateHash()
@@ -79,15 +79,4 @@ func (s *Service) Copy(ctx context.Context, in CopyInput) (*domain.Config, error
 	s.watcher.NotifyCreated(ctx, dest)
 
 	return dest, nil
-}
-
-func copyMetadata(src map[string]string) map[string]string {
-	if src == nil {
-		return make(map[string]string)
-	}
-
-	dst := make(map[string]string, len(src))
-	maps.Copy(dst, src)
-
-	return dst
 }

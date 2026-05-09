@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 func (s *Service) Update(ctx context.Context, cfg *domain.Config) (*domain.Config, error) {
