@@ -10,9 +10,8 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
-	webhook_mock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
+	webhookmock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
 )
 
 func TestService_List(t *testing.T) {
@@ -44,13 +43,17 @@ func TestService_List(t *testing.T) {
 			name: "success filters list",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhook_mock.NewMockenforcer(ctrl)
-				repo := webhook_mock.NewMockrepo(ctrl)
+				enf := webhookmock.NewMockenforcer(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().List(ctx).Return(webhooks, nil)
 				// Allow wh-1 (prod), deny wh-2 (dev)
-				enf.EXPECT().Enforce("test@example.com", "prod", auth.ObjectWebhook, auth.ActionRead).Return(true, nil)
-				enf.EXPECT().Enforce("test@example.com", "dev", auth.ObjectWebhook, auth.ActionRead).Return(false, nil)
+				enf.EXPECT().
+					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionRead).
+					Return(true, nil)
+				enf.EXPECT().
+					Enforce("test@example.com", "dev", domain.ObjectWebhook, domain.ActionRead).
+					Return(false, nil)
 
 				return webhookuc.New(enf, repo, nil), ctx
 			},
@@ -60,7 +63,7 @@ func TestService_List(t *testing.T) {
 			name: "empty list",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				repo := webhook_mock.NewMockrepo(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().List(ctx).Return([]*domain.Webhook{}, nil)
 
@@ -72,7 +75,7 @@ func TestService_List(t *testing.T) {
 			name: "repo error",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				repo := webhook_mock.NewMockrepo(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().List(ctx).Return(nil, errors.New("db error"))
 

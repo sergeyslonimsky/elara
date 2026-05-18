@@ -1,90 +1,113 @@
 package casbin_test
 
 import (
+	"path/filepath"
 	"testing"
 
-	casbinmodel "github.com/casbin/casbin/v2/model"
-	"github.com/casbin/casbin/v2/persist"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	casbin_mock "github.com/sergeyslonimsky/elara/internal/service/auth/casbin/mocks"
+	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
-// newTestEnforcer creates an Enforcer seeded with built-in policies.
-// When rules is nil/empty the adapter will seed built-ins and persist them.
-// When rules is non-nil the adapter loads them via LoadPolicy (simulating pre-existing policy).
+// newTestEnforcer creates an Enforcer backed by a real bbolt PolicyRepo in a
+// temp directory. When rules is non-empty it pre-seeds them through PolicyRepo
+// before constructing the enforcer, so the seed-on-empty branch is skipped.
+// Each rule is [ptype, fields...] (e.g. {"p", "alice", "*", "config", "read"}).
 func newTestEnforcer(t *testing.T, rules [][]string) *casbin.Enforcer {
 	t.Helper()
 
-	ctrl := gomock.NewController(t)
-	adapter := casbin_mock.NewMockAdapter(ctrl)
-
-	if len(rules) == 0 {
-		// Empty storage: enforcer will seed built-ins and call SavePolicy once.
-		adapter.EXPECT().LoadPolicy(gomock.Any()).Return(nil)
-		adapter.EXPECT().SavePolicy(gomock.Any()).Return(nil)
-	} else {
-		// Pre-existing rules: populate the model inside LoadPolicy.
-		adapter.EXPECT().LoadPolicy(gomock.Any()).DoAndReturn(func(m casbinmodel.Model) error {
-			for _, rule := range rules {
-				if len(rule) == 0 {
-					continue
-				}
-
-				require.NoError(t, persist.LoadPolicyArray(rule, m))
-			}
-
-			return nil
-		})
-	}
-
-	// AutoSave will call AddPolicy/RemovePolicy on the adapter for runtime mutations.
-	adapter.EXPECT().AddPolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	adapter.EXPECT().RemovePolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	adapter.EXPECT().RemoveFilteredPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-
-	e, err := casbin.NewEnforcer(adapter)
-	require.NoError(t, err)
+	e, _ := newTestEnforcerWithTxM(t, rules)
 
 	return e
+}
+
+// newTestEnforcerWithTxM constructs an Enforcer + TxManager backed by a real
+// bbolt store. Pre-seeds raw rules through PolicyRepo (bypassing the enforcer)
+// before NewEnforcer runs, so seed-on-empty is skipped when rules is non-empty.
+func newTestEnforcerWithTxM(t *testing.T, rules [][]string) (*casbin.Enforcer, storage.TxManager) {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), "casbin.db")
+
+	store, err := bbolt.Open(path)
+	require.NoError(t, err)
+
+	t.Cleanup(func() { _ = store.Close() })
+
+	policies := bbolt.NewPolicyRepo(store)
+
+	for _, rule := range rules {
+		if len(rule) < 2 {
+			continue
+		}
+
+		ptype := rule[0]
+
+		sec := "p"
+		if ptype == "g" || ptype == "g2" || ptype == "g3" {
+			sec = "g"
+		}
+
+		require.NoError(t, policies.AddPolicy(sec, ptype, rule[1:]))
+	}
+
+	e, err := casbin.NewEnforcer(policies)
+	require.NoError(t, err)
+
+	return e, bbolt.NewTxManager(store.DB())
+}
+
+// seedRole adds a g-rule (role assignment) through a real WriteTx so persistence
+// and cache stay in sync — equivalent to the old Enforcer.AddRoleForUser bridge.
+func seedRole(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, user, role, dom string) {
+	t.Helper()
+	require.NoError(t, e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		return txe.AddRoleForUser(user, role, dom)
+	}))
+}
+
+// removeRole removes a g-rule through a real WriteTx.
+func removeRole(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, user, role, dom string) {
+	t.Helper()
+	require.NoError(t, e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		return txe.RemoveRoleForUser(user, role, dom)
+	}))
+}
+
+// seedPolicy adds a p-rule through a real WriteTx.
+func seedPolicy(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, sub, dom, obj, act string) {
+	t.Helper()
+	require.NoError(t, e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		return txe.AddPolicy(sub, dom, obj, act)
+	}))
+}
+
+// removePolicy removes a p-rule through a real WriteTx.
+func removePolicy(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, sub, dom, obj, act string) {
+	t.Helper()
+	require.NoError(t, e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		return txe.RemovePolicy(sub, dom, obj, act)
+	}))
 }
 
 func TestNewEnforcer_SeedsBuiltinPoliciesOnEmpty(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
-	adapter := casbin_mock.NewMockAdapter(ctrl)
+	e := newTestEnforcer(t, nil)
 
-	var savedModel casbinmodel.Model
-	adapter.EXPECT().LoadPolicy(gomock.Any()).Return(nil)
-	adapter.EXPECT().SavePolicy(gomock.Any()).DoAndReturn(func(m casbinmodel.Model) error {
-		savedModel = m
-
-		return nil
-	})
-	adapter.EXPECT().AddPolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	adapter.EXPECT().RemovePolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	adapter.EXPECT().RemoveFilteredPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-
-	_, err := casbin.NewEnforcer(adapter)
-	require.NoError(t, err)
-
-	assert.NotNil(t, savedModel, "built-in policies should be saved when storage is empty")
-
-	pAssert, hasPType := savedModel["p"]["p"]
-	require.True(t, hasPType, "expected 'p' policy type in saved model")
-	assert.Len(t, pAssert.Policy, 16, "expected 16 built-in p rules")
+	rules := e.GetPolicy()
+	assert.Len(t, rules, 16, "expected 16 built-in p rules seeded into empty storage")
 }
 
 func TestEnforce_AdminCanDoAnything(t *testing.T) {
 	t.Parallel()
 
-	e := newTestEnforcer(t, nil)
+	e, txm := newTestEnforcerWithTxM(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("alice", "admin", "*"))
+	seedRole(t, e, txm, "alice", "admin", "*")
 
 	tests := []struct {
 		name   string
@@ -112,9 +135,9 @@ func TestEnforce_AdminCanDoAnything(t *testing.T) {
 func TestEnforce_ViewerCanReadConfigButNotWrite(t *testing.T) {
 	t.Parallel()
 
-	e := newTestEnforcer(t, nil)
+	e, txm := newTestEnforcerWithTxM(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("bob", "reader", "*"))
+	seedRole(t, e, txm, "bob", "reader", "*")
 
 	t.Run("read config allowed", func(t *testing.T) {
 		t.Parallel()
@@ -136,9 +159,9 @@ func TestEnforce_ViewerCanReadConfigButNotWrite(t *testing.T) {
 func TestEnforce_EditorCanReadAndWriteConfig(t *testing.T) {
 	t.Parallel()
 
-	e := newTestEnforcer(t, nil)
+	e, txm := newTestEnforcerWithTxM(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("carol", "writer", "*"))
+	seedRole(t, e, txm, "carol", "writer", "*")
 
 	tests := []struct {
 		name    string
@@ -164,10 +187,10 @@ func TestEnforce_EditorCanReadAndWriteConfig(t *testing.T) {
 func TestEnforce_NamespaceScoping(t *testing.T) {
 	t.Parallel()
 
-	e := newTestEnforcer(t, nil)
+	e, txm := newTestEnforcerWithTxM(t, nil)
 
 	// dave has role:viewer only in domain "prod"
-	require.NoError(t, e.AddRoleForUser("dave", "reader", "prod"))
+	seedRole(t, e, txm, "dave", "reader", "prod")
 
 	t.Run("can read config in prod", func(t *testing.T) {
 		t.Parallel()
@@ -189,9 +212,9 @@ func TestEnforce_NamespaceScoping(t *testing.T) {
 func TestAddRoleForUser_ThenEnforce(t *testing.T) {
 	t.Parallel()
 
-	e := newTestEnforcer(t, nil)
+	e, txm := newTestEnforcerWithTxM(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("eve", "writer", "*"))
+	seedRole(t, e, txm, "eve", "writer", "*")
 
 	ok, err := e.Enforce("eve", "*", "namespace", "read")
 	require.NoError(t, err)
@@ -201,15 +224,15 @@ func TestAddRoleForUser_ThenEnforce(t *testing.T) {
 func TestRemoveRoleForUser(t *testing.T) {
 	t.Parallel()
 
-	e := newTestEnforcer(t, nil)
+	e, txm := newTestEnforcerWithTxM(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("frank", "writer", "*"))
+	seedRole(t, e, txm, "frank", "writer", "*")
 
 	ok, err := e.Enforce("frank", "*", "config", "write")
 	require.NoError(t, err)
 	require.True(t, ok)
 
-	require.NoError(t, e.RemoveRoleForUser("frank", "writer", "*"))
+	removeRole(t, e, txm, "frank", "writer", "*")
 
 	ok, err = e.Enforce("frank", "*", "config", "write")
 	require.NoError(t, err)
@@ -219,25 +242,13 @@ func TestRemoveRoleForUser(t *testing.T) {
 func TestEnforcer_GetRolesForUser(t *testing.T) {
 	t.Parallel()
 
-	e := newTestEnforcer(t, nil)
+	e, txm := newTestEnforcerWithTxM(t, nil)
 
-	require.NoError(t, e.AddRoleForUser("alice", "admin", "*"))
+	seedRole(t, e, txm, "alice", "admin", "*")
 
 	roles, err := e.GetRolesForUser("alice", "*")
 	require.NoError(t, err)
 	assert.Contains(t, roles, "admin")
-}
-
-func TestEnforcer_SeedPassthroughAdmin(t *testing.T) {
-	t.Parallel()
-
-	e := newTestEnforcer(t, nil)
-
-	require.NoError(t, e.SeedPassthroughAdmin())
-
-	ok, err := e.Enforce("local-admin@elara.internal", "*", "config", "read")
-	require.NoError(t, err)
-	assert.True(t, ok)
 }
 
 func TestEnforcer_Methods(t *testing.T) { // NOSONAR
@@ -246,9 +257,9 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 	t.Run("GetAllRoles returns roles in domain", func(t *testing.T) {
 		t.Parallel()
 
-		e := newTestEnforcer(t, nil)
-		require.NoError(t, e.AddRoleForUser("alice", "admin", "*"))
-		require.NoError(t, e.AddRoleForUser("bob", "reader", "*"))
+		e, txm := newTestEnforcerWithTxM(t, nil)
+		seedRole(t, e, txm, "alice", "admin", "*")
+		seedRole(t, e, txm, "bob", "reader", "*")
 
 		roles, err := e.GetAllRoles("*")
 		require.NoError(t, err)
@@ -268,8 +279,8 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 	t.Run("GetGroupingPolicy returns added g rules", func(t *testing.T) {
 		t.Parallel()
 
-		e := newTestEnforcer(t, nil)
-		require.NoError(t, e.AddRoleForUser("grace", "reader", "ns1"))
+		e, txm := newTestEnforcerWithTxM(t, nil)
+		seedRole(t, e, txm, "grace", "reader", "ns1")
 
 		gRules := e.GetGroupingPolicy()
 		assert.NotEmpty(t, gRules)
@@ -289,8 +300,8 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 	t.Run("RemovePolicy removes a p rule", func(t *testing.T) {
 		t.Parallel()
 
-		e := newTestEnforcer(t, nil)
-		require.NoError(t, e.AddPolicy("role:custom", "*", "config", "read"))
+		e, txm := newTestEnforcerWithTxM(t, nil)
+		seedPolicy(t, e, txm, "role:custom", "*", "config", "read")
 
 		rules := e.GetPolicy()
 		found := false
@@ -303,7 +314,7 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 		}
 		require.True(t, found, "policy should exist before removal")
 
-		require.NoError(t, e.RemovePolicy("role:custom", "*", "config", "read"))
+		removePolicy(t, e, txm, "role:custom", "*", "config", "read")
 
 		rules = e.GetPolicy()
 		for _, r := range rules {
@@ -316,14 +327,14 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 	t.Run("RemoveRoleForUser removes g rule", func(t *testing.T) {
 		t.Parallel()
 
-		e := newTestEnforcer(t, nil)
-		require.NoError(t, e.AddRoleForUser("ivan", "writer", "*"))
+		e, txm := newTestEnforcerWithTxM(t, nil)
+		seedRole(t, e, txm, "ivan", "writer", "*")
 
 		ok, err := e.Enforce("ivan", "*", "config", "write")
 		require.NoError(t, err)
 		require.True(t, ok, "ivan should be able to write before role removal")
 
-		require.NoError(t, e.RemoveRoleForUser("ivan", "writer", "*"))
+		removeRole(t, e, txm, "ivan", "writer", "*")
 
 		ok, err = e.Enforce("ivan", "*", "config", "write")
 		require.NoError(t, err)

@@ -116,7 +116,10 @@ func TestService_ExportAll(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				m.enforcer.EXPECT().
+					Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(true, nil).
+					Times(2)
 				m.namespaces.EXPECT().
 					List(gomock.Any()).
 					Return([]*domain.Namespace{{Name: "ns1"}, {Name: "ns2"}}, nil)
@@ -143,7 +146,6 @@ func TestService_ExportAll(t *testing.T) {
 			name: "empty namespaces",
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 				m.namespaces.EXPECT().List(gomock.Any()).Return([]*domain.Namespace{}, nil)
 
 				return svc
@@ -161,7 +163,6 @@ func TestService_ExportAll(t *testing.T) {
 			name: "storage error - list namespaces",
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 				m.namespaces.EXPECT().List(gomock.Any()).Return(nil, errors.New("db error"))
 
 				return svc
@@ -180,6 +181,51 @@ func TestService_ExportAll(t *testing.T) {
 			},
 			wantErr: "list configs for namespace ns1: timeout",
 		},
+		{
+			name: "partial access - skips unauthorized namespaces",
+			input: input{
+				encoding: transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.namespaces.EXPECT().List(gomock.Any()).Return([]*domain.Namespace{{Name: "ns1"}, {Name: "ns2"}}, nil)
+				m.enforcer.EXPECT().Enforce("test@example.com", "ns1", "config", "read").Return(true, nil)
+				m.enforcer.EXPECT().Enforce("test@example.com", "ns2", "config", "read").Return(false, nil)
+				m.configs.EXPECT().
+					ListAllByNamespace(gomock.Any(), "ns1").
+					Return([]*domain.Config{{Path: "/a.json", Namespace: "ns1"}}, nil)
+
+				return svc
+			},
+			check: func(t *testing.T, payload []byte, ct, fname string) {
+				t.Helper()
+
+				var bundle domain.AllBundle
+				require.NoError(t, json.Unmarshal(payload, &bundle))
+				require.Len(t, bundle.Namespaces, 1)
+				assert.Equal(t, "ns1", bundle.Namespaces[0].Namespace)
+			},
+		},
+		{
+			name: "all namespaces denied - returns empty bundle",
+			input: input{
+				encoding: transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.namespaces.EXPECT().List(gomock.Any()).Return([]*domain.Namespace{{Name: "secret"}}, nil)
+				m.enforcer.EXPECT().Enforce("test@example.com", "secret", "config", "read").Return(false, nil)
+
+				return svc
+			},
+			check: func(t *testing.T, payload []byte, ct, fname string) {
+				t.Helper()
+
+				var bundle domain.AllBundle
+				require.NoError(t, json.Unmarshal(payload, &bundle))
+				assert.Empty(t, bundle.Namespaces)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -190,7 +236,7 @@ func TestService_ExportAll(t *testing.T) {
 			sut := tt.mockFunc(ctrl)
 
 			payload, ct, fname, err := sut.ExportAll(
-				transferTestCtx(),
+				transferTestCtx(t.Context()),
 				tt.input.asZip,
 				tt.input.encoding,
 				tt.input.layout,

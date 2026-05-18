@@ -24,17 +24,20 @@ func TestService_GetStats(t *testing.T) {
 		want     *dashboard.StatsResult
 	}{
 		{
-			name: "success",
+			name: "admin sees all namespaces",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "*", "dashboard", "read").
-					Return(true, nil)
 
 				m.namespaces.EXPECT().
 					List(ctx).
 					Return([]*domain.Namespace{{Name: "n1"}, {Name: "n2"}}, nil)
+
+				m.enforcer.EXPECT().
+					Enforce("admin@example.com", "n1", domain.ObjectConfig, domain.ActionRead).
+					Return(true, nil)
+				m.enforcer.EXPECT().
+					Enforce("admin@example.com", "n2", domain.ObjectConfig, domain.ActionRead).
+					Return(true, nil)
 
 				m.configs.EXPECT().
 					CountByNamespace(ctx, "n1").
@@ -60,6 +63,72 @@ func TestService_GetStats(t *testing.T) {
 			},
 		},
 		{
+			name: "scoped user sees only allowed namespaces",
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+
+				m.namespaces.EXPECT().
+					List(ctx).
+					Return([]*domain.Namespace{{Name: "prod"}, {Name: "dev"}}, nil)
+
+				m.enforcer.EXPECT().
+					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
+					Return(true, nil)
+				m.enforcer.EXPECT().
+					Enforce("user@example.com", "dev", domain.ObjectConfig, domain.ActionRead).
+					Return(false, nil)
+
+				m.configs.EXPECT().
+					CountByNamespace(ctx, "prod").
+					Return(7, nil)
+				m.configs.EXPECT().
+					CurrentRevision(ctx).
+					Return(int64(42), nil)
+
+				m.activeClients.EXPECT().
+					ListActive().
+					Return(nil)
+
+				return ctx
+			},
+			want: &dashboard.StatsResult{
+				NamespaceCount:    1,
+				ConfigCount:       7,
+				ActiveClientCount: 0,
+				GlobalRevision:    42,
+			},
+		},
+		{
+			name: "no-access user sees zeros",
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "no-access@example.com"})
+
+				m.namespaces.EXPECT().
+					List(ctx).
+					Return([]*domain.Namespace{{Name: "prod"}}, nil)
+
+				m.enforcer.EXPECT().
+					Enforce("no-access@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
+					Return(false, nil)
+
+				m.configs.EXPECT().
+					CurrentRevision(ctx).
+					Return(int64(99), nil)
+
+				m.activeClients.EXPECT().
+					ListActive().
+					Return(nil)
+
+				return ctx
+			},
+			want: &dashboard.StatsResult{
+				NamespaceCount:    0,
+				ConfigCount:       0,
+				ActiveClientCount: 0,
+				GlobalRevision:    99,
+			},
+		},
+		{
 			name: "unauthorized",
 			mockFunc: func(ctx context.Context, _ mocks) context.Context {
 				return ctx
@@ -67,29 +136,17 @@ func TestService_GetStats(t *testing.T) {
 			errIs: domain.ErrUnauthorized,
 		},
 		{
-			name: "forbidden",
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "*", "dashboard", "read").
-					Return(false, nil)
-
-				return ctx
-			},
-			errIs: domain.ErrForbidden,
-		},
-		{
 			name: "count error",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
 
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "*", "dashboard", "read").
-					Return(true, nil)
-
 				m.namespaces.EXPECT().
 					List(ctx).
 					Return([]*domain.Namespace{{Name: "n1"}}, nil)
+
+				m.enforcer.EXPECT().
+					Enforce("admin@example.com", "n1", domain.ObjectConfig, domain.ActionRead).
+					Return(true, nil)
 
 				m.configs.EXPECT().
 					CountByNamespace(ctx, "n1").
@@ -100,24 +157,9 @@ func TestService_GetStats(t *testing.T) {
 			wantErr: "count configs for namespace \"n1\": count error",
 		},
 		{
-			name: "enforce error",
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "*", "dashboard", "read").
-					Return(false, errors.New("enforce error"))
-
-				return ctx
-			},
-			wantErr: "enforce: enforce error",
-		},
-		{
 			name: "list namespaces error",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "*", "dashboard", "read").
-					Return(true, nil)
 
 				m.namespaces.EXPECT().
 					List(ctx).
@@ -131,9 +173,6 @@ func TestService_GetStats(t *testing.T) {
 			name: "current revision error",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "*", "dashboard", "read").
-					Return(true, nil)
 
 				m.namespaces.EXPECT().
 					List(ctx).

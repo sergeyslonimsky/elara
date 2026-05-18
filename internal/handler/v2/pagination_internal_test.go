@@ -11,16 +11,16 @@ import (
 func TestNormalizeLimit(t *testing.T) {
 	t.Parallel()
 
-	runPaginationTest(t, "limit", NormalizeLimit)
+	runPaginationTest(t, NormalizeLimit)
 }
 
 func TestNormalizeOffset(t *testing.T) {
 	t.Parallel()
 
-	runPaginationTest(t, "offset", NormalizeOffset)
+	runPaginationTest(t, NormalizeOffset)
 }
 
-func runPaginationTest(t *testing.T, field string, fn func(int32) (int, error)) {
+func runPaginationTest(t *testing.T, fn func(int32) (int, error)) {
 	t.Helper()
 
 	tests := []struct {

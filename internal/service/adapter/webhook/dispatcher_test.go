@@ -22,7 +22,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	webhookadapter "github.com/sergeyslonimsky/elara/internal/service/adapter/webhook"
-	webhook_mock "github.com/sergeyslonimsky/elara/internal/service/adapter/webhook/mocks"
+	webhookmock "github.com/sergeyslonimsky/elara/internal/service/adapter/webhook/mocks"
 )
 
 func TestDispatcher_EventDispatchedToMatchingWebhook(t *testing.T) {
@@ -39,10 +39,10 @@ func TestDispatcher_EventDispatchedToMatchingWebhook(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-1",
@@ -57,7 +57,7 @@ func TestDispatcher_EventDispatchedToMatchingWebhook(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
@@ -100,10 +100,10 @@ func TestDispatcher_HMACHeaderPresentAndCorrect(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-2",
@@ -119,7 +119,7 @@ func TestDispatcher_HMACHeaderPresentAndCorrect(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
@@ -160,10 +160,10 @@ func TestDispatcher_NonMatchingNamespaceSkipped(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:              "wh-3",
@@ -179,7 +179,7 @@ func TestDispatcher_NonMatchingNamespaceSkipped(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
@@ -247,14 +247,14 @@ func TestDispatcher_EventNotDelivered(t *testing.T) {
 
 			ch := make(chan domain.WatchEvent, 10)
 			var chRecv <-chan domain.WatchEvent = ch
-			pub := webhook_mock.NewMockeventPublisher(ctrl)
+			pub := webhookmock.NewMockeventPublisher(ctrl)
 			pub.EXPECT().
 				Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(chRecv, func() {})
 
 			wh := tt.webhook
 			wh.URL = srv.URL
-			lister := webhook_mock.NewMockwebhookLister(ctrl)
+			lister := webhookmock.NewMockwebhookLister(ctrl)
 			lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{&wh}, nil).AnyTimes()
 
 			dispatcher := webhookadapter.NewDispatcher(lister, pub)
@@ -262,7 +262,7 @@ func TestDispatcher_EventNotDelivered(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
-			go dispatcher.Start(ctx)
+			go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 			ch <- tt.event
 
@@ -283,10 +283,10 @@ func TestDispatcher_DeliveryHistoryRecorded(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-5",
@@ -301,7 +301,7 @@ func TestDispatcher_DeliveryHistoryRecorded(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
@@ -358,10 +358,10 @@ func TestDispatcher_PayloadContents(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-6",
@@ -376,7 +376,7 @@ func TestDispatcher_PayloadContents(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeUpdated,
@@ -416,10 +416,10 @@ func TestDeliveryRingBuffer_Push60ReturnsLast50(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      webhookID,
@@ -434,7 +434,7 @@ func TestDeliveryRingBuffer_Push60ReturnsLast50(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	const total = 60
 
@@ -464,8 +464,8 @@ func TestDispatcher_GetDeliveryHistory_UnknownWebhookID_ReturnsEmpty(t *testing.
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -485,10 +485,10 @@ func TestDispatcher_ClearHistory_RemovesHistory(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-clear",
@@ -503,7 +503,7 @@ func TestDispatcher_ClearHistory_RemovesHistory(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
@@ -528,10 +528,10 @@ func TestDispatcher_Stop_ExitsStartLoop(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
 
@@ -541,15 +541,17 @@ func TestDispatcher_Stop_ExitsStartLoop(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		dispatcher.Start(ctx)
+		_ = dispatcher.Run(ctx)
 	}()
 
-	dispatcher.Stop()
+	shutdownCtx, shutdownCancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer shutdownCancel()
+	require.NoError(t, dispatcher.Shutdown(shutdownCtx))
 
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
-		t.Fatal("dispatcher.Start did not return after Stop()")
+		t.Fatal("dispatcher.Run did not return after Shutdown()")
 	}
 }
 
@@ -560,10 +562,10 @@ func TestDispatcher_DispatchListError_NoDelivery(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return(nil, errors.New("db error")).AnyTimes()
 
 	dispatcher := webhookadapter.NewDispatcher(lister, pub)
@@ -571,7 +573,7 @@ func TestDispatcher_DispatchListError_NoDelivery(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
@@ -628,13 +630,13 @@ func TestDispatcher_RetryOnFailure_EventuallySucceeds(t *testing.T) {
 
 			ch := make(chan domain.WatchEvent, 10)
 			var chRecv <-chan domain.WatchEvent = ch
-			pub := webhook_mock.NewMockeventPublisher(ctrl)
+			pub := webhookmock.NewMockeventPublisher(ctrl)
 			pub.EXPECT().
 				Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(chRecv, func() {})
 
 			webhookID := "wh-retry-" + tt.name
-			lister := webhook_mock.NewMockwebhookLister(ctrl)
+			lister := webhookmock.NewMockwebhookLister(ctrl)
 			lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 				{
 					ID:      webhookID,
@@ -649,7 +651,7 @@ func TestDispatcher_RetryOnFailure_EventuallySucceeds(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
-			go dispatcher.Start(ctx)
+			go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 			ch <- domain.WatchEvent{
 				Type:      domain.EventTypeCreated,
@@ -706,10 +708,10 @@ func TestDispatcher_BuildPayload_ContentHashPresent(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-content-hash",
@@ -724,7 +726,7 @@ func TestDispatcher_BuildPayload_ContentHashPresent(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
@@ -762,11 +764,11 @@ func TestDispatcher_SendRequest_NetworkError_RecordsFailure(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
 	webhookID := "wh-net-err"
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      webhookID,
@@ -781,7 +783,7 @@ func TestDispatcher_SendRequest_NetworkError_RecordsFailure(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	ch <- domain.WatchEvent{
 		Type:      domain.EventTypeCreated,
@@ -817,10 +819,10 @@ func TestDispatcher_ConcurrentDeliveries_SemaphoreNotExceeded(t *testing.T) {
 
 	ch := make(chan domain.WatchEvent, 10)
 	var chRecv <-chan domain.WatchEvent = ch
-	pub := webhook_mock.NewMockeventPublisher(ctrl)
+	pub := webhookmock.NewMockeventPublisher(ctrl)
 	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
 
-	lister := webhook_mock.NewMockwebhookLister(ctrl)
+	lister := webhookmock.NewMockwebhookLister(ctrl)
 	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 		{
 			ID:      "wh-concurrent",
@@ -835,7 +837,7 @@ func TestDispatcher_ConcurrentDeliveries_SemaphoreNotExceeded(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	go dispatcher.Start(ctx)
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
 
 	for i := range numEvents {
 		ch <- domain.WatchEvent{

@@ -1,0 +1,8 @@
+{
+  "namespaces": [
+    {"name":"dev","configCount":2,"createdAt":"<<PRESENCE>>","updatedAt":"<<PRESENCE>>"},
+    {"name":"prod","configCount":2,"createdAt":"<<PRESENCE>>","updatedAt":"<<PRESENCE>>"},
+    {"name":"staging","configCount":2,"createdAt":"<<PRESENCE>>","updatedAt":"<<PRESENCE>>"}
+  ],
+  "pagination": {"total":3,"limit":20}
+}

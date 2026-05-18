@@ -169,7 +169,7 @@ func toJSONValue(content string, format domain.Format) (any, error) {
 }
 
 func collectViolations(err error) *domain.SchemaValidationError {
-	violations := []domain.SchemaViolation{}
+	var violations []domain.SchemaViolation
 
 	if ve, ok := errors.AsType[*jsonschema.ValidationError](err); ok {
 		violations = walkViolations(ve, violations)

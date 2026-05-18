@@ -230,3 +230,43 @@ func TestGroup_RemoveMember(t *testing.T) {
 		})
 	}
 }
+
+func TestGroup_EnsureMutable(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		group   domain.Group
+		wantErr bool
+		errIs   error
+	}{
+		{
+			name:    "mutable group",
+			group:   domain.Group{System: false},
+			wantErr: false,
+		},
+		{
+			name:    "immutable system group",
+			group:   domain.Group{System: true},
+			wantErr: true,
+			errIs:   domain.ErrSystemImmutable,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := tt.group.EnsureMutable()
+
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errIs != nil {
+					require.ErrorIs(t, err, tt.errIs)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

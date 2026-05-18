@@ -10,7 +10,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
-	mock_auth "github.com/sergeyslonimsky/elara/internal/service/auth/mocks"
+	mockauth "github.com/sergeyslonimsky/elara/internal/service/auth/mocks"
 )
 
 func TestCheckAccess(t *testing.T) {
@@ -31,7 +31,7 @@ func TestCheckAccess(t *testing.T) {
 		{
 			name: "no claims",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (context.Context, auth.AccessEnforcer) {
-				return ctx, mock_auth.NewMockAccessEnforcer(ctrl)
+				return ctx, mockauth.NewMockAccessEnforcer(ctrl)
 			},
 			errIs: domain.ErrUnauthorized,
 		},
@@ -39,7 +39,7 @@ func TestCheckAccess(t *testing.T) {
 			name: "enforcer error",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (context.Context, auth.AccessEnforcer) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				e := mock_auth.NewMockAccessEnforcer(ctrl)
+				e := mockauth.NewMockAccessEnforcer(ctrl)
 				e.EXPECT().Enforce("user@example.com", dom, obj, act).Return(false, errors.New("db error"))
 
 				return ctx, e
@@ -50,7 +50,7 @@ func TestCheckAccess(t *testing.T) {
 			name: "forbidden",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (context.Context, auth.AccessEnforcer) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				e := mock_auth.NewMockAccessEnforcer(ctrl)
+				e := mockauth.NewMockAccessEnforcer(ctrl)
 				e.EXPECT().Enforce("user@example.com", dom, obj, act).Return(false, nil)
 
 				return ctx, e
@@ -61,7 +61,7 @@ func TestCheckAccess(t *testing.T) {
 			name: "allowed",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (context.Context, auth.AccessEnforcer) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				e := mock_auth.NewMockAccessEnforcer(ctrl)
+				e := mockauth.NewMockAccessEnforcer(ctrl)
 				e.EXPECT().Enforce("user@example.com", dom, obj, act).Return(true, nil)
 
 				return ctx, e

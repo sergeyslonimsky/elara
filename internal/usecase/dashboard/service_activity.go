@@ -8,26 +8,47 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
-// ListActivity returns the most recent changelog entries.
+// activityOverfetchMultiplier — backend-side overfetch so we can still hit `limit`
+// after dropping entries from namespaces the caller cannot read.
+const activityOverfetchMultiplier = 5
+
+// ListActivity returns the most recent changelog entries scoped to namespaces
+// the caller can read. Result may be shorter than `limit` if recent activity
+// happened mostly in namespaces the caller has no access to.
 func (s *Service) ListActivity(ctx context.Context, limit int) ([]*domain.ChangelogEntry, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}
 
-	allowed, err := s.enforcer.Enforce(claims.Email, "*", "dashboard", "read")
-	if err != nil {
-		return nil, fmt.Errorf("enforce: %w", err)
+	if limit <= 0 {
+		limit = 1
 	}
 
-	if !allowed {
-		return nil, domain.ErrForbidden
-	}
-
-	entries, err := s.activity.ListRecentChanges(ctx, limit)
+	entries, err := s.activity.ListRecentChanges(ctx, limit*activityOverfetchMultiplier)
 	if err != nil {
 		return nil, fmt.Errorf("list recent changes: %w", err)
 	}
 
-	return entries, nil
+	allowedNamespace := make(map[string]bool)
+
+	out := make([]*domain.ChangelogEntry, 0, len(entries))
+	for _, e := range entries {
+		allowed, ok := allowedNamespace[e.Namespace]
+		if !ok {
+			allowed, _ = s.enforcer.Enforce(claims.Email, e.Namespace, domain.ObjectConfig, domain.ActionRead)
+			allowedNamespace[e.Namespace] = allowed
+		}
+
+		if !allowed {
+			continue
+		}
+
+		out = append(out, e)
+		if len(out) >= limit {
+			break
+		}
+	}
+
+	return out, nil
 }

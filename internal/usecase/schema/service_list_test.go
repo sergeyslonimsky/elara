@@ -12,7 +12,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/schema"
-	schema_mock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
+	schemamock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
 )
 
 func TestService_List(t *testing.T) {
@@ -32,10 +32,10 @@ func TestService_List(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
-				enforcer := schema_mock.NewMockenforcer(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(true, nil)
 
-				store := schema_mock.NewMockstore(ctrl)
+				store := schemamock.NewMockstore(ctrl)
 				list := []*domain.SchemaAttachment{{ID: "s1"}}
 				store.EXPECT().List(ctx, "prod").Return(list, nil)
 
@@ -48,7 +48,7 @@ func TestService_List(t *testing.T) {
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				enforcer := schema_mock.NewMockenforcer(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(false, nil)
 
 				return schema.New(enforcer, nil, nil), ctx
@@ -68,9 +68,9 @@ func TestService_List(t *testing.T) {
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				enforcer := schema_mock.NewMockenforcer(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(true, nil)
-				store := schema_mock.NewMockstore(ctrl)
+				store := schemamock.NewMockstore(ctrl)
 				store.EXPECT().List(ctx, "prod").Return(nil, errors.New("db error"))
 
 				return schema.New(enforcer, store, nil), ctx

@@ -11,7 +11,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/schema"
-	schema_mock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
+	schemamock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
 )
 
 func TestService_Detach(t *testing.T) {
@@ -38,9 +38,9 @@ func TestService_Detach(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
 
-				enforcer := schema_mock.NewMockenforcer(ctrl)
-				store := schema_mock.NewMockstore(ctrl)
-				namespaces := schema_mock.NewMocknsProvider(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
+				store := schemamock.NewMockstore(ctrl)
+				namespaces := schemamock.NewMocknsProvider(ctrl)
 
 				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(true, nil)
 				namespaces.EXPECT().
@@ -67,7 +67,7 @@ func TestService_Detach(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
 
-				enforcer := schema_mock.NewMockenforcer(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
 				enforcer.EXPECT().
 					Enforce(testEmail, testNamespace, "schema", "write").
 					Return(false, errors.New("casbin fail"))
@@ -83,7 +83,7 @@ func TestService_Detach(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
 
-				enforcer := schema_mock.NewMockenforcer(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
 				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(false, nil)
 
 				return schema.New(enforcer, nil, nil), ctx
@@ -97,8 +97,8 @@ func TestService_Detach(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
 
-				enforcer := schema_mock.NewMockenforcer(ctrl)
-				namespaces := schema_mock.NewMocknsProvider(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
+				namespaces := schemamock.NewMocknsProvider(ctrl)
 
 				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(true, nil)
 				namespaces.EXPECT().Get(ctx, testNamespace).Return(nil, errors.New("db error"))
@@ -114,8 +114,8 @@ func TestService_Detach(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
 
-				enforcer := schema_mock.NewMockenforcer(ctrl)
-				namespaces := schema_mock.NewMocknsProvider(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
+				namespaces := schemamock.NewMocknsProvider(ctrl)
 
 				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(true, nil)
 				namespaces.EXPECT().
@@ -133,9 +133,9 @@ func TestService_Detach(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
 
-				enforcer := schema_mock.NewMockenforcer(ctrl)
-				store := schema_mock.NewMockstore(ctrl)
-				namespaces := schema_mock.NewMocknsProvider(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
+				store := schemamock.NewMockstore(ctrl)
+				namespaces := schemamock.NewMocknsProvider(ctrl)
 
 				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(true, nil)
 				namespaces.EXPECT().

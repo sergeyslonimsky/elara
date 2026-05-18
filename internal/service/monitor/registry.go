@@ -12,6 +12,7 @@ package monitor
 //go:generate mockgen -destination=mocks/mock_registry.go -package=mock_monitor -source=registry.go
 
 import (
+	"context"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -406,8 +407,9 @@ func (r *Registry) SubscribeClient(connID string) (<-chan domain.ClientChange, f
 
 // Shutdown stops accepting new events and closes all active subscriptions
 // (both global and per-client). Already-registered connections remain
-// queryable but will not produce any further notifications.
-func (r *Registry) Shutdown() {
+// queryable but will not produce any further notifications. Implements
+// lifecycle.Resource. The provided context is unused — cleanup is synchronous.
+func (r *Registry) Shutdown(_ context.Context) error {
 	r.pub.shutdown()
 
 	r.clients.Range(func(_, v any) bool {
@@ -422,6 +424,8 @@ func (r *Registry) Shutdown() {
 
 		return true
 	})
+
+	return nil
 }
 
 // -----------------------------------------------------------------------------

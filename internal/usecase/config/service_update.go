@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Service) Update(ctx context.Context, cfg *domain.Config) (*domain.Config, error) {
-	if err := auth.CheckAccess(ctx, s.enforcer, cfg.Namespace, auth.ObjectConfig, auth.ActionWrite); err != nil {
+	if err := auth.CheckAccess(ctx, s.enforcer, cfg.Namespace, domain.ObjectConfig, domain.ActionWrite); err != nil {
 		return nil, fmt.Errorf("check access: %w", err)
 	}
 

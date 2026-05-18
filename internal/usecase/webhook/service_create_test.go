@@ -10,9 +10,8 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
-	webhook_mock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
+	webhookmock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
 )
 
 func TestService_Create(t *testing.T) {
@@ -36,10 +35,12 @@ func TestService_Create(t *testing.T) {
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhook_mock.NewMockenforcer(ctrl)
-				repo := webhook_mock.NewMockrepo(ctrl)
+				enf := webhookmock.NewMockenforcer(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
 
-				enf.EXPECT().Enforce("test@example.com", "prod", auth.ObjectWebhook, auth.ActionWrite).Return(true, nil)
+				enf.EXPECT().
+					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionWrite).
+					Return(true, nil)
 				repo.EXPECT().Create(ctx, gomock.Any()).Return(nil)
 
 				return webhookuc.New(enf, repo, nil), ctx
@@ -59,9 +60,11 @@ func TestService_Create(t *testing.T) {
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhook_mock.NewMockenforcer(ctrl)
+				enf := webhookmock.NewMockenforcer(ctrl)
 
-				enf.EXPECT().Enforce("test@example.com", "*", auth.ObjectWebhook, auth.ActionWrite).Return(true, nil)
+				enf.EXPECT().
+					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
+					Return(true, nil)
 
 				return webhookuc.New(enf, nil, nil), ctx
 			},
@@ -75,9 +78,11 @@ func TestService_Create(t *testing.T) {
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhook_mock.NewMockenforcer(ctrl)
+				enf := webhookmock.NewMockenforcer(ctrl)
 
-				enf.EXPECT().Enforce("test@example.com", "*", auth.ObjectWebhook, auth.ActionWrite).Return(false, nil)
+				enf.EXPECT().
+					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
+					Return(false, nil)
 
 				return webhookuc.New(enf, nil, nil), ctx
 			},
@@ -103,10 +108,12 @@ func TestService_Create(t *testing.T) {
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhook_mock.NewMockenforcer(ctrl)
-				repo := webhook_mock.NewMockrepo(ctrl)
+				enf := webhookmock.NewMockenforcer(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
 
-				enf.EXPECT().Enforce("test@example.com", "*", auth.ObjectWebhook, auth.ActionWrite).Return(true, nil)
+				enf.EXPECT().
+					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
+					Return(true, nil)
 				repo.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("db error"))
 
 				return webhookuc.New(enf, repo, nil), ctx

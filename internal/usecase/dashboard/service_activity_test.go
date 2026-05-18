@@ -24,23 +24,81 @@ func TestService_ListActivity(t *testing.T) {
 		want     []*domain.ChangelogEntry
 	}{
 		{
-			name:  "success",
+			name:  "all entries visible to admin",
 			limit: 10,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
 
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "*", "dashboard", "read").
-					Return(true, nil)
-
-				entries := []*domain.ChangelogEntry{{Path: "/a.json"}}
+				entries := []*domain.ChangelogEntry{
+					{Path: "/a.json", Namespace: "prod"},
+					{Path: "/b.json", Namespace: "dev"},
+				}
 				m.activity.EXPECT().
-					ListRecentChanges(ctx, 10).
+					ListRecentChanges(ctx, 50).
 					Return(entries, nil)
+
+				m.enforcer.EXPECT().
+					Enforce("admin@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
+					Return(true, nil)
+				m.enforcer.EXPECT().
+					Enforce("admin@example.com", "dev", domain.ObjectConfig, domain.ActionRead).
+					Return(true, nil)
 
 				return ctx
 			},
-			want: []*domain.ChangelogEntry{{Path: "/a.json"}},
+			want: []*domain.ChangelogEntry{
+				{Path: "/a.json", Namespace: "prod"},
+				{Path: "/b.json", Namespace: "dev"},
+			},
+		},
+		{
+			name:  "scoped user only sees allowed-namespace entries",
+			limit: 10,
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+
+				entries := []*domain.ChangelogEntry{
+					{Path: "/a.json", Namespace: "prod"},
+					{Path: "/b.json", Namespace: "dev"},
+					{Path: "/c.json", Namespace: "prod"},
+				}
+				m.activity.EXPECT().
+					ListRecentChanges(ctx, 50).
+					Return(entries, nil)
+
+				// Cached per-namespace check: prod queried once, dev queried once.
+				m.enforcer.EXPECT().
+					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
+					Return(true, nil)
+				m.enforcer.EXPECT().
+					Enforce("user@example.com", "dev", domain.ObjectConfig, domain.ActionRead).
+					Return(false, nil)
+
+				return ctx
+			},
+			want: []*domain.ChangelogEntry{
+				{Path: "/a.json", Namespace: "prod"},
+				{Path: "/c.json", Namespace: "prod"},
+			},
+		},
+		{
+			name:  "no-access user sees empty list",
+			limit: 10,
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "no-access@example.com"})
+
+				entries := []*domain.ChangelogEntry{{Path: "/a.json", Namespace: "prod"}}
+				m.activity.EXPECT().
+					ListRecentChanges(ctx, 50).
+					Return(entries, nil)
+
+				m.enforcer.EXPECT().
+					Enforce("no-access@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
+					Return(false, nil)
+
+				return ctx
+			},
+			want: []*domain.ChangelogEntry{},
 		},
 		{
 			name:  "unauthorized",
@@ -51,42 +109,13 @@ func TestService_ListActivity(t *testing.T) {
 			errIs: domain.ErrUnauthorized,
 		},
 		{
-			name:  "forbidden",
-			limit: 10,
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "*", "dashboard", "read").
-					Return(false, nil)
-
-				return ctx
-			},
-			errIs: domain.ErrForbidden,
-		},
-		{
-			name:  "enforce error",
-			limit: 10,
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "*", "dashboard", "read").
-					Return(false, errors.New("enforce error"))
-
-				return ctx
-			},
-			wantErr: "enforce: enforce error",
-		},
-		{
 			name:  "list changes error",
 			limit: 10,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "*", "dashboard", "read").
-					Return(true, nil)
 
 				m.activity.EXPECT().
-					ListRecentChanges(ctx, 10).
+					ListRecentChanges(ctx, 50).
 					Return(nil, errors.New("list error"))
 
 				return ctx

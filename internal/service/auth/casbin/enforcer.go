@@ -1,15 +1,26 @@
 package casbin
 
 import (
+	"context"
 	"fmt"
 
 	gocasbin "github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
-	"github.com/casbin/casbin/v2/persist"
+	"github.com/casbin/casbin/v2/util"
 
-	authpkg "github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
+	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
+// The matcher relies on a domain matching function registered below
+// (AddNamedDomainMatchingFunc) so that a g-rule stored with domain "*" matches
+// any queried domain. This is what lets transitive chains such as
+//
+//	g, alice, group:devs, *      (membership, global)
+//	g, group:devs, admin, prod   (group role in prod)
+//
+// resolve via Casbin's native recursion without application-side fan-out.
 const casbinModel = `
 [request_definition]
 r = sub, dom, obj, act
@@ -24,7 +35,7 @@ g = _, _, _
 e = some(where (p.eft == allow))
 
 [matchers]
-m = (g(r.sub, p.sub, r.dom) || g(r.sub, p.sub, "*")) && (r.dom == p.dom || p.dom == "*") && keyMatch(r.obj, p.obj) && (r.act == p.act || p.act == "*")
+m = g(r.sub, p.sub, r.dom) && (r.dom == p.dom || p.dom == "*") && keyMatch(r.obj, p.obj) && (r.act == p.act || p.act == "*")
 `
 
 // gRuleNativeLen is the number of elements returned by GetGroupingPolicy() (without type prefix): [user, role, domain].
@@ -34,31 +45,42 @@ const gRuleNativeLen = 3
 const domainIdx = 2
 
 // Enforcer wraps the Casbin enforcer with domain-aware RBAC.
+//
+// AutoSave is permanently disabled: all runtime mutations must go through
+// WithTx/WriteTx so writes are routed through PolicyRepo bound to the caller's
+// transaction. The in-memory cache is synced post-commit via applyOpsToCache.
+// This is what enables atomicity invariant §4 level 2 — a usecase can mutate
+// domain entities and Casbin rules inside the same bbolt transaction.
 type Enforcer struct {
-	e *gocasbin.Enforcer
+	e        *gocasbin.Enforcer
+	policies *bbolt.PolicyRepo
 }
 
-// NewEnforcer creates a new Enforcer using the given persist.Adapter.
-// If the policy is empty after loading, built-in role policies are seeded and saved.
-func NewEnforcer(adapter persist.Adapter) (*Enforcer, error) {
+// NewEnforcer creates a new Enforcer using the given PolicyRepo.
+// PolicyRepo implements persist.Adapter and is also used per-transaction via
+// WithTx. If the policy is empty after loading, built-in role policies are
+// seeded and saved.
+func NewEnforcer(policies *bbolt.PolicyRepo) (*Enforcer, error) {
 	m, err := model.NewModelFromString(casbinModel)
 	if err != nil {
 		return nil, fmt.Errorf("build casbin model: %w", err)
 	}
 
-	// Disable AutoSave before creating so no incremental writes happen during initial load/seed.
-	// We build without an adapter first, then re-initialize to control the flow.
-	// Instead: create with adapter (LoadPolicy is called internally by NewEnforcer),
-	// then disable AutoSave only for the seeding phase.
-	e, err := gocasbin.NewEnforcer(m, adapter)
+	e, err := gocasbin.NewEnforcer(m, policies)
 	if err != nil {
 		return nil, fmt.Errorf("create casbin enforcer: %w", err)
 	}
 
+	// Register a domain matching function on the "g" role manager so that "*"
+	// stored in the domain field of a g-rule acts as a wildcard during recursive
+	// role traversal. Without this, a membership rule g(alice, group:devs, "*")
+	// would not match a query g(alice, group:devs, "prod").
+	e.AddNamedDomainMatchingFunc("g", "keyMatch", util.KeyMatch)
+
 	// Disable AutoSave during initial seeding so we can do a single atomic save.
 	e.EnableAutoSave(false)
 
-	enforcer := &Enforcer{e: e}
+	enforcer := &Enforcer{e: e, policies: policies}
 
 	pRules, _ := e.GetPolicy()
 	gRules, _ := e.GetGroupingPolicy()
@@ -73,15 +95,98 @@ func NewEnforcer(adapter persist.Adapter) (*Enforcer, error) {
 		}
 	}
 
-	// Enable AutoSave for all runtime mutations.
-	e.EnableAutoSave(true)
-
+	// AutoSave stays off permanently. Runtime mutations flow through
+	// WithTx/WriteTx; in-memory model is updated via applyOpsToCache after
+	// the underlying transaction commits successfully.
 	return enforcer, nil
 }
 
+// WithTx returns a per-transaction view of the enforcer. All mutations on the
+// returned TxEnforcer write through PolicyRepo bound to tx and record ops to
+// be applied to the in-memory cache after commit.
+func (e *Enforcer) WithTx(tx storage.Tx) *TxEnforcer {
+	return &TxEnforcer{
+		parent:   e,
+		policies: e.policies.WithTx(tx),
+	}
+}
+
+// WriteTx opens a write transaction via txm and invokes fn with the tx and a
+// per-tx enforcer view. On success, the recorded ops are applied to the
+// in-memory cache. On error, the cache is left untouched (the bbolt tx is
+// rolled back by TxManager, so persisted state matches the cache).
+func (e *Enforcer) WriteTx(
+	ctx context.Context,
+	txm storage.TxManager,
+	fn func(storage.Tx, *TxEnforcer) error,
+) error {
+	var txe *TxEnforcer
+
+	err := txm.Write(ctx, func(tx storage.Tx) error {
+		txe = e.WithTx(tx)
+
+		return fn(tx, txe)
+	})
+	if err != nil {
+		return fmt.Errorf("write tx: %w", err)
+	}
+
+	if txe != nil {
+		if err := e.applyOpsToCache(txe.ops); err != nil {
+			return fmt.Errorf("sync casbin cache: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// applyOpsToCache replays the ops recorded during a successful tx onto the
+// in-memory casbin model. With AutoSave=off these calls do not re-hit the
+// adapter — they only update the cached rules.
+func (e *Enforcer) applyOpsToCache(ops []op) error {
+	for _, o := range ops {
+		switch o.kind {
+		case opAddP:
+			if _, err := e.e.AddPolicy(o.args[0], o.args[1], o.args[2], o.args[3]); err != nil {
+				return fmt.Errorf("cache add policy: %w", err)
+			}
+		case opRemoveP:
+			if _, err := e.e.RemovePolicy(o.args[0], o.args[1], o.args[2], o.args[3]); err != nil {
+				return fmt.Errorf("cache remove policy: %w", err)
+			}
+		case opAddG:
+			if _, err := e.e.AddGroupingPolicy(o.args[0], o.args[1], o.args[2]); err != nil {
+				return fmt.Errorf("cache add grouping policy: %w", err)
+			}
+		case opRemoveG:
+			if _, err := e.e.RemoveGroupingPolicy(o.args[0], o.args[1], o.args[2]); err != nil {
+				return fmt.Errorf("cache remove grouping policy: %w", err)
+			}
+		case opDeleteUser:
+			if _, err := e.e.DeleteUser(o.user); err != nil {
+				return fmt.Errorf("cache delete user: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadPolicy reloads the in-memory policy model from the persistence adapter.
+// Used to resync the enforcer cache after out-of-band writes that bypass the
+// enforcer (e.g. AdminBootstrap writes raw rules directly to the policy
+// repository in a shared transaction).
+func (e *Enforcer) LoadPolicy() error {
+	if err := e.e.LoadPolicy(); err != nil {
+		return fmt.Errorf("load policy: %w", err)
+	}
+
+	return nil
+}
+
 // Enforce checks whether subject can perform action on object in domain.
-func (e *Enforcer) Enforce(subject, domain, object, action string) (bool, error) {
-	ok, err := e.e.Enforce(subject, domain, object, action)
+func (e *Enforcer) Enforce(subject, domainStr, object, action string) (bool, error) {
+	ok, err := e.e.Enforce(subject, domainStr, object, action)
 	if err != nil {
 		return false, fmt.Errorf("enforce: %w", err)
 	}
@@ -89,45 +194,9 @@ func (e *Enforcer) Enforce(subject, domain, object, action string) (bool, error)
 	return ok, nil
 }
 
-// AddPolicy adds a permission rule (p rule) to the enforcer.
-func (e *Enforcer) AddPolicy(sub, dom, obj, act string) error {
-	if _, err := e.e.AddPolicy(sub, dom, obj, act); err != nil {
-		return fmt.Errorf("add policy: %w", err)
-	}
-
-	return nil
-}
-
-// RemovePolicy removes a permission rule (p rule) from the enforcer.
-func (e *Enforcer) RemovePolicy(sub, dom, obj, act string) error {
-	if _, err := e.e.RemovePolicy(sub, dom, obj, act); err != nil {
-		return fmt.Errorf("remove policy: %w", err)
-	}
-
-	return nil
-}
-
-// AddRoleForUser assigns a role to a user within a domain.
-func (e *Enforcer) AddRoleForUser(user, role, domain string) error {
-	if _, err := e.e.AddGroupingPolicy(user, role, domain); err != nil {
-		return fmt.Errorf("add role for user: %w", err)
-	}
-
-	return nil
-}
-
-// RemoveRoleForUser removes a role assignment from a user within a domain.
-func (e *Enforcer) RemoveRoleForUser(user, role, domain string) error {
-	if _, err := e.e.RemoveGroupingPolicy(user, role, domain); err != nil {
-		return fmt.Errorf("remove role for user: %w", err)
-	}
-
-	return nil
-}
-
 // GetRolesForUser returns the roles assigned to a user in the given domain.
-func (e *Enforcer) GetRolesForUser(user, domain string) ([]string, error) {
-	roles, err := e.e.GetRolesForUser(user, domain)
+func (e *Enforcer) GetRolesForUser(user, domainStr string) ([]string, error) {
+	roles, err := e.e.GetRolesForUser(user, domainStr)
 	if err != nil {
 		return nil, fmt.Errorf("get roles for user: %w", err)
 	}
@@ -136,7 +205,7 @@ func (e *Enforcer) GetRolesForUser(user, domain string) ([]string, error) {
 }
 
 // GetAllRoles returns all roles that have assignments in the given domain.
-func (e *Enforcer) GetAllRoles(domain string) ([]string, error) {
+func (e *Enforcer) GetAllRoles(domainStr string) ([]string, error) {
 	grouping, err := e.e.GetGroupingPolicy()
 	if err != nil {
 		return nil, fmt.Errorf("get grouping policy: %w", err)
@@ -151,7 +220,7 @@ func (e *Enforcer) GetAllRoles(domain string) ([]string, error) {
 			continue
 		}
 
-		if rule[domainIdx] == domain || domain == authpkg.ObjectAll {
+		if rule[domainIdx] == domainStr || domainStr == domain.DomainAll {
 			role := rule[1]
 			if _, exists := seen[role]; !exists {
 				seen[role] = struct{}{}
@@ -177,15 +246,6 @@ func (e *Enforcer) GetGroupingPolicy() [][]string {
 	return rules
 }
 
-// DeleteUser removes all g-rules where the given email appears as subject.
-func (e *Enforcer) DeleteUser(email string) error {
-	if _, err := e.e.DeleteUser(email); err != nil {
-		return fmt.Errorf("delete user from casbin: %w", err)
-	}
-
-	return nil
-}
-
 // GetRulesForSubject returns all [subject, role, domain] g-rules where subject matches.
 func (e *Enforcer) GetRulesForSubject(subject string) [][]string {
 	all, _ := e.e.GetGroupingPolicy()
@@ -201,38 +261,60 @@ func (e *Enforcer) GetRulesForSubject(subject string) [][]string {
 	return result
 }
 
-// SeedPassthroughAdmin adds the g-rule for the passthrough user used when auth is disabled.
-func (e *Enforcer) SeedPassthroughAdmin() error {
-	if _, err := e.e.AddGroupingPolicy("local-admin@elara.internal", authpkg.RoleAdmin, authpkg.ObjectAll); err != nil {
-		return fmt.Errorf("seed passthrough admin: %w", err)
+// GetImplicitPermissionsForUser returns all permissions inherited by the user,
+// including those through roles. Returns rules in format [sub, dom, obj, act].
+func (e *Enforcer) GetImplicitPermissionsForUser(user string) ([][]string, error) {
+	rules, err := e.e.GetImplicitPermissionsForUser(user)
+	if err != nil {
+		return nil, fmt.Errorf("get implicit permissions for user: %w", err)
 	}
 
-	return nil
+	return rules, nil
+}
+
+// GetMembersOfGroup returns the subjects (users) that belong to the given
+// group subject, i.e. the first column of every g-rule where the second
+// column equals groupSubject. groupSubject must be the fully-prefixed group
+// subject (use domain.GroupSubject).
+func (e *Enforcer) GetMembersOfGroup(groupSubject string) []string {
+	all, _ := e.e.GetGroupingPolicy()
+
+	var members []string
+
+	for _, rule := range all {
+		if len(rule) == gRuleNativeLen && rule[1] == groupSubject {
+			members = append(members, rule[0])
+		}
+	}
+
+	return members
 }
 
 func (e *Enforcer) seedBuiltinPolicies() error {
+	// Columns: {role, domain, object, action}. Roles are granted in every
+	// domain via DomainAll; for the admin role the object is also a wildcard.
 	policies := [][]string{
 		// admin — wildcard covers everything
-		{authpkg.RoleAdmin, authpkg.ObjectAll, authpkg.ObjectAll, authpkg.ActionAll},
+		{domain.RoleAdmin, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 
 		// writer
-		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectConfig, authpkg.ActionRead},
-		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectConfig, authpkg.ActionWrite},
-		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectNamespace, authpkg.ActionRead},
-		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectWebhook, authpkg.ActionRead},
-		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectSchema, authpkg.ActionRead},
-		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectClient, authpkg.ActionRead},
-		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectDashboard, authpkg.ActionRead},
-		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectToken, authpkg.ActionRead},
-		{authpkg.RoleWriter, authpkg.ObjectAll, authpkg.ObjectToken, authpkg.ActionWrite},
+		{domain.RoleWriter, domain.DomainAll, domain.ObjectConfig, domain.ActionRead},
+		{domain.RoleWriter, domain.DomainAll, domain.ObjectConfig, domain.ActionWrite},
+		{domain.RoleWriter, domain.DomainAll, domain.ObjectNamespace, domain.ActionRead},
+		{domain.RoleWriter, domain.DomainAll, domain.ObjectWebhook, domain.ActionRead},
+		{domain.RoleWriter, domain.DomainAll, domain.ObjectSchema, domain.ActionRead},
+		{domain.RoleWriter, domain.DomainAll, domain.ObjectClient, domain.ActionRead},
+		{domain.RoleWriter, domain.DomainAll, domain.ObjectDashboard, domain.ActionRead},
+		{domain.RoleWriter, domain.DomainAll, domain.ObjectToken, domain.ActionRead},
+		{domain.RoleWriter, domain.DomainAll, domain.ObjectToken, domain.ActionWrite},
 
 		// reader
-		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectConfig, authpkg.ActionRead},
-		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectNamespace, authpkg.ActionRead},
-		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectClient, authpkg.ActionRead},
-		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectDashboard, authpkg.ActionRead},
-		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectToken, authpkg.ActionRead},
-		{authpkg.RoleReader, authpkg.ObjectAll, authpkg.ObjectToken, authpkg.ActionWrite},
+		{domain.RoleReader, domain.DomainAll, domain.ObjectConfig, domain.ActionRead},
+		{domain.RoleReader, domain.DomainAll, domain.ObjectNamespace, domain.ActionRead},
+		{domain.RoleReader, domain.DomainAll, domain.ObjectClient, domain.ActionRead},
+		{domain.RoleReader, domain.DomainAll, domain.ObjectDashboard, domain.ActionRead},
+		{domain.RoleReader, domain.DomainAll, domain.ObjectToken, domain.ActionRead},
+		{domain.RoleReader, domain.DomainAll, domain.ObjectToken, domain.ActionWrite},
 	}
 
 	for _, p := range policies {

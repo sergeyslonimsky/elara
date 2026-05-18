@@ -7,24 +7,24 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/usecase/profile"
-	profile_mock "github.com/sergeyslonimsky/elara/internal/usecase/profile/mocks"
+	profilemock "github.com/sergeyslonimsky/elara/internal/usecase/profile/mocks"
 )
 
 type mocks struct {
-	enforcer *profile_mock.Mockenforcer
-	ns       *profile_mock.MocknsLister
-	users    *profile_mock.MockuserGetter
-	pass     *profile_mock.MockpassWriter
-	session  *profile_mock.MocksessionCreator
+	enforcer *profilemock.Mockenforcer
+	ns       *profilemock.MocknsLister
+	users    *profilemock.MockuserGetter
+	pass     *profilemock.MockpassWriter
+	session  *profilemock.MocksessionCreator
 }
 
 func setupService(ctrl *gomock.Controller) (*profile.Service, mocks) {
 	m := mocks{
-		enforcer: profile_mock.NewMockenforcer(ctrl),
-		ns:       profile_mock.NewMocknsLister(ctrl),
-		users:    profile_mock.NewMockuserGetter(ctrl),
-		pass:     profile_mock.NewMockpassWriter(ctrl),
-		session:  profile_mock.NewMocksessionCreator(ctrl),
+		enforcer: profilemock.NewMockenforcer(ctrl),
+		ns:       profilemock.NewMocknsLister(ctrl),
+		users:    profilemock.NewMockuserGetter(ctrl),
+		pass:     profilemock.NewMockpassWriter(ctrl),
+		session:  profilemock.NewMocksessionCreator(ctrl),
 	}
 
 	svc := profile.New(m.enforcer, m.ns, m.users, m.pass, m.session)

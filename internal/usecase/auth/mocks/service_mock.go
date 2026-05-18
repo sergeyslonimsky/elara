@@ -163,55 +163,40 @@ func (mr *MocksessionCreatorMockRecorder) Create(user any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MocksessionCreator)(nil).Create), user)
 }
 
-// MockbootstrapEnforcer is a mock of bootstrapEnforcer interface.
-type MockbootstrapEnforcer struct {
+// MockadminBootstrap is a mock of adminBootstrap interface.
+type MockadminBootstrap struct {
 	ctrl     *gomock.Controller
-	recorder *MockbootstrapEnforcerMockRecorder
+	recorder *MockadminBootstrapMockRecorder
 	isgomock struct{}
 }
 
-// MockbootstrapEnforcerMockRecorder is the mock recorder for MockbootstrapEnforcer.
-type MockbootstrapEnforcerMockRecorder struct {
-	mock *MockbootstrapEnforcer
+// MockadminBootstrapMockRecorder is the mock recorder for MockadminBootstrap.
+type MockadminBootstrapMockRecorder struct {
+	mock *MockadminBootstrap
 }
 
-// NewMockbootstrapEnforcer creates a new mock instance.
-func NewMockbootstrapEnforcer(ctrl *gomock.Controller) *MockbootstrapEnforcer {
-	mock := &MockbootstrapEnforcer{ctrl: ctrl}
-	mock.recorder = &MockbootstrapEnforcerMockRecorder{mock}
+// NewMockadminBootstrap creates a new mock instance.
+func NewMockadminBootstrap(ctrl *gomock.Controller) *MockadminBootstrap {
+	mock := &MockadminBootstrap{ctrl: ctrl}
+	mock.recorder = &MockadminBootstrapMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockbootstrapEnforcer) EXPECT() *MockbootstrapEnforcerMockRecorder {
+func (m *MockadminBootstrap) EXPECT() *MockadminBootstrapMockRecorder {
 	return m.recorder
 }
 
-// AddRoleForUser mocks base method.
-func (m *MockbootstrapEnforcer) AddRoleForUser(user, role, arg2 string) error {
+// EnsureMember mocks base method.
+func (m *MockadminBootstrap) EnsureMember(ctx context.Context, email string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddRoleForUser", user, role, arg2)
+	ret := m.ctrl.Call(m, "EnsureMember", ctx, email)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// AddRoleForUser indicates an expected call of AddRoleForUser.
-func (mr *MockbootstrapEnforcerMockRecorder) AddRoleForUser(user, role, arg2 any) *gomock.Call {
+// EnsureMember indicates an expected call of EnsureMember.
+func (mr *MockadminBootstrapMockRecorder) EnsureMember(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRoleForUser", reflect.TypeOf((*MockbootstrapEnforcer)(nil).AddRoleForUser), user, role, arg2)
-}
-
-// GetRolesForUser mocks base method.
-func (m *MockbootstrapEnforcer) GetRolesForUser(user, arg1 string) ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRolesForUser", user, arg1)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRolesForUser indicates an expected call of GetRolesForUser.
-func (mr *MockbootstrapEnforcerMockRecorder) GetRolesForUser(user, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRolesForUser", reflect.TypeOf((*MockbootstrapEnforcer)(nil).GetRolesForUser), user, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureMember", reflect.TypeOf((*MockadminBootstrap)(nil).EnsureMember), ctx, email)
 }

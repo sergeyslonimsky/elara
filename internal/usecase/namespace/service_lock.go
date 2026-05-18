@@ -3,26 +3,12 @@ package namespace
 import (
 	"context"
 	"fmt"
-
-	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
+// Lock and Unlock toggle the lock flag on a namespace. Authorization
+// (namespace/write on `name`) is enforced at the handler boundary.
+
 func (s *Service) Lock(ctx context.Context, name string) error {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return domain.ErrUnauthorized
-	}
-
-	allowed, err := s.enforcer.Enforce(claims.Email, name, auth.ObjectNamespace, auth.ActionWrite)
-	if err != nil {
-		return fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return domain.ErrForbidden
-	}
-
 	if err := s.store.LockNamespace(ctx, name); err != nil {
 		return fmt.Errorf("lock namespace: %w", err)
 	}
@@ -33,20 +19,6 @@ func (s *Service) Lock(ctx context.Context, name string) error {
 }
 
 func (s *Service) Unlock(ctx context.Context, name string) error {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return domain.ErrUnauthorized
-	}
-
-	allowed, err := s.enforcer.Enforce(claims.Email, name, auth.ObjectNamespace, auth.ActionWrite)
-	if err != nil {
-		return fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return domain.ErrForbidden
-	}
-
 	if err := s.store.UnlockNamespace(ctx, name); err != nil {
 		return fmt.Errorf("unlock namespace: %w", err)
 	}

@@ -12,22 +12,22 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/transfer"
-	transfer_mock "github.com/sergeyslonimsky/elara/internal/usecase/transfer/mocks"
+	transfermock "github.com/sergeyslonimsky/elara/internal/usecase/transfer/mocks"
 )
 
 type mocks struct {
-	enforcer   *transfer_mock.Mockenforcer
-	configs    *transfer_mock.Mockconfigs
-	namespaces *transfer_mock.Mocknamespaces
+	enforcer   *transfermock.Mockenforcer
+	configs    *transfermock.Mockconfigs
+	namespaces *transfermock.Mocknamespaces
 }
 
 func setupService(t *testing.T, ctrl *gomock.Controller) (*transfer.Service, mocks) {
 	t.Helper()
 
 	m := mocks{
-		enforcer:   transfer_mock.NewMockenforcer(ctrl),
-		configs:    transfer_mock.NewMockconfigs(ctrl),
-		namespaces: transfer_mock.NewMocknamespaces(ctrl),
+		enforcer:   transfermock.NewMockenforcer(ctrl),
+		configs:    transfermock.NewMockconfigs(ctrl),
+		namespaces: transfermock.NewMocknamespaces(ctrl),
 	}
 
 	svc := transfer.New(m.enforcer, m.configs, m.namespaces)
@@ -35,8 +35,8 @@ func setupService(t *testing.T, ctrl *gomock.Controller) (*transfer.Service, moc
 	return svc, m
 }
 
-func transferTestCtx() context.Context {
-	return auth.WithClaims(context.Background(), &auth.Claims{Email: "test@example.com"})
+func transferTestCtx(ctx context.Context) context.Context {
+	return auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 }
 
 // readZipEntries reads a ZIP archive and returns a map of filename -> content.

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package elara.group.v1;
+
+import "elara/common/v1/permission.proto";
+import "google/protobuf/timestamp.proto";
+
+message Group {
+  string id = 1;
+  string name = 2;
+  repeated string members = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  // is_system flags built-in groups (e.g. `admins`) that the server protects
+  // from deletion, renaming, and removing their last member. Clients should
+  // disable destructive UI actions when this is true.
+  bool is_system = 6;
+  string description = 7;
+  int64 version = 8;
+  repeated elara.common.v1.PermissionAssignment permissions = 9;
+}

@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
+	"sort"
 	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
@@ -13,16 +15,14 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/util/archive"
 )
 
+const exportFileName = "elara-export-all"
+
 func (s *Service) ExportAll(
 	ctx context.Context,
 	asZip bool,
 	enc transferv1.BundleEncoding,
 	layout transferv1.ZipLayout,
 ) ([]byte, string, string, error) {
-	if err := auth.CheckAccess(ctx, s.enforcer, auth.ObjectAll, auth.ObjectTransfer, auth.ActionWrite); err != nil {
-		return nil, "", "", fmt.Errorf("check access: %w", err)
-	}
-
 	allBundle, err := s.buildAllBundle(ctx)
 	if err != nil {
 		return nil, "", "", err
@@ -34,7 +34,7 @@ func (s *Service) ExportAll(
 			return nil, "", "", err
 		}
 
-		return payload, contentTypeZIP, "elara-export-all.zip", nil
+		return payload, contentTypeZIP, exportFileName + "." + extZIP, nil
 	}
 
 	payload, ct, err := marshalBundle(allBundle, enc)
@@ -43,10 +43,10 @@ func (s *Service) ExportAll(
 	}
 
 	ext := bundleExtension(ct, asZip)
-	fname := "elara-export-all" + ext
+	fname := exportFileName + ext
 
 	if asZip {
-		innerName := "elara-export-all" + bundleExtension(ct, false)
+		innerName := exportFileName + bundleExtension(ct, false)
 
 		payload, err = archive.WrapInZip(innerName, payload)
 		if err != nil {
@@ -65,7 +65,7 @@ func (s *Service) ExportNamespace(
 	asZip bool,
 	enc transferv1.BundleEncoding,
 ) ([]byte, string, string, error) {
-	if err := auth.CheckAccess(ctx, s.enforcer, auth.ObjectAll, auth.ObjectTransfer, auth.ActionWrite); err != nil {
+	if err := auth.CheckAccess(ctx, s.enforcer, namespace, domain.ObjectConfig, domain.ActionRead); err != nil {
 		return nil, "", "", fmt.Errorf("check access: %w", err)
 	}
 
@@ -74,7 +74,7 @@ func (s *Service) ExportNamespace(
 		return nil, "", "", fmt.Errorf("get namespace: %w", err)
 	}
 
-	configs, err := s.configs.ListAllByNamespace(ctx, namespace)
+	configsByNS, err := s.configs.ListAllByNamespace(ctx, namespace)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("list configs: %w", err)
 	}
@@ -83,10 +83,10 @@ func (s *Service) ExportNamespace(
 		Namespace:   namespace,
 		Description: ns.Description,
 		ExportedAt:  time.Now().UTC(),
-		Configs:     make([]domain.BundleConfig, 0, len(configs)),
+		Configs:     make([]domain.BundleConfig, 0, len(configsByNS)),
 	}
 
-	for _, cfg := range configs {
+	for _, cfg := range configsByNS {
 		bundle.Configs = append(bundle.Configs, domain.BundleConfig{
 			Path:     cfg.Path,
 			Content:  cfg.Content,
@@ -94,6 +94,10 @@ func (s *Service) ExportNamespace(
 			Metadata: cfg.Metadata,
 		})
 	}
+
+	sort.Slice(bundle.Configs, func(i, j int) bool {
+		return bundle.Configs[i].Path < bundle.Configs[j].Path
+	})
 
 	payload, ct, err := marshalBundle(bundle, enc)
 	if err != nil {
@@ -118,7 +122,7 @@ func (s *Service) ExportNamespace(
 }
 
 func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) {
-	namespaces, err := s.namespaces.List(ctx)
+	ns, err := s.namespaces.List(ctx)
 	if err != nil {
 		return domain.AllBundle{}, fmt.Errorf("list namespaces: %w", err)
 	}
@@ -126,10 +130,14 @@ func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) 
 	exportedAt := time.Now().UTC()
 	allBundle := domain.AllBundle{
 		ExportedAt: exportedAt,
-		Namespaces: make([]domain.NamespaceBundle, 0, len(namespaces)),
+		Namespaces: make([]domain.NamespaceBundle, 0, len(ns)),
 	}
 
-	for _, ns := range namespaces {
+	for _, ns := range ns {
+		if err := auth.CheckAccess(ctx, s.enforcer, ns.Name, domain.ObjectConfig, domain.ActionRead); err != nil {
+			continue
+		}
+
 		nsBundle, err := s.buildNamespaceBundle(ctx, ns, exportedAt)
 		if err != nil {
 			return domain.AllBundle{}, err
@@ -137,6 +145,11 @@ func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) 
 
 		allBundle.Namespaces = append(allBundle.Namespaces, nsBundle)
 	}
+
+	// Deterministic order: API contract should not depend on storage iteration order.
+	sort.Slice(allBundle.Namespaces, func(i, j int) bool {
+		return allBundle.Namespaces[i].Namespace < allBundle.Namespaces[j].Namespace
+	})
 
 	return allBundle, nil
 }
@@ -167,6 +180,10 @@ func (s *Service) buildNamespaceBundle(
 		})
 	}
 
+	sort.Slice(nsBundle.Configs, func(i, j int) bool {
+		return nsBundle.Configs[i].Path < nsBundle.Configs[j].Path
+	})
+
 	return nsBundle, nil
 }
 
@@ -177,16 +194,28 @@ func marshalPerNamespaceZip(bundle domain.AllBundle, enc transferv1.BundleEncodi
 
 	for i := range bundle.Namespaces {
 		if err := writeZipNamespace(zw, &bundle.Namespaces[i], enc); err != nil {
+			if cErr := zw.Close(); cErr != nil {
+				slog.Error(
+					"close namespace zip writer",
+					slog.String("namespace", bundle.Namespaces[i].Namespace),
+					slog.Any("error", cErr),
+				)
+			}
+
 			return nil, err
 		}
 	}
 
 	if err := writeZipIndex(zw, bundle, enc); err != nil {
+		if cErr := zw.Close(); cErr != nil {
+			slog.Error("close index zip writer", slog.Any("error", cErr))
+		}
+
 		return nil, err
 	}
 
 	if err := zw.Close(); err != nil {
-		return nil, fmt.Errorf("close zip: %w", err)
+		slog.Error("close zip body", slog.Any("error", err))
 	}
 
 	return buf.Bytes(), nil

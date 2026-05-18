@@ -10,9 +10,8 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
-	webhook_mock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
+	webhookmock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
 )
 
 func TestService_Update(t *testing.T) {
@@ -38,8 +37,8 @@ func TestService_Update(t *testing.T) {
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhook_mock.NewMockenforcer(ctrl)
-				repo := webhook_mock.NewMockrepo(ctrl)
+				enf := webhookmock.NewMockenforcer(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{
 					ID:              "wh-1",
@@ -48,7 +47,9 @@ func TestService_Update(t *testing.T) {
 					Events:          []domain.WebhookEventType{domain.WebhookEventCreated},
 					Enabled:         true,
 				}, nil)
-				enf.EXPECT().Enforce("test@example.com", "prod", auth.ObjectWebhook, auth.ActionWrite).Return(true, nil)
+				enf.EXPECT().
+					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionWrite).
+					Return(true, nil)
 				repo.EXPECT().Update(ctx, gomock.Any()).Return(nil)
 
 				return webhookuc.New(enf, repo, nil), ctx
@@ -70,13 +71,15 @@ func TestService_Update(t *testing.T) {
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhook_mock.NewMockenforcer(ctrl)
-				repo := webhook_mock.NewMockrepo(ctrl)
+				enf := webhookmock.NewMockenforcer(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().
 					Get(ctx, "wh-1").
 					Return(&domain.Webhook{ID: "wh-1", URL: "https://old.com", Events: []domain.WebhookEventType{domain.WebhookEventCreated}}, nil)
-				enf.EXPECT().Enforce("test@example.com", "*", auth.ObjectWebhook, auth.ActionWrite).Return(true, nil)
+				enf.EXPECT().
+					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
+					Return(true, nil)
 
 				return webhookuc.New(enf, repo, nil), ctx
 			},
@@ -87,12 +90,12 @@ func TestService_Update(t *testing.T) {
 			id:   "wh-1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhook_mock.NewMockenforcer(ctrl)
-				repo := webhook_mock.NewMockrepo(ctrl)
+				enf := webhookmock.NewMockenforcer(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
 				enf.EXPECT().
-					Enforce("test@example.com", "prod", auth.ObjectWebhook, auth.ActionWrite).
+					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionWrite).
 					Return(false, nil)
 
 				return webhookuc.New(enf, repo, nil), ctx
@@ -104,7 +107,7 @@ func TestService_Update(t *testing.T) {
 			id:   "wh-1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				repo := webhook_mock.NewMockrepo(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(nil, domain.ErrNotFound)
 
@@ -121,13 +124,15 @@ func TestService_Update(t *testing.T) {
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhook_mock.NewMockenforcer(ctrl)
-				repo := webhook_mock.NewMockrepo(ctrl)
+				enf := webhookmock.NewMockenforcer(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().
 					Get(ctx, "wh-1").
 					Return(&domain.Webhook{ID: "wh-1", URL: "https://old.com", Events: []domain.WebhookEventType{domain.WebhookEventCreated}}, nil)
-				enf.EXPECT().Enforce("test@example.com", "*", auth.ObjectWebhook, auth.ActionWrite).Return(true, nil)
+				enf.EXPECT().
+					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
+					Return(true, nil)
 				repo.EXPECT().Update(ctx, gomock.Any()).Return(errors.New("db error"))
 
 				return webhookuc.New(enf, repo, nil), ctx

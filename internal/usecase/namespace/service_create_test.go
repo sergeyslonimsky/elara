@@ -10,8 +10,10 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
+
+// Authorization (namespace/write at DomainAll) is enforced by the RBAC
+// interceptor; this test covers the remaining usecase logic only.
 
 func TestService_Create(t *testing.T) {
 	t.Parallel()
@@ -20,19 +22,16 @@ func TestService_Create(t *testing.T) {
 		name     string
 		input    *domain.Namespace
 		mockFunc func(ctx context.Context, m mocks) context.Context
-		errIs    error
 		wantErr  string
 		want     *domain.Namespace
 	}{
 		{
-			name: "success",
-			input: &domain.Namespace{
-				Name: "prod",
-			},
+			name:  "success",
+			input: &domain.Namespace{Name: "prod"},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-
-				m.enforcer.EXPECT().Enforce("admin@example.com", "*", "namespace", "write").Return(true, nil)
+				m.authz.EXPECT().
+					Require(ctx, domain.ObjectNamespace, domain.ActionWrite, domain.DomainAll).
+					Return(nil)
 				m.store.EXPECT().Create(ctx, gomock.Any()).Return(nil)
 				m.store.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
 
@@ -41,30 +40,12 @@ func TestService_Create(t *testing.T) {
 			want: &domain.Namespace{Name: "prod"},
 		},
 		{
-			name:  "unauthorized",
-			input: &domain.Namespace{Name: "prod"},
-			mockFunc: func(ctx context.Context, _ mocks) context.Context {
-				return ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
-			name:  "forbidden",
-			input: &domain.Namespace{Name: "prod"},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().Enforce("user@example.com", "*", "namespace", "write").Return(false, nil)
-
-				return ctx
-			},
-			errIs: domain.ErrForbidden,
-		},
-		{
 			name:  "validation error",
 			input: &domain.Namespace{Name: ""},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().Enforce("admin@example.com", "*", "namespace", "write").Return(true, nil)
+				m.authz.EXPECT().
+					Require(ctx, domain.ObjectNamespace, domain.ActionWrite, domain.DomainAll).
+					Return(nil)
 
 				return ctx
 			},
@@ -74,8 +55,9 @@ func TestService_Create(t *testing.T) {
 			name:  "create error",
 			input: &domain.Namespace{Name: "prod"},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().Enforce("admin@example.com", "*", "namespace", "write").Return(true, nil)
+				m.authz.EXPECT().
+					Require(ctx, domain.ObjectNamespace, domain.ActionWrite, domain.DomainAll).
+					Return(nil)
 				m.store.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("db error"))
 
 				return ctx
@@ -93,11 +75,6 @@ func TestService_Create(t *testing.T) {
 
 			got, err := svc.Create(ctx, tt.input)
 
-			if tt.errIs != nil {
-				require.ErrorIs(t, err, tt.errIs)
-
-				return
-			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
 

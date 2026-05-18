@@ -10,11 +10,13 @@ import (
 	bolt "go.etcd.io/bbolt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
 // GroupRepo stores and retrieves auth groups in bbolt.
 type GroupRepo struct {
 	store *Store
+	tx    storage.Tx
 }
 
 // NewGroupRepo creates a new GroupRepo backed by the given Store.
@@ -22,9 +24,37 @@ func NewGroupRepo(store *Store) *GroupRepo {
 	return &GroupRepo{store: store}
 }
 
+// WithTx returns a new GroupRepo that uses the provided transaction.
+func (r *GroupRepo) WithTx(tx storage.Tx) *GroupRepo {
+	return &GroupRepo{
+		store: r.store,
+		tx:    tx,
+	}
+}
+
+func (r *GroupRepo) view(fn func(storage.Tx) error) error {
+	if r.tx != nil {
+		return fn(r.tx)
+	}
+
+	return r.store.db.View(func(tx *bolt.Tx) error {
+		return fn(&txWrapper{tx: tx})
+	})
+}
+
+func (r *GroupRepo) update(fn func(storage.Tx) error) error {
+	if r.tx != nil {
+		return fn(r.tx)
+	}
+
+	return r.store.db.Update(func(tx *bolt.Tx) error {
+		return fn(&txWrapper{tx: tx})
+	})
+}
+
 // Create stores a new group. Returns domain.ErrAlreadyExists if the ID is already taken.
 func (r *GroupRepo) Create(_ context.Context, group *domain.Group) error {
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
+	err := r.update(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
 		key := []byte(group.ID)
 
@@ -35,6 +65,9 @@ func (r *GroupRepo) Create(_ context.Context, group *domain.Group) error {
 		now := time.Now()
 		group.CreatedAt = now
 		group.UpdatedAt = now
+		if group.Version == 0 {
+			group.Version = 1
+		}
 
 		data, err := json.Marshal(domainToAuthGroupMeta(group))
 		if err != nil {
@@ -54,7 +87,7 @@ func (r *GroupRepo) Create(_ context.Context, group *domain.Group) error {
 func (r *GroupRepo) Get(_ context.Context, id string) (*domain.Group, error) {
 	var group *domain.Group
 
-	err := r.store.db.View(func(tx *bolt.Tx) error {
+	err := r.view(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
 		data := b.Get([]byte(id))
 
@@ -80,7 +113,7 @@ func (r *GroupRepo) Get(_ context.Context, id string) (*domain.Group, error) {
 
 // Update replaces a group's Name and Members. Returns domain.ErrNotFound if missing.
 func (r *GroupRepo) Update(_ context.Context, group *domain.Group) error {
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
+	err := r.update(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
 		key := []byte(group.ID)
 		data := b.Get(key)
@@ -95,13 +128,16 @@ func (r *GroupRepo) Update(_ context.Context, group *domain.Group) error {
 		}
 
 		existing.Name = group.Name
+		existing.Description = group.Description
 		existing.Members = group.Members
+		existing.Version = group.Version
 		existing.UpdatedAt = time.Now()
 
 		group.CreatedAt = existing.CreatedAt
 		group.UpdatedAt = existing.UpdatedAt
+		group.System = existing.System
 
-		newData, err := json.Marshal(&existing)
+		newData, err := json.Marshal(existing)
 		if err != nil {
 			return fmt.Errorf("marshal group: %w", err)
 		}
@@ -117,7 +153,7 @@ func (r *GroupRepo) Update(_ context.Context, group *domain.Group) error {
 
 // Delete removes the group with the given ID. Returns domain.ErrNotFound if missing.
 func (r *GroupRepo) Delete(_ context.Context, id string) error {
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
+	err := r.update(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
 		key := []byte(id)
 
@@ -141,7 +177,7 @@ var errFound = errors.New("found") // sentinel for early ForEach exit
 func (r *GroupRepo) FindByName(_ context.Context, name string) (*domain.Group, error) {
 	var found *domain.Group
 
-	err := r.store.db.View(func(tx *bolt.Tx) error {
+	err := r.view(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
 
 		return b.ForEach(func(_, v []byte) error {
@@ -174,7 +210,7 @@ func (r *GroupRepo) FindByName(_ context.Context, name string) (*domain.Group, e
 func (r *GroupRepo) List(_ context.Context) ([]*domain.Group, error) {
 	var groups []*domain.Group
 
-	err := r.store.db.View(func(tx *bolt.Tx) error {
+	err := r.view(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
 
 		return b.ForEach(func(_, v []byte) error {

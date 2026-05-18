@@ -79,7 +79,7 @@ func TestHistoryStore_Record(t *testing.T) {
 			sut, _ := tt.mockFunc(t.Context(), ctrl)
 
 			sut.Record(snap)
-			sut.Shutdown()
+			require.NoError(t, sut.Shutdown(t.Context()))
 		})
 	}
 }
@@ -102,7 +102,7 @@ func TestHistoryStore_Record_NonBlocking(t *testing.T) {
 	sut := monitor.NewHistoryStore(t.Context(), monitor.HistoryConfig{BufferSize: 1}, repo)
 	t.Cleanup(func() {
 		close(block)
-		sut.Shutdown()
+		require.NoError(t, sut.Shutdown(context.Background()))
 	})
 
 	// 1st Record: picked up by run(), blocks in Save
@@ -144,22 +144,23 @@ func TestHistoryStore_Shutdown(t *testing.T) {
 		for range 5 {
 			sut.Record(&domain.Client{ID: "x"})
 		}
-		sut.Shutdown()
+
+		require.NoError(t, sut.Shutdown(t.Context()))
 	})
 
 	t.Run("idempotent", func(t *testing.T) {
 		t.Parallel()
 		repo := mockmonitor.NewMockClientHistoryRepo(gomock.NewController(t))
 		sut := monitor.NewHistoryStore(t.Context(), monitor.HistoryConfig{}, repo)
-		sut.Shutdown()
-		sut.Shutdown()
+		require.NoError(t, sut.Shutdown(t.Context()))
+		require.NoError(t, sut.Shutdown(t.Context()))
 	})
 
 	t.Run("prevents new records", func(t *testing.T) {
 		t.Parallel()
 		repo := mockmonitor.NewMockClientHistoryRepo(gomock.NewController(t))
 		sut := monitor.NewHistoryStore(t.Context(), monitor.HistoryConfig{}, repo)
-		sut.Shutdown()
+		require.NoError(t, sut.Shutdown(t.Context()))
 
 		// Should not call repo
 		sut.Record(&domain.Client{ID: "x"})
@@ -206,7 +207,7 @@ func TestHistoryStore_List(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			sut, ctx := tt.mockFunc(t.Context(), ctrl)
-			defer sut.Shutdown()
+			defer require.NoError(t, sut.Shutdown(t.Context()))
 
 			got, err := sut.List(ctx, tt.limit)
 
@@ -267,7 +268,7 @@ func TestHistoryStore_ListByClient(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			sut, ctx := tt.mockFunc(t.Context(), ctrl)
-			defer sut.Shutdown()
+			defer func() { require.NoError(t, sut.Shutdown(context.Background())) }()
 
 			got, err := sut.ListByClient(ctx, tt.client, tt.namespace, tt.limit)
 

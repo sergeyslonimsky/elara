@@ -37,19 +37,26 @@ type usecase interface {
 }
 
 type Handler struct {
-	uc usecase
-
-	// snapshotInterval is overridable for tests. Zero → defaultWatchSnapshotInterval.
+	uc               usecase
 	snapshotInterval time.Duration
 }
 
-func New(uc usecase) *Handler {
-	return &Handler{uc: uc}
+// Option configures a Handler. Pass to NewHandler.
+type Option func(*Handler)
+
+// WithSnapshotInterval sets how often WatchClients/WatchClient emit a
+// SNAPSHOT frame. Zero or negative falls back to defaultWatchSnapshotInterval.
+// Production use: tune heartbeat for chatty/quiet streams. Tests: shorten to
+// drive ticker assertions, or set very long to suppress ticker entirely.
+func WithSnapshotInterval(d time.Duration) Option {
+	return func(h *Handler) { h.snapshotInterval = d }
 }
 
-// WithSnapshotInterval overrides the WatchClients tick interval. Useful in tests.
-func (h *Handler) WithSnapshotInterval(d time.Duration) *Handler {
-	h.snapshotInterval = d
+func NewHandler(uc usecase, opts ...Option) *Handler {
+	h := &Handler{uc: uc}
+	for _, opt := range opts {
+		opt(h)
+	}
 
 	return h
 }

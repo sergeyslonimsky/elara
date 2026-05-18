@@ -13,6 +13,7 @@ import (
 	clientshandler "github.com/sergeyslonimsky/elara/internal/handler/v2/clients"
 	confighandler "github.com/sergeyslonimsky/elara/internal/handler/v2/config"
 	dashboardhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/dashboard"
+	grouphandler "github.com/sergeyslonimsky/elara/internal/handler/v2/group"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/interceptor"
 	namespacehandler "github.com/sergeyslonimsky/elara/internal/handler/v2/namespace"
 	profilehandler "github.com/sergeyslonimsky/elara/internal/handler/v2/profile"
@@ -25,6 +26,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/clients/v1/clientsv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1/configv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/dashboard/v1/dashboardv1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/group/v1/groupv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/namespace/v1/namespacev1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1/profilev1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/token/v1/tokenv1connect"
@@ -35,7 +37,7 @@ import (
 )
 
 type V2Handlers struct {
-	Config    *confighandler.Handler
+	Config    *confighandler.ConfigHandler
 	Schema    *confighandler.SchemaHandler
 	Namespace *namespacehandler.Handler
 	Clients   *clientshandler.Handler
@@ -45,7 +47,7 @@ type V2Handlers struct {
 	Auth      *authhandler.Handler
 	Profile   *profilehandler.Handler
 	Users     *userhandler.Handler
-	Groups    *accesshandler.GroupHandler
+	Groups    *grouphandler.Handler
 	Access    *accesshandler.AccessHandler
 	Tokens    *tokenhandler.Handler
 }
@@ -61,17 +63,17 @@ func NewV2Handlers(s *Services, cfg config.Config) *V2Handlers {
 }
 
 func initCoreHandlers(handlers *V2Handlers, s *Services) {
-	handlers.Config = confighandler.New(s.Config)
+	handlers.Config = confighandler.NewConfigHandler(s.Config)
 	handlers.Schema = confighandler.NewSchemaHandler(s.Schema)
 	handlers.Namespace = namespacehandler.New(s.Namespace)
-	handlers.Clients = clientshandler.New(s.Clients)
+	handlers.Clients = clientshandler.NewHandler(s.Clients)
 	handlers.Dashboard = dashboardhandler.New(s.Dashboard)
 	handlers.Transfer = transferhandler.New(s.Transfer)
 	handlers.Webhook = webhookhandler.New(s.Webhook)
 }
 
 func initAuthHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
-	handlers.Auth = authhandler.New(
+	handlers.Auth = authhandler.NewHandler(
 		s.Auth,
 		cfg.UI.Auth.Type,
 		cfg.UI.Auth.Session.SecureCookie,
@@ -93,7 +95,7 @@ func initIAMHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
 	}
 
 	handlers.Users = userhandler.New(s.User, cfg.UI.Auth.Type)
-	handlers.Groups = accesshandler.NewGroupHandler(s.Group)
+	handlers.Groups = grouphandler.NewHandler(s.Group)
 	handlers.Access = accesshandler.NewAccessHandler(s.Policy)
 }
 
@@ -153,7 +155,7 @@ func V2Routes(server server, handlers *V2Handlers, sessionManager *auth.SessionM
 	}
 
 	if handlers.Groups != nil {
-		path, handler = accessv1connect.NewGroupServiceHandler(handlers.Groups, privateOpts)
+		path, handler = groupv1connect.NewGroupServiceHandler(handlers.Groups, privateOpts)
 		server.Mount(path, handler)
 	}
 

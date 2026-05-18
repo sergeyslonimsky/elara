@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
@@ -13,7 +14,7 @@ type UnlockInput struct {
 }
 
 func (s *Service) Unlock(ctx context.Context, in UnlockInput) error {
-	if err := auth.CheckAccess(ctx, s.enforcer, in.Namespace, auth.ObjectConfig, auth.ActionWrite); err != nil {
+	if err := auth.CheckAccess(ctx, s.enforcer, in.Namespace, domain.ObjectConfig, domain.ActionWrite); err != nil {
 		return fmt.Errorf("check access: %w", err)
 	}
 

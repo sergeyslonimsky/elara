@@ -10,7 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	webhook_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/webhook/mocks"
+	webhookmock "github.com/sergeyslonimsky/elara/internal/handler/v2/webhook/mocks"
 	webhookv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/webhook/v1"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
 )
@@ -34,7 +34,7 @@ func TestHandler_CreateWebhook(t *testing.T) {
 				Enabled:         true,
 			},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
 					Return(&domain.Webhook{
 						ID:              "gen-id",
@@ -54,7 +54,7 @@ func TestHandler_CreateWebhook(t *testing.T) {
 				Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
 			},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
 					Return(nil, domain.NewValidationError("url", "url is required"))
 
@@ -68,7 +68,7 @@ func TestHandler_CreateWebhook(t *testing.T) {
 				Url: "https://example.com/hook",
 			},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
 					Return(nil, domain.NewValidationError("events", "at least one event is required"))
 
@@ -114,7 +114,7 @@ func TestHandler_GetWebhook(t *testing.T) {
 			name: "success",
 			id:   "wh-1",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Get(gomock.Any(), "wh-1").Return(&domain.Webhook{
 					ID:              "wh-1",
 					URL:             "https://example.com/hook",
@@ -128,7 +128,7 @@ func TestHandler_GetWebhook(t *testing.T) {
 			name: "not found",
 			id:   "missing",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Get(gomock.Any(), "missing").Return(nil, domain.ErrNotFound)
 
 				return New(uc)
@@ -177,7 +177,7 @@ func TestHandler_UpdateWebhook(t *testing.T) {
 				Enabled: false,
 			},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Update(gomock.Any(), "wh-1", webhookuc.UpdateParams{
 						URL:     "https://new.example.com/hook",
@@ -202,7 +202,7 @@ func TestHandler_UpdateWebhook(t *testing.T) {
 				Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
 			},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Update(gomock.Any(), "missing", gomock.Any()).Return(nil, domain.ErrNotFound)
 
 				return New(uc)
@@ -247,7 +247,7 @@ func TestHandler_DeleteWebhook(t *testing.T) {
 			name: "success",
 			id:   "wh-1",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Delete(gomock.Any(), "wh-1").Return(nil)
 
 				return New(uc)
@@ -257,7 +257,7 @@ func TestHandler_DeleteWebhook(t *testing.T) {
 			name: "not found",
 			id:   "missing",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Delete(gomock.Any(), "missing").Return(domain.ErrNotFound)
 
 				return New(uc)
@@ -298,7 +298,7 @@ func TestHandler_ListWebhooks(t *testing.T) {
 		{
 			name: "success empty",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{}, nil)
 
 				return New(uc)
@@ -308,7 +308,7 @@ func TestHandler_ListWebhooks(t *testing.T) {
 		{
 			name: "success populated",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 					{ID: "wh-1", URL: "https://a.com", NamespaceFilter: "prod"},
 					{ID: "wh-2", URL: "https://b.com", NamespaceFilter: "dev"},
@@ -360,7 +360,7 @@ func TestHandler_GetDeliveryHistory(t *testing.T) {
 			name: "success",
 			id:   "wh-1",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().GetHistory(gomock.Any(), "wh-1").Return(attempts, nil)
 
 				return New(uc)
@@ -370,7 +370,7 @@ func TestHandler_GetDeliveryHistory(t *testing.T) {
 			name: "not found",
 			id:   "unknown",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhook_mock.NewMockusecase(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().GetHistory(gomock.Any(), "unknown").Return(nil, domain.ErrNotFound)
 
 				return New(uc)

@@ -23,6 +23,13 @@ test: test-go test-react
 test-go:
 	@go tool gotestsum --hide-summary=output -- -race -count=1 -shuffle=on ./...
 
+.PHONY: test-integration
+test-integration:
+	@go tool gotestsum --hide-summary=output -- -race -count=1 -shuffle=on -tags=integration ./...
+
+.PHONY: test-all
+test-all: test-react test-integration
+
 .PHONY: test-react
 test-react:
 	@npm --prefix ./web run test

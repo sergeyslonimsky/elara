@@ -138,15 +138,21 @@ func (s *HistoryStore) ListByClient(
 }
 
 // Shutdown signals the writer to exit, drains the in-flight queue, and waits
-// for the background goroutine to finish.
-func (s *HistoryStore) Shutdown() {
+// for the background goroutine to finish. Implements lifecycle.Resource.
+func (s *HistoryStore) Shutdown(ctx context.Context) error {
 	s.stopOnce.Do(func() {
 		s.mu.Lock()
 		s.shutdown = true
 		close(s.in)
 		s.mu.Unlock()
 	})
-	<-s.done
+
+	select {
+	case <-s.done:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("history store shutdown: %w", ctx.Err())
+	}
 }
 
 // run is the single writer goroutine.

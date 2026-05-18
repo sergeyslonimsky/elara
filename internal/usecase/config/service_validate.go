@@ -19,7 +19,7 @@ type ValidateInput struct {
 func (s *Service) Validate(ctx context.Context, in ValidateInput) (*domain.ValidationResult, error) {
 	// Only enforce when namespace is provided (schema validation path).
 	if in.Namespace != "" {
-		if err := auth.CheckAccess(ctx, s.enforcer, in.Namespace, auth.ObjectConfig, auth.ActionRead); err != nil {
+		if err := auth.CheckAccess(ctx, s.enforcer, in.Namespace, domain.ObjectConfig, domain.ActionRead); err != nil {
 			return nil, fmt.Errorf("check access: %w", err)
 		}
 	} else if _, ok := auth.ClaimsFromContext(ctx); !ok {

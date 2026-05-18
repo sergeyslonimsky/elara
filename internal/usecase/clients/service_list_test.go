@@ -30,7 +30,7 @@ func TestService_ListActive(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.active.EXPECT().ListActive().Return([]*domain.Client{
@@ -100,7 +100,7 @@ func TestService_ListHistorical(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.history.EXPECT().List(ctx, 100).Return([]*domain.Client{
@@ -119,7 +119,7 @@ func TestService_ListHistorical(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.history.EXPECT().List(ctx, 5).Return([]*domain.Client{
@@ -138,7 +138,7 @@ func TestService_ListHistorical(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.history.EXPECT().List(ctx, 10).Return(nil, errors.New("db error"))
@@ -197,7 +197,7 @@ func TestService_ListSessions(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.history.EXPECT().ListByClient(ctx, "order-service", "prod", 51).Return([]*domain.Client{
@@ -220,7 +220,7 @@ func TestService_ListSessions(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.history.EXPECT().ListByClient(ctx, "order-service", "prod", 51).Return([]*domain.Client{
@@ -240,7 +240,7 @@ func TestService_ListSessions(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				return ctx
@@ -256,7 +256,7 @@ func TestService_ListSessions(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.history.EXPECT().ListByClient(ctx, "order-service", "prod", 3).Return([]*domain.Client{
@@ -279,7 +279,7 @@ func TestService_ListSessions(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.history.EXPECT().ListByClient(ctx, "order-service", "prod", 51).Return(nil, errors.New("db error"))

@@ -40,17 +40,19 @@ func TestService_Me(t *testing.T) {
 				m.ns.EXPECT().List(ctx).Return(namespaces, nil)
 
 				// Namespace "prod"
-				m.enforcer.EXPECT().Enforce(email, "prod", auth.ObjectConfig, auth.ActionRead).Return(true, nil)
-				m.enforcer.EXPECT().Enforce(email, "prod", auth.ObjectConfig, auth.ActionWrite).Return(true, nil)
-				m.enforcer.EXPECT().Enforce(email, "prod", auth.ObjectWebhook, auth.ActionRead).Return(true, nil)
+				m.enforcer.EXPECT().Enforce(email, "prod", domain.ObjectConfig, domain.ActionRead).Return(true, nil)
+				m.enforcer.EXPECT().Enforce(email, "prod", domain.ObjectConfig, domain.ActionWrite).Return(true, nil)
+				m.enforcer.EXPECT().Enforce(email, "prod", domain.ObjectWebhook, domain.ActionRead).Return(true, nil)
 
 				// Namespace "stage"
-				m.enforcer.EXPECT().Enforce(email, "stage", auth.ObjectConfig, auth.ActionRead).Return(true, nil)
-				m.enforcer.EXPECT().Enforce(email, "stage", auth.ObjectConfig, auth.ActionWrite).Return(false, nil)
+				m.enforcer.EXPECT().Enforce(email, "stage", domain.ObjectConfig, domain.ActionRead).Return(true, nil)
+				m.enforcer.EXPECT().Enforce(email, "stage", domain.ObjectConfig, domain.ActionWrite).Return(false, nil)
 
-				m.enforcer.EXPECT().Enforce(email, auth.ObjectAll, auth.ObjectUser, auth.ActionRead).Return(true, nil)
 				m.enforcer.EXPECT().
-					Enforce(email, auth.ObjectAll, auth.ObjectWebhook, auth.ActionWrite).
+					Enforce(email, domain.DomainAll, domain.ObjectUser, domain.ActionRead).
+					Return(true, nil)
+				m.enforcer.EXPECT().
+					Enforce(email, domain.DomainAll, domain.ObjectWebhook, domain.ActionWrite).
 					Return(true, nil)
 
 				return svc, ctx
@@ -76,16 +78,18 @@ func TestService_Me(t *testing.T) {
 				m.ns.EXPECT().List(ctx).Return(namespaces, nil)
 
 				// Namespace "prod" - no read access
-				m.enforcer.EXPECT().Enforce(email, "prod", auth.ObjectConfig, auth.ActionRead).Return(false, nil)
+				m.enforcer.EXPECT().Enforce(email, "prod", domain.ObjectConfig, domain.ActionRead).Return(false, nil)
 
 				// Namespace "stage" - read only
-				m.enforcer.EXPECT().Enforce(email, "stage", auth.ObjectConfig, auth.ActionRead).Return(true, nil)
-				m.enforcer.EXPECT().Enforce(email, "stage", auth.ObjectConfig, auth.ActionWrite).Return(false, nil)
-				m.enforcer.EXPECT().Enforce(email, "stage", auth.ObjectWebhook, auth.ActionRead).Return(false, nil)
+				m.enforcer.EXPECT().Enforce(email, "stage", domain.ObjectConfig, domain.ActionRead).Return(true, nil)
+				m.enforcer.EXPECT().Enforce(email, "stage", domain.ObjectConfig, domain.ActionWrite).Return(false, nil)
+				m.enforcer.EXPECT().Enforce(email, "stage", domain.ObjectWebhook, domain.ActionRead).Return(false, nil)
 
-				m.enforcer.EXPECT().Enforce(email, auth.ObjectAll, auth.ObjectUser, auth.ActionRead).Return(false, nil)
 				m.enforcer.EXPECT().
-					Enforce(email, auth.ObjectAll, auth.ObjectWebhook, auth.ActionWrite).
+					Enforce(email, domain.DomainAll, domain.ObjectUser, domain.ActionRead).
+					Return(false, nil)
+				m.enforcer.EXPECT().
+					Enforce(email, domain.DomainAll, domain.ObjectWebhook, domain.ActionWrite).
 					Return(false, nil)
 
 				return svc, ctx

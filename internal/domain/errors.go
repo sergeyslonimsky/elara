@@ -6,12 +6,14 @@ import (
 )
 
 var (
-	ErrNotFound       = errors.New("not found")
-	ErrAlreadyExists  = errors.New("already exists")
-	ErrConflict       = errors.New("version conflict")
-	ErrInvalidFormat  = errors.New("invalid format")
-	ErrInvalidContent = errors.New("invalid content")
-	ErrLocked         = errors.New("config is locked")
+	ErrNotFound             = errors.New("not found")
+	ErrAlreadyExists        = errors.New("already exists")
+	ErrVersionConflict      = errors.New("version conflict")
+	ErrSystemImmutable      = errors.New("system entity is immutable")
+	ErrPermissionEscalation = errors.New("permission escalation")
+	ErrInvalidFormat        = errors.New("invalid format")
+	ErrInvalidContent       = errors.New("invalid content")
+	ErrLocked               = errors.New("config is locked")
 	// ErrNamespaceLocked wraps ErrLocked so callers can attribute the cause
 	// (e.g. for metrics) while still matching errors.Is(err, ErrLocked).
 	ErrNamespaceLocked        = fmt.Errorf("namespace is locked: %w", ErrLocked)
@@ -62,5 +64,5 @@ func NewAlreadyExistsError(resource, identifier string) error {
 }
 
 func NewConflictError(expected, actual int64) error {
-	return fmt.Errorf("expected version %d, got %d: %w", expected, actual, ErrConflict)
+	return fmt.Errorf("expected version %d, got %d: %w", expected, actual, ErrVersionConflict)
 }

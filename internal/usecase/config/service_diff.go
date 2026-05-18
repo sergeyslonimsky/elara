@@ -26,7 +26,7 @@ func (s *Service) Diff(ctx context.Context, in DiffInput) (*domain.ConfigDiff, e
 		return nil, fmt.Errorf("validate: %w", err)
 	}
 
-	if err := auth.CheckAccess(ctx, s.enforcer, in.Namespace, auth.ObjectConfig, auth.ActionRead); err != nil {
+	if err := auth.CheckAccess(ctx, s.enforcer, in.Namespace, domain.ObjectConfig, domain.ActionRead); err != nil {
 		return nil, fmt.Errorf("check access: %w", err)
 	}
 

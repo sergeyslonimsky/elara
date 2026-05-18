@@ -6,65 +6,34 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
+
+// Authorization is enforced at the handler boundary; these tests cover only
+// the business behaviour of Lock and Unlock.
 
 func TestService_Lock(t *testing.T) {
 	t.Parallel()
 
+	const name = "prod"
+
 	tests := []struct {
 		name     string
-		nsName   string
 		mockFunc func(ctx context.Context, m mocks) context.Context
-		errIs    error
 		wantErr  string
 	}{
 		{
-			name:   "success",
-			nsName: "prod",
+			name: "success notifies after store update",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "prod", auth.ObjectNamespace, auth.ActionWrite).
-					Return(true, nil)
-				m.store.EXPECT().LockNamespace(ctx, "prod").Return(nil)
-				m.notifier.EXPECT().NotifyNamespaceLocked(ctx, "prod")
+				m.store.EXPECT().LockNamespace(ctx, name).Return(nil)
+				m.notifier.EXPECT().NotifyNamespaceLocked(ctx, name)
 
 				return ctx
 			},
 		},
 		{
-			name:   "unauthorized",
-			nsName: "prod",
-			mockFunc: func(ctx context.Context, _ mocks) context.Context {
-				return ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
-			name:   "forbidden",
-			nsName: "prod",
+			name: "store error skips notify",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectNamespace, auth.ActionWrite).
-					Return(false, nil)
-
-				return ctx
-			},
-			errIs: domain.ErrForbidden,
-		},
-		{
-			name:   "store error",
-			nsName: "prod",
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "prod", auth.ObjectNamespace, auth.ActionWrite).
-					Return(true, nil)
-				m.store.EXPECT().LockNamespace(ctx, "prod").Return(errors.New("db error"))
+				m.store.EXPECT().LockNamespace(ctx, name).Return(errors.New("db error"))
 
 				return ctx
 			},
@@ -79,13 +48,8 @@ func TestService_Lock(t *testing.T) {
 			svc, m, _ := setupService(t)
 			ctx := tt.mockFunc(t.Context(), m)
 
-			err := svc.Lock(ctx, tt.nsName)
+			err := svc.Lock(ctx, name)
 
-			if tt.errIs != nil {
-				require.ErrorIs(t, err, tt.errIs)
-
-				return
-			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
 
@@ -99,57 +63,26 @@ func TestService_Lock(t *testing.T) {
 func TestService_Unlock(t *testing.T) {
 	t.Parallel()
 
+	const name = "prod"
+
 	tests := []struct {
 		name     string
-		nsName   string
 		mockFunc func(ctx context.Context, m mocks) context.Context
-		errIs    error
 		wantErr  string
 	}{
 		{
-			name:   "success",
-			nsName: "prod",
+			name: "success notifies after store update",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "prod", auth.ObjectNamespace, auth.ActionWrite).
-					Return(true, nil)
-				m.store.EXPECT().UnlockNamespace(ctx, "prod").Return(nil)
-				m.notifier.EXPECT().NotifyNamespaceUnlocked(ctx, "prod")
+				m.store.EXPECT().UnlockNamespace(ctx, name).Return(nil)
+				m.notifier.EXPECT().NotifyNamespaceUnlocked(ctx, name)
 
 				return ctx
 			},
 		},
 		{
-			name:   "unauthorized",
-			nsName: "prod",
-			mockFunc: func(ctx context.Context, _ mocks) context.Context {
-				return ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
-			name:   "forbidden",
-			nsName: "prod",
+			name: "store error skips notify",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectNamespace, auth.ActionWrite).
-					Return(false, nil)
-
-				return ctx
-			},
-			errIs: domain.ErrForbidden,
-		},
-		{
-			name:   "store error",
-			nsName: "prod",
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "prod", auth.ObjectNamespace, auth.ActionWrite).
-					Return(true, nil)
-				m.store.EXPECT().UnlockNamespace(ctx, "prod").Return(errors.New("db error"))
+				m.store.EXPECT().UnlockNamespace(ctx, name).Return(errors.New("db error"))
 
 				return ctx
 			},
@@ -164,13 +97,8 @@ func TestService_Unlock(t *testing.T) {
 			svc, m, _ := setupService(t)
 			ctx := tt.mockFunc(t.Context(), m)
 
-			err := svc.Unlock(ctx, tt.nsName)
+			err := svc.Unlock(ctx, name)
 
-			if tt.errIs != nil {
-				require.ErrorIs(t, err, tt.errIs)
-
-				return
-			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
 

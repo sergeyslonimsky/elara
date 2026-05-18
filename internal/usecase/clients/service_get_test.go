@@ -30,7 +30,7 @@ func TestService_Get(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.active.EXPECT().Get("active-id").Return(&domain.Client{ID: "active-id"})
@@ -47,7 +47,7 @@ func TestService_Get(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.active.EXPECT().Get("historical-id").Return(nil)
@@ -67,7 +67,7 @@ func TestService_Get(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.active.EXPECT().Get("missing-id").Return(nil)
@@ -87,7 +87,7 @@ func TestService_Get(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				m.active.EXPECT().Get("some-id").Return(nil)

@@ -39,7 +39,7 @@ func TestPublisher_NotifyCreated_DeliversEvent(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	events, cleanup := p.Subscribe(ctx, "", "default")
@@ -66,7 +66,7 @@ func TestPublisher_NotifyUpdated_DeliversEvent(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	events, cleanup := p.Subscribe(ctx, "", "default")
@@ -85,7 +85,7 @@ func TestPublisher_NotifyDeleted_CarriesRevision(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	events, cleanup := p.Subscribe(ctx, "", "default")
@@ -105,7 +105,7 @@ func TestPublisher_NamespaceFilter(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	events, cleanup := p.Subscribe(ctx, "", "default")
@@ -124,7 +124,7 @@ func TestPublisher_PathPrefixFilter(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	events, cleanup := p.Subscribe(ctx, "/services/", "default")
@@ -143,7 +143,7 @@ func TestPublisher_EmptyFilters_MatchEverything(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	events, cleanup := p.Subscribe(ctx, "", "")
@@ -166,7 +166,7 @@ func TestPublisher_Cleanup_IsIdempotent(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	events, cleanup := p.Subscribe(ctx, "", "ns")
@@ -183,7 +183,7 @@ func TestPublisher_Cleanup_UnsubscribesFromFurtherNotifications(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	events, cleanup := p.Subscribe(ctx, "", "ns")
@@ -202,7 +202,7 @@ func TestPublisher_MultipleSubscribers_IndependentDelivery(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 
@@ -235,7 +235,7 @@ func TestPublisher_Shutdown_ClosesAllSubscribers(t *testing.T) {
 	ctx := context.Background()
 	ev, _ := p.Subscribe(ctx, "", "ns")
 
-	p.Shutdown()
+	require.NoError(t, p.Shutdown(t.Context()))
 
 	_, ok := <-ev
 	assert.False(t, ok, "Shutdown must close subscriber channels")
@@ -248,7 +248,7 @@ func TestPublisher_BufferFull_DropsWithoutBlocking(t *testing.T) {
 	// We subscribe but don't read from the channel, then send more than the
 	// buffer capacity of notifications (default 100).
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	_, cleanup := p.Subscribe(ctx, "", "ns")
@@ -275,7 +275,7 @@ func TestPublisher_NotifyConfigLocked_DeliversLockedEvent(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	events, cleanup := p.Subscribe(ctx, "", "prod")
@@ -296,7 +296,7 @@ func TestPublisher_NotifyNamespaceLocked_DeliveredToPathFilteredSubscribers(t *t
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 
@@ -318,7 +318,7 @@ func TestPublisher_NotifyNamespaceLocked_FiltersOtherNamespaces(t *testing.T) {
 	t.Parallel()
 
 	p := watchadapter.NewPublisher()
-	defer p.Shutdown()
+	defer require.NoError(t, p.Shutdown(t.Context()))
 
 	ctx := context.Background()
 	events, cleanup := p.Subscribe(ctx, "", "staging")

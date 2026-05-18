@@ -13,6 +13,8 @@ type authUserMeta struct {
 	Name                   string    `json:"name"`
 	Picture                string    `json:"picture"`
 	Provider               string    `json:"provider"`
+	System                 bool      `json:"system,omitempty"`
+	Source                 string    `json:"source,omitempty"`
 	CreatedAt              time.Time `json:"created_at"`
 	LastLoginAt            time.Time `json:"last_login_at"`
 	PasswordHash           string    `json:"password_hash,omitempty"`
@@ -20,11 +22,14 @@ type authUserMeta struct {
 }
 
 type authGroupMeta struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Members   []string  `json:"members"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
+	Members     []string  `json:"members"`
+	System      bool      `json:"system,omitempty"`
+	Version     int64     `json:"version,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type authTokenMeta struct {
@@ -46,6 +51,8 @@ func domainToAuthUserMeta(u *domain.User) *authUserMeta {
 		Name:                   u.Name,
 		Picture:                u.Picture,
 		Provider:               u.Provider,
+		System:                 u.System,
+		Source:                 u.Source,
 		CreatedAt:              u.CreatedAt,
 		LastLoginAt:            u.LastLoginAt,
 		PasswordHash:           u.PasswordHash,
@@ -59,6 +66,8 @@ func authUserMetaToDomain(m *authUserMeta) *domain.User {
 		Name:                   m.Name,
 		Picture:                m.Picture,
 		Provider:               m.Provider,
+		System:                 m.System,
+		Source:                 m.Source,
 		CreatedAt:              m.CreatedAt,
 		LastLoginAt:            m.LastLoginAt,
 		PasswordHash:           m.PasswordHash,
@@ -71,11 +80,14 @@ func domainToAuthGroupMeta(g *domain.Group) *authGroupMeta {
 	copy(members, g.Members)
 
 	return &authGroupMeta{
-		ID:        g.ID,
-		Name:      g.Name,
-		Members:   members,
-		CreatedAt: g.CreatedAt,
-		UpdatedAt: g.UpdatedAt,
+		ID:          g.ID,
+		Name:        g.Name,
+		Description: g.Description,
+		Members:     members,
+		System:      g.System,
+		Version:     g.Version,
+		CreatedAt:   g.CreatedAt,
+		UpdatedAt:   g.UpdatedAt,
 	}
 }
 
@@ -84,11 +96,14 @@ func authGroupMetaToDomain(m *authGroupMeta) *domain.Group {
 	copy(members, m.Members)
 
 	return &domain.Group{
-		ID:        m.ID,
-		Name:      m.Name,
-		Members:   members,
-		CreatedAt: m.CreatedAt,
-		UpdatedAt: m.UpdatedAt,
+		ID:          m.ID,
+		Name:        m.Name,
+		Description: m.Description,
+		Members:     members,
+		System:      m.System,
+		Version:     m.Version,
+		CreatedAt:   m.CreatedAt,
+		UpdatedAt:   m.UpdatedAt,
 	}
 }
 

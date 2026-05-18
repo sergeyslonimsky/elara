@@ -62,8 +62,7 @@ func TestService_Callback(t *testing.T) {
 				adminIdentity := &auth.Identity{Email: "admin@example.com", Name: "Admin"}
 				m.provider.EXPECT().Exchange(gomock.Any(), "auth-code", "test-nonce").Return(adminIdentity, nil)
 				m.users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
-				m.enforcer.EXPECT().GetRolesForUser("admin@example.com", auth.ObjectAll).Return([]string{}, nil)
-				m.enforcer.EXPECT().AddRoleForUser("admin@example.com", auth.RoleAdmin, auth.ObjectAll).Return(nil)
+				m.admin.EXPECT().EnsureMember(gomock.Any(), "admin@example.com").Return(nil)
 				m.session.EXPECT().Create(gomock.Any()).Return("admin-token", nil)
 
 				return svc

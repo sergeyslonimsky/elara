@@ -9,27 +9,35 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
-// ListActive returns all currently-connected clients sorted by ConnectedAt
-// ascending (oldest first — UI typically reverses).
+// ListActive returns currently-connected clients sorted by ConnectedAt
+// ascending. Non-admin callers only see clients whose active watches touch
+// at least one namespace they can read.
 func (s *Service) ListActive(ctx context.Context) ([]*domain.Client, error) {
-	if err := auth.CheckAccess(ctx, s.enforcer, auth.ObjectAll, auth.ObjectClient, auth.ActionRead); err != nil {
-		return nil, fmt.Errorf("check access: %w", err)
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
 	}
+
+	scope := newScopeChecker(s.enforcer, claims.Email)
 
 	clients := s.active.ListActive()
 	sort.Slice(clients, func(i, j int) bool {
 		return clients[i].ConnectedAt.Before(clients[j].ConnectedAt)
 	})
 
-	return clients, nil
+	return scope.filter(clients), nil
 }
 
 // ListHistorical returns past connections, newest first, capped at limit
-// (0 → server-default cap).
+// (0 → server-default cap). Non-admins receive an empty list because
+// historical entries do not retain per-watch namespace info to scope on.
 func (s *Service) ListHistorical(ctx context.Context, limit int) ([]*domain.Client, error) {
-	if err := auth.CheckAccess(ctx, s.enforcer, auth.ObjectAll, auth.ObjectClient, auth.ActionRead); err != nil {
-		return nil, fmt.Errorf("check access: %w", err)
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
 	}
+
+	scope := newScopeChecker(s.enforcer, claims.Email)
 
 	const defaultLimit = 100
 	if limit <= 0 {
@@ -41,7 +49,7 @@ func (s *Service) ListHistorical(ctx context.Context, limit int) ([]*domain.Clie
 		return nil, fmt.Errorf("list historical connections: %w", err)
 	}
 
-	return out, nil
+	return scope.filter(out), nil
 }
 
 // ListSessions returns past connections of the same logical client
@@ -55,9 +63,12 @@ func (s *Service) ListSessions(
 	clientName, k8sNamespace, currentID string,
 	limit int,
 ) ([]*domain.Client, error) {
-	if err := auth.CheckAccess(ctx, s.enforcer, auth.ObjectAll, auth.ObjectClient, auth.ActionRead); err != nil {
-		return nil, fmt.Errorf("check access: %w", err)
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
 	}
+
+	scope := newScopeChecker(s.enforcer, claims.Email)
 
 	const defaultLimit = 50
 
@@ -75,26 +86,22 @@ func (s *Service) ListSessions(
 		return nil, fmt.Errorf("list sessions by client: %w", err)
 	}
 
-	if currentID == "" {
-		if len(results) > limit {
-			results = results[:limit]
+	if currentID != "" {
+		filtered := make([]*domain.Client, 0, len(results))
+		for _, c := range results {
+			if c.ID == currentID {
+				continue
+			}
+
+			filtered = append(filtered, c)
 		}
 
-		return results, nil
+		results = filtered
 	}
 
-	out := make([]*domain.Client, 0, len(results))
-	for _, c := range results {
-		if c.ID == currentID {
-			continue
-		}
-
-		out = append(out, c)
-
-		if len(out) >= limit {
-			break
-		}
+	if len(results) > limit {
+		results = results[:limit]
 	}
 
-	return out, nil
+	return scope.filter(results), nil
 }

@@ -6,13 +6,14 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/usecase/namespace"
-	namespace_mock "github.com/sergeyslonimsky/elara/internal/usecase/namespace/mocks"
+	namespacemock "github.com/sergeyslonimsky/elara/internal/usecase/namespace/mocks"
 )
 
 type mocks struct {
-	enforcer *namespace_mock.Mockenforcer
-	store    *namespace_mock.Mockstore
-	notifier *namespace_mock.Mocknotifier
+	authz    *namespacemock.Mockauthz
+	pdp      *namespacemock.Mockpdp
+	store    *namespacemock.Mockstore
+	notifier *namespacemock.Mocknotifier
 }
 
 func setupService(t *testing.T) (*namespace.Service, mocks, *gomock.Controller) {
@@ -20,11 +21,12 @@ func setupService(t *testing.T) (*namespace.Service, mocks, *gomock.Controller) 
 	ctrl := gomock.NewController(t)
 
 	m := mocks{
-		enforcer: namespace_mock.NewMockenforcer(ctrl),
-		store:    namespace_mock.NewMockstore(ctrl),
-		notifier: namespace_mock.NewMocknotifier(ctrl),
+		authz:    namespacemock.NewMockauthz(ctrl),
+		pdp:      namespacemock.NewMockpdp(ctrl),
+		store:    namespacemock.NewMockstore(ctrl),
+		notifier: namespacemock.NewMocknotifier(ctrl),
 	}
-	svc := namespace.New(m.enforcer, m.store, m.notifier)
+	svc := namespace.New(m.authz, m.pdp, m.store, m.notifier)
 
 	return svc, m, ctrl
 }

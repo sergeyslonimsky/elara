@@ -205,3 +205,41 @@ func TestGroupRepo_List(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, groups, len(ids))
 }
+
+func TestGroupRepo_SystemAndVersion(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t)
+	repo := bboltadapter.NewGroupRepo(store)
+	ctx := t.Context()
+
+	group := &domain.Group{
+		ID:      "sys-admins",
+		Name:    "System Admins",
+		System:  true,
+		Version: 42,
+	}
+
+	// Create
+	require.NoError(t, repo.Create(ctx, group))
+	assert.Equal(t, int64(42), group.Version)
+
+	// Get and verify
+	got, err := repo.Get(ctx, group.ID)
+	require.NoError(t, err)
+	assert.True(t, got.System)
+	assert.Equal(t, int64(42), got.Version)
+
+	// Update (should preserve System flag even if we try to change it)
+	got.Name = "Updated Name"
+	got.System = false
+	got.Version = 43
+	require.NoError(t, repo.Update(ctx, got))
+
+	// Get again
+	final, err := repo.Get(ctx, group.ID)
+	require.NoError(t, err)
+	assert.True(t, final.System, "System flag must be preserved from existing record")
+	assert.Equal(t, "Updated Name", final.Name)
+	assert.Equal(t, int64(43), final.Version)
+}

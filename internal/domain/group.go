@@ -9,11 +9,25 @@ import (
 const maxGroupNameLen = 128
 
 type Group struct {
-	ID        string
-	Name      string
-	Members   []string // emails
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          string
+	Name        string
+	Description string
+	Members     []string // emails
+	System      bool     // protected from delete/rename; set by Seed, never by the API
+	Version     int64    // for optimistic locking
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+// SystemUserSuperAdmin is the username of the break-glass superuser.
+const SystemUserSuperAdmin = "superadmin"
+
+func (g *Group) EnsureMutable() error {
+	if g.System {
+		return ErrSystemImmutable
+	}
+
+	return nil
 }
 
 func (g *Group) Validate() error {
@@ -27,6 +41,10 @@ func (g *Group) Validate() error {
 
 	if len(g.Name) > maxGroupNameLen {
 		return NewValidationError("name", "group name must be at most 128 characters")
+	}
+
+	if len(g.Description) > 1024 {
+		return NewValidationError("description", "group description must be at most 1024 characters")
 	}
 
 	for _, email := range g.Members {

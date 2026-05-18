@@ -27,9 +27,21 @@ type ListResult struct {
 	Offset     int
 }
 
+// List returns the namespaces visible to the authenticated caller, annotated
+// with per-namespace permission flags the UI uses to gate actions.
+//
+// Authorization for the call itself is enforced at the handler — every
+// authenticated user may invoke List. The two ways permissions enter this
+// method are pure business logic:
+//
+//   - filterAccessible drops namespaces the caller cannot read.
+//   - per-namespace CanWrite is computed for the remaining items so the UI
+//     can show or hide write-only actions (e.g. "Import to this namespace").
 func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
+		// Defence in depth — handler should already have rejected
+		// unauthenticated calls via auth.RequireAuthenticated.
 		return nil, domain.ErrUnauthorized
 	}
 
@@ -54,6 +66,8 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 		return nil, err
 	}
 
+	s.annotatePermissions(claims.Email, paginated)
+
 	return &ListResult{
 		Namespaces: paginated,
 		Total:      total,
@@ -66,13 +80,32 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 func (s *Service) filterAccessible(callerEmail string, namespaces []*domain.Namespace) []*domain.Namespace {
 	accessible := namespaces[:0]
 	for _, ns := range namespaces {
-		allowed, _ := s.enforcer.Enforce(callerEmail, ns.Name, auth.ObjectNamespace, auth.ActionRead)
-		if allowed {
+		if s.pdp.Has(callerEmail, domain.Permission{
+			Object: domain.ObjectNamespace,
+			Action: domain.ActionRead,
+			Domain: ns.Name,
+		}) {
 			accessible = append(accessible, ns)
 		}
 	}
 
 	return accessible
+}
+
+// annotatePermissions fills CanRead/CanWrite on each namespace from the
+// caller's perspective. CanRead is implicitly true (the slice has already
+// been filtered through filterAccessible); CanWrite is the result of a
+// separate per-namespace check against config/write — that's the permission
+// needed to import configs into the namespace.
+func (s *Service) annotatePermissions(callerEmail string, namespaces []*domain.Namespace) {
+	for _, ns := range namespaces {
+		ns.CanRead = true
+		ns.CanWrite = s.pdp.Has(callerEmail, domain.Permission{
+			Object: domain.ObjectConfig,
+			Action: domain.ActionWrite,
+			Domain: ns.Name,
+		})
+	}
 }
 
 // filterByQuery filters namespaces by case-insensitive substring match on name.

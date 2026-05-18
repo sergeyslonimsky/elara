@@ -6,11 +6,10 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	internalauth "github.com/sergeyslonimsky/elara/internal/service/auth"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 )
 
-// BasicLogin verifies the user's credentials, optionally bootstraps admin role,
-// and returns a signed session token.
+// BasicLogin verifies the user's credentials, optionally bootstraps the
+// configured admin into the admins group, and returns a signed session token.
 func (s *Service) BasicLogin(ctx context.Context, email, password string) (string, *domain.User, error) {
 	user, err := s.users.Get(ctx, email)
 	if err != nil {
@@ -21,8 +20,10 @@ func (s *Service) BasicLogin(ctx context.Context, email, password string) (strin
 		return "", nil, domain.ErrUnauthorized
 	}
 
-	if err := casbin.CheckBootstrapAdmin(ctx, email, s.adminEmail, s.enforcer); err != nil {
-		return "", nil, fmt.Errorf("bootstrap admin: %w", err)
+	if email == s.adminEmail {
+		if err := s.admin.EnsureMember(ctx, email); err != nil {
+			return "", nil, fmt.Errorf("bootstrap admin: %w", err)
+		}
 	}
 
 	token, err := s.session.Create(user)

@@ -149,7 +149,10 @@ func (p *Publisher) NotifyNamespaceUnlocked(_ context.Context, namespace string)
 	})
 }
 
-func (p *Publisher) Shutdown() {
+// Shutdown closes every active subscription channel. Implements
+// lifecycle.Resource. The provided context is unused — cleanup is synchronous
+// and local.
+func (p *Publisher) Shutdown(_ context.Context) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -157,6 +160,8 @@ func (p *Publisher) Shutdown() {
 		close(sub.events)
 		delete(p.subscriptions, id)
 	}
+
+	return nil
 }
 
 func (p *Publisher) notify(event domain.WatchEvent) {

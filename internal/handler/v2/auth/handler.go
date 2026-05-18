@@ -36,8 +36,8 @@ type Handler struct {
 	secureCookie bool
 }
 
-// New returns a new Handler wired with the login use cases.
-func New(
+// NewHandler returns a new Handler wired with the login use cases.
+func NewHandler(
 	uc usecase,
 	authType config.AuthType,
 	secureCookie bool,

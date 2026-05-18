@@ -35,7 +35,7 @@ func TestService_Create(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
 				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
 					Return(true, nil)
 
 				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
@@ -73,7 +73,7 @@ func TestService_Create(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
 					Return(true, nil)
 
 				return ctx
@@ -86,7 +86,7 @@ func TestService_Create(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
 					Return(true, nil)
 
 				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(nil, domain.ErrNotFound)
@@ -105,7 +105,7 @@ func TestService_Create(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
 					Return(true, nil)
 
 				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
@@ -124,7 +124,7 @@ func TestService_Create(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
 					Return(true, nil)
 
 				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
@@ -148,7 +148,7 @@ func TestService_Create(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionWrite).
+					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
 					Return(true, nil)
 
 				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)

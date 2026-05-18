@@ -245,6 +245,89 @@ func TestService_Import(t *testing.T) {
 			want: &domain.ImportReport{Created: 1},
 		},
 		{
+			name: "access denied - target namespace",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.NamespaceBundle{
+							Namespace: "original",
+							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+					targetNamespace: "target",
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.enforcer.EXPECT().Enforce("test@example.com", "target", "config", "write").Return(false, nil)
+
+				return svc
+			},
+			errIs:   domain.ErrForbidden,
+			wantErr: "check access: forbidden",
+		},
+		{
+			name: "access denied - all bundle",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.AllBundle{
+							Namespaces: []domain.NamespaceBundle{
+								{
+									Namespace: "ns1",
+									Configs:   []domain.BundleConfig{{Path: "/a", Content: "{}"}},
+								},
+							},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.enforcer.EXPECT().Enforce("test@example.com", "*", "transfer", "write").Return(false, nil)
+
+				return svc
+			},
+			errIs:   domain.ErrForbidden,
+			wantErr: "check access: forbidden",
+		},
+		{
+			name: "access denied - single namespace fallback",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.NamespaceBundle{
+							Namespace: "my-ns",
+							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.enforcer.EXPECT().Enforce("test@example.com", "my-ns", "config", "write").Return(false, nil)
+
+				return svc
+			},
+			errIs:   domain.ErrForbidden,
+			wantErr: "check access: forbidden",
+		},
+		{
 			name: "validation error - empty namespace",
 			input: func(t *testing.T) input {
 				t.Helper()
@@ -262,8 +345,7 @@ func TestService_Import(t *testing.T) {
 				}
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
-				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				svc, _ := setupService(t, ctrl)
 
 				return svc
 			},
@@ -279,8 +361,7 @@ func TestService_Import(t *testing.T) {
 				}
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
-				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				svc, _ := setupService(t, ctrl)
 
 				return svc
 			},
@@ -297,7 +378,7 @@ func TestService_Import(t *testing.T) {
 			testInput := tt.input(t)
 
 			got, err := sut.Import(
-				transferTestCtx(),
+				transferTestCtx(t.Context()),
 				testInput.data,
 				testInput.resolution,
 				testInput.dryRun,

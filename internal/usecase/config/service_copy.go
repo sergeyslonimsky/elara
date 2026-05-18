@@ -31,7 +31,7 @@ func (s *Service) Copy(ctx context.Context, in CopyInput) (*domain.Config, error
 	}
 
 	// Check write permission on destination namespace.
-	if err := auth.CheckAccess(ctx, s.enforcer, in.DestNamespace, auth.ObjectConfig, auth.ActionWrite); err != nil {
+	if err := auth.CheckAccess(ctx, s.enforcer, in.DestNamespace, domain.ObjectConfig, domain.ActionWrite); err != nil {
 		return nil, fmt.Errorf("check access: %w", err)
 	}
 

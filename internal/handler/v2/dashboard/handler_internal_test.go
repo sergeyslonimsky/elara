@@ -9,7 +9,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	dashboard_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/dashboard/mocks"
+	dashboardmock "github.com/sergeyslonimsky/elara/internal/handler/v2/dashboard/mocks"
 	dashboardv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/dashboard/v1"
 	dashboarduc "github.com/sergeyslonimsky/elara/internal/usecase/dashboard"
 )
@@ -18,7 +18,7 @@ func TestDashboardHandler_GetStats_Success(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	uc := dashboard_mock.NewMockusecase(ctrl)
+	uc := dashboardmock.NewMockusecase(ctrl)
 	uc.EXPECT().GetStats(gomock.Any()).Return(&dashboarduc.StatsResult{
 		NamespaceCount:    1,
 		ConfigCount:       10,
@@ -40,7 +40,7 @@ func TestDashboardHandler_GetStats_Unauthorized(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	uc := dashboard_mock.NewMockusecase(ctrl)
+	uc := dashboardmock.NewMockusecase(ctrl)
 	uc.EXPECT().GetStats(gomock.Any()).Return(nil, domain.ErrUnauthorized)
 
 	h := New(uc)
@@ -54,7 +54,7 @@ func TestDashboardHandler_GetStats_Forbidden(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	uc := dashboard_mock.NewMockusecase(ctrl)
+	uc := dashboardmock.NewMockusecase(ctrl)
 	uc.EXPECT().GetStats(gomock.Any()).Return(nil, domain.ErrForbidden)
 
 	h := New(uc)

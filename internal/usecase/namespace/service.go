@@ -10,8 +10,12 @@ import (
 //go:generate mockgen -destination=mocks/service_mock.go -package=namespace_mock -source=service.go
 
 type (
-	enforcer interface {
-		Enforce(subject, domain, object, action string) (bool, error)
+	authz interface {
+		Require(ctx context.Context, object, action, domainStr string) error
+	}
+
+	pdp interface {
+		Has(principal string, perm domain.Permission) bool
 	}
 
 	store interface {
@@ -32,14 +36,16 @@ type (
 )
 
 type Service struct {
-	enforcer enforcer
+	authz    authz
+	pdp      pdp
 	store    store
 	notifier notifier
 }
 
-func New(enforcer enforcer, store store, notifier notifier) *Service {
+func New(authz authz, pdp pdp, store store, notifier notifier) *Service {
 	return &Service{
-		enforcer: enforcer,
+		authz:    authz,
+		pdp:      pdp,
 		store:    store,
 		notifier: notifier,
 	}

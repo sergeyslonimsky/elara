@@ -74,9 +74,9 @@ func (mr *MockusecaseMockRecorder) Callback(ctx, code, nonce any) *gomock.Call {
 }
 
 // Login mocks base method.
-func (m *Mockusecase) Login(arg0 context.Context) (string, string, string, error) {
+func (m *Mockusecase) Login(ctx context.Context) (string, string, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Login", arg0)
+	ret := m.ctrl.Call(m, "Login", ctx)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(string)
@@ -85,7 +85,7 @@ func (m *Mockusecase) Login(arg0 context.Context) (string, string, string, error
 }
 
 // Login indicates an expected call of Login.
-func (mr *MockusecaseMockRecorder) Login(arg0 any) *gomock.Call {
+func (mr *MockusecaseMockRecorder) Login(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*Mockusecase)(nil).Login), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*Mockusecase)(nil).Login), ctx)
 }

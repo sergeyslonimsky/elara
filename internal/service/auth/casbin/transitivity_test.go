@@ -29,9 +29,9 @@ func TestEnforcer_GroupMembershipTransitivity(t *testing.T) {
 			name: "member inherits group role",
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
-				e := newTestEnforcer(t, nil)
-				require.NoError(t, e.AddRoleForUser("devops", "writer", "prod"))
-				require.NoError(t, e.AddRoleForUser("alice@example.com", "devops", "prod"))
+				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRole(t, e, txm, "devops", "writer", "prod")
+				seedRole(t, e, txm, "alice@example.com", "devops", "prod")
 
 				return e
 			},
@@ -47,10 +47,10 @@ func TestEnforcer_GroupMembershipTransitivity(t *testing.T) {
 			name: "removing membership revokes access",
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
-				e := newTestEnforcer(t, nil)
-				require.NoError(t, e.AddRoleForUser("devops", "writer", "prod"))
-				require.NoError(t, e.AddRoleForUser("alice@example.com", "devops", "prod"))
-				require.NoError(t, e.RemoveRoleForUser("alice@example.com", "devops", "prod"))
+				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRole(t, e, txm, "devops", "writer", "prod")
+				seedRole(t, e, txm, "alice@example.com", "devops", "prod")
+				removeRole(t, e, txm, "alice@example.com", "devops", "prod")
 
 				return e
 			},
@@ -66,12 +66,12 @@ func TestEnforcer_GroupMembershipTransitivity(t *testing.T) {
 			name: "member in two groups keeps access when removed from one",
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
-				e := newTestEnforcer(t, nil)
-				require.NoError(t, e.AddRoleForUser("devops", "writer", "prod"))
-				require.NoError(t, e.AddRoleForUser("ops", "writer", "prod"))
-				require.NoError(t, e.AddRoleForUser("alice@example.com", "devops", "prod"))
-				require.NoError(t, e.AddRoleForUser("alice@example.com", "ops", "prod"))
-				require.NoError(t, e.RemoveRoleForUser("alice@example.com", "devops", "prod"))
+				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRole(t, e, txm, "devops", "writer", "prod")
+				seedRole(t, e, txm, "ops", "writer", "prod")
+				seedRole(t, e, txm, "alice@example.com", "devops", "prod")
+				seedRole(t, e, txm, "alice@example.com", "ops", "prod")
+				removeRole(t, e, txm, "alice@example.com", "devops", "prod")
 
 				return e
 			},
@@ -87,13 +87,13 @@ func TestEnforcer_GroupMembershipTransitivity(t *testing.T) {
 			name: "no access after removing from all groups",
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
-				e := newTestEnforcer(t, nil)
-				require.NoError(t, e.AddRoleForUser("devops", "writer", "prod"))
-				require.NoError(t, e.AddRoleForUser("ops", "writer", "prod"))
-				require.NoError(t, e.AddRoleForUser("alice@example.com", "devops", "prod"))
-				require.NoError(t, e.AddRoleForUser("alice@example.com", "ops", "prod"))
-				require.NoError(t, e.RemoveRoleForUser("alice@example.com", "devops", "prod"))
-				require.NoError(t, e.RemoveRoleForUser("alice@example.com", "ops", "prod"))
+				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRole(t, e, txm, "devops", "writer", "prod")
+				seedRole(t, e, txm, "ops", "writer", "prod")
+				seedRole(t, e, txm, "alice@example.com", "devops", "prod")
+				seedRole(t, e, txm, "alice@example.com", "ops", "prod")
+				removeRole(t, e, txm, "alice@example.com", "devops", "prod")
+				removeRole(t, e, txm, "alice@example.com", "ops", "prod")
 
 				return e
 			},

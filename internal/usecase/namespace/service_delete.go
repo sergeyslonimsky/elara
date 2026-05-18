@@ -5,23 +5,13 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
+// Delete removes a namespace. Authorization is enforced at the handler
+// boundary (admin-only via DomainAll namespace/write).
 func (s *Service) Delete(ctx context.Context, name string) error {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return domain.ErrUnauthorized
-	}
-
-	// domain = namespace name itself.
-	allowed, err := s.enforcer.Enforce(claims.Email, name, auth.ObjectNamespace, auth.ActionWrite)
-	if err != nil {
-		return fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return domain.ErrForbidden
+	if err := s.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, name); err != nil {
+		return err
 	}
 
 	count, err := s.store.CountConfigs(ctx, name)

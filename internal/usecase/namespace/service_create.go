@@ -5,22 +5,13 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
+// Create persists a new namespace. Authorization (namespace/write at
+// DomainAll) is enforced by the RBAC interceptor.
 func (s *Service) Create(ctx context.Context, ns *domain.Namespace) (*domain.Namespace, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, domain.ErrUnauthorized
-	}
-
-	allowed, err := s.enforcer.Enforce(claims.Email, auth.ObjectAll, auth.ObjectNamespace, auth.ActionWrite)
-	if err != nil {
-		return nil, fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return nil, domain.ErrForbidden
+	if err := s.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, domain.DomainAll); err != nil {
+		return nil, err
 	}
 
 	if err := ns.Validate(); err != nil {

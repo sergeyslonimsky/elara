@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sergeyslonimsky/core/lifecycle"
+
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
@@ -52,16 +54,18 @@ type Dispatcher struct {
 	publisher eventPublisher
 	client    *http.Client
 
-	mu      sync.RWMutex
-	history map[string]*deliveryRingBuffer
+	historyMu sync.RWMutex
+	history   map[string]*deliveryRingBuffer
 
 	deliverySem chan struct{}
-	stopOnce    sync.Once
-	stopCh      chan struct{}
+
+	stopOnce sync.Once
+	stopCh   chan struct{}
+	inflight sync.WaitGroup
 }
 
 func NewDispatcher(repo webhookLister, publisher eventPublisher) *Dispatcher {
-	return &Dispatcher{
+	return &Dispatcher{ //nolint:exhaustruct // stopOnce/inflight have valid zero values
 		repo:        repo,
 		publisher:   publisher,
 		client:      &http.Client{Timeout: httpRequestTimeout},
@@ -71,40 +75,86 @@ func NewDispatcher(repo webhookLister, publisher eventPublisher) *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) Start(ctx context.Context) {
+// Run subscribes to watch events and fans them out to matching webhooks.
+// Blocks until ctx (or the inner ctx set by Shutdown) is cancelled. Returns
+// nil on cancellation; never returns a non-nil error — delivery failures are
+// recorded in the per-webhook history ring buffer, not propagated.
+//
+// Implements lifecycle.Runner.
+func (d *Dispatcher) Run(ctx context.Context) error {
 	defer func() {
 		if r := recover(); r != nil {
 			slog.Error("dispatcher: recovered from panic", "panic", r)
 		}
 	}()
 
-	events, cleanup := d.publisher.Subscribe(ctx, "", "")
+	innerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Propagate Shutdown's stopCh to innerCtx so retry backoff sleeps and
+	// in-flight HTTP requests unblock when Shutdown is called.
+	stopWatcher := make(chan struct{})
+	defer close(stopWatcher)
+
+	go func() {
+		select {
+		case <-d.stopCh:
+			cancel()
+		case <-stopWatcher:
+		}
+	}()
+
+	events, cleanup := d.publisher.Subscribe(innerCtx, "", "")
 	defer cleanup()
 
 	for {
 		select {
 		case event, ok := <-events:
 			if !ok {
-				return
+				return nil
 			}
 
-			go d.dispatch(ctx, event)
-		case <-ctx.Done():
-			return
-		case <-d.stopCh:
-			return
+			d.inflight.Add(1)
+
+			go func(ev domain.WatchEvent) {
+				defer d.inflight.Done()
+				d.dispatch(innerCtx, ev)
+			}(event)
+		case <-innerCtx.Done():
+			return nil
 		}
 	}
 }
 
-func (d *Dispatcher) Stop() {
+// Shutdown signals Run to stop and waits for inflight deliveries to drain
+// within the provided ctx budget. Cancelling the inner ctx unblocks retry
+// backoff sleeps and aborts in-flight HTTP requests, so most deliveries
+// terminate promptly and record a final attempt in the ring buffer.
+//
+// Idempotent: safe to call before Run, after Run has returned, or twice.
+// Implements lifecycle.Resource.
+func (d *Dispatcher) Shutdown(ctx context.Context) error {
 	d.stopOnce.Do(func() { close(d.stopCh) })
+
+	drained := make(chan struct{})
+
+	go func() {
+		d.inflight.Wait()
+		close(drained)
+	}()
+
+	select {
+	case <-drained:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("webhook dispatcher shutdown: %w", ctx.Err())
+	}
 }
 
 func (d *Dispatcher) GetDeliveryHistory(webhookID string) []domain.DeliveryAttempt {
-	d.mu.RLock()
+	d.historyMu.RLock()
 	buf, ok := d.history[webhookID]
-	d.mu.RUnlock()
+	d.historyMu.RUnlock()
 
 	if !ok {
 		return []domain.DeliveryAttempt{}
@@ -114,8 +164,8 @@ func (d *Dispatcher) GetDeliveryHistory(webhookID string) []domain.DeliveryAttem
 }
 
 func (d *Dispatcher) ClearHistory(webhookID string) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.historyMu.Lock()
+	defer d.historyMu.Unlock()
 
 	delete(d.history, webhookID)
 }
@@ -132,13 +182,14 @@ func (d *Dispatcher) dispatch(ctx context.Context, event domain.WatchEvent) {
 		if wh.MatchesEvent(event) {
 			select {
 			case d.deliverySem <- struct{}{}:
+				d.inflight.Add(1)
+
 				go func(w *domain.Webhook) {
+					defer d.inflight.Done()
 					defer func() { <-d.deliverySem }()
 					d.deliver(ctx, w, event)
 				}(wh)
 			case <-ctx.Done():
-				return
-			case <-d.stopCh:
 				return
 			}
 		}
@@ -162,8 +213,6 @@ func (d *Dispatcher) deliver(ctx context.Context, wh *domain.Webhook, event doma
 			select {
 			case <-time.After(jitter):
 			case <-ctx.Done():
-				return
-			case <-d.stopCh:
 				return
 			}
 		}
@@ -270,16 +319,16 @@ func (d *Dispatcher) sendRequest(
 }
 
 func (d *Dispatcher) getOrCreateBuffer(webhookID string) *deliveryRingBuffer {
-	d.mu.RLock()
+	d.historyMu.RLock()
 	buf, ok := d.history[webhookID]
-	d.mu.RUnlock()
+	d.historyMu.RUnlock()
 
 	if ok {
 		return buf
 	}
 
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.historyMu.Lock()
+	defer d.historyMu.Unlock()
 
 	if buf, ok = d.history[webhookID]; ok {
 		return buf
@@ -290,6 +339,12 @@ func (d *Dispatcher) getOrCreateBuffer(webhookID string) *deliveryRingBuffer {
 
 	return buf
 }
+
+// Compile-time assertions.
+var (
+	_ lifecycle.Runner   = (*Dispatcher)(nil)
+	_ lifecycle.Resource = (*Dispatcher)(nil)
+)
 
 // cryptoJitter returns delay ±20% using a cryptographically secure source.
 func cryptoJitter(delay time.Duration) time.Duration {

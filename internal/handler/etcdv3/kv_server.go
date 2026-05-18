@@ -547,7 +547,7 @@ func (s *KVServer) checkAccess(ctx context.Context, namespace, action string) er
 			return status.Errorf(codes.PermissionDenied, "permission denied for namespace %q", namespace)
 		}
 
-		if action == auth.ActionWrite && claims.Role != "writer" {
+		if action == domain.ActionWrite && claims.Role != "writer" {
 			return status.Errorf(codes.PermissionDenied, "permission denied for action %q", action)
 		}
 

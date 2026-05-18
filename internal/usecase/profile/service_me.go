@@ -36,11 +36,11 @@ func (s *Service) Me(ctx context.Context) (*MeResult, error) {
 
 	var accessible []NamespaceAccess
 	for _, ns := range allNamespaces {
-		canRead, _ := s.enforcer.Enforce(claims.Email, ns.Name, auth.ObjectConfig, auth.ActionRead)
+		canRead, _ := s.enforcer.Enforce(claims.Email, ns.Name, domain.ObjectConfig, domain.ActionRead)
 		if !canRead {
 			continue
 		}
-		canWrite, _ := s.enforcer.Enforce(claims.Email, ns.Name, auth.ObjectConfig, auth.ActionWrite)
+		canWrite, _ := s.enforcer.Enforce(claims.Email, ns.Name, domain.ObjectConfig, domain.ActionWrite)
 		accessible = append(accessible, NamespaceAccess{Name: ns.Name, CanWrite: canWrite})
 	}
 
@@ -48,11 +48,11 @@ func (s *Service) Me(ctx context.Context) (*MeResult, error) {
 		return accessible[i].Name < accessible[j].Name
 	})
 
-	isAdmin, _ := s.enforcer.Enforce(claims.Email, auth.ObjectAll, auth.ObjectUser, auth.ActionRead)
+	isAdmin, _ := s.enforcer.Enforce(claims.Email, domain.DomainAll, domain.ObjectUser, domain.ActionRead)
 
 	var canViewWebhooks bool
 	for _, ns := range accessible {
-		ok, _ := s.enforcer.Enforce(claims.Email, ns.Name, auth.ObjectWebhook, auth.ActionRead)
+		ok, _ := s.enforcer.Enforce(claims.Email, ns.Name, domain.ObjectWebhook, domain.ActionRead)
 		if ok {
 			canViewWebhooks = true
 
@@ -60,7 +60,7 @@ func (s *Service) Me(ctx context.Context) (*MeResult, error) {
 		}
 	}
 
-	canManageWebhooks, _ := s.enforcer.Enforce(claims.Email, auth.ObjectAll, auth.ObjectWebhook, auth.ActionWrite)
+	canManageWebhooks, _ := s.enforcer.Enforce(claims.Email, domain.DomainAll, domain.ObjectWebhook, domain.ActionWrite)
 
 	return &MeResult{
 		Email:             claims.Email,

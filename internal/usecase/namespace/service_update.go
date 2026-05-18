@@ -5,25 +5,11 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
+// Update changes a namespace's description. Authorization
+// (namespace/write on `name`) is enforced at the handler boundary.
 func (s *Service) Update(ctx context.Context, name, description string) (*domain.Namespace, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, domain.ErrUnauthorized
-	}
-
-	// domain = namespace name itself.
-	allowed, err := s.enforcer.Enforce(claims.Email, name, auth.ObjectNamespace, auth.ActionWrite)
-	if err != nil {
-		return nil, fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return nil, domain.ErrForbidden
-	}
-
 	ns := &domain.Namespace{
 		Name:        name,
 		Description: description,

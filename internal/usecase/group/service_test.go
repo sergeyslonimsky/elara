@@ -1,37 +1,40 @@
 package group_test
 
 import (
-	"context"
+	"path/filepath"
+	"testing"
 
-	"go.uber.org/mock/gomock"
+	"github.com/stretchr/testify/require"
 
+	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/usecase/group"
-	group_mock "github.com/sergeyslonimsky/elara/internal/usecase/group/mocks"
 )
 
-type mocks struct {
-	enforcer     *group_mock.Mockenforcer
-	syncEnforcer *group_mock.MocksyncEnforcer
-	store        *group_mock.Mockstore
-}
+// newTestService boots a real bbolt store + Casbin enforcer + GroupRepo +
+// TxManager and returns a wired Service. Tests use the real stack rather
+// than mocks because the service depends on concrete per-tx views
+// (Enforcer.WithTx, GroupRepo.WithTx) whose return types do not fit
+// cleanly into mockable interfaces. The integration helper also exercises
+// the §4 level-2 atomicity invariant end-to-end.
+func newTestService(t *testing.T) (*group.Service, *bbolt.Store, *casbin.Enforcer, *bbolt.GroupRepo) {
+	t.Helper()
 
-func setupService(ctrl *gomock.Controller) (*group.Service, mocks) {
-	m := mocks{
-		enforcer:     group_mock.NewMockenforcer(ctrl),
-		syncEnforcer: group_mock.NewMocksyncEnforcer(ctrl),
-		store:        group_mock.NewMockstore(ctrl),
-	}
+	path := filepath.Join(t.TempDir(), "group.db")
 
-	return group.New(m.enforcer, m.syncEnforcer, m.store), m
-}
+	store, err := bbolt.Open(path)
+	require.NoError(t, err)
 
-func mockFuncWithContext(
-	f func(ctx context.Context, m mocks) context.Context,
-) func(context.Context, *gomock.Controller) (*group.Service, context.Context) {
-	return func(ctx context.Context, ctrl *gomock.Controller) (*group.Service, context.Context) {
-		sut, m := setupService(ctrl)
-		ctx = f(ctx, m)
+	t.Cleanup(func() { _ = store.Close() })
 
-		return sut, ctx
-	}
+	policies := bbolt.NewPolicyRepo(store)
+	enforcer, err := casbin.NewEnforcer(policies)
+	require.NoError(t, err)
+
+	groups := bbolt.NewGroupRepo(store)
+	txm := bbolt.NewTxManager(store.DB())
+	pdp := authz.NewPDP(enforcer)
+
+	return group.New(enforcer, groups, txm, pdp), store, enforcer, groups
 }

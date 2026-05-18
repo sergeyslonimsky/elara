@@ -16,6 +16,13 @@ type Namespace struct {
 	Locked      bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+
+	// CanRead / CanWrite are populated per request, not persisted. They tell
+	// the UI what the *current caller* is allowed to do on this namespace —
+	// e.g. CanWrite gates the "Import here" button in ListNamespaces.
+	// Persistence adapters (bbolt) ignore these fields.
+	CanRead  bool
+	CanWrite bool
 }
 
 func (n *Namespace) Validate() error {

@@ -65,7 +65,7 @@ func (s *Service) List(ctx context.Context, issuedBy string) ([]*domain.Token, e
 		return nil, domain.ErrUnauthorized
 	}
 
-	isAdmin, err := s.enforcer.Enforce(claims.Email, auth.ObjectAll, auth.ObjectToken, auth.ActionRead)
+	isAdmin, err := s.enforcer.Enforce(claims.Email, domain.DomainAll, domain.ObjectToken, domain.ActionRead)
 	if err != nil {
 		return nil, fmt.Errorf("enforce admin token read: %w", err)
 	}
@@ -97,7 +97,7 @@ func (s *Service) Get(ctx context.Context, id string) (*domain.Token, error) {
 		return token, nil
 	}
 
-	isAdmin, err := s.enforcer.Enforce(claims.Email, auth.ObjectAll, auth.ObjectToken, auth.ActionRead)
+	isAdmin, err := s.enforcer.Enforce(claims.Email, domain.DomainAll, domain.ObjectToken, domain.ActionRead)
 	if err != nil {
 		return nil, fmt.Errorf("enforce admin token get: %w", err)
 	}
@@ -108,7 +108,7 @@ func (s *Service) Get(ctx context.Context, id string) (*domain.Token, error) {
 
 	// Check if caller has access to any of the token's namespaces.
 	for _, ns := range token.Namespaces {
-		allowed, err := s.enforcer.Enforce(claims.Email, ns, auth.ObjectNamespace, auth.ActionRead)
+		allowed, err := s.enforcer.Enforce(claims.Email, ns, domain.ObjectNamespace, domain.ActionRead)
 		if err != nil {
 			return nil, fmt.Errorf("enforce namespace read: %w", err)
 		}
@@ -134,7 +134,7 @@ func (s *Service) Revoke(ctx context.Context, id string) error {
 
 	allowed := token.IssuedBy == claims.Email
 	if !allowed {
-		isAdmin, err := s.enforcer.Enforce(claims.Email, auth.ObjectAll, auth.ObjectToken, auth.ActionWrite)
+		isAdmin, err := s.enforcer.Enforce(claims.Email, domain.DomainAll, domain.ObjectToken, domain.ActionWrite)
 		if err != nil {
 			return fmt.Errorf("enforce admin token write: %w", err)
 		}
@@ -156,7 +156,7 @@ func (s *Service) Revoke(ctx context.Context, id string) error {
 // writer tokens, can also write configs in each namespace.
 func (s *Service) checkNamespaceAccess(ctx context.Context, namespaces []string, role string) error {
 	for _, ns := range namespaces {
-		if err := auth.CheckAccess(ctx, s.enforcer, ns, auth.ObjectNamespace, auth.ActionRead); err != nil {
+		if err := auth.CheckAccess(ctx, s.enforcer, ns, domain.ObjectNamespace, domain.ActionRead); err != nil {
 			return fmt.Errorf("check access: %w", err)
 		}
 	}
@@ -166,7 +166,7 @@ func (s *Service) checkNamespaceAccess(ctx context.Context, namespaces []string,
 	}
 
 	for _, ns := range namespaces {
-		if err := auth.CheckAccess(ctx, s.enforcer, ns, auth.ObjectConfig, auth.ActionWrite); err != nil {
+		if err := auth.CheckAccess(ctx, s.enforcer, ns, domain.ObjectConfig, domain.ActionWrite); err != nil {
 			return fmt.Errorf("check access: %w", err)
 		}
 	}
@@ -215,7 +215,7 @@ func (s *Service) canSeeToken(
 		if !cached {
 			var err error
 
-			allowed, err = s.enforcer.Enforce(callerEmail, ns, auth.ObjectNamespace, auth.ActionRead)
+			allowed, err = s.enforcer.Enforce(callerEmail, ns, domain.ObjectNamespace, domain.ActionRead)
 			if err != nil {
 				return false, fmt.Errorf("enforce namespace read: %w", err)
 			}

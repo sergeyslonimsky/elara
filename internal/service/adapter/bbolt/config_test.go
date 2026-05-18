@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -132,7 +133,7 @@ func TestConfigRepo_VersionConflict(t *testing.T) {
 
 	err := repo.Update(ctx, cfg)
 	require.Error(t, err)
-	assert.ErrorIs(t, err, domain.ErrConflict)
+	assert.ErrorIs(t, err, domain.ErrVersionConflict)
 }
 
 func TestConfigRepo_ListByPrefix(t *testing.T) {
@@ -188,7 +189,7 @@ func TestConfigRepo_ListSummaryPage(t *testing.T) {
 
 	for i := range 5 {
 		cfg := &domain.Config{
-			Path: "/config" + string(rune('A'+i)) + ".json", Content: `{}`,
+			Path: "/config" + strconv.Itoa(int(rune('A'+i))) + ".json", Content: `{}`,
 			Format: domain.FormatJSON, Namespace: "default",
 		}
 		require.NoError(t, repo.Create(ctx, cfg))

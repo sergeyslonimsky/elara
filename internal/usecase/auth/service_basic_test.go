@@ -60,8 +60,7 @@ func TestService_BasicLogin(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
 				m.users.EXPECT().Get(gomock.Any(), adminEmail).Return(adminUser, nil)
-				m.enforcer.EXPECT().GetRolesForUser(adminEmail, auth.ObjectAll).Return([]string{}, nil)
-				m.enforcer.EXPECT().AddRoleForUser(adminEmail, auth.RoleAdmin, auth.ObjectAll).Return(nil)
+				m.admin.EXPECT().EnsureMember(gomock.Any(), adminEmail).Return(nil)
 				m.session.EXPECT().Create(adminUser).Return("admin-token", nil)
 
 				return svc

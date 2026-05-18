@@ -103,3 +103,43 @@ func TestUser_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestUser_EnsureMutable(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		user    domain.User
+		wantErr bool
+		errIs   error
+	}{
+		{
+			name:    "mutable user",
+			user:    domain.User{System: false},
+			wantErr: false,
+		},
+		{
+			name:    "immutable system user",
+			user:    domain.User{System: true},
+			wantErr: true,
+			errIs:   domain.ErrSystemImmutable,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := tt.user.EnsureMutable()
+
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errIs != nil {
+					require.ErrorIs(t, err, tt.errIs)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

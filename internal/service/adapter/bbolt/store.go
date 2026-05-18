@@ -1,6 +1,7 @@
 package bbolt
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -88,6 +89,11 @@ func (s *Store) Close() error {
 	}
 
 	return nil
+}
+
+// Shutdown closes the underlying bbolt database. Implements lifecycle.Resource.
+func (s *Store) Shutdown(_ context.Context) error {
+	return s.Close()
 }
 
 func (s *Store) DB() *bolt.DB {

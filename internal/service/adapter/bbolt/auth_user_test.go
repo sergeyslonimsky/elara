@@ -153,3 +153,46 @@ func TestUserRepo_SetPassword(t *testing.T) {
 	assert.Equal(t, "new-hash", got.PasswordHash)
 	assert.False(t, got.PasswordChangeRequired)
 }
+
+func TestUserRepo_SystemAndSource(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t)
+	repo := bboltadapter.NewUserRepo(store)
+	ctx := t.Context()
+
+	user := &domain.User{
+		Email:    "sys@example.com",
+		Name:     "System User",
+		Provider: domain.ProviderBasicAuth,
+		System:   true,
+		Source:   "seed",
+	}
+
+	// Upsert (New)
+	require.NoError(t, repo.Upsert(ctx, user))
+
+	// Get and verify
+	got, err := repo.Get(ctx, user.Email)
+	require.NoError(t, err)
+	assert.True(t, got.System)
+	assert.Equal(t, "seed", got.Source)
+
+	// Upsert (Existing) - should preserve System flag
+	user.Name = "Updated Name"
+	user.System = false
+	user.Source = "manual"
+	require.NoError(t, repo.Upsert(ctx, user))
+
+	final, err := repo.Get(ctx, user.Email)
+	require.NoError(t, err)
+	assert.True(t, final.System, "System flag must be preserved from existing record")
+	assert.Equal(t, "manual", final.Source, "Source should be updated if provided")
+
+	// Upsert (Existing) - preserve Source
+	user.Source = ""
+	require.NoError(t, repo.Upsert(ctx, user))
+	final2, err := repo.Get(ctx, user.Email)
+	require.NoError(t, err)
+	assert.Equal(t, "manual", final2.Source, "Source should be preserved if not provided")
+}

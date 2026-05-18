@@ -13,6 +13,10 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/usecase/namespace"
 )
 
+// List is authenticated-only at the handler boundary; the usecase uses the
+// caller's claims for business-logic filtering and per-namespace permission
+// flags (CanRead, CanWrite).
+
 func TestService_List(t *testing.T) {
 	t.Parallel()
 
@@ -22,44 +26,11 @@ func TestService_List(t *testing.T) {
 		mockFunc func(ctx context.Context, m mocks) context.Context
 		errIs    error
 		wantErr  string
-		want     *namespace.ListResult
+		wantLen  int
+		wantWant map[string]struct{ canWrite bool }
 	}{
 		{
-			name: "success",
-			params: namespace.ListParams{
-				Limit: 10,
-			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-
-				m.store.EXPECT().List(ctx).Return([]*domain.Namespace{
-					{Name: "prod"},
-					{Name: "dev"},
-				}, nil)
-
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectNamespace, auth.ActionRead).
-					Return(true, nil)
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "dev", auth.ObjectNamespace, auth.ActionRead).
-					Return(true, nil)
-
-				m.store.EXPECT().CountConfigs(ctx, "dev").Return(5, nil)
-				m.store.EXPECT().CountConfigs(ctx, "prod").Return(10, nil)
-
-				return ctx
-			},
-			want: &namespace.ListResult{
-				Namespaces: []*domain.Namespace{
-					{Name: "dev", ConfigCount: 5},
-					{Name: "prod", ConfigCount: 10},
-				},
-				Total: 2,
-				Limit: 10,
-			},
-		},
-		{
-			name:   "filter by permission",
+			name:   "success — annotates each visible namespace with CanRead/CanWrite",
 			params: namespace.ListParams{Limit: 10},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
@@ -69,27 +40,79 @@ func TestService_List(t *testing.T) {
 					{Name: "dev"},
 				}, nil)
 
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectNamespace, auth.ActionRead).
-					Return(true, nil)
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "dev", auth.ObjectNamespace, auth.ActionRead).
-					Return(false, nil)
+				// filter pass: both visible
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{
+						Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "prod",
+					}).
+					Return(true)
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{
+						Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev",
+					}).
+					Return(true)
 
+				m.store.EXPECT().CountConfigs(ctx, "dev").Return(5, nil)
 				m.store.EXPECT().CountConfigs(ctx, "prod").Return(10, nil)
+
+				// per-namespace CanWrite flag computation
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{
+						Object: domain.ObjectConfig, Action: domain.ActionWrite, Domain: "dev",
+					}).
+					Return(true)
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{
+						Object: domain.ObjectConfig, Action: domain.ActionWrite, Domain: "prod",
+					}).
+					Return(false)
 
 				return ctx
 			},
-			want: &namespace.ListResult{
-				Namespaces: []*domain.Namespace{
-					{Name: "prod", ConfigCount: 10},
-				},
-				Total: 1,
-				Limit: 10,
+			wantLen: 2,
+			wantWant: map[string]struct{ canWrite bool }{
+				"dev":  {canWrite: true},
+				"prod": {canWrite: false},
 			},
 		},
 		{
-			name: "unauthorized",
+			name:   "filter by namespace/read drops invisible items",
+			params: namespace.ListParams{Limit: 10},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+
+				m.store.EXPECT().List(ctx).Return([]*domain.Namespace{
+					{Name: "prod"},
+					{Name: "dev"},
+				}, nil)
+
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{
+						Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "prod",
+					}).
+					Return(true)
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{
+						Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev",
+					}).
+					Return(false)
+
+				m.store.EXPECT().CountConfigs(ctx, "prod").Return(10, nil)
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{
+						Object: domain.ObjectConfig, Action: domain.ActionWrite, Domain: "prod",
+					}).
+					Return(true)
+
+				return ctx
+			},
+			wantLen: 1,
+			wantWant: map[string]struct{ canWrite bool }{
+				"prod": {canWrite: true},
+			},
+		},
+		{
+			name: "unauthorized (no claims) returns ErrUnauthorized (defence in depth)",
 			mockFunc: func(ctx context.Context, _ mocks) context.Context {
 				return ctx
 			},
@@ -127,11 +150,13 @@ func TestService_List(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.Total, got.Total)
-			require.Len(t, got.Namespaces, len(tt.want.Namespaces))
-			for i := range got.Namespaces {
-				assert.Equal(t, tt.want.Namespaces[i].Name, got.Namespaces[i].Name)
-				assert.Equal(t, tt.want.Namespaces[i].ConfigCount, got.Namespaces[i].ConfigCount)
+			require.Len(t, got.Namespaces, tt.wantLen)
+
+			for _, ns := range got.Namespaces {
+				want, ok := tt.wantWant[ns.Name]
+				require.Truef(t, ok, "unexpected namespace %q in result", ns.Name)
+				assert.Truef(t, ns.CanRead, "CanRead must be true on every returned namespace (got %q)", ns.Name)
+				assert.Equalf(t, want.canWrite, ns.CanWrite, "CanWrite mismatch for %q", ns.Name)
 			}
 		})
 	}

@@ -15,10 +15,20 @@ type User struct {
 	Name                   string
 	Picture                string
 	Provider               string
+	System                 bool   // protected from delete/rename; set by Seed, never by the API
+	Source                 string // where the user came from (e.g. "seed", "oidc", "admin")
 	CreatedAt              time.Time
 	LastLoginAt            time.Time
 	PasswordHash           string
 	PasswordChangeRequired bool
+}
+
+func (u *User) EnsureMutable() error {
+	if u.System {
+		return ErrSystemImmutable
+	}
+
+	return nil
 }
 
 func (u *User) Validate() error {

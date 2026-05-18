@@ -12,7 +12,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/schema"
-	schema_mock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
+	schemamock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
 )
 
 func TestService_GetEffective(t *testing.T) {
@@ -34,10 +34,10 @@ func TestService_GetEffective(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
-				enforcer := schema_mock.NewMockenforcer(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(true, nil)
 
-				store := schema_mock.NewMockstore(ctrl)
+				store := schemamock.NewMockstore(ctrl)
 				now := time.Now()
 				schemas := []*domain.SchemaAttachment{
 					{ID: "s1", PathPattern: "/*.json", CreatedAt: now},
@@ -55,9 +55,9 @@ func TestService_GetEffective(t *testing.T) {
 			path:      "/other.txt",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				enforcer := schema_mock.NewMockenforcer(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
 				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(true, nil)
-				store := schema_mock.NewMockstore(ctrl)
+				store := schemamock.NewMockstore(ctrl)
 				store.EXPECT().List(ctx, "prod").Return([]*domain.SchemaAttachment{}, nil)
 
 				return schema.New(enforcer, store, nil), ctx

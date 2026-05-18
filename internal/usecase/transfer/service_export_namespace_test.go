@@ -144,6 +144,18 @@ func TestService_ExportNamespace(t *testing.T) {
 				assert.NotContains(t, entry, "namespaceLocked")
 			},
 		},
+		{
+			name:  "access denied",
+			input: input{namespace: "secret-ns"},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.enforcer.EXPECT().Enforce("test@example.com", "secret-ns", "config", "read").Return(false, nil)
+
+				return svc
+			},
+			errIs:   domain.ErrForbidden,
+			wantErr: "check access",
+		},
 	}
 
 	for _, tt := range tests {
@@ -154,7 +166,7 @@ func TestService_ExportNamespace(t *testing.T) {
 			sut := tt.mockFunc(ctrl)
 
 			payload, ct, fname, err := sut.ExportNamespace(
-				transferTestCtx(),
+				transferTestCtx(t.Context()),
 				tt.input.namespace,
 				tt.input.asZip,
 				tt.input.encoding,

@@ -7,141 +7,81 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/storage"
 	"github.com/sergeyslonimsky/elara/internal/usecase/policy"
 )
+
+// Authorization for policy.{AssignRole,RevokeRole,List} is enforced by the
+// RBAC interceptor; these tests cover only the business logic that remains
+// in the usecase. The Casbin enforcer is exercised end-to-end against a real
+// bbolt-backed PolicyRepo so we lock in the canonical g-rule layout
+// (group: prefix, single write, no per-member fan-out).
 
 func TestService_AssignRole(t *testing.T) {
 	t.Parallel()
 
-	subject := "devops"
-	dom := "prod"
-	role := "role:admin"
-	adminEmail := "admin@example.com"
+	const (
+		groupName = "devops"
+		dom       = "prod"
+		role      = "admin"
+	)
 
 	tests := []struct {
-		name     string
-		mockFunc func(context.Context, *gomock.Controller) (*policy.Service, context.Context)
-		errIs    error
-		wantErr  string
+		name      string
+		setupMock func(ctx context.Context, m *mocks)
+		// verify lets the success case assert the persisted g-rule layout.
+		verify  func(t *testing.T, e *casbin.Enforcer)
+		errIs   error
+		wantErr string
 	}{
 		{
-			name: "assign: subject is a group with 2 members -> members synced",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
+			name: "writes a single g-rule with the group: prefix; no per-member fan-out",
+			setupMock: func(ctx context.Context, m *mocks) {
+				m.groups.EXPECT().FindByName(ctx, groupName).Return(&domain.Group{Name: groupName}, nil)
+			},
+			verify: func(t *testing.T, e *casbin.Enforcer) {
+				t.Helper()
 
-				m.enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(true, nil)
-				m.enforcer.EXPECT().AddRoleForUser(subject, role, dom).Return(nil)
+				want := []string{domain.GroupSubject(groupName), role, dom}
 
-				m.groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
-					Name: subject, Members: []string{"user1@example.com", "user2@example.com"},
-				}, nil)
+				rules := e.GetGroupingPolicy()
+				found := 0
+				for _, r := range rules {
+					if len(r) == 3 && r[0] == want[0] && r[1] == want[1] && r[2] == want[2] {
+						found++
+					}
+				}
 
-				m.enforcer.EXPECT().AddRoleForUser("user1@example.com", subject, dom).Return(nil)
-				m.enforcer.EXPECT().AddRoleForUser("user2@example.com", subject, dom).Return(nil)
-
-				return sut, ctx
+				assert.Equal(t, 1, found, "expected exactly one g-rule %v, got rules=%v", want, rules)
 			},
 		},
 		{
-			name: "assign: subject is a group with no members -> no member calls",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
-				m.enforcer.EXPECT().AddRoleForUser(subject, role, dom).Return(nil)
-
-				m.groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
-					Name: subject, Members: []string{},
-				}, nil)
-
-				return sut, ctx
+			name: "non-existent group -> ErrNotFound, no Casbin mutation",
+			setupMock: func(ctx context.Context, m *mocks) {
+				m.groups.EXPECT().
+					FindByName(ctx, groupName).
+					Return(nil, domain.NewNotFoundError("group", groupName))
 			},
+			verify: func(t *testing.T, e *casbin.Enforcer) {
+				t.Helper()
+				// No g-rule for this group should exist after the failed call.
+				for _, r := range e.GetGroupingPolicy() {
+					if len(r) == 3 && r[0] == domain.GroupSubject(groupName) {
+						t.Errorf("unexpected g-rule for group: %v", r)
+					}
+				}
+			},
+			errIs: domain.ErrNotFound,
 		},
 		{
-			name: "assign: FindByName returns ErrNotFound -> success (subject is a user)",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
-				m.enforcer.EXPECT().AddRoleForUser(subject, role, dom).Return(nil)
-
-				m.groups.EXPECT().FindByName(ctx, subject).Return(nil, domain.ErrNotFound)
-
-				return sut, ctx
-			},
-		},
-		{
-			name: "assign: FindByName returns unexpected error -> returns error",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
-				m.enforcer.EXPECT().AddRoleForUser(subject, role, dom).Return(nil)
-
-				m.groups.EXPECT().FindByName(ctx, subject).Return(nil, errors.New("db error"))
-
-				return sut, ctx
+			name: "FindByName unexpected error -> wrapped",
+			setupMock: func(ctx context.Context, m *mocks) {
+				m.groups.EXPECT().FindByName(ctx, groupName).Return(nil, errors.New("db error"))
 			},
 			wantErr: "find group by name",
-		},
-		{
-			name: "enforce error",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-				m.enforcer.EXPECT().
-					Enforce(adminEmail, "*", "policy", "write").
-					Return(false, errors.New("enforce failed"))
-
-				return sut, ctx
-			},
-			wantErr: "enforce",
-		},
-		{
-			name: "sync group member fails",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(true, nil)
-				m.enforcer.EXPECT().AddRoleForUser(subject, role, dom).Return(nil)
-
-				m.groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
-					Name: subject, Members: []string{"member@example.com"},
-				}, nil)
-				m.enforcer.EXPECT().
-					AddRoleForUser("member@example.com", subject, dom).
-					Return(errors.New("casbin error"))
-
-				return sut, ctx
-			},
-			wantErr: "sync group member",
-		},
-		{
-			name: "unauthorized",
-			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*policy.Service, context.Context) {
-				return policy.New(nil, nil), ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
-			name: "forbidden",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-				m.enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(false, nil)
-
-				return sut, ctx
-			},
-			errIs: domain.ErrForbidden,
 		},
 	}
 
@@ -149,13 +89,17 @@ func TestService_AssignRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			sut, ctx := tt.mockFunc(t.Context(), ctrl)
+			sut, e, _, m := setupService(t)
+			ctx := t.Context()
+			tt.setupMock(ctx, m)
 
-			err := sut.AssignRole(ctx, subject, dom, role)
+			err := sut.AssignRole(ctx, groupName, dom, role)
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
+				if tt.verify != nil {
+					tt.verify(t, e)
+				}
 
 				return
 			}
@@ -165,6 +109,9 @@ func TestService_AssignRole(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+			if tt.verify != nil {
+				tt.verify(t, e)
+			}
 		})
 	}
 }
@@ -172,117 +119,34 @@ func TestService_AssignRole(t *testing.T) {
 func TestService_RevokeRole(t *testing.T) {
 	t.Parallel()
 
-	subject := "devops"
-	dom := "prod"
-	role := "role:admin"
-	adminEmail := "admin@example.com"
+	const (
+		groupName = "devops"
+		dom       = "prod"
+		role      = "admin"
+	)
 
 	tests := []struct {
-		name     string
-		mockFunc func(context.Context, *gomock.Controller) (*policy.Service, context.Context)
-		errIs    error
-		wantErr  string
+		name      string
+		preSeed   bool // if true, seed the g-rule before invoking RevokeRole.
+		setupMock func(ctx context.Context, m *mocks)
+		errIs     error
+		wantErr   string
 	}{
 		{
-			name: "revoke: subject is a group with 2 members -> members synced",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(true, nil)
-				m.enforcer.EXPECT().RemoveRoleForUser(subject, role, dom).Return(nil)
-
-				m.groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
-					Name: subject, Members: []string{"user1@example.com", "user2@example.com"},
-				}, nil)
-
-				m.enforcer.EXPECT().RemoveRoleForUser("user1@example.com", subject, dom).Return(nil)
-				m.enforcer.EXPECT().RemoveRoleForUser("user2@example.com", subject, dom).Return(nil)
-
-				return sut, ctx
+			name:    "single RemoveRoleForUser with group: prefix; all members lose access via casbin recursion",
+			preSeed: true,
+			setupMock: func(ctx context.Context, m *mocks) {
+				m.groups.EXPECT().FindByName(ctx, groupName).Return(&domain.Group{Name: groupName}, nil)
 			},
 		},
 		{
-			name: "revoke: subject is a group with no members -> no member calls",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
-				m.enforcer.EXPECT().RemoveRoleForUser(subject, role, dom).Return(nil)
-
-				m.groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
-					Name: subject, Members: []string{},
-				}, nil)
-
-				return sut, ctx
+			name: "non-existent group -> ErrNotFound",
+			setupMock: func(ctx context.Context, m *mocks) {
+				m.groups.EXPECT().
+					FindByName(ctx, groupName).
+					Return(nil, domain.NewNotFoundError("group", groupName))
 			},
-		},
-		{
-			name: "revoke: FindByName returns unexpected error -> returns error",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
-				m.enforcer.EXPECT().RemoveRoleForUser(subject, role, dom).Return(nil)
-
-				m.groups.EXPECT().FindByName(ctx, subject).Return(nil, errors.New("db error"))
-
-				return sut, ctx
-			},
-			wantErr: "find group by name",
-		},
-		{
-			name: "enforce error",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-				m.enforcer.EXPECT().
-					Enforce(adminEmail, "*", "policy", "write").
-					Return(false, errors.New("enforce failed"))
-
-				return sut, ctx
-			},
-			wantErr: "enforce",
-		},
-		{
-			name: "sync revoke group member fails",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(true, nil)
-				m.enforcer.EXPECT().RemoveRoleForUser(subject, role, dom).Return(nil)
-
-				m.groups.EXPECT().FindByName(ctx, subject).Return(&domain.Group{
-					Name: subject, Members: []string{"member@example.com"},
-				}, nil)
-				m.enforcer.EXPECT().
-					RemoveRoleForUser("member@example.com", subject, dom).
-					Return(errors.New("casbin error"))
-
-				return sut, ctx
-			},
-			wantErr: "sync revoke group member",
-		},
-		{
-			name: "unauthorized",
-			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*policy.Service, context.Context) {
-				return policy.New(nil, nil), ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
-			name: "forbidden",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-				m.enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "write").Return(false, nil)
-
-				return sut, ctx
-			},
-			errIs: domain.ErrForbidden,
+			errIs: domain.ErrNotFound,
 		},
 	}
 
@@ -290,10 +154,18 @@ func TestService_RevokeRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			sut, ctx := tt.mockFunc(t.Context(), ctrl)
+			sut, e, txm, m := setupService(t)
+			ctx := t.Context()
 
-			err := sut.RevokeRole(ctx, subject, dom, role)
+			if tt.preSeed {
+				require.NoError(t, e.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+					return txe.AddRoleForUser(domain.GroupSubject(groupName), role, dom)
+				}))
+			}
+
+			tt.setupMock(ctx, m)
+
+			err := sut.RevokeRole(ctx, groupName, dom, role)
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
@@ -306,6 +178,14 @@ func TestService_RevokeRole(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+
+			// After successful revoke the g-rule must be gone.
+			want := []string{domain.GroupSubject(groupName), role, dom}
+			for _, r := range e.GetGroupingPolicy() {
+				if len(r) == 3 && r[0] == want[0] && r[1] == want[1] && r[2] == want[2] {
+					t.Errorf("g-rule %v should be removed", want)
+				}
+			}
 		})
 	}
 }
@@ -313,78 +193,30 @@ func TestService_RevokeRole(t *testing.T) {
 func TestService_List(t *testing.T) {
 	t.Parallel()
 
-	adminEmail := "admin@example.com"
-
 	tests := []struct {
-		name     string
-		mockFunc func(context.Context, *gomock.Controller) (*policy.Service, context.Context)
-		wantLen  int
-		errIs    error
+		name string
+		// seed g-rules added through WriteTx prior to invoking List.
+		seedG [][]string
+		want  []policy.Rule
 	}{
 		{
-			name: "filters out membership records, keeps known roles",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "read").Return(true, nil)
-				rules := [][]string{
-					{"user@example.com", "admin", "*"},
-					{"devops", "writer", "prod"},
-					{"user@example.com", "devops", "prod"}, // membership record — filtered out
-				}
-				m.enforcer.EXPECT().GetGroupingPolicy().Return(rules)
-
-				return sut, ctx
+			name: "only group->role rules are surfaced; memberships and direct user grants are filtered",
+			seedG: [][]string{
+				// Direct user grant (plain email subject) — filtered.
+				{"admin@example.com", "admin", "*"},
+				// Canonical group->role rule.
+				{domain.GroupSubject("devops"), "admin", "prod"},
+				// Membership rule — column 0 is a plain user, filtered.
+				{"alice@example.com", domain.GroupSubject("devops"), "*"},
 			},
-			wantLen: 2,
+			want: []policy.Rule{
+				{Subject: "devops", Role: "admin", Domain: "prod"},
+			},
 		},
 		{
-			name: "all rules are membership records -> empty result",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
-				m.enforcer.EXPECT().GetGroupingPolicy().Return([][]string{
-					{"user1@example.com", "devops", "prod"},
-					{"user2@example.com", "devops", "prod"},
-				})
-
-				return sut, ctx
-			},
-			wantLen: 0,
-		},
-		{
-			name: "empty rules -> empty result",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
-				m.enforcer.EXPECT().GetGroupingPolicy().Return(nil)
-
-				return sut, ctx
-			},
-			wantLen: 0,
-		},
-		{
-			name: "unauthorized",
-			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*policy.Service, context.Context) {
-				return policy.New(nil, nil), ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
-			name: "forbidden",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*policy.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: adminEmail})
-				sut, m := setupService(ctrl)
-				m.enforcer.EXPECT().Enforce(adminEmail, "*", "policy", "read").Return(false, nil)
-
-				return sut, ctx
-			},
-			errIs: domain.ErrForbidden,
+			name:  "empty grouping policy -> empty result",
+			seedG: nil,
+			want:  []policy.Rule{},
 		},
 	}
 
@@ -392,18 +224,22 @@ func TestService_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			sut, ctx := tt.mockFunc(t.Context(), ctrl)
+			sut, e, txm, _ := setupService(t)
+			ctx := t.Context()
+
+			for _, g := range tt.seedG {
+				rule := g
+				require.NoError(t, e.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+					return txe.AddRoleForUser(rule[0], rule[1], rule[2])
+				}))
+			}
 
 			got, err := sut.List(ctx)
-
-			if tt.errIs != nil {
-				require.ErrorIs(t, err, tt.errIs)
-
-				return
-			}
 			require.NoError(t, err)
-			assert.Len(t, got, tt.wantLen)
+
+			// Compare contents irrespective of slice order — List does not
+			// promise stable ordering and the seed order is incidental.
+			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
 }

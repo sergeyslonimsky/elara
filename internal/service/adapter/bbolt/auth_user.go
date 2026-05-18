@@ -9,6 +9,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
 const errUnmarshalUser = "unmarshal user: %w"
@@ -16,6 +17,7 @@ const errUnmarshalUser = "unmarshal user: %w"
 // UserRepo stores and retrieves auth users in bbolt.
 type UserRepo struct {
 	store *Store
+	tx    storage.Tx
 }
 
 // NewUserRepo creates a new UserRepo backed by the given Store.
@@ -23,10 +25,38 @@ func NewUserRepo(store *Store) *UserRepo {
 	return &UserRepo{store: store}
 }
 
+// WithTx returns a new UserRepo that uses the provided transaction.
+func (r *UserRepo) WithTx(tx storage.Tx) *UserRepo {
+	return &UserRepo{
+		store: r.store,
+		tx:    tx,
+	}
+}
+
+func (r *UserRepo) view(fn func(storage.Tx) error) error {
+	if r.tx != nil {
+		return fn(r.tx)
+	}
+
+	return r.store.db.View(func(tx *bolt.Tx) error {
+		return fn(&txWrapper{tx: tx})
+	})
+}
+
+func (r *UserRepo) update(fn func(storage.Tx) error) error {
+	if r.tx != nil {
+		return fn(r.tx)
+	}
+
+	return r.store.db.Update(func(tx *bolt.Tx) error {
+		return fn(&txWrapper{tx: tx})
+	})
+}
+
 // Upsert creates or updates a user. It is called on every OIDC login.
 // When the user already exists, only Name, Picture, and LastLoginAt are updated.
 func (r *UserRepo) Upsert(_ context.Context, user *domain.User) error {
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
+	err := r.update(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthUsers))
 		key := []byte(user.Email)
 
@@ -42,6 +72,10 @@ func (r *UserRepo) Upsert(_ context.Context, user *domain.User) error {
 			}
 
 			user.CreatedAt = m.CreatedAt
+			user.System = m.System
+			if user.Source == "" {
+				user.Source = m.Source
+			}
 			user.PasswordHash = m.PasswordHash
 			user.PasswordChangeRequired = m.PasswordChangeRequired
 		}
@@ -63,7 +97,7 @@ func (r *UserRepo) Upsert(_ context.Context, user *domain.User) error {
 // SetPassword updates the password hash and password_change_required flag for a user.
 // Returns domain.ErrNotFound if the user does not exist.
 func (r *UserRepo) SetPassword(_ context.Context, email, hash string, changeRequired bool) error {
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
+	err := r.update(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthUsers))
 		key := []byte(email)
 
@@ -99,7 +133,7 @@ func (r *UserRepo) SetPassword(_ context.Context, email, hash string, changeRequ
 func (r *UserRepo) Get(_ context.Context, email string) (*domain.User, error) {
 	var user *domain.User
 
-	err := r.store.db.View(func(tx *bolt.Tx) error {
+	err := r.view(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthUsers))
 		data := b.Get([]byte(email))
 
@@ -126,7 +160,7 @@ func (r *UserRepo) Get(_ context.Context, email string) (*domain.User, error) {
 // Delete removes the user with the given email.
 // Returns domain.ErrNotFound if the user does not exist.
 func (r *UserRepo) Delete(_ context.Context, email string) error {
-	err := r.store.db.Update(func(tx *bolt.Tx) error {
+	err := r.update(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthUsers))
 		key := []byte(email)
 
@@ -147,7 +181,7 @@ func (r *UserRepo) Delete(_ context.Context, email string) error {
 func (r *UserRepo) List(_ context.Context) ([]*domain.User, error) {
 	var users []*domain.User
 
-	err := r.store.db.View(func(tx *bolt.Tx) error {
+	err := r.view(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthUsers))
 
 		return b.ForEach(func(_, v []byte) error {

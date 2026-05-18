@@ -13,7 +13,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/schema"
-	schema_mock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
+	schemamock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
 )
 
 func TestService_Get(t *testing.T) {
@@ -42,8 +42,8 @@ func TestService_Get(t *testing.T) {
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-				enforcer := schema_mock.NewMockenforcer(ctrl)
-				store := schema_mock.NewMockstore(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
+				store := schemamock.NewMockstore(ctrl)
 				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "read").Return(true, nil)
 				store.EXPECT().Get(ctx, testNamespace, testPathPattern).Return(&domain.SchemaAttachment{
 					ID:          "schema-1",
@@ -78,7 +78,7 @@ func TestService_Get(t *testing.T) {
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-				enforcer := schema_mock.NewMockenforcer(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
 				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "read").
 					Return(false, errors.New("casbin error"))
 
@@ -92,7 +92,7 @@ func TestService_Get(t *testing.T) {
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-				enforcer := schema_mock.NewMockenforcer(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
 				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "read").Return(false, nil)
 
 				return schema.New(enforcer, nil, nil), ctx
@@ -105,8 +105,8 @@ func TestService_Get(t *testing.T) {
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-				enforcer := schema_mock.NewMockenforcer(ctrl)
-				store := schema_mock.NewMockstore(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
+				store := schemamock.NewMockstore(ctrl)
 				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "read").Return(true, nil)
 				store.EXPECT().Get(ctx, testNamespace, testPathPattern).Return(nil, errors.New("bbolt error"))
 
@@ -120,8 +120,8 @@ func TestService_Get(t *testing.T) {
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-				enforcer := schema_mock.NewMockenforcer(ctrl)
-				store := schema_mock.NewMockstore(ctrl)
+				enforcer := schemamock.NewMockenforcer(ctrl)
+				store := schemamock.NewMockstore(ctrl)
 				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "read").Return(true, nil)
 				store.EXPECT().Get(ctx, testNamespace, testPathPattern).Return(nil, domain.ErrNotFound)
 

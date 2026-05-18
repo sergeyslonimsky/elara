@@ -5,23 +5,13 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
+// Get returns a single namespace. Authorization (namespace/read on `name`)
+// is enforced at the handler boundary.
 func (s *Service) Get(ctx context.Context, name string) (*domain.Namespace, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, domain.ErrUnauthorized
-	}
-
-	// domain = namespace name itself.
-	allowed, err := s.enforcer.Enforce(claims.Email, name, auth.ObjectNamespace, auth.ActionRead)
-	if err != nil {
-		return nil, fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return nil, domain.ErrForbidden
+	if err := s.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, name); err != nil {
+		return nil, err
 	}
 
 	ns, err := s.store.Get(ctx, name)

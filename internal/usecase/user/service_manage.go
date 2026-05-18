@@ -6,28 +6,15 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
+// Authorization for all UserService methods is enforced by the RBAC
+// interceptor (user/read|write at DomainAll). The usecase still needs claims
+// from context for `Delete` self-protection ("cannot delete your own account").
+
 func (s *Service) Create(ctx context.Context, email, name, initialPassword string) (*domain.User, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, domain.ErrUnauthorized
-	}
-
-	allowed, err := s.enforcer.Enforce(
-		claims.Email,
-		auth.ObjectAll,
-		auth.ObjectUser,
-		auth.ActionWrite,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return nil, domain.ErrForbidden
-	}
-
 	user := &domain.User{
 		Email:    email,
 		Name:     name,
@@ -66,20 +53,6 @@ func (s *Service) Delete(ctx context.Context, targetEmail string) error {
 		return domain.ErrUnauthorized
 	}
 
-	allowed, err := s.enforcer.Enforce(
-		claims.Email,
-		auth.ObjectAll,
-		auth.ObjectUser,
-		auth.ActionWrite,
-	)
-	if err != nil {
-		return fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return domain.ErrForbidden
-	}
-
 	if claims.Email == targetEmail {
 		return domain.NewValidationError("email", "cannot delete your own account")
 	}
@@ -92,32 +65,25 @@ func (s *Service) Delete(ctx context.Context, targetEmail string) error {
 		return err
 	}
 
-	if err := s.store.Delete(ctx, targetEmail); err != nil {
-		return fmt.Errorf("delete user: %w", err)
-	}
+	err := s.enforcer.WriteTx(ctx, s.txm, func(tx storage.Tx, txe *casbin.TxEnforcer) error {
+		if err := s.users.WithTx(tx).Delete(ctx, targetEmail); err != nil {
+			return fmt.Errorf("delete user: %w", err)
+		}
 
-	if err := s.enforcer.DeleteUser(targetEmail); err != nil {
-		return fmt.Errorf("delete casbin user: %w", err)
+		if err := txe.DeleteUser(targetEmail); err != nil {
+			return fmt.Errorf("delete casbin user: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (s *Service) List(ctx context.Context) ([]*domain.User, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, domain.ErrUnauthorized
-	}
-
-	allowed, err := s.enforcer.Enforce(claims.Email, auth.ObjectAll, auth.ObjectUser, auth.ActionRead)
-	if err != nil {
-		return nil, fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return nil, domain.ErrForbidden
-	}
-
 	users, err := s.store.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list users: %w", err)
@@ -127,20 +93,6 @@ func (s *Service) List(ctx context.Context) ([]*domain.User, error) {
 }
 
 func (s *Service) Get(ctx context.Context, email string) (*domain.User, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, domain.ErrUnauthorized
-	}
-
-	allowed, err := s.enforcer.Enforce(claims.Email, auth.ObjectAll, auth.ObjectUser, auth.ActionRead)
-	if err != nil {
-		return nil, fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return nil, domain.ErrForbidden
-	}
-
 	user, err := s.store.Get(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
@@ -155,7 +107,7 @@ func (s *Service) validateLastAdmin(targetEmail string) error {
 	isTargetAdmin := false
 
 	for _, rule := range rules {
-		if len(rule) == 3 && rule[1] == auth.RoleAdmin && rule[2] == auth.ObjectAll {
+		if len(rule) == 3 && rule[1] == domain.RoleAdmin && rule[2] == domain.DomainAll {
 			adminCount++
 			if rule[0] == targetEmail {
 				isTargetAdmin = true

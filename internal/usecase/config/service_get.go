@@ -18,7 +18,7 @@ func (s *Service) Get(ctx context.Context, in GetInput) (*domain.Config, error) 
 		return nil, domain.NewValidationError("namespace", "namespace is required")
 	}
 
-	if err := auth.CheckAccess(ctx, s.enforcer, in.Namespace, auth.ObjectConfig, auth.ActionRead); err != nil {
+	if err := auth.CheckAccess(ctx, s.enforcer, in.Namespace, domain.ObjectConfig, domain.ActionRead); err != nil {
 		return nil, fmt.Errorf("check access: %w", err)
 	}
 

@@ -3,14 +3,11 @@ package casbin_test
 import (
 	"testing"
 
-	casbinmodel "github.com/casbin/casbin/v2/model"
-	"github.com/casbin/casbin/v2/persist"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	casbinmock "github.com/sergeyslonimsky/elara/internal/service/auth/casbin/mocks"
+	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
 func TestNewEnforcer_WithExistingRules(t *testing.T) {
@@ -20,7 +17,7 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 		name  string
 		rules [][]string
 		// verify describes what to assert after loading
-		verify func(t *testing.T, e *casbin.Enforcer)
+		verify func(t *testing.T, e *casbin.Enforcer, txm storage.TxManager)
 	}{
 		{
 			name: "pre-existing p rule is enforced after load",
@@ -28,7 +25,7 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 				{"p", "admin", "*", "*", "*"},
 				{"g", "alice", "admin", "*"},
 			},
-			verify: func(t *testing.T, e *casbin.Enforcer) {
+			verify: func(t *testing.T, e *casbin.Enforcer, _ storage.TxManager) {
 				t.Helper()
 
 				ok, err := e.Enforce("alice", "*", "anything", "delete")
@@ -42,7 +39,7 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 				{"p", "reader", "*", "config", "read"},
 				{"g", "bob", "reader", "prod"},
 			},
-			verify: func(t *testing.T, e *casbin.Enforcer) {
+			verify: func(t *testing.T, e *casbin.Enforcer, _ storage.TxManager) {
 				t.Helper()
 
 				roles, err := e.GetRolesForUser("bob", "prod")
@@ -69,10 +66,10 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 				{"p", "writer", "*", "config", "write", "extra"},
 				{"p", "writer", "*", "config", "write"},
 			},
-			verify: func(t *testing.T, e *casbin.Enforcer) {
+			verify: func(t *testing.T, e *casbin.Enforcer, txm storage.TxManager) {
 				t.Helper()
 
-				require.NoError(t, e.AddRoleForUser("carol", "writer", "*"))
+				seedRole(t, e, txm, "carol", "writer", "*")
 				ok, err := e.Enforce("carol", "*", "config", "write")
 				require.NoError(t, err)
 				assert.True(t, ok, "carol should be allowed via the valid loaded rule")
@@ -87,7 +84,7 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 				{"g", "dave", "writer", "*"},
 				{"g", "eve", "reader", "*"},
 			},
-			verify: func(t *testing.T, e *casbin.Enforcer) {
+			verify: func(t *testing.T, e *casbin.Enforcer, _ storage.TxManager) {
 				t.Helper()
 
 				ok, err := e.Enforce("dave", "*", "config", "write")
@@ -109,31 +106,9 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			adapter := casbinmock.NewMockAdapter(ctrl)
+			e, txm := newTestEnforcerWithTxM(t, tt.rules)
 
-			adapter.EXPECT().LoadPolicy(gomock.Any()).DoAndReturn(func(m casbinmodel.Model) error {
-				for _, rule := range tt.rules {
-					if len(rule) == 0 {
-						continue
-					}
-
-					_ = persist.LoadPolicyArray(rule, m) // malformed entries are silently skipped
-				}
-
-				return nil
-			})
-			adapter.EXPECT().AddPolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-			adapter.EXPECT().RemovePolicy(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-			adapter.EXPECT().
-				RemoveFilteredPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(nil).
-				AnyTimes()
-
-			e, err := casbin.NewEnforcer(adapter)
-			require.NoError(t, err)
-
-			tt.verify(t, e)
+			tt.verify(t, e, txm)
 		})
 	}
 }
@@ -144,9 +119,9 @@ func TestEnforcer_PolicyMethods(t *testing.T) {
 	t.Run("AddPolicy adds a rule and Enforce recognizes it", func(t *testing.T) {
 		t.Parallel()
 
-		e := newTestEnforcer(t, nil)
+		e, txm := newTestEnforcerWithTxM(t, nil)
 
-		require.NoError(t, e.AddPolicy("role:custom", "ns1", "config", "read"))
+		seedPolicy(t, e, txm, "role:custom", "ns1", "config", "read")
 
 		ok, err := e.Enforce("role:custom", "ns1", "config", "read")
 		require.NoError(t, err)
@@ -156,15 +131,15 @@ func TestEnforcer_PolicyMethods(t *testing.T) {
 	t.Run("RemovePolicy removes a rule and Enforce no longer recognizes it", func(t *testing.T) {
 		t.Parallel()
 
-		e := newTestEnforcer(t, nil)
+		e, txm := newTestEnforcerWithTxM(t, nil)
 
-		require.NoError(t, e.AddPolicy("role:temp", "*", "namespace", "write"))
+		seedPolicy(t, e, txm, "role:temp", "*", "namespace", "write")
 
 		ok, err := e.Enforce("role:temp", "*", "namespace", "write")
 		require.NoError(t, err)
 		require.True(t, ok, "policy must exist before removal")
 
-		require.NoError(t, e.RemovePolicy("role:temp", "*", "namespace", "write"))
+		removePolicy(t, e, txm, "role:temp", "*", "namespace", "write")
 
 		ok, err = e.Enforce("role:temp", "*", "namespace", "write")
 		require.NoError(t, err)
@@ -174,10 +149,10 @@ func TestEnforcer_PolicyMethods(t *testing.T) {
 	t.Run("multiple AddRoleForUser calls do not duplicate", func(t *testing.T) {
 		t.Parallel()
 
-		e := newTestEnforcer(t, nil)
+		e, txm := newTestEnforcerWithTxM(t, nil)
 
-		require.NoError(t, e.AddRoleForUser("frank", "writer", "*"))
-		require.NoError(t, e.AddRoleForUser("frank", "writer", "*"))
+		seedRole(t, e, txm, "frank", "writer", "*")
+		seedRole(t, e, txm, "frank", "writer", "*")
 
 		roles, err := e.GetRolesForUser("frank", "*")
 		require.NoError(t, err)
@@ -194,10 +169,10 @@ func TestEnforcer_PolicyMethods(t *testing.T) {
 	t.Run("GetRolesForUser returns correct roles after multiple assignments", func(t *testing.T) {
 		t.Parallel()
 
-		e := newTestEnforcer(t, nil)
+		e, txm := newTestEnforcerWithTxM(t, nil)
 
-		require.NoError(t, e.AddRoleForUser("grace", "writer", "prod"))
-		require.NoError(t, e.AddRoleForUser("grace", "reader", "staging"))
+		seedRole(t, e, txm, "grace", "writer", "prod")
+		seedRole(t, e, txm, "grace", "reader", "staging")
 
 		prodRoles, err := e.GetRolesForUser("grace", "prod")
 		require.NoError(t, err)

@@ -25,7 +25,7 @@ func TestService_SubscribeChanges(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) (context.Context, <-chan domain.ClientChange) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				ch := make(chan domain.ClientChange)
@@ -88,7 +88,7 @@ func TestService_SubscribeClient(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) (context.Context, <-chan domain.ClientChange) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("test@example.com", auth.ObjectAll, auth.ObjectClient, auth.ActionRead).
+					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
 					Return(true, nil)
 
 				ch := make(chan domain.ClientChange)

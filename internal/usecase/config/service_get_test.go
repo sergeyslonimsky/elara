@@ -32,7 +32,7 @@ func TestService_Get(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionRead).
+					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
 					Return(true, nil)
 
 				m.storage.EXPECT().
@@ -65,7 +65,7 @@ func TestService_Get(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", auth.ObjectConfig, auth.ActionRead).
+					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
 					Return(true, nil)
 
 				m.storage.EXPECT().

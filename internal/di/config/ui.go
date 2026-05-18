@@ -23,12 +23,14 @@ type UI struct {
 
 // UIAuthConfig controls authentication and session management.
 type UIAuthConfig struct {
-	Enabled    bool
-	Type       AuthType
-	AdminEmail string
-	BasicAuth  BasicAuthConfig
-	OIDC       OIDCConfig
-	Session    SessionConfig
+	Enabled            bool
+	Type               AuthType
+	AdminEmail         string
+	SuperAdminUsername string
+	SuperAdminPassword string
+	BasicAuth          BasicAuthConfig
+	OIDC               OIDCConfig
+	Session            SessionConfig
 }
 
 type BasicAuthConfig struct {
@@ -59,12 +61,21 @@ var (
 	ErrBasicAuthAdminInitialPasswordRequired = errors.New(
 		"basic-auth requires ui.auth.basicAuth.adminInitialPassword to be set",
 	)
+	ErrSuperAdminUsernameRequired = errors.New("ui.auth.superadmin.username (or SUPERADMIN_USERNAME) is required")
+	ErrSuperAdminPasswordRequired = errors.New("ui.auth.superadmin.password (or SUPERADMIN_PASSWORD) is required")
 )
 
 // Validate returns an error if the configuration is invalid.
 func (c UIAuthConfig) Validate() error {
 	if !c.Enabled {
 		return nil
+	}
+
+	if c.SuperAdminUsername == "" {
+		return ErrSuperAdminUsernameRequired
+	}
+	if c.SuperAdminPassword == "" {
+		return ErrSuperAdminPasswordRequired
 	}
 
 	if c.Type == AuthTypeBasicAuth {
@@ -91,9 +102,11 @@ func newUIConfig(cfg *di.Config) (UI, error) {
 			),
 		},
 		Auth: UIAuthConfig{
-			Enabled:    cfg.GetBool("ui.auth.enabled"),
-			Type:       getAuthType(cfg),
-			AdminEmail: cfg.GetString("ui.auth.adminEmail"),
+			Enabled:            cfg.GetBool("ui.auth.enabled"),
+			Type:               getAuthType(cfg),
+			AdminEmail:         cfg.GetString("ui.auth.adminEmail"),
+			SuperAdminUsername: getSuperAdminUsername(cfg),
+			SuperAdminPassword: getSuperAdminPassword(cfg),
 			BasicAuth: BasicAuthConfig{
 				AdminInitialPassword: cfg.GetString("ui.auth.basicAuth.adminInitialPassword"),
 			},
@@ -142,4 +155,22 @@ func getAuthType(cfg *di.Config) AuthType {
 	default:
 		return AuthTypeNone
 	}
+}
+
+func getSuperAdminUsername(cfg *di.Config) string {
+	u := cfg.GetString("ui.auth.superadmin.username")
+	if u != "" {
+		return u
+	}
+
+	return cfg.GetString("SUPERADMIN_USERNAME")
+}
+
+func getSuperAdminPassword(cfg *di.Config) string {
+	p := cfg.GetString("ui.auth.superadmin.password")
+	if p != "" {
+		return p
+	}
+
+	return cfg.GetString("SUPERADMIN_PASSWORD")
 }

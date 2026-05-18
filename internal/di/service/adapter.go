@@ -85,22 +85,30 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 // Shutdown closes every adapter in reverse dependency order. Idempotent
 // and concurrent-safe: runs exactly once, subsequent calls return the
 // same cached result.
-func (a *Adapters) Shutdown(_ context.Context) error {
+func (a *Adapters) Shutdown(ctx context.Context) error {
 	a.shutdownOnce.Do(func() {
 		if a.WebhookDispatcher != nil {
-			a.WebhookDispatcher.Stop()
+			if err := a.WebhookDispatcher.Shutdown(ctx); err != nil {
+				a.shutdownErr = fmt.Errorf("shutdown webhook dispatcher: %w", err)
+			}
 		}
 
 		if a.ClientRegistry != nil {
-			a.ClientRegistry.Shutdown()
+			if err := a.ClientRegistry.Shutdown(ctx); err != nil && a.shutdownErr == nil {
+				a.shutdownErr = fmt.Errorf("shutdown client registry: %w", err)
+			}
 		}
 
 		if a.ClientHistory != nil {
-			a.ClientHistory.Shutdown()
+			if err := a.ClientHistory.Shutdown(ctx); err != nil && a.shutdownErr == nil {
+				a.shutdownErr = fmt.Errorf("shutdown client history: %w", err)
+			}
 		}
 
 		if a.Watch != nil {
-			a.Watch.Shutdown()
+			if err := a.Watch.Shutdown(ctx); err != nil && a.shutdownErr == nil {
+				a.shutdownErr = fmt.Errorf("shutdown watch: %w", err)
+			}
 		}
 
 		if a.Store != nil {

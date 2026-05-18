@@ -7,7 +7,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-//go:generate mockgen -destination=mocks/mock_access.go -package=mock_auth -source=access.go
+//go:generate mockgen -destination=mocks/mock_access.go -package=auth_mock -source=access.go
 
 // AccessEnforcer is satisfied by any enforcer that can check a permission.
 type AccessEnforcer interface {
@@ -29,6 +29,18 @@ func CheckAccess(ctx context.Context, e AccessEnforcer, dom, obj, act string) er
 
 	if !allowed {
 		return domain.ErrForbidden
+	}
+
+	return nil
+}
+
+// RequireAuthenticated rejects the call when claims aren't present. Use this
+// for handler methods that accept any authenticated user and let the usecase
+// decide what each user actually sees (e.g. List endpoints with per-item
+// permission filtering).
+func RequireAuthenticated(ctx context.Context) error {
+	if _, ok := ClaimsFromContext(ctx); !ok {
+		return domain.ErrUnauthorized
 	}
 
 	return nil

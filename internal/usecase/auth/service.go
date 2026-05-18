@@ -29,9 +29,12 @@ type (
 		Create(user *domain.User) (string, error)
 	}
 
-	bootstrapEnforcer interface {
-		GetRolesForUser(user, domain string) ([]string, error)
-		AddRoleForUser(user, role, domain string) error
+	// adminBootstrap is implemented by *auth.AdminBootstrap. It owns the
+	// system admins group and writes membership g-rules; the auth usecase
+	// asks it to ensure the configured bootstrap admin is a member after a
+	// successful login.
+	adminBootstrap interface {
+		EnsureMember(ctx context.Context, email string) error
 	}
 )
 
@@ -39,7 +42,7 @@ type Service struct {
 	provider   oidcProvider
 	users      userStore
 	session    sessionCreator
-	enforcer   bootstrapEnforcer
+	admin      adminBootstrap
 	adminEmail string
 }
 
@@ -47,14 +50,14 @@ func New(
 	provider oidcProvider,
 	users userStore,
 	session sessionCreator,
-	enforcer bootstrapEnforcer,
+	admin adminBootstrap,
 	adminEmail string,
 ) *Service {
 	return &Service{
 		provider:   provider,
 		users:      users,
 		session:    session,
-		enforcer:   enforcer,
+		admin:      admin,
 		adminEmail: adminEmail,
 	}
 }

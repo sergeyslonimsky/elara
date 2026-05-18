@@ -6,15 +6,15 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/usecase/dashboard"
-	dashboard_mock "github.com/sergeyslonimsky/elara/internal/usecase/dashboard/mocks"
+	dashboardmock "github.com/sergeyslonimsky/elara/internal/usecase/dashboard/mocks"
 )
 
 type mocks struct {
-	enforcer      *dashboard_mock.Mockenforcer
-	namespaces    *dashboard_mock.MocknsLister
-	configs       *dashboard_mock.MockconfigCounter
-	activity      *dashboard_mock.MockactivitySource
-	activeClients *dashboard_mock.MockactiveClientsSource
+	enforcer      *dashboardmock.Mockenforcer
+	namespaces    *dashboardmock.MocknsLister
+	configs       *dashboardmock.MockconfigCounter
+	activity      *dashboardmock.MockactivitySource
+	activeClients *dashboardmock.MockactiveClientsSource
 }
 
 func setupService(t *testing.T) (*dashboard.Service, mocks, *gomock.Controller) {
@@ -22,11 +22,11 @@ func setupService(t *testing.T) (*dashboard.Service, mocks, *gomock.Controller) 
 	ctrl := gomock.NewController(t)
 
 	m := mocks{
-		enforcer:      dashboard_mock.NewMockenforcer(ctrl),
-		namespaces:    dashboard_mock.NewMocknsLister(ctrl),
-		configs:       dashboard_mock.NewMockconfigCounter(ctrl),
-		activity:      dashboard_mock.NewMockactivitySource(ctrl),
-		activeClients: dashboard_mock.NewMockactiveClientsSource(ctrl),
+		enforcer:      dashboardmock.NewMockenforcer(ctrl),
+		namespaces:    dashboardmock.NewMocknsLister(ctrl),
+		configs:       dashboardmock.NewMockconfigCounter(ctrl),
+		activity:      dashboardmock.NewMockactivitySource(ctrl),
+		activeClients: dashboardmock.NewMockactiveClientsSource(ctrl),
 	}
 	svc := dashboard.New(m.enforcer, m.namespaces, m.configs, m.activity, m.activeClients)
 

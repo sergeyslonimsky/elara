@@ -75,7 +75,13 @@ func run() error {
 	// Background worker: fan-out webhook delivery. Lives for the lifetime of
 	// ctx — app.App's signal handler cancels ctx on shutdown, the dispatcher
 	// drains and exits.
-	go svc.Adapters.WebhookDispatcher.Start(ctx)
+	go func() {
+		if err := svc.Adapters.WebhookDispatcher.Run(ctx); err != nil {
+			// Dispatcher's Run blocks until ctx cancel; non-nil error is
+			// logged but doesn't fail the process — Shutdown handles drain.
+			_ = err
+		}
+	}()
 
 	// Registration order is LIFO for shutdown:
 	//   otelProvider      ← shuts down LAST (telemetry exporters close last)
@@ -118,12 +124,25 @@ func run() error {
 	return nil
 }
 
-// bootstrap performs idempotent data-plane seeding: passthrough admin policy
-// when auth is disabled, basic-auth admin user, admin role and policy for the
-// configured admin email. Safe to call on every startup.
+// bootstrap performs idempotent superadmin seeding: the system:superadmin
+// group, the superadmin user from config, and the (*,*,*) p-rule. Safe to
+// call on every startup — each step is idempotent. Skipped when UI auth is
+// disabled (passthrough mode handles its own enforcer seeding).
 func bootstrap(ctx context.Context, svc *service.Manager, cfg config.Config) error {
-	if err := service.Bootstrap(ctx, svc.Adapters, cfg, svc.Enforcer); err != nil {
-		return fmt.Errorf("bootstrap services: %w", err)
+	if !cfg.UI.Auth.Enabled {
+		return nil
+	}
+
+	if svc.Services.AdminBootstrap == nil {
+		return nil
+	}
+
+	if err := svc.Services.AdminBootstrap.Bootstrap(
+		ctx,
+		cfg.UI.Auth.SuperAdminUsername,
+		cfg.UI.Auth.SuperAdminPassword,
+	); err != nil {
+		return fmt.Errorf("admin bootstrap: %w", err)
 	}
 
 	return nil

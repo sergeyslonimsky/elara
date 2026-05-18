@@ -17,39 +17,68 @@ func (s *Service) Import(
 	dryRun bool,
 	targetNamespace string,
 ) (*domain.ImportReport, error) {
-	if err := auth.CheckAccess(ctx, s.enforcer, auth.ObjectAll, auth.ObjectTransfer, auth.ActionWrite); err != nil {
-		return nil, fmt.Errorf("check access: %w", err)
-	}
-
 	if onConflict == transferv1.ConflictResolution_CONFLICT_RESOLUTION_UNSPECIFIED {
 		onConflict = transferv1.ConflictResolution_CONFLICT_RESOLUTION_SKIP
 	}
 
-	// When a target namespace is specified, only a single NamespaceBundle is allowed.
 	if targetNamespace != "" {
-		bundle, err := unmarshalNamespaceBundle(data)
-		if err != nil {
-			return nil, domain.NewValidationError("data", fmt.Sprintf("parse bundle: %s", err))
-		}
-
-		bundle.Namespace = targetNamespace
-
-		report := &domain.ImportReport{DryRun: dryRun}
-
-		return report, s.importNamespaceBundle(ctx, bundle, onConflict, dryRun, report)
+		return s.importToTarget(ctx, data, onConflict, dryRun, targetNamespace)
 	}
 
-	// Try AllBundle first — it has a top-level "namespaces" array.
+	return s.importInferredScope(ctx, data, onConflict, dryRun)
+}
+
+// importToTarget imports a single NamespaceBundle into an explicit target
+// namespace. The bundle's own namespace field is overwritten.
+func (s *Service) importToTarget(
+	ctx context.Context,
+	data []byte,
+	onConflict transferv1.ConflictResolution,
+	dryRun bool,
+	targetNamespace string,
+) (*domain.ImportReport, error) {
+	if err := auth.CheckAccess(ctx, s.enforcer, targetNamespace, domain.ObjectConfig, domain.ActionWrite); err != nil {
+		return nil, fmt.Errorf("check access: %w", err)
+	}
+
+	bundle, err := unmarshalNamespaceBundle(data)
+	if err != nil {
+		return nil, domain.NewValidationError("data", fmt.Sprintf("parse bundle: %s", err))
+	}
+
+	bundle.Namespace = targetNamespace
+	report := &domain.ImportReport{DryRun: dryRun}
+
+	return report, s.importNamespaceBundle(ctx, bundle, onConflict, dryRun, report)
+}
+
+// importInferredScope tries AllBundle first (multi-namespace import) and
+// falls back to a single NamespaceBundle that names its own namespace.
+func (s *Service) importInferredScope(
+	ctx context.Context,
+	data []byte,
+	onConflict transferv1.ConflictResolution,
+	dryRun bool,
+) (*domain.ImportReport, error) {
 	allBundle, err := unmarshalAllBundle(data)
 	if err != nil {
 		return nil, domain.NewValidationError("data", fmt.Sprintf("parse bundle: %s", err))
 	}
 
 	if len(allBundle.Namespaces) > 0 {
+		if err := auth.CheckAccess(
+			ctx,
+			s.enforcer,
+			domain.DomainAll,
+			domain.ObjectTransfer,
+			domain.ActionWrite,
+		); err != nil {
+			return nil, fmt.Errorf("check access: %w", err)
+		}
+
 		return s.importAllBundle(ctx, allBundle, onConflict, dryRun)
 	}
 
-	// Fall back to single NamespaceBundle.
 	bundle, err := unmarshalNamespaceBundle(data)
 	if err != nil {
 		return nil, domain.NewValidationError("data", fmt.Sprintf("parse bundle: %s", err))
@@ -57,6 +86,10 @@ func (s *Service) Import(
 
 	if bundle.Namespace == "" {
 		return nil, domain.NewValidationError("namespace", "bundle namespace is required")
+	}
+
+	if err := auth.CheckAccess(ctx, s.enforcer, bundle.Namespace, domain.ObjectConfig, domain.ActionWrite); err != nil {
+		return nil, fmt.Errorf("check access: %w", err)
 	}
 
 	report := &domain.ImportReport{DryRun: dryRun}

@@ -8,12 +8,12 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/token"
-	token_mock "github.com/sergeyslonimsky/elara/internal/usecase/token/mocks"
+	tokenmock "github.com/sergeyslonimsky/elara/internal/usecase/token/mocks"
 )
 
 type mocks struct {
-	enforcer *token_mock.Mockenforcer
-	store    *token_mock.Mockstore
+	enforcer *tokenmock.Mockenforcer
+	store    *tokenmock.Mockstore
 }
 
 func setupService(t *testing.T) (*token.Service, mocks) {
@@ -21,8 +21,8 @@ func setupService(t *testing.T) (*token.Service, mocks) {
 
 	ctrl := gomock.NewController(t)
 	m := mocks{
-		enforcer: token_mock.NewMockenforcer(ctrl),
-		store:    token_mock.NewMockstore(ctrl),
+		enforcer: tokenmock.NewMockenforcer(ctrl),
+		store:    tokenmock.NewMockstore(ctrl),
 	}
 
 	svc := token.New(m.enforcer, m.store)

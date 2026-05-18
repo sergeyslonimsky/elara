@@ -33,7 +33,7 @@ func TestService_Copy(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.enforcer.EXPECT().
-					Enforce("user@example.com", "dst", auth.ObjectConfig, auth.ActionWrite).
+					Enforce("user@example.com", "dst", domain.ObjectConfig, domain.ActionWrite).
 					Return(true, nil)
 
 				m.storage.EXPECT().

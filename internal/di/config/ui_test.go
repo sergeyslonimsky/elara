@@ -27,9 +27,11 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 		{
 			name: "basic-auth with all fields",
 			auth: config.UIAuthConfig{
-				Enabled:    true,
-				Type:       config.AuthTypeBasicAuth,
-				AdminEmail: "admin@example.com",
+				Enabled:            true,
+				Type:               config.AuthTypeBasicAuth,
+				AdminEmail:         "admin@example.com",
+				SuperAdminUsername: "admin",
+				SuperAdminPassword: "password",
 				BasicAuth: config.BasicAuthConfig{
 					AdminInitialPassword: "password",
 				},
@@ -39,8 +41,10 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 		{
 			name: "basic-auth missing email",
 			auth: config.UIAuthConfig{
-				Enabled: true,
-				Type:    config.AuthTypeBasicAuth,
+				Enabled:            true,
+				Type:               config.AuthTypeBasicAuth,
+				SuperAdminUsername: "admin",
+				SuperAdminPassword: "password",
 				BasicAuth: config.BasicAuthConfig{
 					AdminInitialPassword: "password",
 				},
@@ -51,18 +55,40 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 		{
 			name: "basic-auth missing password",
 			auth: config.UIAuthConfig{
-				Enabled:    true,
-				Type:       config.AuthTypeBasicAuth,
-				AdminEmail: "admin@example.com",
+				Enabled:            true,
+				Type:               config.AuthTypeBasicAuth,
+				AdminEmail:         "admin@example.com",
+				SuperAdminUsername: "admin",
+				SuperAdminPassword: "password",
 			},
 			wantErr: true,
 			errMsg:  "basic-auth requires ui.auth.basicAuth.adminInitialPassword to be set",
 		},
 		{
-			name: "oidc missing fields (not validated yet)",
+			name: "superadmin missing username",
 			auth: config.UIAuthConfig{
-				Enabled: true,
-				Type:    config.AuthTypeOIDC,
+				Enabled:            true,
+				SuperAdminPassword: "password",
+			},
+			wantErr: true,
+			errMsg:  "ui.auth.superadmin.username (or SUPERADMIN_USERNAME) is required",
+		},
+		{
+			name: "superadmin missing password",
+			auth: config.UIAuthConfig{
+				Enabled:            true,
+				SuperAdminUsername: "admin",
+			},
+			wantErr: true,
+			errMsg:  "ui.auth.superadmin.password (or SUPERADMIN_PASSWORD) is required",
+		},
+		{
+			name: "oidc with superadmin",
+			auth: config.UIAuthConfig{
+				Enabled:            true,
+				Type:               config.AuthTypeOIDC,
+				SuperAdminUsername: "admin",
+				SuperAdminPassword: "password",
 			},
 			wantErr: false,
 		},

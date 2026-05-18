@@ -12,7 +12,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	mock_monitor "github.com/sergeyslonimsky/elara/internal/service/monitor/mocks"
+	mockmonitor "github.com/sergeyslonimsky/elara/internal/service/monitor/mocks"
 )
 
 // drainEvents reads up to n change events from ch, with timeout.
@@ -93,6 +93,7 @@ func TestRegistry_UpdateIdentity_OnlyFirstWins(t *testing.T) {
 	r.UpdateIdentity(id, domain.ConnectionInfo{ClientName: "second"})
 
 	c := r.Get(id)
+	require.NotNil(t, c)
 	assert.Equal(t, "first", c.ClientName, "identity must be set once and remain stable")
 }
 
@@ -119,6 +120,7 @@ func TestRegistry_RegisterPopulatesIdentityImmediately(t *testing.T) {
 	r.UpdateIdentity(id, domain.ConnectionInfo{ClientName: "should-not-overwrite"})
 
 	c := r.Get(id)
+	require.NotNil(t, c)
 	assert.Equal(t, "x", c.ClientName)
 }
 
@@ -138,6 +140,7 @@ func TestRegistry_RecordRequest_IncCountersAndEvents(t *testing.T) {
 	r.RecordRequest(id, "Put", "/ns/c", 3, 4*time.Millisecond, errors.New("boom"))
 
 	c := r.Get(id)
+	require.NotNil(t, c)
 	assert.Equal(t, int64(3), c.RequestCounts["Put"])
 	assert.Equal(t, int64(1), c.RequestCounts["Range"])
 	assert.Equal(t, int64(1), c.ErrorCount)
@@ -220,7 +223,9 @@ func TestRegistry_UnregisterWatch(t *testing.T) {
 	r.RegisterWatch(id, domain.ActiveWatch{WatchID: 2, StartKey: "/b"})
 
 	r.UnregisterWatch(id, 1)
-	assert.Equal(t, int32(1), r.Get(id).ActiveWatches)
+	c := r.Get(id)
+	require.NotNil(t, c)
+	assert.Equal(t, int32(1), c.ActiveWatches)
 
 	got := r.ActiveWatches(id)
 	require.Len(t, got, 1)
@@ -228,7 +233,9 @@ func TestRegistry_UnregisterWatch(t *testing.T) {
 
 	// Unknown ID — no-op
 	r.UnregisterWatch(id, 999)
-	assert.Equal(t, int32(1), r.Get(id).ActiveWatches)
+	c2 := r.Get(id)
+	require.NotNil(t, c2)
+	assert.Equal(t, int32(1), c2.ActiveWatches)
 }
 
 func TestRegistry_RegisterWatch_Idempotent(t *testing.T) {
@@ -243,7 +250,10 @@ func TestRegistry_RegisterWatch_Idempotent(t *testing.T) {
 	got := r.ActiveWatches(id)
 	require.Len(t, got, 1, "same WatchID overwrites, doesn't duplicate")
 	assert.Equal(t, "/a-updated", got[0].StartKey)
-	assert.Equal(t, int32(1), r.Get(id).ActiveWatches)
+
+	c := r.Get(id)
+	require.NotNil(t, c)
+	assert.Equal(t, int32(1), c.ActiveWatches)
 }
 
 func TestRegistry_ActiveWatches_UnknownConn(t *testing.T) {
@@ -261,10 +271,16 @@ func TestRegistry_ActiveWatches(t *testing.T) {
 
 	r.IncActiveWatches(id)
 	r.IncActiveWatches(id)
-	assert.Equal(t, int32(2), r.Get(id).ActiveWatches)
+
+	c1 := r.Get(id)
+	require.NotNil(t, c1)
+	assert.Equal(t, int32(2), c1.ActiveWatches)
 
 	r.DecActiveWatches(id)
-	assert.Equal(t, int32(1), r.Get(id).ActiveWatches)
+
+	c2 := r.Get(id)
+	require.NotNil(t, c2)
+	assert.Equal(t, int32(1), c2.ActiveWatches)
 
 	// Unknown id is a no-op
 	r.IncActiveWatches("nope")
@@ -278,7 +294,7 @@ func TestRegistry_Unregister_RecordsToHistorySinkWithDisconnectedAt(t *testing.T
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	sink := mock_monitor.NewMockHistorySink(ctrl)
+	sink := mockmonitor.NewMockHistorySink(ctrl)
 	r := NewRegistry(Config{}, sink)
 
 	id := r.RegisterConnection(domain.ConnectionInfo{
@@ -319,7 +335,7 @@ func TestRegistry_PubSub_ConnectAndDisconnect(t *testing.T) {
 	t.Parallel()
 
 	r := NewRegistry(Config{}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	ch, cleanup := r.Subscribe()
 	defer cleanup()
@@ -338,7 +354,7 @@ func TestRegistry_PubSub_ActivityIsThrottled(t *testing.T) {
 	t.Parallel()
 
 	r := NewRegistry(Config{ActivityThrottle: 100 * time.Millisecond}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	ch, cleanup := r.Subscribe()
 	defer cleanup()
@@ -374,7 +390,7 @@ func TestRegistry_PubSub_ActivityDisabledWhenFlagSet(t *testing.T) {
 	t.Parallel()
 
 	r := NewRegistry(Config{DisableActivityEvents: true}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	ch, cleanup := r.Subscribe()
 	defer cleanup()
@@ -402,7 +418,7 @@ func TestRegistry_Subscribe_Cleanup_IsIdempotent(t *testing.T) {
 	t.Parallel()
 
 	r := NewRegistry(Config{}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	ch, cleanup := r.Subscribe()
 
@@ -419,7 +435,7 @@ func TestRegistry_Shutdown_ClosesAllSubscriptions(t *testing.T) {
 	r := NewRegistry(Config{}, nil)
 
 	ch, _ := r.Subscribe()
-	r.Shutdown()
+	require.NoError(t, r.Shutdown(t.Context()))
 
 	_, ok := <-ch
 	assert.False(t, ok, "Shutdown closes subscriber channels")
@@ -437,7 +453,7 @@ func TestRegistry_PubSub_DropsOnFullBuffer(t *testing.T) {
 	// Subscribe but never drain — publisher must continue to function for
 	// other subscribers and must not block on RegisterConnection.
 	r := NewRegistry(Config{}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	_, cleanup := r.Subscribe()
 	defer cleanup()
@@ -472,7 +488,7 @@ func TestRegistry_SubscribeClient_DeliversPerRPCEvents(t *testing.T) {
 	t.Parallel()
 
 	r := NewRegistry(Config{DisableActivityEvents: true}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	id := r.RegisterConnection(domain.ConnectionInfo{PeerAddress: "p"})
 
@@ -495,7 +511,7 @@ func TestRegistry_SubscribeClient_DisconnectClosesChannel(t *testing.T) {
 	t.Parallel()
 
 	r := NewRegistry(Config{}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	id := r.RegisterConnection(domain.ConnectionInfo{PeerAddress: "p"})
 	ch, cleanup := r.SubscribeClient(id)
@@ -522,7 +538,7 @@ func TestRegistry_SubscribeClient_UnknownConn_ReturnsClosedChan(t *testing.T) {
 	t.Parallel()
 
 	r := NewRegistry(Config{}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	ch, cleanup := r.SubscribeClient("does-not-exist")
 	defer cleanup()
@@ -537,7 +553,7 @@ func TestRegistry_SubscribeClient_NoSubscribers_NoPublishOverhead(t *testing.T) 
 	// Hot-path guard: when nobody subscribes, RecordRequest must not allocate
 	// per-RPC publisher. We assert this indirectly: e.pub stays nil.
 	r := NewRegistry(Config{DisableActivityEvents: true}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	id := r.RegisterConnection(domain.ConnectionInfo{PeerAddress: "p"})
 
@@ -558,7 +574,7 @@ func TestRegistry_SubscribeClient_Cleanup_ReleasesSubscription(t *testing.T) {
 	t.Parallel()
 
 	r := NewRegistry(Config{}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	id := r.RegisterConnection(domain.ConnectionInfo{PeerAddress: "p"})
 	ch, cleanup := r.SubscribeClient(id)
@@ -580,7 +596,7 @@ func TestRegistry_SubscribeClient_Shutdown_ClosesPerClientChans(t *testing.T) {
 	id := r.RegisterConnection(domain.ConnectionInfo{PeerAddress: "p"})
 	ch, _ := r.SubscribeClient(id)
 
-	r.Shutdown()
+	require.NoError(t, r.Shutdown(t.Context()))
 
 	deadline := time.After(time.Second)
 	for {
@@ -600,7 +616,7 @@ func TestRegistry_SubscribeClient_BurstDoesNotBlockHotPath(t *testing.T) {
 
 	// A subscriber that doesn't drain → publisher must drop, not block RecordRequest.
 	r := NewRegistry(Config{DisableActivityEvents: true}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	id := r.RegisterConnection(domain.ConnectionInfo{PeerAddress: "p"})
 	_, cleanup := r.SubscribeClient(id)
@@ -650,7 +666,7 @@ func TestRegistry_ConcurrentRegisterAndQuery(t *testing.T) {
 	t.Parallel()
 
 	r := NewRegistry(Config{DisableActivityEvents: true}, nil)
-	defer r.Shutdown()
+	t.Cleanup(func() { require.NoError(t, r.Shutdown(t.Context())) })
 
 	var (
 		stop atomic.Bool

@@ -8,60 +8,42 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
+
+// Authorization is enforced at the handler boundary; these tests cover only
+// the business behaviour of Get.
 
 func TestService_Get(t *testing.T) {
 	t.Parallel()
 
+	const name = "prod"
+
 	tests := []struct {
 		name     string
-		nsName   string
 		mockFunc func(ctx context.Context, m mocks) context.Context
-		errIs    error
 		wantErr  string
 		want     *domain.Namespace
 	}{
 		{
-			name:   "success",
-			nsName: "prod",
+			name: "success",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-
-				m.enforcer.EXPECT().Enforce("user@example.com", "prod", "namespace", "read").Return(true, nil)
-				m.store.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
-				m.store.EXPECT().CountConfigs(ctx, "prod").Return(5, nil)
-
-				return ctx
-			},
-			want: &domain.Namespace{Name: "prod", ConfigCount: 5},
-		},
-		{
-			name:   "unauthorized",
-			nsName: "prod",
-			mockFunc: func(ctx context.Context, _ mocks) context.Context {
-				return ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
-			name:   "forbidden",
-			nsName: "prod",
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().Enforce("user@example.com", "prod", "namespace", "read").Return(false, nil)
+				m.authz.EXPECT().
+					Require(ctx, domain.ObjectNamespace, domain.ActionRead, name).
+					Return(nil)
+				m.store.EXPECT().Get(ctx, name).Return(&domain.Namespace{Name: name}, nil)
+				m.store.EXPECT().CountConfigs(ctx, name).Return(5, nil)
 
 				return ctx
 			},
-			errIs: domain.ErrForbidden,
+			want: &domain.Namespace{Name: name, ConfigCount: 5},
 		},
 		{
-			name:   "namespace not found",
-			nsName: "prod",
+			name: "namespace not found",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().Enforce("user@example.com", "prod", "namespace", "read").Return(true, nil)
-				m.store.EXPECT().Get(ctx, "prod").Return(nil, domain.ErrNotFound)
+				m.authz.EXPECT().
+					Require(ctx, domain.ObjectNamespace, domain.ActionRead, name).
+					Return(nil)
+				m.store.EXPECT().Get(ctx, name).Return(nil, domain.ErrNotFound)
 
 				return ctx
 			},
@@ -76,13 +58,8 @@ func TestService_Get(t *testing.T) {
 			svc, m, _ := setupService(t)
 			ctx := tt.mockFunc(t.Context(), m)
 
-			got, err := svc.Get(ctx, tt.nsName)
+			got, err := svc.Get(ctx, name)
 
-			if tt.errIs != nil {
-				require.ErrorIs(t, err, tt.errIs)
-
-				return
-			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
 
