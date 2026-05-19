@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package elara.auth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1;authv1";
+
+message User {
+  string email = 1;
+  string name = 2;
+  string picture = 3;
+  string provider = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp last_login_at = 6;
+}
+
+message ListUsersRequest {}
+
+message ListUsersResponse {
+  repeated User users = 1;
+}
+
+message GetUserRequest {
+  string email = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+// Admin-only, basic-auth mode only
+message CreateUserRequest {
+  string email = 1;
+  string name = 2;
+  string initial_password = 3;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+// Admin-only — resets the target user's password and sets password_change_required
+message ResetUserPasswordRequest {
+  string email = 1;
+  string new_password = 2;
+}
+
+message ResetUserPasswordResponse {}
+
+// Admin-only, basic-auth mode only
+message DeleteUserRequest {
+  string email = 1;
+}
+
+message DeleteUserResponse {}
+
+service UserService {
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+
+  // basic-auth only
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc ResetUserPassword(ResetUserPasswordRequest) returns (ResetUserPasswordResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+}

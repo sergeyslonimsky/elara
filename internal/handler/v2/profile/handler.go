@@ -10,6 +10,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
+	"github.com/sergeyslonimsky/elara/internal/handler/v2/permission"
 	profilev1 "github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	profileuc "github.com/sergeyslonimsky/elara/internal/usecase/profile"
@@ -57,24 +58,13 @@ func (h *Handler) Me(
 		return nil, v2.ToConnectError(err)
 	}
 
-	namespaces := make([]*profilev1.NamespaceAccess, 0, len(result.Namespaces))
-	for _, ns := range result.Namespaces {
-		namespaces = append(namespaces, &profilev1.NamespaceAccess{
-			Name:     ns.Name,
-			CanWrite: ns.CanWrite,
-		})
-	}
-
 	claims, _ := auth.ClaimsFromContext(ctx)
 
 	return connect.NewResponse(&profilev1.MeResponse{
 		Email:                  result.Email,
 		Name:                   result.Name,
-		IsAdmin:                result.IsAdmin,
-		Namespaces:             namespaces,
-		CanViewWebhooks:        result.CanViewWebhooks,
-		CanManageWebhooks:      result.CanManageWebhooks,
 		PasswordChangeRequired: claims.PasswordChangeRequired,
+		Permissions:            permission.AssignmentsToProto(result.Permissions),
 	}), nil
 }
 

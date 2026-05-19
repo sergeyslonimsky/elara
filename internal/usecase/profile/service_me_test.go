@@ -17,12 +17,10 @@ import (
 func TestService_Me(t *testing.T) {
 	t.Parallel()
 
-	email := "user@example.com"
-	name := "Test User"
-	namespaces := []*domain.Namespace{
-		{Name: "prod"},
-		{Name: "stage"},
-	}
+	const (
+		email = "user@example.com"
+		name  = "Test User"
+	)
 
 	tests := []struct {
 		name     string
@@ -32,99 +30,47 @@ func TestService_Me(t *testing.T) {
 		want     *profile.MeResult
 	}{
 		{
-			name: "success fully authorized",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: email, Name: name})
-				svc, m := setupService(ctrl)
-
-				m.ns.EXPECT().List(ctx).Return(namespaces, nil)
-
-				// Namespace "prod"
-				m.enforcer.EXPECT().Enforce(email, "prod", domain.ObjectConfig, domain.ActionRead).Return(true, nil)
-				m.enforcer.EXPECT().Enforce(email, "prod", domain.ObjectConfig, domain.ActionWrite).Return(true, nil)
-				m.enforcer.EXPECT().Enforce(email, "prod", domain.ObjectWebhook, domain.ActionRead).Return(true, nil)
-
-				// Namespace "stage"
-				m.enforcer.EXPECT().Enforce(email, "stage", domain.ObjectConfig, domain.ActionRead).Return(true, nil)
-				m.enforcer.EXPECT().Enforce(email, "stage", domain.ObjectConfig, domain.ActionWrite).Return(false, nil)
-
-				m.enforcer.EXPECT().
-					Enforce(email, domain.DomainAll, domain.ObjectUser, domain.ActionRead).
-					Return(true, nil)
-				m.enforcer.EXPECT().
-					Enforce(email, domain.DomainAll, domain.ObjectWebhook, domain.ActionWrite).
-					Return(true, nil)
-
-				return svc, ctx
-			},
-			want: &profile.MeResult{
-				Email:   email,
-				Name:    name,
-				IsAdmin: true,
-				Namespaces: []profile.NamespaceAccess{
-					{Name: "prod", CanWrite: true},
-					{Name: "stage", CanWrite: false},
-				},
-				CanViewWebhooks:   true,
-				CanManageWebhooks: true,
-			},
-		},
-		{
-			name: "success partial access",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: email, Name: name})
-				svc, m := setupService(ctrl)
-
-				m.ns.EXPECT().List(ctx).Return(namespaces, nil)
-
-				// Namespace "prod" - no read access
-				m.enforcer.EXPECT().Enforce(email, "prod", domain.ObjectConfig, domain.ActionRead).Return(false, nil)
-
-				// Namespace "stage" - read only
-				m.enforcer.EXPECT().Enforce(email, "stage", domain.ObjectConfig, domain.ActionRead).Return(true, nil)
-				m.enforcer.EXPECT().Enforce(email, "stage", domain.ObjectConfig, domain.ActionWrite).Return(false, nil)
-				m.enforcer.EXPECT().Enforce(email, "stage", domain.ObjectWebhook, domain.ActionRead).Return(false, nil)
-
-				m.enforcer.EXPECT().
-					Enforce(email, domain.DomainAll, domain.ObjectUser, domain.ActionRead).
-					Return(false, nil)
-				m.enforcer.EXPECT().
-					Enforce(email, domain.DomainAll, domain.ObjectWebhook, domain.ActionWrite).
-					Return(false, nil)
-
-				return svc, ctx
-			},
-			want: &profile.MeResult{
-				Email:   email,
-				Name:    name,
-				IsAdmin: false,
-				Namespaces: []profile.NamespaceAccess{
-					{Name: "stage", CanWrite: false},
-				},
-				CanViewWebhooks:   false,
-				CanManageWebhooks: false,
-			},
-		},
-		{
-			name: "unauthorized - no claims",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				svc := profile.New(nil, nil, nil, nil, nil)
-
-				return svc, ctx
+			name: "unauthorized - no claims in context",
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*profile.Service, context.Context) {
+				return profile.New(nil, nil, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,
 		},
 		{
-			name: "list namespaces fails",
+			name: "pdp error is wrapped",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: email, Name: name})
 				svc, m := setupService(ctrl)
-
-				m.ns.EXPECT().List(ctx).Return(nil, errors.New("db error"))
+				m.pdp.EXPECT().
+					ListPermissions(email).
+					Return(nil, errors.New("casbin boom"))
 
 				return svc, ctx
 			},
-			wantErr: "list namespaces: db error",
+			wantErr: "me: casbin boom",
+		},
+		{
+			name: "happy path - permissions passthrough",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: email, Name: name})
+				svc, m := setupService(ctrl)
+				m.pdp.EXPECT().
+					ListPermissions(email).
+					Return([]domain.Permission{
+						{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+						{Object: domain.ObjectUser, Action: domain.ActionRead, Domain: "ns2"},
+					}, nil)
+
+				return svc, ctx
+			},
+			want: &profile.MeResult{
+				Email: email,
+				Name:  name,
+				Permissions: []domain.Permission{
+					{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+					{Object: domain.ObjectUser, Action: domain.ActionRead, Domain: "ns2"},
+				},
+			},
 		},
 	}
 

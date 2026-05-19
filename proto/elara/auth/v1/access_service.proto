@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package elara.auth.v1;
+
+option go_package = "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1;authv1";
+
+message PolicyRule {
+  string subject = 1;
+  string domain = 2;
+  string role = 3;
+}
+
+message AssignRoleRequest {
+  string subject = 1;
+  string domain = 2;
+  string role = 3;
+}
+
+message AssignRoleResponse {}
+
+message RevokeRoleRequest {
+  string subject = 1;
+  string domain = 2;
+  string role = 3;
+}
+
+message RevokeRoleResponse {}
+
+message ListPoliciesRequest {}
+
+message ListPoliciesResponse {
+  repeated PolicyRule rules = 1;
+}
+
+service AccessService {
+  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse);
+  rpc RevokeRole(RevokeRoleRequest) returns (RevokeRoleResponse);
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+}

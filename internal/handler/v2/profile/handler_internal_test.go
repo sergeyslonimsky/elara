@@ -11,6 +11,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	profile_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/profile/mocks"
+	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	profilev1 "github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1"
 	internalauth "github.com/sergeyslonimsky/elara/internal/service/auth"
 	profileuc "github.com/sergeyslonimsky/elara/internal/usecase/profile"
@@ -68,6 +69,39 @@ func TestProfileHandler_Me(t *testing.T) {
 			assert.Equal(t, tc.email, resp.Msg.GetEmail())
 		})
 	}
+}
+
+func TestProfileHandler_Me_permissions_mapping(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	uc := profile_mock.NewMockusecase(ctrl)
+	uc.EXPECT().Me(gomock.Any()).Return(&profileuc.MeResult{
+		Email: "alice@example.com",
+		Name:  "Alice",
+		Permissions: []domain.Permission{
+			{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+			{Object: domain.ObjectAll, Action: domain.ActionAll, Domain: domain.DomainAll},
+		},
+	}, nil)
+
+	h := New(uc, config.AuthTypeOIDC, false)
+
+	ctx := internalauth.WithClaims(t.Context(), &internalauth.Claims{Email: "alice@example.com", Name: "Alice"})
+
+	resp, err := h.Me(ctx, connect.NewRequest(&profilev1.MeRequest{}))
+	require.NoError(t, err)
+
+	perms := resp.Msg.GetPermissions()
+	require.Len(t, perms, 2)
+
+	assert.Equal(t, commonv1.PermissionObject_PERMISSION_OBJECT_CONFIG, perms[0].GetObject())
+	assert.Equal(t, commonv1.PermissionAction_PERMISSION_ACTION_READ, perms[0].GetAction())
+	assert.Equal(t, "ns1", perms[0].GetDomain())
+
+	assert.Equal(t, commonv1.PermissionObject_PERMISSION_OBJECT_ALL, perms[1].GetObject())
+	assert.Equal(t, commonv1.PermissionAction_PERMISSION_ACTION_ALL, perms[1].GetAction())
+	assert.Equal(t, domain.DomainAll, perms[1].GetDomain())
 }
 
 func TestProfileHandler_ChangePassword(t *testing.T) {

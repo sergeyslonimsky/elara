@@ -84,11 +84,11 @@ func NewServices(
 		),
 		Transfer: transferuc.New(enforcer, a.ConfigRepo, a.NamespaceRepo),
 		Webhook:  webhookuc.New(enforcer, a.WebhookRepo, a.WebhookDispatcher),
-		Profile:  profileuc.New(enforcer, a.NamespaceRepo, a.AuthUsers, a.AuthUsers, sessionManager),
-		User:     useruc.New(enforcer, a.AuthUsers, a.AuthUsers, txm),
+		Profile:  profileuc.New(pdp, a.AuthUsers, a.AuthUsers, sessionManager),
+		User:     useruc.New(enforcer, a.AuthUsers, a.AuthUsers, txm, pdp),
 		Group:    groupuc.New(enforcer, a.AuthGroups, txm, pdp),
 		Policy:   policyuc.New(enforcer, a.AuthGroups, txm),
-		Token:    tokenuc.New(enforcer, a.AuthTokens),
+		Token:    tokenuc.New(enforcer, pdp, a.AuthTokens),
 
 		AdminBootstrap: adminBootstrap,
 	}

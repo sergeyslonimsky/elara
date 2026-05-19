@@ -9,12 +9,8 @@ import (
 //go:generate mockgen -destination=mocks/service_mock.go -package=profile_mock -source=service.go
 
 type (
-	enforcer interface {
-		Enforce(subject, domain, object, action string) (bool, error)
-	}
-
-	nsLister interface {
-		List(ctx context.Context) ([]*domain.Namespace, error)
+	pdp interface {
+		ListPermissions(principal string) ([]domain.Permission, error)
 	}
 
 	userGetter interface {
@@ -31,26 +27,23 @@ type (
 )
 
 type Service struct {
-	enforcer enforcer
-	ns       nsLister
-	users    userGetter
-	pass     passWriter
-	session  sessionCreator
+	pdp     pdp
+	users   userGetter
+	pass    passWriter
+	session sessionCreator
 }
 
 func New(
-	enforcer enforcer,
-	ns nsLister,
+	pdp pdp,
 	users userGetter,
 	pass passWriter,
 	session sessionCreator,
 ) *Service {
 	return &Service{
-		enforcer: enforcer,
-		ns:       ns,
-		users:    users,
-		pass:     pass,
-		session:  session,
+		pdp:     pdp,
+		users:   users,
+		pass:    pass,
+		session: session,
 	}
 }
 

@@ -3,24 +3,15 @@ package profile
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
-type NamespaceAccess struct {
-	Name     string
-	CanWrite bool
-}
-
 type MeResult struct {
-	Email             string
-	Name              string
-	IsAdmin           bool
-	Namespaces        []NamespaceAccess
-	CanViewWebhooks   bool
-	CanManageWebhooks bool
+	Email       string
+	Name        string
+	Permissions []domain.Permission
 }
 
 func (s *Service) Me(ctx context.Context) (*MeResult, error) {
@@ -29,45 +20,14 @@ func (s *Service) Me(ctx context.Context) (*MeResult, error) {
 		return nil, domain.ErrUnauthorized
 	}
 
-	allNamespaces, err := s.ns.List(ctx)
+	permissions, err := s.pdp.ListPermissions(claims.Email)
 	if err != nil {
-		return nil, fmt.Errorf("list namespaces: %w", err)
+		return nil, fmt.Errorf("me: %w", err)
 	}
-
-	var accessible []NamespaceAccess
-	for _, ns := range allNamespaces {
-		canRead, _ := s.enforcer.Enforce(claims.Email, ns.Name, domain.ObjectConfig, domain.ActionRead)
-		if !canRead {
-			continue
-		}
-		canWrite, _ := s.enforcer.Enforce(claims.Email, ns.Name, domain.ObjectConfig, domain.ActionWrite)
-		accessible = append(accessible, NamespaceAccess{Name: ns.Name, CanWrite: canWrite})
-	}
-
-	sort.Slice(accessible, func(i, j int) bool {
-		return accessible[i].Name < accessible[j].Name
-	})
-
-	isAdmin, _ := s.enforcer.Enforce(claims.Email, domain.DomainAll, domain.ObjectUser, domain.ActionRead)
-
-	var canViewWebhooks bool
-	for _, ns := range accessible {
-		ok, _ := s.enforcer.Enforce(claims.Email, ns.Name, domain.ObjectWebhook, domain.ActionRead)
-		if ok {
-			canViewWebhooks = true
-
-			break
-		}
-	}
-
-	canManageWebhooks, _ := s.enforcer.Enforce(claims.Email, domain.DomainAll, domain.ObjectWebhook, domain.ActionWrite)
 
 	return &MeResult{
-		Email:             claims.Email,
-		Name:              claims.Name,
-		IsAdmin:           isAdmin,
-		Namespaces:        accessible,
-		CanViewWebhooks:   canViewWebhooks,
-		CanManageWebhooks: canManageWebhooks,
+		Email:       claims.Email,
+		Name:        claims.Name,
+		Permissions: permissions,
 	}, nil
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
@@ -123,6 +124,138 @@ func TestPDP_EffectiveDomains(t *testing.T) {
 			pdp := tt.mockFunc(ctrl)
 
 			got := pdp.EffectiveDomains(tt.principal, tt.object, tt.action)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestPDP_ListPermissions(t *testing.T) {
+	t.Parallel()
+
+	const principal = "user@example.com"
+
+	tests := []struct {
+		name     string
+		mockFunc func(*gomock.Controller) *authz.PDP
+		wantErr  string
+		want     []domain.Permission
+	}{
+		{
+			name: "empty rules returns empty non-nil slice",
+			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
+				m := authz_mock.NewMockenforcer(ctrl)
+				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{}, nil)
+
+				return authz.NewPDP(m)
+			},
+			want: []domain.Permission{},
+		},
+		{
+			name: "single rule mapped to Permission",
+			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
+				m := authz_mock.NewMockenforcer(ctrl)
+				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
+					{"sub", "ns1", domain.ObjectConfig, domain.ActionRead},
+				}, nil)
+
+				return authz.NewPDP(m)
+			},
+			want: []domain.Permission{
+				{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+			},
+		},
+		{
+			name: "duplicate rules are deduplicated",
+			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
+				m := authz_mock.NewMockenforcer(ctrl)
+				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
+					{"sub", "ns1", domain.ObjectConfig, domain.ActionRead},
+					{"sub", "ns1", domain.ObjectConfig, domain.ActionRead},
+				}, nil)
+
+				return authz.NewPDP(m)
+			},
+			want: []domain.Permission{
+				{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+			},
+		},
+		{
+			name: "sorted by object then action then domain",
+			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
+				m := authz_mock.NewMockenforcer(ctrl)
+				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
+					{"sub", "ns2", domain.ObjectUser, domain.ActionRead},
+					{"sub", "ns1", domain.ObjectConfig, domain.ActionWrite},
+					{"sub", "ns1", domain.ObjectConfig, domain.ActionRead},
+					{"sub", "ns2", domain.ObjectConfig, domain.ActionRead},
+				}, nil)
+
+				return authz.NewPDP(m)
+			},
+			want: []domain.Permission{
+				{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+				{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns2"},
+				{Object: domain.ObjectConfig, Action: domain.ActionWrite, Domain: "ns1"},
+				{Object: domain.ObjectUser, Action: domain.ActionRead, Domain: "ns2"},
+			},
+		},
+		{
+			name: "malformed rule (len<4) is skipped",
+			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
+				m := authz_mock.NewMockenforcer(ctrl)
+				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
+					{"sub", "ns1"},
+					{"sub", "ns1", domain.ObjectConfig, domain.ActionRead},
+				}, nil)
+
+				return authz.NewPDP(m)
+			},
+			want: []domain.Permission{
+				{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+			},
+		},
+		{
+			name: "wildcard tuple preserved as ObjectAll/ActionAll/DomainAll",
+			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
+				m := authz_mock.NewMockenforcer(ctrl)
+				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
+					{"sub", domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+				}, nil)
+
+				return authz.NewPDP(m)
+			},
+			want: []domain.Permission{
+				{Object: domain.ObjectAll, Action: domain.ActionAll, Domain: domain.DomainAll},
+			},
+		},
+		{
+			name: "enforcer error is wrapped",
+			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
+				m := authz_mock.NewMockenforcer(ctrl)
+				m.EXPECT().GetImplicitPermissionsForUser(principal).Return(nil, errors.New("db error"))
+
+				return authz.NewPDP(m)
+			},
+			wantErr: "list permissions: db error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			pdp := tt.mockFunc(ctrl)
+
+			got, err := pdp.ListPermissions(principal)
+
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+
+				return
+			}
+			require.NoError(t, err)
+			assert.NotNil(t, got)
 			assert.Equal(t, tt.want, got)
 		})
 	}

@@ -71,7 +71,7 @@ func TestService_ChangePassword(t *testing.T) {
 			name:     "unauthorized - no claims",
 			currPass: currentPassword,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				return profile.New(nil, nil, nil, nil, nil), ctx
+				return profile.New(nil, nil, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,
 		},

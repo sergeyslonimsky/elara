@@ -4,15 +4,15 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { NamespaceAccess } from "./profile_pb";
-import { file_elara_profile_v1_profile } from "./profile_pb";
+import type { PermissionAssignment } from "../../common/v1/permission_pb";
+import { file_elara_common_v1_permission } from "../../common/v1/permission_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file elara/profile/v1/profile_service.proto.
  */
 export const file_elara_profile_v1_profile_service: GenFile = /*@__PURE__*/
-  fileDesc("CiZlbGFyYS9wcm9maWxlL3YxL3Byb2ZpbGVfc2VydmljZS5wcm90bxIQZWxhcmEucHJvZmlsZS52MSILCglNZVJlcXVlc3Qi3QEKCk1lUmVzcG9uc2USDQoFZW1haWwYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdwaWN0dXJlGAMgASgJEhAKCGlzX2FkbWluGAQgASgIEjUKCm5hbWVzcGFjZXMYBSADKAsyIS5lbGFyYS5wcm9maWxlLnYxLk5hbWVzcGFjZUFjY2VzcxIZChFjYW5fdmlld193ZWJob29rcxgGIAEoCBIbChNjYW5fbWFuYWdlX3dlYmhvb2tzGAcgASgIEiAKGHBhc3N3b3JkX2NoYW5nZV9yZXF1aXJlZBgIIAEoCCJhChVDaGFuZ2VQYXNzd29yZFJlcXVlc3QSHQoQY3VycmVudF9wYXNzd29yZBgBIAEoCUgAiAEBEhQKDG5ld19wYXNzd29yZBgCIAEoCUITChFfY3VycmVudF9wYXNzd29yZCIYChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlIg8KDUxvZ291dFJlcXVlc3QiEAoOTG9nb3V0UmVzcG9uc2UygwIKDlByb2ZpbGVTZXJ2aWNlEj8KAk1lEhsuZWxhcmEucHJvZmlsZS52MS5NZVJlcXVlc3QaHC5lbGFyYS5wcm9maWxlLnYxLk1lUmVzcG9uc2USYwoOQ2hhbmdlUGFzc3dvcmQSJy5lbGFyYS5wcm9maWxlLnYxLkNoYW5nZVBhc3N3b3JkUmVxdWVzdBooLmVsYXJhLnByb2ZpbGUudjEuQ2hhbmdlUGFzc3dvcmRSZXNwb25zZRJLCgZMb2dvdXQSHy5lbGFyYS5wcm9maWxlLnYxLkxvZ291dFJlcXVlc3QaIC5lbGFyYS5wcm9maWxlLnYxLkxvZ291dFJlc3BvbnNlQtkBChRjb20uZWxhcmEucHJvZmlsZS52MUITUHJvZmlsZVNlcnZpY2VQcm90b1ABWkpnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9wcm9maWxlL3YxO3Byb2ZpbGV2MaICA0VQWKoCEEVsYXJhLlByb2ZpbGUuVjHKAhBFbGFyYVxQcm9maWxlXFYx4gIcRWxhcmFcUHJvZmlsZVxWMVxHUEJNZXRhZGF0YeoCEkVsYXJhOjpQcm9maWxlOjpWMWIGcHJvdG8z", [file_elara_profile_v1_profile]);
+  fileDesc("CiZlbGFyYS9wcm9maWxlL3YxL3Byb2ZpbGVfc2VydmljZS5wcm90bxIQZWxhcmEucHJvZmlsZS52MSILCglNZVJlcXVlc3QimAEKCk1lUmVzcG9uc2USDQoFZW1haWwYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdwaWN0dXJlGAMgASgJEiAKGHBhc3N3b3JkX2NoYW5nZV9yZXF1aXJlZBgEIAEoCBI6CgtwZXJtaXNzaW9ucxgFIAMoCzIlLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQXNzaWdubWVudCJhChVDaGFuZ2VQYXNzd29yZFJlcXVlc3QSHQoQY3VycmVudF9wYXNzd29yZBgBIAEoCUgAiAEBEhQKDG5ld19wYXNzd29yZBgCIAEoCUITChFfY3VycmVudF9wYXNzd29yZCIYChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlIg8KDUxvZ291dFJlcXVlc3QiEAoOTG9nb3V0UmVzcG9uc2UygwIKDlByb2ZpbGVTZXJ2aWNlEj8KAk1lEhsuZWxhcmEucHJvZmlsZS52MS5NZVJlcXVlc3QaHC5lbGFyYS5wcm9maWxlLnYxLk1lUmVzcG9uc2USYwoOQ2hhbmdlUGFzc3dvcmQSJy5lbGFyYS5wcm9maWxlLnYxLkNoYW5nZVBhc3N3b3JkUmVxdWVzdBooLmVsYXJhLnByb2ZpbGUudjEuQ2hhbmdlUGFzc3dvcmRSZXNwb25zZRJLCgZMb2dvdXQSHy5lbGFyYS5wcm9maWxlLnYxLkxvZ291dFJlcXVlc3QaIC5lbGFyYS5wcm9maWxlLnYxLkxvZ291dFJlc3BvbnNlQtkBChRjb20uZWxhcmEucHJvZmlsZS52MUITUHJvZmlsZVNlcnZpY2VQcm90b1ABWkpnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9wcm9maWxlL3YxO3Byb2ZpbGV2MaICA0VQWKoCEEVsYXJhLlByb2ZpbGUuVjHKAhBFbGFyYVxQcm9maWxlXFYx4gIcRWxhcmFcUHJvZmlsZVxWMVxHUEJNZXRhZGF0YeoCEkVsYXJhOjpQcm9maWxlOjpWMWIGcHJvdG8z", [file_elara_common_v1_permission]);
 
 /**
  * @generated from message elara.profile.v1.MeRequest
@@ -47,29 +47,14 @@ export type MeResponse = Message<"elara.profile.v1.MeResponse"> & {
   picture: string;
 
   /**
-   * @generated from field: bool is_admin = 4;
-   */
-  isAdmin: boolean;
-
-  /**
-   * @generated from field: repeated elara.profile.v1.NamespaceAccess namespaces = 5;
-   */
-  namespaces: NamespaceAccess[];
-
-  /**
-   * @generated from field: bool can_view_webhooks = 6;
-   */
-  canViewWebhooks: boolean;
-
-  /**
-   * @generated from field: bool can_manage_webhooks = 7;
-   */
-  canManageWebhooks: boolean;
-
-  /**
-   * @generated from field: bool password_change_required = 8;
+   * @generated from field: bool password_change_required = 4;
    */
   passwordChangeRequired: boolean;
+
+  /**
+   * @generated from field: repeated elara.common.v1.PermissionAssignment permissions = 5;
+   */
+  permissions: PermissionAssignment[];
 };
 
 /**

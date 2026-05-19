@@ -7,6 +7,7 @@
 package profilev1
 
 import (
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -58,15 +59,12 @@ func (*MeRequest) Descriptor() ([]byte, []int) {
 }
 
 type MeResponse struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Email                  string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Name                   string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Picture                string                 `protobuf:"bytes,3,opt,name=picture,proto3" json:"picture,omitempty"`
-	IsAdmin                bool                   `protobuf:"varint,4,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
-	Namespaces             []*NamespaceAccess     `protobuf:"bytes,5,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
-	CanViewWebhooks        bool                   `protobuf:"varint,6,opt,name=can_view_webhooks,json=canViewWebhooks,proto3" json:"can_view_webhooks,omitempty"`
-	CanManageWebhooks      bool                   `protobuf:"varint,7,opt,name=can_manage_webhooks,json=canManageWebhooks,proto3" json:"can_manage_webhooks,omitempty"`
-	PasswordChangeRequired bool                   `protobuf:"varint,8,opt,name=password_change_required,json=passwordChangeRequired,proto3" json:"password_change_required,omitempty"`
+	state                  protoimpl.MessageState     `protogen:"open.v1"`
+	Email                  string                     `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Name                   string                     `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Picture                string                     `protobuf:"bytes,3,opt,name=picture,proto3" json:"picture,omitempty"`
+	PasswordChangeRequired bool                       `protobuf:"varint,4,opt,name=password_change_required,json=passwordChangeRequired,proto3" json:"password_change_required,omitempty"`
+	Permissions            []*v1.PermissionAssignment `protobuf:"bytes,5,rep,name=permissions,proto3" json:"permissions,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -122,39 +120,18 @@ func (x *MeResponse) GetPicture() string {
 	return ""
 }
 
-func (x *MeResponse) GetIsAdmin() bool {
-	if x != nil {
-		return x.IsAdmin
-	}
-	return false
-}
-
-func (x *MeResponse) GetNamespaces() []*NamespaceAccess {
-	if x != nil {
-		return x.Namespaces
-	}
-	return nil
-}
-
-func (x *MeResponse) GetCanViewWebhooks() bool {
-	if x != nil {
-		return x.CanViewWebhooks
-	}
-	return false
-}
-
-func (x *MeResponse) GetCanManageWebhooks() bool {
-	if x != nil {
-		return x.CanManageWebhooks
-	}
-	return false
-}
-
 func (x *MeResponse) GetPasswordChangeRequired() bool {
 	if x != nil {
 		return x.PasswordChangeRequired
 	}
 	return false
+}
+
+func (x *MeResponse) GetPermissions() []*v1.PermissionAssignment {
+	if x != nil {
+		return x.Permissions
+	}
+	return nil
 }
 
 type ChangePasswordRequest struct {
@@ -321,20 +298,15 @@ var File_elara_profile_v1_profile_service_proto protoreflect.FileDescriptor
 
 const file_elara_profile_v1_profile_service_proto_rawDesc = "" +
 	"\n" +
-	"&elara/profile/v1/profile_service.proto\x12\x10elara.profile.v1\x1a\x1eelara/profile/v1/profile.proto\"\v\n" +
-	"\tMeRequest\"\xc4\x02\n" +
+	"&elara/profile/v1/profile_service.proto\x12\x10elara.profile.v1\x1a elara/common/v1/permission.proto\"\v\n" +
+	"\tMeRequest\"\xd3\x01\n" +
 	"\n" +
 	"MeResponse\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
-	"\apicture\x18\x03 \x01(\tR\apicture\x12\x19\n" +
-	"\bis_admin\x18\x04 \x01(\bR\aisAdmin\x12A\n" +
-	"\n" +
-	"namespaces\x18\x05 \x03(\v2!.elara.profile.v1.NamespaceAccessR\n" +
-	"namespaces\x12*\n" +
-	"\x11can_view_webhooks\x18\x06 \x01(\bR\x0fcanViewWebhooks\x12.\n" +
-	"\x13can_manage_webhooks\x18\a \x01(\bR\x11canManageWebhooks\x128\n" +
-	"\x18password_change_required\x18\b \x01(\bR\x16passwordChangeRequired\"\x7f\n" +
+	"\apicture\x18\x03 \x01(\tR\apicture\x128\n" +
+	"\x18password_change_required\x18\x04 \x01(\bR\x16passwordChangeRequired\x12G\n" +
+	"\vpermissions\x18\x05 \x03(\v2%.elara.common.v1.PermissionAssignmentR\vpermissions\"\x7f\n" +
 	"\x15ChangePasswordRequest\x12.\n" +
 	"\x10current_password\x18\x01 \x01(\tH\x00R\x0fcurrentPassword\x88\x01\x01\x12!\n" +
 	"\fnew_password\x18\x02 \x01(\tR\vnewPasswordB\x13\n" +
@@ -362,16 +334,16 @@ func file_elara_profile_v1_profile_service_proto_rawDescGZIP() []byte {
 
 var file_elara_profile_v1_profile_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_elara_profile_v1_profile_service_proto_goTypes = []any{
-	(*MeRequest)(nil),              // 0: elara.profile.v1.MeRequest
-	(*MeResponse)(nil),             // 1: elara.profile.v1.MeResponse
-	(*ChangePasswordRequest)(nil),  // 2: elara.profile.v1.ChangePasswordRequest
-	(*ChangePasswordResponse)(nil), // 3: elara.profile.v1.ChangePasswordResponse
-	(*LogoutRequest)(nil),          // 4: elara.profile.v1.LogoutRequest
-	(*LogoutResponse)(nil),         // 5: elara.profile.v1.LogoutResponse
-	(*NamespaceAccess)(nil),        // 6: elara.profile.v1.NamespaceAccess
+	(*MeRequest)(nil),               // 0: elara.profile.v1.MeRequest
+	(*MeResponse)(nil),              // 1: elara.profile.v1.MeResponse
+	(*ChangePasswordRequest)(nil),   // 2: elara.profile.v1.ChangePasswordRequest
+	(*ChangePasswordResponse)(nil),  // 3: elara.profile.v1.ChangePasswordResponse
+	(*LogoutRequest)(nil),           // 4: elara.profile.v1.LogoutRequest
+	(*LogoutResponse)(nil),          // 5: elara.profile.v1.LogoutResponse
+	(*v1.PermissionAssignment)(nil), // 6: elara.common.v1.PermissionAssignment
 }
 var file_elara_profile_v1_profile_service_proto_depIdxs = []int32{
-	6, // 0: elara.profile.v1.MeResponse.namespaces:type_name -> elara.profile.v1.NamespaceAccess
+	6, // 0: elara.profile.v1.MeResponse.permissions:type_name -> elara.common.v1.PermissionAssignment
 	0, // 1: elara.profile.v1.ProfileService.Me:input_type -> elara.profile.v1.MeRequest
 	2, // 2: elara.profile.v1.ProfileService.ChangePassword:input_type -> elara.profile.v1.ChangePasswordRequest
 	4, // 3: elara.profile.v1.ProfileService.Logout:input_type -> elara.profile.v1.LogoutRequest
@@ -390,7 +362,6 @@ func file_elara_profile_v1_profile_service_proto_init() {
 	if File_elara_profile_v1_profile_service_proto != nil {
 		return
 	}
-	file_elara_profile_v1_profile_proto_init()
 	file_elara_profile_v1_profile_service_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
