@@ -11,7 +11,7 @@ import (
 // is enforced at the handler boundary.
 func (s *Service) Get(ctx context.Context, name string) (*domain.Namespace, error) {
 	if err := s.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, name); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("authorize: %w", err)
 	}
 
 	ns, err := s.store.Get(ctx, name)

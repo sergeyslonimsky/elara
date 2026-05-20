@@ -6,6 +6,7 @@ import {
 } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useMemo } from "react";
+import { type AppAbility, buildAbility } from "@/auth/ability";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 import { getAuthInfo } from "@/gen/elara/auth/v1/auth_service-AuthService_connectquery";
 import type { MeResponse } from "@/gen/elara/profile/v1/profile_service_pb";
@@ -18,7 +19,12 @@ export type AuthState =
 	| { status: "loading" }
 	| { status: "error"; error: ConnectError }
 	| { status: "anonymous"; authType: AuthType }
-	| { status: "authenticated"; authType: AuthType; user: MeResponse };
+	| {
+			status: "authenticated";
+			authType: AuthType;
+			user: MeResponse;
+			ability: AppAbility;
+	  };
 
 export interface AuthContextType {
 	state: AuthState;
@@ -74,14 +80,26 @@ function AuthProviderInner({ children }: { children: React.ReactNode }) {
 		if (authType === AuthType.UNSPECIFIED) return { status: "loading" };
 
 		if (authType === AuthType.NONE) {
-			if (meData) return { status: "authenticated", authType, user: meData };
+			if (meData)
+				return {
+					status: "authenticated",
+					authType,
+					user: meData,
+					ability: buildAbility(meData.permissions),
+				};
 			if (meError)
 				return { status: "error", error: ConnectError.from(meError) };
 			return { status: "loading" };
 		}
 
 		// BASIC / OIDC
-		if (meData) return { status: "authenticated", authType, user: meData };
+		if (meData)
+			return {
+				status: "authenticated",
+				authType,
+				user: meData,
+				ability: buildAbility(meData.permissions),
+			};
 		if (meError) return { status: "anonymous", authType };
 		if (isMeLoading) return { status: "loading" };
 		return { status: "anonymous", authType };

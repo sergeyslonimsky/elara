@@ -56,6 +56,44 @@ func (mr *MockenforcerMockRecorder) Enforce(subject, arg1, object, action any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enforce", reflect.TypeOf((*Mockenforcer)(nil).Enforce), subject, arg1, object, action)
 }
 
+// Mockpdp is a mock of pdp interface.
+type Mockpdp struct {
+	ctrl     *gomock.Controller
+	recorder *MockpdpMockRecorder
+	isgomock struct{}
+}
+
+// MockpdpMockRecorder is the mock recorder for Mockpdp.
+type MockpdpMockRecorder struct {
+	mock *Mockpdp
+}
+
+// NewMockpdp creates a new mock instance.
+func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
+	mock := &Mockpdp{ctrl: ctrl}
+	mock.recorder = &MockpdpMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *Mockpdp) EXPECT() *MockpdpMockRecorder {
+	return m.recorder
+}
+
+// EffectiveDomains mocks base method.
+func (m *Mockpdp) EffectiveDomains(principal, object, action string) domain.DomainSet {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EffectiveDomains", principal, object, action)
+	ret0, _ := ret[0].(domain.DomainSet)
+	return ret0
+}
+
+// EffectiveDomains indicates an expected call of EffectiveDomains.
+func (mr *MockpdpMockRecorder) EffectiveDomains(principal, object, action any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveDomains", reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains), principal, object, action)
+}
+
 // Mockstore is a mock of store interface.
 type Mockstore struct {
 	ctrl     *gomock.Controller
@@ -124,16 +162,17 @@ func (mr *MockstoreMockRecorder) GetByID(ctx, id any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *Mockstore) List(ctx context.Context, issuedBy string) ([]*domain.Token, error) {
+func (m *Mockstore) List(ctx context.Context, filter domain.TokenFilter, params domain.TokenListParams) ([]*domain.Token, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, issuedBy)
+	ret := m.ctrl.Call(m, "List", ctx, filter, params)
 	ret0, _ := ret[0].([]*domain.Token)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // List indicates an expected call of List.
-func (mr *MockstoreMockRecorder) List(ctx, issuedBy any) *gomock.Call {
+func (mr *MockstoreMockRecorder) List(ctx, filter, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstore)(nil).List), ctx, issuedBy)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstore)(nil).List), ctx, filter, params)
 }

@@ -42,7 +42,7 @@ type txWrapper struct {
 	tx *bolt.Tx
 }
 
-func (w *txWrapper) Bucket(name []byte) storage.Bucket {
+func (w *txWrapper) Bucket(name []byte) storage.Bucket { //nolint:ireturn //implementation of interface
 	b := w.tx.Bucket(name)
 	if b == nil {
 		return nil
@@ -60,13 +60,25 @@ func (w *bucketWrapper) Get(key []byte) []byte {
 }
 
 func (w *bucketWrapper) Put(key, value []byte) error {
-	return w.b.Put(key, value)
+	if err := w.b.Put(key, value); err != nil {
+		return fmt.Errorf("bbolt put: %w", err)
+	}
+
+	return nil
 }
 
 func (w *bucketWrapper) Delete(key []byte) error {
-	return w.b.Delete(key)
+	if err := w.b.Delete(key); err != nil {
+		return fmt.Errorf("bbolt delete: %w", err)
+	}
+
+	return nil
 }
 
 func (w *bucketWrapper) ForEach(fn func(k, v []byte) error) error {
-	return w.b.ForEach(fn)
+	if err := w.b.ForEach(fn); err != nil {
+		return fmt.Errorf("bbolt for each: %w", err)
+	}
+
+	return nil
 }

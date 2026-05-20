@@ -1,12 +1,34 @@
 package domain
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"time"
 )
 
-const maxGroupNameLen = 128
+const (
+	maxGroupNameLen   = 128
+	maxDescriptionLen = 1024
+)
+
+// GroupFilter narrows a group list to the names visible to the caller.
+//
+// When Wildcard is true, Names MUST be ignored — every group matches.
+// Search applies a case-insensitive substring match on Name and is
+// independent of Wildcard/Names.
+type GroupFilter struct {
+	Names    map[string]struct{}
+	Wildcard bool
+	Search   string
+}
+
+// GroupListParams carries pagination and sort options for group list queries.
+type GroupListParams struct {
+	Limit  int
+	Offset int
+	Sort   SortParams
+}
 
 type Group struct {
 	ID          string
@@ -40,11 +62,14 @@ func (g *Group) Validate() error {
 	}
 
 	if len(g.Name) > maxGroupNameLen {
-		return NewValidationError("name", "group name must be at most 128 characters")
+		return NewValidationError("name", fmt.Sprintf("group name must be at most %d characters", maxGroupNameLen))
 	}
 
-	if len(g.Description) > 1024 {
-		return NewValidationError("description", "group description must be at most 1024 characters")
+	if len(g.Description) > maxDescriptionLen {
+		return NewValidationError(
+			"description",
+			fmt.Sprintf("group description must be at most %d characters", maxDescriptionLen),
+		)
 	}
 
 	for _, email := range g.Members {

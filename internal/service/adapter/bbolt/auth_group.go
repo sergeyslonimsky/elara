@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -30,26 +32,6 @@ func (r *GroupRepo) WithTx(tx storage.Tx) *GroupRepo {
 		store: r.store,
 		tx:    tx,
 	}
-}
-
-func (r *GroupRepo) view(fn func(storage.Tx) error) error {
-	if r.tx != nil {
-		return fn(r.tx)
-	}
-
-	return r.store.db.View(func(tx *bolt.Tx) error {
-		return fn(&txWrapper{tx: tx})
-	})
-}
-
-func (r *GroupRepo) update(fn func(storage.Tx) error) error {
-	if r.tx != nil {
-		return fn(r.tx)
-	}
-
-	return r.store.db.Update(func(tx *bolt.Tx) error {
-		return fn(&txWrapper{tx: tx})
-	})
 }
 
 // Create stores a new group. Returns domain.ErrAlreadyExists if the ID is already taken.
@@ -206,9 +188,19 @@ func (r *GroupRepo) FindByName(_ context.Context, name string) (*domain.Group, e
 	return found, nil
 }
 
-// List returns all groups sorted by ID (bbolt ForEach iterates keys in byte order).
-func (r *GroupRepo) List(_ context.Context) ([]*domain.Group, error) {
-	var groups []*domain.Group
+// List returns groups matching filter, applies search + sort, and slices the
+// result by params.Offset / params.Limit. Total is the count after
+// filter+search but before pagination so callers can render page indicators.
+//
+// bbolt keys groups by UUID, not Name, so name-based filtering requires a
+// full bucket scan with per-item check. This is acceptable at the current
+// group cardinality (tens, not thousands).
+func (r *GroupRepo) List(
+	_ context.Context,
+	filter domain.GroupFilter,
+	params domain.GroupListParams,
+) ([]*domain.Group, int, error) {
+	var matches []*domain.Group
 
 	err := r.view(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
@@ -219,14 +211,118 @@ func (r *GroupRepo) List(_ context.Context) ([]*domain.Group, error) {
 				return err
 			}
 
-			groups = append(groups, authGroupMetaToDomain(m))
+			g := authGroupMetaToDomain(m)
+
+			if !filter.Wildcard {
+				if _, ok := filter.Names[g.Name]; !ok {
+					return nil
+				}
+			}
+
+			if !matchesGroupSearch(g.Name, filter.Search) {
+				return nil
+			}
+
+			matches = append(matches, g)
 
 			return nil
 		})
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list groups: %w", err)
+		return nil, 0, fmt.Errorf("list groups: %w", err)
+	}
+
+	sortGroups(matches, params.Sort)
+	total := len(matches)
+	paginated := paginateGroups(matches, params.Offset, params.Limit)
+
+	return paginated, total, nil
+}
+
+// ListAll returns every group without filter / pagination. Convenience for
+// callers that genuinely need the global view; new code that filters by
+// caller permissions MUST use List.
+func (r *GroupRepo) ListAll(ctx context.Context) ([]*domain.Group, error) {
+	groups, _, err := r.List(ctx, domain.GroupFilter{Wildcard: true}, domain.GroupListParams{})
+	if err != nil {
+		return nil, err
 	}
 
 	return groups, nil
+}
+
+func matchesGroupSearch(name, search string) bool {
+	if search == "" {
+		return true
+	}
+
+	return strings.Contains(strings.ToLower(name), strings.ToLower(search))
+}
+
+func sortGroups(groups []*domain.Group, params domain.SortParams) {
+	sort.Slice(groups, func(i, j int) bool {
+		a, b := groups[i], groups[j]
+
+		var less bool
+
+		switch params.Field {
+		case "members":
+			less = len(a.Members) < len(b.Members)
+		case "modified":
+			less = a.UpdatedAt.Before(b.UpdatedAt)
+		default:
+			less = a.Name < b.Name
+		}
+
+		if params.Desc {
+			return !less
+		}
+
+		return less
+	})
+}
+
+func paginateGroups(groups []*domain.Group, offset, limit int) []*domain.Group {
+	if offset < 0 {
+		offset = 0
+	}
+
+	if offset >= len(groups) {
+		return []*domain.Group{}
+	}
+
+	end := len(groups)
+	if limit > 0 && offset+limit < end {
+		end = offset + limit
+	}
+
+	return groups[offset:end]
+}
+
+func (r *GroupRepo) view(fn func(storage.Tx) error) error {
+	if r.tx != nil {
+		return fn(r.tx)
+	}
+
+	if err := r.store.db.View(func(tx *bolt.Tx) error {
+		return fn(&txWrapper{tx: tx})
+	}); err != nil {
+		return fmt.Errorf("bbolt view: %w", err)
+	}
+
+	return nil
+}
+
+func (r *GroupRepo) update(fn func(storage.Tx) error) error {
+	if r.tx != nil {
+		return fn(r.tx)
+	}
+
+	if err := r.store.db.Update(func(tx *bolt.Tx) error {
+		return fn(&txWrapper{tx: tx})
+	}); err != nil {
+		return fmt.Errorf("bbolt update: %w", err)
+	}
+
+	return nil
 }

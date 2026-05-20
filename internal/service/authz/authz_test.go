@@ -71,7 +71,7 @@ func TestAuthz_Require(t *testing.T) {
 
 				return authz.NewAuthz(pdp), ctx
 			},
-			wantErr: "permission denied",
+			wantErr: "permission_denied",
 			errCode: connect.CodePermissionDenied,
 		},
 	}

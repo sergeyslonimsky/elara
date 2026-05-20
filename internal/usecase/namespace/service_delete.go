@@ -11,7 +11,7 @@ import (
 // boundary (admin-only via DomainAll namespace/write).
 func (s *Service) Delete(ctx context.Context, name string) error {
 	if err := s.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, name); err != nil {
-		return err
+		return fmt.Errorf("authorize: %w", err)
 	}
 
 	count, err := s.store.CountConfigs(ctx, name)

@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router";
+import { uiVisibility } from "@/auth/uiVisibility";
 import { useAuth } from "@/components/auth-provider";
 import { FullScreenError } from "@/components/full-screen-error";
 import { FullScreenLoader } from "@/components/full-screen-loader";
@@ -29,6 +30,31 @@ export function AuthGuard() {
 	}
 
 	// authenticated
+	const visibility = uiVisibility(state.ability);
+
+	// Route protection based on visibility
+	if (pathname.startsWith("/users") && !visibility.canSeeUsersSection) {
+		return <Navigate to="/" replace />;
+	}
+	if (pathname.startsWith("/groups") && !visibility.canSeeGroupsSection) {
+		return <Navigate to="/" replace />;
+	}
+	if (pathname.startsWith("/access") && !visibility.canManageAccess) {
+		return <Navigate to="/" replace />;
+	}
+	if (pathname.startsWith("/clients") && !visibility.canSeeClientsSection) {
+		return <Navigate to="/" replace />;
+	}
+	if (
+		pathname.startsWith("/namespaces") &&
+		!visibility.canSeeNamespacesSection
+	) {
+		return <Navigate to="/" replace />;
+	}
+	if (pathname.startsWith("/browse") && !visibility.canSeeConfigsSection) {
+		return <Navigate to="/" replace />;
+	}
+
 	if (state.user.passwordChangeRequired && pathname !== "/change-password") {
 		return <Navigate to="/change-password" replace />;
 	}

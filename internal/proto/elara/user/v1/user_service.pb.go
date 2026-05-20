@@ -7,6 +7,7 @@
 package userv1
 
 import (
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	_ "google.golang.org/protobuf/types/known/timestamppb"
@@ -24,6 +25,8 @@ const (
 
 type ListUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pagination    *v1.PaginationRequest  `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Search        string                 `protobuf:"bytes,2,opt,name=search,proto3" json:"search,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -58,9 +61,24 @@ func (*ListUsersRequest) Descriptor() ([]byte, []int) {
 	return file_elara_user_v1_user_service_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *ListUsersRequest) GetPagination() *v1.PaginationRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+func (x *ListUsersRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
 type ListUsersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Users         []*User                `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -98,6 +116,13 @@ func (*ListUsersResponse) Descriptor() ([]byte, []int) {
 func (x *ListUsersResponse) GetUsers() []*User {
 	if x != nil {
 		return x.Users
+	}
+	return nil
+}
+
+func (x *ListUsersResponse) GetPagination() *v1.PaginationResponse {
+	if x != nil {
+		return x.Pagination
 	}
 	return nil
 }
@@ -466,10 +491,17 @@ var File_elara_user_v1_user_service_proto protoreflect.FileDescriptor
 
 const file_elara_user_v1_user_service_proto_rawDesc = "" +
 	"\n" +
-	" elara/user/v1/user_service.proto\x12\relara.user.v1\x1a\x18elara/user/v1/user.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x12\n" +
-	"\x10ListUsersRequest\">\n" +
+	" elara/user/v1/user_service.proto\x12\relara.user.v1\x1a\x1celara/common/v1/common.proto\x1a\x18elara/user/v1/user.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"n\n" +
+	"\x10ListUsersRequest\x12B\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2\".elara.common.v1.PaginationRequestR\n" +
+	"pagination\x12\x16\n" +
+	"\x06search\x18\x02 \x01(\tR\x06search\"\x83\x01\n" +
 	"\x11ListUsersResponse\x12)\n" +
-	"\x05users\x18\x01 \x03(\v2\x13.elara.user.v1.UserR\x05users\"&\n" +
+	"\x05users\x18\x01 \x03(\v2\x13.elara.user.v1.UserR\x05users\x12C\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2#.elara.common.v1.PaginationResponseR\n" +
+	"pagination\"&\n" +
 	"\x0eGetUserRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\":\n" +
 	"\x0fGetUserResponse\x12'\n" +
@@ -521,27 +553,31 @@ var file_elara_user_v1_user_service_proto_goTypes = []any{
 	(*ResetUserPasswordResponse)(nil), // 7: elara.user.v1.ResetUserPasswordResponse
 	(*DeleteUserRequest)(nil),         // 8: elara.user.v1.DeleteUserRequest
 	(*DeleteUserResponse)(nil),        // 9: elara.user.v1.DeleteUserResponse
-	(*User)(nil),                      // 10: elara.user.v1.User
+	(*v1.PaginationRequest)(nil),      // 10: elara.common.v1.PaginationRequest
+	(*User)(nil),                      // 11: elara.user.v1.User
+	(*v1.PaginationResponse)(nil),     // 12: elara.common.v1.PaginationResponse
 }
 var file_elara_user_v1_user_service_proto_depIdxs = []int32{
-	10, // 0: elara.user.v1.ListUsersResponse.users:type_name -> elara.user.v1.User
-	10, // 1: elara.user.v1.GetUserResponse.user:type_name -> elara.user.v1.User
-	10, // 2: elara.user.v1.CreateUserResponse.user:type_name -> elara.user.v1.User
-	0,  // 3: elara.user.v1.UserService.ListUsers:input_type -> elara.user.v1.ListUsersRequest
-	2,  // 4: elara.user.v1.UserService.GetUser:input_type -> elara.user.v1.GetUserRequest
-	4,  // 5: elara.user.v1.UserService.CreateUser:input_type -> elara.user.v1.CreateUserRequest
-	6,  // 6: elara.user.v1.UserService.ResetUserPassword:input_type -> elara.user.v1.ResetUserPasswordRequest
-	8,  // 7: elara.user.v1.UserService.DeleteUser:input_type -> elara.user.v1.DeleteUserRequest
-	1,  // 8: elara.user.v1.UserService.ListUsers:output_type -> elara.user.v1.ListUsersResponse
-	3,  // 9: elara.user.v1.UserService.GetUser:output_type -> elara.user.v1.GetUserResponse
-	5,  // 10: elara.user.v1.UserService.CreateUser:output_type -> elara.user.v1.CreateUserResponse
-	7,  // 11: elara.user.v1.UserService.ResetUserPassword:output_type -> elara.user.v1.ResetUserPasswordResponse
-	9,  // 12: elara.user.v1.UserService.DeleteUser:output_type -> elara.user.v1.DeleteUserResponse
-	8,  // [8:13] is the sub-list for method output_type
-	3,  // [3:8] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	10, // 0: elara.user.v1.ListUsersRequest.pagination:type_name -> elara.common.v1.PaginationRequest
+	11, // 1: elara.user.v1.ListUsersResponse.users:type_name -> elara.user.v1.User
+	12, // 2: elara.user.v1.ListUsersResponse.pagination:type_name -> elara.common.v1.PaginationResponse
+	11, // 3: elara.user.v1.GetUserResponse.user:type_name -> elara.user.v1.User
+	11, // 4: elara.user.v1.CreateUserResponse.user:type_name -> elara.user.v1.User
+	0,  // 5: elara.user.v1.UserService.ListUsers:input_type -> elara.user.v1.ListUsersRequest
+	2,  // 6: elara.user.v1.UserService.GetUser:input_type -> elara.user.v1.GetUserRequest
+	4,  // 7: elara.user.v1.UserService.CreateUser:input_type -> elara.user.v1.CreateUserRequest
+	6,  // 8: elara.user.v1.UserService.ResetUserPassword:input_type -> elara.user.v1.ResetUserPasswordRequest
+	8,  // 9: elara.user.v1.UserService.DeleteUser:input_type -> elara.user.v1.DeleteUserRequest
+	1,  // 10: elara.user.v1.UserService.ListUsers:output_type -> elara.user.v1.ListUsersResponse
+	3,  // 11: elara.user.v1.UserService.GetUser:output_type -> elara.user.v1.GetUserResponse
+	5,  // 12: elara.user.v1.UserService.CreateUser:output_type -> elara.user.v1.CreateUserResponse
+	7,  // 13: elara.user.v1.UserService.ResetUserPassword:output_type -> elara.user.v1.ResetUserPasswordResponse
+	9,  // 14: elara.user.v1.UserService.DeleteUser:output_type -> elara.user.v1.DeleteUserResponse
+	10, // [10:15] is the sub-list for method output_type
+	5,  // [5:10] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_elara_user_v1_user_service_proto_init() }

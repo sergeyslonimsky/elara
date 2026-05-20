@@ -1,5 +1,7 @@
+import { subject } from "@casl/ability";
 import { Database, Lock, ShieldCheck } from "lucide-react";
 import { Link } from "react-router";
+import { useAuth } from "@/components/auth-provider";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +19,11 @@ import { EditDialog } from "./edit-dialog";
 import { LockButton } from "./lock-button";
 
 export function NamespaceCard({ ns }: Readonly<{ ns: Namespace }>) {
+	const { state } = useAuth();
+	const canWrite =
+		state.status === "authenticated" &&
+		state.ability.can("write", subject("Namespace", { domain: ns.name }));
+
 	return (
 		<Card className="rounded-xl">
 			<CardHeader className="pb-2">
@@ -29,14 +36,16 @@ export function NamespaceCard({ ns }: Readonly<{ ns: Namespace }>) {
 						<CardTitle className="text-base">{ns.name}</CardTitle>
 						{ns.locked && <Lock className="h-3 w-3 text-amber-500" />}
 					</Link>
-					<div className="flex gap-1">
-						<EditDialog
-							name={ns.name}
-							currentDescription={ns.description}
-							locked={ns.locked}
-						/>
-						<DeleteButton name={ns.name} locked={ns.locked} />
-					</div>
+					{canWrite && (
+						<div className="flex gap-1">
+							<EditDialog
+								name={ns.name}
+								currentDescription={ns.description}
+								locked={ns.locked}
+							/>
+							<DeleteButton name={ns.name} locked={ns.locked} />
+						</div>
+					)}
 				</div>
 				<CardDescription className="min-h-[1.25rem]">
 					{ns.description}
@@ -49,7 +58,7 @@ export function NamespaceCard({ ns }: Readonly<{ ns: Namespace }>) {
 				<div className="flex flex-wrap gap-2">
 					<ExportDialog namespace={ns.name} />
 					<ImportDialog namespace={ns.name} />
-					<LockButton name={ns.name} locked={ns.locked} />
+					{canWrite && <LockButton name={ns.name} locked={ns.locked} />}
 					<Button
 						size="sm"
 						variant="outline"

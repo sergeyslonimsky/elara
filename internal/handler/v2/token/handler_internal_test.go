@@ -89,8 +89,12 @@ func TestTokenHandler_ListTokens(t *testing.T) {
 			issuedBy: "user@example.com",
 			mock: func(uc *token_mock.Mockusecase) {
 				uc.EXPECT().
-					List(gomock.Any(), "user@example.com").
-					Return([]*domain.Token{{ID: "t1", IssuedBy: "user@example.com"}}, nil)
+					List(gomock.Any(), tokenuc.ListParams{IssuedBy: "user@example.com"}).
+					Return(&tokenuc.ListResult{
+						Tokens: []*domain.Token{{ID: "t1", IssuedBy: "user@example.com"}},
+						Total:  1,
+						Limit:  20,
+					}, nil)
 			},
 			wantLen: 1,
 		},
@@ -99,8 +103,12 @@ func TestTokenHandler_ListTokens(t *testing.T) {
 			issuedBy: "",
 			mock: func(uc *token_mock.Mockusecase) {
 				uc.EXPECT().
-					List(gomock.Any(), "").
-					Return([]*domain.Token{{ID: "t1", IssuedBy: "user@example.com"}}, nil)
+					List(gomock.Any(), tokenuc.ListParams{}).
+					Return(&tokenuc.ListResult{
+						Tokens: []*domain.Token{{ID: "t1", IssuedBy: "user@example.com"}},
+						Total:  1,
+						Limit:  20,
+					}, nil)
 			},
 			wantLen: 1,
 		},

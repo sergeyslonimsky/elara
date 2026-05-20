@@ -10,6 +10,33 @@ const (
 	ProviderBasicAuth = "basic-auth"
 )
 
+// UserFilter narrows a user list to those the caller is permitted to see.
+//
+// When AnyUser is true, Usernames MUST be ignored — every user matches. This
+// represents the wildcard scope (caller can read every group, hence every
+// user). Search applies a case-insensitive substring match on Email/Name and
+// is independent of AnyUser/Usernames.
+type UserFilter struct {
+	Usernames map[string]struct{}
+	AnyUser   bool
+	Search    string
+}
+
+// UserListParams carries pagination and sort options for user list queries.
+type UserListParams struct {
+	Limit  int
+	Offset int
+	Sort   SortParams
+}
+
+// Source identifies where a user was created. Kept as a typed string so OIDC /
+// admin / seed handlers cannot drift on casing.
+const (
+	SourceLocal = "local"
+	SourceOIDC  = "oidc"
+	SourceSeed  = "seed"
+)
+
 type User struct {
 	Email                  string
 	Name                   string

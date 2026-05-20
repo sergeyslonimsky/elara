@@ -39,17 +39,36 @@ const (
 	errUpdateGroup = "update group: %w"
 )
 
-func diffPermissions(old, new []domain.Permission) (added, removed []domain.Permission) {
+const defaultListLimit = 20
+
+// ListParams carries pagination, sort, and search options accepted by List.
+type ListParams struct {
+	Limit  int
+	Offset int
+	Sort   domain.SortParams
+	Query  string
+}
+
+// ListResult is the paginated response returned by List.
+type ListResult struct {
+	Groups []*domain.Group
+	Total  int
+	Limit  int
+	Offset int
+}
+
+func diffPermissions(old, incoming []domain.Permission) ([]domain.Permission, []domain.Permission) {
 	oldMap := make(map[domain.Permission]struct{})
 	for _, p := range old {
 		oldMap[p] = struct{}{}
 	}
 
 	newMap := make(map[domain.Permission]struct{})
-	for _, p := range new {
+	for _, p := range incoming {
 		newMap[p] = struct{}{}
 	}
 
+	var added, removed []domain.Permission
 	for p := range newMap {
 		if _, ok := oldMap[p]; !ok {
 			added = append(added, p)
@@ -62,20 +81,21 @@ func diffPermissions(old, new []domain.Permission) (added, removed []domain.Perm
 		}
 	}
 
-	return
+	return added, removed
 }
 
-func diffStrings(old, new []string) (added, removed []string) {
+func diffStrings(old, incoming []string) ([]string, []string) {
 	oldMap := make(map[string]struct{})
 	for _, s := range old {
 		oldMap[s] = struct{}{}
 	}
 
 	newMap := make(map[string]struct{})
-	for _, s := range new {
+	for _, s := range incoming {
 		newMap[s] = struct{}{}
 	}
 
+	var added, removed []string
 	for s := range newMap {
 		if _, ok := oldMap[s]; !ok {
 			added = append(added, s)
@@ -88,7 +108,7 @@ func diffStrings(old, new []string) (added, removed []string) {
 		}
 	}
 
-	return
+	return added, removed
 }
 
 func unionPermissions(a, b []domain.Permission) []domain.Permission {
@@ -101,7 +121,7 @@ func unionPermissions(a, b []domain.Permission) []domain.Permission {
 		m[p] = struct{}{}
 	}
 
-	var res []domain.Permission
+	res := make([]domain.Permission, 0, len(m))
 	for p := range m {
 		res = append(res, p)
 	}

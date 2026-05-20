@@ -29,7 +29,7 @@ func TestService_GetStats(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
 
 				m.namespaces.EXPECT().
-					List(ctx).
+					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "n1"}, {Name: "n2"}}, nil)
 
 				m.enforcer.EXPECT().
@@ -68,7 +68,7 @@ func TestService_GetStats(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
 				m.namespaces.EXPECT().
-					List(ctx).
+					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "prod"}, {Name: "dev"}}, nil)
 
 				m.enforcer.EXPECT().
@@ -104,7 +104,7 @@ func TestService_GetStats(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "no-access@example.com"})
 
 				m.namespaces.EXPECT().
-					List(ctx).
+					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "prod"}}, nil)
 
 				m.enforcer.EXPECT().
@@ -141,7 +141,7 @@ func TestService_GetStats(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
 
 				m.namespaces.EXPECT().
-					List(ctx).
+					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "n1"}}, nil)
 
 				m.enforcer.EXPECT().
@@ -162,7 +162,7 @@ func TestService_GetStats(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
 
 				m.namespaces.EXPECT().
-					List(ctx).
+					ListAll(ctx).
 					Return(nil, errors.New("list error"))
 
 				return ctx
@@ -175,7 +175,7 @@ func TestService_GetStats(t *testing.T) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
 
 				m.namespaces.EXPECT().
-					List(ctx).
+					ListAll(ctx).
 					Return([]*domain.Namespace{}, nil)
 
 				m.configs.EXPECT().

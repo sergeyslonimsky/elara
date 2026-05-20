@@ -3,6 +3,7 @@ package bbolt_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,17 +39,19 @@ func TestNamespaceRepo_CRUD(t *testing.T) {
 	ns2 := &domain.Namespace{Name: "staging", Description: "Staging"}
 	require.NoError(t, repo.Create(ctx, ns2))
 
-	list, err := repo.List(ctx)
+	list, total, err := repo.List(ctx, domain.NamespaceFilter{Wildcard: true}, domain.NamespaceListParams{})
 	require.NoError(t, err)
 	assert.Len(t, list, 2)
+	assert.Equal(t, 2, total)
 
 	// Delete
 	err = repo.Delete(ctx, "staging")
 	require.NoError(t, err)
 
-	list, err = repo.List(ctx)
+	list, total, err = repo.List(ctx, domain.NamespaceFilter{Wildcard: true}, domain.NamespaceListParams{})
 	require.NoError(t, err)
 	assert.Len(t, list, 1)
+	assert.Equal(t, 1, total)
 
 	// Delete non-existent
 	err = repo.Delete(ctx, "nonexistent")
@@ -256,4 +259,154 @@ func TestNamespaceRepo_UpdateTimestamp(t *testing.T) {
 	updated, err := repo.Get(ctx, "test")
 	require.NoError(t, err)
 	assert.True(t, updated.UpdatedAt.After(original.UpdatedAt) || updated.UpdatedAt.Equal(original.UpdatedAt))
+}
+
+func TestNamespaceRepo_List(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		seed      []string
+		filter    domain.NamespaceFilter
+		params    domain.NamespaceListParams
+		wantNames []string
+		wantTotal int
+	}{
+		{
+			name:      "wildcard filter returns all sorted by name asc",
+			seed:      []string{"zeta", "alpha", "beta"},
+			filter:    domain.NamespaceFilter{Wildcard: true},
+			params:    domain.NamespaceListParams{},
+			wantNames: []string{"alpha", "beta", "zeta"},
+			wantTotal: 3,
+		},
+		{
+			name: "explicit filter returns subset",
+			seed: []string{"ns1", "ns2", "ns3", "ns4", "ns5"},
+			filter: domain.NamespaceFilter{
+				Names: map[string]struct{}{"ns2": {}, "ns4": {}},
+			},
+			params:    domain.NamespaceListParams{},
+			wantNames: []string{"ns2", "ns4"},
+			wantTotal: 2,
+		},
+		{
+			name: "explicit filter with missing name silently skips",
+			seed: []string{"exists"},
+			filter: domain.NamespaceFilter{
+				Names: map[string]struct{}{"exists": {}, "missing": {}},
+			},
+			params:    domain.NamespaceListParams{},
+			wantNames: []string{"exists"},
+			wantTotal: 1,
+		},
+		{
+			name:      "search filters by case-insensitive substring",
+			seed:      []string{"prod-eu", "PROD-us", "staging", "dev"},
+			filter:    domain.NamespaceFilter{Wildcard: true, Search: "PROD"},
+			params:    domain.NamespaceListParams{},
+			wantNames: []string{"PROD-us", "prod-eu"},
+			wantTotal: 2,
+		},
+		{
+			name: "search combined with explicit filter intersects",
+			seed: []string{"prod-eu", "prod-us", "staging"},
+			filter: domain.NamespaceFilter{
+				Names:  map[string]struct{}{"prod-eu": {}, "staging": {}},
+				Search: "prod",
+			},
+			params:    domain.NamespaceListParams{},
+			wantNames: []string{"prod-eu"},
+			wantTotal: 1,
+		},
+		{
+			name:      "pagination offset+limit slices result, total preserved",
+			seed:      []string{"ns1", "ns2", "ns3", "ns4", "ns5"},
+			filter:    domain.NamespaceFilter{Wildcard: true},
+			params:    domain.NamespaceListParams{Offset: 2, Limit: 2},
+			wantNames: []string{"ns3", "ns4"},
+			wantTotal: 5,
+		},
+		{
+			name:      "empty filter returns empty list, no error",
+			seed:      []string{"ns1", "ns2"},
+			filter:    domain.NamespaceFilter{Wildcard: false, Names: nil},
+			params:    domain.NamespaceListParams{},
+			wantNames: []string{},
+			wantTotal: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			store := newTestStore(t)
+			repo := bbolt.NewNamespaceRepo(store)
+			ctx := t.Context()
+
+			for _, n := range tt.seed {
+				require.NoError(t, repo.Create(ctx, &domain.Namespace{Name: n}))
+			}
+
+			got, total, err := repo.List(ctx, tt.filter, tt.params)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantTotal, total)
+
+			gotNames := make([]string, 0, len(got))
+			for _, ns := range got {
+				gotNames = append(gotNames, ns.Name)
+			}
+			assert.Equal(t, tt.wantNames, gotNames)
+		})
+	}
+}
+
+func TestNamespaceRepo_List_SortByModifiedDesc(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t)
+	repo := bbolt.NewNamespaceRepo(store)
+	ctx := t.Context()
+
+	require.NoError(t, repo.Create(ctx, &domain.Namespace{Name: "first"}))
+	time.Sleep(2 * time.Millisecond)
+	require.NoError(t, repo.Create(ctx, &domain.Namespace{Name: "second"}))
+	time.Sleep(2 * time.Millisecond)
+	require.NoError(t, repo.Create(ctx, &domain.Namespace{Name: "third"}))
+
+	got, total, err := repo.List(ctx,
+		domain.NamespaceFilter{Wildcard: true},
+		domain.NamespaceListParams{
+			Sort: domain.SortParams{Field: "modified", Desc: true},
+		},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, 3, total)
+	require.Len(t, got, 3)
+	assert.Equal(t, "third", got[0].Name)
+	assert.Equal(t, "second", got[1].Name)
+	assert.Equal(t, "first", got[2].Name)
+}
+
+func TestNamespaceRepo_ListAll(t *testing.T) {
+	t.Parallel()
+
+	store := newTestStore(t)
+	repo := bbolt.NewNamespaceRepo(store)
+	ctx := t.Context()
+
+	for _, n := range []string{"ns-a", "ns-b", "ns-c"} {
+		require.NoError(t, repo.Create(ctx, &domain.Namespace{Name: n}))
+	}
+
+	got, err := repo.ListAll(ctx)
+	require.NoError(t, err)
+	require.Len(t, got, 3)
+
+	names := make([]string, 0, len(got))
+	for _, ns := range got {
+		names = append(names, ns.Name)
+	}
+	assert.Equal(t, []string{"ns-a", "ns-b", "ns-c"}, names)
 }

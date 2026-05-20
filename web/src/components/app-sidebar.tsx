@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
+import { uiVisibility } from "@/auth/uiVisibility";
 import { useAuth } from "@/components/auth-provider";
 import { Logo } from "@/components/logo";
 import {
@@ -36,7 +37,9 @@ export function AppSidebar() {
 
 	const authType =
 		state.status === "authenticated" ? state.authType : undefined;
-	const meUser = state.status === "authenticated" ? state.user : null;
+
+	const visibility =
+		state.status === "authenticated" ? uiVisibility(state.ability) : null;
 
 	const navItems = [
 		{
@@ -52,35 +55,35 @@ export function AppSidebar() {
 			icon: FolderTree,
 			isActive:
 				pathname.startsWith("/browse") || pathname.startsWith("/config"),
-			show: true,
+			show: visibility?.canSeeConfigsSection ?? false,
 		},
 		{
 			title: "Namespaces",
 			href: "/namespaces",
 			icon: Database,
 			isActive: pathname.startsWith("/namespaces"),
-			show: true,
+			show: visibility?.canSeeNamespacesSection ?? false,
 		},
 		{
 			title: "Clients",
 			href: "/clients",
 			icon: Network,
 			isActive: pathname.startsWith("/clients"),
-			show: true,
+			show: visibility?.canSeeClientsSection ?? false,
 		},
 		{
 			title: "Webhooks",
 			href: "/webhooks",
 			icon: Webhook,
 			isActive: pathname.startsWith("/webhooks"),
-			show: meUser?.canViewWebhooks ?? false,
+			show: visibility?.canSeeWebhooksSection ?? false,
 		},
 		{
 			title: "Tokens",
 			href: "/tokens",
 			icon: Key,
 			isActive: pathname.startsWith("/tokens"),
-			show: !!meUser,
+			show: visibility?.canSeeTokensSection ?? false,
 		},
 	].filter((item) => item.show);
 
@@ -90,23 +93,26 @@ export function AppSidebar() {
 			href: "/users",
 			icon: Users,
 			isActive: pathname.startsWith("/users"),
+			show: visibility?.canSeeUsersSection ?? false,
 		},
 		{
 			title: "Groups",
 			href: "/groups",
 			icon: UsersRound,
 			isActive: pathname.startsWith("/groups"),
+			show: visibility?.canSeeGroupsSection ?? false,
 		},
 		{
 			title: "Access",
 			href: "/access",
 			icon: Shield,
 			isActive: pathname.startsWith("/access"),
+			show: visibility?.canManageAccess ?? false,
 		},
-	];
+	].filter((item) => item.show);
 
 	const showAdministration =
-		authType !== AuthType.NONE && meUser?.isAdmin === true;
+		authType !== AuthType.NONE && administrationItems.length > 0;
 
 	return (
 		<Sidebar>

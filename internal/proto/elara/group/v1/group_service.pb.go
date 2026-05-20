@@ -408,6 +408,8 @@ func (*DeleteGroupResponse) Descriptor() ([]byte, []int) {
 
 type ListGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pagination    *v1.PaginationRequest  `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Search        string                 `protobuf:"bytes,2,opt,name=search,proto3" json:"search,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -442,9 +444,24 @@ func (*ListGroupsRequest) Descriptor() ([]byte, []int) {
 	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{8}
 }
 
+func (x *ListGroupsRequest) GetPagination() *v1.PaginationRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+func (x *ListGroupsRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
 type ListGroupsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Groups        []*Group               `protobuf:"bytes,1,rep,name=groups,proto3" json:"groups,omitempty"`
+	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -486,11 +503,18 @@ func (x *ListGroupsResponse) GetGroups() []*Group {
 	return nil
 }
 
+func (x *ListGroupsResponse) GetPagination() *v1.PaginationResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
 var File_elara_group_v1_group_service_proto protoreflect.FileDescriptor
 
 const file_elara_group_v1_group_service_proto_rawDesc = "" +
 	"\n" +
-	"\"elara/group/v1/group_service.proto\x12\x0eelara.group.v1\x1a elara/common/v1/permission.proto\x1a\x1aelara/group/v1/group.proto\"(\n" +
+	"\"elara/group/v1/group_service.proto\x12\x0eelara.group.v1\x1a\x1celara/common/v1/common.proto\x1a elara/common/v1/permission.proto\x1a\x1aelara/group/v1/group.proto\"(\n" +
 	"\x12CreateGroupRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"B\n" +
 	"\x13CreateGroupResponse\x12+\n" +
@@ -510,10 +534,17 @@ const file_elara_group_v1_group_service_proto_rawDesc = "" +
 	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\"$\n" +
 	"\x12DeleteGroupRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
-	"\x13DeleteGroupResponse\"\x13\n" +
-	"\x11ListGroupsRequest\"C\n" +
+	"\x13DeleteGroupResponse\"o\n" +
+	"\x11ListGroupsRequest\x12B\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2\".elara.common.v1.PaginationRequestR\n" +
+	"pagination\x12\x16\n" +
+	"\x06search\x18\x02 \x01(\tR\x06search\"\x88\x01\n" +
 	"\x12ListGroupsResponse\x12-\n" +
-	"\x06groups\x18\x01 \x03(\v2\x15.elara.group.v1.GroupR\x06groups2\xba\x03\n" +
+	"\x06groups\x18\x01 \x03(\v2\x15.elara.group.v1.GroupR\x06groups\x12C\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2#.elara.common.v1.PaginationResponseR\n" +
+	"pagination2\xba\x03\n" +
 	"\fGroupService\x12V\n" +
 	"\vCreateGroup\x12\".elara.group.v1.CreateGroupRequest\x1a#.elara.group.v1.CreateGroupResponse\x12M\n" +
 	"\bGetGroup\x12\x1f.elara.group.v1.GetGroupRequest\x1a .elara.group.v1.GetGroupResponse\x12V\n" +
@@ -549,28 +580,32 @@ var file_elara_group_v1_group_service_proto_goTypes = []any{
 	(*ListGroupsResponse)(nil),      // 9: elara.group.v1.ListGroupsResponse
 	(*Group)(nil),                   // 10: elara.group.v1.Group
 	(*v1.PermissionAssignment)(nil), // 11: elara.common.v1.PermissionAssignment
+	(*v1.PaginationRequest)(nil),    // 12: elara.common.v1.PaginationRequest
+	(*v1.PaginationResponse)(nil),   // 13: elara.common.v1.PaginationResponse
 }
 var file_elara_group_v1_group_service_proto_depIdxs = []int32{
 	10, // 0: elara.group.v1.CreateGroupResponse.group:type_name -> elara.group.v1.Group
 	10, // 1: elara.group.v1.GetGroupResponse.group:type_name -> elara.group.v1.Group
 	11, // 2: elara.group.v1.UpdateGroupRequest.permissions:type_name -> elara.common.v1.PermissionAssignment
 	10, // 3: elara.group.v1.UpdateGroupResponse.group:type_name -> elara.group.v1.Group
-	10, // 4: elara.group.v1.ListGroupsResponse.groups:type_name -> elara.group.v1.Group
-	0,  // 5: elara.group.v1.GroupService.CreateGroup:input_type -> elara.group.v1.CreateGroupRequest
-	2,  // 6: elara.group.v1.GroupService.GetGroup:input_type -> elara.group.v1.GetGroupRequest
-	4,  // 7: elara.group.v1.GroupService.UpdateGroup:input_type -> elara.group.v1.UpdateGroupRequest
-	6,  // 8: elara.group.v1.GroupService.DeleteGroup:input_type -> elara.group.v1.DeleteGroupRequest
-	8,  // 9: elara.group.v1.GroupService.ListGroups:input_type -> elara.group.v1.ListGroupsRequest
-	1,  // 10: elara.group.v1.GroupService.CreateGroup:output_type -> elara.group.v1.CreateGroupResponse
-	3,  // 11: elara.group.v1.GroupService.GetGroup:output_type -> elara.group.v1.GetGroupResponse
-	5,  // 12: elara.group.v1.GroupService.UpdateGroup:output_type -> elara.group.v1.UpdateGroupResponse
-	7,  // 13: elara.group.v1.GroupService.DeleteGroup:output_type -> elara.group.v1.DeleteGroupResponse
-	9,  // 14: elara.group.v1.GroupService.ListGroups:output_type -> elara.group.v1.ListGroupsResponse
-	10, // [10:15] is the sub-list for method output_type
-	5,  // [5:10] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	12, // 4: elara.group.v1.ListGroupsRequest.pagination:type_name -> elara.common.v1.PaginationRequest
+	10, // 5: elara.group.v1.ListGroupsResponse.groups:type_name -> elara.group.v1.Group
+	13, // 6: elara.group.v1.ListGroupsResponse.pagination:type_name -> elara.common.v1.PaginationResponse
+	0,  // 7: elara.group.v1.GroupService.CreateGroup:input_type -> elara.group.v1.CreateGroupRequest
+	2,  // 8: elara.group.v1.GroupService.GetGroup:input_type -> elara.group.v1.GetGroupRequest
+	4,  // 9: elara.group.v1.GroupService.UpdateGroup:input_type -> elara.group.v1.UpdateGroupRequest
+	6,  // 10: elara.group.v1.GroupService.DeleteGroup:input_type -> elara.group.v1.DeleteGroupRequest
+	8,  // 11: elara.group.v1.GroupService.ListGroups:input_type -> elara.group.v1.ListGroupsRequest
+	1,  // 12: elara.group.v1.GroupService.CreateGroup:output_type -> elara.group.v1.CreateGroupResponse
+	3,  // 13: elara.group.v1.GroupService.GetGroup:output_type -> elara.group.v1.GetGroupResponse
+	5,  // 14: elara.group.v1.GroupService.UpdateGroup:output_type -> elara.group.v1.UpdateGroupResponse
+	7,  // 15: elara.group.v1.GroupService.DeleteGroup:output_type -> elara.group.v1.DeleteGroupResponse
+	9,  // 16: elara.group.v1.GroupService.ListGroups:output_type -> elara.group.v1.ListGroupsResponse
+	12, // [12:17] is the sub-list for method output_type
+	7,  // [7:12] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_elara_group_v1_group_service_proto_init() }

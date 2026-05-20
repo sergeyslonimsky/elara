@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	group "github.com/sergeyslonimsky/elara/internal/usecase/group"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -86,18 +87,18 @@ func (mr *MockgroupUsecaseMockRecorder) Get(ctx, id any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *MockgroupUsecase) List(ctx context.Context) ([]*domain.Group, error) {
+func (m *MockgroupUsecase) List(ctx context.Context, params group.ListParams) (*group.ListResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx)
-	ret0, _ := ret[0].([]*domain.Group)
+	ret := m.ctrl.Call(m, "List", ctx, params)
+	ret0, _ := ret[0].(*group.ListResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockgroupUsecaseMockRecorder) List(ctx any) *gomock.Call {
+func (mr *MockgroupUsecaseMockRecorder) List(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockgroupUsecase)(nil).List), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockgroupUsecase)(nil).List), ctx, params)
 }
 
 // Update mocks base method.

@@ -17,7 +17,7 @@ import (
 
 type usecase interface {
 	Create(ctx context.Context, in tokenuc.CreateInput) (*domain.Token, string, error)
-	List(ctx context.Context, issuedBy string) ([]*domain.Token, error)
+	List(ctx context.Context, params tokenuc.ListParams) (*tokenuc.ListResult, error)
 	Get(ctx context.Context, id string) (*domain.Token, error)
 	Revoke(ctx context.Context, id string) error
 }
@@ -62,13 +62,15 @@ func (h *Handler) ListTokens(
 	ctx context.Context,
 	req *connect.Request[tokenv1.ListTokensRequest],
 ) (*connect.Response[tokenv1.ListTokensResponse], error) {
-	tokens, err := h.uc.List(ctx, req.Msg.GetIssuedBy())
+	result, err := h.uc.List(ctx, tokenuc.ListParams{
+		IssuedBy: req.Msg.GetIssuedBy(),
+	})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	protos := make([]*tokenv1.Token, 0, len(tokens))
-	for _, t := range tokens {
+	protos := make([]*tokenv1.Token, 0, len(result.Tokens))
+	for _, t := range result.Tokens {
 		protos = append(protos, domainTokenToProto(t))
 	}
 

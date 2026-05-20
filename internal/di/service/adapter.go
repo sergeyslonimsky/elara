@@ -85,7 +85,7 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 // Shutdown closes every adapter in reverse dependency order. Idempotent
 // and concurrent-safe: runs exactly once, subsequent calls return the
 // same cached result.
-func (a *Adapters) Shutdown(ctx context.Context) error {
+func (a *Adapters) Shutdown(ctx context.Context) error { //nolint:cyclop //refactor
 	a.shutdownOnce.Do(func() {
 		if a.WebhookDispatcher != nil {
 			if err := a.WebhookDispatcher.Shutdown(ctx); err != nil {

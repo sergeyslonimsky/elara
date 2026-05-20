@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package elara.user.v1;
 
+import "elara/common/v1/common.proto";
 import "elara/user/v1/user.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -15,10 +16,14 @@ service UserService {
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
 
-message ListUsersRequest {}
+message ListUsersRequest {
+  elara.common.v1.PaginationRequest pagination = 1;
+  string search = 2;
+}
 
 message ListUsersResponse {
   repeated User users = 1;
+  elara.common.v1.PaginationResponse pagination = 2;
 }
 
 message GetUserRequest {

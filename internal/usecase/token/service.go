@@ -23,9 +23,17 @@ type (
 		Enforce(subject, domain, object, action string) (bool, error)
 	}
 
+	pdp interface {
+		EffectiveDomains(principal, object, action string) domain.DomainSet
+	}
+
 	store interface {
 		Create(ctx context.Context, token *domain.Token) error
-		List(ctx context.Context, issuedBy string) ([]*domain.Token, error)
+		List(
+			ctx context.Context,
+			filter domain.TokenFilter,
+			params domain.TokenListParams,
+		) ([]*domain.Token, int, error)
 		Delete(ctx context.Context, id string) error
 		GetByID(ctx context.Context, id string) (*domain.Token, error)
 	}
@@ -33,12 +41,14 @@ type (
 
 type Service struct {
 	enforcer enforcer
+	pdp      pdp
 	store    store
 }
 
-func New(enforcer enforcer, store store) *Service {
+func New(enforcer enforcer, pdp pdp, store store) *Service {
 	return &Service{
 		enforcer: enforcer,
+		pdp:      pdp,
 		store:    store,
 	}
 }

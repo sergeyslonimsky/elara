@@ -33,7 +33,7 @@ func (s *Service) AssignRole(ctx context.Context, subject, dom, role string) err
 		return nil
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("write tx: %w", err)
 	}
 
 	return nil
@@ -53,7 +53,7 @@ func (s *Service) RevokeRole(ctx context.Context, subject, dom, role string) err
 		return nil
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("write tx: %w", err)
 	}
 
 	return nil

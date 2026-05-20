@@ -74,18 +74,18 @@ func (mr *MockusecaseMockRecorder) Get(ctx, id any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *Mockusecase) List(ctx context.Context, issuedBy string) ([]*domain.Token, error) {
+func (m *Mockusecase) List(ctx context.Context, params token.ListParams) (*token.ListResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, issuedBy)
-	ret0, _ := ret[0].([]*domain.Token)
+	ret := m.ctrl.Call(m, "List", ctx, params)
+	ret0, _ := ret[0].(*token.ListResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockusecaseMockRecorder) List(ctx, issuedBy any) *gomock.Call {
+func (mr *MockusecaseMockRecorder) List(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockusecase)(nil).List), ctx, issuedBy)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockusecase)(nil).List), ctx, params)
 }
 
 // Revoke mocks base method.

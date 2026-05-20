@@ -75,16 +75,24 @@ func TestTokenRepo_List_ByIssuedBy(t *testing.T) {
 	require.NoError(t, repo.Create(ctx, newTestToken("token-u2", "carol@example.com", "hash-u2")))
 	require.NoError(t, repo.Create(ctx, newTestToken("token-u3", "dave@example.com", "hash-u3")))
 
-	carolTokens, err := repo.List(ctx, "carol@example.com")
+	carolTokens, total, err := repo.List(ctx, domain.TokenFilter{
+		AnyNamespace: true,
+		IssuedBy:     "carol@example.com",
+	}, domain.TokenListParams{})
 	require.NoError(t, err)
 	assert.Len(t, carolTokens, 2)
+	assert.Equal(t, 2, total)
 
-	daveTokens, err := repo.List(ctx, "dave@example.com")
+	daveTokens, total, err := repo.List(ctx, domain.TokenFilter{
+		AnyNamespace: true,
+		IssuedBy:     "dave@example.com",
+	}, domain.TokenListParams{})
 	require.NoError(t, err)
 	assert.Len(t, daveTokens, 1)
+	assert.Equal(t, 1, total)
 }
 
-func TestTokenRepo_List_All(t *testing.T) {
+func TestTokenRepo_ListAll(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
@@ -92,7 +100,7 @@ func TestTokenRepo_List_All(t *testing.T) {
 	ctx := t.Context()
 
 	// Empty list.
-	all, err := repo.List(ctx, "")
+	all, err := repo.ListAll(ctx)
 	require.NoError(t, err)
 	assert.Empty(t, all)
 
@@ -101,9 +109,205 @@ func TestTokenRepo_List_All(t *testing.T) {
 	require.NoError(t, repo.Create(ctx, newTestToken("token-a2", "frank@example.com", "hash-a2")))
 	require.NoError(t, repo.Create(ctx, newTestToken("token-a3", "grace@example.com", "hash-a3")))
 
-	all, err = repo.List(ctx, "")
+	all, err = repo.ListAll(ctx)
 	require.NoError(t, err)
 	assert.Len(t, all, 3)
+}
+
+func TestTokenRepo_List(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now().UTC()
+	earlier := now.Add(-2 * time.Hour)
+	earliest := now.Add(-5 * time.Hour)
+
+	type seedToken struct {
+		id         string
+		issuedBy   string
+		name       string
+		namespaces []string
+		createdAt  time.Time
+		lastUsedAt *time.Time
+	}
+
+	mkSeed := func(s seedToken) *domain.Token {
+		return &domain.Token{
+			ID:         s.id,
+			IssuedBy:   s.issuedBy,
+			Name:       s.name,
+			TokenHash:  "hash-" + s.id,
+			Namespaces: s.namespaces,
+			Role:       "writer",
+			CreatedAt:  s.createdAt,
+			LastUsedAt: s.lastUsedAt,
+		}
+	}
+
+	tests := []struct {
+		name      string
+		seeds     []seedToken
+		filter    domain.TokenFilter
+		params    domain.TokenListParams
+		wantIDs   []string
+		wantTotal int
+	}{
+		{
+			name: "AnyNamespace returns all sorted by created desc",
+			seeds: []seedToken{
+				{id: "a", issuedBy: "u@x", name: "a", namespaces: []string{"ns1"}, createdAt: earliest},
+				{id: "b", issuedBy: "u@x", name: "b", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "c", issuedBy: "u@x", name: "c", namespaces: []string{"ns1"}, createdAt: earlier},
+			},
+			filter:    domain.TokenFilter{AnyNamespace: true},
+			params:    domain.TokenListParams{},
+			wantIDs:   []string{"b", "c", "a"},
+			wantTotal: 3,
+		},
+		{
+			name: "NamespaceScopes filter returns intersection",
+			seeds: []seedToken{
+				{id: "a", issuedBy: "u@x", name: "a", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "b", issuedBy: "u@x", name: "b", namespaces: []string{"ns2"}, createdAt: now},
+				{id: "c", issuedBy: "u@x", name: "c", namespaces: []string{"ns1"}, createdAt: earlier},
+				{id: "d", issuedBy: "u@x", name: "d", namespaces: []string{"ns3"}, createdAt: now},
+			},
+			filter: domain.TokenFilter{
+				NamespaceScopes: map[string]struct{}{"ns1": {}},
+			},
+			params:    domain.TokenListParams{Sort: domain.SortParams{Field: "name"}},
+			wantIDs:   []string{"a", "c"},
+			wantTotal: 2,
+		},
+		{
+			name: "token with multiple namespaces matches if any overlaps with scope",
+			seeds: []seedToken{
+				{id: "a", issuedBy: "u@x", name: "a", namespaces: []string{"ns1", "ns2"}, createdAt: now},
+			},
+			filter: domain.TokenFilter{
+				NamespaceScopes: map[string]struct{}{"ns2": {}},
+			},
+			wantIDs:   []string{"a"},
+			wantTotal: 1,
+		},
+		{
+			name: "token with no overlap is filtered out",
+			seeds: []seedToken{
+				{id: "a", issuedBy: "u@x", name: "a", namespaces: []string{"ns3"}, createdAt: now},
+			},
+			filter: domain.TokenFilter{
+				NamespaceScopes: map[string]struct{}{"ns1": {}, "ns2": {}},
+			},
+			wantIDs:   []string{},
+			wantTotal: 0,
+		},
+		{
+			name: "IssuedBy filter narrows additionally",
+			seeds: []seedToken{
+				{id: "a", issuedBy: "alice@x", name: "a", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "b", issuedBy: "bob@x", name: "b", namespaces: []string{"ns1"}, createdAt: now},
+			},
+			filter: domain.TokenFilter{
+				AnyNamespace: true,
+				IssuedBy:     "alice@x",
+			},
+			wantIDs:   []string{"a"},
+			wantTotal: 1,
+		},
+		{
+			name: "Search filters case-insensitive substring on Name",
+			seeds: []seedToken{
+				{id: "a", issuedBy: "u@x", name: "prod-key", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "b", issuedBy: "u@x", name: "stg-key", namespaces: []string{"ns1"}, createdAt: now},
+			},
+			filter: domain.TokenFilter{
+				AnyNamespace: true,
+				Search:       "PROD",
+			},
+			wantIDs:   []string{"a"},
+			wantTotal: 1,
+		},
+		{
+			name: "pagination offset+limit slices, total preserved",
+			seeds: []seedToken{
+				{id: "a", issuedBy: "u@x", name: "a", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "b", issuedBy: "u@x", name: "b", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "c", issuedBy: "u@x", name: "c", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "d", issuedBy: "u@x", name: "d", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "e", issuedBy: "u@x", name: "e", namespaces: []string{"ns1"}, createdAt: now},
+			},
+			filter:    domain.TokenFilter{AnyNamespace: true},
+			params:    domain.TokenListParams{Sort: domain.SortParams{Field: "name"}, Offset: 2, Limit: 2},
+			wantIDs:   []string{"c", "d"},
+			wantTotal: 5,
+		},
+		{
+			name: "sort by name asc",
+			seeds: []seedToken{
+				{id: "a", issuedBy: "u@x", name: "charlie", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "b", issuedBy: "u@x", name: "alpha", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "c", issuedBy: "u@x", name: "bravo", namespaces: []string{"ns1"}, createdAt: now},
+			},
+			filter:    domain.TokenFilter{AnyNamespace: true},
+			params:    domain.TokenListParams{Sort: domain.SortParams{Field: "name"}},
+			wantIDs:   []string{"b", "c", "a"},
+			wantTotal: 3,
+		},
+		{
+			name: "sort by last_used handles nil LastUsedAt",
+			seeds: []seedToken{
+				{
+					id: "a", issuedBy: "u@x", name: "a",
+					namespaces: []string{"ns1"}, createdAt: now, lastUsedAt: &earlier,
+				},
+				{
+					id: "b", issuedBy: "u@x", name: "b",
+					namespaces: []string{"ns1"}, createdAt: now, lastUsedAt: nil,
+				},
+				{
+					id: "c", issuedBy: "u@x", name: "c",
+					namespaces: []string{"ns1"}, createdAt: now, lastUsedAt: &now,
+				},
+			},
+			filter:    domain.TokenFilter{AnyNamespace: true},
+			params:    domain.TokenListParams{Sort: domain.SortParams{Field: "last_used"}},
+			wantIDs:   []string{"b", "a", "c"},
+			wantTotal: 3,
+		},
+		{
+			name: "empty filter returns empty list",
+			seeds: []seedToken{
+				{id: "a", issuedBy: "u@x", name: "a", namespaces: []string{"ns1"}, createdAt: now},
+				{id: "b", issuedBy: "u@x", name: "b", namespaces: []string{"ns2"}, createdAt: now},
+			},
+			filter:    domain.TokenFilter{AnyNamespace: false, NamespaceScopes: nil},
+			wantIDs:   []string{},
+			wantTotal: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			store := newTestStore(t)
+			repo := bboltadapter.NewTokenRepo(store)
+			ctx := t.Context()
+
+			for _, s := range tt.seeds {
+				require.NoError(t, repo.Create(ctx, mkSeed(s)))
+			}
+
+			got, total, err := repo.List(ctx, tt.filter, tt.params)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantTotal, total)
+
+			gotIDs := make([]string, 0, len(got))
+			for _, tok := range got {
+				gotIDs = append(gotIDs, tok.ID)
+			}
+			assert.Equal(t, tt.wantIDs, gotIDs)
+		})
+	}
 }
 
 func TestTokenRepo_Delete_ByID(t *testing.T) {

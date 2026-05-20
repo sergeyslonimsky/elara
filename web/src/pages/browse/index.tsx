@@ -1,7 +1,9 @@
+import { subject } from "@casl/ability";
 import { useQuery } from "@connectrpc/connect-query";
 import { FilePlus } from "lucide-react";
 import { useEffect } from "react";
 import { useParams } from "react-router";
+import { useAuth } from "@/components/auth-provider";
 import { DirectoryTable } from "@/components/directory-table";
 import { ErrorCard } from "@/components/error-card";
 import { LockAwareButton } from "@/components/lock-aware-button";
@@ -15,9 +17,17 @@ import { useTableState } from "@/hooks/use-table-state";
 import { NamespaceList } from "./namespace-list";
 
 export function BrowsePage() {
+	const { state } = useAuth();
 	const { namespace, "*": splat = "" } = useParams();
 	const path = namespace ? `/${splat}` : undefined;
 	const tableState = useTableState();
+
+	const canWriteConfig =
+		state.status === "authenticated" &&
+		state.ability.can(
+			"write",
+			subject("Namespace", { domain: namespace ?? "" }),
+		);
 
 	const {
 		offset,
@@ -93,15 +103,17 @@ export function BrowsePage() {
 		>
 			<div className="flex min-h-7 items-center justify-between">
 				<PathBreadcrumb namespace={namespace} path={path ?? "/"} />
-				<LockAwareButton
-					size="sm"
-					locked={namespaceLocked}
-					lockedReason={`Namespace "${namespace}" is locked`}
-					to={newConfigPath}
-				>
-					<FilePlus className="mr-1 h-4 w-4" />
-					New Config
-				</LockAwareButton>
+				{canWriteConfig && (
+					<LockAwareButton
+						size="sm"
+						locked={namespaceLocked}
+						lockedReason={`Namespace "${namespace}" is locked`}
+						to={newConfigPath}
+					>
+						<FilePlus className="mr-1 h-4 w-4" />
+						New Config
+					</LockAwareButton>
+				)}
 			</div>
 
 			{error && <ErrorCard message={error.message} />}

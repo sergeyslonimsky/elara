@@ -44,7 +44,7 @@ func (r *PolicyRepo) RemoveFilteredPolicy(sec, ptype string, fieldIndex int, fie
 		err := b.ForEach(func(k, _ []byte) error {
 			var parts []string
 			if err := json.Unmarshal(k, &parts); err != nil {
-				slog.Warn("bbolt: malformed policy rule key during filtered removal", "error", err, "key", string(k))
+				slog.Warn("Casbin: malformed policy rule key during filtered removal", "error", err, "key", string(k))
 
 				return nil
 			}
@@ -83,34 +83,6 @@ func (r *PolicyRepo) RemoveFilteredPolicy(sec, ptype string, fieldIndex int, fie
 	})
 	if err != nil {
 		return fmt.Errorf("remove filtered policy: %w", err)
-	}
-
-	return nil
-}
-
-func (r *PolicyRepo) view(fn func(storage.Tx) error) error {
-	if r.tx != nil {
-		return fn(r.tx)
-	}
-
-	if err := r.store.db.View(func(tx *bolt.Tx) error {
-		return fn(&txWrapper{tx: tx})
-	}); err != nil {
-		return fmt.Errorf("bbolt view: %w", err)
-	}
-
-	return nil
-}
-
-func (r *PolicyRepo) update(fn func(storage.Tx) error) error {
-	if r.tx != nil {
-		return fn(r.tx)
-	}
-
-	if err := r.store.db.Update(func(tx *bolt.Tx) error {
-		return fn(&txWrapper{tx: tx})
-	}); err != nil {
-		return fmt.Errorf("bbolt update: %w", err)
 	}
 
 	return nil
@@ -281,6 +253,8 @@ func (r *PolicyRepo) ListPermissionsForSubject(subject string) ([][]string, erro
 		return b.ForEach(func(k, _ []byte) error {
 			var parts []string
 			if err := json.Unmarshal(k, &parts); err != nil {
+				slog.Warn("Casbin: malformed policy rule key during list", "error", err, "key", string(k))
+
 				return nil
 			}
 
@@ -305,4 +279,32 @@ func (r *PolicyRepo) ListPermissionsForSubject(subject string) ([][]string, erro
 	}
 
 	return rules, nil
+}
+
+func (r *PolicyRepo) view(fn func(storage.Tx) error) error {
+	if r.tx != nil {
+		return fn(r.tx)
+	}
+
+	if err := r.store.db.View(func(tx *bolt.Tx) error {
+		return fn(&txWrapper{tx: tx})
+	}); err != nil {
+		return fmt.Errorf("bbolt view: %w", err)
+	}
+
+	return nil
+}
+
+func (r *PolicyRepo) update(fn func(storage.Tx) error) error {
+	if r.tx != nil {
+		return fn(r.tx)
+	}
+
+	if err := r.store.db.Update(func(tx *bolt.Tx) error {
+		return fn(&txWrapper{tx: tx})
+	}); err != nil {
+		return fmt.Errorf("bbolt update: %w", err)
+	}
+
+	return nil
 }

@@ -71,18 +71,19 @@ func (mr *MockstoreMockRecorder) Get(ctx, email any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *Mockstore) List(ctx context.Context) ([]*domain.User, error) {
+func (m *Mockstore) List(ctx context.Context, filter domain.UserFilter, params domain.UserListParams) ([]*domain.User, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx)
+	ret := m.ctrl.Call(m, "List", ctx, filter, params)
 	ret0, _ := ret[0].([]*domain.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // List indicates an expected call of List.
-func (mr *MockstoreMockRecorder) List(ctx any) *gomock.Call {
+func (mr *MockstoreMockRecorder) List(ctx, filter, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstore)(nil).List), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstore)(nil).List), ctx, filter, params)
 }
 
 // SetPassword mocks base method.

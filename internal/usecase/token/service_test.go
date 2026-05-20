@@ -13,6 +13,7 @@ import (
 
 type mocks struct {
 	enforcer *tokenmock.Mockenforcer
+	pdp      *tokenmock.Mockpdp
 	store    *tokenmock.Mockstore
 }
 
@@ -22,10 +23,11 @@ func setupService(t *testing.T) (*token.Service, mocks) {
 	ctrl := gomock.NewController(t)
 	m := mocks{
 		enforcer: tokenmock.NewMockenforcer(ctrl),
+		pdp:      tokenmock.NewMockpdp(ctrl),
 		store:    tokenmock.NewMockstore(ctrl),
 	}
 
-	svc := token.New(m.enforcer, m.store)
+	svc := token.New(m.enforcer, m.pdp, m.store)
 
 	return svc, m
 }

@@ -60,11 +60,12 @@ func TestService_Update_ConcurrentVersionConflict(t *testing.T) {
 
 	var successCount, conflictCount int
 	for err := range errs {
-		if err == nil {
+		switch {
+		case err == nil:
 			successCount++
-		} else if errors.Is(err, domain.ErrVersionConflict) {
+		case errors.Is(err, domain.ErrVersionConflict):
 			conflictCount++
-		} else {
+		default:
 			t.Errorf("unexpected error: %v", err)
 		}
 	}

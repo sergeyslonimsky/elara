@@ -122,7 +122,7 @@ func (s *Service) ExportNamespace(
 }
 
 func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) {
-	ns, err := s.namespaces.List(ctx)
+	ns, err := s.namespaces.ListAll(ctx)
 	if err != nil {
 		return domain.AllBundle{}, fmt.Errorf("list namespaces: %w", err)
 	}

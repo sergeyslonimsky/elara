@@ -11,6 +11,13 @@ type DomainSet struct {
 	Explicit map[string]struct{}
 }
 
+// NewDomainSet builds a DomainSet from explicit domain names. A "*" entry
+// sets Wildcard=true; any other entries are still recorded in Explicit so
+// callers can inspect them if needed.
+//
+// Invariant for consumers: when Wildcard is true, Explicit MUST be ignored —
+// wildcard subsumes any explicit entries. Repo filters and PDP checks should
+// branch on Wildcard first.
 func NewDomainSet(explicit ...string) DomainSet {
 	ds := DomainSet{
 		Explicit: make(map[string]struct{}),

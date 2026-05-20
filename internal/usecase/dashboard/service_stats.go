@@ -17,7 +17,7 @@ func (s *Service) GetStats(ctx context.Context) (*StatsResult, error) {
 		return nil, domain.ErrUnauthorized
 	}
 
-	namespaces, err := s.namespaces.List(ctx)
+	namespaces, err := s.namespaces.ListAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list namespaces: %w", err)
 	}

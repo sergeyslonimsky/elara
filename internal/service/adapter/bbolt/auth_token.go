@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -77,9 +79,18 @@ func (r *TokenRepo) GetByHash(_ context.Context, tokenHash string) (*domain.Toke
 	return token, nil
 }
 
-// List returns Tokens filtered by issuedBy. An empty issuedBy returns all tokens (admin view).
-func (r *TokenRepo) List(_ context.Context, issuedBy string) ([]*domain.Token, error) {
-	var tokens []*domain.Token
+// List returns tokens matching filter (namespace-scope intersect, optional
+// IssuedBy, optional Name search), sorted and paginated per params.
+//
+// Currently full-scan over the tokens bucket — secondary indexes by namespace
+// are deferred (EL-4 §12 pt 7). When token inventory grows past the point of
+// noticeable list latency, introduce a `tokens_by_namespace` index.
+func (r *TokenRepo) List(
+	_ context.Context,
+	filter domain.TokenFilter,
+	params domain.TokenListParams,
+) ([]*domain.Token, int, error) {
+	var matches []*domain.Token
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthTokens))
@@ -90,20 +101,121 @@ func (r *TokenRepo) List(_ context.Context, issuedBy string) ([]*domain.Token, e
 				return err
 			}
 
-			if issuedBy != "" && m.IssuedBy != issuedBy {
+			if filter.IssuedBy != "" && m.IssuedBy != filter.IssuedBy {
 				return nil
 			}
 
-			tokens = append(tokens, authTokenMetaToDomain(m))
+			tok := authTokenMetaToDomain(m)
+
+			if !tokenNamespaceMatches(tok, filter) {
+				return nil
+			}
+
+			if !tokenSearchMatches(tok.Name, filter.Search) {
+				return nil
+			}
+
+			matches = append(matches, tok)
 
 			return nil
 		})
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list tokens: %w", err)
+		return nil, 0, fmt.Errorf("list tokens: %w", err)
+	}
+
+	sortTokens(matches, params.Sort)
+	total := len(matches)
+	paginated := paginateTokens(matches, params.Offset, params.Limit)
+
+	return paginated, total, nil
+}
+
+// ListAll returns every token without filter / pagination. Convenience for
+// callers that need the global view (e.g. token-by-hash lookup at auth time
+// would use GetByHash, not this).
+func (r *TokenRepo) ListAll(ctx context.Context) ([]*domain.Token, error) {
+	tokens, _, err := r.List(ctx, domain.TokenFilter{AnyNamespace: true}, domain.TokenListParams{})
+	if err != nil {
+		return nil, err
 	}
 
 	return tokens, nil
+}
+
+func tokenNamespaceMatches(t *domain.Token, filter domain.TokenFilter) bool {
+	if filter.AnyNamespace {
+		return true
+	}
+
+	for _, ns := range t.Namespaces {
+		if _, ok := filter.NamespaceScopes[ns]; ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+func tokenSearchMatches(name, search string) bool {
+	if search == "" {
+		return true
+	}
+
+	return strings.Contains(strings.ToLower(name), strings.ToLower(search))
+}
+
+func sortTokens(tokens []*domain.Token, params domain.SortParams) {
+	sort.Slice(tokens, func(i, j int) bool {
+		a, b := tokens[i], tokens[j]
+
+		var less bool
+
+		switch params.Field {
+		case "name":
+			less = a.Name < b.Name
+		case "last_used":
+			less = lastUsedBefore(a, b)
+		default: // "created" or empty — most recent first
+			less = a.CreatedAt.After(b.CreatedAt)
+		}
+
+		if params.Desc {
+			return !less
+		}
+
+		return less
+	})
+}
+
+func lastUsedBefore(a, b *domain.Token) bool {
+	switch {
+	case a.LastUsedAt == nil && b.LastUsedAt == nil:
+		return a.CreatedAt.Before(b.CreatedAt)
+	case a.LastUsedAt == nil:
+		return true
+	case b.LastUsedAt == nil:
+		return false
+	default:
+		return a.LastUsedAt.Before(*b.LastUsedAt)
+	}
+}
+
+func paginateTokens(tokens []*domain.Token, offset, limit int) []*domain.Token {
+	if offset < 0 {
+		offset = 0
+	}
+
+	if offset >= len(tokens) {
+		return []*domain.Token{}
+	}
+
+	end := len(tokens)
+	if limit > 0 && offset+limit < end {
+		end = offset + limit
+	}
+
+	return tokens[offset:end]
 }
 
 // GetByID returns the Token identified by its ID using the secondary index.

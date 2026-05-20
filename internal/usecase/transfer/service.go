@@ -21,7 +21,7 @@ type (
 	}
 
 	namespaces interface {
-		List(ctx context.Context) ([]*domain.Namespace, error)
+		ListAll(ctx context.Context) ([]*domain.Namespace, error)
 		Get(ctx context.Context, name string) (*domain.Namespace, error)
 		Create(ctx context.Context, ns *domain.Namespace) error
 	}

@@ -4,6 +4,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { PaginationRequest, PaginationResponse } from "../../common/v1/common_pb";
+import { file_elara_common_v1_common } from "../../common/v1/common_pb";
 import type { User } from "./user_pb";
 import { file_elara_user_v1_user } from "./user_pb";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
@@ -13,12 +15,21 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/user/v1/user_service.proto.
  */
 export const file_elara_user_v1_user_service: GenFile = /*@__PURE__*/
-  fileDesc("CiBlbGFyYS91c2VyL3YxL3VzZXJfc2VydmljZS5wcm90bxINZWxhcmEudXNlci52MSISChBMaXN0VXNlcnNSZXF1ZXN0IjcKEUxpc3RVc2Vyc1Jlc3BvbnNlEiIKBXVzZXJzGAEgAygLMhMuZWxhcmEudXNlci52MS5Vc2VyIh8KDkdldFVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIjQKD0dldFVzZXJSZXNwb25zZRIhCgR1c2VyGAEgASgLMhMuZWxhcmEudXNlci52MS5Vc2VyIkoKEUNyZWF0ZVVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEgwKBG5hbWUYAiABKAkSGAoQaW5pdGlhbF9wYXNzd29yZBgDIAEoCSI3ChJDcmVhdGVVc2VyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLnVzZXIudjEuVXNlciI/ChhSZXNldFVzZXJQYXNzd29yZFJlcXVlc3QSDQoFZW1haWwYASABKAkSFAoMbmV3X3Bhc3N3b3JkGAIgASgJIhsKGVJlc2V0VXNlclBhc3N3b3JkUmVzcG9uc2UiIgoRRGVsZXRlVXNlclJlcXVlc3QSDQoFZW1haWwYASABKAkiFAoSRGVsZXRlVXNlclJlc3BvbnNlMrUDCgtVc2VyU2VydmljZRJOCglMaXN0VXNlcnMSHy5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1JlcXVlc3QaIC5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1Jlc3BvbnNlEkgKB0dldFVzZXISHS5lbGFyYS51c2VyLnYxLkdldFVzZXJSZXF1ZXN0Gh4uZWxhcmEudXNlci52MS5HZXRVc2VyUmVzcG9uc2USUQoKQ3JlYXRlVXNlchIgLmVsYXJhLnVzZXIudjEuQ3JlYXRlVXNlclJlcXVlc3QaIS5lbGFyYS51c2VyLnYxLkNyZWF0ZVVzZXJSZXNwb25zZRJmChFSZXNldFVzZXJQYXNzd29yZBInLmVsYXJhLnVzZXIudjEuUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0GiguZWxhcmEudXNlci52MS5SZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlElEKCkRlbGV0ZVVzZXISIC5lbGFyYS51c2VyLnYxLkRlbGV0ZVVzZXJSZXF1ZXN0GiEuZWxhcmEudXNlci52MS5EZWxldGVVc2VyUmVzcG9uc2VCwQEKEWNvbS5lbGFyYS51c2VyLnYxQhBVc2VyU2VydmljZVByb3RvUAFaRGdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL3VzZXIvdjE7dXNlcnYxogIDRVVYqgINRWxhcmEuVXNlci5WMcoCDUVsYXJhXFVzZXJcVjHiAhlFbGFyYVxVc2VyXFYxXEdQQk1ldGFkYXRh6gIPRWxhcmE6OlVzZXI6OlYxYgZwcm90bzM", [file_elara_user_v1_user, file_google_protobuf_timestamp]);
+  fileDesc("CiBlbGFyYS91c2VyL3YxL3VzZXJfc2VydmljZS5wcm90bxINZWxhcmEudXNlci52MSJaChBMaXN0VXNlcnNSZXF1ZXN0EjYKCnBhZ2luYXRpb24YASABKAsyIi5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlcXVlc3QSDgoGc2VhcmNoGAIgASgJInAKEUxpc3RVc2Vyc1Jlc3BvbnNlEiIKBXVzZXJzGAEgAygLMhMuZWxhcmEudXNlci52MS5Vc2VyEjcKCnBhZ2luYXRpb24YAiABKAsyIy5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlc3BvbnNlIh8KDkdldFVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIjQKD0dldFVzZXJSZXNwb25zZRIhCgR1c2VyGAEgASgLMhMuZWxhcmEudXNlci52MS5Vc2VyIkoKEUNyZWF0ZVVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEgwKBG5hbWUYAiABKAkSGAoQaW5pdGlhbF9wYXNzd29yZBgDIAEoCSI3ChJDcmVhdGVVc2VyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLnVzZXIudjEuVXNlciI/ChhSZXNldFVzZXJQYXNzd29yZFJlcXVlc3QSDQoFZW1haWwYASABKAkSFAoMbmV3X3Bhc3N3b3JkGAIgASgJIhsKGVJlc2V0VXNlclBhc3N3b3JkUmVzcG9uc2UiIgoRRGVsZXRlVXNlclJlcXVlc3QSDQoFZW1haWwYASABKAkiFAoSRGVsZXRlVXNlclJlc3BvbnNlMrUDCgtVc2VyU2VydmljZRJOCglMaXN0VXNlcnMSHy5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1JlcXVlc3QaIC5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1Jlc3BvbnNlEkgKB0dldFVzZXISHS5lbGFyYS51c2VyLnYxLkdldFVzZXJSZXF1ZXN0Gh4uZWxhcmEudXNlci52MS5HZXRVc2VyUmVzcG9uc2USUQoKQ3JlYXRlVXNlchIgLmVsYXJhLnVzZXIudjEuQ3JlYXRlVXNlclJlcXVlc3QaIS5lbGFyYS51c2VyLnYxLkNyZWF0ZVVzZXJSZXNwb25zZRJmChFSZXNldFVzZXJQYXNzd29yZBInLmVsYXJhLnVzZXIudjEuUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0GiguZWxhcmEudXNlci52MS5SZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlElEKCkRlbGV0ZVVzZXISIC5lbGFyYS51c2VyLnYxLkRlbGV0ZVVzZXJSZXF1ZXN0GiEuZWxhcmEudXNlci52MS5EZWxldGVVc2VyUmVzcG9uc2VCwQEKEWNvbS5lbGFyYS51c2VyLnYxQhBVc2VyU2VydmljZVByb3RvUAFaRGdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL3VzZXIvdjE7dXNlcnYxogIDRVVYqgINRWxhcmEuVXNlci5WMcoCDUVsYXJhXFVzZXJcVjHiAhlFbGFyYVxVc2VyXFYxXEdQQk1ldGFkYXRh6gIPRWxhcmE6OlVzZXI6OlYxYgZwcm90bzM", [file_elara_common_v1_common, file_elara_user_v1_user, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message elara.user.v1.ListUsersRequest
  */
 export type ListUsersRequest = Message<"elara.user.v1.ListUsersRequest"> & {
+  /**
+   * @generated from field: elara.common.v1.PaginationRequest pagination = 1;
+   */
+  pagination?: PaginationRequest;
+
+  /**
+   * @generated from field: string search = 2;
+   */
+  search: string;
 };
 
 /**
@@ -36,6 +47,11 @@ export type ListUsersResponse = Message<"elara.user.v1.ListUsersResponse"> & {
    * @generated from field: repeated elara.user.v1.User users = 1;
    */
   users: User[];
+
+  /**
+   * @generated from field: elara.common.v1.PaginationResponse pagination = 2;
+   */
+  pagination?: PaginationResponse;
 };
 
 /**

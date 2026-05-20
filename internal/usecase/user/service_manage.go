@@ -77,19 +77,10 @@ func (s *Service) Delete(ctx context.Context, targetEmail string) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("delete user transaction: %w", err)
 	}
 
 	return nil
-}
-
-func (s *Service) List(ctx context.Context) ([]*domain.User, error) {
-	users, err := s.store.List(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("list users: %w", err)
-	}
-
-	return users, nil
 }
 
 func (s *Service) Get(ctx context.Context, email string) (*domain.User, error) {

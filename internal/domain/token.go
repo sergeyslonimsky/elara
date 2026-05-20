@@ -8,6 +8,31 @@ import (
 
 const maxTokenNameLen = 128
 
+// TokenFilter narrows a token list to those whose namespace scope intersects
+// the caller's allowed namespaces.
+//
+// When AnyNamespace is true, NamespaceScopes MUST be ignored. Tokens that
+// expose at least one namespace from NamespaceScopes match; tokens whose
+// namespaces all fall outside the set are filtered out.
+//
+// IssuedBy is an additional narrowing (admin / UI may want a particular
+// user's tokens). Empty string means "any issuer".
+//
+// Search applies a case-insensitive substring match on Name.
+type TokenFilter struct {
+	NamespaceScopes map[string]struct{}
+	AnyNamespace    bool
+	IssuedBy        string
+	Search          string
+}
+
+// TokenListParams carries pagination and sort options for token list queries.
+type TokenListParams struct {
+	Limit  int
+	Offset int
+	Sort   SortParams
+}
+
 // Token is a service credential issued by a user for use by external etcd clients.
 type Token struct {
 	ID         string

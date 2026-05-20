@@ -16,13 +16,18 @@ type (
 
 	pdp interface {
 		Has(principal string, perm domain.Permission) bool
+		EffectiveDomains(principal, object, action string) domain.DomainSet
 	}
 
 	store interface {
 		Create(ctx context.Context, ns *domain.Namespace) error
 		Delete(ctx context.Context, name string) error
 		Get(ctx context.Context, name string) (*domain.Namespace, error)
-		List(ctx context.Context) ([]*domain.Namespace, error)
+		List(
+			ctx context.Context,
+			filter domain.NamespaceFilter,
+			params domain.NamespaceListParams,
+		) ([]*domain.Namespace, int, error)
 		Update(ctx context.Context, ns *domain.Namespace) error
 		LockNamespace(ctx context.Context, name string) error
 		UnlockNamespace(ctx context.Context, name string) error

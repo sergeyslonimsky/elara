@@ -49,7 +49,7 @@ func NewAdminBootstrap(
 
 // Bootstrap runs the full idempotent bootstrap sequence in a single write transaction.
 func (a *AdminBootstrap) Bootstrap(ctx context.Context, username, password string) error {
-	return a.txm.Write(ctx, func(tx storage.Tx) error {
+	if err := a.txm.Write(ctx, func(tx storage.Tx) error {
 		if err := a.EnsureSuperAdminGroup(ctx, tx); err != nil {
 			return err
 		}
@@ -63,7 +63,11 @@ func (a *AdminBootstrap) Bootstrap(ctx context.Context, username, password strin
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("bootstrap: %w", err)
+	}
+
+	return nil
 }
 
 // EnsureSuperAdminGroup creates the superadmin group with System=true if it does not
@@ -106,7 +110,11 @@ func (a *AdminBootstrap) EnsureSuperAdminGroup(ctx context.Context, tx storage.T
 
 // EnsureSuperAdminUser creates the superadmin user, sets its password if it's
 // new, and ensures it is a member of the superadmin group.
-func (a *AdminBootstrap) EnsureSuperAdminUser(ctx context.Context, tx storage.Tx, username, password string) error {
+func (a *AdminBootstrap) EnsureSuperAdminUser( //nolint:cyclop //refactor
+	ctx context.Context,
+	tx storage.Tx,
+	username, password string,
+) error {
 	users := a.users.WithTx(tx)
 	groups := a.groups.WithTx(tx)
 
@@ -125,10 +133,11 @@ func (a *AdminBootstrap) EnsureSuperAdminUser(ctx context.Context, tx storage.Tx
 		user = &domain.User{
 			Email:                  username,
 			Name:                   "Super Admin",
+			Provider:               domain.ProviderBasicAuth,
 			PasswordHash:           hash,
 			PasswordChangeRequired: true,
 			System:                 true,
-			Source:                 "local",
+			Source:                 domain.SourceLocal,
 			CreatedAt:              now,
 		}
 
@@ -191,7 +200,7 @@ func (a *AdminBootstrap) EnsureSuperAdminPolicy(ctx context.Context, tx storage.
 // EnsureMember ensures the given user is a member of the superadmin group.
 // It is used to elevate configured admins after OIDC login.
 func (a *AdminBootstrap) EnsureMember(ctx context.Context, email string) error {
-	return a.txm.Write(ctx, func(tx storage.Tx) error {
+	if err := a.txm.Write(ctx, func(tx storage.Tx) error {
 		groups := a.groups.WithTx(tx)
 
 		group, err := groups.FindByName(ctx, domain.SystemGroupSuperAdmin)
@@ -220,5 +229,9 @@ func (a *AdminBootstrap) EnsureMember(ctx context.Context, email string) error {
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return fmt.Errorf("ensure superadmin member: %w", err)
+	}
+
+	return nil
 }

@@ -79,6 +79,20 @@ func (m *Mockpdp) EXPECT() *MockpdpMockRecorder {
 	return m.recorder
 }
 
+// EffectiveDomains mocks base method.
+func (m *Mockpdp) EffectiveDomains(principal, object, action string) domain.DomainSet {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EffectiveDomains", principal, object, action)
+	ret0, _ := ret[0].(domain.DomainSet)
+	return ret0
+}
+
+// EffectiveDomains indicates an expected call of EffectiveDomains.
+func (mr *MockpdpMockRecorder) EffectiveDomains(principal, object, action any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveDomains", reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains), principal, object, action)
+}
+
 // Has mocks base method.
 func (m *Mockpdp) Has(principal string, perm domain.Permission) bool {
 	m.ctrl.T.Helper()
@@ -176,18 +190,19 @@ func (mr *MockstoreMockRecorder) Get(ctx, name any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *Mockstore) List(ctx context.Context) ([]*domain.Namespace, error) {
+func (m *Mockstore) List(ctx context.Context, filter domain.NamespaceFilter, params domain.NamespaceListParams) ([]*domain.Namespace, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx)
+	ret := m.ctrl.Call(m, "List", ctx, filter, params)
 	ret0, _ := ret[0].([]*domain.Namespace)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(int)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // List indicates an expected call of List.
-func (mr *MockstoreMockRecorder) List(ctx any) *gomock.Call {
+func (mr *MockstoreMockRecorder) List(ctx, filter, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstore)(nil).List), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstore)(nil).List), ctx, filter, params)
 }
 
 // LockNamespace mocks base method.

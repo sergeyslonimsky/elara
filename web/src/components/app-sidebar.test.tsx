@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { render, screen } from "@testing-library/react";
 import { Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
+import { buildAbility } from "@/auth/ability";
 import type { AuthContextType } from "@/components/auth-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
@@ -12,12 +13,9 @@ import { AppSidebar } from "./app-sidebar";
 const adminUser = create(MeResponseSchema, {
 	name: "Admin",
 	email: "admin@elara.local",
-	isAdmin: true,
-	namespaces: [],
+	permissions: [],
 	passwordChangeRequired: false,
 	picture: "",
-	canViewWebhooks: true,
-	canManageWebhooks: true,
 });
 
 const mockAdminContext: AuthContextType = {
@@ -25,6 +23,7 @@ const mockAdminContext: AuthContextType = {
 		status: "authenticated",
 		authType: AuthType.BASIC,
 		user: adminUser,
+		ability: buildAbility([{ object: 99, action: 99, domain: "*" } as any]),
 	},
 	logout: async () => {},
 };
@@ -36,13 +35,15 @@ const mockUserContext: AuthContextType = {
 		user: create(MeResponseSchema, {
 			name: "User",
 			email: "user@elara.local",
-			isAdmin: false,
-			namespaces: [],
+			permissions: [],
 			passwordChangeRequired: false,
 			picture: "",
-			canViewWebhooks: false,
-			canManageWebhooks: false,
 		}),
+		ability: buildAbility([
+			{ object: 1, action: 1, domain: "*" } as any, // NAMESPACE READ (required by uiVisibility for Tokens section)
+			{ object: 5, action: 1, domain: "*" } as any, // TOKEN READ
+			{ object: 5, action: 2, domain: "*" } as any, // TOKEN WRITE
+		]),
 	},
 	logout: async () => {},
 };
@@ -52,6 +53,7 @@ const mockOidcAdminContext: AuthContextType = {
 		status: "authenticated",
 		authType: AuthType.OIDC,
 		user: adminUser,
+		ability: buildAbility([{ object: 99, action: 99, domain: "*" } as any]),
 	},
 	logout: async () => {},
 };
@@ -61,6 +63,7 @@ const mockNoneContext: AuthContextType = {
 		status: "authenticated",
 		authType: AuthType.NONE,
 		user: adminUser,
+		ability: buildAbility([{ object: 99, action: 99, domain: "*" } as any]),
 	},
 	logout: async () => {},
 };
@@ -105,13 +108,13 @@ describe("AppSidebar", () => {
 				user: create(MeResponseSchema, {
 					name: "User",
 					email: "user@elara.local",
-					isAdmin: false,
-					namespaces: [],
+					permissions: [],
 					passwordChangeRequired: false,
 					picture: "",
-					canViewWebhooks: true,
-					canManageWebhooks: false,
 				}),
+				ability: buildAbility([
+					{ object: 6, action: 1, domain: "*" } as any, // WEBHOOK READ
+				]),
 			},
 			logout: async () => {},
 		};

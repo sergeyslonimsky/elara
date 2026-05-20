@@ -28,6 +28,10 @@ func (s *Service) Create(ctx context.Context, name string) (*domain.Group, error
 		UpdatedAt: now,
 	}
 
+	if err := group.Validate(); err != nil {
+		return nil, fmt.Errorf("validate group: %w", err)
+	}
+
 	if err := s.store.Create(ctx, group); err != nil {
 		return nil, fmt.Errorf("create group: %w", err)
 	}
@@ -44,7 +48,7 @@ func (s *Service) Get(ctx context.Context, id string) (*domain.Group, error) {
 	return group, nil
 }
 
-func (s *Service) Update(
+func (s *Service) Update( //nolint:cyclop,funlen //refactor
 	ctx context.Context,
 	id string,
 	name string,
@@ -72,7 +76,7 @@ func (s *Service) Update(
 		}
 
 		if err := existing.EnsureMutable(); err != nil {
-			return err
+			return fmt.Errorf("ensure mutable: %w", err)
 		}
 
 		// 1. Compute Permission Delta & Check Boundary
@@ -91,7 +95,9 @@ func (s *Service) Update(
 		}
 
 		pAdded, pRemoved := diffPermissions(oldPerms, permissions)
-		pDelta := append(pAdded, pRemoved...)
+		pDelta := make([]domain.Permission, 0, len(pAdded)+len(pRemoved))
+		pDelta = append(pDelta, pAdded...)
+		pDelta = append(pDelta, pRemoved...)
 
 		for _, p := range pDelta {
 			if !s.pdp.Has(principal, p) {
@@ -132,10 +138,10 @@ func (s *Service) Update(
 			// Reassign the group's own role rules: g, group:<old>, <role>, <dom> -> g, group:<new>, <role>, <dom>
 			for _, rule := range s.enforcer.GetRulesForSubject(oldSubject) {
 				if err := txe.AddRoleForUser(newSubject, rule[1], rule[2]); err != nil {
-					return err
+					return fmt.Errorf("add role for user: %w", err)
 				}
 				if err := txe.RemoveRoleForUser(oldSubject, rule[1], rule[2]); err != nil {
-					return err
+					return fmt.Errorf("remove role for user: %w", err)
 				}
 			}
 		}
@@ -143,12 +149,12 @@ func (s *Service) Update(
 		// Update Permissions (p-rules)
 		for _, p := range pRemoved {
 			if err := txe.RemovePolicy(newSubject, p.Domain, p.Object, p.Action); err != nil {
-				return err
+				return fmt.Errorf("remove policy: %w", err)
 			}
 		}
 		for _, p := range pAdded {
 			if err := txe.AddPolicy(newSubject, p.Domain, p.Object, p.Action); err != nil {
-				return err
+				return fmt.Errorf("add policy: %w", err)
 			}
 		}
 
@@ -159,24 +165,24 @@ func (s *Service) Update(
 			// Remove all old memberships
 			for _, m := range s.enforcer.GetMembersOfGroup(oldSubject) {
 				if err := txe.RemoveRoleForUser(m, oldSubject, domain.MembershipDomain); err != nil {
-					return err
+					return fmt.Errorf("remove role for user: %w", err)
 				}
 			}
 			// Add all new memberships
 			for _, m := range members {
 				if err := txe.AddRoleForUser(m, newSubject, domain.MembershipDomain); err != nil {
-					return err
+					return fmt.Errorf("add role for user: %w", err)
 				}
 			}
 		} else {
 			for _, m := range mRemoved {
 				if err := txe.RemoveRoleForUser(m, newSubject, domain.MembershipDomain); err != nil {
-					return err
+					return fmt.Errorf("remove role from user: %w", err)
 				}
 			}
 			for _, m := range mAdded {
 				if err := txe.AddRoleForUser(m, newSubject, domain.MembershipDomain); err != nil {
-					return err
+					return fmt.Errorf("add role for user: %w", err)
 				}
 			}
 		}
@@ -184,23 +190,23 @@ func (s *Service) Update(
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("write tx: %w", err)
 	}
 
 	return updatedGroup, nil
 }
 
 func (s *Service) Delete(ctx context.Context, id string) error {
-	group, err := s.store.Get(ctx, id)
-	if err != nil {
-		return fmt.Errorf(errGetGroup, err)
-	}
+	err := s.enforcer.WriteTx(ctx, s.txm, func(tx storage.Tx, txe *casbin.TxEnforcer) error {
+		group, err := s.store.WithTx(tx).Get(ctx, id)
+		if err != nil {
+			return fmt.Errorf(errGetGroup, err)
+		}
 
-	if group.System {
-		return fmt.Errorf("delete system group: %w", domain.ErrForbidden)
-	}
+		if err := group.EnsureMutable(); err != nil {
+			return fmt.Errorf("ensure mutable: %w", err)
+		}
 
-	err = s.enforcer.WriteTx(ctx, s.txm, func(tx storage.Tx, txe *casbin.TxEnforcer) error {
 		if err := txe.DeleteUser(domain.GroupSubject(group.Name)); err != nil {
 			return fmt.Errorf("delete group from casbin: %w", err)
 		}
@@ -212,17 +218,70 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("write tx: %w", err)
 	}
 
 	return nil
 }
 
-func (s *Service) List(ctx context.Context) ([]*domain.Group, error) {
-	groups, err := s.store.List(ctx)
+// List returns groups the authenticated caller can read.
+//
+// Filtering happens at the repository: the caller's effective group set
+// (from PDP.EffectiveDomains for object=group action=read) is translated
+// into a GroupFilter — no post-fetch pdp.Has loop. An empty effective set
+// returns an empty list, not an error (EL-4 §7 acceptance: empty
+// responses → empty list, not 403).
+func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, error) {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return nil, domain.ErrUnauthorized
+	}
+
+	limit := params.Limit
+	if limit <= 0 {
+		limit = defaultListLimit
+	}
+
+	scope := s.pdp.EffectiveDomains(claims.Email, domain.ObjectGroup, domain.ActionRead)
+	if scope.IsEmpty() {
+		return &ListResult{
+			Groups: []*domain.Group{},
+			Total:  0,
+			Limit:  limit,
+			Offset: params.Offset,
+		}, nil
+	}
+
+	// EffectiveDomains for object=group yields domains in the "group:<name>"
+	// subject form. Strip the prefix; non-group entries (defensive) are
+	// ignored — Wildcard already covers them.
+	names := make(map[string]struct{}, len(scope.Explicit))
+	for d := range scope.Explicit {
+		if domain.IsGroupSubject(d) {
+			names[domain.GroupNameFromSubject(d)] = struct{}{}
+		}
+	}
+
+	filter := domain.GroupFilter{
+		Names:    names,
+		Wildcard: scope.Wildcard,
+		Search:   params.Query,
+	}
+	repoParams := domain.GroupListParams{
+		Limit:  limit,
+		Offset: params.Offset,
+		Sort:   params.Sort,
+	}
+
+	groups, total, err := s.store.List(ctx, filter, repoParams)
 	if err != nil {
 		return nil, fmt.Errorf("list groups: %w", err)
 	}
 
-	return groups, nil
+	return &ListResult{
+		Groups: groups,
+		Total:  total,
+		Limit:  limit,
+		Offset: params.Offset,
+	}, nil
 }

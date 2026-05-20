@@ -191,17 +191,17 @@ func (mr *MocknamespacesMockRecorder) Get(ctx, name any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mocknamespaces)(nil).Get), ctx, name)
 }
 
-// List mocks base method.
-func (m *Mocknamespaces) List(ctx context.Context) ([]*domain.Namespace, error) {
+// ListAll mocks base method.
+func (m *Mocknamespaces) ListAll(ctx context.Context) ([]*domain.Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx)
+	ret := m.ctrl.Call(m, "ListAll", ctx)
 	ret0, _ := ret[0].([]*domain.Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// List indicates an expected call of List.
-func (mr *MocknamespacesMockRecorder) List(ctx any) *gomock.Call {
+// ListAll indicates an expected call of ListAll.
+func (mr *MocknamespacesMockRecorder) ListAll(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mocknamespaces)(nil).List), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*Mocknamespaces)(nil).ListAll), ctx)
 }

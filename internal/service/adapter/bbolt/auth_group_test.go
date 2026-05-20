@@ -182,7 +182,7 @@ func TestGroupRepo_FindByName_Multiple(t *testing.T) {
 	assert.Equal(t, "Second Group", got.Name)
 }
 
-func TestGroupRepo_List(t *testing.T) {
+func TestGroupRepo_ListAll(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
@@ -190,7 +190,7 @@ func TestGroupRepo_List(t *testing.T) {
 	ctx := t.Context()
 
 	// Empty list.
-	groups, err := repo.List(ctx)
+	groups, err := repo.ListAll(ctx)
 	require.NoError(t, err)
 	assert.Empty(t, groups)
 
@@ -201,9 +201,159 @@ func TestGroupRepo_List(t *testing.T) {
 		require.NoError(t, repo.Create(ctx, g))
 	}
 
-	groups, err = repo.List(ctx)
+	groups, err = repo.ListAll(ctx)
 	require.NoError(t, err)
 	assert.Len(t, groups, len(ids))
+}
+
+// nameSet constructs a domain.GroupFilter.Names map from variadic names.
+func nameSet(names ...string) map[string]struct{} {
+	out := make(map[string]struct{}, len(names))
+	for _, n := range names {
+		out[n] = struct{}{}
+	}
+
+	return out
+}
+
+func groupNames(groups []*domain.Group) []string {
+	out := make([]string, 0, len(groups))
+	for _, g := range groups {
+		out = append(out, g.Name)
+	}
+
+	return out
+}
+
+func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
+	t.Parallel()
+
+	type seedGroup struct {
+		id      string
+		name    string
+		members []string
+	}
+
+	tests := []struct {
+		name      string
+		seed      []seedGroup
+		filter    domain.GroupFilter
+		params    domain.GroupListParams
+		wantNames []string
+		wantTotal int
+	}{
+		{
+			name: "wildcard returns all sorted by name asc",
+			seed: []seedGroup{
+				{id: "id-bbb", name: "bbb"},
+				{id: "id-aaa", name: "aaa"},
+				{id: "id-ccc", name: "ccc"},
+			},
+			filter:    domain.GroupFilter{Wildcard: true},
+			wantNames: []string{"aaa", "bbb", "ccc"},
+			wantTotal: 3,
+		},
+		{
+			name: "explicit filter returns subset",
+			seed: []seedGroup{
+				{id: "id-a", name: "a"},
+				{id: "id-b", name: "b"},
+				{id: "id-c", name: "c"},
+				{id: "id-d", name: "d"},
+			},
+			filter:    domain.GroupFilter{Names: nameSet("a", "c")},
+			wantNames: []string{"a", "c"},
+			wantTotal: 2,
+		},
+		{
+			name: "explicit filter with missing name silently skips",
+			seed: []seedGroup{
+				{id: "id-exists", name: "exists"},
+			},
+			filter:    domain.GroupFilter{Names: nameSet("exists", "missing")},
+			wantNames: []string{"exists"},
+			wantTotal: 1,
+		},
+		{
+			name: "search filters case-insensitive substring",
+			seed: []seedGroup{
+				{id: "id-dev", name: "dev"},
+				{id: "id-pdev", name: "production-dev"},
+				{id: "id-qa", name: "qa"},
+				{id: "id-staging", name: "staging"},
+			},
+			filter:    domain.GroupFilter{Wildcard: true, Search: "DE"},
+			wantNames: []string{"dev", "production-dev"},
+			wantTotal: 2,
+		},
+		{
+			name: "search combined with explicit filter intersects",
+			seed: []seedGroup{
+				{id: "id-dev", name: "dev"},
+				{id: "id-dev2", name: "dev-prod"},
+				{id: "id-qa", name: "qa"},
+			},
+			filter:    domain.GroupFilter{Names: nameSet("dev", "qa"), Search: "dev"},
+			wantNames: []string{"dev"},
+			wantTotal: 1,
+		},
+		{
+			name: "pagination offset+limit slices, total preserved",
+			seed: []seedGroup{
+				{id: "id-a", name: "a"},
+				{id: "id-b", name: "b"},
+				{id: "id-c", name: "c"},
+				{id: "id-d", name: "d"},
+				{id: "id-e", name: "e"},
+			},
+			filter:    domain.GroupFilter{Wildcard: true},
+			params:    domain.GroupListParams{Offset: 2, Limit: 2},
+			wantNames: []string{"c", "d"},
+			wantTotal: 5,
+		},
+		{
+			name: "sort by members count asc",
+			seed: []seedGroup{
+				{id: "id-big", name: "big", members: []string{"a@x.com", "b@x.com", "c@x.com"}},
+				{id: "id-small", name: "small", members: []string{"a@x.com"}},
+				{id: "id-mid", name: "mid", members: []string{"a@x.com", "b@x.com"}},
+			},
+			filter:    domain.GroupFilter{Wildcard: true},
+			params:    domain.GroupListParams{Sort: domain.SortParams{Field: "members"}},
+			wantNames: []string{"small", "mid", "big"},
+			wantTotal: 3,
+		},
+		{
+			name: "empty filter returns empty list",
+			seed: []seedGroup{
+				{id: "id-a", name: "a"},
+				{id: "id-b", name: "b"},
+			},
+			filter:    domain.GroupFilter{Wildcard: false, Names: nil},
+			wantNames: []string{},
+			wantTotal: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			store := newTestStore(t)
+			repo := bboltadapter.NewGroupRepo(store)
+			ctx := t.Context()
+
+			for _, sg := range tt.seed {
+				g := &domain.Group{ID: sg.id, Name: sg.name, Members: sg.members}
+				require.NoError(t, repo.Create(ctx, g))
+			}
+
+			got, total, err := repo.List(ctx, tt.filter, tt.params)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantTotal, total)
+			assert.Equal(t, tt.wantNames, groupNames(got))
+		})
+	}
 }
 
 func TestGroupRepo_SystemAndVersion(t *testing.T) {

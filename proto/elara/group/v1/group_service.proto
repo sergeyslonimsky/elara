@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package elara.group.v1;
 
+import "elara/common/v1/common.proto";
 import "elara/common/v1/permission.proto";
 import "elara/group/v1/group.proto";
 
@@ -48,8 +49,12 @@ message DeleteGroupRequest {
 
 message DeleteGroupResponse {}
 
-message ListGroupsRequest {}
+message ListGroupsRequest {
+  elara.common.v1.PaginationRequest pagination = 1;
+  string search = 2;
+}
 
 message ListGroupsResponse {
   repeated Group groups = 1;
+  elara.common.v1.PaginationResponse pagination = 2;
 }

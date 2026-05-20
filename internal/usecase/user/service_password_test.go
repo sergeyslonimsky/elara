@@ -44,7 +44,7 @@ func TestService_ResetPassword(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			sut, m, _ := setupService(t)
+			sut, m, _, _ := setupService(t)
 			ctx := t.Context()
 			tt.mockFunc(ctx, m)
 

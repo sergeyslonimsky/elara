@@ -12,6 +12,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	userv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1"
+	useruc "github.com/sergeyslonimsky/elara/internal/usecase/user"
 )
 
 //go:generate mockgen -destination=mocks/handler_mock.go -package=user_mock -source=handler.go
@@ -22,7 +23,7 @@ var (
 )
 
 type usecase interface {
-	List(ctx context.Context) ([]*domain.User, error)
+	List(ctx context.Context, params useruc.ListParams) (*useruc.ListResult, error)
 	Get(ctx context.Context, email string) (*domain.User, error)
 	Create(ctx context.Context, email, name, initialPassword string) (*domain.User, error)
 	ResetPassword(ctx context.Context, targetEmail, newPassword string) error
@@ -50,13 +51,13 @@ func (h *Handler) ListUsers(
 	ctx context.Context,
 	_ *connect.Request[userv1.ListUsersRequest],
 ) (*connect.Response[userv1.ListUsersResponse], error) {
-	users, err := h.uc.List(ctx)
+	result, err := h.uc.List(ctx, useruc.ListParams{})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	protos := make([]*userv1.User, 0, len(users))
-	for _, u := range users {
+	protos := make([]*userv1.User, 0, len(result.Users))
+	for _, u := range result.Users {
 		protos = append(protos, domainUserToProto(u))
 	}
 

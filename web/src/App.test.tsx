@@ -1,6 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { buildAbility } from "@/auth/ability";
 import type { AuthContextType } from "@/components/auth-provider";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 import { MeResponseSchema } from "@/gen/elara/profile/v1/profile_service_pb";
@@ -30,13 +31,11 @@ describe("App", () => {
 			user: create(MeResponseSchema, {
 				name: "Anonymous",
 				email: "anonymous@elara.local",
-				isAdmin: true,
-				namespaces: [],
+				permissions: [],
 				passwordChangeRequired: false,
 				picture: "",
-				canViewWebhooks: true,
-				canManageWebhooks: true,
 			}),
+			ability: buildAbility([{ object: 99, action: 99, domain: "*" } as any]),
 		},
 		logout: vi.fn(),
 	};

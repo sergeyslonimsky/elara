@@ -16,6 +16,7 @@ import (
 	groupmock "github.com/sergeyslonimsky/elara/internal/handler/v2/group/mocks"
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	groupv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/group/v1"
+	groupuc "github.com/sergeyslonimsky/elara/internal/usecase/group"
 )
 
 // -----------------------------------------------------------------------------
@@ -428,9 +429,14 @@ func TestGroupHandler_ListGroups(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	uc := groupmock.NewMockgroupUsecase(ctrl)
-	uc.EXPECT().List(gomock.Any()).Return([]*domain.Group{
-		{ID: "g-1", Name: "devs", Version: 1},
-		{ID: "g-2", Name: "qa", Version: 1, System: true},
+	uc.EXPECT().List(gomock.Any(), groupuc.ListParams{}).Return(&groupuc.ListResult{
+		Groups: []*domain.Group{
+			{ID: "g-1", Name: "devs", Version: 1},
+			{ID: "g-2", Name: "qa", Version: 1, System: true},
+		},
+		Total:  2,
+		Limit:  20,
+		Offset: 0,
 	}, nil)
 
 	h := group.NewHandler(uc)

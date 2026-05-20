@@ -13,6 +13,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	user_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/user/mocks"
 	userv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1"
+	useruc "github.com/sergeyslonimsky/elara/internal/usecase/user"
 )
 
 func TestUserHandler_ListUsers(t *testing.T) {
@@ -28,8 +29,11 @@ func TestUserHandler_ListUsers(t *testing.T) {
 			name: "returns all users",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				uc := user_mock.NewMockusecase(ctrl)
-				uc.EXPECT().List(gomock.Any()).
-					Return([]*domain.User{{Email: "a@example.com"}, {Email: "b@example.com"}}, nil)
+				uc.EXPECT().List(gomock.Any(), useruc.ListParams{}).
+					Return(&useruc.ListResult{
+						Users: []*domain.User{{Email: "a@example.com"}, {Email: "b@example.com"}},
+						Total: 2,
+					}, nil)
 
 				return New(uc, config.AuthTypeOIDC)
 			},
@@ -39,7 +43,7 @@ func TestUserHandler_ListUsers(t *testing.T) {
 			name: "storage error returns internal",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				uc := user_mock.NewMockusecase(ctrl)
-				uc.EXPECT().List(gomock.Any()).Return(nil, errors.New("db error"))
+				uc.EXPECT().List(gomock.Any(), useruc.ListParams{}).Return(nil, errors.New("db error"))
 
 				return New(uc, config.AuthTypeOIDC)
 			},

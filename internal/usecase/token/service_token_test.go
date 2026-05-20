@@ -131,54 +131,204 @@ func TestService_Create(t *testing.T) {
 func TestService_List(t *testing.T) {
 	t.Parallel()
 
-	tokens := []*domain.Token{
-		{ID: "t1", IssuedBy: "other@example.com", Namespaces: []string{"ns1"}},
+	resultTokens := []*domain.Token{
+		{ID: "t1", IssuedBy: "user@example.com", Namespaces: []string{"ns1"}},
 		{ID: "t2", IssuedBy: "user@example.com", Namespaces: []string{"ns2"}},
-		{ID: "t3", IssuedBy: "stranger@example.com", Namespaces: []string{"secret"}},
 	}
 
 	tests := []struct {
 		name     string
-		issuedBy string
+		params   token.ListParams
 		mockFunc func(context.Context, mocks) context.Context
-		wantLen  int
+		want     *token.ListResult
 		errIs    error
 		wantErr  string
 	}{
 		{
-			name:     "admin sees all",
-			issuedBy: "other@example.com",
+			name: "unauthenticated",
+			mockFunc: func(ctx context.Context, _ mocks) context.Context {
+				return ctx // no claims, no mock calls
+			},
+			errIs: domain.ErrUnauthorized,
+		},
+		{
+			name:   "wildcard namespace scope forwards AnyNamespace",
+			params: token.ListParams{},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "admin@example.com")
 
-				m.enforcer.EXPECT().Enforce("admin@example.com", "*", "token", "read").Return(true, nil)
-				m.store.EXPECT().List(ctx, "other@example.com").Return(tokens[:1], nil)
+				m.pdp.EXPECT().
+					EffectiveDomains("admin@example.com", "namespace", "read").
+					Return(domain.DomainSet{Wildcard: true})
+				m.store.EXPECT().List(ctx, domain.TokenFilter{
+					NamespaceScopes: nil,
+					AnyNamespace:    true,
+				}, domain.TokenListParams{Limit: 20}).
+					Return(resultTokens, 2, nil)
 
 				return ctx
 			},
-			wantLen: 1,
+			want: &token.ListResult{
+				Tokens: resultTokens,
+				Total:  2,
+				Limit:  20,
+				Offset: 0,
+			},
 		},
 		{
-			name:     "user sees own and accessible",
-			issuedBy: "",
+			name:   "explicit namespace scope forwards NamespaceScopes",
+			params: token.ListParams{},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "user@example.com")
 
-				m.enforcer.EXPECT().Enforce("user@example.com", "*", "token", "read").Return(false, nil)
-				m.store.EXPECT().List(ctx, "").Return(tokens, nil)
-				m.enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(true, nil)
-				m.enforcer.EXPECT().Enforce("user@example.com", "secret", "namespace", "read").Return(false, nil)
+				m.pdp.EXPECT().
+					EffectiveDomains("user@example.com", "namespace", "read").
+					Return(domain.DomainSet{
+						Explicit: map[string]struct{}{"ns1": {}, "ns2": {}},
+					})
+				m.store.EXPECT().List(ctx, domain.TokenFilter{
+					NamespaceScopes: map[string]struct{}{"ns1": {}, "ns2": {}},
+					AnyNamespace:    false,
+				}, domain.TokenListParams{Limit: 20}).
+					Return(resultTokens, 2, nil)
 
 				return ctx
 			},
-			wantLen: 2, // t1 (ns1) and t2 (own)
+			want: &token.ListResult{
+				Tokens: resultTokens,
+				Total:  2,
+				Limit:  20,
+				Offset: 0,
+			},
 		},
 		{
-			name: "unauthorized",
-			mockFunc: func(ctx context.Context, _ mocks) context.Context {
+			name:   "empty namespace scope returns empty result without calling store",
+			params: token.ListParams{},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = ctxWithClaims(ctx, "noaccess@example.com")
+
+				m.pdp.EXPECT().
+					EffectiveDomains("noaccess@example.com", "namespace", "read").
+					Return(domain.DomainSet{Explicit: map[string]struct{}{}})
+
 				return ctx
 			},
-			errIs: domain.ErrUnauthorized,
+			want: &token.ListResult{
+				Tokens: []*domain.Token{},
+				Total:  0,
+				Limit:  20,
+				Offset: 0,
+			},
+		},
+		{
+			name:   "IssuedBy forwarded to filter",
+			params: token.ListParams{IssuedBy: "alice@example.com"},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = ctxWithClaims(ctx, "admin@example.com")
+
+				m.pdp.EXPECT().
+					EffectiveDomains("admin@example.com", "namespace", "read").
+					Return(domain.DomainSet{Wildcard: true})
+				m.store.EXPECT().List(ctx, domain.TokenFilter{
+					AnyNamespace: true,
+					IssuedBy:     "alice@example.com",
+				}, domain.TokenListParams{Limit: 20}).
+					Return(resultTokens[:1], 1, nil)
+
+				return ctx
+			},
+			want: &token.ListResult{
+				Tokens: resultTokens[:1],
+				Total:  1,
+				Limit:  20,
+				Offset: 0,
+			},
+		},
+		{
+			name:   "Query forwarded as filter.Search",
+			params: token.ListParams{Query: "prod"},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = ctxWithClaims(ctx, "admin@example.com")
+
+				m.pdp.EXPECT().
+					EffectiveDomains("admin@example.com", "namespace", "read").
+					Return(domain.DomainSet{Wildcard: true})
+				m.store.EXPECT().List(ctx, domain.TokenFilter{
+					AnyNamespace: true,
+					Search:       "prod",
+				}, domain.TokenListParams{Limit: 20}).
+					Return(resultTokens, 2, nil)
+
+				return ctx
+			},
+			want: &token.ListResult{
+				Tokens: resultTokens,
+				Total:  2,
+				Limit:  20,
+				Offset: 0,
+			},
+		},
+		{
+			name:   "pagination forwarded",
+			params: token.ListParams{Limit: 5, Offset: 10},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = ctxWithClaims(ctx, "admin@example.com")
+
+				m.pdp.EXPECT().
+					EffectiveDomains("admin@example.com", "namespace", "read").
+					Return(domain.DomainSet{Wildcard: true})
+				m.store.EXPECT().List(ctx, domain.TokenFilter{
+					AnyNamespace: true,
+				}, domain.TokenListParams{Limit: 5, Offset: 10}).
+					Return([]*domain.Token{}, 12, nil)
+
+				return ctx
+			},
+			want: &token.ListResult{
+				Tokens: []*domain.Token{},
+				Total:  12,
+				Limit:  5,
+				Offset: 10,
+			},
+		},
+		{
+			name:   "default limit when params.Limit is zero",
+			params: token.ListParams{Limit: 0},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = ctxWithClaims(ctx, "admin@example.com")
+
+				m.pdp.EXPECT().
+					EffectiveDomains("admin@example.com", "namespace", "read").
+					Return(domain.DomainSet{Wildcard: true})
+				m.store.EXPECT().List(ctx, domain.TokenFilter{
+					AnyNamespace: true,
+				}, domain.TokenListParams{Limit: 20}).
+					Return(resultTokens, 2, nil)
+
+				return ctx
+			},
+			want: &token.ListResult{
+				Tokens: resultTokens,
+				Total:  2,
+				Limit:  20,
+				Offset: 0,
+			},
+		},
+		{
+			name:   "store error wrapped",
+			params: token.ListParams{},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = ctxWithClaims(ctx, "admin@example.com")
+
+				m.pdp.EXPECT().
+					EffectiveDomains("admin@example.com", "namespace", "read").
+					Return(domain.DomainSet{Wildcard: true})
+				m.store.EXPECT().List(ctx, gomock.Any(), gomock.Any()).
+					Return(nil, 0, errors.New("db error"))
+
+				return ctx
+			},
+			wantErr: "list tokens:",
 		},
 	}
 
@@ -189,7 +339,7 @@ func TestService_List(t *testing.T) {
 			svc, m := setupService(t)
 			ctx := tt.mockFunc(t.Context(), m)
 
-			got, err := svc.List(ctx, tt.issuedBy)
+			got, err := svc.List(ctx, tt.params)
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
@@ -202,7 +352,7 @@ func TestService_List(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Len(t, got, tt.wantLen)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

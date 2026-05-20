@@ -25,6 +25,11 @@ type Bucket interface {
 }
 
 // TxManager manages database transactions.
+//
+// Nesting is not supported: calling Read or Write from within fn will deadlock
+// or panic depending on the underlying engine (bbolt holds a single writer
+// lock). Compose transactional work by passing the existing Tx to repo
+// WithTx helpers, not by opening a new TxManager call.
 type TxManager interface {
 	// Read executes a read-only transaction.
 	Read(ctx context.Context, fn func(Tx) error) error

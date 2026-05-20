@@ -80,19 +80,19 @@ func (m *MocknsLister) EXPECT() *MocknsListerMockRecorder {
 	return m.recorder
 }
 
-// List mocks base method.
-func (m *MocknsLister) List(ctx context.Context) ([]*domain.Namespace, error) {
+// ListAll mocks base method.
+func (m *MocknsLister) ListAll(ctx context.Context) ([]*domain.Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx)
+	ret := m.ctrl.Call(m, "ListAll", ctx)
 	ret0, _ := ret[0].([]*domain.Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// List indicates an expected call of List.
-func (mr *MocknsListerMockRecorder) List(ctx any) *gomock.Call {
+// ListAll indicates an expected call of ListAll.
+func (mr *MocknsListerMockRecorder) ListAll(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MocknsLister)(nil).List), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*MocknsLister)(nil).ListAll), ctx)
 }
 
 // MockconfigCounter is a mock of configCounter interface.

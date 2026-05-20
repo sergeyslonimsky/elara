@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -74,25 +76,131 @@ func (r *NamespaceRepo) Get(_ context.Context, name string) (*domain.Namespace, 
 	return ns, nil
 }
 
-func (r *NamespaceRepo) List(_ context.Context) ([]*domain.Namespace, error) {
-	var namespaces []*domain.Namespace
+// List returns namespaces matching filter, applies search + sort, and slices
+// the result by params.Offset / params.Limit. Total is the count after
+// filter+search but before pagination so callers can render page indicators.
+//
+// When filter.Wildcard is true the repo scans the namespaces bucket; otherwise
+// it point-looks up each name in filter.Names. Missing keys in Names are
+// silently skipped — they may have been deleted between PDP evaluation and the
+// repo call.
+func (r *NamespaceRepo) List(
+	_ context.Context,
+	filter domain.NamespaceFilter,
+	params domain.NamespaceListParams,
+) ([]*domain.Namespace, int, error) {
+	var matches []*domain.Namespace
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketNamespaces))
 
-		return b.ForEach(func(k, v []byte) error {
-			var m namespaceMeta
-			if err := json.Unmarshal(v, &m); err != nil {
-				return fmt.Errorf("unmarshal namespace %s: %w", k, err)
+		if filter.Wildcard {
+			return b.ForEach(func(k, v []byte) error {
+				ns, err := decodeNamespace(k, v)
+				if err != nil {
+					return err
+				}
+
+				if matchesSearch(ns.Name, filter.Search) {
+					matches = append(matches, ns)
+				}
+
+				return nil
+			})
+		}
+
+		for name := range filter.Names {
+			data := b.Get([]byte(name))
+			if data == nil {
+				continue
 			}
 
-			namespaces = append(namespaces, namespaceMetaToDomain(&m, string(k)))
+			ns, err := decodeNamespace([]byte(name), data)
+			if err != nil {
+				return err
+			}
 
-			return nil
-		})
+			if matchesSearch(ns.Name, filter.Search) {
+				matches = append(matches, ns)
+			}
+		}
+
+		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list namespaces: %w", err)
+		return nil, 0, fmt.Errorf("list namespaces: %w", err)
+	}
+
+	sortNamespaces(matches, params.Sort)
+	total := len(matches)
+	paginated := paginate(matches, params.Offset, params.Limit)
+
+	return paginated, total, nil
+}
+
+func decodeNamespace(k, v []byte) (*domain.Namespace, error) {
+	var m namespaceMeta
+	if err := json.Unmarshal(v, &m); err != nil {
+		return nil, fmt.Errorf("unmarshal namespace %s: %w", k, err)
+	}
+
+	return namespaceMetaToDomain(&m, string(k)), nil
+}
+
+func matchesSearch(name, search string) bool {
+	if search == "" {
+		return true
+	}
+
+	return strings.Contains(strings.ToLower(name), strings.ToLower(search))
+}
+
+func sortNamespaces(namespaces []*domain.Namespace, params domain.SortParams) {
+	sort.Slice(namespaces, func(i, j int) bool {
+		a, b := namespaces[i], namespaces[j]
+
+		var less bool
+
+		switch params.Field {
+		case "modified":
+			less = a.UpdatedAt.Before(b.UpdatedAt)
+		default:
+			less = a.Name < b.Name
+		}
+
+		if params.Desc {
+			return !less
+		}
+
+		return less
+	})
+}
+
+func paginate(namespaces []*domain.Namespace, offset, limit int) []*domain.Namespace {
+	if offset < 0 {
+		offset = 0
+	}
+
+	if offset >= len(namespaces) {
+		return []*domain.Namespace{}
+	}
+
+	end := len(namespaces)
+	if limit > 0 && offset+limit < end {
+		end = offset + limit
+	}
+
+	return namespaces[offset:end]
+}
+
+// ListAll returns every namespace without filter / pagination. It is a
+// convenience for callers that genuinely need the global view (dashboard
+// stats, transfer export-all, profile bootstrap) and apply their own scoping
+// downstream. New code that filters by caller permissions MUST use List.
+func (r *NamespaceRepo) ListAll(ctx context.Context) ([]*domain.Namespace, error) {
+	namespaces, _, err := r.List(ctx, domain.NamespaceFilter{Wildcard: true}, domain.NamespaceListParams{})
+	if err != nil {
+		return nil, err
 	}
 
 	return namespaces, nil

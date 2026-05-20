@@ -107,5 +107,10 @@ func (t *TxEnforcer) DeleteUser(email string) error {
 
 // GetPermissionsForSubject retrieves permissions for the given subject directly from the tx.
 func (t *TxEnforcer) GetPermissionsForSubject(subject string) ([][]string, error) {
-	return t.policies.ListPermissionsForSubject(subject)
+	rules, err := t.policies.ListPermissionsForSubject(subject)
+	if err != nil {
+		return nil, fmt.Errorf("list permissions for subject: %w", err)
+	}
+
+	return rules, nil
 }

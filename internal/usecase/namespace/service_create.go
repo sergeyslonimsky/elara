@@ -11,7 +11,7 @@ import (
 // DomainAll) is enforced by the RBAC interceptor.
 func (s *Service) Create(ctx context.Context, ns *domain.Namespace) (*domain.Namespace, error) {
 	if err := s.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, domain.DomainAll); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("authorize: %w", err)
 	}
 
 	if err := ns.Validate(); err != nil {

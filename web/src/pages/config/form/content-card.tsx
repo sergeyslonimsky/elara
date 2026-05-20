@@ -37,6 +37,7 @@ interface ContentCardProps {
 	content: string;
 	onContentChange: (v: string) => void;
 	protoFormat: Format;
+	readOnly?: boolean;
 }
 
 export function ContentCard({
@@ -52,6 +53,7 @@ export function ContentCard({
 	content,
 	onContentChange,
 	protoFormat,
+	readOnly = false,
 }: Readonly<ContentCardProps>) {
 	const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
@@ -124,7 +126,7 @@ export function ContentCard({
 							value={filename}
 							onChange={(e) => onFilenameChange(e.target.value)}
 							placeholder="config.json"
-							disabled={isEdit}
+							disabled={isEdit || readOnly}
 							required
 						/>
 						{!isEdit && (
@@ -136,6 +138,7 @@ export function ContentCard({
 						<Select
 							value={format}
 							onValueChange={(v) => onFormatChange(v ?? "auto")}
+							disabled={readOnly}
 						>
 							<SelectTrigger>
 								<SelectValue />
@@ -157,40 +160,42 @@ export function ContentCard({
 				<Field>
 					<div className="flex items-center justify-between">
 						<FieldLabel>Content</FieldLabel>
-						<div className="flex gap-2">
-							<Button
-								type="button"
-								variant="outline"
-								size="xs"
-								onClick={() =>
-									formatMutation.mutate({
-										content,
-										format: protoFormat,
-									})
-								}
-								disabled={!canValidate || formatMutation.isPending}
-							>
-								<Sparkles className="mr-1 h-3 w-3" />
-								{formatMutation.isPending ? "Formatting..." : "Format"}
-							</Button>
-							<Button
-								type="button"
-								variant="outline"
-								size="xs"
-								onClick={() =>
-									validateMutation.mutate({
-										content,
-										format: protoFormat,
-										namespace: isEdit ? namespace : "",
-										path: isEdit ? configPath : "",
-									})
-								}
-								disabled={!canValidate || validateMutation.isPending}
-							>
-								<CheckCircle className="mr-1 h-3 w-3" />
-								Validate
-							</Button>
-						</div>
+						{!readOnly && (
+							<div className="flex gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									size="xs"
+									onClick={() =>
+										formatMutation.mutate({
+											content,
+											format: protoFormat,
+										})
+									}
+									disabled={!canValidate || formatMutation.isPending}
+								>
+									<Sparkles className="mr-1 h-3 w-3" />
+									{formatMutation.isPending ? "Formatting..." : "Format"}
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									size="xs"
+									onClick={() =>
+										validateMutation.mutate({
+											content,
+											format: protoFormat,
+											namespace: isEdit ? namespace : "",
+											path: isEdit ? configPath : "",
+										})
+									}
+									disabled={!canValidate || validateMutation.isPending}
+								>
+									<CheckCircle className="mr-1 h-3 w-3" />
+									Validate
+								</Button>
+							</div>
+						)}
 					</div>
 					<ConfigEditor
 						value={content}
@@ -200,6 +205,7 @@ export function ContentCard({
 							setSchemaViolations([]);
 						}}
 						language={editorLanguage}
+						readOnly={readOnly}
 					/>
 					{validationErrors.length > 0 && (
 						<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">

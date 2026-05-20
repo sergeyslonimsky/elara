@@ -4,7 +4,6 @@ package authz
 
 import (
 	"context"
-	"errors"
 
 	"connectrpc.com/connect"
 
@@ -27,11 +26,11 @@ func NewAuthz(p pdp) *Authz {
 func (a *Authz) Require(ctx context.Context, object, action, domainStr string) error {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
-		return connect.NewError(connect.CodeUnauthenticated, errors.New("unauthenticated"))
+		return connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
 	}
 
 	if !a.pdp.Has(claims.Email, domain.Permission{Object: object, Action: action, Domain: domainStr}) {
-		return connect.NewError(connect.CodePermissionDenied, errors.New("permission denied"))
+		return connect.NewError(connect.CodePermissionDenied, domain.ErrForbidden)
 	}
 
 	return nil
@@ -40,7 +39,7 @@ func (a *Authz) Require(ctx context.Context, object, action, domainStr string) e
 func (a *Authz) RequireAuthenticated(ctx context.Context) error {
 	_, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
-		return connect.NewError(connect.CodeUnauthenticated, errors.New("unauthenticated"))
+		return connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
 	}
 
 	return nil

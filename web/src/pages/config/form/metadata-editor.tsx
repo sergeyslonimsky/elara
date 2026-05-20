@@ -12,11 +12,13 @@ import { Input } from "@/components/ui/input";
 interface MetadataEditorProps {
 	metadata: Record<string, string>;
 	onChange: (next: Record<string, string>) => void;
+	readOnly?: boolean;
 }
 
 export function MetadataEditor({
 	metadata,
 	onChange,
+	readOnly = false,
 }: Readonly<MetadataEditorProps>) {
 	const [metaKey, setMetaKey] = useState("");
 	const [metaValue, setMetaValue] = useState("");
@@ -42,35 +44,37 @@ export function MetadataEditor({
 				<CardDescription>Optional key-value pairs</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">
-				<div className="flex gap-2">
-					<Input
-						value={metaKey}
-						onChange={(e) => setMetaKey(e.target.value)}
-						placeholder="Key"
-						className="flex-1"
-					/>
-					<Input
-						value={metaValue}
-						onChange={(e) => setMetaValue(e.target.value)}
-						onKeyDown={(e) => {
-							if (e.key === "Enter") {
-								e.preventDefault();
-								handleAdd();
-							}
-						}}
-						placeholder="Value"
-						className="flex-1"
-					/>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={handleAdd}
-						disabled={!metaKey || !metaValue}
-					>
-						Add
-					</Button>
-				</div>
+				{!readOnly && (
+					<div className="flex gap-2">
+						<Input
+							value={metaKey}
+							onChange={(e) => setMetaKey(e.target.value)}
+							placeholder="Key"
+							className="flex-1"
+						/>
+						<Input
+							value={metaValue}
+							onChange={(e) => setMetaValue(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									e.preventDefault();
+									handleAdd();
+								}
+							}}
+							placeholder="Value"
+							className="flex-1"
+						/>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={handleAdd}
+							disabled={!metaKey || !metaValue}
+						>
+							Add
+						</Button>
+					</div>
+				)}
 				{Object.entries(metadata).map(([key, value]) => (
 					<div
 						key={key}
@@ -79,14 +83,16 @@ export function MetadataEditor({
 						<span>
 							<strong>{key}</strong>: {value}
 						</span>
-						<Button
-							type="button"
-							variant="ghost"
-							size="xs"
-							onClick={() => handleRemove(key)}
-						>
-							×
-						</Button>
+						{!readOnly && (
+							<Button
+								type="button"
+								variant="ghost"
+								size="xs"
+								onClick={() => handleRemove(key)}
+							>
+								×
+							</Button>
+						)}
 					</div>
 				))}
 				{Object.keys(metadata).length === 0 && (

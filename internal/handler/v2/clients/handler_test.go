@@ -539,7 +539,7 @@ func TestClientsHandler_WatchClients_RegistryShutdownExitsCleanly(t *testing.T) 
 			break
 		}
 	}
-	assert.NoError(t, stream.Err())
+	require.NoError(t, stream.Err())
 	fx.waitForCancel(t)
 }
 
@@ -654,7 +654,7 @@ func TestClientsHandler_WatchClient_DisconnectExitsCleanly(t *testing.T) {
 
 	// Stream ends after disconnect; no error.
 	assert.False(t, stream.Receive())
-	assert.NoError(t, stream.Err())
+	require.NoError(t, stream.Err())
 	fx.waitForCancel(t)
 }
 

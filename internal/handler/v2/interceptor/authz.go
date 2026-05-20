@@ -2,6 +2,7 @@ package interceptor
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -54,7 +55,7 @@ func (i *AuthzInterceptor) authorize(ctx context.Context, procedure string) erro
 
 	// 2. All other procedures require authentication.
 	if err := i.authz.RequireAuthenticated(ctx); err != nil {
-		return err
+		return fmt.Errorf("require authenticated: %w", err)
 	}
 
 	// 3. Procedures in elara.user.v1.UserService, elara.access.v1.GroupService,
@@ -62,7 +63,9 @@ func (i *AuthzInterceptor) authorize(ctx context.Context, procedure string) erro
 	if strings.HasPrefix(procedure, "/elara.user.v1.UserService/") ||
 		strings.HasPrefix(procedure, "/elara.access.v1.GroupService/") ||
 		strings.HasPrefix(procedure, "/elara.access.v1.AccessService/") {
-		return i.authz.Require(ctx, domain.ObjectAll, domain.ActionAll, domain.DomainAll)
+		if err := i.authz.Require(ctx, domain.ObjectAll, domain.ActionAll, domain.DomainAll); err != nil {
+			return fmt.Errorf("require superadmin: %w", err)
+		}
 	}
 
 	return nil

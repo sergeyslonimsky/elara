@@ -3,6 +3,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { render, screen } from "@testing-library/react";
 import { Route, Routes } from "react-router";
 import { describe, expect, it, vi } from "vitest";
+import { buildAbility } from "@/auth/ability";
 import type { AuthContextType } from "@/components/auth-provider";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 import { MeResponseSchema } from "@/gen/elara/profile/v1/profile_service_pb";
@@ -12,12 +13,9 @@ import { AuthGuard } from "./auth-guard";
 const authenticatedUser = create(MeResponseSchema, {
 	name: "Admin",
 	email: "admin@elara.local",
-	isAdmin: false,
-	namespaces: [],
+	permissions: [],
 	passwordChangeRequired: false,
 	picture: "",
-	canViewWebhooks: false,
-	canManageWebhooks: false,
 });
 
 function TestApp() {
@@ -101,6 +99,7 @@ describe("AuthGuard", () => {
 				status: "authenticated",
 				authType: AuthType.BASIC,
 				user: authenticatedUser,
+				ability: buildAbility([]),
 			},
 			logout: vi.fn(),
 		};
@@ -123,6 +122,7 @@ describe("AuthGuard", () => {
 				status: "authenticated",
 				authType: AuthType.BASIC,
 				user: userWithPasswordChange,
+				ability: buildAbility([]),
 			},
 			logout: vi.fn(),
 		};
@@ -141,6 +141,7 @@ describe("AuthGuard", () => {
 				status: "authenticated",
 				authType: AuthType.BASIC,
 				user: authenticatedUser,
+				ability: buildAbility([]),
 			},
 			logout: vi.fn(),
 		};
@@ -162,6 +163,7 @@ describe("AuthGuard", () => {
 				status: "authenticated",
 				authType: AuthType.BASIC,
 				user: userWithPasswordChange,
+				ability: buildAbility([]),
 			},
 			logout: vi.fn(),
 		};

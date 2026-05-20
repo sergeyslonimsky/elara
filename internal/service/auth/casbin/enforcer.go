@@ -140,38 +140,6 @@ func (e *Enforcer) WriteTx(
 	return nil
 }
 
-// applyOpsToCache replays the ops recorded during a successful tx onto the
-// in-memory casbin model. With AutoSave=off these calls do not re-hit the
-// adapter — they only update the cached rules.
-func (e *Enforcer) applyOpsToCache(ops []op) error {
-	for _, o := range ops {
-		switch o.kind {
-		case opAddP:
-			if _, err := e.e.AddPolicy(o.args[0], o.args[1], o.args[2], o.args[3]); err != nil {
-				return fmt.Errorf("cache add policy: %w", err)
-			}
-		case opRemoveP:
-			if _, err := e.e.RemovePolicy(o.args[0], o.args[1], o.args[2], o.args[3]); err != nil {
-				return fmt.Errorf("cache remove policy: %w", err)
-			}
-		case opAddG:
-			if _, err := e.e.AddGroupingPolicy(o.args[0], o.args[1], o.args[2]); err != nil {
-				return fmt.Errorf("cache add grouping policy: %w", err)
-			}
-		case opRemoveG:
-			if _, err := e.e.RemoveGroupingPolicy(o.args[0], o.args[1], o.args[2]); err != nil {
-				return fmt.Errorf("cache remove grouping policy: %w", err)
-			}
-		case opDeleteUser:
-			if _, err := e.e.DeleteUser(o.user); err != nil {
-				return fmt.Errorf("cache delete user: %w", err)
-			}
-		}
-	}
-
-	return nil
-}
-
 // LoadPolicy reloads the in-memory policy model from the persistence adapter.
 // Used to resync the enforcer cache after out-of-band writes that bypass the
 // enforcer (e.g. AdminBootstrap writes raw rules directly to the policy
@@ -288,6 +256,38 @@ func (e *Enforcer) GetMembersOfGroup(groupSubject string) []string {
 	}
 
 	return members
+}
+
+// applyOpsToCache replays the ops recorded during a successful tx onto the
+// in-memory casbin model. With AutoSave=off these calls do not re-hit the
+// adapter — they only update the cached rules.
+func (e *Enforcer) applyOpsToCache(ops []op) error { //nolint:cyclop //refactor
+	for _, o := range ops {
+		switch o.kind {
+		case opAddP:
+			if _, err := e.e.AddPolicy(o.args[0], o.args[1], o.args[2], o.args[3]); err != nil {
+				return fmt.Errorf("cache add policy: %w", err)
+			}
+		case opRemoveP:
+			if _, err := e.e.RemovePolicy(o.args[0], o.args[1], o.args[2], o.args[3]); err != nil {
+				return fmt.Errorf("cache remove policy: %w", err)
+			}
+		case opAddG:
+			if _, err := e.e.AddGroupingPolicy(o.args[0], o.args[1], o.args[2]); err != nil {
+				return fmt.Errorf("cache add grouping policy: %w", err)
+			}
+		case opRemoveG:
+			if _, err := e.e.RemoveGroupingPolicy(o.args[0], o.args[1], o.args[2]); err != nil {
+				return fmt.Errorf("cache remove grouping policy: %w", err)
+			}
+		case opDeleteUser:
+			if _, err := e.e.DeleteUser(o.user); err != nil {
+				return fmt.Errorf("cache delete user: %w", err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (e *Enforcer) seedBuiltinPolicies() error {

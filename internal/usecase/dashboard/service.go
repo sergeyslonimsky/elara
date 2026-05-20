@@ -16,7 +16,7 @@ type (
 
 	// nsLister returns the flat list of namespaces (names only, no config count needed here).
 	nsLister interface {
-		List(ctx context.Context) ([]*domain.Namespace, error)
+		ListAll(ctx context.Context) ([]*domain.Namespace, error)
 	}
 
 	// configCounter counts configs per namespace and exposes the global revision.

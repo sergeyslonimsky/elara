@@ -8,7 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/usecase/group"
 )
 
 // Authorization for GroupService.* is enforced by the RBAC interceptor;
@@ -185,17 +189,136 @@ func TestService_Delete(t *testing.T) {
 	})
 }
 
-func TestService_List(t *testing.T) {
+func TestService_List_Unauthenticated(t *testing.T) {
 	t.Parallel()
 
 	sut, _, _, _ := newTestService(t)
 
-	_, err := sut.Create(t.Context(), "g1")
-	require.NoError(t, err)
-	_, err = sut.Create(t.Context(), "g2")
-	require.NoError(t, err)
+	_, err := sut.List(t.Context(), group.ListParams{})
+	require.ErrorIs(t, err, domain.ErrUnauthorized)
+}
 
-	got, err := sut.List(t.Context())
+func TestService_List_WildcardScopeReturnsAll(t *testing.T) {
+	t.Parallel()
+
+	sut, store, enforcer, _ := newTestService(t)
+	ctx := t.Context()
+	txm := bbolt.NewTxManager(store.DB())
+
+	// Grant admin (*,*,*) — yields a wildcard EffectiveDomains scope.
+	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		return txe.AddPolicy("admin@example.com", domain.DomainAll, domain.ObjectAll, domain.ActionAll)
+	}))
+
+	for _, n := range []string{"alpha", "beta", "gamma"} {
+		_, err := sut.Create(ctx, n)
+		require.NoError(t, err)
+	}
+
+	reqCtx := contextWithAdmin(ctx)
+	got, err := sut.List(reqCtx, group.ListParams{})
 	require.NoError(t, err)
-	assert.Len(t, got, 2)
+	assert.Equal(t, 3, got.Total)
+	assert.Len(t, got.Groups, 3)
+	// default sort field "" → name asc
+	assert.Equal(t, []string{"alpha", "beta", "gamma"}, []string{
+		got.Groups[0].Name, got.Groups[1].Name, got.Groups[2].Name,
+	})
+}
+
+func TestService_List_ExplicitScope(t *testing.T) {
+	t.Parallel()
+
+	sut, store, enforcer, _ := newTestService(t)
+	ctx := t.Context()
+	txm := bbolt.NewTxManager(store.DB())
+
+	// Seed two groups; user has read-permission only on "dev".
+	for _, n := range []string{"dev", "prod"} {
+		_, err := sut.Create(ctx, n)
+		require.NoError(t, err)
+	}
+
+	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		return txe.AddPolicy(
+			"delegated@example.com",
+			domain.GroupSubject("dev"),
+			domain.ObjectGroup,
+			domain.ActionRead,
+		)
+	}))
+
+	reqCtx := auth.WithClaims(ctx, &auth.Claims{Email: "delegated@example.com"})
+	got, err := sut.List(reqCtx, group.ListParams{})
+	require.NoError(t, err)
+	assert.Equal(t, 1, got.Total)
+	require.Len(t, got.Groups, 1)
+	assert.Equal(t, "dev", got.Groups[0].Name)
+}
+
+func TestService_List_EmptyScopeReturnsEmpty(t *testing.T) {
+	t.Parallel()
+
+	sut, _, _, _ := newTestService(t)
+	ctx := t.Context()
+
+	// Seed groups that the user has no read permission on.
+	for _, n := range []string{"dev", "prod"} {
+		_, err := sut.Create(ctx, n)
+		require.NoError(t, err)
+	}
+
+	// User has zero grants — EffectiveDomains is empty → early-return.
+	reqCtx := auth.WithClaims(ctx, &auth.Claims{Email: "nobody@example.com"})
+	got, err := sut.List(reqCtx, group.ListParams{})
+	require.NoError(t, err)
+	assert.Equal(t, 0, got.Total)
+	assert.Empty(t, got.Groups)
+	// Limit field still populated with default to keep response shape stable.
+	assert.Equal(t, 20, got.Limit)
+}
+
+func TestService_List_DefaultLimit(t *testing.T) {
+	t.Parallel()
+
+	sut, store, enforcer, _ := newTestService(t)
+	ctx := t.Context()
+	txm := bbolt.NewTxManager(store.DB())
+
+	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		return txe.AddPolicy("admin@example.com", domain.DomainAll, domain.ObjectAll, domain.ActionAll)
+	}))
+
+	reqCtx := contextWithAdmin(ctx)
+	got, err := sut.List(reqCtx, group.ListParams{Limit: 0})
+	require.NoError(t, err)
+	// Lock the literal default to prevent silent drift.
+	assert.Equal(t, 20, got.Limit)
+}
+
+func TestService_List_PaginationForwarded(t *testing.T) {
+	t.Parallel()
+
+	sut, store, enforcer, _ := newTestService(t)
+	ctx := t.Context()
+	txm := bbolt.NewTxManager(store.DB())
+
+	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		return txe.AddPolicy("admin@example.com", domain.DomainAll, domain.ObjectAll, domain.ActionAll)
+	}))
+
+	// Seed 6 groups: a,b,c,d,e,f (sorted name asc by default).
+	for _, n := range []string{"a", "b", "c", "d", "e", "f"} {
+		_, err := sut.Create(ctx, n)
+		require.NoError(t, err)
+	}
+
+	reqCtx := contextWithAdmin(ctx)
+	got, err := sut.List(reqCtx, group.ListParams{Limit: 2, Offset: 2})
+	require.NoError(t, err)
+	assert.Equal(t, 6, got.Total)
+	assert.Equal(t, 2, got.Limit)
+	assert.Equal(t, 2, got.Offset)
+	require.Len(t, got.Groups, 2)
+	assert.Equal(t, []string{"c", "d"}, []string{got.Groups[0].Name, got.Groups[1].Name})
 }
