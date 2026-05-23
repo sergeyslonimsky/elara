@@ -14,27 +14,43 @@ import (
 
 //go:generate mockgen -destination=mocks/handler_mock.go -package=webhook_mock -source=handler.go
 
-type usecase interface {
-	Create(ctx context.Context, w *domain.Webhook) (*domain.Webhook, error)
-	Get(ctx context.Context, id string) (*domain.Webhook, error)
-	Update(ctx context.Context, id string, params webhookuc.UpdateParams) (*domain.Webhook, error)
-	Delete(ctx context.Context, id string) error
-	List(ctx context.Context) ([]*domain.Webhook, error)
-	GetHistory(ctx context.Context, webhookID string) ([]domain.DeliveryAttempt, error)
-}
+type (
+	authz interface {
+		Require(ctx context.Context, object, action, domainStr string) error
+	}
+
+	usecase interface {
+		Create(ctx context.Context, w *domain.Webhook) (*domain.Webhook, error)
+		Get(ctx context.Context, id string) (*domain.Webhook, error)
+		Update(ctx context.Context, id string, params webhookuc.UpdateParams) (*domain.Webhook, error)
+		Delete(ctx context.Context, id string) error
+		List(ctx context.Context) ([]*domain.Webhook, error)
+		GetHistory(ctx context.Context, webhookID string) ([]domain.DeliveryAttempt, error)
+	}
+)
 
 type Handler struct {
-	uc usecase
+	authz authz
+	uc    usecase
 }
 
-func New(uc usecase) *Handler {
-	return &Handler{uc: uc}
+func New(authz authz, uc usecase) *Handler {
+	return &Handler{authz: authz, uc: uc}
 }
 
 func (h *Handler) CreateWebhook(
 	ctx context.Context,
 	req *connect.Request[webhookv1.CreateWebhookRequest],
 ) (*connect.Response[webhookv1.CreateWebhookResponse], error) {
+	ns := req.Msg.GetNamespaceFilter()
+	if ns == "" {
+		ns = domain.DomainAll
+	}
+
+	if err := h.authz.Require(ctx, domain.ObjectWebhook, domain.ActionCreate, ns); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	w := &domain.Webhook{
 		URL:             req.Msg.GetUrl(),
 		NamespaceFilter: req.Msg.GetNamespaceFilter(),

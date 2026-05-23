@@ -8,6 +8,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
+// GetHistory returns delivery attempts for a webhook if the caller can read it.
 func (s *Service) GetHistory(ctx context.Context, webhookID string) ([]domain.DeliveryAttempt, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
@@ -19,17 +20,11 @@ func (s *Service) GetHistory(ctx context.Context, webhookID string) ([]domain.De
 		return nil, fmt.Errorf("get webhook: %w", err)
 	}
 
-	ns := w.NamespaceFilter
-	if ns == "" {
-		ns = "*"
-	}
-
-	allowed, err := s.enforcer.Enforce(claims.Email, ns, "webhook", "read")
-	if err != nil {
-		return nil, fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
+	if !s.pdp.Has(claims.Email, domain.Permission{
+		Object: domain.ObjectWebhook,
+		Action: domain.ActionRead,
+		Domain: webhookDomain(w),
+	}) {
 		return nil, domain.ErrForbidden
 	}
 

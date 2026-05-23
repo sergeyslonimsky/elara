@@ -47,13 +47,16 @@ data:
   UI_AUTH_ENABLED: {{ .Values.config.ui.auth.enabled | quote }}
   {{- if .Values.config.ui.auth.enabled }}
   UI_AUTH_TYPE: {{ .Values.config.ui.auth.type | quote }}
-  UI_AUTH_ADMINEMAIL: {{ .Values.config.ui.auth.adminEmail | quote }}
   UI_AUTH_SESSION_TTL: {{ .Values.config.ui.auth.session.ttl | quote }}
   UI_AUTH_SESSION_SECURECOOKIE: {{ .Values.config.ui.auth.session.secureCookie | quote }}
+  {{- if eq .Values.config.ui.auth.type "basic-auth" }}
+  UI_AUTH_BASICAUTH_USERNAME: {{ .Values.config.ui.auth.basicAuth.username | quote }}
+  {{- end }}
   {{- if eq .Values.config.ui.auth.type "oidc" }}
   UI_AUTH_OIDC_ISSUERURL: {{ .Values.config.ui.auth.oidc.issuerUrl | quote }}
   UI_AUTH_OIDC_CLIENTID: {{ .Values.config.ui.auth.oidc.clientId | quote }}
   UI_AUTH_OIDC_REDIRECTURL: {{ .Values.config.ui.auth.oidc.redirectUrl | quote }}
+  UI_AUTH_OIDC_ADMINEMAIL: {{ .Values.config.ui.auth.oidc.adminEmail | quote }}
   {{- if .Values.config.ui.auth.oidc.scopes }}
   UI_AUTH_OIDC_SCOPES: {{ join "," .Values.config.ui.auth.oidc.scopes | quote }}
   {{- end }}

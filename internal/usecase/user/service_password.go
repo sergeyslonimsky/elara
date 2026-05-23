@@ -8,7 +8,7 @@ import (
 )
 
 // ResetPassword sets a new password for another user. Authorization
-// (user/write at DomainAll) is enforced by the RBAC interceptor.
+// `(User, Write, *)` is enforced in the handler (EL-4 M9).
 func (s *Service) ResetPassword(ctx context.Context, targetEmail, newPassword string) error {
 	newHash, err := auth.HashPassword(newPassword)
 	if err != nil {

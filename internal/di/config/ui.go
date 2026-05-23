@@ -23,27 +23,32 @@ type UI struct {
 
 // UIAuthConfig controls authentication and session management.
 type UIAuthConfig struct {
-	Enabled            bool
-	Type               AuthType
-	AdminEmail         string
-	SuperAdminUsername string
-	SuperAdminPassword string
-	BasicAuth          BasicAuthConfig
-	OIDC               OIDCConfig
-	Session            SessionConfig
+	Enabled   bool
+	Type      AuthType
+	BasicAuth BasicAuthConfig
+	OIDC      OIDCConfig
+	Session   SessionConfig
 }
 
+// BasicAuthConfig holds the initial admin credentials used when Type == basic-auth.
+// On bootstrap, a local user with these credentials is created and added to the
+// superadmin group.
 type BasicAuthConfig struct {
-	AdminInitialPassword string
+	Username string
+	Password string
 }
 
 // OIDCConfig holds OpenID Connect provider settings.
+// AdminEmail bootstraps the first superadmin identity for OIDC: the first time
+// a user with this email completes the OIDC callback, they are added to the
+// superadmin group.
 type OIDCConfig struct {
 	IssuerURL    string
 	ClientID     string
 	ClientSecret string
 	RedirectURL  string
 	Scopes       []string
+	AdminEmail   string
 }
 
 // SessionConfig controls JWT session token signing and lifetime.
@@ -57,12 +62,9 @@ type SessionConfig struct {
 }
 
 var (
-	ErrBasicAuthAdminEmailRequired           = errors.New("basic-auth requires ui.auth.adminEmail to be set")
-	ErrBasicAuthAdminInitialPasswordRequired = errors.New(
-		"basic-auth requires ui.auth.basicAuth.adminInitialPassword to be set",
-	)
-	ErrSuperAdminUsernameRequired = errors.New("ui.auth.superadmin.username (or SUPERADMIN_USERNAME) is required")
-	ErrSuperAdminPasswordRequired = errors.New("ui.auth.superadmin.password (or SUPERADMIN_PASSWORD) is required")
+	ErrBasicAuthUsernameRequired = errors.New("basic-auth requires ui.auth.basicAuth.username to be set")
+	ErrBasicAuthPasswordRequired = errors.New("basic-auth requires ui.auth.basicAuth.password to be set")
+	ErrOIDCAdminEmailRequired    = errors.New("oidc requires ui.auth.oidc.adminEmail to be set")
 )
 
 // Validate returns an error if the configuration is invalid.
@@ -71,20 +73,20 @@ func (c UIAuthConfig) Validate() error {
 		return nil
 	}
 
-	if c.SuperAdminUsername == "" {
-		return ErrSuperAdminUsernameRequired
-	}
-	if c.SuperAdminPassword == "" {
-		return ErrSuperAdminPasswordRequired
-	}
-
-	if c.Type == AuthTypeBasicAuth {
-		if c.AdminEmail == "" {
-			return ErrBasicAuthAdminEmailRequired
+	switch c.Type {
+	case AuthTypeBasicAuth:
+		if c.BasicAuth.Username == "" {
+			return ErrBasicAuthUsernameRequired
 		}
-		if c.BasicAuth.AdminInitialPassword == "" {
-			return ErrBasicAuthAdminInitialPasswordRequired
+		if c.BasicAuth.Password == "" {
+			return ErrBasicAuthPasswordRequired
 		}
+	case AuthTypeOIDC:
+		if c.OIDC.AdminEmail == "" {
+			return ErrOIDCAdminEmailRequired
+		}
+	case AuthTypeNone:
+		// no admin identity required — passthrough user is seeded at bootstrap
 	}
 
 	return nil
@@ -102,13 +104,11 @@ func newUIConfig(cfg *di.Config) (UI, error) {
 			),
 		},
 		Auth: UIAuthConfig{
-			Enabled:            cfg.GetBool("ui.auth.enabled"),
-			Type:               getAuthType(cfg),
-			AdminEmail:         cfg.GetString("ui.auth.adminEmail"),
-			SuperAdminUsername: getSuperAdminUsername(cfg),
-			SuperAdminPassword: getSuperAdminPassword(cfg),
+			Enabled: cfg.GetBool("ui.auth.enabled"),
+			Type:    getAuthType(cfg),
 			BasicAuth: BasicAuthConfig{
-				AdminInitialPassword: cfg.GetString("ui.auth.basicAuth.adminInitialPassword"),
+				Username: cfg.GetString("ui.auth.basicAuth.username"),
+				Password: cfg.GetString("ui.auth.basicAuth.password"),
 			},
 			OIDC: OIDCConfig{
 				IssuerURL:    cfg.GetString("ui.auth.oidc.issuerUrl"),
@@ -119,6 +119,7 @@ func newUIConfig(cfg *di.Config) (UI, error) {
 					cfg.GetStringSlice("ui.auth.oidc.scopes"),
 					[]string{"openid", "email", "profile"},
 				),
+				AdminEmail: cfg.GetString("ui.auth.oidc.adminEmail"),
 			},
 			Session: SessionConfig{
 				Secret: cfg.GetString("ui.auth.session.secret"),
@@ -155,22 +156,4 @@ func getAuthType(cfg *di.Config) AuthType {
 	default:
 		return AuthTypeNone
 	}
-}
-
-func getSuperAdminUsername(cfg *di.Config) string {
-	u := cfg.GetString("ui.auth.superadmin.username")
-	if u != "" {
-		return u
-	}
-
-	return cfg.GetString("SUPERADMIN_USERNAME")
-}
-
-func getSuperAdminPassword(cfg *di.Config) string {
-	p := cfg.GetString("ui.auth.superadmin.password")
-	if p != "" {
-		return p
-	}
-
-	return cfg.GetString("SUPERADMIN_PASSWORD")
 }

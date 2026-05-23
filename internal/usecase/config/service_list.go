@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/util/pathutil"
 	"github.com/sergeyslonimsky/elara/internal/util/sliceutil"
 )
@@ -16,22 +15,6 @@ import (
 const defaultListLimit = 20
 
 func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, domain.ErrUnauthorized
-	}
-
-	// config/list silently filters: only return results for namespaces the caller can read.
-	allowed, _ := s.enforcer.Enforce(claims.Email, params.Namespace, "config", "read")
-	if !allowed {
-		return &ListResult{
-			Entries: nil,
-			Total:   0,
-			Limit:   params.Limit,
-			Offset:  params.Offset,
-		}, nil
-	}
-
 	path := pathutil.Normalize(params.Path)
 
 	prefix := path

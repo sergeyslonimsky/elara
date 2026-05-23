@@ -16,28 +16,39 @@ import (
 
 //go:generate mockgen -destination=mocks/handler_mock.go -package=namespace_mock -source=handler.go
 
-type usecase interface {
-	Create(ctx context.Context, ns *domain.Namespace) (*domain.Namespace, error)
-	Get(ctx context.Context, name string) (*domain.Namespace, error)
-	Update(ctx context.Context, name, description string) (*domain.Namespace, error)
-	List(ctx context.Context, params nsuc.ListParams) (*nsuc.ListResult, error)
-	Delete(ctx context.Context, name string) error
-	Lock(ctx context.Context, name string) error
-	Unlock(ctx context.Context, name string) error
-}
+type (
+	authz interface {
+		Require(ctx context.Context, object, action, domainStr string) error
+	}
+
+	usecase interface {
+		Create(ctx context.Context, ns *domain.Namespace) (*domain.Namespace, error)
+		Get(ctx context.Context, name string) (*domain.Namespace, error)
+		Update(ctx context.Context, name, description string) (*domain.Namespace, error)
+		List(ctx context.Context, params nsuc.ListParams) (*nsuc.ListResult, error)
+		Delete(ctx context.Context, name string) error
+		Lock(ctx context.Context, name string) error
+		Unlock(ctx context.Context, name string) error
+	}
+)
 
 type Handler struct {
-	uc usecase
+	authz authz
+	uc    usecase
 }
 
-func New(uc usecase) *Handler {
-	return &Handler{uc: uc}
+func New(authz authz, uc usecase) *Handler {
+	return &Handler{authz: authz, uc: uc}
 }
 
 func (h *Handler) CreateNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.CreateNamespaceRequest],
 ) (*connect.Response[namespacev2.CreateNamespaceResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionCreate, domain.DomainAll); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	ns := &domain.Namespace{
 		Name:        req.Msg.GetName(),
 		Description: req.Msg.GetDescription(),
@@ -57,6 +68,10 @@ func (h *Handler) GetNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.GetNamespaceRequest],
 ) (*connect.Response[namespacev2.GetNamespaceResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetName()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	result, err := h.uc.Get(ctx, req.Msg.GetName())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
@@ -71,6 +86,10 @@ func (h *Handler) UpdateNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.UpdateNamespaceRequest],
 ) (*connect.Response[namespacev2.UpdateNamespaceResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetName()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	result, err := h.uc.Update(ctx, req.Msg.GetName(), req.Msg.GetDescription())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
@@ -129,6 +148,10 @@ func (h *Handler) DeleteNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.DeleteNamespaceRequest],
 ) (*connect.Response[namespacev2.DeleteNamespaceResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetName()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	if err := h.uc.Delete(ctx, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -140,6 +163,10 @@ func (h *Handler) LockNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.LockNamespaceRequest],
 ) (*connect.Response[namespacev2.LockNamespaceResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetName()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	if err := h.uc.Lock(ctx, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -151,6 +178,10 @@ func (h *Handler) UnlockNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.UnlockNamespaceRequest],
 ) (*connect.Response[namespacev2.UnlockNamespaceResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetName()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	if err := h.uc.Unlock(ctx, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}

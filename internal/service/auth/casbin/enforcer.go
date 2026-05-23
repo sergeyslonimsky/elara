@@ -243,7 +243,7 @@ func (e *Enforcer) GetImplicitPermissionsForUser(user string) ([][]string, error
 // GetMembersOfGroup returns the subjects (users) that belong to the given
 // group subject, i.e. the first column of every g-rule where the second
 // column equals groupSubject. groupSubject must be the fully-prefixed group
-// subject (use domain.GroupSubject).
+// subject (use GroupSubject).
 func (e *Enforcer) GetMembersOfGroup(groupSubject string) []string {
 	all, _ := e.e.GetGroupingPolicy()
 

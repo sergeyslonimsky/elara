@@ -9,7 +9,7 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/content"
 )
 
 const diffContextLines = 3
@@ -24,10 +24,6 @@ type DiffInput struct {
 func (s *Service) Diff(ctx context.Context, in DiffInput) (*domain.ConfigDiff, error) {
 	if err := s.validateDiff(in.Path, in.Namespace, in.V1, in.V2); err != nil {
 		return nil, fmt.Errorf("validate: %w", err)
-	}
-
-	if err := auth.CheckAccess(ctx, s.enforcer, in.Namespace, domain.ObjectConfig, domain.ActionRead); err != nil {
-		return nil, fmt.Errorf("check access: %w", err)
 	}
 
 	toEntry, err := s.storage.GetAtRevision(ctx, in.Path, in.Namespace, in.V2)
@@ -98,15 +94,15 @@ func (s *Service) validateDiff(path, namespace string, fromRevision, toRevision 
 	return nil
 }
 
-func normalizeDiffContent(path, content string) (string, error) {
-	if content == "" {
+func normalizeDiffContent(path, body string) (string, error) {
+	if body == "" {
 		return "", nil
 	}
 
-	normalized, err := domain.NormalizeContent(content, domain.DetectFormatFromPath(path))
+	normalized, err := content.Normalize(body, domain.DetectFormatFromPath(path))
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidContent) {
-			return content, nil
+			return body, nil
 		}
 
 		return "", fmt.Errorf("normalize content: %w", err)

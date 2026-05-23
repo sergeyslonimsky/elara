@@ -19,8 +19,12 @@ func TestSchemaHandler_AttachSchema_Success(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	uc := configmock.NewMockschemaUsecase(ctrl)
+	az := configmock.NewMockschemaAuthz(ctrl)
+	az.EXPECT().
+		Require(gomock.Any(), domain.ObjectSchema, domain.ActionWrite, "prod").
+		Return(nil)
 
+	uc := configmock.NewMockschemaUsecase(ctrl)
 	uc.EXPECT().
 		Attach(gomock.Any(), schemauc.AttachInput{
 			Namespace:   "prod",
@@ -33,7 +37,7 @@ func TestSchemaHandler_AttachSchema_Success(t *testing.T) {
 			JSONSchema:  "{}",
 		}, nil)
 
-	h := config.NewSchemaHandler(uc)
+	h := config.NewSchemaHandler(az, uc)
 
 	resp, err := h.AttachSchema(t.Context(), connect.NewRequest(&configv1.AttachSchemaRequest{
 		Namespace:   "prod",
@@ -49,12 +53,13 @@ func TestSchemaHandler_AttachSchema_Unauthorized(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
+	az := configmock.NewMockschemaAuthz(ctrl)
+	az.EXPECT().
+		Require(gomock.Any(), domain.ObjectSchema, domain.ActionWrite, "prod").
+		Return(domain.ErrUnauthorized)
 	uc := configmock.NewMockschemaUsecase(ctrl)
-	uc.EXPECT().
-		Attach(gomock.Any(), gomock.Any()).
-		Return(nil, domain.ErrUnauthorized)
 
-	h := config.NewSchemaHandler(uc)
+	h := config.NewSchemaHandler(az, uc)
 
 	_, err := h.AttachSchema(t.Context(), connect.NewRequest(&configv1.AttachSchemaRequest{
 		Namespace:  "prod",
@@ -68,12 +73,16 @@ func TestSchemaHandler_AttachSchema_NamespaceNotFound(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
+	az := configmock.NewMockschemaAuthz(ctrl)
+	az.EXPECT().
+		Require(gomock.Any(), domain.ObjectSchema, domain.ActionWrite, "prod").
+		Return(nil)
 	uc := configmock.NewMockschemaUsecase(ctrl)
 	uc.EXPECT().
 		Attach(gomock.Any(), gomock.Any()).
 		Return(nil, domain.ErrNotFound)
 
-	h := config.NewSchemaHandler(uc)
+	h := config.NewSchemaHandler(az, uc)
 
 	_, err := h.AttachSchema(t.Context(), connect.NewRequest(&configv1.AttachSchemaRequest{
 		Namespace:  "prod",

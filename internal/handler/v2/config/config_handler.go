@@ -11,40 +11,52 @@ import (
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	configv2 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
+	"github.com/sergeyslonimsky/elara/internal/service/content"
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
 //go:generate mockgen -destination=mocks/config_handler_mock.go -package=config_mock -source=config_handler.go
 
-type configUsecase interface {
-	Create(ctx context.Context, cfg *domain.Config) (*domain.Config, error)
-	Get(ctx context.Context, in configuc.GetInput) (*domain.Config, error)
-	Update(ctx context.Context, cfg *domain.Config) (*domain.Config, error)
-	Delete(ctx context.Context, in configuc.DeleteInput) error
-	List(ctx context.Context, params configuc.ListParams) (*configuc.ListResult, error)
-	History(ctx context.Context, in configuc.HistoryInput) ([]*domain.HistoryEntry, error)
-	GetAtRevision(ctx context.Context, in configuc.GetAtRevisionInput) (*domain.HistoryEntry, error)
-	Search(ctx context.Context, params configuc.SearchParams) (*configuc.SearchResult, error)
-	Copy(ctx context.Context, in configuc.CopyInput) (*domain.Config, error)
-	Validate(ctx context.Context, in configuc.ValidateInput) (*domain.ValidationResult, error)
-	Diff(ctx context.Context, in configuc.DiffInput) (*domain.ConfigDiff, error)
-	Watch(ctx context.Context, in configuc.WatchInput) (<-chan domain.WatchEvent, func(), error)
-	Lock(ctx context.Context, in configuc.LockInput) error
-	Unlock(ctx context.Context, in configuc.UnlockInput) error
-}
+type (
+	authz interface {
+		Require(ctx context.Context, object, action, domainStr string) error
+	}
+
+	configUsecase interface {
+		Create(ctx context.Context, cfg *domain.Config) (*domain.Config, error)
+		Get(ctx context.Context, in configuc.GetInput) (*domain.Config, error)
+		Update(ctx context.Context, cfg *domain.Config) (*domain.Config, error)
+		Delete(ctx context.Context, in configuc.DeleteInput) error
+		List(ctx context.Context, params configuc.ListParams) (*configuc.ListResult, error)
+		History(ctx context.Context, in configuc.HistoryInput) ([]*domain.HistoryEntry, error)
+		GetAtRevision(ctx context.Context, in configuc.GetAtRevisionInput) (*domain.HistoryEntry, error)
+		Search(ctx context.Context, params configuc.SearchParams) (*configuc.SearchResult, error)
+		Copy(ctx context.Context, in configuc.CopyInput) (*domain.Config, error)
+		Validate(ctx context.Context, in configuc.ValidateInput) (*content.ValidationResult, error)
+		Diff(ctx context.Context, in configuc.DiffInput) (*domain.ConfigDiff, error)
+		Watch(ctx context.Context, in configuc.WatchInput) (<-chan domain.WatchEvent, func(), error)
+		Lock(ctx context.Context, in configuc.LockInput) error
+		Unlock(ctx context.Context, in configuc.UnlockInput) error
+	}
+)
 
 type ConfigHandler struct {
-	svc configUsecase
+	authz authz
+	svc   configUsecase
 }
 
-func NewConfigHandler(svc configUsecase) *ConfigHandler {
-	return &ConfigHandler{svc: svc}
+func NewConfigHandler(authz authz, svc configUsecase) *ConfigHandler {
+	return &ConfigHandler{authz: authz, svc: svc}
 }
 
 func (h *ConfigHandler) CreateConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.CreateConfigRequest],
 ) (*connect.Response[configv2.CreateConfigResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionCreate, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	cfg := &domain.Config{
 		Path:      req.Msg.GetPath(),
 		Content:   req.Msg.GetContent(),
@@ -67,6 +79,10 @@ func (h *ConfigHandler) GetConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.GetConfigRequest],
 ) (*connect.Response[configv2.GetConfigResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	result, err := h.svc.Get(ctx, configuc.GetInput{
 		Path:      req.Msg.GetPath(),
 		Namespace: req.Msg.GetNamespace(),
@@ -84,6 +100,10 @@ func (h *ConfigHandler) UpdateConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.UpdateConfigRequest],
 ) (*connect.Response[configv2.UpdateConfigResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	cfg := &domain.Config{
 		Path:      req.Msg.GetPath(),
 		Content:   req.Msg.GetContent(),
@@ -107,6 +127,10 @@ func (h *ConfigHandler) DeleteConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.DeleteConfigRequest],
 ) (*connect.Response[configv2.DeleteConfigResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	err := h.svc.Delete(ctx, configuc.DeleteInput{
 		Path:      req.Msg.GetPath(),
 		Namespace: req.Msg.GetNamespace(),
@@ -122,6 +146,10 @@ func (h *ConfigHandler) ListConfigs(
 	ctx context.Context,
 	req *connect.Request[configv2.ListConfigsRequest],
 ) (*connect.Response[configv2.ListConfigsResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	params := configuc.ListParams{
 		Namespace: req.Msg.GetNamespace(),
 		Path:      req.Msg.GetPath(),
@@ -168,6 +196,10 @@ func (h *ConfigHandler) GetConfigHistory(
 	ctx context.Context,
 	req *connect.Request[configv2.GetConfigHistoryRequest],
 ) (*connect.Response[configv2.GetConfigHistoryResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	limit, err := v2.NormalizeLimit(req.Msg.GetLimit())
 	if err != nil {
 		return nil, fmt.Errorf("normalize limit: %w", err)
@@ -196,6 +228,10 @@ func (h *ConfigHandler) GetConfigAtRevision(
 	ctx context.Context,
 	req *connect.Request[configv2.GetConfigAtRevisionRequest],
 ) (*connect.Response[configv2.GetConfigAtRevisionResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	entry, err := h.svc.GetAtRevision(ctx, configuc.GetAtRevisionInput{
 		Path:      req.Msg.GetPath(),
 		Namespace: req.Msg.GetNamespace(),
@@ -259,6 +295,19 @@ func (h *ConfigHandler) CopyConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.CopyConfigRequest],
 ) (*connect.Response[configv2.CopyConfigResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetSourceNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
+	if err := h.authz.Require(
+		ctx,
+		domain.ObjectConfig,
+		domain.ActionWrite,
+		req.Msg.GetDestinationNamespace(),
+	); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	result, err := h.svc.Copy(ctx, configuc.CopyInput{
 		SourcePath:      req.Msg.GetSourcePath(),
 		SourceNamespace: req.Msg.GetSourceNamespace(),
@@ -278,6 +327,10 @@ func (h *ConfigHandler) ValidateConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.ValidateConfigRequest],
 ) (*connect.Response[configv2.ValidateConfigResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	result, err := h.svc.Validate(ctx, configuc.ValidateInput{
 		Content:   req.Msg.GetContent(),
 		Format:    protoFormatToDomain(req.Msg.GetFormat()),
@@ -312,6 +365,10 @@ func (h *ConfigHandler) GetConfigDiff(
 	ctx context.Context,
 	req *connect.Request[configv2.GetConfigDiffRequest],
 ) (*connect.Response[configv2.GetConfigDiffResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	result, err := h.svc.Diff(ctx, configuc.DiffInput{
 		Path:      req.Msg.GetPath(),
 		Namespace: req.Msg.GetNamespace(),
@@ -336,6 +393,10 @@ func (h *ConfigHandler) WatchConfigs(
 	req *connect.Request[configv2.WatchConfigsRequest],
 	stream *connect.ServerStream[configv2.WatchConfigsResponse],
 ) error {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+		return v2.ToConnectError(err)
+	}
+
 	events, cancel, err := h.svc.Watch(ctx, configuc.WatchInput{
 		PathPrefix: req.Msg.GetPathPrefix(),
 		Namespace:  req.Msg.GetNamespace(),
@@ -370,6 +431,10 @@ func (h *ConfigHandler) LockConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.LockConfigRequest],
 ) (*connect.Response[configv2.LockConfigResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	err := h.svc.Lock(ctx, configuc.LockInput{
 		Namespace: req.Msg.GetNamespace(),
 		Path:      req.Msg.GetPath(),
@@ -385,6 +450,10 @@ func (h *ConfigHandler) UnlockConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.UnlockConfigRequest],
 ) (*connect.Response[configv2.UnlockConfigResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	err := h.svc.Unlock(ctx, configuc.UnlockInput{
 		Namespace: req.Msg.GetNamespace(),
 		Path:      req.Msg.GetPath(),

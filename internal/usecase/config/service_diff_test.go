@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
@@ -18,7 +17,7 @@ func TestService_Diff(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    config.DiffInput
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, m mocks)
 		wantErr  string
 	}{
 		{
@@ -29,15 +28,11 @@ func TestService_Diff(t *testing.T) {
 				V1:        1,
 				V2:        2,
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().Enforce("user@example.com", "prod", "config", "read").Return(true, nil)
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.storage.EXPECT().GetAtRevision(ctx, "/app.json", "prod", int64(2)).
 					Return(&domain.HistoryEntry{Revision: 2, Content: `{"a":2}`}, nil)
 				m.storage.EXPECT().GetAtRevision(ctx, "/app.json", "prod", int64(1)).
 					Return(&domain.HistoryEntry{Revision: 1, Content: `{"a":1}`}, nil)
-
-				return ctx
 			},
 		},
 	}
@@ -48,7 +43,8 @@ func TestService_Diff(t *testing.T) {
 
 			svc, m, _ := setupService(t)
 
-			ctx := tt.mockFunc(t.Context(), m)
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
 
 			got, err := svc.Diff(ctx, tt.input)
 

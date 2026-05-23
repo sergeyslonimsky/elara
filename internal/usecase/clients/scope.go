@@ -13,20 +13,24 @@ import (
 // they can read. Clients with no live watches (e.g. historical entries) are
 // invisible to non-admins because we have no per-namespace info to scope by.
 type scopeChecker struct {
-	enforcer enforcer
-	email    string
-	admin    bool
-	cache    map[string]bool // namespace → allowed
+	pdp   pdp
+	email string
+	admin bool
+	cache map[string]bool // namespace → allowed
 }
 
-func newScopeChecker(enforcer enforcer, email string) *scopeChecker {
-	admin, _ := enforcer.Enforce(email, domain.DomainAll, domain.ObjectClient, domain.ActionRead)
+func newScopeChecker(p pdp, email string) *scopeChecker {
+	admin := p.Has(email, domain.Permission{
+		Object: domain.ObjectClient,
+		Action: domain.ActionRead,
+		Domain: domain.DomainAll,
+	})
 
 	return &scopeChecker{
-		enforcer: enforcer,
-		email:    email,
-		admin:    admin,
-		cache:    map[string]bool{},
+		pdp:   p,
+		email: email,
+		admin: admin,
+		cache: map[string]bool{},
 	}
 }
 
@@ -43,7 +47,11 @@ func (s *scopeChecker) visible(c *domain.Client) bool {
 
 		allowed, ok := s.cache[ns]
 		if !ok {
-			allowed, _ = s.enforcer.Enforce(s.email, ns, domain.ObjectConfig, domain.ActionRead)
+			allowed = s.pdp.Has(s.email, domain.Permission{
+				Object: domain.ObjectConfig,
+				Action: domain.ActionRead,
+				Domain: ns,
+			})
 			s.cache[ns] = allowed
 		}
 

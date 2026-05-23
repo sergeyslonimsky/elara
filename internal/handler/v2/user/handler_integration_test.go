@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1/userv1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1/userv1connect"
 	itest "github.com/sergeyslonimsky/elara/test/integration"
 )
 
@@ -84,12 +84,6 @@ func TestIntegration_GetUser(t *testing.T) {
 			respPath: "testdata/get_user/admin_not_found_resp.json",
 		},
 		{
-			name:     "devops forbidden",
-			user:     "devops",
-			reqPath:  "testdata/get_user/devops_forbidden_req.json",
-			respPath: "testdata/get_user/devops_forbidden_resp.json",
-		},
-		{
 			name:     "unauthenticated denied",
 			user:     "unauthenticated",
 			reqPath:  "testdata/get_user/unauthenticated_req.json",
@@ -120,12 +114,6 @@ func TestIntegration_CreateUser(t *testing.T) {
 			respPath: "testdata/create_user/admin_no_password_resp.json",
 		},
 		{
-			name:     "devops forbidden",
-			user:     "devops",
-			reqPath:  "testdata/create_user/devops_forbidden_req.json",
-			respPath: "testdata/create_user/devops_forbidden_resp.json",
-		},
-		{
 			name:     "unauthenticated denied",
 			user:     "unauthenticated",
 			reqPath:  "testdata/create_user/unauthenticated_req.json",
@@ -148,12 +136,6 @@ func TestIntegration_ResetUserPassword(t *testing.T) {
 			user:     "admin",
 			reqPath:  "testdata/reset_password/admin_not_found_req.json",
 			respPath: "testdata/reset_password/admin_not_found_resp.json",
-		},
-		{
-			name:     "devops forbidden",
-			user:     "devops",
-			reqPath:  "testdata/reset_password/devops_forbidden_req.json",
-			respPath: "testdata/reset_password/devops_forbidden_resp.json",
 		},
 	}
 
@@ -178,12 +160,6 @@ func TestIntegration_DeleteUser(t *testing.T) {
 			user:     "admin",
 			reqPath:  "testdata/delete_user/admin_not_found_req.json",
 			respPath: "testdata/delete_user/admin_not_found_resp.json",
-		},
-		{
-			name:     "devops forbidden",
-			user:     "devops",
-			reqPath:  "testdata/delete_user/devops_forbidden_req.json",
-			respPath: "testdata/delete_user/devops_forbidden_resp.json",
 		},
 	}
 

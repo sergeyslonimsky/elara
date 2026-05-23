@@ -22,12 +22,6 @@ func TestService_BasicLogin(t *testing.T) {
 		Email:        "user@example.com",
 		PasswordHash: hash,
 	}
-	adminEmail := "admin@example.com"
-	adminHash, _ := auth.HashPassword(password)
-	adminUser := &domain.User{
-		Email:        adminEmail,
-		PasswordHash: adminHash,
-	}
 
 	tests := []struct {
 		name     string
@@ -52,21 +46,6 @@ func TestService_BasicLogin(t *testing.T) {
 			},
 			want:     "token123",
 			wantUser: user,
-		},
-		{
-			name:     "success admin bootstrap",
-			email:    adminEmail,
-			password: password,
-			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
-				svc, m := setupService(t, ctrl)
-				m.users.EXPECT().Get(gomock.Any(), adminEmail).Return(adminUser, nil)
-				m.admin.EXPECT().EnsureMember(gomock.Any(), adminEmail).Return(nil)
-				m.session.EXPECT().Create(adminUser).Return("admin-token", nil)
-
-				return svc
-			},
-			want:     "admin-token",
-			wantUser: adminUser,
 		},
 		{
 			name:     "user not found",

@@ -12,40 +12,51 @@ import (
 
 //go:generate mockgen -destination=mocks/handler_mock.go -package=transfer_mock -source=handler.go
 
-type usecase interface {
-	ExportNamespace(
-		ctx context.Context,
-		namespace string,
-		asZip bool,
-		enc transferv1.BundleEncoding,
-	) ([]byte, string, string, error)
-	ExportAll(
-		ctx context.Context,
-		asZip bool,
-		enc transferv1.BundleEncoding,
-		layout transferv1.ZipLayout,
-	) ([]byte, string, string, error)
-	Import(
-		ctx context.Context,
-		data []byte,
-		onConflict transferv1.ConflictResolution,
-		dryRun bool,
-		targetNamespace string,
-	) (*domain.ImportReport, error)
-}
+type (
+	authz interface {
+		Require(ctx context.Context, object, action, domainStr string) error
+	}
+
+	usecase interface {
+		ExportNamespace(
+			ctx context.Context,
+			namespace string,
+			asZip bool,
+			enc transferv1.BundleEncoding,
+		) ([]byte, string, string, error)
+		ExportAll(
+			ctx context.Context,
+			asZip bool,
+			enc transferv1.BundleEncoding,
+			layout transferv1.ZipLayout,
+		) ([]byte, string, string, error)
+		Import(
+			ctx context.Context,
+			data []byte,
+			onConflict transferv1.ConflictResolution,
+			dryRun bool,
+			targetNamespace string,
+		) (*domain.ImportReport, error)
+	}
+)
 
 type Handler struct {
-	uc usecase
+	authz authz
+	uc    usecase
 }
 
-func New(uc usecase) *Handler {
-	return &Handler{uc: uc}
+func New(authz authz, uc usecase) *Handler {
+	return &Handler{authz: authz, uc: uc}
 }
 
 func (h *Handler) ExportNamespace(
 	ctx context.Context,
 	req *connect.Request[transferv1.ExportNamespaceRequest],
 ) (*connect.Response[transferv1.ExportNamespaceResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectTransfer, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	data, ct, filename, err := h.uc.ExportNamespace(
 		ctx,
 		req.Msg.GetNamespace(),
@@ -63,6 +74,10 @@ func (h *Handler) ExportNamespace(
 	}), nil
 }
 
+// ExportAll is gate-less at the handler boundary; the use case filters
+// namespaces per the caller's transfer:read permissions via the PDP. A caller
+// with no read access on any namespace gets back an empty bundle rather than
+// a 403.
 func (h *Handler) ExportAll(
 	ctx context.Context,
 	req *connect.Request[transferv1.ExportAllRequest],
@@ -88,6 +103,10 @@ func (h *Handler) ImportNamespace(
 	ctx context.Context,
 	req *connect.Request[transferv1.ImportNamespaceRequest],
 ) (*connect.Response[transferv1.ImportNamespaceResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectTransfer, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	report, err := h.uc.Import(
 		ctx,
 		req.Msg.GetData(),

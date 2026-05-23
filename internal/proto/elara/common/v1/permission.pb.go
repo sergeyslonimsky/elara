@@ -91,6 +91,7 @@ const (
 	PermissionAction_PERMISSION_ACTION_UNSPECIFIED PermissionAction = 0
 	PermissionAction_PERMISSION_ACTION_READ        PermissionAction = 1
 	PermissionAction_PERMISSION_ACTION_WRITE       PermissionAction = 2
+	PermissionAction_PERMISSION_ACTION_CREATE      PermissionAction = 3
 	PermissionAction_PERMISSION_ACTION_ALL         PermissionAction = 99
 )
 
@@ -100,12 +101,14 @@ var (
 		0:  "PERMISSION_ACTION_UNSPECIFIED",
 		1:  "PERMISSION_ACTION_READ",
 		2:  "PERMISSION_ACTION_WRITE",
+		3:  "PERMISSION_ACTION_CREATE",
 		99: "PERMISSION_ACTION_ALL",
 	}
 	PermissionAction_value = map[string]int32{
 		"PERMISSION_ACTION_UNSPECIFIED": 0,
 		"PERMISSION_ACTION_READ":        1,
 		"PERMISSION_ACTION_WRITE":       2,
+		"PERMISSION_ACTION_CREATE":      3,
 		"PERMISSION_ACTION_ALL":         99,
 	}
 )
@@ -214,11 +217,12 @@ const file_elara_common_v1_permission_proto_rawDesc = "" +
 	"\x17PERMISSION_OBJECT_GROUP\x10\x04\x12\x1b\n" +
 	"\x17PERMISSION_OBJECT_TOKEN\x10\x05\x12\x1d\n" +
 	"\x19PERMISSION_OBJECT_WEBHOOK\x10\x06\x12\x19\n" +
-	"\x15PERMISSION_OBJECT_ALL\x10c*\x89\x01\n" +
+	"\x15PERMISSION_OBJECT_ALL\x10c*\xa7\x01\n" +
 	"\x10PermissionAction\x12!\n" +
 	"\x1dPERMISSION_ACTION_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16PERMISSION_ACTION_READ\x10\x01\x12\x1b\n" +
-	"\x17PERMISSION_ACTION_WRITE\x10\x02\x12\x19\n" +
+	"\x17PERMISSION_ACTION_WRITE\x10\x02\x12\x1c\n" +
+	"\x18PERMISSION_ACTION_CREATE\x10\x03\x12\x19\n" +
 	"\x15PERMISSION_ACTION_ALL\x10cB\xce\x01\n" +
 	"\x13com.elara.common.v1B\x0fPermissionProtoP\x01ZHgithub.com/sergeyslonimsky/elara/internal/proto/elara/common/v1;commonv1\xa2\x02\x03ECX\xaa\x02\x0fElara.Common.V1\xca\x02\x0fElara\\Common\\V1\xe2\x02\x1bElara\\Common\\V1\\GPBMetadata\xea\x02\x11Elara::Common::V1b\x06proto3"
 

@@ -10,7 +10,6 @@ import (
 )
 
 type mocks struct {
-	authz    *namespacemock.Mockauthz
 	pdp      *namespacemock.Mockpdp
 	store    *namespacemock.Mockstore
 	notifier *namespacemock.Mocknotifier
@@ -21,12 +20,11 @@ func setupService(t *testing.T) (*namespace.Service, mocks, *gomock.Controller) 
 	ctrl := gomock.NewController(t)
 
 	m := mocks{
-		authz:    namespacemock.NewMockauthz(ctrl),
 		pdp:      namespacemock.NewMockpdp(ctrl),
 		store:    namespacemock.NewMockstore(ctrl),
 		notifier: namespacemock.NewMocknotifier(ctrl),
 	}
-	svc := namespace.New(m.authz, m.pdp, m.store, m.notifier)
+	svc := namespace.New(m.pdp, m.store, m.notifier)
 
 	return svc, m, ctrl
 }

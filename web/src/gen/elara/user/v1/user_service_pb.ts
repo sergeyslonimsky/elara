@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/user/v1/user_service.proto.
  */
 export const file_elara_user_v1_user_service: GenFile = /*@__PURE__*/
-  fileDesc("CiBlbGFyYS91c2VyL3YxL3VzZXJfc2VydmljZS5wcm90bxINZWxhcmEudXNlci52MSJaChBMaXN0VXNlcnNSZXF1ZXN0EjYKCnBhZ2luYXRpb24YASABKAsyIi5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlcXVlc3QSDgoGc2VhcmNoGAIgASgJInAKEUxpc3RVc2Vyc1Jlc3BvbnNlEiIKBXVzZXJzGAEgAygLMhMuZWxhcmEudXNlci52MS5Vc2VyEjcKCnBhZ2luYXRpb24YAiABKAsyIy5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlc3BvbnNlIh8KDkdldFVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIjQKD0dldFVzZXJSZXNwb25zZRIhCgR1c2VyGAEgASgLMhMuZWxhcmEudXNlci52MS5Vc2VyIkoKEUNyZWF0ZVVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEgwKBG5hbWUYAiABKAkSGAoQaW5pdGlhbF9wYXNzd29yZBgDIAEoCSI3ChJDcmVhdGVVc2VyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLnVzZXIudjEuVXNlciI/ChhSZXNldFVzZXJQYXNzd29yZFJlcXVlc3QSDQoFZW1haWwYASABKAkSFAoMbmV3X3Bhc3N3b3JkGAIgASgJIhsKGVJlc2V0VXNlclBhc3N3b3JkUmVzcG9uc2UiIgoRRGVsZXRlVXNlclJlcXVlc3QSDQoFZW1haWwYASABKAkiFAoSRGVsZXRlVXNlclJlc3BvbnNlMrUDCgtVc2VyU2VydmljZRJOCglMaXN0VXNlcnMSHy5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1JlcXVlc3QaIC5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1Jlc3BvbnNlEkgKB0dldFVzZXISHS5lbGFyYS51c2VyLnYxLkdldFVzZXJSZXF1ZXN0Gh4uZWxhcmEudXNlci52MS5HZXRVc2VyUmVzcG9uc2USUQoKQ3JlYXRlVXNlchIgLmVsYXJhLnVzZXIudjEuQ3JlYXRlVXNlclJlcXVlc3QaIS5lbGFyYS51c2VyLnYxLkNyZWF0ZVVzZXJSZXNwb25zZRJmChFSZXNldFVzZXJQYXNzd29yZBInLmVsYXJhLnVzZXIudjEuUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0GiguZWxhcmEudXNlci52MS5SZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlElEKCkRlbGV0ZVVzZXISIC5lbGFyYS51c2VyLnYxLkRlbGV0ZVVzZXJSZXF1ZXN0GiEuZWxhcmEudXNlci52MS5EZWxldGVVc2VyUmVzcG9uc2VCwQEKEWNvbS5lbGFyYS51c2VyLnYxQhBVc2VyU2VydmljZVByb3RvUAFaRGdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL3VzZXIvdjE7dXNlcnYxogIDRVVYqgINRWxhcmEuVXNlci5WMcoCDUVsYXJhXFVzZXJcVjHiAhlFbGFyYVxVc2VyXFYxXEdQQk1ldGFkYXRh6gIPRWxhcmE6OlVzZXI6OlYxYgZwcm90bzM", [file_elara_common_v1_common, file_elara_user_v1_user, file_google_protobuf_timestamp]);
+  fileDesc("CiBlbGFyYS91c2VyL3YxL3VzZXJfc2VydmljZS5wcm90bxINZWxhcmEudXNlci52MSJaChBMaXN0VXNlcnNSZXF1ZXN0EjYKCnBhZ2luYXRpb24YASABKAsyIi5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlcXVlc3QSDgoGc2VhcmNoGAIgASgJInAKEUxpc3RVc2Vyc1Jlc3BvbnNlEiIKBXVzZXJzGAEgAygLMhMuZWxhcmEudXNlci52MS5Vc2VyEjcKCnBhZ2luYXRpb24YAiABKAsyIy5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlc3BvbnNlIh8KDkdldFVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIjQKD0dldFVzZXJSZXNwb25zZRIhCgR1c2VyGAEgASgLMhMuZWxhcmEudXNlci52MS5Vc2VyIkoKEUNyZWF0ZVVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEgwKBG5hbWUYAiABKAkSGAoQaW5pdGlhbF9wYXNzd29yZBgDIAEoCSI3ChJDcmVhdGVVc2VyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLnVzZXIudjEuVXNlciI/ChhSZXNldFVzZXJQYXNzd29yZFJlcXVlc3QSDQoFZW1haWwYASABKAkSFAoMbmV3X3Bhc3N3b3JkGAIgASgJIhsKGVJlc2V0VXNlclBhc3N3b3JkUmVzcG9uc2UiIgoRRGVsZXRlVXNlclJlcXVlc3QSDQoFZW1haWwYASABKAkiFAoSRGVsZXRlVXNlclJlc3BvbnNlIjsKF1VwZGF0ZVVzZXJHcm91cHNSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEhEKCWdyb3VwX2lkcxgCIAMoCSJQChhVcGRhdGVVc2VyR3JvdXBzUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLnVzZXIudjEuVXNlchIRCglncm91cF9pZHMYAiADKAkymgQKC1VzZXJTZXJ2aWNlEk4KCUxpc3RVc2VycxIfLmVsYXJhLnVzZXIudjEuTGlzdFVzZXJzUmVxdWVzdBogLmVsYXJhLnVzZXIudjEuTGlzdFVzZXJzUmVzcG9uc2USSAoHR2V0VXNlchIdLmVsYXJhLnVzZXIudjEuR2V0VXNlclJlcXVlc3QaHi5lbGFyYS51c2VyLnYxLkdldFVzZXJSZXNwb25zZRJRCgpDcmVhdGVVc2VyEiAuZWxhcmEudXNlci52MS5DcmVhdGVVc2VyUmVxdWVzdBohLmVsYXJhLnVzZXIudjEuQ3JlYXRlVXNlclJlc3BvbnNlEmYKEVJlc2V0VXNlclBhc3N3b3JkEicuZWxhcmEudXNlci52MS5SZXNldFVzZXJQYXNzd29yZFJlcXVlc3QaKC5lbGFyYS51c2VyLnYxLlJlc2V0VXNlclBhc3N3b3JkUmVzcG9uc2USUQoKRGVsZXRlVXNlchIgLmVsYXJhLnVzZXIudjEuRGVsZXRlVXNlclJlcXVlc3QaIS5lbGFyYS51c2VyLnYxLkRlbGV0ZVVzZXJSZXNwb25zZRJjChBVcGRhdGVVc2VyR3JvdXBzEiYuZWxhcmEudXNlci52MS5VcGRhdGVVc2VyR3JvdXBzUmVxdWVzdBonLmVsYXJhLnVzZXIudjEuVXBkYXRlVXNlckdyb3Vwc1Jlc3BvbnNlQsEBChFjb20uZWxhcmEudXNlci52MUIQVXNlclNlcnZpY2VQcm90b1ABWkRnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS91c2VyL3YxO3VzZXJ2MaICA0VVWKoCDUVsYXJhLlVzZXIuVjHKAg1FbGFyYVxVc2VyXFYx4gIZRWxhcmFcVXNlclxWMVxHUEJNZXRhZGF0YeoCD0VsYXJhOjpVc2VyOjpWMWIGcHJvdG8z", [file_elara_common_v1_common, file_elara_user_v1_user, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message elara.user.v1.ListUsersRequest
@@ -205,6 +205,54 @@ export const DeleteUserResponseSchema: GenMessage<DeleteUserResponse> = /*@__PUR
   messageDesc(file_elara_user_v1_user_service, 9);
 
 /**
+ * @generated from message elara.user.v1.UpdateUserGroupsRequest
+ */
+export type UpdateUserGroupsRequest = Message<"elara.user.v1.UpdateUserGroupsRequest"> & {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email: string;
+
+  /**
+   * Group IDs the user should belong to after the call. The set is
+   * canonical; the server diffs against current memberships and only
+   * operates on the symmetric difference.
+   *
+   * @generated from field: repeated string group_ids = 2;
+   */
+  groupIds: string[];
+};
+
+/**
+ * Describes the message elara.user.v1.UpdateUserGroupsRequest.
+ * Use `create(UpdateUserGroupsRequestSchema)` to create a new message.
+ */
+export const UpdateUserGroupsRequestSchema: GenMessage<UpdateUserGroupsRequest> = /*@__PURE__*/
+  messageDesc(file_elara_user_v1_user_service, 10);
+
+/**
+ * @generated from message elara.user.v1.UpdateUserGroupsResponse
+ */
+export type UpdateUserGroupsResponse = Message<"elara.user.v1.UpdateUserGroupsResponse"> & {
+  /**
+   * @generated from field: elara.user.v1.User user = 1;
+   */
+  user?: User;
+
+  /**
+   * @generated from field: repeated string group_ids = 2;
+   */
+  groupIds: string[];
+};
+
+/**
+ * Describes the message elara.user.v1.UpdateUserGroupsResponse.
+ * Use `create(UpdateUserGroupsResponseSchema)` to create a new message.
+ */
+export const UpdateUserGroupsResponseSchema: GenMessage<UpdateUserGroupsResponse> = /*@__PURE__*/
+  messageDesc(file_elara_user_v1_user_service, 11);
+
+/**
  * @generated from service elara.user.v1.UserService
  */
 export const UserService: GenService<{
@@ -251,6 +299,21 @@ export const UserService: GenService<{
     methodKind: "unary";
     input: typeof DeleteUserRequestSchema;
     output: typeof DeleteUserResponseSchema;
+  },
+  /**
+   * Replaces the target user's group memberships with the given set.
+   * The caller must hold ObjectGroup:Write on every group whose membership
+   * changes (added or removed). Adding a user to a group additionally
+   * requires that the caller holds every permission the target group
+   * grants (anti-escalation). Groups present in both the current and
+   * desired state are no-ops and require no permission.
+   *
+   * @generated from rpc elara.user.v1.UserService.UpdateUserGroups
+   */
+  updateUserGroups: {
+    methodKind: "unary";
+    input: typeof UpdateUserGroupsRequestSchema;
+    output: typeof UpdateUserGroupsResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_elara_user_v1_user_service, 0);

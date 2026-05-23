@@ -6,12 +6,12 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
-// Authorization for all UserService methods is enforced by the RBAC
-// interceptor (user/read|write at DomainAll). The usecase still needs claims
+// Authorization for all UserService methods is enforced in the handler layer
+// (EL-4 M9: `(User, Create|Read|Write, *)`). The usecase still needs claims
 // from context for `Delete` self-protection ("cannot delete your own account").
 
 func (s *Service) Create(ctx context.Context, email, name, initialPassword string) (*domain.User, error) {
@@ -65,13 +65,13 @@ func (s *Service) Delete(ctx context.Context, targetEmail string) error {
 		return err
 	}
 
-	err := s.enforcer.WriteTx(ctx, s.txm, func(tx storage.Tx, txe *casbin.TxEnforcer) error {
+	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
 		if err := s.users.WithTx(tx).Delete(ctx, targetEmail); err != nil {
 			return fmt.Errorf("delete user: %w", err)
 		}
 
-		if err := txe.DeleteUser(targetEmail); err != nil {
-			return fmt.Errorf("delete casbin user: %w", err)
+		if err := w.DeleteUser(targetEmail); err != nil {
+			return err
 		}
 
 		return nil
@@ -93,20 +93,7 @@ func (s *Service) Get(ctx context.Context, email string) (*domain.User, error) {
 }
 
 func (s *Service) validateLastAdmin(targetEmail string) error {
-	rules := s.enforcer.GetGroupingPolicy()
-	adminCount := 0
-	isTargetAdmin := false
-
-	for _, rule := range rules {
-		if len(rule) == 3 && rule[1] == domain.RoleAdmin && rule[2] == domain.DomainAll {
-			adminCount++
-			if rule[0] == targetEmail {
-				isTargetAdmin = true
-			}
-		}
-	}
-
-	if isTargetAdmin && adminCount == 1 {
+	if s.pap.HasDirectAdminAssignment(targetEmail) && s.pap.AdminAssignmentCount() == 1 {
 		return domain.NewValidationError("email", "cannot delete the last admin")
 	}
 

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/content"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
@@ -20,10 +20,10 @@ func TestService_Validate(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    config.ValidateInput
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, m mocks)
 		errIs    error
 		wantErr  string
-		want     *domain.ValidationResult
+		want     *content.ValidationResult
 	}{
 		{
 			name: "success with schema",
@@ -33,16 +33,12 @@ func TestService_Validate(t *testing.T) {
 				Namespace: "prod",
 				Path:      "/a.json",
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().Enforce("user@example.com", "prod", "config", "read").Return(true, nil)
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.schemaValidator.EXPECT().
 					Validate(ctx, "prod", "/a.json", normalizedJSON, domain.FormatJSON).
 					Return(nil)
-
-				return ctx
 			},
-			want: &domain.ValidationResult{Valid: true},
+			want: &content.ValidationResult{Valid: true},
 		},
 	}
 
@@ -52,7 +48,8 @@ func TestService_Validate(t *testing.T) {
 
 			svc, m, _ := setupService(t)
 
-			ctx := tt.mockFunc(t.Context(), m)
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
 
 			got, err := svc.Validate(ctx, tt.input)
 

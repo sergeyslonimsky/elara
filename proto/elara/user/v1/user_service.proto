@@ -14,6 +14,13 @@ service UserService {
   rpc ResetUserPassword(ResetUserPasswordRequest) returns (ResetUserPasswordResponse);
   // Admin-only, basic-auth mode only
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  // Replaces the target user's group memberships with the given set.
+  // The caller must hold ObjectGroup:Write on every group whose membership
+  // changes (added or removed). Adding a user to a group additionally
+  // requires that the caller holds every permission the target group
+  // grants (anti-escalation). Groups present in both the current and
+  // desired state are no-ops and require no permission.
+  rpc UpdateUserGroups(UpdateUserGroupsRequest) returns (UpdateUserGroupsResponse);
 }
 
 message ListUsersRequest {
@@ -56,3 +63,16 @@ message DeleteUserRequest {
 }
 
 message DeleteUserResponse {}
+
+message UpdateUserGroupsRequest {
+  string email = 1;
+  // Group IDs the user should belong to after the call. The set is
+  // canonical; the server diffs against current memberships and only
+  // operates on the symmetric difference.
+  repeated string group_ids = 2;
+}
+
+message UpdateUserGroupsResponse {
+  User user = 1;
+  repeated string group_ids = 2;
+}

@@ -9,8 +9,8 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// Authorization (user/write at DomainAll) is enforced by the RBAC
-// interceptor; this test covers only the SetPassword flow.
+// Authorization `(User, Write, *)` is enforced in the handler (EL-4 M9);
+// this test covers only the SetPassword flow.
 
 func TestService_ResetPassword(t *testing.T) {
 	t.Parallel()

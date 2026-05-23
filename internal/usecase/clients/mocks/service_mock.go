@@ -17,43 +17,42 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// Mockenforcer is a mock of enforcer interface.
-type Mockenforcer struct {
+// Mockpdp is a mock of pdp interface.
+type Mockpdp struct {
 	ctrl     *gomock.Controller
-	recorder *MockenforcerMockRecorder
+	recorder *MockpdpMockRecorder
 	isgomock struct{}
 }
 
-// MockenforcerMockRecorder is the mock recorder for Mockenforcer.
-type MockenforcerMockRecorder struct {
-	mock *Mockenforcer
+// MockpdpMockRecorder is the mock recorder for Mockpdp.
+type MockpdpMockRecorder struct {
+	mock *Mockpdp
 }
 
-// NewMockenforcer creates a new mock instance.
-func NewMockenforcer(ctrl *gomock.Controller) *Mockenforcer {
-	mock := &Mockenforcer{ctrl: ctrl}
-	mock.recorder = &MockenforcerMockRecorder{mock}
+// NewMockpdp creates a new mock instance.
+func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
+	mock := &Mockpdp{ctrl: ctrl}
+	mock.recorder = &MockpdpMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockenforcer) EXPECT() *MockenforcerMockRecorder {
+func (m *Mockpdp) EXPECT() *MockpdpMockRecorder {
 	return m.recorder
 }
 
-// Enforce mocks base method.
-func (m *Mockenforcer) Enforce(subject, arg1, object, action string) (bool, error) {
+// Has mocks base method.
+func (m *Mockpdp) Has(principal string, perm domain.Permission) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enforce", subject, arg1, object, action)
+	ret := m.ctrl.Call(m, "Has", principal, perm)
 	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
-// Enforce indicates an expected call of Enforce.
-func (mr *MockenforcerMockRecorder) Enforce(subject, arg1, object, action any) *gomock.Call {
+// Has indicates an expected call of Has.
+func (mr *MockpdpMockRecorder) Has(principal, perm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enforce", reflect.TypeOf((*Mockenforcer)(nil).Enforce), subject, arg1, object, action)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*Mockpdp)(nil).Has), principal, perm)
 }
 
 // MockactiveSource is a mock of activeSource interface.

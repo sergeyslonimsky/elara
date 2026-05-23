@@ -4,13 +4,14 @@ import (
 	"context"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 )
 
 //go:generate mockgen -destination=mocks/service_mock.go -package=config_mock -source=service.go
 
 type (
-	enforcer interface {
-		Enforce(subject, domain, object, action string) (bool, error)
+	pdp interface {
+		EffectiveDomains(principal, object, action string) authz.DomainSet
 	}
 
 	storage interface {
@@ -46,7 +47,7 @@ type (
 )
 
 type Service struct {
-	enforcer          enforcer
+	pdp               pdp
 	storage           storage
 	watcher           watcher
 	namespaceProvider namespaceProvider
@@ -54,14 +55,14 @@ type Service struct {
 }
 
 func New(
-	enforcer enforcer,
+	pdp pdp,
 	storage storage,
 	watcher watcher,
 	namespaceProvider namespaceProvider,
 	schemaValidator schemaValidator,
 ) *Service {
 	return &Service{
-		enforcer:          enforcer,
+		pdp:               pdp,
 		storage:           storage,
 		watcher:           watcher,
 		namespaceProvider: namespaceProvider,

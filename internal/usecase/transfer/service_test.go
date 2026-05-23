@@ -16,7 +16,7 @@ import (
 )
 
 type mocks struct {
-	enforcer   *transfermock.Mockenforcer
+	pdp        *transfermock.Mockpdp
 	configs    *transfermock.Mockconfigs
 	namespaces *transfermock.Mocknamespaces
 }
@@ -25,12 +25,12 @@ func setupService(t *testing.T, ctrl *gomock.Controller) (*transfer.Service, moc
 	t.Helper()
 
 	m := mocks{
-		enforcer:   transfermock.NewMockenforcer(ctrl),
+		pdp:        transfermock.NewMockpdp(ctrl),
 		configs:    transfermock.NewMockconfigs(ctrl),
 		namespaces: transfermock.NewMocknamespaces(ctrl),
 	}
 
-	svc := transfer.New(m.enforcer, m.configs, m.namespaces)
+	svc := transfer.New(m.pdp, m.configs, m.namespaces)
 
 	return svc, m
 }

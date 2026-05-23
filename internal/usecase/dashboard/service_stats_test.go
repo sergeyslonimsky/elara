@@ -32,12 +32,12 @@ func TestService_GetStats(t *testing.T) {
 					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "n1"}, {Name: "n2"}}, nil)
 
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "n1", domain.ObjectConfig, domain.ActionRead).
-					Return(true, nil)
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "n2", domain.ObjectConfig, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("admin@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "n1"}).
+					Return(true)
+				m.pdp.EXPECT().
+					Has("admin@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "n2"}).
+					Return(true)
 
 				m.configs.EXPECT().
 					CountByNamespace(ctx, "n1").
@@ -71,12 +71,12 @@ func TestService_GetStats(t *testing.T) {
 					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "prod"}, {Name: "dev"}}, nil)
 
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
-					Return(true, nil)
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "dev", domain.ObjectConfig, domain.ActionRead).
-					Return(false, nil)
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "prod"}).
+					Return(true)
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "dev"}).
+					Return(false)
 
 				m.configs.EXPECT().
 					CountByNamespace(ctx, "prod").
@@ -107,9 +107,9 @@ func TestService_GetStats(t *testing.T) {
 					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "prod"}}, nil)
 
-				m.enforcer.EXPECT().
-					Enforce("no-access@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
-					Return(false, nil)
+				m.pdp.EXPECT().
+					Has("no-access@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "prod"}).
+					Return(false)
 
 				m.configs.EXPECT().
 					CurrentRevision(ctx).
@@ -144,9 +144,9 @@ func TestService_GetStats(t *testing.T) {
 					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "n1"}}, nil)
 
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "n1", domain.ObjectConfig, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("admin@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "n1"}).
+					Return(true)
 
 				m.configs.EXPECT().
 					CountByNamespace(ctx, "n1").

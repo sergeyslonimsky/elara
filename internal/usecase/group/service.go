@@ -1,6 +1,9 @@
 package group
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
@@ -23,14 +26,22 @@ type Service struct {
 	store    *bbolt.GroupRepo
 	txm      storage.TxManager
 	pdp      *authz.PDP
+	pap      *authz.PAP
 }
 
-func New(enforcer *casbin.Enforcer, store *bbolt.GroupRepo, txm storage.TxManager, pdp *authz.PDP) *Service {
+func New(
+	enforcer *casbin.Enforcer,
+	store *bbolt.GroupRepo,
+	txm storage.TxManager,
+	pdp *authz.PDP,
+	pap *authz.PAP,
+) *Service {
 	return &Service{
 		enforcer: enforcer,
 		store:    store,
 		txm:      txm,
 		pdp:      pdp,
+		pap:      pap,
 	}
 }
 
@@ -41,90 +52,42 @@ const (
 
 const defaultListLimit = 20
 
-// ListParams carries pagination, sort, and search options accepted by List.
-type ListParams struct {
-	Limit  int
-	Offset int
-	Sort   domain.SortParams
-	Query  string
+// loadGroupForUpdate fetches a group via the given tx, rejects system
+// groups via EnsureMutable, then verifies the optimistic-concurrency
+// version. Used by Update.
+func (s *Service) loadGroupForUpdate(
+	ctx context.Context,
+	tx storage.Tx,
+	id string,
+	version int64,
+) (*domain.Group, error) {
+	existing, err := s.loadMutableGroup(ctx, tx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if existing.Version != version {
+		return nil, domain.ErrVersionConflict
+	}
+
+	return existing, nil
 }
 
-// ListResult is the paginated response returned by List.
-type ListResult struct {
-	Groups []*domain.Group
-	Total  int
-	Limit  int
-	Offset int
-}
-
-func diffPermissions(old, incoming []domain.Permission) ([]domain.Permission, []domain.Permission) {
-	oldMap := make(map[domain.Permission]struct{})
-	for _, p := range old {
-		oldMap[p] = struct{}{}
+// loadMutableGroup fetches a group within the given tx and rejects system
+// groups via EnsureMutable. Shared by Update and Delete.
+func (s *Service) loadMutableGroup(
+	ctx context.Context,
+	tx storage.Tx,
+	id string,
+) (*domain.Group, error) {
+	existing, err := s.store.WithTx(tx).Get(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf(errGetGroup, err)
 	}
 
-	newMap := make(map[domain.Permission]struct{})
-	for _, p := range incoming {
-		newMap[p] = struct{}{}
+	if err := existing.EnsureMutable(); err != nil {
+		return nil, fmt.Errorf("ensure mutable: %w", err)
 	}
 
-	var added, removed []domain.Permission
-	for p := range newMap {
-		if _, ok := oldMap[p]; !ok {
-			added = append(added, p)
-		}
-	}
-
-	for p := range oldMap {
-		if _, ok := newMap[p]; !ok {
-			removed = append(removed, p)
-		}
-	}
-
-	return added, removed
-}
-
-func diffStrings(old, incoming []string) ([]string, []string) {
-	oldMap := make(map[string]struct{})
-	for _, s := range old {
-		oldMap[s] = struct{}{}
-	}
-
-	newMap := make(map[string]struct{})
-	for _, s := range incoming {
-		newMap[s] = struct{}{}
-	}
-
-	var added, removed []string
-	for s := range newMap {
-		if _, ok := oldMap[s]; !ok {
-			added = append(added, s)
-		}
-	}
-
-	for s := range oldMap {
-		if _, ok := newMap[s]; !ok {
-			removed = append(removed, s)
-		}
-	}
-
-	return added, removed
-}
-
-func unionPermissions(a, b []domain.Permission) []domain.Permission {
-	m := make(map[domain.Permission]struct{})
-	for _, p := range a {
-		m[p] = struct{}{}
-	}
-
-	for _, p := range b {
-		m[p] = struct{}{}
-	}
-
-	res := make([]domain.Permission, 0, len(m))
-	for p := range m {
-		res = append(res, p)
-	}
-
-	return res
+	return existing, nil
 }

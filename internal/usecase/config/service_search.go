@@ -23,17 +23,28 @@ func (s *Service) Search(ctx context.Context, params SearchParams) (*SearchResul
 		limit = defaultSearchLimit
 	}
 
+	scope := s.pdp.EffectiveDomains(claims.Email, domain.ObjectConfig, domain.ActionRead)
+	if scope.IsEmpty() {
+		return &SearchResult{
+			Results: nil,
+			Total:   0,
+			Limit:   limit,
+			Offset:  params.Offset,
+		}, nil
+	}
+
 	// Fetch all matching results (bbolt is fast for this).
 	results, err := s.storage.SearchByPath(ctx, params.Query, params.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("search configs: %w", err)
 	}
 
-	// Filter silently by namespace access.
-	filtered := results[:0]
+	// Filter silently by namespace access. Allocate a fresh slice — sharing the
+	// backing array of `results` would race with parallel sub-tests where the
+	// store mock returns the same slice across calls.
+	filtered := make([]*domain.ConfigSummary, 0, len(results))
 	for _, r := range results {
-		allowed, _ := s.enforcer.Enforce(claims.Email, r.Namespace, "config", "read")
-		if allowed {
+		if scope.Contains(r.Namespace) {
 			filtered = append(filtered, r)
 		}
 	}

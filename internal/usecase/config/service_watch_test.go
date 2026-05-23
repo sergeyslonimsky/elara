@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
@@ -18,7 +17,7 @@ func TestService_Watch(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    config.WatchInput
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, m mocks)
 		errIs    error
 	}{
 		{
@@ -27,14 +26,10 @@ func TestService_Watch(t *testing.T) {
 				Namespace:  "prod",
 				PathPrefix: "/app",
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().Enforce("user@example.com", "prod", "config", "read").Return(true, nil)
+			mockFunc: func(ctx context.Context, m mocks) {
 				ch := make(chan domain.WatchEvent)
 				cancel := func() {}
 				m.watcher.EXPECT().Subscribe(ctx, "/app", "prod").Return(ch, cancel)
-
-				return ctx
 			},
 		},
 	}
@@ -45,7 +40,8 @@ func TestService_Watch(t *testing.T) {
 
 			svc, m, _ := setupService(t)
 
-			ctx := tt.mockFunc(t.Context(), m)
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
 
 			ch, cancel, err := svc.Watch(ctx, tt.input)
 

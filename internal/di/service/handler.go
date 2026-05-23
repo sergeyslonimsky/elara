@@ -63,13 +63,13 @@ func NewV2Handlers(s *Services, cfg config.Config) *V2Handlers {
 }
 
 func initCoreHandlers(handlers *V2Handlers, s *Services) {
-	handlers.Config = confighandler.NewConfigHandler(s.Config)
-	handlers.Schema = confighandler.NewSchemaHandler(s.Schema)
-	handlers.Namespace = namespacehandler.New(s.Namespace)
-	handlers.Clients = clientshandler.NewHandler(s.Clients)
+	handlers.Config = confighandler.NewConfigHandler(s.Authz, s.Config)
+	handlers.Schema = confighandler.NewSchemaHandler(s.Authz, s.Schema)
+	handlers.Namespace = namespacehandler.New(s.Authz, s.Namespace)
+	handlers.Clients = clientshandler.NewHandler(s.Authz, s.Clients)
 	handlers.Dashboard = dashboardhandler.New(s.Dashboard)
-	handlers.Transfer = transferhandler.New(s.Transfer)
-	handlers.Webhook = webhookhandler.New(s.Webhook)
+	handlers.Transfer = transferhandler.New(s.Authz, s.Transfer)
+	handlers.Webhook = webhookhandler.New(s.Authz, s.Webhook)
 }
 
 func initAuthHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
@@ -85,7 +85,7 @@ func initAuthHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
 	)
 
 	if cfg.Client.Auth.Enabled {
-		handlers.Tokens = tokenhandler.New(s.Token)
+		handlers.Tokens = tokenhandler.New(s.Authz, s.Token)
 	}
 }
 
@@ -94,9 +94,9 @@ func initIAMHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
 		return
 	}
 
-	handlers.Users = userhandler.New(s.User, cfg.UI.Auth.Type)
-	handlers.Groups = grouphandler.NewHandler(s.Group)
-	handlers.Access = accesshandler.NewAccessHandler(s.Policy)
+	handlers.Users = userhandler.New(s.Authz, s.User, cfg.UI.Auth.Type)
+	handlers.Groups = grouphandler.NewHandler(s.Authz, s.Group)
+	handlers.Access = accesshandler.NewAccessHandler(s.Authz, s.Policy)
 }
 
 type server interface {

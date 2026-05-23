@@ -1,1 +1,7 @@
-{"TODO(human)":"replace this file with the expected ListNamespacesResponse JSON for the developer persona"}
+{
+  "namespaces": [
+    {"name":"dev","configCount":2,"createdAt":"<<PRESENCE>>","updatedAt":"<<PRESENCE>>"},
+    {"name":"staging","configCount":2,"createdAt":"<<PRESENCE>>","updatedAt":"<<PRESENCE>>"}
+  ],
+  "pagination": {"total":2,"limit":20}
+}

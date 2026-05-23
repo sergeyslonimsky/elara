@@ -28,8 +28,22 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (*domain.Token, st
 		return nil, "", domain.NewValidationError("namespaces", "at least one namespace is required")
 	}
 
-	if err := s.checkNamespaceAccess(ctx, in.Namespaces, in.Role); err != nil {
+	// Role-scope invariant: a token cannot grant more than its creator has on
+	// each namespace. A reader-role token requires (Config, Read, ns); a writer
+	// requires (Config, Write, ns). Handler already verified (Token, Create, ns);
+	// this is the analogue of UpdateGroup's diff-boundary check.
+	action, err := configActionForRole(in.Role)
+	if err != nil {
 		return nil, "", err
+	}
+	for _, ns := range in.Namespaces {
+		if !s.pdp.Has(claims.Email, domain.Permission{
+			Object: domain.ObjectConfig,
+			Action: action,
+			Domain: ns,
+		}) {
+			return nil, "", domain.ErrPermissionEscalation
+		}
 	}
 
 	rawToken, tokenHash, err := generateRawToken()
@@ -59,6 +73,19 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (*domain.Token, st
 	return token, rawToken, nil
 }
 
+// configActionForRole maps a token role to the (Config, action) the creator
+// must hold on each requested namespace.
+func configActionForRole(role string) (string, error) {
+	switch role {
+	case domain.RoleReader:
+		return domain.ActionRead, nil
+	case domain.RoleWriter:
+		return domain.ActionWrite, nil
+	default:
+		return "", domain.NewValidationError("role", "must be reader or writer")
+	}
+}
+
 const defaultListLimit = 20
 
 type ListParams struct {
@@ -77,14 +104,10 @@ type ListResult struct {
 }
 
 // List returns tokens the authenticated caller can see, scoped by the
-// namespaces they can read.
+// namespaces in which they hold (Token, Read).
 //
-// Flow (EL-4 §7, T5.5):
-//  1. effective = pdp.EffectiveDomains(caller, "namespace", "read"); if empty,
-//     return an empty list (acceptance: empty → empty list, not 403).
-//  2. Build a TokenFilter from the effective scope plus optional IssuedBy /
-//     search and forward it to the repo. The repo applies the intersect
-//     filter, sort, and pagination — no post-fetch loop here.
+// Token visibility is gated by Token:Read per namespace (NOT Namespace:Read);
+// see EL-4 T9.6.
 func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
@@ -96,8 +119,8 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 		limit = defaultListLimit
 	}
 
-	nsScope := s.pdp.EffectiveDomains(claims.Email, domain.ObjectNamespace, domain.ActionRead)
-	if nsScope.IsEmpty() {
+	scope := s.pdp.EffectiveDomains(claims.Email, domain.ObjectToken, domain.ActionRead)
+	if scope.IsEmpty() {
 		return &ListResult{
 			Tokens: []*domain.Token{},
 			Total:  0,
@@ -107,8 +130,8 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 	}
 
 	filter := domain.TokenFilter{
-		NamespaceScopes: nsScope.Explicit,
-		AnyNamespace:    nsScope.Wildcard,
+		NamespaceScopes: scope.Explicit,
+		AnyNamespace:    scope.Wildcard,
 		IssuedBy:        params.IssuedBy,
 		Search:          params.Query,
 	}
@@ -131,6 +154,9 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 	}, nil
 }
 
+// Get returns the token if the caller holds (Token, Read) on at least one of
+// the token's scoped namespaces. No ownership bypass: tokens are service
+// credentials, not user-owned resources.
 func (s *Service) Get(ctx context.Context, id string) (*domain.Token, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
@@ -142,27 +168,12 @@ func (s *Service) Get(ctx context.Context, id string) (*domain.Token, error) {
 		return nil, fmt.Errorf("get token: %w", err)
 	}
 
-	if token.IssuedBy == claims.Email {
-		return token, nil
-	}
-
-	isAdmin, err := s.enforcer.Enforce(claims.Email, domain.DomainAll, domain.ObjectToken, domain.ActionRead)
-	if err != nil {
-		return nil, fmt.Errorf("enforce admin token get: %w", err)
-	}
-
-	if isAdmin {
-		return token, nil
-	}
-
-	// Check if caller has access to any of the token's namespaces.
 	for _, ns := range token.Namespaces {
-		allowed, err := s.enforcer.Enforce(claims.Email, ns, domain.ObjectNamespace, domain.ActionRead)
-		if err != nil {
-			return nil, fmt.Errorf("enforce namespace read: %w", err)
-		}
-
-		if allowed {
+		if s.pdp.Has(claims.Email, domain.Permission{
+			Object: domain.ObjectToken,
+			Action: domain.ActionRead,
+			Domain: ns,
+		}) {
 			return token, nil
 		}
 	}
@@ -170,6 +181,8 @@ func (s *Service) Get(ctx context.Context, id string) (*domain.Token, error) {
 	return nil, domain.ErrForbidden
 }
 
+// Revoke deletes the token if the caller holds (Token, Write) on at least one
+// of the token's scoped namespaces. No ownership bypass.
 func (s *Service) Revoke(ctx context.Context, id string) error {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
@@ -181,13 +194,18 @@ func (s *Service) Revoke(ctx context.Context, id string) error {
 		return fmt.Errorf("get token for revocation: %w", err)
 	}
 
-	allowed := token.IssuedBy == claims.Email
-	if !allowed {
-		isAdmin, err := s.enforcer.Enforce(claims.Email, domain.DomainAll, domain.ObjectToken, domain.ActionWrite)
-		if err != nil {
-			return fmt.Errorf("enforce admin token write: %w", err)
+	allowed := false
+
+	for _, ns := range token.Namespaces {
+		if s.pdp.Has(claims.Email, domain.Permission{
+			Object: domain.ObjectToken,
+			Action: domain.ActionWrite,
+			Domain: ns,
+		}) {
+			allowed = true
+
+			break
 		}
-		allowed = isAdmin
 	}
 
 	if !allowed {
@@ -196,28 +214,6 @@ func (s *Service) Revoke(ctx context.Context, id string) error {
 
 	if err := s.store.Delete(ctx, id); err != nil {
 		return fmt.Errorf("revoke token: %w", err)
-	}
-
-	return nil
-}
-
-// checkNamespaceAccess verifies the caller can read each namespace and, for
-// writer tokens, can also write configs in each namespace.
-func (s *Service) checkNamespaceAccess(ctx context.Context, namespaces []string, role string) error {
-	for _, ns := range namespaces {
-		if err := auth.CheckAccess(ctx, s.enforcer, ns, domain.ObjectNamespace, domain.ActionRead); err != nil {
-			return fmt.Errorf("check access: %w", err)
-		}
-	}
-
-	if role != "writer" {
-		return nil
-	}
-
-	for _, ns := range namespaces {
-		if err := auth.CheckAccess(ctx, s.enforcer, ns, domain.ObjectConfig, domain.ActionWrite); err != nil {
-			return fmt.Errorf("check access: %w", err)
-		}
 	}
 
 	return nil

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 type GetInput struct {
@@ -18,14 +17,29 @@ func (s *Service) Get(ctx context.Context, in GetInput) (*domain.Config, error) 
 		return nil, domain.NewValidationError("namespace", "namespace is required")
 	}
 
-	if err := auth.CheckAccess(ctx, s.enforcer, in.Namespace, domain.ObjectConfig, domain.ActionRead); err != nil {
-		return nil, fmt.Errorf("check access: %w", err)
-	}
-
 	cfg, err := s.storage.Get(ctx, in.Path, in.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("get config: %w", err)
 	}
 
 	return cfg, nil
+}
+
+type GetAtRevisionInput struct {
+	Namespace string
+	Path      string
+	Revision  int64
+}
+
+func (s *Service) GetAtRevision(ctx context.Context, in GetAtRevisionInput) (*domain.HistoryEntry, error) {
+	if in.Namespace == "" {
+		return nil, domain.NewValidationError("namespace", "namespace is required")
+	}
+
+	entry, err := s.storage.GetAtRevision(ctx, in.Path, in.Namespace, in.Revision)
+	if err != nil {
+		return nil, fmt.Errorf("get config at revision: %w", err)
+	}
+
+	return entry, nil
 }

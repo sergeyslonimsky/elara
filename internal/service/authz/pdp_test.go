@@ -22,7 +22,7 @@ func TestPDP_EffectiveDomains(t *testing.T) {
 		object    string
 		action    string
 		mockFunc  func(*gomock.Controller) *authz.PDP
-		want      domain.DomainSet
+		want      authz.DomainSet
 	}{
 		{
 			name:      "multiple permissions",
@@ -39,7 +39,7 @@ func TestPDP_EffectiveDomains(t *testing.T) {
 
 				return authz.NewPDP(m)
 			},
-			want: domain.NewDomainSet("dom1", "dom2"),
+			want: authz.NewDomainSet("dom1", "dom2"),
 		},
 		{
 			name:      "wildcard object",
@@ -54,7 +54,7 @@ func TestPDP_EffectiveDomains(t *testing.T) {
 
 				return authz.NewPDP(m)
 			},
-			want: domain.NewDomainSet("dom1"),
+			want: authz.NewDomainSet("dom1"),
 		},
 		{
 			name:      "wildcard action",
@@ -69,7 +69,7 @@ func TestPDP_EffectiveDomains(t *testing.T) {
 
 				return authz.NewPDP(m)
 			},
-			want: domain.NewDomainSet("dom1"),
+			want: authz.NewDomainSet("dom1"),
 		},
 		{
 			name:      "wildcard domain",
@@ -84,7 +84,7 @@ func TestPDP_EffectiveDomains(t *testing.T) {
 
 				return authz.NewPDP(m)
 			},
-			want: domain.NewDomainSet("*"),
+			want: authz.NewDomainSet("*"),
 		},
 		{
 			name:      "error from enforcer",
@@ -97,7 +97,7 @@ func TestPDP_EffectiveDomains(t *testing.T) {
 
 				return authz.NewPDP(m)
 			},
-			want: domain.NewDomainSet(),
+			want: authz.NewDomainSet(),
 		},
 		{
 			name:      "invalid rule length",
@@ -112,7 +112,7 @@ func TestPDP_EffectiveDomains(t *testing.T) {
 
 				return authz.NewPDP(m)
 			},
-			want: domain.NewDomainSet(),
+			want: authz.NewDomainSet(),
 		},
 	}
 

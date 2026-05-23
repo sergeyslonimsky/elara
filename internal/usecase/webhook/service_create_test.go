@@ -34,16 +34,10 @@ func TestService_Create(t *testing.T) {
 				Enabled:         true,
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
-				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
-
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionWrite).
-					Return(true, nil)
 				repo.EXPECT().Create(ctx, gomock.Any()).Return(nil)
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(nil, repo, nil), ctx
 			},
 			want: &domain.Webhook{
 				URL:             "https://example.com/hook",
@@ -59,45 +53,9 @@ func TestService_Create(t *testing.T) {
 				Events: []domain.WebhookEventType{domain.WebhookEventCreated},
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
-				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
-
-				enf.EXPECT().
-					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
-					Return(true, nil)
-
-				return webhookuc.New(enf, nil, nil), ctx
-			},
-			wantErr: "validate",
-		},
-		{
-			name: "forbidden",
-			webhook: &domain.Webhook{
-				URL:    "https://example.com/hook",
-				Events: []domain.WebhookEventType{domain.WebhookEventCreated},
-			},
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
-				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
-
-				enf.EXPECT().
-					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
-					Return(false, nil)
-
-				return webhookuc.New(enf, nil, nil), ctx
-			},
-			errIs: domain.ErrForbidden,
-		},
-		{
-			name: "unauthorized",
-			webhook: &domain.Webhook{
-				URL:    "https://example.com/hook",
-				Events: []domain.WebhookEventType{domain.WebhookEventCreated},
-			},
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				return webhookuc.New(nil, nil, nil), ctx
 			},
-			errIs: domain.ErrUnauthorized,
+			wantErr: "validate",
 		},
 		{
 			name: "repo error",
@@ -107,16 +65,10 @@ func TestService_Create(t *testing.T) {
 				Enabled: true,
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
-				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
-
-				enf.EXPECT().
-					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
-					Return(true, nil)
 				repo.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("db error"))
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(nil, repo, nil), ctx
 			},
 			wantErr: "create",
 		},

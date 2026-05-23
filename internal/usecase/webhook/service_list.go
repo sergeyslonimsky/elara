@@ -8,6 +8,11 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
+// List returns webhooks the caller can read, scoped by (Webhook, Read).
+//
+// Filtering is silent: webhooks in domains the caller cannot read are dropped
+// from the result rather than returning an error. Global webhooks (empty
+// NamespaceFilter) require a (Webhook, Read, *) right to be visible.
 func (s *Service) List(ctx context.Context) ([]*domain.Webhook, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
@@ -19,16 +24,14 @@ func (s *Service) List(ctx context.Context) ([]*domain.Webhook, error) {
 		return nil, fmt.Errorf("list webhooks: %w", err)
 	}
 
-	// Filter silently: only return webhooks the caller can read.
-	filtered := webhooks[:0]
-	for _, w := range webhooks {
-		ns := w.NamespaceFilter
-		if ns == "" {
-			ns = "*"
-		}
+	scope := s.pdp.EffectiveDomains(claims.Email, domain.ObjectWebhook, domain.ActionRead)
+	if scope.IsEmpty() {
+		return []*domain.Webhook{}, nil
+	}
 
-		allowed, _ := s.enforcer.Enforce(claims.Email, ns, "webhook", "read")
-		if allowed {
+	filtered := make([]*domain.Webhook, 0, len(webhooks))
+	for _, w := range webhooks {
+		if scope.Contains(webhookDomain(w)) {
 			filtered = append(filtered, w)
 		}
 	}

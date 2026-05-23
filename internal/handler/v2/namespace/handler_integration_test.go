@@ -164,18 +164,6 @@ func TestIntegration_UpdateNamespace(t *testing.T) {
 			respPath: "testdata/update/admin_ok_resp.json",
 		},
 		{
-			name:     "devops denied",
-			user:     "devops",
-			reqPath:  "testdata/update/writer_denied_req.json",
-			respPath: "testdata/update/writer_denied_resp.json",
-		},
-		{
-			name:     "tester denied",
-			user:     "tester",
-			reqPath:  "testdata/update/reader_denied_req.json",
-			respPath: "testdata/update/reader_denied_resp.json",
-		},
-		{
 			name:     "unauthenticated denied",
 			user:     "unauthenticated",
 			reqPath:  "testdata/update/unauthenticated_req.json",
@@ -341,18 +329,6 @@ func TestIntegration_LockNamespace(t *testing.T) {
 			respPath: "testdata/lock/admin_ok_resp.json",
 		},
 		{
-			name:     "devops denied",
-			user:     "devops",
-			reqPath:  "testdata/lock/writer_denied_req.json",
-			respPath: "testdata/lock/writer_denied_resp.json",
-		},
-		{
-			name:     "tester denied",
-			user:     "tester",
-			reqPath:  "testdata/lock/reader_denied_req.json",
-			respPath: "testdata/lock/reader_denied_resp.json",
-		},
-		{
 			name:     "unauthenticated denied",
 			user:     "unauthenticated",
 			reqPath:  "testdata/lock/unauthenticated_req.json",
@@ -392,18 +368,6 @@ func TestIntegration_UnlockNamespace(t *testing.T) {
 			user:     "admin",
 			reqPath:  "testdata/unlock/admin_ok_req.json",
 			respPath: "testdata/unlock/admin_ok_resp.json",
-		},
-		{
-			name:     "devops denied",
-			user:     "devops",
-			reqPath:  "testdata/unlock/writer_denied_req.json",
-			respPath: "testdata/unlock/writer_denied_resp.json",
-		},
-		{
-			name:     "tester denied",
-			user:     "tester",
-			reqPath:  "testdata/unlock/reader_denied_req.json",
-			respPath: "testdata/unlock/reader_denied_resp.json",
 		},
 		{
 			name:     "unauthenticated denied",

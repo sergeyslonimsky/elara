@@ -18,6 +18,7 @@ func TestDashboardHandler_GetStats_Success(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
+
 	uc := dashboardmock.NewMockusecase(ctrl)
 	uc.EXPECT().GetStats(gomock.Any()).Return(&dashboarduc.StatsResult{
 		NamespaceCount:    1,
@@ -36,10 +37,11 @@ func TestDashboardHandler_GetStats_Success(t *testing.T) {
 	assert.Equal(t, int32(1), resp.Msg.GetActiveClientCount())
 }
 
-func TestDashboardHandler_GetStats_Unauthorized(t *testing.T) {
+func TestDashboardHandler_GetStats_UsecaseError(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
+
 	uc := dashboardmock.NewMockusecase(ctrl)
 	uc.EXPECT().GetStats(gomock.Any()).Return(nil, domain.ErrUnauthorized)
 
@@ -48,18 +50,4 @@ func TestDashboardHandler_GetStats_Unauthorized(t *testing.T) {
 	_, err := h.GetStats(t.Context(), connect.NewRequest(&dashboardv1.GetStatsRequest{}))
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
-}
-
-func TestDashboardHandler_GetStats_Forbidden(t *testing.T) {
-	t.Parallel()
-
-	ctrl := gomock.NewController(t)
-	uc := dashboardmock.NewMockusecase(ctrl)
-	uc.EXPECT().GetStats(gomock.Any()).Return(nil, domain.ErrForbidden)
-
-	h := New(uc)
-
-	_, err := h.GetStats(t.Context(), connect.NewRequest(&dashboardv1.GetStatsRequest{}))
-	require.Error(t, err)
-	assert.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
 }

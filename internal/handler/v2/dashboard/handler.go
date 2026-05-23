@@ -22,6 +22,10 @@ type usecase interface {
 }
 
 // Handler implements dashboardv1connect.DashboardServiceHandler.
+//
+// GetStats and ListActivity are gate-less at the handler boundary; the use case
+// filters results per-namespace using the PDP so each caller sees only the
+// namespaces they can read.
 type Handler struct {
 	uc usecase
 }

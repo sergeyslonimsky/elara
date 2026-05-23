@@ -29,7 +29,7 @@ func (s *Service) Callback(ctx context.Context, code, nonce string) (string, *do
 		return "", nil, fmt.Errorf("upsert user: %w", err)
 	}
 
-	if identity.Email == s.adminEmail {
+	if identity.Email == s.oidcAdminEmail {
 		if err = s.admin.EnsureMember(ctx, identity.Email); err != nil {
 			return "", nil, fmt.Errorf("bootstrap admin: %w", err)
 		}

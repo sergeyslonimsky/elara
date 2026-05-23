@@ -18,6 +18,44 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
+// Mockauthz is a mock of authz interface.
+type Mockauthz struct {
+	ctrl     *gomock.Controller
+	recorder *MockauthzMockRecorder
+	isgomock struct{}
+}
+
+// MockauthzMockRecorder is the mock recorder for Mockauthz.
+type MockauthzMockRecorder struct {
+	mock *Mockauthz
+}
+
+// NewMockauthz creates a new mock instance.
+func NewMockauthz(ctrl *gomock.Controller) *Mockauthz {
+	mock := &Mockauthz{ctrl: ctrl}
+	mock.recorder = &MockauthzMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *Mockauthz) EXPECT() *MockauthzMockRecorder {
+	return m.recorder
+}
+
+// RequireUser mocks base method.
+func (m *Mockauthz) RequireUser(user domain.AuthInfo, object, action, domainStr string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequireUser", user, object, action, domainStr)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RequireUser indicates an expected call of RequireUser.
+func (mr *MockauthzMockRecorder) RequireUser(user, object, action, domainStr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequireUser", reflect.TypeOf((*Mockauthz)(nil).RequireUser), user, object, action, domainStr)
+}
+
 // MockgroupUsecase is a mock of groupUsecase interface.
 type MockgroupUsecase struct {
 	ctrl     *gomock.Controller
@@ -43,32 +81,32 @@ func (m *MockgroupUsecase) EXPECT() *MockgroupUsecaseMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockgroupUsecase) Create(ctx context.Context, name string) (*domain.Group, error) {
+func (m *MockgroupUsecase) Create(ctx context.Context, user domain.AuthInfo, name string) (*domain.Group, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, name)
+	ret := m.ctrl.Call(m, "Create", ctx, user, name)
 	ret0, _ := ret[0].(*domain.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockgroupUsecaseMockRecorder) Create(ctx, name any) *gomock.Call {
+func (mr *MockgroupUsecaseMockRecorder) Create(ctx, user, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockgroupUsecase)(nil).Create), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockgroupUsecase)(nil).Create), ctx, user, name)
 }
 
 // Delete mocks base method.
-func (m *MockgroupUsecase) Delete(ctx context.Context, id string) error {
+func (m *MockgroupUsecase) Delete(ctx context.Context, user domain.AuthInfo, id string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret := m.ctrl.Call(m, "Delete", ctx, user, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockgroupUsecaseMockRecorder) Delete(ctx, id any) *gomock.Call {
+func (mr *MockgroupUsecaseMockRecorder) Delete(ctx, user, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockgroupUsecase)(nil).Delete), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockgroupUsecase)(nil).Delete), ctx, user, id)
 }
 
 // Get mocks base method.
@@ -87,31 +125,31 @@ func (mr *MockgroupUsecaseMockRecorder) Get(ctx, id any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *MockgroupUsecase) List(ctx context.Context, params group.ListParams) (*group.ListResult, error) {
+func (m *MockgroupUsecase) List(ctx context.Context, user domain.AuthInfo, params group.ListParams) (*group.ListResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, params)
+	ret := m.ctrl.Call(m, "List", ctx, user, params)
 	ret0, _ := ret[0].(*group.ListResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockgroupUsecaseMockRecorder) List(ctx, params any) *gomock.Call {
+func (mr *MockgroupUsecaseMockRecorder) List(ctx, user, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockgroupUsecase)(nil).List), ctx, params)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockgroupUsecase)(nil).List), ctx, user, params)
 }
 
 // Update mocks base method.
-func (m *MockgroupUsecase) Update(ctx context.Context, id, name, description string, perms []domain.Permission, members []string, version int64) (*domain.Group, error) {
+func (m *MockgroupUsecase) Update(ctx context.Context, user domain.AuthInfo, data group.UpdateData) (*domain.Group, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, name, description, perms, members, version)
+	ret := m.ctrl.Call(m, "Update", ctx, user, data)
 	ret0, _ := ret[0].(*domain.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockgroupUsecaseMockRecorder) Update(ctx, id, name, description, perms, members, version any) *gomock.Call {
+func (mr *MockgroupUsecaseMockRecorder) Update(ctx, user, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockgroupUsecase)(nil).Update), ctx, id, name, description, perms, members, version)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockgroupUsecase)(nil).Update), ctx, user, data)
 }

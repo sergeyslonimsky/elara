@@ -10,6 +10,27 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
+// requireTransferWrite returns ErrForbidden when the caller lacks
+// (Transfer, Write) on the given namespace. Handler-level Require only covers
+// the request-supplied namespace; this gate covers the per-bundle namespaces
+// resolved inside Import.
+func (s *Service) requireTransferWrite(ctx context.Context, namespace string) error {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return domain.ErrUnauthorized
+	}
+
+	if !s.pdp.Has(claims.Email, domain.Permission{
+		Object: domain.ObjectTransfer,
+		Action: domain.ActionWrite,
+		Domain: namespace,
+	}) {
+		return domain.ErrForbidden
+	}
+
+	return nil
+}
+
 func (s *Service) Import(
 	ctx context.Context,
 	data []byte,
@@ -37,10 +58,6 @@ func (s *Service) importToTarget(
 	dryRun bool,
 	targetNamespace string,
 ) (*domain.ImportReport, error) {
-	if err := auth.CheckAccess(ctx, s.enforcer, targetNamespace, domain.ObjectConfig, domain.ActionWrite); err != nil {
-		return nil, fmt.Errorf("check access: %w", err)
-	}
-
 	bundle, err := unmarshalNamespaceBundle(data)
 	if err != nil {
 		return nil, domain.NewValidationError("data", fmt.Sprintf("parse bundle: %s", err))
@@ -66,14 +83,8 @@ func (s *Service) importInferredScope(
 	}
 
 	if len(allBundle.Namespaces) > 0 {
-		if err := auth.CheckAccess(
-			ctx,
-			s.enforcer,
-			domain.DomainAll,
-			domain.ObjectTransfer,
-			domain.ActionWrite,
-		); err != nil {
-			return nil, fmt.Errorf("check access: %w", err)
+		if err := s.requireTransferWrite(ctx, domain.DomainAll); err != nil {
+			return nil, err
 		}
 
 		return s.importAllBundle(ctx, allBundle, onConflict, dryRun)
@@ -88,8 +99,8 @@ func (s *Service) importInferredScope(
 		return nil, domain.NewValidationError("namespace", "bundle namespace is required")
 	}
 
-	if err := auth.CheckAccess(ctx, s.enforcer, bundle.Namespace, domain.ObjectConfig, domain.ActionWrite); err != nil {
-		return nil, fmt.Errorf("check access: %w", err)
+	if err := s.requireTransferWrite(ctx, bundle.Namespace); err != nil {
+		return nil, err
 	}
 
 	report := &domain.ImportReport{DryRun: dryRun}

@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
@@ -34,7 +33,7 @@ func TestService_List(t *testing.T) {
 	tests := []struct {
 		name     string
 		params   config.ListParams
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, m mocks)
 		want     *config.ListResult
 	}{
 		{
@@ -44,12 +43,8 @@ func TestService_List(t *testing.T) {
 				Path:      "/",
 				Limit:     50,
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().Enforce("user@example.com", "default", "config", "read").Return(true, nil)
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.storage.EXPECT().ListSummariesByPrefix(ctx, "/", "default").Return(summaries, nil)
-
-				return ctx
 			},
 			want: &config.ListResult{
 				Total: 3,
@@ -63,7 +58,8 @@ func TestService_List(t *testing.T) {
 
 			svc, m, _ := setupService(t)
 
-			ctx := tt.mockFunc(t.Context(), m)
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
 
 			result, err := svc.List(ctx, tt.params)
 

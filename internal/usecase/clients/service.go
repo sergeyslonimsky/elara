@@ -14,8 +14,8 @@ import (
 const historyScanLimit = 1000
 
 type (
-	enforcer interface {
-		Enforce(subject, domain, object, action string) (bool, error)
+	pdp interface {
+		Has(principal string, perm domain.Permission) bool
 	}
 
 	activeSource interface {
@@ -33,11 +33,11 @@ type (
 )
 
 type Service struct {
-	enforcer enforcer
-	active   activeSource
-	history  historySource
+	pdp     pdp
+	active  activeSource
+	history historySource
 }
 
-func New(enforcer enforcer, active activeSource, history historySource) *Service {
-	return &Service{enforcer: enforcer, active: active, history: history}
+func New(pdp pdp, active activeSource, history historySource) *Service {
+	return &Service{pdp: pdp, active: active, history: history}
 }

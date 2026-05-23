@@ -42,6 +42,11 @@ type Services struct {
 	Token     *tokenuc.Service
 	Auth      *authuc.Service
 
+	// Authz is the shared per-RPC authorization gate used by v2 handlers.
+	// It is exposed on Services so V2Handlers wiring can pass it into each
+	// handler that needs Require(...).
+	Authz *authz.Authz
+
 	// AdminBootstrap is exposed so cmd/service/main.go can run the idempotent
 	// superadmin seed before the HTTP/gRPC listeners come up. Lives on Services
 	// rather than Manager because it depends on the same repos as the usecases.
@@ -61,35 +66,45 @@ func NewServices(
 
 	txm := bbolt.NewTxManager(a.Store.DB())
 	pdp := authz.NewPDP(enforcer)
+	pap := authz.NewPAP(enforcer, txm)
 	authzSvc := authz.NewAuthz(pdp)
 	adminBootstrap := auth.NewAdminBootstrap(txm, a.AuthUsers, a.AuthGroups, a.AuthPolicy)
 
 	services := &Services{
 		Config: configuc.New(
-			enforcer,
+			pdp,
 			a.ConfigRepo,
 			a.Watch,
 			a.NamespaceRepo,
 			schemaValidator,
 		),
-		Namespace: nsuc.New(authzSvc, pdp, a.NamespaceRepo, a.Watch),
-		Schema:    schemauc.New(enforcer, a.SchemaRepo, a.NamespaceRepo),
-		Clients:   clientsuc.New(enforcer, a.ClientRegistry, a.ClientHistory),
+		Namespace: nsuc.New(pdp, a.NamespaceRepo, a.Watch),
+		Schema:    schemauc.New(pdp, a.SchemaRepo, a.NamespaceRepo),
+		Clients:   clientsuc.New(pdp, a.ClientRegistry, a.ClientHistory),
 		Dashboard: dashboarduc.New(
-			enforcer,
+			pdp,
 			a.NamespaceRepo,
 			a.ConfigRepo,
 			a.ConfigRepo,
 			a.ClientRegistry,
 		),
-		Transfer: transferuc.New(enforcer, a.ConfigRepo, a.NamespaceRepo),
-		Webhook:  webhookuc.New(enforcer, a.WebhookRepo, a.WebhookDispatcher),
+		Transfer: transferuc.New(pdp, a.ConfigRepo, a.NamespaceRepo),
+		Webhook:  webhookuc.New(pdp, a.WebhookRepo, a.WebhookDispatcher),
 		Profile:  profileuc.New(pdp, a.AuthUsers, a.AuthUsers, sessionManager),
-		User:     useruc.New(enforcer, a.AuthUsers, a.AuthUsers, txm, pdp),
-		Group:    groupuc.New(enforcer, a.AuthGroups, txm, pdp),
-		Policy:   policyuc.New(enforcer, a.AuthGroups, txm),
-		Token:    tokenuc.New(enforcer, pdp, a.AuthTokens),
+		User: useruc.New(
+			enforcer,
+			a.AuthUsers,
+			a.AuthUsers,
+			useruc.NewBoltGroupReader(a.AuthGroups),
+			txm,
+			pdp,
+			pap,
+		),
+		Group:  groupuc.New(enforcer, a.AuthGroups, txm, pdp, pap),
+		Policy: policyuc.New(enforcer, a.AuthGroups, txm),
+		Token:  tokenuc.New(pdp, a.AuthTokens),
 
+		Authz:          authzSvc,
 		AdminBootstrap: adminBootstrap,
 	}
 
@@ -117,7 +132,7 @@ func NewServices(
 				a.AuthUsers,
 				sessionManager,
 				adminBootstrap,
-				cfg.UI.Auth.AdminEmail,
+				cfg.UI.Auth.OIDC.AdminEmail,
 			)
 		}
 	}

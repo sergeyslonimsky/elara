@@ -24,9 +24,9 @@ func TestService_SubscribeChanges(t *testing.T) {
 			name: "success",
 			mockFunc: func(ctx context.Context, m mocks) (context.Context, <-chan domain.ClientChange) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				ch := make(chan domain.ClientChange)
 				m.active.EXPECT().Subscribe().Return(ch, func() { close(ch) })
@@ -87,9 +87,9 @@ func TestService_SubscribeClient(t *testing.T) {
 			connID: "conn-1",
 			mockFunc: func(ctx context.Context, m mocks) (context.Context, <-chan domain.ClientChange) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				ch := make(chan domain.ClientChange)
 				m.active.EXPECT().SubscribeClient("conn-1").Return(ch, func() { close(ch) })

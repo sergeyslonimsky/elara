@@ -10,7 +10,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/schema"
 	schemamock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
 )
@@ -19,7 +18,6 @@ func TestService_Attach(t *testing.T) {
 	t.Parallel()
 
 	const (
-		testEmail       = "user@example.com"
 		testNamespace   = "production"
 		testPathPattern = "/app/**"
 		testJSONSchema  = `{"type": "object"}`
@@ -40,69 +38,16 @@ func TestService_Attach(t *testing.T) {
 				JSONSchema:  testJSONSchema,
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-
-				enforcer := schemamock.NewMockenforcer(ctrl)
 				store := schemamock.NewMockstore(ctrl)
 				namespaces := schemamock.NewMocknsProvider(ctrl)
 
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(true, nil)
 				namespaces.EXPECT().
 					Get(ctx, testNamespace).
 					Return(&domain.Namespace{Name: testNamespace, Locked: false}, nil)
-
 				store.EXPECT().Attach(ctx, gomock.Any()).Return(nil)
 
-				return schema.New(enforcer, store, namespaces), ctx
+				return schema.New(nil, store, namespaces), ctx
 			},
-		},
-		{
-			name: "unauthorized when no claims in context",
-			input: schema.AttachInput{
-				Namespace:   testNamespace,
-				PathPattern: testPathPattern,
-				JSONSchema:  testJSONSchema,
-			},
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				return schema.New(nil, nil, nil), ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
-			name: "enforce error wraps error",
-			input: schema.AttachInput{
-				Namespace:   testNamespace,
-				PathPattern: testPathPattern,
-				JSONSchema:  testJSONSchema,
-			},
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-
-				enforcer := schemamock.NewMockenforcer(ctrl)
-				enforcer.EXPECT().
-					Enforce(testEmail, testNamespace, "schema", "write").
-					Return(false, errors.New("casbin fail"))
-
-				return schema.New(enforcer, nil, nil), ctx
-			},
-			wantErr: "enforce: casbin fail",
-		},
-		{
-			name: "forbidden when enforcer returns false",
-			input: schema.AttachInput{
-				Namespace:   testNamespace,
-				PathPattern: testPathPattern,
-				JSONSchema:  testJSONSchema,
-			},
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-
-				enforcer := schemamock.NewMockenforcer(ctrl)
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(false, nil)
-
-				return schema.New(enforcer, nil, nil), ctx
-			},
-			errIs: domain.ErrForbidden,
 		},
 		{
 			name: "get namespace error wraps error",
@@ -112,17 +57,10 @@ func TestService_Attach(t *testing.T) {
 				JSONSchema:  testJSONSchema,
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-
-				enforcer := schemamock.NewMockenforcer(ctrl)
 				namespaces := schemamock.NewMocknsProvider(ctrl)
+				namespaces.EXPECT().Get(ctx, testNamespace).Return(nil, errors.New("db error"))
 
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(true, nil)
-				namespaces.EXPECT().
-					Get(ctx, testNamespace).
-					Return(nil, errors.New("db error"))
-
-				return schema.New(enforcer, nil, namespaces), ctx
+				return schema.New(nil, nil, namespaces), ctx
 			},
 			wantErr: "get namespace: db error",
 		},
@@ -134,19 +72,14 @@ func TestService_Attach(t *testing.T) {
 				JSONSchema:  testJSONSchema,
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-
-				enforcer := schemamock.NewMockenforcer(ctrl)
 				namespaces := schemamock.NewMocknsProvider(ctrl)
-
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(true, nil)
 				namespaces.EXPECT().
 					Get(ctx, testNamespace).
 					Return(&domain.Namespace{Name: testNamespace, Locked: true}, nil)
 
-				return schema.New(enforcer, nil, namespaces), ctx
+				return schema.New(nil, nil, namespaces), ctx
 			},
-			wantErr: "namespace \"production\": namespace is locked: config is locked",
+			errIs: domain.ErrNamespaceLocked,
 		},
 		{
 			name: "invalid json schema error",
@@ -156,19 +89,14 @@ func TestService_Attach(t *testing.T) {
 				JSONSchema:  `invalid`,
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-
-				enforcer := schemamock.NewMockenforcer(ctrl)
 				namespaces := schemamock.NewMocknsProvider(ctrl)
-
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(true, nil)
 				namespaces.EXPECT().
 					Get(ctx, testNamespace).
 					Return(&domain.Namespace{Name: testNamespace, Locked: false}, nil)
 
-				return schema.New(enforcer, nil, namespaces), ctx
+				return schema.New(nil, nil, namespaces), ctx
 			},
-			wantErr: "validate json schema: validation: json_schema: invalid JSON",
+			wantErr: "validate json schema",
 		},
 		{
 			name: "attach error wraps error",
@@ -178,20 +106,15 @@ func TestService_Attach(t *testing.T) {
 				JSONSchema:  testJSONSchema,
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-
-				enforcer := schemamock.NewMockenforcer(ctrl)
 				store := schemamock.NewMockstore(ctrl)
 				namespaces := schemamock.NewMocknsProvider(ctrl)
 
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "write").Return(true, nil)
 				namespaces.EXPECT().
 					Get(ctx, testNamespace).
 					Return(&domain.Namespace{Name: testNamespace, Locked: false}, nil)
-
 				store.EXPECT().Attach(ctx, gomock.Any()).Return(errors.New("store failure"))
 
-				return schema.New(enforcer, store, namespaces), ctx
+				return schema.New(nil, store, namespaces), ctx
 			},
 			wantErr: "attach schema: store failure",
 		},

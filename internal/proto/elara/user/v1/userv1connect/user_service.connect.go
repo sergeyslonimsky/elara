@@ -44,6 +44,9 @@ const (
 	UserServiceResetUserPasswordProcedure = "/elara.user.v1.UserService/ResetUserPassword"
 	// UserServiceDeleteUserProcedure is the fully-qualified name of the UserService's DeleteUser RPC.
 	UserServiceDeleteUserProcedure = "/elara.user.v1.UserService/DeleteUser"
+	// UserServiceUpdateUserGroupsProcedure is the fully-qualified name of the UserService's
+	// UpdateUserGroups RPC.
+	UserServiceUpdateUserGroupsProcedure = "/elara.user.v1.UserService/UpdateUserGroups"
 )
 
 // UserServiceClient is a client for the elara.user.v1.UserService service.
@@ -55,6 +58,13 @@ type UserServiceClient interface {
 	ResetUserPassword(context.Context, *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error)
 	// Admin-only, basic-auth mode only
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
+	// Replaces the target user's group memberships with the given set.
+	// The caller must hold ObjectGroup:Write on every group whose membership
+	// changes (added or removed). Adding a user to a group additionally
+	// requires that the caller holds every permission the target group
+	// grants (anti-escalation). Groups present in both the current and
+	// desired state are no-ops and require no permission.
+	UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error)
 }
 
 // NewUserServiceClient constructs a client for the elara.user.v1.UserService service. By default,
@@ -98,6 +108,12 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("DeleteUser")),
 			connect.WithClientOptions(opts...),
 		),
+		updateUserGroups: connect.NewClient[v1.UpdateUserGroupsRequest, v1.UpdateUserGroupsResponse](
+			httpClient,
+			baseURL+UserServiceUpdateUserGroupsProcedure,
+			connect.WithSchema(userServiceMethods.ByName("UpdateUserGroups")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -108,6 +124,7 @@ type userServiceClient struct {
 	createUser        *connect.Client[v1.CreateUserRequest, v1.CreateUserResponse]
 	resetUserPassword *connect.Client[v1.ResetUserPasswordRequest, v1.ResetUserPasswordResponse]
 	deleteUser        *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
+	updateUserGroups  *connect.Client[v1.UpdateUserGroupsRequest, v1.UpdateUserGroupsResponse]
 }
 
 // ListUsers calls elara.user.v1.UserService.ListUsers.
@@ -135,6 +152,11 @@ func (c *userServiceClient) DeleteUser(ctx context.Context, req *connect.Request
 	return c.deleteUser.CallUnary(ctx, req)
 }
 
+// UpdateUserGroups calls elara.user.v1.UserService.UpdateUserGroups.
+func (c *userServiceClient) UpdateUserGroups(ctx context.Context, req *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error) {
+	return c.updateUserGroups.CallUnary(ctx, req)
+}
+
 // UserServiceHandler is an implementation of the elara.user.v1.UserService service.
 type UserServiceHandler interface {
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
@@ -144,6 +166,13 @@ type UserServiceHandler interface {
 	ResetUserPassword(context.Context, *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error)
 	// Admin-only, basic-auth mode only
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
+	// Replaces the target user's group memberships with the given set.
+	// The caller must hold ObjectGroup:Write on every group whose membership
+	// changes (added or removed). Adding a user to a group additionally
+	// requires that the caller holds every permission the target group
+	// grants (anti-escalation). Groups present in both the current and
+	// desired state are no-ops and require no permission.
+	UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -183,6 +212,12 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("DeleteUser")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceUpdateUserGroupsHandler := connect.NewUnaryHandler(
+		UserServiceUpdateUserGroupsProcedure,
+		svc.UpdateUserGroups,
+		connect.WithSchema(userServiceMethods.ByName("UpdateUserGroups")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/elara.user.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceListUsersProcedure:
@@ -195,6 +230,8 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 			userServiceResetUserPasswordHandler.ServeHTTP(w, r)
 		case UserServiceDeleteUserProcedure:
 			userServiceDeleteUserHandler.ServeHTTP(w, r)
+		case UserServiceUpdateUserGroupsProcedure:
+			userServiceUpdateUserGroupsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -222,4 +259,8 @@ func (UnimplementedUserServiceHandler) ResetUserPassword(context.Context, *conne
 
 func (UnimplementedUserServiceHandler) DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.DeleteUser is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.UpdateUserGroups is not implemented"))
 }

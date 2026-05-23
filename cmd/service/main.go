@@ -125,23 +125,35 @@ func run() error {
 }
 
 // bootstrap performs idempotent superadmin seeding: the system:superadmin
-// group, the superadmin user from config, and the (*,*,*) p-rule. Safe to
-// call on every startup — each step is idempotent. Skipped when UI auth is
-// disabled (passthrough mode handles its own enforcer seeding).
+// group, the (*,*,*) p-rule, and a type-specific admin identity. Safe to call
+// on every startup — each step is idempotent.
+//
+//   - basic-auth: creates a local admin user from cfg.UI.Auth.BasicAuth and
+//     adds it to the superadmin group.
+//   - oidc: creates only the group and policy; the first OIDC login matching
+//     cfg.UI.Auth.OIDC.AdminEmail is elevated into the group on callback.
+//   - none: creates the synthetic passthrough user used by the interceptor.
 func bootstrap(ctx context.Context, svc *service.Manager, cfg config.Config) error {
-	if !cfg.UI.Auth.Enabled {
-		return nil
-	}
-
 	if svc.Services.AdminBootstrap == nil {
 		return nil
 	}
 
-	if err := svc.Services.AdminBootstrap.Bootstrap(
-		ctx,
-		cfg.UI.Auth.SuperAdminUsername,
-		cfg.UI.Auth.SuperAdminPassword,
-	); err != nil {
+	var err error
+
+	switch cfg.UI.Auth.Type {
+	case config.AuthTypeBasicAuth:
+		err = svc.Services.AdminBootstrap.BootstrapBasic(
+			ctx,
+			cfg.UI.Auth.BasicAuth.Username,
+			cfg.UI.Auth.BasicAuth.Password,
+		)
+	case config.AuthTypeOIDC:
+		err = svc.Services.AdminBootstrap.BootstrapOIDC(ctx)
+	case config.AuthTypeNone:
+		err = svc.Services.AdminBootstrap.BootstrapPassthrough(ctx)
+	}
+
+	if err != nil {
 		return fmt.Errorf("admin bootstrap: %w", err)
 	}
 

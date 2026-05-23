@@ -28,18 +28,22 @@ func TestService_Delete(t *testing.T) {
 			id:   "wh-1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 				disp := webhookmock.NewMockdispatcher(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionWrite).
-					Return(true, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionWrite,
+						Domain: "prod",
+					}).
+					Return(true)
 				repo.EXPECT().Delete(ctx, "wh-1").Return(nil)
 				disp.EXPECT().ClearHistory("wh-1")
 
-				return webhookuc.New(enf, repo, disp), ctx
+				return webhookuc.New(pdp, repo, disp), ctx
 			},
 		},
 		{
@@ -47,15 +51,19 @@ func TestService_Delete(t *testing.T) {
 			id:   "wh-1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionWrite).
-					Return(false, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionWrite,
+						Domain: "prod",
+					}).
+					Return(false)
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
 			errIs: domain.ErrForbidden,
 		},
@@ -64,16 +72,20 @@ func TestService_Delete(t *testing.T) {
 			id:   "wh-1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1"}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
-					Return(true, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionWrite,
+						Domain: domain.DomainAll,
+					}).
+					Return(true)
 				repo.EXPECT().Delete(ctx, "wh-1").Return(errors.New("db failure"))
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
 			wantErr: "db failure",
 		},
@@ -93,7 +105,7 @@ func TestService_Delete(t *testing.T) {
 		{
 			name: "unauthorized",
 			id:   "wh-1",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*webhookuc.Service, context.Context) {
 				return webhookuc.New(nil, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,

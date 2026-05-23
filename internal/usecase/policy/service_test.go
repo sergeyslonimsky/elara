@@ -1,17 +1,15 @@
 package policy_test
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 	"github.com/sergeyslonimsky/elara/internal/usecase/policy"
 	policymock "github.com/sergeyslonimsky/elara/internal/usecase/policy/mocks"
+	"github.com/sergeyslonimsky/elara/test/bbolttest"
 )
 
 // mocks bundles the gomock-backed dependencies. The Casbin enforcer is a
@@ -29,19 +27,7 @@ type mocks struct {
 func setupService(t *testing.T) (*policy.Service, *casbin.Enforcer, storage.TxManager, *mocks) {
 	t.Helper()
 
-	path := filepath.Join(t.TempDir(), "elara.db")
-
-	store, err := bbolt.Open(path)
-	require.NoError(t, err)
-
-	t.Cleanup(func() { _ = store.Close() })
-
-	policies := bbolt.NewPolicyRepo(store)
-
-	enforcer, err := casbin.NewEnforcer(policies)
-	require.NoError(t, err)
-
-	txm := bbolt.NewTxManager(store.DB())
+	_, enforcer, txm := bbolttest.OpenStack(t)
 
 	ctrl := gomock.NewController(t)
 	m := &mocks{groups: policymock.NewMockgroupFinder(ctrl)}

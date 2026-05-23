@@ -10,10 +10,6 @@ import (
 // Delete removes a namespace. Authorization is enforced at the handler
 // boundary (admin-only via DomainAll namespace/write).
 func (s *Service) Delete(ctx context.Context, name string) error {
-	if err := s.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, name); err != nil {
-		return fmt.Errorf("authorize: %w", err)
-	}
-
 	count, err := s.store.CountConfigs(ctx, name)
 	if err != nil {
 		return fmt.Errorf("count configs in namespace: %w", err)

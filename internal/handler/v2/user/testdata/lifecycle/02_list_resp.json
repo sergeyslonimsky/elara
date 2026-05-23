@@ -1,1 +1,18 @@
-{"users":[{"email":"alice@new.example.com","name":"Alice","provider":"basic-auth","createdAt":"<<PRESENCE>>","lastLoginAt":"<<PRESENCE>>"}]}
+{
+  "users": [
+    {
+      "email": "alice@new.example.com",
+      "name": "Alice",
+      "provider": "basic-auth",
+      "createdAt": "<<PRESENCE>>",
+      "lastLoginAt": "<<PRESENCE>>"
+    },
+    {
+      "email": "carol@example.com",
+      "name": "Super Admin",
+      "provider": "basic-auth",
+      "createdAt": "<<PRESENCE>>",
+      "lastLoginAt": "<<PRESENCE>>"
+    }
+  ]
+}

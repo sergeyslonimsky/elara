@@ -19,12 +19,15 @@ func TestTokenHandler_CreateToken(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		mock    func(uc *token_mock.Mockusecase)
+		mock    func(az *token_mock.Mockauthz, uc *token_mock.Mockusecase)
 		wantErr bool
 	}{
 		{
 			name: "creates token with raw token returned",
-			mock: func(uc *token_mock.Mockusecase) {
+			mock: func(az *token_mock.Mockauthz, uc *token_mock.Mockusecase) {
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectToken, domain.ActionCreate, "ns1").
+					Return(nil)
 				uc.EXPECT().
 					Create(gomock.Any(), tokenuc.CreateInput{
 						Name:       "my-token",
@@ -35,8 +38,20 @@ func TestTokenHandler_CreateToken(t *testing.T) {
 			},
 		},
 		{
+			name: "forbidden on namespace returns error before usecase",
+			mock: func(az *token_mock.Mockauthz, _ *token_mock.Mockusecase) {
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectToken, domain.ActionCreate, "ns1").
+					Return(domain.ErrForbidden)
+			},
+			wantErr: true,
+		},
+		{
 			name: "no auth context returns unauthenticated",
-			mock: func(uc *token_mock.Mockusecase) {
+			mock: func(az *token_mock.Mockauthz, uc *token_mock.Mockusecase) {
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectToken, domain.ActionCreate, "ns1").
+					Return(nil)
 				uc.EXPECT().
 					Create(gomock.Any(), gomock.Any()).
 					Return(nil, "", domain.ErrUnauthorized)
@@ -50,10 +65,11 @@ func TestTokenHandler_CreateToken(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
+			az := token_mock.NewMockauthz(ctrl)
 			uc := token_mock.NewMockusecase(ctrl)
-			tc.mock(uc)
+			tc.mock(az, uc)
 
-			h := New(uc)
+			h := New(az, uc)
 
 			resp, err := h.CreateToken(t.Context(), connect.NewRequest(&tokenv1.CreateTokenRequest{
 				Name:       "my-token",
@@ -119,10 +135,11 @@ func TestTokenHandler_ListTokens(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
+			az := token_mock.NewMockauthz(ctrl)
 			uc := token_mock.NewMockusecase(ctrl)
 			tc.mock(uc)
 
-			h := New(uc)
+			h := New(az, uc)
 
 			resp, err := h.ListTokens(t.Context(), connect.NewRequest(&tokenv1.ListTokensRequest{
 				IssuedBy: tc.issuedBy,
@@ -175,10 +192,11 @@ func TestTokenHandler_GetToken(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
+			az := token_mock.NewMockauthz(ctrl)
 			uc := token_mock.NewMockusecase(ctrl)
 			tc.mock(uc)
 
-			h := New(uc)
+			h := New(az, uc)
 
 			resp, err := h.GetToken(
 				t.Context(),
@@ -221,10 +239,11 @@ func TestTokenHandler_RevokeToken(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
+			az := token_mock.NewMockauthz(ctrl)
 			uc := token_mock.NewMockusecase(ctrl)
 			tc.mock(uc)
 
-			h := New(uc)
+			h := New(az, uc)
 
 			_, err := h.RevokeToken(
 				t.Context(),

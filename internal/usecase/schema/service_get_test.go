@@ -11,7 +11,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/schema"
 	schemamock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
 )
@@ -20,7 +19,6 @@ func TestService_Get(t *testing.T) {
 	t.Parallel()
 
 	const (
-		testEmail       = "user@example.com"
 		testNamespace   = "production"
 		testPathPattern = "/app/**"
 	)
@@ -41,10 +39,7 @@ func TestService_Get(t *testing.T) {
 			namespace:   testNamespace,
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-				enforcer := schemamock.NewMockenforcer(ctrl)
 				store := schemamock.NewMockstore(ctrl)
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "read").Return(true, nil)
 				store.EXPECT().Get(ctx, testNamespace, testPathPattern).Return(&domain.SchemaAttachment{
 					ID:          "schema-1",
 					Namespace:   testNamespace,
@@ -53,7 +48,7 @@ func TestService_Get(t *testing.T) {
 					CreatedAt:   now,
 				}, nil)
 
-				return schema.New(enforcer, store, nil), ctx
+				return schema.New(nil, store, nil), ctx
 			},
 			want: &domain.SchemaAttachment{
 				ID:          "schema-1",
@@ -64,53 +59,14 @@ func TestService_Get(t *testing.T) {
 			},
 		},
 		{
-			name:        "no claims in context returns unauthorized",
-			namespace:   testNamespace,
-			pathPattern: testPathPattern,
-			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*schema.Service, context.Context) {
-				return schema.New(nil, nil, nil), ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
-			name:        "enforcer returns error wraps it",
-			namespace:   testNamespace,
-			pathPattern: testPathPattern,
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-				enforcer := schemamock.NewMockenforcer(ctrl)
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "read").
-					Return(false, errors.New("casbin error"))
-
-				return schema.New(enforcer, nil, nil), ctx
-			},
-			wantErr: "enforce:",
-		},
-		{
-			name:        "not allowed returns forbidden",
-			namespace:   testNamespace,
-			pathPattern: testPathPattern,
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-				enforcer := schemamock.NewMockenforcer(ctrl)
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "read").Return(false, nil)
-
-				return schema.New(enforcer, nil, nil), ctx
-			},
-			errIs: domain.ErrForbidden,
-		},
-		{
 			name:        "store returns error wraps it",
 			namespace:   testNamespace,
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-				enforcer := schemamock.NewMockenforcer(ctrl)
 				store := schemamock.NewMockstore(ctrl)
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "read").Return(true, nil)
 				store.EXPECT().Get(ctx, testNamespace, testPathPattern).Return(nil, errors.New("bbolt error"))
 
-				return schema.New(enforcer, store, nil), ctx
+				return schema.New(nil, store, nil), ctx
 			},
 			wantErr: "get schema:",
 		},
@@ -119,15 +75,12 @@ func TestService_Get(t *testing.T) {
 			namespace:   testNamespace,
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
-				enforcer := schemamock.NewMockenforcer(ctrl)
 				store := schemamock.NewMockstore(ctrl)
-				enforcer.EXPECT().Enforce(testEmail, testNamespace, "schema", "read").Return(true, nil)
 				store.EXPECT().Get(ctx, testNamespace, testPathPattern).Return(nil, domain.ErrNotFound)
 
-				return schema.New(enforcer, store, nil), ctx
+				return schema.New(nil, store, nil), ctx
 			},
-			wantErr: "get schema:",
+			errIs: domain.ErrNotFound,
 		},
 	}
 

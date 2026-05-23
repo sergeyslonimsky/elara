@@ -27,9 +27,6 @@ func TestService_Get(t *testing.T) {
 		{
 			name: "success",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.authz.EXPECT().
-					Require(ctx, domain.ObjectNamespace, domain.ActionRead, name).
-					Return(nil)
 				m.store.EXPECT().Get(ctx, name).Return(&domain.Namespace{Name: name}, nil)
 				m.store.EXPECT().CountConfigs(ctx, name).Return(5, nil)
 
@@ -40,9 +37,6 @@ func TestService_Get(t *testing.T) {
 		{
 			name: "namespace not found",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.authz.EXPECT().
-					Require(ctx, domain.ObjectNamespace, domain.ActionRead, name).
-					Return(nil)
 				m.store.EXPECT().Get(ctx, name).Return(nil, domain.ErrNotFound)
 
 				return ctx

@@ -8,6 +8,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
+// Delete removes a webhook if the caller holds (Webhook, Write) on its
+// namespace.
 func (s *Service) Delete(ctx context.Context, id string) error {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
@@ -19,17 +21,11 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("get webhook: %w", err)
 	}
 
-	ns := w.NamespaceFilter
-	if ns == "" {
-		ns = "*"
-	}
-
-	allowed, err := s.enforcer.Enforce(claims.Email, ns, "webhook", "write")
-	if err != nil {
-		return fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
+	if !s.pdp.Has(claims.Email, domain.Permission{
+		Object: domain.ObjectWebhook,
+		Action: domain.ActionWrite,
+		Domain: webhookDomain(w),
+	}) {
 		return domain.ErrForbidden
 	}
 

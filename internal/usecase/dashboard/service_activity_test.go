@@ -37,12 +37,12 @@ func TestService_ListActivity(t *testing.T) {
 					ListRecentChanges(ctx, 50).
 					Return(entries, nil)
 
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
-					Return(true, nil)
-				m.enforcer.EXPECT().
-					Enforce("admin@example.com", "dev", domain.ObjectConfig, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("admin@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "prod"}).
+					Return(true)
+				m.pdp.EXPECT().
+					Has("admin@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "dev"}).
+					Return(true)
 
 				return ctx
 			},
@@ -67,12 +67,12 @@ func TestService_ListActivity(t *testing.T) {
 					Return(entries, nil)
 
 				// Cached per-namespace check: prod queried once, dev queried once.
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
-					Return(true, nil)
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "dev", domain.ObjectConfig, domain.ActionRead).
-					Return(false, nil)
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "prod"}).
+					Return(true)
+				m.pdp.EXPECT().
+					Has("user@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "dev"}).
+					Return(false)
 
 				return ctx
 			},
@@ -92,9 +92,9 @@ func TestService_ListActivity(t *testing.T) {
 					ListRecentChanges(ctx, 50).
 					Return(entries, nil)
 
-				m.enforcer.EXPECT().
-					Enforce("no-access@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
-					Return(false, nil)
+				m.pdp.EXPECT().
+					Has("no-access@example.com", domain.Permission{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "prod"}).
+					Return(false)
 
 				return ctx
 			},

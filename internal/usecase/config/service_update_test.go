@@ -9,7 +9,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
 func TestService_Update(t *testing.T) {
@@ -20,7 +20,7 @@ func TestService_Update(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    *domain.Config
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, m mocks)
 		errIs    error
 		wantErr  string
 		want     *domain.Config
@@ -33,12 +33,7 @@ func TestService_Update(t *testing.T) {
 				Content:   `{"key": "value"}`,
 				Format:    domain.FormatJSON,
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
-					Return(true, nil)
-
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.storage.EXPECT().
 					Get(ctx, "/app/config.json", "prod").
 					Return(&domain.Config{Format: domain.FormatJSON}, nil)
@@ -50,8 +45,6 @@ func TestService_Update(t *testing.T) {
 				m.storage.EXPECT().Update(ctx, gomock.Any()).Return(nil)
 				m.namespaceProvider.EXPECT().UpdateTimestamp(ctx, "prod").Return(nil)
 				m.watcher.EXPECT().NotifyUpdated(ctx, gomock.Any())
-
-				return ctx
 			},
 			want: &domain.Config{
 				Path:      "/app/config.json",
@@ -59,14 +52,6 @@ func TestService_Update(t *testing.T) {
 				Content:   normalizedJSON,
 				Format:    domain.FormatJSON,
 			},
-		},
-		{
-			name:  "unauthorized",
-			input: &domain.Config{Namespace: "prod"},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				return ctx
-			},
-			errIs: domain.ErrUnauthorized,
 		},
 	}
 
@@ -76,7 +61,8 @@ func TestService_Update(t *testing.T) {
 
 			svc, m, _ := setupService(t)
 
-			ctx := tt.mockFunc(t.Context(), m)
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
 
 			got, err := svc.Update(ctx, tt.input)
 
@@ -97,4 +83,44 @@ func TestService_Update(t *testing.T) {
 			assert.Equal(t, tt.want.Format, got.Format)
 		})
 	}
+}
+
+func TestService_Lock(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		svc, m, _ := setupService(t)
+
+		ctx := t.Context()
+		m.storage.EXPECT().LockConfig(ctx, "prod", "/a.json").Return(nil)
+
+		cfg := &domain.Config{Path: "/a.json", Namespace: "prod"}
+		m.storage.EXPECT().Get(ctx, "/a.json", "prod").Return(cfg, nil)
+		m.watcher.EXPECT().NotifyConfigLocked(ctx, cfg)
+
+		err := svc.Lock(ctx, config.LockInput{Namespace: "prod", Path: "/a.json"})
+		require.NoError(t, err)
+	})
+}
+
+func TestService_Unlock(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		svc, m, _ := setupService(t)
+
+		ctx := t.Context()
+		m.storage.EXPECT().UnlockConfig(ctx, "prod", "/a.json").Return(nil)
+
+		cfg := &domain.Config{Path: "/a.json", Namespace: "prod"}
+		m.storage.EXPECT().Get(ctx, "/a.json", "prod").Return(cfg, nil)
+		m.watcher.EXPECT().NotifyConfigUnlocked(ctx, cfg)
+
+		err := svc.Unlock(ctx, config.UnlockInput{Namespace: "prod", Path: "/a.json"})
+		require.NoError(t, err)
+	})
 }

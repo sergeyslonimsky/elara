@@ -10,7 +10,7 @@ import (
 )
 
 type mocks struct {
-	enforcer      *dashboardmock.Mockenforcer
+	pdp           *dashboardmock.Mockpdp
 	namespaces    *dashboardmock.MocknsLister
 	configs       *dashboardmock.MockconfigCounter
 	activity      *dashboardmock.MockactivitySource
@@ -22,13 +22,13 @@ func setupService(t *testing.T) (*dashboard.Service, mocks, *gomock.Controller) 
 	ctrl := gomock.NewController(t)
 
 	m := mocks{
-		enforcer:      dashboardmock.NewMockenforcer(ctrl),
+		pdp:           dashboardmock.NewMockpdp(ctrl),
 		namespaces:    dashboardmock.NewMocknsLister(ctrl),
 		configs:       dashboardmock.NewMockconfigCounter(ctrl),
 		activity:      dashboardmock.NewMockactivitySource(ctrl),
 		activeClients: dashboardmock.NewMockactiveClientsSource(ctrl),
 	}
-	svc := dashboard.New(m.enforcer, m.namespaces, m.configs, m.activity, m.activeClients)
+	svc := dashboard.New(m.pdp, m.namespaces, m.configs, m.activity, m.activeClients)
 
 	return svc, m, ctrl
 }

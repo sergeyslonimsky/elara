@@ -8,7 +8,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
@@ -18,7 +17,7 @@ func TestService_Copy(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    config.CopyInput
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, m mocks)
 		errIs    error
 		wantErr  string
 	}{
@@ -30,12 +29,7 @@ func TestService_Copy(t *testing.T) {
 				DestPath:        "/b.json",
 				DestNamespace:   "dst",
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "dst", domain.ObjectConfig, domain.ActionWrite).
-					Return(true, nil)
-
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.storage.EXPECT().
 					Get(ctx, "/a.json", "src").
 					Return(&domain.Config{Path: "/a.json", Namespace: "src", Content: "{}", Format: domain.FormatJSON}, nil)
@@ -47,8 +41,6 @@ func TestService_Copy(t *testing.T) {
 				m.storage.EXPECT().Create(ctx, gomock.Any()).Return(nil)
 				m.namespaceProvider.EXPECT().UpdateTimestamp(ctx, "dst").Return(nil)
 				m.watcher.EXPECT().NotifyCreated(ctx, gomock.Any())
-
-				return ctx
 			},
 		},
 	}
@@ -59,7 +51,8 @@ func TestService_Copy(t *testing.T) {
 
 			svc, m, _ := setupService(t)
 
-			ctx := tt.mockFunc(t.Context(), m)
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
 
 			_, err := svc.Copy(ctx, tt.input)
 

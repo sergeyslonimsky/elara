@@ -37,7 +37,7 @@ func TestService_Update(t *testing.T) {
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{
@@ -47,12 +47,16 @@ func TestService_Update(t *testing.T) {
 					Events:          []domain.WebhookEventType{domain.WebhookEventCreated},
 					Enabled:         true,
 				}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionWrite).
-					Return(true, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionWrite,
+						Domain: "prod",
+					}).
+					Return(true)
 				repo.EXPECT().Update(ctx, gomock.Any()).Return(nil)
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
 			want: &domain.Webhook{
 				ID:              "wh-1",
@@ -63,25 +67,33 @@ func TestService_Update(t *testing.T) {
 			},
 		},
 		{
-			name: "validate error",
+			name: "validate error after authz pass",
 			id:   "wh-1",
 			params: webhookuc.UpdateParams{
-				URL:    "", // invalid
+				URL:    "",
 				Events: []domain.WebhookEventType{domain.WebhookEventCreated},
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().
 					Get(ctx, "wh-1").
-					Return(&domain.Webhook{ID: "wh-1", URL: "https://old.com", Events: []domain.WebhookEventType{domain.WebhookEventCreated}}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
-					Return(true, nil)
+					Return(&domain.Webhook{
+						ID:     "wh-1",
+						URL:    "https://old.com",
+						Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+					}, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionWrite,
+						Domain: domain.DomainAll,
+					}).
+					Return(true)
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
 			wantErr: "validate",
 		},
@@ -90,15 +102,19 @@ func TestService_Update(t *testing.T) {
 			id:   "wh-1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionWrite).
-					Return(false, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionWrite,
+						Domain: "prod",
+					}).
+					Return(false)
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
 			errIs: domain.ErrForbidden,
 		},
@@ -124,25 +140,33 @@ func TestService_Update(t *testing.T) {
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().
 					Get(ctx, "wh-1").
-					Return(&domain.Webhook{ID: "wh-1", URL: "https://old.com", Events: []domain.WebhookEventType{domain.WebhookEventCreated}}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "*", domain.ObjectWebhook, domain.ActionWrite).
-					Return(true, nil)
+					Return(&domain.Webhook{
+						ID:     "wh-1",
+						URL:    "https://old.com",
+						Events: []domain.WebhookEventType{domain.WebhookEventCreated},
+					}, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionWrite,
+						Domain: domain.DomainAll,
+					}).
+					Return(true)
 				repo.EXPECT().Update(ctx, gomock.Any()).Return(errors.New("db error"))
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
 			wantErr: "db error",
 		},
 		{
 			name: "unauthorized",
 			id:   "wh-1",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*webhookuc.Service, context.Context) {
 				return webhookuc.New(nil, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,

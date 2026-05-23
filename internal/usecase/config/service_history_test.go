@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
@@ -18,7 +17,7 @@ func TestService_History(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    config.HistoryInput
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, m mocks)
 		errIs    error
 		wantErr  string
 		want     []*domain.HistoryEntry
@@ -30,13 +29,9 @@ func TestService_History(t *testing.T) {
 				Path:      "/a.json",
 				Limit:     10,
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().Enforce("user@example.com", "prod", "config", "read").Return(true, nil)
+			mockFunc: func(ctx context.Context, m mocks) {
 				entries := []*domain.HistoryEntry{{Revision: 1}}
 				m.storage.EXPECT().GetConfigHistory(ctx, "/a.json", "prod", 10).Return(entries, nil)
-
-				return ctx
 			},
 			want: []*domain.HistoryEntry{{Revision: 1}},
 		},
@@ -48,7 +43,8 @@ func TestService_History(t *testing.T) {
 
 			svc, m, _ := setupService(t)
 
-			ctx := tt.mockFunc(t.Context(), m)
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
 
 			got, err := svc.History(ctx, tt.input)
 

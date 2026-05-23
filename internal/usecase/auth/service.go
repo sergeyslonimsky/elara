@@ -39,26 +39,31 @@ type (
 )
 
 type Service struct {
-	provider   oidcProvider
-	users      userStore
-	session    sessionCreator
-	admin      adminBootstrap
-	adminEmail string
+	provider       oidcProvider
+	users          userStore
+	session        sessionCreator
+	admin          adminBootstrap
+	oidcAdminEmail string
 }
 
+// New constructs the auth Service.
+//
+// oidcAdminEmail is the email that, when seen on a successful OIDC callback,
+// is elevated into the superadmin group. Pass "" for non-OIDC modes; the
+// callback path is not reachable there.
 func New(
 	provider oidcProvider,
 	users userStore,
 	session sessionCreator,
 	admin adminBootstrap,
-	adminEmail string,
+	oidcAdminEmail string,
 ) *Service {
 	return &Service{
-		provider:   provider,
-		users:      users,
-		session:    session,
-		admin:      admin,
-		adminEmail: adminEmail,
+		provider:       provider,
+		users:          users,
+		session:        session,
+		admin:          admin,
+		oidcAdminEmail: oidcAdminEmail,
 	}
 }
 

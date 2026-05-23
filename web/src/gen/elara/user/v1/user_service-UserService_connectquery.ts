@@ -32,3 +32,15 @@ export const resetUserPassword = UserService.method.resetUserPassword;
  * @generated from rpc elara.user.v1.UserService.DeleteUser
  */
 export const deleteUser = UserService.method.deleteUser;
+
+/**
+ * Replaces the target user's group memberships with the given set.
+ * The caller must hold ObjectGroup:Write on every group whose membership
+ * changes (added or removed). Adding a user to a group additionally
+ * requires that the caller holds every permission the target group
+ * grants (anti-escalation). Groups present in both the current and
+ * desired state are no-ops and require no permission.
+ *
+ * @generated from rpc elara.user.v1.UserService.UpdateUserGroups
+ */
+export const updateUserGroups = UserService.method.updateUserGroups;

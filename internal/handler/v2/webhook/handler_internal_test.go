@@ -25,7 +25,7 @@ func TestHandler_CreateWebhook(t *testing.T) {
 		wantErr  connect.Code
 	}{
 		{
-			name: "success",
+			name: "success per-namespace gate",
 			req: &webhookv1.CreateWebhookRequest{
 				Url:             "https://example.com/hook",
 				Events:          []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
@@ -34,7 +34,12 @@ func TestHandler_CreateWebhook(t *testing.T) {
 				Enabled:         true,
 			},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
+
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectWebhook, domain.ActionCreate, "production").
+					Return(nil)
 				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
 					Return(&domain.Webhook{
 						ID:              "gen-id",
@@ -45,34 +50,62 @@ func TestHandler_CreateWebhook(t *testing.T) {
 						Enabled:         true,
 					}, nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
+		},
+		{
+			name: "global webhook gates on wildcard domain",
+			req: &webhookv1.CreateWebhookRequest{
+				Url:    "https://example.com/hook",
+				Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
+			},
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
+
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectWebhook, domain.ActionCreate, domain.DomainAll).
+					Return(nil)
+				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
+					Return(&domain.Webhook{ID: "gen-id", URL: "https://example.com/hook"}, nil)
+
+				return New(az, uc)
+			},
+		},
+		{
+			name: "forbidden short-circuits before usecase",
+			req: &webhookv1.CreateWebhookRequest{
+				Url:             "https://example.com/hook",
+				Events:          []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
+				NamespaceFilter: "prod",
+			},
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
+
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectWebhook, domain.ActionCreate, "prod").
+					Return(domain.ErrForbidden)
+
+				return New(az, uc)
+			},
+			wantErr: connect.CodePermissionDenied,
 		},
 		{
 			name: "invalid argument missing url",
 			req: &webhookv1.CreateWebhookRequest{
-				Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
+				Events:          []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
+				NamespaceFilter: "prod",
 			},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
+
+				az.EXPECT().Require(gomock.Any(), domain.ObjectWebhook, domain.ActionCreate, "prod").Return(nil)
 				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
 					Return(nil, domain.NewValidationError("url", "url is required"))
 
-				return New(uc)
-			},
-			wantErr: connect.CodeInvalidArgument,
-		},
-		{
-			name: "invalid argument no events",
-			req: &webhookv1.CreateWebhookRequest{
-				Url: "https://example.com/hook",
-			},
-			mockFunc: func(ctrl *gomock.Controller) *Handler {
-				uc := webhookmock.NewMockusecase(ctrl)
-				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
-					Return(nil, domain.NewValidationError("events", "at least one event is required"))
-
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr: connect.CodeInvalidArgument,
 		},
@@ -111,9 +144,10 @@ func TestHandler_GetWebhook(t *testing.T) {
 		wantErr  connect.Code
 	}{
 		{
-			name: "success",
+			name: "success delegates to usecase",
 			id:   "wh-1",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Get(gomock.Any(), "wh-1").Return(&domain.Webhook{
 					ID:              "wh-1",
@@ -121,19 +155,32 @@ func TestHandler_GetWebhook(t *testing.T) {
 					NamespaceFilter: "prod",
 				}, nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 		},
 		{
 			name: "not found",
 			id:   "missing",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Get(gomock.Any(), "missing").Return(nil, domain.ErrNotFound)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr: connect.CodeNotFound,
+		},
+		{
+			name: "forbidden propagates from usecase",
+			id:   "wh-1",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
+				uc := webhookmock.NewMockusecase(ctrl)
+				uc.EXPECT().Get(gomock.Any(), "wh-1").Return(nil, domain.ErrForbidden)
+
+				return New(az, uc)
+			},
+			wantErr: connect.CodePermissionDenied,
 		},
 	}
 
@@ -169,7 +216,7 @@ func TestHandler_UpdateWebhook(t *testing.T) {
 		wantErr  connect.Code
 	}{
 		{
-			name: "success",
+			name: "success delegates to usecase",
 			req: &webhookv1.UpdateWebhookRequest{
 				Id:      "wh-1",
 				Url:     "https://new.example.com/hook",
@@ -177,6 +224,7 @@ func TestHandler_UpdateWebhook(t *testing.T) {
 				Enabled: false,
 			},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Update(gomock.Any(), "wh-1", webhookuc.UpdateParams{
@@ -191,7 +239,7 @@ func TestHandler_UpdateWebhook(t *testing.T) {
 						Enabled: false,
 					}, nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 		},
 		{
@@ -202,10 +250,11 @@ func TestHandler_UpdateWebhook(t *testing.T) {
 				Events: []webhookv1.WebhookEvent{webhookv1.WebhookEvent_WEBHOOK_EVENT_CREATED},
 			},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Update(gomock.Any(), "missing", gomock.Any()).Return(nil, domain.ErrNotFound)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr: connect.CodeNotFound,
 		},
@@ -247,20 +296,22 @@ func TestHandler_DeleteWebhook(t *testing.T) {
 			name: "success",
 			id:   "wh-1",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Delete(gomock.Any(), "wh-1").Return(nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 		},
 		{
 			name: "not found",
 			id:   "missing",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().Delete(gomock.Any(), "missing").Return(domain.ErrNotFound)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr: connect.CodeNotFound,
 		},
@@ -298,23 +349,25 @@ func TestHandler_ListWebhooks(t *testing.T) {
 		{
 			name: "success empty",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{}, nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantLen: 0,
 		},
 		{
 			name: "success populated",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
 					{ID: "wh-1", URL: "https://a.com", NamespaceFilter: "prod"},
 					{ID: "wh-2", URL: "https://b.com", NamespaceFilter: "dev"},
 				}, nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantLen: 2,
 		},
@@ -360,20 +413,22 @@ func TestHandler_GetDeliveryHistory(t *testing.T) {
 			name: "success",
 			id:   "wh-1",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().GetHistory(gomock.Any(), "wh-1").Return(attempts, nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 		},
 		{
 			name: "not found",
 			id:   "unknown",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := webhookmock.NewMockauthz(ctrl)
 				uc := webhookmock.NewMockusecase(ctrl)
 				uc.EXPECT().GetHistory(gomock.Any(), "unknown").Return(nil, domain.ErrNotFound)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr: connect.CodeNotFound,
 		},

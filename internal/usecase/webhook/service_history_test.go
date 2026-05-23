@@ -49,17 +49,21 @@ func TestService_GetHistory(t *testing.T) {
 			id:   "wh-known",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 				disp := webhookmock.NewMockdispatcher(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-known").Return(&domain.Webhook{ID: "wh-known", NamespaceFilter: "prod"}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionRead).
-					Return(true, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionRead,
+						Domain: "prod",
+					}).
+					Return(true)
 				disp.EXPECT().GetDeliveryHistory("wh-known").Return(attempts)
 
-				return webhookuc.New(enf, repo, disp), ctx
+				return webhookuc.New(pdp, repo, disp), ctx
 			},
 			want: attempts,
 		},
@@ -68,17 +72,21 @@ func TestService_GetHistory(t *testing.T) {
 			id:   "wh-empty",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 				disp := webhookmock.NewMockdispatcher(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-empty").Return(&domain.Webhook{ID: "wh-empty", NamespaceFilter: "prod"}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionRead).
-					Return(true, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionRead,
+						Domain: "prod",
+					}).
+					Return(true)
 				disp.EXPECT().GetDeliveryHistory("wh-empty").Return([]domain.DeliveryAttempt{})
 
-				return webhookuc.New(enf, repo, disp), ctx
+				return webhookuc.New(pdp, repo, disp), ctx
 			},
 			want: []domain.DeliveryAttempt{},
 		},
@@ -100,22 +108,26 @@ func TestService_GetHistory(t *testing.T) {
 			id:   "wh-1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionRead).
-					Return(false, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionRead,
+						Domain: "prod",
+					}).
+					Return(false)
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
 			errIs: domain.ErrForbidden,
 		},
 		{
 			name: "unauthorized",
 			id:   "wh-1",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*webhookuc.Service, context.Context) {
 				return webhookuc.New(nil, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,

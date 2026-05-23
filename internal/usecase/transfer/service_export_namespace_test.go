@@ -40,7 +40,6 @@ func TestService_ExportNamespace(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 				m.namespaces.EXPECT().
 					Get(gomock.Any(), "my-ns").
 					Return(&domain.Namespace{Name: "my-ns", Description: "desc"}, nil)
@@ -68,7 +67,6 @@ func TestService_ExportNamespace(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 				m.namespaces.EXPECT().Get(gomock.Any(), "my-ns").Return(&domain.Namespace{Name: "my-ns"}, nil)
 				m.configs.EXPECT().ListAllByNamespace(gomock.Any(), "my-ns").Return([]*domain.Config{}, nil)
 
@@ -90,7 +88,6 @@ func TestService_ExportNamespace(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 				m.namespaces.EXPECT().Get(gomock.Any(), "missing").Return(nil, domain.ErrNotFound)
 
 				return svc
@@ -105,7 +102,6 @@ func TestService_ExportNamespace(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 				m.namespaces.EXPECT().Get(gomock.Any(), "my-ns").Return(&domain.Namespace{Name: "my-ns"}, nil)
 				m.configs.EXPECT().ListAllByNamespace(gomock.Any(), "my-ns").Return(nil, errors.New("db error"))
 
@@ -120,7 +116,6 @@ func TestService_ExportNamespace(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 				m.namespaces.EXPECT().
 					Get(gomock.Any(), "locked-ns").
 					Return(&domain.Namespace{Name: "locked-ns", Locked: true}, nil)
@@ -143,18 +138,6 @@ func TestService_ExportNamespace(t *testing.T) {
 				assert.NotContains(t, entry, "locked")
 				assert.NotContains(t, entry, "namespaceLocked")
 			},
-		},
-		{
-			name:  "access denied",
-			input: input{namespace: "secret-ns"},
-			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
-				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce("test@example.com", "secret-ns", "config", "read").Return(false, nil)
-
-				return svc
-			},
-			errIs:   domain.ErrForbidden,
-			wantErr: "check access",
 		},
 	}
 

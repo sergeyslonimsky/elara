@@ -12,8 +12,8 @@ import (
 //go:generate mockgen -destination=mocks/service_mock.go -package=schema_mock -source=service.go
 
 type (
-	enforcer interface {
-		Enforce(subject, domain, object, action string) (bool, error)
+	pdp interface {
+		Has(principal string, perm domain.Permission) bool
 	}
 
 	store interface {
@@ -29,14 +29,14 @@ type (
 )
 
 type Service struct {
-	enforcer   enforcer
+	pdp        pdp
 	store      store
 	namespaces nsProvider
 }
 
-func New(enforcer enforcer, store store, namespaces nsProvider) *Service {
+func New(pdp pdp, store store, namespaces nsProvider) *Service {
 	return &Service{
-		enforcer:   enforcer,
+		pdp:        pdp,
 		store:      store,
 		namespaces: namespaces,
 	}

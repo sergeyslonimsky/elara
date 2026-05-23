@@ -28,6 +28,7 @@ func TestUserHandler_ListUsers(t *testing.T) {
 		{
 			name: "returns all users",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
 				uc := user_mock.NewMockusecase(ctrl)
 				uc.EXPECT().List(gomock.Any(), useruc.ListParams{}).
 					Return(&useruc.ListResult{
@@ -35,17 +36,18 @@ func TestUserHandler_ListUsers(t *testing.T) {
 						Total: 2,
 					}, nil)
 
-				return New(uc, config.AuthTypeOIDC)
+				return New(az, uc, config.AuthTypeOIDC)
 			},
 			wantLen: 2,
 		},
 		{
 			name: "storage error returns internal",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
 				uc := user_mock.NewMockusecase(ctrl)
 				uc.EXPECT().List(gomock.Any(), useruc.ListParams{}).Return(nil, errors.New("db error"))
 
-				return New(uc, config.AuthTypeOIDC)
+				return New(az, uc, config.AuthTypeOIDC)
 			},
 			wantErr: true,
 		},
@@ -86,23 +88,45 @@ func TestUserHandler_GetUser(t *testing.T) {
 		{
 			name: "returns user by email",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionRead, domain.DomainAll).
+					Return(nil)
 				uc := user_mock.NewMockusecase(ctrl)
 				uc.EXPECT().Get(gomock.Any(), email).
 					Return(&domain.User{Email: email, Name: "Alice"}, nil)
 
-				return New(uc, config.AuthTypeOIDC)
+				return New(az, uc, config.AuthTypeOIDC)
 			},
 		},
 		{
 			name: "not found returns NotFound code",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionRead, domain.DomainAll).
+					Return(nil)
 				uc := user_mock.NewMockusecase(ctrl)
 				uc.EXPECT().Get(gomock.Any(), email).Return(nil, domain.ErrNotFound)
 
-				return New(uc, config.AuthTypeOIDC)
+				return New(az, uc, config.AuthTypeOIDC)
 			},
 			wantErr:  true,
 			wantCode: connect.CodeNotFound,
+		},
+		{
+			name: "authz denied returns PermissionDenied",
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionRead, domain.DomainAll).
+					Return(domain.ErrForbidden)
+				uc := user_mock.NewMockusecase(ctrl)
+
+				return New(az, uc, config.AuthTypeOIDC)
+			},
+			wantErr:  true,
+			wantCode: connect.CodePermissionDenied,
 		},
 	}
 
@@ -142,12 +166,31 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 		wantCode  connect.Code
 	}{
 		{
+			name:     "authz denied returns PermissionDenied",
+			authType: config.AuthTypeBasicAuth,
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionWrite, domain.DomainAll).
+					Return(domain.ErrForbidden)
+				uc := user_mock.NewMockusecase(ctrl)
+
+				return New(az, uc, config.AuthTypeBasicAuth)
+			},
+			wantErr:  true,
+			wantCode: connect.CodePermissionDenied,
+		},
+		{
 			name:     "authType == OIDC returns ErrFeatureNotAvailable",
 			authType: config.AuthTypeOIDC,
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionWrite, domain.DomainAll).
+					Return(nil)
 				uc := user_mock.NewMockusecase(ctrl)
 
-				return New(uc, config.AuthTypeOIDC)
+				return New(az, uc, config.AuthTypeOIDC)
 			},
 			wantErr:   true,
 			wantCode:  connect.CodeInvalidArgument,
@@ -157,10 +200,14 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 			name:     "authType == BasicAuth: success",
 			authType: config.AuthTypeBasicAuth,
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionWrite, domain.DomainAll).
+					Return(nil)
 				uc := user_mock.NewMockusecase(ctrl)
 				uc.EXPECT().Delete(gomock.Any(), targetEmail).Return(nil)
 
-				return New(uc, config.AuthTypeBasicAuth)
+				return New(az, uc, config.AuthTypeBasicAuth)
 			},
 		},
 	}
@@ -203,12 +250,30 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		wantCode        connect.Code
 	}{
 		{
+			name:     "authz denied returns PermissionDenied",
+			authType: config.AuthTypeBasicAuth,
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionCreate, domain.DomainAll).
+					Return(domain.ErrForbidden)
+				uc := user_mock.NewMockusecase(ctrl)
+
+				return New(az, uc, config.AuthTypeBasicAuth)
+			},
+			wantCode: connect.CodePermissionDenied,
+		},
+		{
 			name:     "authType == None returns ErrFeatureNotAvailable",
 			authType: config.AuthTypeNone,
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionCreate, domain.DomainAll).
+					Return(nil)
 				uc := user_mock.NewMockusecase(ctrl)
 
-				return New(uc, config.AuthTypeNone)
+				return New(az, uc, config.AuthTypeNone)
 			},
 			wantCode:  connect.CodeInvalidArgument,
 			wantErrMs: "feature not available",
@@ -218,9 +283,13 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			authType:        config.AuthTypeOIDC,
 			initialPassword: "password",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionCreate, domain.DomainAll).
+					Return(nil)
 				uc := user_mock.NewMockusecase(ctrl)
 
-				return New(uc, config.AuthTypeOIDC)
+				return New(az, uc, config.AuthTypeOIDC)
 			},
 			wantCode:  connect.CodeInvalidArgument,
 			wantErrMs: "initial_password must not be set in OIDC mode",
@@ -230,12 +299,16 @@ func TestUserHandler_CreateUser(t *testing.T) {
 			authType:        config.AuthTypeBasicAuth,
 			initialPassword: "password",
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionCreate, domain.DomainAll).
+					Return(nil)
 				uc := user_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Create(gomock.Any(), email, "User", "password").
 					Return(&domain.User{Email: email, Name: "User"}, nil)
 
-				return New(uc, config.AuthTypeBasicAuth)
+				return New(az, uc, config.AuthTypeBasicAuth)
 			},
 		},
 	}
@@ -281,12 +354,31 @@ func TestUserHandler_ResetUserPassword(t *testing.T) {
 		wantCode connect.Code
 	}{
 		{
+			name:     "authz denied returns PermissionDenied",
+			authType: config.AuthTypeBasicAuth,
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionWrite, domain.DomainAll).
+					Return(domain.ErrForbidden)
+				uc := user_mock.NewMockusecase(ctrl)
+
+				return New(az, uc, config.AuthTypeBasicAuth)
+			},
+			wantErr:  true,
+			wantCode: connect.CodePermissionDenied,
+		},
+		{
 			name:     "authType == OIDC returns ErrFeatureNotAvailable",
 			authType: config.AuthTypeOIDC,
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionWrite, domain.DomainAll).
+					Return(nil)
 				uc := user_mock.NewMockusecase(ctrl)
 
-				return New(uc, config.AuthTypeOIDC)
+				return New(az, uc, config.AuthTypeOIDC)
 			},
 			wantErr:  true,
 			wantCode: connect.CodeInvalidArgument,
@@ -295,12 +387,16 @@ func TestUserHandler_ResetUserPassword(t *testing.T) {
 			name:     "authType == BasicAuth: success",
 			authType: config.AuthTypeBasicAuth,
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := user_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectUser, domain.ActionWrite, domain.DomainAll).
+					Return(nil)
 				uc := user_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					ResetPassword(gomock.Any(), email, "new-password").
 					Return(nil)
 
-				return New(uc, config.AuthTypeBasicAuth)
+				return New(az, uc, config.AuthTypeBasicAuth)
 			},
 		},
 	}

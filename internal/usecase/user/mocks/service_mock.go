@@ -14,6 +14,8 @@ import (
 	reflect "reflect"
 
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	storage "github.com/sergeyslonimsky/elara/internal/service/storage"
+	user "github.com/sergeyslonimsky/elara/internal/usecase/user"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -101,15 +103,83 @@ func (mr *MockstoreMockRecorder) SetPassword(ctx, email, hash, changeRequired an
 }
 
 // Upsert mocks base method.
-func (m *Mockstore) Upsert(ctx context.Context, user *domain.User) error {
+func (m *Mockstore) Upsert(ctx context.Context, arg1 *domain.User) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Upsert", ctx, user)
+	ret := m.ctrl.Call(m, "Upsert", ctx, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Upsert indicates an expected call of Upsert.
-func (mr *MockstoreMockRecorder) Upsert(ctx, user any) *gomock.Call {
+func (mr *MockstoreMockRecorder) Upsert(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*Mockstore)(nil).Upsert), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*Mockstore)(nil).Upsert), ctx, arg1)
+}
+
+// MockGroupReader is a mock of GroupReader interface.
+type MockGroupReader struct {
+	ctrl     *gomock.Controller
+	recorder *MockGroupReaderMockRecorder
+	isgomock struct{}
+}
+
+// MockGroupReaderMockRecorder is the mock recorder for MockGroupReader.
+type MockGroupReaderMockRecorder struct {
+	mock *MockGroupReader
+}
+
+// NewMockGroupReader creates a new mock instance.
+func NewMockGroupReader(ctrl *gomock.Controller) *MockGroupReader {
+	mock := &MockGroupReader{ctrl: ctrl}
+	mock.recorder = &MockGroupReaderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGroupReader) EXPECT() *MockGroupReaderMockRecorder {
+	return m.recorder
+}
+
+// FindByName mocks base method.
+func (m *MockGroupReader) FindByName(ctx context.Context, name string) (*domain.Group, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByName", ctx, name)
+	ret0, _ := ret[0].(*domain.Group)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByName indicates an expected call of FindByName.
+func (mr *MockGroupReaderMockRecorder) FindByName(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByName", reflect.TypeOf((*MockGroupReader)(nil).FindByName), ctx, name)
+}
+
+// Get mocks base method.
+func (m *MockGroupReader) Get(ctx context.Context, id string) (*domain.Group, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret0, _ := ret[0].(*domain.Group)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockGroupReaderMockRecorder) Get(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockGroupReader)(nil).Get), ctx, id)
+}
+
+// WithTx mocks base method.
+func (m *MockGroupReader) WithTx(tx storage.Tx) user.GroupReader {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithTx", tx)
+	ret0, _ := ret[0].(user.GroupReader)
+	return ret0
+}
+
+// WithTx indicates an expected call of WithTx.
+func (mr *MockGroupReaderMockRecorder) WithTx(tx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockGroupReader)(nil).WithTx), tx)
 }

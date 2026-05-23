@@ -6,8 +6,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
@@ -17,7 +15,7 @@ func TestService_Delete(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    config.DeleteInput
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, m mocks)
 		errIs    error
 		wantErr  string
 	}{
@@ -27,25 +25,10 @@ func TestService_Delete(t *testing.T) {
 				Namespace: "prod",
 				Path:      "/app/config.json",
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
-					Return(true, nil)
-
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.storage.EXPECT().Delete(ctx, "/app/config.json", "prod").Return(int64(10), nil)
 				m.watcher.EXPECT().NotifyDeleted(ctx, "/app/config.json", "prod", int64(10))
-
-				return ctx
 			},
-		},
-		{
-			name:  "unauthorized",
-			input: config.DeleteInput{Namespace: "prod"},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				return ctx
-			},
-			errIs: domain.ErrUnauthorized,
 		},
 	}
 
@@ -55,7 +38,8 @@ func TestService_Delete(t *testing.T) {
 
 			svc, m, _ := setupService(t)
 
-			ctx := tt.mockFunc(t.Context(), m)
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
 
 			err := svc.Delete(ctx, tt.input)
 

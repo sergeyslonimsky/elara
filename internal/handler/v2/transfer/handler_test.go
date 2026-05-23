@@ -31,12 +31,16 @@ func TestHandler_ExportNamespace(t *testing.T) {
 				Encoding:  transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectTransfer, domain.ActionRead, "prod").
+					Return(nil)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					ExportNamespace(gomock.Any(), "prod", false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON).
 					Return([]byte("{}"), "application/json", "prod-export.json", nil)
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
 			want: &transferv1.ExportNamespaceResponse{
 				ContentType: "application/json",
@@ -47,12 +51,13 @@ func TestHandler_ExportNamespace(t *testing.T) {
 			name: "unauthorized",
 			req:  &transferv1.ExportNamespaceRequest{Namespace: "prod"},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectTransfer, domain.ActionRead, "prod").
+					Return(domain.ErrUnauthorized)
 				uc := transfermock.NewMockusecase(ctrl)
-				uc.EXPECT().
-					ExportNamespace(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, "", "", domain.ErrUnauthorized)
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
 			errCode: connect.CodeUnauthenticated,
 		},
@@ -60,12 +65,13 @@ func TestHandler_ExportNamespace(t *testing.T) {
 			name: "forbidden",
 			req:  &transferv1.ExportNamespaceRequest{Namespace: "prod"},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectTransfer, domain.ActionRead, "prod").
+					Return(domain.ErrForbidden)
 				uc := transfermock.NewMockusecase(ctrl)
-				uc.EXPECT().
-					ExportNamespace(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, "", "", domain.ErrForbidden)
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
 			errCode: connect.CodePermissionDenied,
 		},
@@ -73,12 +79,16 @@ func TestHandler_ExportNamespace(t *testing.T) {
 			name: "not found",
 			req:  &transferv1.ExportNamespaceRequest{Namespace: "missing"},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectTransfer, domain.ActionRead, "missing").
+					Return(nil)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					ExportNamespace(gomock.Any(), "missing", gomock.Any(), gomock.Any()).
 					Return(nil, "", "", domain.ErrNotFound)
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
 			errCode: connect.CodeNotFound,
 		},
@@ -124,12 +134,13 @@ func TestHandler_ExportAll(t *testing.T) {
 				Encoding: transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					ExportAll(gomock.Any(), false, transferv1.BundleEncoding_BUNDLE_ENCODING_JSON, transferv1.ZipLayout(0)).
 					Return([]byte("{}"), "application/json", "elara-export-all.json", nil)
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
 			want: &transferv1.ExportAllResponse{
 				ContentType: "application/json",
@@ -137,17 +148,18 @@ func TestHandler_ExportAll(t *testing.T) {
 			},
 		},
 		{
-			name: "forbidden",
+			name: "usecase error",
 			req:  &transferv1.ExportAllRequest{},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					ExportAll(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, "", "", domain.ErrForbidden)
+					Return(nil, "", "", domain.ErrUnauthorized)
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
-			errCode: connect.CodePermissionDenied,
+			errCode: connect.CodeUnauthenticated,
 		},
 	}
 
@@ -194,16 +206,18 @@ func TestHandler_ImportNamespace(t *testing.T) {
 				Namespace: "prod",
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectTransfer, domain.ActionWrite, "prod").
+					Return(nil)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Import(gomock.Any(), validBundle, transferv1.ConflictResolution(0), false, "prod").
 					Return(&domain.ImportReport{}, nil)
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
-			want: &transferv1.ImportNamespaceResponse{
-				Created: 0,
-			},
+			want: &transferv1.ImportNamespaceResponse{Created: 0},
 		},
 		{
 			name: "invalid bundle",
@@ -212,12 +226,16 @@ func TestHandler_ImportNamespace(t *testing.T) {
 				Namespace: "prod",
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectTransfer, domain.ActionWrite, "prod").
+					Return(nil)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Import(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, domain.NewValidationError("data", "invalid bundle"))
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
 			errCode: connect.CodeInvalidArgument,
 		},
@@ -227,12 +245,13 @@ func TestHandler_ImportNamespace(t *testing.T) {
 				Data: validBundle,
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectTransfer, domain.ActionWrite, "").
+					Return(domain.ErrForbidden)
 				uc := transfermock.NewMockusecase(ctrl)
-				uc.EXPECT().
-					Import(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, domain.ErrForbidden)
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
 			errCode: connect.CodePermissionDenied,
 		},
@@ -242,12 +261,13 @@ func TestHandler_ImportNamespace(t *testing.T) {
 				Data: validBundle,
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectTransfer, domain.ActionWrite, "").
+					Return(domain.ErrUnauthorized)
 				uc := transfermock.NewMockusecase(ctrl)
-				uc.EXPECT().
-					Import(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, domain.ErrUnauthorized)
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
 			errCode: connect.CodeUnauthenticated,
 		},
@@ -258,12 +278,16 @@ func TestHandler_ImportNamespace(t *testing.T) {
 				Namespace: "prod",
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
+				az := transfermock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectTransfer, domain.ActionWrite, "prod").
+					Return(nil)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Import(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, assert.AnError)
 
-				return transfer.New(uc)
+				return transfer.New(az, uc)
 			},
 			errCode: connect.CodeInternal,
 		},

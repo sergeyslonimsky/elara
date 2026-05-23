@@ -9,43 +9,87 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
 func TestService_Search(t *testing.T) {
 	t.Parallel()
 
+	results := []*domain.ConfigSummary{
+		{Path: "/app/1.json", Namespace: "prod"},
+		{Path: "/app/2.json", Namespace: "dev"},
+		{Path: "/app/3.json", Namespace: "prod"},
+	}
+
 	tests := []struct {
-		name     string
-		params   config.SearchParams
-		mockFunc func(ctx context.Context, m mocks) context.Context
-		errIs    error
-		wantErr  string
-		want     *config.SearchResult
+		name      string
+		params    config.SearchParams
+		mockFunc  func(context.Context, mocks) context.Context
+		errIs     error
+		wantTotal int
 	}{
 		{
-			name: "success",
+			name: "missing claims",
+			params: config.SearchParams{
+				Query: "app",
+			},
+			mockFunc: func(ctx context.Context, _ mocks) context.Context {
+				return ctx
+			},
+			errIs: domain.ErrUnauthorized,
+		},
+		{
+			name: "empty scope returns empty result",
+			params: config.SearchParams{
+				Query: "app",
+				Limit: 10,
+			},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				m.pdp.EXPECT().
+					EffectiveDomains("user@example.com", domain.ObjectConfig, domain.ActionRead).
+					Return(authz.NewDomainSet())
+
+				return ctx
+			},
+			wantTotal: 0,
+		},
+		{
+			name: "wildcard scope returns all",
 			params: config.SearchParams{
 				Query:     "app",
-				Namespace: "prod",
+				Namespace: "",
 				Limit:     10,
 			},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().Enforce("user@example.com", "prod", "config", "read").Return(true, nil).Times(2)
-
-				results := []*domain.ConfigSummary{
-					{Path: "/app/1.json", Namespace: "prod"},
-					{Path: "/app/2.json", Namespace: "prod"},
-				}
-				m.storage.EXPECT().SearchByPath(ctx, "app", "prod").Return(results, nil)
+				m.pdp.EXPECT().
+					EffectiveDomains("user@example.com", domain.ObjectConfig, domain.ActionRead).
+					Return(authz.NewDomainSet("*"))
+				m.storage.EXPECT().SearchByPath(ctx, "app", "").Return(results, nil)
 
 				return ctx
 			},
-			want: &config.SearchResult{
-				Total: 2,
-				Limit: 10,
+			wantTotal: 3,
+		},
+		{
+			name: "explicit scope filters by namespace access",
+			params: config.SearchParams{
+				Query:     "app",
+				Namespace: "",
+				Limit:     10,
 			},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				m.pdp.EXPECT().
+					EffectiveDomains("user@example.com", domain.ObjectConfig, domain.ActionRead).
+					Return(authz.NewDomainSet("prod"))
+				m.storage.EXPECT().SearchByPath(ctx, "app", "").Return(results, nil)
+
+				return ctx
+			},
+			wantTotal: 2,
 		},
 	}
 
@@ -64,13 +108,8 @@ func TestService_Search(t *testing.T) {
 
 				return
 			}
-			if tt.wantErr != "" {
-				require.ErrorContains(t, err, tt.wantErr)
-
-				return
-			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.want.Total, got.Total)
+			assert.Equal(t, tt.wantTotal, got.Total)
 		})
 	}
 }

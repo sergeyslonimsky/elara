@@ -18,7 +18,7 @@ func (s *Service) ListActive(ctx context.Context) ([]*domain.Client, error) {
 		return nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.enforcer, claims.Email)
+	scope := newScopeChecker(s.pdp, claims.Email)
 
 	clients := s.active.ListActive()
 	sort.Slice(clients, func(i, j int) bool {
@@ -37,7 +37,7 @@ func (s *Service) ListHistorical(ctx context.Context, limit int) ([]*domain.Clie
 		return nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.enforcer, claims.Email)
+	scope := newScopeChecker(s.pdp, claims.Email)
 
 	const defaultLimit = 100
 	if limit <= 0 {
@@ -68,7 +68,7 @@ func (s *Service) ListSessions(
 		return nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.enforcer, claims.Email)
+	scope := newScopeChecker(s.pdp, claims.Email)
 
 	const defaultLimit = 50
 

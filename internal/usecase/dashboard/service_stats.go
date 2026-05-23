@@ -28,8 +28,11 @@ func (s *Service) GetStats(ctx context.Context) (*StatsResult, error) {
 	)
 
 	for _, ns := range namespaces {
-		allowed, _ := s.enforcer.Enforce(claims.Email, ns.Name, domain.ObjectConfig, domain.ActionRead)
-		if !allowed {
+		if !s.pdp.Has(claims.Email, domain.Permission{
+			Object: domain.ObjectConfig,
+			Action: domain.ActionRead,
+			Domain: ns.Name,
+		}) {
 			continue
 		}
 

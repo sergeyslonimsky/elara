@@ -14,46 +14,46 @@ import (
 	reflect "reflect"
 
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	authz "github.com/sergeyslonimsky/elara/internal/service/authz"
 	gomock "go.uber.org/mock/gomock"
 )
 
-// Mockenforcer is a mock of enforcer interface.
-type Mockenforcer struct {
+// Mockpdp is a mock of pdp interface.
+type Mockpdp struct {
 	ctrl     *gomock.Controller
-	recorder *MockenforcerMockRecorder
+	recorder *MockpdpMockRecorder
 	isgomock struct{}
 }
 
-// MockenforcerMockRecorder is the mock recorder for Mockenforcer.
-type MockenforcerMockRecorder struct {
-	mock *Mockenforcer
+// MockpdpMockRecorder is the mock recorder for Mockpdp.
+type MockpdpMockRecorder struct {
+	mock *Mockpdp
 }
 
-// NewMockenforcer creates a new mock instance.
-func NewMockenforcer(ctrl *gomock.Controller) *Mockenforcer {
-	mock := &Mockenforcer{ctrl: ctrl}
-	mock.recorder = &MockenforcerMockRecorder{mock}
+// NewMockpdp creates a new mock instance.
+func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
+	mock := &Mockpdp{ctrl: ctrl}
+	mock.recorder = &MockpdpMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockenforcer) EXPECT() *MockenforcerMockRecorder {
+func (m *Mockpdp) EXPECT() *MockpdpMockRecorder {
 	return m.recorder
 }
 
-// Enforce mocks base method.
-func (m *Mockenforcer) Enforce(subject, arg1, object, action string) (bool, error) {
+// EffectiveDomains mocks base method.
+func (m *Mockpdp) EffectiveDomains(principal, object, action string) authz.DomainSet {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Enforce", subject, arg1, object, action)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "EffectiveDomains", principal, object, action)
+	ret0, _ := ret[0].(authz.DomainSet)
+	return ret0
 }
 
-// Enforce indicates an expected call of Enforce.
-func (mr *MockenforcerMockRecorder) Enforce(subject, arg1, object, action any) *gomock.Call {
+// EffectiveDomains indicates an expected call of EffectiveDomains.
+func (mr *MockpdpMockRecorder) EffectiveDomains(principal, object, action any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enforce", reflect.TypeOf((*Mockenforcer)(nil).Enforce), subject, arg1, object, action)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveDomains", reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains), principal, object, action)
 }
 
 // Mockstorage is a mock of storage interface.

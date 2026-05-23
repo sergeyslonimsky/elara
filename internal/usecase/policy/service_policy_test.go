@@ -14,10 +14,10 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/usecase/policy"
 )
 
-// Authorization for policy.{AssignRole,RevokeRole,List} is enforced by the
-// RBAC interceptor; these tests cover only the business logic that remains
-// in the usecase. The Casbin enforcer is exercised end-to-end against a real
-// bbolt-backed PolicyRepo so we lock in the canonical g-rule layout
+// Authorization for policy.{AssignRole,RevokeRole,List} is enforced in the
+// AccessHandler (EL-4 M9); these tests cover only the business logic that
+// remains in the usecase. The Casbin enforcer is exercised end-to-end against
+// a real bbolt-backed PolicyRepo so we lock in the canonical g-rule layout
 // (group: prefix, single write, no per-member fan-out).
 
 func TestService_AssignRole(t *testing.T) {
@@ -45,7 +45,7 @@ func TestService_AssignRole(t *testing.T) {
 			verify: func(t *testing.T, e *casbin.Enforcer) {
 				t.Helper()
 
-				want := []string{domain.GroupSubject(groupName), role, dom}
+				want := []string{casbin.GroupSubject(groupName), role, dom}
 
 				rules := e.GetGroupingPolicy()
 				found := 0
@@ -69,7 +69,7 @@ func TestService_AssignRole(t *testing.T) {
 				t.Helper()
 				// No g-rule for this group should exist after the failed call.
 				for _, r := range e.GetGroupingPolicy() {
-					if len(r) == 3 && r[0] == domain.GroupSubject(groupName) {
+					if len(r) == 3 && r[0] == casbin.GroupSubject(groupName) {
 						t.Errorf("unexpected g-rule for group: %v", r)
 					}
 				}
@@ -159,7 +159,7 @@ func TestService_RevokeRole(t *testing.T) {
 
 			if tt.preSeed {
 				require.NoError(t, e.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-					return txe.AddRoleForUser(domain.GroupSubject(groupName), role, dom)
+					return txe.AddRoleForUser(casbin.GroupSubject(groupName), role, dom)
 				}))
 			}
 
@@ -180,7 +180,7 @@ func TestService_RevokeRole(t *testing.T) {
 			require.NoError(t, err)
 
 			// After successful revoke the g-rule must be gone.
-			want := []string{domain.GroupSubject(groupName), role, dom}
+			want := []string{casbin.GroupSubject(groupName), role, dom}
 			for _, r := range e.GetGroupingPolicy() {
 				if len(r) == 3 && r[0] == want[0] && r[1] == want[1] && r[2] == want[2] {
 					t.Errorf("g-rule %v should be removed", want)
@@ -205,9 +205,9 @@ func TestService_List(t *testing.T) {
 				// Direct user grant (plain email subject) — filtered.
 				{"admin@example.com", "admin", "*"},
 				// Canonical group->role rule.
-				{domain.GroupSubject("devops"), "admin", "prod"},
+				{casbin.GroupSubject("devops"), "admin", "prod"},
 				// Membership rule — column 0 is a plain user, filtered.
-				{"alice@example.com", domain.GroupSubject("devops"), "*"},
+				{"alice@example.com", casbin.GroupSubject("devops"), "*"},
 			},
 			want: []policy.Rule{
 				{Subject: "devops", Role: "admin", Domain: "prod"},

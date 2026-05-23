@@ -5,18 +5,15 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 )
 
 //go:generate mockgen -destination=mocks/service_mock.go -package=namespace_mock -source=service.go
 
 type (
-	authz interface {
-		Require(ctx context.Context, object, action, domainStr string) error
-	}
-
 	pdp interface {
 		Has(principal string, perm domain.Permission) bool
-		EffectiveDomains(principal, object, action string) domain.DomainSet
+		EffectiveDomains(principal, object, action string) authz.DomainSet
 	}
 
 	store interface {
@@ -41,15 +38,13 @@ type (
 )
 
 type Service struct {
-	authz    authz
 	pdp      pdp
 	store    store
 	notifier notifier
 }
 
-func New(authz authz, pdp pdp, store store, notifier notifier) *Service {
+func New(pdp pdp, store store, notifier notifier) *Service {
 	return &Service{
-		authz:    authz,
 		pdp:      pdp,
 		store:    store,
 		notifier: notifier,

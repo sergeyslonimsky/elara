@@ -36,6 +36,14 @@ func (a *Authz) Require(ctx context.Context, object, action, domainStr string) e
 	return nil
 }
 
+func (a *Authz) RequireUser(user domain.AuthInfo, object, action, domainStr string) error {
+	if !a.pdp.Has(user.Email, domain.Permission{Object: object, Action: action, Domain: domainStr}) {
+		return connect.NewError(connect.CodePermissionDenied, domain.ErrForbidden)
+	}
+
+	return nil
+}
+
 func (a *Authz) RequireAuthenticated(ctx context.Context) error {
 	_, ok := auth.ClaimsFromContext(ctx)
 	if !ok {

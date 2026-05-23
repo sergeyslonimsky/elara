@@ -27,6 +27,32 @@ describe("buildAbility", () => {
 		expect(ability.can("read", "Namespace")).toBe(true);
 		expect(ability.can("write", "Group")).toBe(true);
 		expect(ability.can("write", "all")).toBe(true);
+		expect(ability.can("create", "Namespace")).toBe(true);
+		expect(ability.can("create", "all")).toBe(true);
+	});
+
+	it("handles explicit (Namespace, CREATE, *) rule", () => {
+		const ability = buildAbility([
+			pa(PermissionObject.NAMESPACE, PermissionAction.CREATE, "*"),
+		]);
+		expect(ability.can("create", "Namespace")).toBe(true);
+		expect(ability.can("write", "Namespace")).toBe(false);
+		expect(ability.can("create", "Group")).toBe(false);
+	});
+
+	it("handles explicit (Config, CREATE, prod) rule", () => {
+		const ability = buildAbility([
+			pa(PermissionObject.CONFIG, PermissionAction.CREATE, "prod"),
+		]);
+		expect(ability.can("create", subject("Config", { domain: "prod" }))).toBe(
+			true,
+		);
+		expect(ability.can("create", subject("Config", { domain: "dev" }))).toBe(
+			false,
+		);
+		expect(ability.can("write", subject("Config", { domain: "prod" }))).toBe(
+			false,
+		);
 	});
 
 	it("handles global wildcard domain", () => {
@@ -63,6 +89,9 @@ describe("buildAbility", () => {
 			true,
 		);
 		expect(ability.can("write", subject("Config", { domain: "app-1" }))).toBe(
+			true,
+		);
+		expect(ability.can("create", subject("Config", { domain: "app-1" }))).toBe(
 			true,
 		);
 	});

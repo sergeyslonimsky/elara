@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 // Authorization is enforced at the handler boundary; these tests cover only
@@ -26,9 +24,6 @@ func TestService_Delete(t *testing.T) {
 		{
 			name: "success when namespace is empty",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.authz.EXPECT().
-					Require(ctx, domain.ObjectNamespace, domain.ActionWrite, name).
-					Return(nil)
 				m.store.EXPECT().CountConfigs(ctx, name).Return(0, nil)
 				m.store.EXPECT().Delete(ctx, name).Return(nil)
 
@@ -38,9 +33,6 @@ func TestService_Delete(t *testing.T) {
 		{
 			name: "rejects deletion when namespace still has configs",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.authz.EXPECT().
-					Require(ctx, domain.ObjectNamespace, domain.ActionWrite, name).
-					Return(nil)
 				m.store.EXPECT().CountConfigs(ctx, name).Return(5, nil)
 
 				return ctx
@@ -50,9 +42,6 @@ func TestService_Delete(t *testing.T) {
 		{
 			name: "delete store error",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.authz.EXPECT().
-					Require(ctx, domain.ObjectNamespace, domain.ActionWrite, name).
-					Return(nil)
 				m.store.EXPECT().CountConfigs(ctx, name).Return(0, nil)
 				m.store.EXPECT().Delete(ctx, name).Return(errors.New("db error"))
 

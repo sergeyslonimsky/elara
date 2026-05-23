@@ -25,72 +25,68 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "basic-auth with all fields",
+			name: "none type requires nothing",
 			auth: config.UIAuthConfig{
-				Enabled:            true,
-				Type:               config.AuthTypeBasicAuth,
-				AdminEmail:         "admin@example.com",
-				SuperAdminUsername: "admin",
-				SuperAdminPassword: "password",
+				Enabled: true,
+				Type:    config.AuthTypeNone,
+			},
+			wantErr: false,
+		},
+		{
+			name: "basic-auth with username and password",
+			auth: config.UIAuthConfig{
+				Enabled: true,
+				Type:    config.AuthTypeBasicAuth,
 				BasicAuth: config.BasicAuthConfig{
-					AdminInitialPassword: "password",
+					Username: "admin",
+					Password: "password",
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "basic-auth missing email",
+			name: "basic-auth missing username",
 			auth: config.UIAuthConfig{
-				Enabled:            true,
-				Type:               config.AuthTypeBasicAuth,
-				SuperAdminUsername: "admin",
-				SuperAdminPassword: "password",
+				Enabled: true,
+				Type:    config.AuthTypeBasicAuth,
 				BasicAuth: config.BasicAuthConfig{
-					AdminInitialPassword: "password",
+					Password: "password",
 				},
 			},
 			wantErr: true,
-			errMsg:  "basic-auth requires ui.auth.adminEmail to be set",
+			errMsg:  "basic-auth requires ui.auth.basicAuth.username to be set",
 		},
 		{
 			name: "basic-auth missing password",
 			auth: config.UIAuthConfig{
-				Enabled:            true,
-				Type:               config.AuthTypeBasicAuth,
-				AdminEmail:         "admin@example.com",
-				SuperAdminUsername: "admin",
-				SuperAdminPassword: "password",
+				Enabled: true,
+				Type:    config.AuthTypeBasicAuth,
+				BasicAuth: config.BasicAuthConfig{
+					Username: "admin",
+				},
 			},
 			wantErr: true,
-			errMsg:  "basic-auth requires ui.auth.basicAuth.adminInitialPassword to be set",
+			errMsg:  "basic-auth requires ui.auth.basicAuth.password to be set",
 		},
 		{
-			name: "superadmin missing username",
+			name: "oidc with admin email",
 			auth: config.UIAuthConfig{
-				Enabled:            true,
-				SuperAdminPassword: "password",
-			},
-			wantErr: true,
-			errMsg:  "ui.auth.superadmin.username (or SUPERADMIN_USERNAME) is required",
-		},
-		{
-			name: "superadmin missing password",
-			auth: config.UIAuthConfig{
-				Enabled:            true,
-				SuperAdminUsername: "admin",
-			},
-			wantErr: true,
-			errMsg:  "ui.auth.superadmin.password (or SUPERADMIN_PASSWORD) is required",
-		},
-		{
-			name: "oidc with superadmin",
-			auth: config.UIAuthConfig{
-				Enabled:            true,
-				Type:               config.AuthTypeOIDC,
-				SuperAdminUsername: "admin",
-				SuperAdminPassword: "password",
+				Enabled: true,
+				Type:    config.AuthTypeOIDC,
+				OIDC: config.OIDCConfig{
+					AdminEmail: "admin@example.com",
+				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "oidc missing admin email",
+			auth: config.UIAuthConfig{
+				Enabled: true,
+				Type:    config.AuthTypeOIDC,
+			},
+			wantErr: true,
+			errMsg:  "oidc requires ui.auth.oidc.adminEmail to be set",
 		},
 	}
 

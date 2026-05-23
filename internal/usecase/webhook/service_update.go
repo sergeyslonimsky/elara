@@ -17,6 +17,10 @@ type UpdateParams struct {
 	Enabled         bool
 }
 
+// Update mutates a webhook if the caller holds (Webhook, Write) on the
+// existing webhook's namespace. We do not re-check against the new
+// NamespaceFilter — moving a webhook between namespaces is gated by the same
+// Write right that lets the caller delete-and-recreate.
 func (s *Service) Update(ctx context.Context, id string, params UpdateParams) (*domain.Webhook, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
@@ -28,17 +32,11 @@ func (s *Service) Update(ctx context.Context, id string, params UpdateParams) (*
 		return nil, fmt.Errorf("get webhook: %w", err)
 	}
 
-	ns := existing.NamespaceFilter
-	if ns == "" {
-		ns = "*"
-	}
-
-	allowed, err := s.enforcer.Enforce(claims.Email, ns, "webhook", "write")
-	if err != nil {
-		return nil, fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
+	if !s.pdp.Has(claims.Email, domain.Permission{
+		Object: domain.ObjectWebhook,
+		Action: domain.ActionWrite,
+		Domain: webhookDomain(existing),
+	}) {
 		return nil, domain.ErrForbidden
 	}
 

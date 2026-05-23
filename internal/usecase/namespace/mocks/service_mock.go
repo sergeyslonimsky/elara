@@ -14,46 +14,9 @@ import (
 	reflect "reflect"
 
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	authz "github.com/sergeyslonimsky/elara/internal/service/authz"
 	gomock "go.uber.org/mock/gomock"
 )
-
-// Mockauthz is a mock of authz interface.
-type Mockauthz struct {
-	ctrl     *gomock.Controller
-	recorder *MockauthzMockRecorder
-	isgomock struct{}
-}
-
-// MockauthzMockRecorder is the mock recorder for Mockauthz.
-type MockauthzMockRecorder struct {
-	mock *Mockauthz
-}
-
-// NewMockauthz creates a new mock instance.
-func NewMockauthz(ctrl *gomock.Controller) *Mockauthz {
-	mock := &Mockauthz{ctrl: ctrl}
-	mock.recorder = &MockauthzMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockauthz) EXPECT() *MockauthzMockRecorder {
-	return m.recorder
-}
-
-// Require mocks base method.
-func (m *Mockauthz) Require(ctx context.Context, object, action, domainStr string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Require indicates an expected call of Require.
-func (mr *MockauthzMockRecorder) Require(ctx, object, action, domainStr any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*Mockauthz)(nil).Require), ctx, object, action, domainStr)
-}
 
 // Mockpdp is a mock of pdp interface.
 type Mockpdp struct {
@@ -80,10 +43,10 @@ func (m *Mockpdp) EXPECT() *MockpdpMockRecorder {
 }
 
 // EffectiveDomains mocks base method.
-func (m *Mockpdp) EffectiveDomains(principal, object, action string) domain.DomainSet {
+func (m *Mockpdp) EffectiveDomains(principal, object, action string) authz.DomainSet {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EffectiveDomains", principal, object, action)
-	ret0, _ := ret[0].(domain.DomainSet)
+	ret0, _ := ret[0].(authz.DomainSet)
 	return ret0
 }
 

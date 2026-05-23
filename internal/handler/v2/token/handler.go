@@ -15,27 +15,40 @@ import (
 
 //go:generate mockgen -destination=mocks/handler_mock.go -package=token_mock -source=handler.go
 
-type usecase interface {
-	Create(ctx context.Context, in tokenuc.CreateInput) (*domain.Token, string, error)
-	List(ctx context.Context, params tokenuc.ListParams) (*tokenuc.ListResult, error)
-	Get(ctx context.Context, id string) (*domain.Token, error)
-	Revoke(ctx context.Context, id string) error
-}
+type (
+	authz interface {
+		Require(ctx context.Context, object, action, domainStr string) error
+	}
+
+	usecase interface {
+		Create(ctx context.Context, in tokenuc.CreateInput) (*domain.Token, string, error)
+		List(ctx context.Context, params tokenuc.ListParams) (*tokenuc.ListResult, error)
+		Get(ctx context.Context, id string) (*domain.Token, error)
+		Revoke(ctx context.Context, id string) error
+	}
+)
 
 // Handler implements tokenv1connect.TokenServiceHandler.
 type Handler struct {
-	uc usecase
+	authz authz
+	uc    usecase
 }
 
 // New returns a new Handler.
-func New(uc usecase) *Handler {
-	return &Handler{uc: uc}
+func New(authz authz, uc usecase) *Handler {
+	return &Handler{authz: authz, uc: uc}
 }
 
 func (h *Handler) CreateToken(
 	ctx context.Context,
 	req *connect.Request[tokenv1.CreateTokenRequest],
 ) (*connect.Response[tokenv1.CreateTokenResponse], error) {
+	for _, ns := range req.Msg.GetNamespaces() {
+		if err := h.authz.Require(ctx, domain.ObjectToken, domain.ActionCreate, ns); err != nil {
+			return nil, v2.ToConnectError(err)
+		}
+	}
+
 	var expiresAt *time.Time
 	if req.Msg.GetExpiresAt() != nil {
 		t := req.Msg.GetExpiresAt().AsTime()

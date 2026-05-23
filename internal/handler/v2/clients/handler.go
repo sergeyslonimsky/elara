@@ -23,20 +23,27 @@ const defaultWatchSnapshotInterval = 2 * time.Second
 
 var errClientNotFound = errors.New("client not found")
 
-type usecase interface {
-	ListActive(ctx context.Context) ([]*domain.Client, error)
-	ListHistorical(ctx context.Context, limit int) ([]*domain.Client, error)
-	ListSessions(
-		ctx context.Context,
-		clientName, k8sNamespace, currentID string,
-		limit int,
-	) ([]*domain.Client, error)
-	Get(ctx context.Context, id string) (*domain.Client, []domain.ClientEvent, error)
-	SubscribeChanges(ctx context.Context) (<-chan domain.ClientChange, func(), error)
-	SubscribeClient(ctx context.Context, connID string) (<-chan domain.ClientChange, func(), error)
-}
+type (
+	authz interface {
+		Require(ctx context.Context, object, action, domainStr string) error
+	}
+
+	usecase interface {
+		ListActive(ctx context.Context) ([]*domain.Client, error)
+		ListHistorical(ctx context.Context, limit int) ([]*domain.Client, error)
+		ListSessions(
+			ctx context.Context,
+			clientName, k8sNamespace, currentID string,
+			limit int,
+		) ([]*domain.Client, error)
+		Get(ctx context.Context, id string) (*domain.Client, []domain.ClientEvent, error)
+		SubscribeChanges(ctx context.Context) (<-chan domain.ClientChange, func(), error)
+		SubscribeClient(ctx context.Context, connID string) (<-chan domain.ClientChange, func(), error)
+	}
+)
 
 type Handler struct {
+	authz            authz
 	uc               usecase
 	snapshotInterval time.Duration
 }
@@ -52,8 +59,8 @@ func WithSnapshotInterval(d time.Duration) Option {
 	return func(h *Handler) { h.snapshotInterval = d }
 }
 
-func NewHandler(uc usecase, opts ...Option) *Handler {
-	h := &Handler{uc: uc}
+func NewHandler(authz authz, uc usecase, opts ...Option) *Handler {
+	h := &Handler{authz: authz, uc: uc}
 	for _, opt := range opts {
 		opt(h)
 	}
@@ -85,6 +92,10 @@ func (h *Handler) GetClient(
 	ctx context.Context,
 	req *connect.Request[clientsv2.GetClientRequest],
 ) (*connect.Response[clientsv2.GetClientResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectClient, domain.ActionRead, domain.DomainAll); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	client, recent, err := h.uc.Get(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
@@ -185,6 +196,10 @@ func (h *Handler) WatchClients(
 	_ *connect.Request[clientsv2.WatchClientsRequest],
 	stream *connect.ServerStream[clientsv2.WatchClientsResponse],
 ) error {
+	if err := h.authz.Require(ctx, domain.ObjectClient, domain.ActionRead, domain.DomainAll); err != nil {
+		return v2.ToConnectError(err)
+	}
+
 	return h.runWatch(ctx, stream)
 }
 
@@ -201,6 +216,10 @@ func (h *Handler) WatchClient(
 	req *connect.Request[clientsv2.WatchClientRequest],
 	stream *connect.ServerStream[clientsv2.WatchClientResponse],
 ) error {
+	if err := h.authz.Require(ctx, domain.ObjectClient, domain.ActionRead, domain.DomainAll); err != nil {
+		return v2.ToConnectError(err)
+	}
+
 	return h.runWatchClient(ctx, req.Msg.GetId(), stream)
 }
 

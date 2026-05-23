@@ -6,6 +6,7 @@ import { SearchInput } from "@/components/search-input";
 import { SkeletonList } from "@/components/skeleton-list";
 import { listUsers } from "@/gen/elara/user/v1/user_service-UserService_connectquery";
 import { useTableState } from "@/hooks/use-table-state";
+import { CreateUserDialog } from "./components/create-user-dialog";
 import { UserTable } from "./components/user-table";
 
 export function UsersPage() {
@@ -32,13 +33,16 @@ export function UsersPage() {
 			onRefresh={() => refetch()}
 			isRefreshing={isFetching}
 			headerSlot={
-				<SearchInput
-					value={searchInput}
-					onChange={setSearchInput}
-					onSearch={handleSearch}
-					onClear={handleClear}
-					placeholder="Search users..."
-				/>
+				<div className="flex items-center gap-2">
+					<SearchInput
+						value={searchInput}
+						onChange={setSearchInput}
+						onSearch={handleSearch}
+						onClear={handleClear}
+						placeholder="Search users..."
+					/>
+					<CreateUserDialog />
+				</div>
 			}
 		>
 			<div className="flex flex-col gap-4">

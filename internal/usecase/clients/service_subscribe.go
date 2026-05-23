@@ -17,7 +17,7 @@ func (s *Service) SubscribeChanges(ctx context.Context) (<-chan domain.ClientCha
 	}
 
 	upstream, cancel := s.active.Subscribe()
-	scope := newScopeChecker(s.enforcer, claims.Email)
+	scope := newScopeChecker(s.pdp, claims.Email)
 
 	if scope.admin {
 		return upstream, cancel, nil
@@ -53,7 +53,7 @@ func (s *Service) SubscribeClient(ctx context.Context, connID string) (<-chan do
 		return nil, nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.enforcer, claims.Email)
+	scope := newScopeChecker(s.pdp, claims.Email)
 
 	if !scope.admin {
 		c := s.active.Get(connID)

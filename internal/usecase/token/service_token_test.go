@@ -11,6 +11,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/usecase/token"
 )
 
@@ -34,12 +35,67 @@ func TestService_Create(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "user@example.com")
 
-				m.enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(true, nil)
-				m.enforcer.EXPECT().Enforce("user@example.com", "ns1", "config", "write").Return(true, nil)
+				m.pdp.EXPECT().Has("user@example.com", domain.Permission{
+					Object: domain.ObjectConfig,
+					Action: domain.ActionWrite,
+					Domain: "ns1",
+				}).Return(true)
 				m.store.EXPECT().Create(ctx, gomock.Any()).Return(nil)
 
 				return ctx
 			},
+		},
+		{
+			name: "role-boundary denied: writer token requires config:write on ns",
+			input: token.CreateInput{
+				Name:       "test-token",
+				Namespaces: []string{"ns1"},
+				Role:       "writer",
+			},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = ctxWithClaims(ctx, "user@example.com")
+
+				m.pdp.EXPECT().Has("user@example.com", domain.Permission{
+					Object: domain.ObjectConfig,
+					Action: domain.ActionWrite,
+					Domain: "ns1",
+				}).Return(false)
+
+				return ctx
+			},
+			errIs: domain.ErrPermissionEscalation,
+		},
+		{
+			name: "role-boundary: reader token requires config:read on ns",
+			input: token.CreateInput{
+				Name:       "test-token",
+				Namespaces: []string{"ns1"},
+				Role:       "reader",
+			},
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = ctxWithClaims(ctx, "user@example.com")
+
+				m.pdp.EXPECT().Has("user@example.com", domain.Permission{
+					Object: domain.ObjectConfig,
+					Action: domain.ActionRead,
+					Domain: "ns1",
+				}).Return(false)
+
+				return ctx
+			},
+			errIs: domain.ErrPermissionEscalation,
+		},
+		{
+			name: "invalid role",
+			input: token.CreateInput{
+				Name:       "test-token",
+				Namespaces: []string{"ns1"},
+				Role:       "bogus",
+			},
+			mockFunc: func(ctx context.Context, _ mocks) context.Context {
+				return ctxWithClaims(ctx, "user@example.com")
+			},
+			wantErr: "must be reader or writer",
 		},
 		{
 			name: "unauthorized",
@@ -64,21 +120,6 @@ func TestService_Create(t *testing.T) {
 			wantErr: "at least one namespace is required",
 		},
 		{
-			name: "forbidden namespace",
-			input: token.CreateInput{
-				Name:       "test-token",
-				Namespaces: []string{"ns1"},
-			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = ctxWithClaims(ctx, "user@example.com")
-
-				m.enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(false, nil)
-
-				return ctx
-			},
-			errIs: domain.ErrForbidden,
-		},
-		{
 			name: "store error",
 			input: token.CreateInput{
 				Name:       "test-token",
@@ -88,7 +129,11 @@ func TestService_Create(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "user@example.com")
 
-				m.enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(true, nil)
+				m.pdp.EXPECT().Has("user@example.com", domain.Permission{
+					Object: domain.ObjectConfig,
+					Action: domain.ActionRead,
+					Domain: "ns1",
+				}).Return(true)
 				m.store.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("db error"))
 
 				return ctx
@@ -152,14 +197,14 @@ func TestService_List(t *testing.T) {
 			errIs: domain.ErrUnauthorized,
 		},
 		{
-			name:   "wildcard namespace scope forwards AnyNamespace",
+			name:   "wildcard token scope forwards AnyNamespace",
 			params: token.ListParams{},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "admin@example.com")
 
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", "namespace", "read").
-					Return(domain.DomainSet{Wildcard: true})
+					EffectiveDomains("admin@example.com", "token", "read").
+					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(ctx, domain.TokenFilter{
 					NamespaceScopes: nil,
 					AnyNamespace:    true,
@@ -176,14 +221,14 @@ func TestService_List(t *testing.T) {
 			},
 		},
 		{
-			name:   "explicit namespace scope forwards NamespaceScopes",
+			name:   "explicit token scope forwards NamespaceScopes",
 			params: token.ListParams{},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "user@example.com")
 
 				m.pdp.EXPECT().
-					EffectiveDomains("user@example.com", "namespace", "read").
-					Return(domain.DomainSet{
+					EffectiveDomains("user@example.com", "token", "read").
+					Return(authz.DomainSet{
 						Explicit: map[string]struct{}{"ns1": {}, "ns2": {}},
 					})
 				m.store.EXPECT().List(ctx, domain.TokenFilter{
@@ -202,14 +247,14 @@ func TestService_List(t *testing.T) {
 			},
 		},
 		{
-			name:   "empty namespace scope returns empty result without calling store",
+			name:   "empty token scope returns empty result without calling store",
 			params: token.ListParams{},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "noaccess@example.com")
 
 				m.pdp.EXPECT().
-					EffectiveDomains("noaccess@example.com", "namespace", "read").
-					Return(domain.DomainSet{Explicit: map[string]struct{}{}})
+					EffectiveDomains("noaccess@example.com", "token", "read").
+					Return(authz.DomainSet{Explicit: map[string]struct{}{}})
 
 				return ctx
 			},
@@ -227,8 +272,8 @@ func TestService_List(t *testing.T) {
 				ctx = ctxWithClaims(ctx, "admin@example.com")
 
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", "namespace", "read").
-					Return(domain.DomainSet{Wildcard: true})
+					EffectiveDomains("admin@example.com", "token", "read").
+					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(ctx, domain.TokenFilter{
 					AnyNamespace: true,
 					IssuedBy:     "alice@example.com",
@@ -251,8 +296,8 @@ func TestService_List(t *testing.T) {
 				ctx = ctxWithClaims(ctx, "admin@example.com")
 
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", "namespace", "read").
-					Return(domain.DomainSet{Wildcard: true})
+					EffectiveDomains("admin@example.com", "token", "read").
+					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(ctx, domain.TokenFilter{
 					AnyNamespace: true,
 					Search:       "prod",
@@ -275,8 +320,8 @@ func TestService_List(t *testing.T) {
 				ctx = ctxWithClaims(ctx, "admin@example.com")
 
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", "namespace", "read").
-					Return(domain.DomainSet{Wildcard: true})
+					EffectiveDomains("admin@example.com", "token", "read").
+					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(ctx, domain.TokenFilter{
 					AnyNamespace: true,
 				}, domain.TokenListParams{Limit: 5, Offset: 10}).
@@ -298,8 +343,8 @@ func TestService_List(t *testing.T) {
 				ctx = ctxWithClaims(ctx, "admin@example.com")
 
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", "namespace", "read").
-					Return(domain.DomainSet{Wildcard: true})
+					EffectiveDomains("admin@example.com", "token", "read").
+					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(ctx, domain.TokenFilter{
 					AnyNamespace: true,
 				}, domain.TokenListParams{Limit: 20}).
@@ -321,8 +366,8 @@ func TestService_List(t *testing.T) {
 				ctx = ctxWithClaims(ctx, "admin@example.com")
 
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", "namespace", "read").
-					Return(domain.DomainSet{Wildcard: true})
+					EffectiveDomains("admin@example.com", "token", "read").
+					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(ctx, gomock.Any(), gomock.Any()).
 					Return(nil, 0, errors.New("db error"))
 
@@ -370,54 +415,45 @@ func TestService_Get(t *testing.T) {
 		wantErr  string
 	}{
 		{
-			name: "owner success",
-			id:   "t1",
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = ctxWithClaims(ctx, "owner@example.com")
-
-				m.store.EXPECT().GetByID(ctx, "t1").Return(testToken, nil)
-
-				return ctx
-			},
-		},
-		{
-			name: "admin success",
-			id:   "t1",
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = ctxWithClaims(ctx, "admin@example.com")
-
-				m.store.EXPECT().GetByID(ctx, "t1").Return(testToken, nil)
-				m.enforcer.EXPECT().Enforce("admin@example.com", "*", "token", "read").Return(true, nil)
-
-				return ctx
-			},
-		},
-		{
-			name: "namespace access success",
+			name: "caller with token read on scoped namespace",
 			id:   "t1",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "user@example.com")
 
 				m.store.EXPECT().GetByID(ctx, "t1").Return(testToken, nil)
-				m.enforcer.EXPECT().Enforce("user@example.com", "*", "token", "read").Return(false, nil)
-				m.enforcer.EXPECT().Enforce("user@example.com", "ns1", "namespace", "read").Return(true, nil)
+				m.pdp.EXPECT().Has("user@example.com", domain.Permission{
+					Object: domain.ObjectToken,
+					Action: domain.ActionRead,
+					Domain: "ns1",
+				}).Return(true)
 
 				return ctx
 			},
 		},
 		{
-			name: "forbidden",
+			name: "forbidden when no token read on any scoped namespace",
 			id:   "t1",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "stranger@example.com")
 
 				m.store.EXPECT().GetByID(ctx, "t1").Return(testToken, nil)
-				m.enforcer.EXPECT().Enforce("stranger@example.com", "*", "token", "read").Return(false, nil)
-				m.enforcer.EXPECT().Enforce("stranger@example.com", "ns1", "namespace", "read").Return(false, nil)
+				m.pdp.EXPECT().Has("stranger@example.com", domain.Permission{
+					Object: domain.ObjectToken,
+					Action: domain.ActionRead,
+					Domain: "ns1",
+				}).Return(false)
 
 				return ctx
 			},
 			errIs: domain.ErrForbidden,
+		},
+		{
+			name: "unauthenticated",
+			id:   "t1",
+			mockFunc: func(ctx context.Context, _ mocks) context.Context {
+				return ctx
+			},
+			errIs: domain.ErrUnauthorized,
 		},
 	}
 
@@ -449,7 +485,7 @@ func TestService_Get(t *testing.T) {
 func TestService_Revoke(t *testing.T) {
 	t.Parallel()
 
-	testToken := &domain.Token{ID: "t1", IssuedBy: "owner@example.com"}
+	testToken := &domain.Token{ID: "t1", IssuedBy: "owner@example.com", Namespaces: []string{"ns1"}}
 
 	tests := []struct {
 		name     string
@@ -459,42 +495,46 @@ func TestService_Revoke(t *testing.T) {
 		wantErr  string
 	}{
 		{
-			name: "owner success",
-			id:   "t1",
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = ctxWithClaims(ctx, "owner@example.com")
-
-				m.store.EXPECT().GetByID(ctx, "t1").Return(testToken, nil)
-				m.store.EXPECT().Delete(ctx, "t1").Return(nil)
-
-				return ctx
-			},
-		},
-		{
-			name: "admin success",
+			name: "caller with token write on scoped namespace",
 			id:   "t1",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "admin@example.com")
 
 				m.store.EXPECT().GetByID(ctx, "t1").Return(testToken, nil)
-				m.enforcer.EXPECT().Enforce("admin@example.com", "*", "token", "write").Return(true, nil)
+				m.pdp.EXPECT().Has("admin@example.com", domain.Permission{
+					Object: domain.ObjectToken,
+					Action: domain.ActionWrite,
+					Domain: "ns1",
+				}).Return(true)
 				m.store.EXPECT().Delete(ctx, "t1").Return(nil)
 
 				return ctx
 			},
 		},
 		{
-			name: "forbidden",
+			name: "forbidden when no token write on any scoped namespace",
 			id:   "t1",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = ctxWithClaims(ctx, "stranger@example.com")
 
 				m.store.EXPECT().GetByID(ctx, "t1").Return(testToken, nil)
-				m.enforcer.EXPECT().Enforce("stranger@example.com", "*", "token", "write").Return(false, nil)
+				m.pdp.EXPECT().Has("stranger@example.com", domain.Permission{
+					Object: domain.ObjectToken,
+					Action: domain.ActionWrite,
+					Domain: "ns1",
+				}).Return(false)
 
 				return ctx
 			},
 			errIs: domain.ErrForbidden,
+		},
+		{
+			name: "unauthenticated",
+			id:   "t1",
+			mockFunc: func(ctx context.Context, _ mocks) context.Context {
+				return ctx
+			},
+			errIs: domain.ErrUnauthorized,
 		},
 	}
 

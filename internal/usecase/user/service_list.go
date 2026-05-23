@@ -6,6 +6,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 )
 
 const defaultListLimit = 20
@@ -66,14 +67,14 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 	default:
 		usernames := make(map[string]struct{})
 		for d := range groupScope.Explicit {
-			if !domain.IsGroupSubject(d) {
+			if !casbin.IsGroupSubject(d) {
 				continue
 			}
 			// GetMembersOfGroup returns subjects which may be users (emails)
 			// or nested groups. EL-4 §1 «Не-цели» excludes nested groups, so
 			// we keep only user-style subjects.
 			for _, m := range s.enforcer.GetMembersOfGroup(d) {
-				if !domain.IsGroupSubject(m) {
+				if !casbin.IsGroupSubject(m) {
 					usernames[m] = struct{}{}
 				}
 			}

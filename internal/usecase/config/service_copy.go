@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/util/maputil"
 )
 
@@ -28,11 +27,6 @@ func (s *Service) Copy(ctx context.Context, in CopyInput) (*domain.Config, error
 
 	if in.DestNamespace == "" {
 		return nil, domain.NewValidationError("destination_namespace", "namespace is required")
-	}
-
-	// Check write permission on destination namespace.
-	if err := auth.CheckAccess(ctx, s.enforcer, in.DestNamespace, domain.ObjectConfig, domain.ActionWrite); err != nil {
-		return nil, fmt.Errorf("check access: %w", err)
 	}
 
 	// Get source config.

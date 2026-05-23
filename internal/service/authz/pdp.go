@@ -25,12 +25,12 @@ func NewPDP(e enforcer) *PDP {
 	return &PDP{enforcer: e}
 }
 
-func (p *PDP) EffectiveDomains(principal, object, action string) domain.DomainSet {
+func (p *PDP) EffectiveDomains(principal, object, action string) DomainSet {
 	rules, err := p.enforcer.GetImplicitPermissionsForUser(principal)
 	if err != nil {
 		slog.Error("pdp: failed to get implicit permissions", "principal", principal, "err", err)
 
-		return domain.NewDomainSet()
+		return NewDomainSet()
 	}
 
 	var domains []string
@@ -48,7 +48,7 @@ func (p *PDP) EffectiveDomains(principal, object, action string) domain.DomainSe
 		}
 	}
 
-	return domain.NewDomainSet(domains...)
+	return NewDomainSet(domains...)
 }
 
 func (p *PDP) Has(principal string, perm domain.Permission) bool {

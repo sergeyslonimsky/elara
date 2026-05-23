@@ -18,6 +18,8 @@ import (
 func TestService_List(t *testing.T) {
 	t.Parallel()
 
+	const testEmail = "user@example.com"
+
 	tests := []struct {
 		name      string
 		namespace string
@@ -30,16 +32,20 @@ func TestService_List(t *testing.T) {
 			name:      "success",
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
 
-				enforcer := schemamock.NewMockenforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(true, nil)
+				pdp := schemamock.NewMockpdp(ctrl)
+				pdp.EXPECT().Has(testEmail, domain.Permission{
+					Object: domain.ObjectSchema,
+					Action: domain.ActionRead,
+					Domain: "prod",
+				}).Return(true)
 
 				store := schemamock.NewMockstore(ctrl)
 				list := []*domain.SchemaAttachment{{ID: "s1"}}
 				store.EXPECT().List(ctx, "prod").Return(list, nil)
 
-				return schema.New(enforcer, store, nil), ctx
+				return schema.New(pdp, store, nil), ctx
 			},
 			want: []*domain.SchemaAttachment{{ID: "s1"}},
 		},
@@ -47,18 +53,23 @@ func TestService_List(t *testing.T) {
 			name:      "forbidden returns nil",
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				enforcer := schemamock.NewMockenforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(false, nil)
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
 
-				return schema.New(enforcer, nil, nil), ctx
+				pdp := schemamock.NewMockpdp(ctrl)
+				pdp.EXPECT().Has(testEmail, domain.Permission{
+					Object: domain.ObjectSchema,
+					Action: domain.ActionRead,
+					Domain: "prod",
+				}).Return(false)
+
+				return schema.New(pdp, nil, nil), ctx
 			},
 			want: nil,
 		},
 		{
 			name:      "unauthorized",
 			namespace: "prod",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*schema.Service, context.Context) {
 				return schema.New(nil, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,
@@ -67,13 +78,19 @@ func TestService_List(t *testing.T) {
 			name:      "list error",
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				enforcer := schemamock.NewMockenforcer(ctrl)
-				enforcer.EXPECT().Enforce("user@example.com", "prod", "schema", "read").Return(true, nil)
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
+
+				pdp := schemamock.NewMockpdp(ctrl)
+				pdp.EXPECT().Has(testEmail, domain.Permission{
+					Object: domain.ObjectSchema,
+					Action: domain.ActionRead,
+					Domain: "prod",
+				}).Return(true)
+
 				store := schemamock.NewMockstore(ctrl)
 				store.EXPECT().List(ctx, "prod").Return(nil, errors.New("db error"))
 
-				return schema.New(enforcer, store, nil), ctx
+				return schema.New(pdp, store, nil), ctx
 			},
 			wantErr: "list schemas: db error",
 		},

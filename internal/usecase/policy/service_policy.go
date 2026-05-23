@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
@@ -26,7 +25,7 @@ func (s *Service) AssignRole(ctx context.Context, subject, dom, role string) err
 	}
 
 	err := s.enforcer.WriteTx(ctx, s.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		if err := txe.AddRoleForUser(domain.GroupSubject(subject), role, dom); err != nil {
+		if err := txe.AddRoleForUser(casbin.GroupSubject(subject), role, dom); err != nil {
 			return fmt.Errorf("add role for group: %w", err)
 		}
 
@@ -46,7 +45,7 @@ func (s *Service) RevokeRole(ctx context.Context, subject, dom, role string) err
 	}
 
 	err := s.enforcer.WriteTx(ctx, s.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		if err := txe.RemoveRoleForUser(domain.GroupSubject(subject), role, dom); err != nil {
+		if err := txe.RemoveRoleForUser(casbin.GroupSubject(subject), role, dom); err != nil {
 			return fmt.Errorf("remove role for group: %w", err)
 		}
 
@@ -71,12 +70,12 @@ func (s *Service) List(_ context.Context) ([]Rule, error) {
 			continue
 		}
 
-		if !domain.IsGroupSubject(rule[0]) {
+		if !casbin.IsGroupSubject(rule[0]) {
 			continue
 		}
 
 		result = append(result, Rule{
-			Subject: domain.GroupNameFromSubject(rule[0]),
+			Subject: casbin.GroupNameFromSubject(rule[0]),
 			Role:    rule[1],
 			Domain:  rule[2],
 		})

@@ -10,7 +10,7 @@ import (
 )
 
 type mocks struct {
-	enforcer          *configmock.Mockenforcer
+	pdp               *configmock.Mockpdp
 	storage           *configmock.Mockstorage
 	watcher           *configmock.Mockwatcher
 	namespaceProvider *configmock.MocknamespaceProvider
@@ -22,13 +22,13 @@ func setupService(t *testing.T) (*config.Service, mocks, *gomock.Controller) {
 	ctrl := gomock.NewController(t)
 
 	m := mocks{
-		enforcer:          configmock.NewMockenforcer(ctrl),
+		pdp:               configmock.NewMockpdp(ctrl),
 		storage:           configmock.NewMockstorage(ctrl),
 		watcher:           configmock.NewMockwatcher(ctrl),
 		namespaceProvider: configmock.NewMocknamespaceProvider(ctrl),
 		schemaValidator:   configmock.NewMockschemaValidator(ctrl),
 	}
-	svc := config.New(m.enforcer, m.storage, m.watcher, m.namespaceProvider, m.schemaValidator)
+	svc := config.New(m.pdp, m.storage, m.watcher, m.namespaceProvider, m.schemaValidator)
 
 	return svc, m, ctrl
 }

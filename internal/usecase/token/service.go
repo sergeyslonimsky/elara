@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 )
 
 const (
@@ -19,12 +20,9 @@ const (
 )
 
 type (
-	enforcer interface {
-		Enforce(subject, domain, object, action string) (bool, error)
-	}
-
 	pdp interface {
-		EffectiveDomains(principal, object, action string) domain.DomainSet
+		Has(principal string, perm domain.Permission) bool
+		EffectiveDomains(principal, object, action string) authz.DomainSet
 	}
 
 	store interface {
@@ -40,16 +38,14 @@ type (
 )
 
 type Service struct {
-	enforcer enforcer
-	pdp      pdp
-	store    store
+	pdp   pdp
+	store store
 }
 
-func New(enforcer enforcer, pdp pdp, store store) *Service {
+func New(pdp pdp, store store) *Service {
 	return &Service{
-		enforcer: enforcer,
-		pdp:      pdp,
-		store:    store,
+		pdp:   pdp,
+		store: store,
 	}
 }
 

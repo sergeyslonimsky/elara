@@ -30,32 +30,61 @@ func TestService_Get(t *testing.T) {
 			id:   "wh-1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionRead).
-					Return(true, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionRead,
+						Domain: "prod",
+					}).
+					Return(true)
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
 			want: &domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"},
+		},
+		{
+			name: "global webhook uses wildcard domain",
+			id:   "wh-global",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
+				ctx = webhookTestCtx(ctx)
+				pdp := webhookmock.NewMockpdp(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
+
+				repo.EXPECT().Get(ctx, "wh-global").Return(&domain.Webhook{ID: "wh-global"}, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionRead,
+						Domain: domain.DomainAll,
+					}).
+					Return(true)
+
+				return webhookuc.New(pdp, repo, nil), ctx
+			},
+			want: &domain.Webhook{ID: "wh-global"},
 		},
 		{
 			name: "forbidden",
 			id:   "wh-1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionRead).
-					Return(false, nil)
+				pdp.EXPECT().
+					Has("test@example.com", domain.Permission{
+						Object: domain.ObjectWebhook,
+						Action: domain.ActionRead,
+						Domain: "prod",
+					}).
+					Return(false)
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
 			errIs: domain.ErrForbidden,
 		},
@@ -75,7 +104,7 @@ func TestService_Get(t *testing.T) {
 		{
 			name: "unauthorized",
 			id:   "wh-1",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*webhookuc.Service, context.Context) {
 				return webhookuc.New(nil, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,

@@ -10,7 +10,7 @@ import {
 	PermissionObject,
 } from "@/gen/elara/common/v1/permission_pb";
 
-export type Action = "read" | "write";
+export type Action = "read" | "write" | "create";
 
 type Tagged<N extends string> = {
 	readonly __caslSubjectType__: N;
@@ -43,9 +43,11 @@ export function actionOf(action: PermissionAction): Action {
 			return "read";
 		case PermissionAction.WRITE:
 			return "write";
+		case PermissionAction.CREATE:
+			return "create";
 		case PermissionAction.ALL:
 			// Invariant: PermissionAction.ALL is handled explicitly in buildAbility
-			// to add both 'read' and 'write' rules. This branch is defensive.
+			// to add all three (read/write/create) rules. This branch is defensive.
 			return "write";
 		default:
 			return "read";
@@ -116,6 +118,7 @@ export function buildAbility(perms: PermissionAssignment[]): AppAbility {
 			// Superadmin catch-all using CASL 'all' keyword
 			can("read", "all");
 			can("write", "all");
+			can("create", "all");
 			continue;
 		}
 
@@ -123,6 +126,7 @@ export function buildAbility(perms: PermissionAssignment[]): AppAbility {
 			if (p.action === PermissionAction.ALL) {
 				can("read", subjectName);
 				can("write", subjectName);
+				can("create", subjectName);
 			} else {
 				can(actionOf(p.action), subjectName);
 			}
@@ -130,6 +134,7 @@ export function buildAbility(perms: PermissionAssignment[]): AppAbility {
 			if (p.action === PermissionAction.ALL) {
 				can("read", subjectName, { domain: p.domain });
 				can("write", subjectName, { domain: p.domain });
+				can("create", subjectName, { domain: p.domain });
 			} else {
 				can(actionOf(p.action), subjectName, { domain: p.domain });
 			}

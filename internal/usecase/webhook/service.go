@@ -4,13 +4,15 @@ import (
 	"context"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 )
 
 //go:generate mockgen -destination=mocks/service_mock.go -package=webhook_mock -source=service.go
 
 type (
-	enforcer interface {
-		Enforce(subject, domain, object, action string) (bool, error)
+	pdp interface {
+		Has(principal string, perm domain.Permission) bool
+		EffectiveDomains(principal, object, action string) authz.DomainSet
 	}
 
 	repo interface {
@@ -28,14 +30,14 @@ type (
 )
 
 type Service struct {
-	enforcer   enforcer
+	pdp        pdp
 	repo       repo
 	dispatcher dispatcher
 }
 
-func New(enforcer enforcer, repo repo, dispatcher dispatcher) *Service {
+func New(pdp pdp, repo repo, dispatcher dispatcher) *Service {
 	return &Service{
-		enforcer:   enforcer,
+		pdp:        pdp,
 		repo:       repo,
 		dispatcher: dispatcher,
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 type AttachInput struct {
@@ -18,20 +17,6 @@ type AttachInput struct {
 }
 
 func (s *Service) Attach(ctx context.Context, in AttachInput) (*domain.SchemaAttachment, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, domain.ErrUnauthorized
-	}
-
-	allowed, err := s.enforcer.Enforce(claims.Email, in.Namespace, "schema", "write")
-	if err != nil {
-		return nil, fmt.Errorf("enforce: %w", err)
-	}
-
-	if !allowed {
-		return nil, domain.ErrForbidden
-	}
-
 	ns, err := s.namespaces.Get(ctx, in.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("get namespace: %w", err)

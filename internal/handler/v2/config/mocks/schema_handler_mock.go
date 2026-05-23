@@ -18,6 +18,44 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
+// MockschemaAuthz is a mock of schemaAuthz interface.
+type MockschemaAuthz struct {
+	ctrl     *gomock.Controller
+	recorder *MockschemaAuthzMockRecorder
+	isgomock struct{}
+}
+
+// MockschemaAuthzMockRecorder is the mock recorder for MockschemaAuthz.
+type MockschemaAuthzMockRecorder struct {
+	mock *MockschemaAuthz
+}
+
+// NewMockschemaAuthz creates a new mock instance.
+func NewMockschemaAuthz(ctrl *gomock.Controller) *MockschemaAuthz {
+	mock := &MockschemaAuthz{ctrl: ctrl}
+	mock.recorder = &MockschemaAuthzMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockschemaAuthz) EXPECT() *MockschemaAuthzMockRecorder {
+	return m.recorder
+}
+
+// Require mocks base method.
+func (m *MockschemaAuthz) Require(ctx context.Context, object, action, domainStr string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Require indicates an expected call of Require.
+func (mr *MockschemaAuthzMockRecorder) Require(ctx, object, action, domainStr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*MockschemaAuthz)(nil).Require), ctx, object, action, domainStr)
+}
+
 // MockschemaUsecase is a mock of schemaUsecase interface.
 type MockschemaUsecase struct {
 	ctrl     *gomock.Controller

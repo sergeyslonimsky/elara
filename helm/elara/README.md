@@ -75,8 +75,8 @@ helm install elara ./helm/elara \
 helm install elara ./helm/elara \
   --set config.ui.auth.enabled=true \
   --set config.ui.auth.type=basic-auth \
-  --set config.ui.auth.adminEmail=admin@example.com \
-  --set config.ui.auth.basicAuth.adminInitialPassword=ChangeMe123 \
+  --set config.ui.auth.basicAuth.username=admin@example.com \
+  --set config.ui.auth.basicAuth.password=ChangeMe123 \
   --set config.ui.auth.session.secret=a-long-random-string
 ```
 The chart creates a `{release}-auth` Secret holding the sensitive values.
@@ -88,24 +88,26 @@ external-secrets or Vault) and omit the plaintext values:
 helm install elara ./helm/elara \
   --set config.ui.auth.enabled=true \
   --set config.ui.auth.type=basic-auth \
-  --set config.ui.auth.adminEmail=admin@example.com \
+  --set config.ui.auth.basicAuth.username=admin@example.com \
   --set config.ui.auth.existingSecret=my-elara-auth-secret
 ```
 The existing Secret must contain keys: `UI_AUTH_SESSION_SECRET` and
-`UI_AUTH_BASICAUTH_ADMININITIALPASSWORD`.
+`UI_AUTH_BASICAUTH_PASSWORD`.
 
 ### With OIDC
 ```bash
 helm install elara ./helm/elara \
   --set config.ui.auth.enabled=true \
   --set config.ui.auth.type=oidc \
-  --set config.ui.auth.adminEmail=admin@example.com \
   --set config.ui.auth.oidc.issuerUrl=https://accounts.google.com \
   --set config.ui.auth.oidc.clientId=MY_CLIENT_ID \
   --set config.ui.auth.oidc.clientSecret=MY_CLIENT_SECRET \
   --set "config.ui.auth.oidc.redirectUrl=https://elara.example.com/auth/callback" \
+  --set config.ui.auth.oidc.adminEmail=admin@example.com \
   --set config.ui.auth.session.secret=a-long-random-string
 ```
+The first OIDC login matching `oidc.adminEmail` is elevated into the
+superadmin group. No local user is pre-created.
 
 ### With production-grade resources + persistence
 ```yaml
@@ -152,14 +154,15 @@ sections:
 | `config.ui.server.port`                          | `8080`                          | HTTP/2, ConnectRPC, Web UI                                           |
 | `config.ui.server.writeTimeout`                  | `24h`                           | Server-streaming RPCs need a long write timeout                      |
 | `config.ui.auth.enabled`                         | `false`                         | Enable authentication; all RPCs are public when false                |
-| `config.ui.auth.type`                            | `basic-auth`                    | `basic-auth` or `oidc`                                               |
-| `config.ui.auth.adminEmail`                      | `""`                            | Bootstrap admin email (required when auth enabled)                   |
-| `config.ui.auth.basicAuth.adminInitialPassword`  | `""`                            | Bootstrap admin password (basic-auth); stored in chart Secret        |
+| `config.ui.auth.type`                            | `basic-auth`                    | `basic-auth`, `oidc`, or `none`                                      |
+| `config.ui.auth.basicAuth.username`              | `""`                            | Bootstrap admin email (required for basic-auth)                      |
+| `config.ui.auth.basicAuth.password`              | `""`                            | Bootstrap admin password (basic-auth); stored in chart Secret        |
 | `config.ui.auth.oidc.issuerUrl`                  | `""`                            | OIDC issuer (e.g. `https://accounts.google.com`)                     |
 | `config.ui.auth.oidc.clientId`                   | `""`                            | OIDC client ID                                                       |
 | `config.ui.auth.oidc.clientSecret`               | `""`                            | OIDC client secret; stored in chart Secret                           |
 | `config.ui.auth.oidc.redirectUrl`                | `""`                            | OIDC callback URL                                                    |
 | `config.ui.auth.oidc.scopes`                     | `[]`                            | OIDC scopes; defaults to `[openid, email, profile]`                  |
+| `config.ui.auth.oidc.adminEmail`                 | `""`                            | First-login admin email; elevated into superadmin group (required for OIDC) |
 | `config.ui.auth.session.secret`                  | `""`                            | HS256 JWT signing secret; stored in chart Secret                     |
 | `config.ui.auth.session.ttl`                     | `24h`                           | JWT session lifetime                                                 |
 | `config.ui.auth.session.secureCookie`            | `true`                          | Add `Secure` flag to session cookie; disable only for HTTP dev       |
@@ -197,15 +200,16 @@ key maps to an env var by **uppercasing and replacing dots with underscores
 | `ui.server.writeTimeout`                        | `UI_SERVER_WRITETIMEOUT`                         | ConfigMap |
 | `ui.auth.enabled`                               | `UI_AUTH_ENABLED`                                | ConfigMap |
 | `ui.auth.type`                                  | `UI_AUTH_TYPE`                                   | ConfigMap |
-| `ui.auth.adminEmail`                            | `UI_AUTH_ADMINEMAIL`                             | ConfigMap |
+| `ui.auth.basicAuth.username`                    | `UI_AUTH_BASICAUTH_USERNAME`                     | ConfigMap |
 | `ui.auth.session.ttl`                           | `UI_AUTH_SESSION_TTL`                            | ConfigMap |
 | `ui.auth.session.secureCookie`                  | `UI_AUTH_SESSION_SECURECOOKIE`                   | ConfigMap |
 | `ui.auth.oidc.issuerUrl`                        | `UI_AUTH_OIDC_ISSUERURL`                         | ConfigMap |
 | `ui.auth.oidc.clientId`                         | `UI_AUTH_OIDC_CLIENTID`                          | ConfigMap |
 | `ui.auth.oidc.redirectUrl`                      | `UI_AUTH_OIDC_REDIRECTURL`                       | ConfigMap |
 | `ui.auth.oidc.scopes`                           | `UI_AUTH_OIDC_SCOPES`                            | ConfigMap |
+| `ui.auth.oidc.adminEmail`                       | `UI_AUTH_OIDC_ADMINEMAIL`                        | ConfigMap |
 | `ui.auth.session.secret`                        | `UI_AUTH_SESSION_SECRET`                         | **Secret** |
-| `ui.auth.basicAuth.adminInitialPassword`        | `UI_AUTH_BASICAUTH_ADMININITIALPASSWORD`          | **Secret** |
+| `ui.auth.basicAuth.password`                    | `UI_AUTH_BASICAUTH_PASSWORD`                     | **Secret** |
 | `ui.auth.oidc.clientSecret`                     | `UI_AUTH_OIDC_CLIENTSECRET`                      | **Secret** |
 | `client.etcd.port`                              | `CLIENT_ETCD_PORT`                               | ConfigMap |
 | `client.history.max_records`                    | `CLIENT_HISTORY_MAX_RECORDS`                     | ConfigMap |

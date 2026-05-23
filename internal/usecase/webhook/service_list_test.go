@@ -10,6 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	webhookuc "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
 	webhookmock "github.com/sergeyslonimsky/elara/internal/usecase/webhook/mocks"
 )
@@ -30,6 +31,11 @@ func TestService_List(t *testing.T) {
 			Events:          []domain.WebhookEventType{domain.WebhookEventUpdated},
 			NamespaceFilter: "dev",
 		},
+		{
+			ID:     "wh-global",
+			URL:    "https://g.example.com/hook",
+			Events: []domain.WebhookEventType{domain.WebhookEventDeleted},
+		},
 	}
 
 	tests := []struct {
@@ -37,39 +43,55 @@ func TestService_List(t *testing.T) {
 		mockFunc func(context.Context, *gomock.Controller) (*webhookuc.Service, context.Context)
 		errIs    error
 		wantErr  string
-		want     []*domain.Webhook
+		wantIDs  []string
 	}{
 		{
-			name: "success filters list",
+			name: "explicit scope filters to readable namespaces",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
-				enf := webhookmock.NewMockenforcer(ctrl)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
 				repo.EXPECT().List(ctx).Return(webhooks, nil)
-				// Allow wh-1 (prod), deny wh-2 (dev)
-				enf.EXPECT().
-					Enforce("test@example.com", "prod", domain.ObjectWebhook, domain.ActionRead).
-					Return(true, nil)
-				enf.EXPECT().
-					Enforce("test@example.com", "dev", domain.ObjectWebhook, domain.ActionRead).
-					Return(false, nil)
+				pdp.EXPECT().
+					EffectiveDomains("test@example.com", domain.ObjectWebhook, domain.ActionRead).
+					Return(authz.NewDomainSet("prod"))
 
-				return webhookuc.New(enf, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
-			want: []*domain.Webhook{webhooks[0]},
+			wantIDs: []string{"wh-1"},
 		},
 		{
-			name: "empty list",
+			name: "wildcard scope includes global webhooks",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
 				ctx = webhookTestCtx(ctx)
+				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
-				repo.EXPECT().List(ctx).Return([]*domain.Webhook{}, nil)
+				repo.EXPECT().List(ctx).Return(webhooks, nil)
+				pdp.EXPECT().
+					EffectiveDomains("test@example.com", domain.ObjectWebhook, domain.ActionRead).
+					Return(authz.NewDomainSet("*"))
 
-				return webhookuc.New(nil, repo, nil), ctx
+				return webhookuc.New(pdp, repo, nil), ctx
 			},
-			want: []*domain.Webhook{},
+			wantIDs: []string{"wh-1", "wh-2", "wh-global"},
+		},
+		{
+			name: "empty scope returns empty without filtering",
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
+				ctx = webhookTestCtx(ctx)
+				pdp := webhookmock.NewMockpdp(ctrl)
+				repo := webhookmock.NewMockrepo(ctrl)
+
+				repo.EXPECT().List(ctx).Return(webhooks, nil)
+				pdp.EXPECT().
+					EffectiveDomains("test@example.com", domain.ObjectWebhook, domain.ActionRead).
+					Return(authz.NewDomainSet())
+
+				return webhookuc.New(pdp, repo, nil), ctx
+			},
+			wantIDs: []string{},
 		},
 		{
 			name: "repo error",
@@ -85,7 +107,7 @@ func TestService_List(t *testing.T) {
 		},
 		{
 			name: "unauthorized",
-			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*webhookuc.Service, context.Context) {
+			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*webhookuc.Service, context.Context) {
 				return webhookuc.New(nil, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,
@@ -113,7 +135,11 @@ func TestService_List(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			gotIDs := make([]string, 0, len(got))
+			for _, w := range got {
+				gotIDs = append(gotIDs, w.ID)
+			}
+			assert.ElementsMatch(t, tt.wantIDs, gotIDs)
 		})
 	}
 }

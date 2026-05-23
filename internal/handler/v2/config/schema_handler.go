@@ -14,26 +14,37 @@ import (
 
 //go:generate mockgen -destination=mocks/schema_handler_mock.go -package=config_mock -source=schema_handler.go
 
-type schemaUsecase interface {
-	Attach(ctx context.Context, in schemauc.AttachInput) (*domain.SchemaAttachment, error)
-	Detach(ctx context.Context, namespace, pathPattern string) error
-	Get(ctx context.Context, namespace, pathPattern string) (*domain.SchemaAttachment, error)
-	GetEffective(ctx context.Context, namespace, path string) (*domain.SchemaAttachment, error)
-	List(ctx context.Context, namespace string) ([]*domain.SchemaAttachment, error)
-}
+type (
+	schemaAuthz interface {
+		Require(ctx context.Context, object, action, domainStr string) error
+	}
+
+	schemaUsecase interface {
+		Attach(ctx context.Context, in schemauc.AttachInput) (*domain.SchemaAttachment, error)
+		Detach(ctx context.Context, namespace, pathPattern string) error
+		Get(ctx context.Context, namespace, pathPattern string) (*domain.SchemaAttachment, error)
+		GetEffective(ctx context.Context, namespace, path string) (*domain.SchemaAttachment, error)
+		List(ctx context.Context, namespace string) ([]*domain.SchemaAttachment, error)
+	}
+)
 
 type SchemaHandler struct {
-	uc schemaUsecase
+	authz schemaAuthz
+	uc    schemaUsecase
 }
 
-func NewSchemaHandler(uc schemaUsecase) *SchemaHandler {
-	return &SchemaHandler{uc: uc}
+func NewSchemaHandler(authz schemaAuthz, uc schemaUsecase) *SchemaHandler {
+	return &SchemaHandler{authz: authz, uc: uc}
 }
 
 func (h *SchemaHandler) AttachSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.AttachSchemaRequest],
 ) (*connect.Response[configv1.AttachSchemaResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectSchema, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	s, err := h.uc.Attach(ctx, schemauc.AttachInput{
 		Namespace:   req.Msg.GetNamespace(),
 		PathPattern: req.Msg.GetPathPattern(),
@@ -52,6 +63,10 @@ func (h *SchemaHandler) DetachSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.DetachSchemaRequest],
 ) (*connect.Response[configv1.DetachSchemaResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectSchema, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	if err := h.uc.Detach(ctx, req.Msg.GetNamespace(), req.Msg.GetPathPattern()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -63,6 +78,10 @@ func (h *SchemaHandler) GetSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.GetSchemaRequest],
 ) (*connect.Response[configv1.GetSchemaResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectSchema, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	s, err := h.uc.Get(ctx, req.Msg.GetNamespace(), req.Msg.GetPathPattern())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
@@ -77,6 +96,10 @@ func (h *SchemaHandler) GetEffectiveSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.GetEffectiveSchemaRequest],
 ) (*connect.Response[configv1.GetEffectiveSchemaResponse], error) {
+	if err := h.authz.Require(ctx, domain.ObjectSchema, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	s, err := h.uc.GetEffective(ctx, req.Msg.GetNamespace(), req.Msg.GetPath())
 	if err != nil {
 		return nil, v2.ToConnectError(err)

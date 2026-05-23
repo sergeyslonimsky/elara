@@ -17,7 +17,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/usecase/user"
 )
 
-// Authorization for UserService.* is enforced by the RBAC interceptor;
+// Authorization for UserService.* is enforced in the handler layer (EL-4 M9);
 // these tests cover only the business logic remaining in the usecase
 // (validation, self-deletion guard, last-admin guard, List scoping).
 
@@ -358,7 +358,7 @@ func TestService_List_ExplicitScope_RollsUpMembers(t *testing.T) {
 	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
 		if err := txe.AddPolicy(
 			"delegated@example.com",
-			domain.GroupSubject("dev"),
+			casbin.GroupSubject("dev"),
 			domain.ObjectGroup,
 			domain.ActionRead,
 		); err != nil {
@@ -367,7 +367,7 @@ func TestService_List_ExplicitScope_RollsUpMembers(t *testing.T) {
 
 		return txe.AddPolicy(
 			"delegated@example.com",
-			domain.GroupSubject("platform"),
+			casbin.GroupSubject("platform"),
 			domain.ObjectGroup,
 			domain.ActionRead,
 		)
@@ -382,7 +382,7 @@ func TestService_List_ExplicitScope_RollsUpMembers(t *testing.T) {
 			{"charlie@x", "platform"},
 			{"outsider@x", "other"},
 		} {
-			if err := txe.AddRoleForUser(m.user, domain.GroupSubject(m.group), domain.MembershipDomain); err != nil {
+			if err := txe.AddRoleForUser(m.user, casbin.GroupSubject(m.group), domain.MembershipDomain); err != nil {
 				return err
 			}
 		}
@@ -420,7 +420,7 @@ func TestService_List_ExplicitScope_NestedGroupSubjectsSkipped(t *testing.T) {
 	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
 		return txe.AddPolicy(
 			"delegated@example.com",
-			domain.GroupSubject("dev"),
+			casbin.GroupSubject("dev"),
 			domain.ObjectGroup,
 			domain.ActionRead,
 		)
@@ -428,13 +428,13 @@ func TestService_List_ExplicitScope_NestedGroupSubjectsSkipped(t *testing.T) {
 
 	// Members include a nested-group subject which must be skipped by List.
 	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		if err := txe.AddRoleForUser("alice@x", domain.GroupSubject("dev"), domain.MembershipDomain); err != nil {
+		if err := txe.AddRoleForUser("alice@x", casbin.GroupSubject("dev"), domain.MembershipDomain); err != nil {
 			return err
 		}
 
 		return txe.AddRoleForUser(
-			domain.GroupSubject("nested"),
-			domain.GroupSubject("dev"),
+			casbin.GroupSubject("nested"),
+			casbin.GroupSubject("dev"),
 			domain.MembershipDomain,
 		)
 	}))
@@ -462,7 +462,7 @@ func TestService_List_ExplicitScope_GroupsVisibleButNoMembers_StoreNotCalled(t *
 	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
 		return txe.AddPolicy(
 			"delegated@example.com",
-			domain.GroupSubject("empty"),
+			casbin.GroupSubject("empty"),
 			domain.ObjectGroup,
 			domain.ActionRead,
 		)
@@ -486,17 +486,17 @@ func TestService_List_ExplicitScope_SearchForwarded(t *testing.T) {
 	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
 		return txe.AddPolicy(
 			"delegated@example.com",
-			domain.GroupSubject("dev"),
+			casbin.GroupSubject("dev"),
 			domain.ObjectGroup,
 			domain.ActionRead,
 		)
 	}))
 	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		if err := txe.AddRoleForUser("alice@x", domain.GroupSubject("dev"), domain.MembershipDomain); err != nil {
+		if err := txe.AddRoleForUser("alice@x", casbin.GroupSubject("dev"), domain.MembershipDomain); err != nil {
 			return err
 		}
 
-		return txe.AddRoleForUser("bob@x", domain.GroupSubject("dev"), domain.MembershipDomain)
+		return txe.AddRoleForUser("bob@x", casbin.GroupSubject("dev"), domain.MembershipDomain)
 	}))
 	for _, u := range []*domain.User{
 		{Email: "alice@x", Name: "Alice", Provider: domain.ProviderBasicAuth},

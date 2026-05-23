@@ -29,9 +29,9 @@ func TestService_ListActive(t *testing.T) {
 			name: "success sorted by connected_at",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				m.active.EXPECT().ListActive().Return([]*domain.Client{
 					{ID: "b", ConnectedAt: now.Add(time.Second)},
@@ -99,9 +99,9 @@ func TestService_ListHistorical(t *testing.T) {
 			limit: 0,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				m.history.EXPECT().List(ctx, 100).Return([]*domain.Client{
 					{ID: "h1", DisconnectedAt: &now},
@@ -118,9 +118,9 @@ func TestService_ListHistorical(t *testing.T) {
 			limit: 5,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				m.history.EXPECT().List(ctx, 5).Return([]*domain.Client{
 					{ID: "h1", DisconnectedAt: &now},
@@ -137,9 +137,9 @@ func TestService_ListHistorical(t *testing.T) {
 			limit: 10,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				m.history.EXPECT().List(ctx, 10).Return(nil, errors.New("db error"))
 
@@ -196,9 +196,9 @@ func TestService_ListSessions(t *testing.T) {
 			k8sNamespace: "prod",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				m.history.EXPECT().ListByClient(ctx, "order-service", "prod", 51).Return([]*domain.Client{
 					{ID: "a", ClientName: "order-service", K8sNamespace: "prod", DisconnectedAt: &now},
@@ -219,9 +219,9 @@ func TestService_ListSessions(t *testing.T) {
 			currentID:    "a",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				m.history.EXPECT().ListByClient(ctx, "order-service", "prod", 51).Return([]*domain.Client{
 					{ID: "a", ClientName: "order-service", K8sNamespace: "prod", DisconnectedAt: &now},
@@ -239,9 +239,9 @@ func TestService_ListSessions(t *testing.T) {
 			clientName: "",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				return ctx
 			},
@@ -255,9 +255,9 @@ func TestService_ListSessions(t *testing.T) {
 			limit:        2,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				m.history.EXPECT().ListByClient(ctx, "order-service", "prod", 3).Return([]*domain.Client{
 					{ID: "a", ClientName: "order-service", K8sNamespace: "prod", DisconnectedAt: &now},
@@ -278,9 +278,9 @@ func TestService_ListSessions(t *testing.T) {
 			k8sNamespace: "prod",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("test@example.com", domain.DomainAll, domain.ObjectClient, domain.ActionRead).
-					Return(true, nil)
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(true)
 
 				m.history.EXPECT().ListByClient(ctx, "order-service", "prod", 51).Return(nil, errors.New("db error"))
 

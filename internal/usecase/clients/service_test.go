@@ -10,9 +10,9 @@ import (
 )
 
 type mocks struct {
-	enforcer *clientsmock.Mockenforcer
-	active   *clientsmock.MockactiveSource
-	history  *clientsmock.MockhistorySource
+	pdp     *clientsmock.Mockpdp
+	active  *clientsmock.MockactiveSource
+	history *clientsmock.MockhistorySource
 }
 
 func setupService(t *testing.T) (*clients.Service, mocks, *gomock.Controller) {
@@ -20,11 +20,11 @@ func setupService(t *testing.T) (*clients.Service, mocks, *gomock.Controller) {
 	ctrl := gomock.NewController(t)
 
 	m := mocks{
-		enforcer: clientsmock.NewMockenforcer(ctrl),
-		active:   clientsmock.NewMockactiveSource(ctrl),
-		history:  clientsmock.NewMockhistorySource(ctrl),
+		pdp:     clientsmock.NewMockpdp(ctrl),
+		active:  clientsmock.NewMockactiveSource(ctrl),
+		history: clientsmock.NewMockhistorySource(ctrl),
 	}
-	svc := clients.New(m.enforcer, m.active, m.history)
+	svc := clients.New(m.pdp, m.active, m.history)
 
 	return svc, m, ctrl
 }

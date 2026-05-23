@@ -7,13 +7,9 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-// Create persists a new namespace. Authorization (namespace/write at
-// DomainAll) is enforced by the RBAC interceptor.
+// Create persists a new namespace. Authorization is enforced at the handler
+// boundary (namespace/create on DomainAll).
 func (s *Service) Create(ctx context.Context, ns *domain.Namespace) (*domain.Namespace, error) {
-	if err := s.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, domain.DomainAll); err != nil {
-		return nil, fmt.Errorf("authorize: %w", err)
-	}
-
 	if err := ns.Validate(); err != nil {
 		return nil, fmt.Errorf("validate namespace: %w", err)
 	}

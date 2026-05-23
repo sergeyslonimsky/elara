@@ -578,16 +578,17 @@ ui:
   auth:
     enabled: true
     type: basic-auth
-    adminEmail: admin@example.com
     basicAuth:
-      adminInitialPassword: ChangeMe123
+      username: admin@example.com
+      password: ChangeMe123
     session:
       secret: a-long-random-string
 ```
 
-On first boot Elara creates the admin user and forces a password change on the
-first login. Admins can create additional users and reset passwords from the
-Web UI or via the `UserService` API.
+On first boot Elara creates the admin user from `basicAuth.username` /
+`basicAuth.password` and forces a password change on the first login. Admins
+can create additional users and reset passwords from the Web UI or via the
+`UserService` API.
 
 ### OIDC
 
@@ -597,15 +598,31 @@ ui:
   auth:
     enabled: true
     type: oidc
-    adminEmail: admin@example.com
     oidc:
       issuerUrl: https://accounts.google.com
       clientId: MY_CLIENT_ID
       clientSecret: MY_CLIENT_SECRET
       redirectUrl: https://elara.example.com/auth/callback
+      adminEmail: admin@example.com
     session:
       secret: a-long-random-string
 ```
+
+No local user is created at bootstrap. The first OIDC login matching
+`oidc.adminEmail` is elevated into the superadmin group; subsequent admins
+are added through the UI.
+
+### No auth (development)
+
+```yaml
+ui:
+  auth:
+    enabled: true
+    type: none
+```
+
+All requests are mapped to a synthetic local-admin user with full
+permissions. Useful for local development and CI; do not use in production.
 
 ### Session behaviour
 
@@ -663,12 +680,13 @@ Key defaults:
 | `ui.server.port`                         | `UI_SERVER_PORT`                           | `8080`         |
 | `ui.auth.enabled`                        | `UI_AUTH_ENABLED`                          | `false`        |
 | `ui.auth.type`                           | `UI_AUTH_TYPE`                             | `basic-auth`   |
-| `ui.auth.adminEmail`                     | `UI_AUTH_ADMINEMAIL`                       | `""`           |
-| `ui.auth.basicAuth.adminInitialPassword` | `UI_AUTH_BASICAUTH_ADMININITIALPASSWORD`   | `""`           |
+| `ui.auth.basicAuth.username`             | `UI_AUTH_BASICAUTH_USERNAME`               | `""`           |
+| `ui.auth.basicAuth.password`             | `UI_AUTH_BASICAUTH_PASSWORD`               | `""`           |
 | `ui.auth.oidc.issuerUrl`                 | `UI_AUTH_OIDC_ISSUERURL`                   | `""`           |
 | `ui.auth.oidc.clientId`                  | `UI_AUTH_OIDC_CLIENTID`                    | `""`           |
-| `ui.auth.oidc.clientSecret`              | `UI_AUTH_OIDC_CLIENTSECRET`               | `""`           |
+| `ui.auth.oidc.clientSecret`              | `UI_AUTH_OIDC_CLIENTSECRET`                | `""`           |
 | `ui.auth.oidc.redirectUrl`               | `UI_AUTH_OIDC_REDIRECTURL`                 | `""`           |
+| `ui.auth.oidc.adminEmail`                | `UI_AUTH_OIDC_ADMINEMAIL`                  | `""`           |
 | `ui.auth.session.secret`                 | `UI_AUTH_SESSION_SECRET`                   | `""`           |
 | `ui.auth.session.ttl`                    | `UI_AUTH_SESSION_TTL`                      | `24h`          |
 | `ui.auth.session.secureCookie`           | `UI_AUTH_SESSION_SECURECOOKIE`             | `false`        |

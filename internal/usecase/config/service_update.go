@@ -5,14 +5,10 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/content"
 )
 
 func (s *Service) Update(ctx context.Context, cfg *domain.Config) (*domain.Config, error) {
-	if err := auth.CheckAccess(ctx, s.enforcer, cfg.Namespace, domain.ObjectConfig, domain.ActionWrite); err != nil {
-		return nil, fmt.Errorf("check access: %w", err)
-	}
-
 	if err := domain.ValidatePath(cfg.Path); err != nil {
 		return nil, fmt.Errorf("validate path: %w", err)
 	}
@@ -25,11 +21,11 @@ func (s *Service) Update(ctx context.Context, cfg *domain.Config) (*domain.Confi
 
 	cfg.Format = existing.Format
 
-	if err := domain.ValidateContent(cfg.Content, cfg.Format); err != nil {
+	if err := content.Validate(cfg.Content, cfg.Format); err != nil {
 		return nil, fmt.Errorf("validate content: %w", err)
 	}
 
-	normalized, err := domain.NormalizeContent(cfg.Content, cfg.Format)
+	normalized, err := content.Normalize(cfg.Content, cfg.Format)
 	if err != nil {
 		return nil, fmt.Errorf("normalize content: %w", err)
 	}
@@ -50,4 +46,44 @@ func (s *Service) Update(ctx context.Context, cfg *domain.Config) (*domain.Confi
 	s.watcher.NotifyUpdated(ctx, cfg)
 
 	return cfg, nil
+}
+
+type LockInput struct {
+	Namespace string
+	Path      string
+}
+
+func (s *Service) Lock(ctx context.Context, in LockInput) error {
+	if err := s.storage.LockConfig(ctx, in.Namespace, in.Path); err != nil {
+		return fmt.Errorf("lock: %w", err)
+	}
+
+	cfg, err := s.storage.Get(ctx, in.Path, in.Namespace)
+	if err != nil {
+		return fmt.Errorf("get config after lock: %w", err)
+	}
+
+	s.watcher.NotifyConfigLocked(ctx, cfg)
+
+	return nil
+}
+
+type UnlockInput struct {
+	Namespace string
+	Path      string
+}
+
+func (s *Service) Unlock(ctx context.Context, in UnlockInput) error {
+	if err := s.storage.UnlockConfig(ctx, in.Namespace, in.Path); err != nil {
+		return fmt.Errorf("unlock: %w", err)
+	}
+
+	cfg, err := s.storage.Get(ctx, in.Path, in.Namespace)
+	if err != nil {
+		return fmt.Errorf("get config after unlock: %w", err)
+	}
+
+	s.watcher.NotifyConfigUnlocked(ctx, cfg)
+
+	return nil
 }

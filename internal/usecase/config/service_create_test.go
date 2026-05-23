@@ -10,7 +10,6 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 func TestService_Create(t *testing.T) {
@@ -19,7 +18,7 @@ func TestService_Create(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    *domain.Config
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, m mocks)
 		errIs    error
 		wantErr  string
 		want     *domain.Config
@@ -31,13 +30,7 @@ func TestService_Create(t *testing.T) {
 				Namespace: "prod",
 				Content:   `{"key": "value"}`,
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
-					Return(true, nil)
-
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
 
 				normalized := "{\n  \"key\": \"value\"\n}"
@@ -48,8 +41,6 @@ func TestService_Create(t *testing.T) {
 				m.storage.EXPECT().Create(ctx, gomock.Any()).Return(nil)
 				m.namespaceProvider.EXPECT().UpdateTimestamp(ctx, "prod").Return(nil)
 				m.watcher.EXPECT().NotifyCreated(ctx, gomock.Any())
-
-				return ctx
 			},
 			want: &domain.Config{
 				Path:      "/app/config.json",
@@ -60,38 +51,17 @@ func TestService_Create(t *testing.T) {
 			},
 		},
 		{
-			name:  "unauthorized",
-			input: &domain.Config{Namespace: "prod"},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				return ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
 			name:  "invalid path",
 			input: &domain.Config{Path: "invalid", Namespace: "prod"},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
-					Return(true, nil)
-
-				return ctx
+			mockFunc: func(_ context.Context, _ mocks) {
 			},
 			wantErr: "validate path",
 		},
 		{
 			name:  "namespace does not exist",
 			input: &domain.Config{Path: "/app/config.json", Namespace: "prod"},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
-					Return(true, nil)
-
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(nil, domain.ErrNotFound)
-
-				return ctx
 			},
 			wantErr: `namespace "prod" does not exist`,
 		},
@@ -102,15 +72,8 @@ func TestService_Create(t *testing.T) {
 				Namespace: "prod",
 				Content:   `{invalid json}`,
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
-					Return(true, nil)
-
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
-
-				return ctx
 			},
 			wantErr: "validate content",
 		},
@@ -121,20 +84,13 @@ func TestService_Create(t *testing.T) {
 				Namespace: "prod",
 				Content:   `{"key": "value"}`,
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
-					Return(true, nil)
-
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
 
 				normalized := "{\n  \"key\": \"value\"\n}"
 				m.schemaValidator.EXPECT().
 					Validate(ctx, "prod", "/app/config.json", normalized, domain.FormatJSON).
 					Return(errors.New("schema error"))
-
-				return ctx
 			},
 			wantErr: "schema validation: schema error",
 		},
@@ -145,12 +101,7 @@ func TestService_Create(t *testing.T) {
 				Namespace: "prod",
 				Content:   `{"key": "value"}`,
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionWrite).
-					Return(true, nil)
-
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
 
 				normalized := "{\n  \"key\": \"value\"\n}"
@@ -159,8 +110,6 @@ func TestService_Create(t *testing.T) {
 					Return(nil)
 
 				m.storage.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("db error"))
-
-				return ctx
 			},
 			wantErr: "create config: db error",
 		},
@@ -172,7 +121,8 @@ func TestService_Create(t *testing.T) {
 
 			svc, m, _ := setupService(t)
 
-			ctx := tt.mockFunc(t.Context(), m)
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
 
 			got, err := svc.Create(ctx, tt.input)
 

@@ -2,13 +2,13 @@ package config_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
@@ -18,7 +18,7 @@ func TestService_Get(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    config.GetInput
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, m mocks)
 		errIs    error
 		wantErr  string
 		want     *domain.Config
@@ -29,50 +29,27 @@ func TestService_Get(t *testing.T) {
 				Namespace: "prod",
 				Path:      "/app/config.json",
 			},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
-					Return(true, nil)
-
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.storage.EXPECT().
 					Get(ctx, "/app/config.json", "prod").
 					Return(&domain.Config{Path: "/app/config.json", Namespace: "prod"}, nil)
-
-				return ctx
 			},
 			want: &domain.Config{Path: "/app/config.json", Namespace: "prod"},
 		},
 		{
-			name:  "unauthorized",
-			input: config.GetInput{Namespace: "prod"},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				return ctx
-			},
-			errIs: domain.ErrUnauthorized,
-		},
-		{
 			name:  "missing namespace",
 			input: config.GetInput{Namespace: ""},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				return ctx
+			mockFunc: func(_ context.Context, _ mocks) {
 			},
 			wantErr: "namespace is required",
 		},
 		{
 			name:  "not found",
 			input: config.GetInput{Namespace: "prod", Path: "/missing"},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
-				m.enforcer.EXPECT().
-					Enforce("user@example.com", "prod", domain.ObjectConfig, domain.ActionRead).
-					Return(true, nil)
-
+			mockFunc: func(ctx context.Context, m mocks) {
 				m.storage.EXPECT().
 					Get(ctx, "/missing", "prod").
 					Return(nil, domain.ErrNotFound)
-
-				return ctx
 			},
 			errIs: domain.ErrNotFound,
 		},
@@ -84,7 +61,8 @@ func TestService_Get(t *testing.T) {
 
 			svc, m, _ := setupService(t)
 
-			ctx := tt.mockFunc(t.Context(), m)
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
 
 			got, err := svc.Get(ctx, tt.input)
 
@@ -101,6 +79,89 @@ func TestService_Get(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.want.Path, got.Path)
 			assert.Equal(t, tt.want.Namespace, got.Namespace)
+		})
+	}
+}
+
+func TestService_GetAtRevision(t *testing.T) {
+	t.Parallel()
+
+	expectedEntry := &domain.HistoryEntry{
+		Revision: 10,
+		Content:  `{"key":"val"}`,
+	}
+
+	tests := []struct {
+		name     string
+		input    config.GetAtRevisionInput
+		mockFunc func(ctx context.Context, m mocks)
+		errIs    error
+		wantErr  string
+		want     *domain.HistoryEntry
+	}{
+		{
+			name: "success",
+			input: config.GetAtRevisionInput{
+				Namespace: "prod",
+				Path:      "/db/config",
+				Revision:  10,
+			},
+			mockFunc: func(ctx context.Context, m mocks) {
+				m.storage.EXPECT().
+					GetAtRevision(ctx, "/db/config", "prod", int64(10)).
+					Return(expectedEntry, nil)
+			},
+			want: expectedEntry,
+		},
+		{
+			name: "empty namespace",
+			input: config.GetAtRevisionInput{
+				Path:     "/db/config",
+				Revision: 10,
+			},
+			mockFunc: func(_ context.Context, _ mocks) {
+			},
+			wantErr: "namespace is required",
+		},
+		{
+			name: "storage error",
+			input: config.GetAtRevisionInput{
+				Namespace: "prod",
+				Path:      "/db/config",
+				Revision:  10,
+			},
+			mockFunc: func(ctx context.Context, m mocks) {
+				m.storage.EXPECT().
+					GetAtRevision(ctx, "/db/config", "prod", int64(10)).
+					Return(nil, errors.New("not found"))
+			},
+			wantErr: "get config at revision: not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			svc, m, _ := setupService(t)
+
+			ctx := t.Context()
+			tt.mockFunc(ctx, m)
+
+			got, err := svc.GetAtRevision(ctx, tt.input)
+
+			if tt.errIs != nil {
+				require.ErrorIs(t, err, tt.errIs)
+
+				return
+			}
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

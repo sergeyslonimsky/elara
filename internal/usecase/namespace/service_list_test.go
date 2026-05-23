@@ -11,6 +11,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/usecase/namespace"
 )
 
@@ -46,7 +47,7 @@ func TestService_List(t *testing.T) {
 
 				m.pdp.EXPECT().
 					EffectiveDomains("admin@example.com", domain.ObjectNamespace, domain.ActionRead).
-					Return(domain.NewDomainSet("*"))
+					Return(authz.NewDomainSet("*"))
 
 				expectedFilter := domain.NamespaceFilter{
 					Names:    map[string]struct{}{},
@@ -90,7 +91,7 @@ func TestService_List(t *testing.T) {
 
 				m.pdp.EXPECT().
 					EffectiveDomains("user@example.com", domain.ObjectNamespace, domain.ActionRead).
-					Return(domain.NewDomainSet("ns1", "ns3"))
+					Return(authz.NewDomainSet("ns1", "ns3"))
 
 				expectedFilter := domain.NamespaceFilter{
 					Names:    map[string]struct{}{"ns1": {}, "ns3": {}},
@@ -134,7 +135,7 @@ func TestService_List(t *testing.T) {
 
 				m.pdp.EXPECT().
 					EffectiveDomains("noaccess@example.com", domain.ObjectNamespace, domain.ActionRead).
-					Return(domain.NewDomainSet())
+					Return(authz.NewDomainSet())
 
 				// store.List and annotations MUST NOT be called.
 
@@ -156,7 +157,7 @@ func TestService_List(t *testing.T) {
 
 				m.pdp.EXPECT().
 					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
-					Return(domain.NewDomainSet("*"))
+					Return(authz.NewDomainSet("*"))
 
 				expectedFilter := domain.NamespaceFilter{
 					Names:    map[string]struct{}{},
@@ -193,7 +194,7 @@ func TestService_List(t *testing.T) {
 
 				m.pdp.EXPECT().
 					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
-					Return(domain.NewDomainSet("*"))
+					Return(authz.NewDomainSet("*"))
 
 				expectedFilter := domain.NamespaceFilter{
 					Names:    map[string]struct{}{},
@@ -224,7 +225,7 @@ func TestService_List(t *testing.T) {
 
 				m.pdp.EXPECT().
 					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
-					Return(domain.NewDomainSet("*"))
+					Return(authz.NewDomainSet("*"))
 
 				expectedFilter := domain.NamespaceFilter{
 					Names:    map[string]struct{}{},
@@ -256,7 +257,7 @@ func TestService_List(t *testing.T) {
 
 				m.pdp.EXPECT().
 					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
-					Return(domain.NewDomainSet("*"))
+					Return(authz.NewDomainSet("*"))
 
 				m.store.EXPECT().
 					List(ctx, gomock.Any(), gomock.Any()).
@@ -274,7 +275,7 @@ func TestService_List(t *testing.T) {
 
 				m.pdp.EXPECT().
 					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
-					Return(domain.NewDomainSet("*"))
+					Return(authz.NewDomainSet("*"))
 
 				m.store.EXPECT().
 					List(ctx, gomock.Any(), gomock.Any()).

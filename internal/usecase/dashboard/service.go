@@ -9,9 +9,9 @@ import (
 //go:generate mockgen -destination=mocks/service_mock.go -package=dashboard_mock -source=service.go
 
 type (
-	// enforcer checks authorization for dashboard operations.
-	enforcer interface {
-		Enforce(subject, domain, object, action string) (bool, error)
+	// pdp checks authorization for dashboard operations.
+	pdp interface {
+		Has(principal string, perm domain.Permission) bool
 	}
 
 	// nsLister returns the flat list of namespaces (names only, no config count needed here).
@@ -38,7 +38,7 @@ type (
 
 // Service provides data for the dashboard page.
 type Service struct {
-	enforcer   enforcer
+	pdp        pdp
 	namespaces nsLister
 	configs    configCounter
 	activity   activitySource
@@ -47,14 +47,14 @@ type Service struct {
 
 // New creates a new dashboard Service.
 func New(
-	enforcer enforcer,
+	pdp pdp,
 	namespaces nsLister,
 	configs configCounter,
 	activity activitySource,
 	clients activeClientsSource,
 ) *Service {
 	return &Service{
-		enforcer:   enforcer,
+		pdp:        pdp,
 		namespaces: namespaces,
 		configs:    configs,
 		activity:   activity,

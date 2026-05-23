@@ -1,10 +1,8 @@
 package user_test
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
@@ -12,6 +10,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/usecase/user"
 	usermock "github.com/sergeyslonimsky/elara/internal/usecase/user/mocks"
+	"github.com/sergeyslonimsky/elara/test/bbolttest"
 )
 
 type mocks struct {
@@ -28,23 +27,15 @@ func setupService(t *testing.T) (*user.Service, mocks, *bbolt.Store, *casbin.Enf
 	t.Helper()
 	ctrl := gomock.NewController(t)
 
-	path := filepath.Join(t.TempDir(), "user.db")
-
-	store, err := bbolt.Open(path)
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = store.Close() })
-
-	policies := bbolt.NewPolicyRepo(store)
-	enforcer, err := casbin.NewEnforcer(policies)
-	require.NoError(t, err)
-
+	store, enforcer, txm := bbolttest.OpenStack(t)
 	users := bbolt.NewUserRepo(store)
-	txm := bbolt.NewTxManager(store.DB())
+	groups := user.NewBoltGroupReader(bbolt.NewGroupRepo(store))
 	pdp := authz.NewPDP(enforcer)
+	pap := authz.NewPAP(enforcer, txm)
 
 	m := mocks{store: usermock.NewMockstore(ctrl)}
 
-	return user.New(enforcer, m.store, users, txm, pdp), m, store, enforcer
+	return user.New(enforcer, m.store, users, groups, txm, pdp, pap), m, store, enforcer
 }
 
 // setupServiceReal boots the full integration stack (no store mock). Used by
@@ -54,19 +45,11 @@ func setupService(t *testing.T) (*user.Service, mocks, *bbolt.Store, *casbin.Enf
 func setupServiceReal(t *testing.T) (*user.Service, *bbolt.Store, *casbin.Enforcer, *bbolt.UserRepo) {
 	t.Helper()
 
-	path := filepath.Join(t.TempDir(), "user.db")
-
-	store, err := bbolt.Open(path)
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = store.Close() })
-
-	policies := bbolt.NewPolicyRepo(store)
-	enforcer, err := casbin.NewEnforcer(policies)
-	require.NoError(t, err)
-
+	store, enforcer, txm := bbolttest.OpenStack(t)
 	users := bbolt.NewUserRepo(store)
-	txm := bbolt.NewTxManager(store.DB())
+	groups := user.NewBoltGroupReader(bbolt.NewGroupRepo(store))
 	pdp := authz.NewPDP(enforcer)
+	pap := authz.NewPAP(enforcer, txm)
 
-	return user.New(enforcer, users, users, txm, pdp), store, enforcer, users
+	return user.New(enforcer, users, users, groups, txm, pdp, pap), store, enforcer, users
 }

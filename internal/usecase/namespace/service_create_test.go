@@ -12,8 +12,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-// Authorization (namespace/write at DomainAll) is enforced by the RBAC
-// interceptor; this test covers the remaining usecase logic only.
+// Authorization (Namespace, Create, *) is enforced in the handler (EL-4 M9);
+// this test covers the remaining usecase logic only.
 
 func TestService_Create(t *testing.T) {
 	t.Parallel()
@@ -29,9 +29,6 @@ func TestService_Create(t *testing.T) {
 			name:  "success",
 			input: &domain.Namespace{Name: "prod"},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.authz.EXPECT().
-					Require(ctx, domain.ObjectNamespace, domain.ActionWrite, domain.DomainAll).
-					Return(nil)
 				m.store.EXPECT().Create(ctx, gomock.Any()).Return(nil)
 				m.store.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
 
@@ -42,11 +39,7 @@ func TestService_Create(t *testing.T) {
 		{
 			name:  "validation error",
 			input: &domain.Namespace{Name: ""},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.authz.EXPECT().
-					Require(ctx, domain.ObjectNamespace, domain.ActionWrite, domain.DomainAll).
-					Return(nil)
-
+			mockFunc: func(ctx context.Context, _ mocks) context.Context {
 				return ctx
 			},
 			wantErr: "validate namespace",
@@ -55,9 +48,6 @@ func TestService_Create(t *testing.T) {
 			name:  "create error",
 			input: &domain.Namespace{Name: "prod"},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.authz.EXPECT().
-					Require(ctx, domain.ObjectNamespace, domain.ActionWrite, domain.DomainAll).
-					Return(nil)
 				m.store.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("db error"))
 
 				return ctx

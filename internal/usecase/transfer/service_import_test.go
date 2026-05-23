@@ -52,7 +52,11 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
+					Object: domain.ObjectTransfer,
+					Action: domain.ActionWrite,
+					Domain: "my-ns",
+				}).Return(true)
 				m.namespaces.EXPECT().Get(gomock.Any(), "my-ns").Return(nil, domain.ErrNotFound)
 				m.namespaces.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 				m.configs.EXPECT().Get(gomock.Any(), "/c1", "my-ns").Return(nil, domain.ErrNotFound)
@@ -91,7 +95,11 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
+					Object: domain.ObjectTransfer,
+					Action: domain.ActionWrite,
+					Domain: "*",
+				}).Return(true)
 				m.namespaces.EXPECT().Get(gomock.Any(), "ns1").Return(&domain.Namespace{Name: "ns1"}, nil)
 				m.namespaces.EXPECT().Get(gomock.Any(), "ns2").Return(&domain.Namespace{Name: "ns2"}, nil)
 				m.configs.EXPECT().Get(gomock.Any(), "/a", "ns1").Return(nil, domain.ErrNotFound)
@@ -123,7 +131,11 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
+					Object: domain.ObjectTransfer,
+					Action: domain.ActionWrite,
+					Domain: "my-ns",
+				}).Return(true)
 				m.namespaces.EXPECT().Get(gomock.Any(), "my-ns").Return(&domain.Namespace{Name: "my-ns"}, nil)
 				m.configs.EXPECT().
 					Get(gomock.Any(), "/c1", "my-ns").
@@ -153,7 +165,11 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
+					Object: domain.ObjectTransfer,
+					Action: domain.ActionWrite,
+					Domain: "my-ns",
+				}).Return(true)
 				m.namespaces.EXPECT().Get(gomock.Any(), "my-ns").Return(&domain.Namespace{Name: "my-ns"}, nil)
 				m.configs.EXPECT().
 					Get(gomock.Any(), "/c1", "my-ns").
@@ -188,7 +204,11 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
+					Object: domain.ObjectTransfer,
+					Action: domain.ActionWrite,
+					Domain: "my-ns",
+				}).Return(true)
 				// Dry run only checks existence
 				m.configs.EXPECT().Get(gomock.Any(), "/c1", "my-ns").Return(nil, domain.ErrNotFound)
 
@@ -216,7 +236,6 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 				m.namespaces.EXPECT().Get(gomock.Any(), "target").Return(nil, domain.ErrNotFound)
 				m.namespaces.EXPECT().Create(gomock.Any(), gomock.Cond(func(x any) bool {
 					ns, ok := x.(*domain.Namespace)
@@ -245,33 +264,6 @@ func TestService_Import(t *testing.T) {
 			want: &domain.ImportReport{Created: 1},
 		},
 		{
-			name: "access denied - target namespace",
-			input: func(t *testing.T) input {
-				t.Helper()
-
-				return input{
-					data: func() []byte {
-						b, err := json.Marshal(domain.NamespaceBundle{
-							Namespace: "original",
-							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
-						})
-						require.NoError(t, err)
-
-						return b
-					}(),
-					targetNamespace: "target",
-				}
-			},
-			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
-				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce("test@example.com", "target", "config", "write").Return(false, nil)
-
-				return svc
-			},
-			errIs:   domain.ErrForbidden,
-			wantErr: "check access: forbidden",
-		},
-		{
 			name: "access denied - all bundle",
 			input: func(t *testing.T) input {
 				t.Helper()
@@ -294,12 +286,15 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce("test@example.com", "*", "transfer", "write").Return(false, nil)
+				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
+					Object: domain.ObjectTransfer,
+					Action: domain.ActionWrite,
+					Domain: "*",
+				}).Return(false)
 
 				return svc
 			},
-			errIs:   domain.ErrForbidden,
-			wantErr: "check access: forbidden",
+			errIs: domain.ErrForbidden,
 		},
 		{
 			name: "access denied - single namespace fallback",
@@ -320,12 +315,15 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.enforcer.EXPECT().Enforce("test@example.com", "my-ns", "config", "write").Return(false, nil)
+				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
+					Object: domain.ObjectTransfer,
+					Action: domain.ActionWrite,
+					Domain: "my-ns",
+				}).Return(false)
 
 				return svc
 			},
-			errIs:   domain.ErrForbidden,
-			wantErr: "check access: forbidden",
+			errIs: domain.ErrForbidden,
 		},
 		{
 			name: "validation error - empty namespace",

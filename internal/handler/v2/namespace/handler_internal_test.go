@@ -35,6 +35,10 @@ func TestHandler_GetNamespace(t *testing.T) {
 			name: "success",
 			req:  &namespacev1.GetNamespaceRequest{Name: "prod"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Get(gomock.Any(), "prod").
@@ -45,7 +49,7 @@ func TestHandler_GetNamespace(t *testing.T) {
 						UpdatedAt:   now,
 					}, nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			want: &namespacev1.GetNamespaceResponse{
 				Namespace: &namespacev1.Namespace{
@@ -60,12 +64,13 @@ func TestHandler_GetNamespace(t *testing.T) {
 			name: "unauthorized",
 			req:  &namespacev1.GetNamespaceRequest{Name: "prod"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					Return(domain.ErrUnauthorized)
 				uc := namespace_mock.NewMockusecase(ctrl)
-				uc.EXPECT().
-					Get(gomock.Any(), "prod").
-					Return(nil, domain.ErrUnauthorized)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr:  "unauthorized",
 			wantCode: connect.CodeUnauthenticated,
@@ -74,12 +79,13 @@ func TestHandler_GetNamespace(t *testing.T) {
 			name: "forbidden",
 			req:  &namespacev1.GetNamespaceRequest{Name: "prod"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					Return(domain.ErrForbidden)
 				uc := namespace_mock.NewMockusecase(ctrl)
-				uc.EXPECT().
-					Get(gomock.Any(), "prod").
-					Return(nil, domain.ErrForbidden)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr:  "forbidden",
 			wantCode: connect.CodePermissionDenied,
@@ -88,12 +94,16 @@ func TestHandler_GetNamespace(t *testing.T) {
 			name: "not found",
 			req:  &namespacev1.GetNamespaceRequest{Name: "prod"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Get(gomock.Any(), "prod").
 					Return(nil, domain.ErrNotFound)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr:  "not found",
 			wantCode: connect.CodeNotFound,
@@ -140,6 +150,10 @@ func TestHandler_CreateNamespace(t *testing.T) {
 			name: "success",
 			req:  &namespacev1.CreateNamespaceRequest{Name: "new-ns", Description: "desc"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionCreate, domain.DomainAll).
+					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Create(gomock.Any(), &domain.Namespace{Name: "new-ns", Description: "desc"}).
@@ -150,7 +164,7 @@ func TestHandler_CreateNamespace(t *testing.T) {
 						UpdatedAt:   now,
 					}, nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			want: &namespacev1.CreateNamespaceResponse{
 				Namespace: &namespacev1.Namespace{
@@ -165,12 +179,13 @@ func TestHandler_CreateNamespace(t *testing.T) {
 			name: "unauthorized",
 			req:  &namespacev1.CreateNamespaceRequest{Name: "new-ns"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionCreate, domain.DomainAll).
+					Return(domain.ErrUnauthorized)
 				uc := namespace_mock.NewMockusecase(ctrl)
-				uc.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
-					Return(nil, domain.ErrUnauthorized)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr:  "unauthorized",
 			wantCode: connect.CodeUnauthenticated,
@@ -179,12 +194,16 @@ func TestHandler_CreateNamespace(t *testing.T) {
 			name: "already exists",
 			req:  &namespacev1.CreateNamespaceRequest{Name: "existing"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionCreate, domain.DomainAll).
+					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Create(gomock.Any(), gomock.Any()).
 					Return(nil, domain.ErrAlreadyExists)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr:  "already exists",
 			wantCode: connect.CodeAlreadyExists,
@@ -231,6 +250,10 @@ func TestHandler_UpdateNamespace(t *testing.T) {
 			name: "success",
 			req:  &namespacev1.UpdateNamespaceRequest{Name: "prod", Description: "new-desc"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Update(gomock.Any(), "prod", "new-desc").
@@ -242,7 +265,7 @@ func TestHandler_UpdateNamespace(t *testing.T) {
 						UpdatedAt:   now,
 					}, nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			want: &namespacev1.UpdateNamespaceResponse{
 				Namespace: &namespacev1.Namespace{
@@ -258,12 +281,13 @@ func TestHandler_UpdateNamespace(t *testing.T) {
 			name: "unauthorized",
 			req:  &namespacev1.UpdateNamespaceRequest{Name: "prod"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					Return(domain.ErrUnauthorized)
 				uc := namespace_mock.NewMockusecase(ctrl)
-				uc.EXPECT().
-					Update(gomock.Any(), "prod", "").
-					Return(nil, domain.ErrUnauthorized)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr:  "unauthorized",
 			wantCode: connect.CodeUnauthenticated,
@@ -272,12 +296,13 @@ func TestHandler_UpdateNamespace(t *testing.T) {
 			name: "forbidden",
 			req:  &namespacev1.UpdateNamespaceRequest{Name: "prod"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					Return(domain.ErrForbidden)
 				uc := namespace_mock.NewMockusecase(ctrl)
-				uc.EXPECT().
-					Update(gomock.Any(), "prod", "").
-					Return(nil, domain.ErrForbidden)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr:  "forbidden",
 			wantCode: connect.CodePermissionDenied,
@@ -330,6 +355,7 @@ func TestHandler_ListNamespaces(t *testing.T) {
 				},
 			},
 			mockFunc: func(_ context.Context, ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					List(gomock.Any(), nsuc.ListParams{
@@ -351,7 +377,7 @@ func TestHandler_ListNamespaces(t *testing.T) {
 						Offset: 0,
 					}, nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			want: &namespacev1.ListNamespacesResponse{
 				Namespaces: []*namespacev1.Namespace{
@@ -409,12 +435,16 @@ func TestHandler_DeleteNamespace(t *testing.T) {
 			name: "success",
 			req:  &namespacev1.DeleteNamespaceRequest{Name: "empty-ns"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "empty-ns").
+					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Delete(gomock.Any(), "empty-ns").
 					Return(nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			want: &namespacev1.DeleteNamespaceResponse{},
 		},
@@ -422,15 +452,34 @@ func TestHandler_DeleteNamespace(t *testing.T) {
 			name: "not empty",
 			req:  &namespacev1.DeleteNamespaceRequest{Name: "full-ns"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "full-ns").
+					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Delete(gomock.Any(), "full-ns").
 					Return(domain.NewValidationError("namespace", "contains 5 config(s)"))
 
-				return New(uc)
+				return New(az, uc)
 			},
 			wantErr:  "contains 5 config(s)",
 			wantCode: connect.CodeInvalidArgument,
+		},
+		{
+			name: "forbidden",
+			req:  &namespacev1.DeleteNamespaceRequest{Name: "prod"},
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					Return(domain.ErrForbidden)
+				uc := namespace_mock.NewMockusecase(ctrl)
+
+				return New(az, uc)
+			},
+			wantErr:  "forbidden",
+			wantCode: connect.CodePermissionDenied,
 		},
 	}
 
@@ -472,14 +521,33 @@ func TestHandler_LockNamespace(t *testing.T) {
 			name: "success",
 			req:  &namespacev1.LockNamespaceRequest{Name: "prod"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Lock(gomock.Any(), "prod").
 					Return(nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			want: &namespacev1.LockNamespaceResponse{},
+		},
+		{
+			name: "forbidden",
+			req:  &namespacev1.LockNamespaceRequest{Name: "prod"},
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					Return(domain.ErrForbidden)
+				uc := namespace_mock.NewMockusecase(ctrl)
+
+				return New(az, uc)
+			},
+			wantErr:  "forbidden",
+			wantCode: connect.CodePermissionDenied,
 		},
 	}
 
@@ -521,14 +589,33 @@ func TestHandler_UnlockNamespace(t *testing.T) {
 			name: "success",
 			req:  &namespacev1.UnlockNamespaceRequest{Name: "prod"},
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
 					Unlock(gomock.Any(), "prod").
 					Return(nil)
 
-				return New(uc)
+				return New(az, uc)
 			},
 			want: &namespacev1.UnlockNamespaceResponse{},
+		},
+		{
+			name: "forbidden",
+			req:  &namespacev1.UnlockNamespaceRequest{Name: "prod"},
+			mockFunc: func(ctrl *gomock.Controller) *Handler {
+				az := namespace_mock.NewMockauthz(ctrl)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					Return(domain.ErrForbidden)
+				uc := namespace_mock.NewMockusecase(ctrl)
+
+				return New(az, uc)
+			},
+			wantErr:  "forbidden",
+			wantCode: connect.CodePermissionDenied,
 		},
 	}
 

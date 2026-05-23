@@ -65,10 +65,6 @@ func (s *Service) ExportNamespace(
 	asZip bool,
 	enc transferv1.BundleEncoding,
 ) ([]byte, string, string, error) {
-	if err := auth.CheckAccess(ctx, s.enforcer, namespace, domain.ObjectConfig, domain.ActionRead); err != nil {
-		return nil, "", "", fmt.Errorf("check access: %w", err)
-	}
-
 	ns, err := s.namespaces.Get(ctx, namespace)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("get namespace: %w", err)
@@ -122,6 +118,11 @@ func (s *Service) ExportNamespace(
 }
 
 func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) {
+	claims, ok := auth.ClaimsFromContext(ctx)
+	if !ok {
+		return domain.AllBundle{}, domain.ErrUnauthorized
+	}
+
 	ns, err := s.namespaces.ListAll(ctx)
 	if err != nil {
 		return domain.AllBundle{}, fmt.Errorf("list namespaces: %w", err)
@@ -134,7 +135,11 @@ func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) 
 	}
 
 	for _, ns := range ns {
-		if err := auth.CheckAccess(ctx, s.enforcer, ns.Name, domain.ObjectConfig, domain.ActionRead); err != nil {
+		if !s.pdp.Has(claims.Email, domain.Permission{
+			Object: domain.ObjectTransfer,
+			Action: domain.ActionRead,
+			Domain: ns.Name,
+		}) {
 			continue
 		}
 
