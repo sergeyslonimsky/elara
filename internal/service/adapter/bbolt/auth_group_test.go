@@ -52,9 +52,8 @@ func TestGroupRepo_Get(t *testing.T) {
 	ctx := t.Context()
 
 	group := &domain.Group{
-		ID:      "devs",
-		Name:    "Developers",
-		Members: []string{"bob@example.com", "carol@example.com"},
+		ID:   "devs",
+		Name: "Developers",
 	}
 	require.NoError(t, repo.Create(ctx, group))
 
@@ -62,7 +61,6 @@ func TestGroupRepo_Get(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "devs", got.ID)
 	assert.Equal(t, "Developers", got.Name)
-	assert.Equal(t, []string{"bob@example.com", "carol@example.com"}, got.Members)
 }
 
 func TestGroupRepo_Get_Missing(t *testing.T) {
@@ -84,17 +82,15 @@ func TestGroupRepo_Update(t *testing.T) {
 	repo := bboltadapter.NewGroupRepo(store)
 	ctx := t.Context()
 
-	group := &domain.Group{ID: "testers", Name: "Testers", Members: []string{"dave@example.com"}}
+	group := &domain.Group{ID: "testers", Name: "Testers"}
 	require.NoError(t, repo.Create(ctx, group))
 
 	group.Name = "QA Testers"
-	group.Members = []string{"dave@example.com", "eve@example.com"}
 	require.NoError(t, repo.Update(ctx, group))
 
 	got, err := repo.Get(ctx, "testers")
 	require.NoError(t, err)
 	assert.Equal(t, "QA Testers", got.Name)
-	assert.Equal(t, []string{"dave@example.com", "eve@example.com"}, got.Members)
 	assert.False(t, got.CreatedAt.IsZero())
 }
 
@@ -310,18 +306,6 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 			params:    domain.GroupListParams{Offset: 2, Limit: 2},
 			wantNames: []string{"c", "d"},
 			wantTotal: 5,
-		},
-		{
-			name: "sort by members count asc",
-			seed: []seedGroup{
-				{id: "id-big", name: "big", members: []string{"a@x.com", "b@x.com", "c@x.com"}},
-				{id: "id-small", name: "small", members: []string{"a@x.com"}},
-				{id: "id-mid", name: "mid", members: []string{"a@x.com", "b@x.com"}},
-			},
-			filter:    domain.GroupFilter{Wildcard: true},
-			params:    domain.GroupListParams{Sort: domain.SortParams{Field: "members"}},
-			wantNames: []string{"small", "mid", "big"},
-			wantTotal: 3,
 		},
 		{
 			name: "empty filter returns empty list",

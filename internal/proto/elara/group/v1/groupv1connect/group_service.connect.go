@@ -41,6 +41,12 @@ const (
 	// GroupServiceUpdateGroupProcedure is the fully-qualified name of the GroupService's UpdateGroup
 	// RPC.
 	GroupServiceUpdateGroupProcedure = "/elara.group.v1.GroupService/UpdateGroup"
+	// GroupServiceUpdateGroupMembersProcedure is the fully-qualified name of the GroupService's
+	// UpdateGroupMembers RPC.
+	GroupServiceUpdateGroupMembersProcedure = "/elara.group.v1.GroupService/UpdateGroupMembers"
+	// GroupServiceUpdateGroupPermissionsProcedure is the fully-qualified name of the GroupService's
+	// UpdateGroupPermissions RPC.
+	GroupServiceUpdateGroupPermissionsProcedure = "/elara.group.v1.GroupService/UpdateGroupPermissions"
 	// GroupServiceDeleteGroupProcedure is the fully-qualified name of the GroupService's DeleteGroup
 	// RPC.
 	GroupServiceDeleteGroupProcedure = "/elara.group.v1.GroupService/DeleteGroup"
@@ -52,7 +58,23 @@ const (
 type GroupServiceClient interface {
 	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.CreateGroupResponse], error)
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.GetGroupResponse], error)
+	// Updates only the group's metadata (name, description). Membership and
+	// permissions are managed by UpdateGroupMembers and UpdateGroupPermissions
+	// respectively — mixing them into one RPC re-introduces the dual-write
+	// drift the split was designed to eliminate.
 	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.UpdateGroupResponse], error)
+	// Replaces the group's membership with the given canonical set. The
+	// server diffs against current Casbin g-rules and operates on the
+	// symmetric difference. Adding a member requires the caller to hold
+	// every permission the group currently grants (anti-escalation);
+	// removal narrows and requires no escalation check.
+	UpdateGroupMembers(context.Context, *connect.Request[v1.UpdateGroupMembersRequest]) (*connect.Response[v1.UpdateGroupMembersResponse], error)
+	// Replaces the group's permissions with the given canonical set. The
+	// server diffs against current Casbin p-rules. Each added or removed
+	// permission must lie within the actor's own boundary. If the group has
+	// members, the actor must additionally hold every permission the group
+	// will hold post-update.
+	UpdateGroupPermissions(context.Context, *connect.Request[v1.UpdateGroupPermissionsRequest]) (*connect.Response[v1.UpdateGroupPermissionsResponse], error)
 	DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[v1.DeleteGroupResponse], error)
 	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
 }
@@ -86,6 +108,18 @@ func NewGroupServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(groupServiceMethods.ByName("UpdateGroup")),
 			connect.WithClientOptions(opts...),
 		),
+		updateGroupMembers: connect.NewClient[v1.UpdateGroupMembersRequest, v1.UpdateGroupMembersResponse](
+			httpClient,
+			baseURL+GroupServiceUpdateGroupMembersProcedure,
+			connect.WithSchema(groupServiceMethods.ByName("UpdateGroupMembers")),
+			connect.WithClientOptions(opts...),
+		),
+		updateGroupPermissions: connect.NewClient[v1.UpdateGroupPermissionsRequest, v1.UpdateGroupPermissionsResponse](
+			httpClient,
+			baseURL+GroupServiceUpdateGroupPermissionsProcedure,
+			connect.WithSchema(groupServiceMethods.ByName("UpdateGroupPermissions")),
+			connect.WithClientOptions(opts...),
+		),
 		deleteGroup: connect.NewClient[v1.DeleteGroupRequest, v1.DeleteGroupResponse](
 			httpClient,
 			baseURL+GroupServiceDeleteGroupProcedure,
@@ -103,11 +137,13 @@ func NewGroupServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // groupServiceClient implements GroupServiceClient.
 type groupServiceClient struct {
-	createGroup *connect.Client[v1.CreateGroupRequest, v1.CreateGroupResponse]
-	getGroup    *connect.Client[v1.GetGroupRequest, v1.GetGroupResponse]
-	updateGroup *connect.Client[v1.UpdateGroupRequest, v1.UpdateGroupResponse]
-	deleteGroup *connect.Client[v1.DeleteGroupRequest, v1.DeleteGroupResponse]
-	listGroups  *connect.Client[v1.ListGroupsRequest, v1.ListGroupsResponse]
+	createGroup            *connect.Client[v1.CreateGroupRequest, v1.CreateGroupResponse]
+	getGroup               *connect.Client[v1.GetGroupRequest, v1.GetGroupResponse]
+	updateGroup            *connect.Client[v1.UpdateGroupRequest, v1.UpdateGroupResponse]
+	updateGroupMembers     *connect.Client[v1.UpdateGroupMembersRequest, v1.UpdateGroupMembersResponse]
+	updateGroupPermissions *connect.Client[v1.UpdateGroupPermissionsRequest, v1.UpdateGroupPermissionsResponse]
+	deleteGroup            *connect.Client[v1.DeleteGroupRequest, v1.DeleteGroupResponse]
+	listGroups             *connect.Client[v1.ListGroupsRequest, v1.ListGroupsResponse]
 }
 
 // CreateGroup calls elara.group.v1.GroupService.CreateGroup.
@@ -125,6 +161,16 @@ func (c *groupServiceClient) UpdateGroup(ctx context.Context, req *connect.Reque
 	return c.updateGroup.CallUnary(ctx, req)
 }
 
+// UpdateGroupMembers calls elara.group.v1.GroupService.UpdateGroupMembers.
+func (c *groupServiceClient) UpdateGroupMembers(ctx context.Context, req *connect.Request[v1.UpdateGroupMembersRequest]) (*connect.Response[v1.UpdateGroupMembersResponse], error) {
+	return c.updateGroupMembers.CallUnary(ctx, req)
+}
+
+// UpdateGroupPermissions calls elara.group.v1.GroupService.UpdateGroupPermissions.
+func (c *groupServiceClient) UpdateGroupPermissions(ctx context.Context, req *connect.Request[v1.UpdateGroupPermissionsRequest]) (*connect.Response[v1.UpdateGroupPermissionsResponse], error) {
+	return c.updateGroupPermissions.CallUnary(ctx, req)
+}
+
 // DeleteGroup calls elara.group.v1.GroupService.DeleteGroup.
 func (c *groupServiceClient) DeleteGroup(ctx context.Context, req *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[v1.DeleteGroupResponse], error) {
 	return c.deleteGroup.CallUnary(ctx, req)
@@ -139,7 +185,23 @@ func (c *groupServiceClient) ListGroups(ctx context.Context, req *connect.Reques
 type GroupServiceHandler interface {
 	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.CreateGroupResponse], error)
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.GetGroupResponse], error)
+	// Updates only the group's metadata (name, description). Membership and
+	// permissions are managed by UpdateGroupMembers and UpdateGroupPermissions
+	// respectively — mixing them into one RPC re-introduces the dual-write
+	// drift the split was designed to eliminate.
 	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.UpdateGroupResponse], error)
+	// Replaces the group's membership with the given canonical set. The
+	// server diffs against current Casbin g-rules and operates on the
+	// symmetric difference. Adding a member requires the caller to hold
+	// every permission the group currently grants (anti-escalation);
+	// removal narrows and requires no escalation check.
+	UpdateGroupMembers(context.Context, *connect.Request[v1.UpdateGroupMembersRequest]) (*connect.Response[v1.UpdateGroupMembersResponse], error)
+	// Replaces the group's permissions with the given canonical set. The
+	// server diffs against current Casbin p-rules. Each added or removed
+	// permission must lie within the actor's own boundary. If the group has
+	// members, the actor must additionally hold every permission the group
+	// will hold post-update.
+	UpdateGroupPermissions(context.Context, *connect.Request[v1.UpdateGroupPermissionsRequest]) (*connect.Response[v1.UpdateGroupPermissionsResponse], error)
 	DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[v1.DeleteGroupResponse], error)
 	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
 }
@@ -169,6 +231,18 @@ func NewGroupServiceHandler(svc GroupServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(groupServiceMethods.ByName("UpdateGroup")),
 		connect.WithHandlerOptions(opts...),
 	)
+	groupServiceUpdateGroupMembersHandler := connect.NewUnaryHandler(
+		GroupServiceUpdateGroupMembersProcedure,
+		svc.UpdateGroupMembers,
+		connect.WithSchema(groupServiceMethods.ByName("UpdateGroupMembers")),
+		connect.WithHandlerOptions(opts...),
+	)
+	groupServiceUpdateGroupPermissionsHandler := connect.NewUnaryHandler(
+		GroupServiceUpdateGroupPermissionsProcedure,
+		svc.UpdateGroupPermissions,
+		connect.WithSchema(groupServiceMethods.ByName("UpdateGroupPermissions")),
+		connect.WithHandlerOptions(opts...),
+	)
 	groupServiceDeleteGroupHandler := connect.NewUnaryHandler(
 		GroupServiceDeleteGroupProcedure,
 		svc.DeleteGroup,
@@ -189,6 +263,10 @@ func NewGroupServiceHandler(svc GroupServiceHandler, opts ...connect.HandlerOpti
 			groupServiceGetGroupHandler.ServeHTTP(w, r)
 		case GroupServiceUpdateGroupProcedure:
 			groupServiceUpdateGroupHandler.ServeHTTP(w, r)
+		case GroupServiceUpdateGroupMembersProcedure:
+			groupServiceUpdateGroupMembersHandler.ServeHTTP(w, r)
+		case GroupServiceUpdateGroupPermissionsProcedure:
+			groupServiceUpdateGroupPermissionsHandler.ServeHTTP(w, r)
 		case GroupServiceDeleteGroupProcedure:
 			groupServiceDeleteGroupHandler.ServeHTTP(w, r)
 		case GroupServiceListGroupsProcedure:
@@ -212,6 +290,14 @@ func (UnimplementedGroupServiceHandler) GetGroup(context.Context, *connect.Reque
 
 func (UnimplementedGroupServiceHandler) UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.UpdateGroupResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.group.v1.GroupService.UpdateGroup is not implemented"))
+}
+
+func (UnimplementedGroupServiceHandler) UpdateGroupMembers(context.Context, *connect.Request[v1.UpdateGroupMembersRequest]) (*connect.Response[v1.UpdateGroupMembersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.group.v1.GroupService.UpdateGroupMembers is not implemented"))
+}
+
+func (UnimplementedGroupServiceHandler) UpdateGroupPermissions(context.Context, *connect.Request[v1.UpdateGroupPermissionsRequest]) (*connect.Response[v1.UpdateGroupPermissionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.group.v1.GroupService.UpdateGroupPermissions is not implemented"))
 }
 
 func (UnimplementedGroupServiceHandler) DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[v1.DeleteGroupResponse], error) {

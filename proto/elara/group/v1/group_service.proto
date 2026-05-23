@@ -9,7 +9,23 @@ import "elara/group/v1/group.proto";
 service GroupService {
   rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
   rpc GetGroup(GetGroupRequest) returns (GetGroupResponse);
+  // Updates only the group's metadata (name, description). Membership and
+  // permissions are managed by UpdateGroupMembers and UpdateGroupPermissions
+  // respectively — mixing them into one RPC re-introduces the dual-write
+  // drift the split was designed to eliminate.
   rpc UpdateGroup(UpdateGroupRequest) returns (UpdateGroupResponse);
+  // Replaces the group's membership with the given canonical set. The
+  // server diffs against current Casbin g-rules and operates on the
+  // symmetric difference. Adding a member requires the caller to hold
+  // every permission the group currently grants (anti-escalation);
+  // removal narrows and requires no escalation check.
+  rpc UpdateGroupMembers(UpdateGroupMembersRequest) returns (UpdateGroupMembersResponse);
+  // Replaces the group's permissions with the given canonical set. The
+  // server diffs against current Casbin p-rules. Each added or removed
+  // permission must lie within the actor's own boundary. If the group has
+  // members, the actor must additionally hold every permission the group
+  // will hold post-update.
+  rpc UpdateGroupPermissions(UpdateGroupPermissionsRequest) returns (UpdateGroupPermissionsResponse);
   rpc DeleteGroup(DeleteGroupRequest) returns (DeleteGroupResponse);
   rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse);
 }
@@ -34,12 +50,32 @@ message UpdateGroupRequest {
   string id = 1;
   string name = 2;
   string description = 3;
-  repeated elara.common.v1.PermissionAssignment permissions = 4;
-  repeated string members = 5;
-  int64 version = 6;
+  int64 version = 4;
 }
 
 message UpdateGroupResponse {
+  Group group = 1;
+}
+
+message UpdateGroupMembersRequest {
+  string group_id = 1;
+  // Canonical full desired set of member emails. The server diffs against
+  // current Casbin g-rules and only operates on the symmetric difference.
+  repeated string members = 2;
+}
+
+message UpdateGroupMembersResponse {
+  Group group = 1;
+}
+
+message UpdateGroupPermissionsRequest {
+  string group_id = 1;
+  // Canonical full desired set of permissions. The server diffs against
+  // current Casbin p-rules and only operates on the symmetric difference.
+  repeated elara.common.v1.PermissionAssignment permissions = 2;
+}
+
+message UpdateGroupPermissionsResponse {
   Group group = 1;
 }
 

@@ -13,5 +13,7 @@ func (s *Service) Get(ctx context.Context, id string) (*domain.Group, error) {
 		return nil, fmt.Errorf(errGetGroup, err)
 	}
 
+	group.Members = s.pap.GroupMembers(group.Name)
+
 	return group, nil
 }

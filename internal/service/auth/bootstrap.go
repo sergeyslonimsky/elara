@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -256,24 +255,15 @@ func (a *AdminBootstrap) ensurePassthroughUser(ctx context.Context, tx storage.T
 	return a.ensureMembership(ctx, tx, PassthroughEmail)
 }
 
-// ensureMembership adds the email to the superadmin group's Members list and
-// writes the corresponding membership g-rule. Idempotent.
+// ensureMembership writes the user→superadmin g-rule into Casbin. Casbin is
+// the source of truth for membership — bbolt's group record only carries
+// metadata. Idempotent: casbin.AddPolicy returns (false, nil) when the rule
+// already exists.
 func (a *AdminBootstrap) ensureMembership(ctx context.Context, tx storage.Tx, email string) error {
 	groups := a.groups.WithTx(tx)
 
-	group, err := groups.FindByName(ctx, domain.SystemGroupSuperAdmin)
-	if err != nil {
+	if _, err := groups.FindByName(ctx, domain.SystemGroupSuperAdmin); err != nil {
 		return fmt.Errorf("lookup superadmin group for membership: %w", err)
-	}
-
-	if !slices.Contains(group.Members, email) {
-		if err := group.AddMember(email); err != nil {
-			return fmt.Errorf("add user to group: %w", err)
-		}
-
-		if err := groups.Update(ctx, group); err != nil {
-			return fmt.Errorf("persist superadmin membership: %w", err)
-		}
 	}
 
 	policy := a.policies.WithTx(tx)

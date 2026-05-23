@@ -35,7 +35,7 @@ func setupService(t *testing.T) (*user.Service, mocks, *bbolt.Store, *casbin.Enf
 
 	m := mocks{store: usermock.NewMockstore(ctrl)}
 
-	return user.New(enforcer, m.store, users, groups, txm, pdp, pap), m, store, enforcer
+	return user.New(m.store, users, groups, txm, pdp, pap), m, store, enforcer
 }
 
 // setupServiceReal boots the full integration stack (no store mock). Used by
@@ -51,5 +51,5 @@ func setupServiceReal(t *testing.T) (*user.Service, *bbolt.Store, *casbin.Enforc
 	pdp := authz.NewPDP(enforcer)
 	pap := authz.NewPAP(enforcer, txm)
 
-	return user.New(enforcer, users, users, groups, txm, pdp, pap), store, enforcer, users
+	return user.New(users, users, groups, txm, pdp, pap), store, enforcer, users
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/group"
 	groupmock "github.com/sergeyslonimsky/elara/internal/handler/v2/group/mocks"
-	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	groupv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/group/v1"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	groupuc "github.com/sergeyslonimsky/elara/internal/usecase/group"
@@ -214,16 +213,6 @@ func TestGroupHandler_UpdateGroup(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	domainPerm := domain.Permission{
-		Object: domain.ObjectNamespace,
-		Action: domain.ActionWrite,
-		Domain: "dev",
-	}
-	protoPerm := &commonv1.PermissionAssignment{
-		Object: commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE,
-		Action: commonv1.PermissionAction_PERMISSION_ACTION_WRITE,
-		Domain: "dev",
-	}
 
 	tests := []struct {
 		name      string
@@ -240,8 +229,6 @@ func TestGroupHandler_UpdateGroup(t *testing.T) {
 				Id:          "g-1",
 				Name:        "developers",
 				Description: "writes to dev ns",
-				Permissions: []*commonv1.PermissionAssignment{protoPerm},
-				Members:     []string{"alice@example.com"},
 				Version:     1,
 			},
 			setupMock: func(az *groupmock.Mockauthz, uc *groupmock.MockgroupUsecase) {
@@ -253,8 +240,6 @@ func TestGroupHandler_UpdateGroup(t *testing.T) {
 						ID:          "g-1",
 						Name:        "developers",
 						Description: "writes to dev ns",
-						Permissions: []domain.Permission{domainPerm},
-						Members:     []string{"alice@example.com"},
 						Version:     1,
 					}).
 					Return(&domain.Group{
@@ -292,7 +277,6 @@ func TestGroupHandler_UpdateGroup(t *testing.T) {
 			name: "permission escalation → 403 PermissionDenied",
 			req: &groupv1.UpdateGroupRequest{
 				Id: "g-1", Name: "developers", Version: 1,
-				Permissions: []*commonv1.PermissionAssignment{protoPerm},
 			},
 			setupMock: func(az *groupmock.Mockauthz, uc *groupmock.MockgroupUsecase) {
 				az.EXPECT().
@@ -372,37 +356,8 @@ func TestGroupHandler_UpdateGroup(t *testing.T) {
 				assert.Equal(t, "g-1", resp.GetGroup().GetId())
 			},
 		},
-		{
-			name: "unspecified perm enum is dropped",
-			req: &groupv1.UpdateGroupRequest{
-				Id: "g-1", Name: "developers", Version: 1,
-				Permissions: []*commonv1.PermissionAssignment{
-					{
-						Object: commonv1.PermissionObject_PERMISSION_OBJECT_UNSPECIFIED,
-						Action: commonv1.PermissionAction_PERMISSION_ACTION_READ,
-						Domain: "dev",
-					},
-					protoPerm,
-				},
-			},
-			setupMock: func(az *groupmock.Mockauthz, uc *groupmock.MockgroupUsecase) {
-				az.EXPECT().
-					RequireUser(gomock.Any(), domain.ObjectGroup, domain.ActionWrite, "group:g-1").
-					Return(nil)
-				uc.EXPECT().
-					Update(gomock.Any(), gomock.Any(), groupuc.UpdateData{
-						ID:          "g-1",
-						Name:        "developers",
-						Permissions: []domain.Permission{domainPerm}, // unspecified got dropped
-						Version:     1,
-					}).
-					Return(&domain.Group{ID: "g-1", Name: "developers", Version: 2}, nil)
-			},
-			assertOK: func(t *testing.T, resp *groupv1.UpdateGroupResponse) {
-				t.Helper()
-				assert.Equal(t, "g-1", resp.GetGroup().GetId())
-			},
-		},
+		// "unspecified perm enum is dropped" moved to a UpdateGroupPermissions
+		// handler test (permissions no longer live on UpdateGroup).
 		{
 			name: "denied — authz returns forbidden, usecase not called",
 			req: &groupv1.UpdateGroupRequest{

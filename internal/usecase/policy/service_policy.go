@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
@@ -24,15 +24,10 @@ func (s *Service) AssignRole(ctx context.Context, subject, dom, role string) err
 		return fmt.Errorf("find group by name: %w", err)
 	}
 
-	err := s.enforcer.WriteTx(ctx, s.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		if err := txe.AddRoleForUser(casbin.GroupSubject(subject), role, dom); err != nil {
-			return fmt.Errorf("add role for group: %w", err)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("write tx: %w", err)
+	if err := s.pap.Write(ctx, func(_ storage.Tx, w *authz.PAPTx) error {
+		return w.AssignRoleToGroup(subject, role, dom)
+	}); err != nil {
+		return fmt.Errorf("assign role: %w", err)
 	}
 
 	return nil
@@ -44,41 +39,23 @@ func (s *Service) RevokeRole(ctx context.Context, subject, dom, role string) err
 		return fmt.Errorf("find group by name: %w", err)
 	}
 
-	err := s.enforcer.WriteTx(ctx, s.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		if err := txe.RemoveRoleForUser(casbin.GroupSubject(subject), role, dom); err != nil {
-			return fmt.Errorf("remove role for group: %w", err)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("write tx: %w", err)
+	if err := s.pap.Write(ctx, func(_ storage.Tx, w *authz.PAPTx) error {
+		return w.RevokeRoleFromGroup(subject, role, dom)
+	}); err != nil {
+		return fmt.Errorf("revoke role: %w", err)
 	}
 
 	return nil
 }
 
-// List returns all group->role assignments.
+// List returns all group→role assignments. Direct user grants and
+// membership rules are filtered out by PAP.ListGroupRoleAssignments.
 func (s *Service) List(_ context.Context) ([]Rule, error) {
-	rules := s.enforcer.GetGroupingPolicy()
+	assignments := s.pap.ListGroupRoleAssignments()
 
-	const gRuleLen = 3
-
-	result := make([]Rule, 0, len(rules))
-	for _, rule := range rules {
-		if len(rule) < gRuleLen {
-			continue
-		}
-
-		if !casbin.IsGroupSubject(rule[0]) {
-			continue
-		}
-
-		result = append(result, Rule{
-			Subject: casbin.GroupNameFromSubject(rule[0]),
-			Role:    rule[1],
-			Domain:  rule[2],
-		})
+	result := make([]Rule, 0, len(assignments))
+	for _, a := range assignments {
+		result = append(result, Rule{Subject: a.Group, Role: a.Role, Domain: a.Domain})
 	}
 
 	return result, nil

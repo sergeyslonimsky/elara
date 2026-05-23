@@ -6,7 +6,6 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 )
 
 const defaultListLimit = 20
@@ -34,12 +33,12 @@ type ListResult struct {
 //  1. effective = pdp.EffectiveDomains(caller, "group", "read") — the groups
 //     the caller can see, in "group:<name>" subject form.
 //  2. If Wildcard: AnyUser=true, no member roll-up.
-//  3. Otherwise: roll up enforcer.GetMembersOfGroup(group:<name>) for each
-//     explicit group into a username set; that's the read scope.
+//  3. Otherwise: PAP.MembersOfScope rolls up group members into a username
+//     set; that's the read scope.
 //  4. Repo filter applies the set + search; pagination/sort live on the repo.
 //  5. Empty effective scope → empty list, not 403 (acceptance: empty
 //     responses → empty list).
-func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, error) { //nolint:cyclop //refactor
+func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
@@ -65,21 +64,7 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 			Offset: params.Offset,
 		}, nil
 	default:
-		usernames := make(map[string]struct{})
-		for d := range groupScope.Explicit {
-			if !casbin.IsGroupSubject(d) {
-				continue
-			}
-			// GetMembersOfGroup returns subjects which may be users (emails)
-			// or nested groups. EL-4 §1 «Не-цели» excludes nested groups, so
-			// we keep only user-style subjects.
-			for _, m := range s.enforcer.GetMembersOfGroup(d) {
-				if !casbin.IsGroupSubject(m) {
-					usernames[m] = struct{}{}
-				}
-			}
-		}
-
+		usernames := s.pap.MembersOfScope(groupScope)
 		if len(usernames) == 0 {
 			return &ListResult{
 				Users:  []*domain.User{},

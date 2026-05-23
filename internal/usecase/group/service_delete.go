@@ -17,7 +17,7 @@ func (s *Service) Delete(ctx context.Context, _ domain.AuthInfo, id string) erro
 		}
 
 		if err := w.DeleteGroup(group.Name); err != nil {
-			return err
+			return fmt.Errorf("pap delete group: %w", err)
 		}
 
 		if err := s.store.WithTx(tx).Delete(ctx, id); err != nil {

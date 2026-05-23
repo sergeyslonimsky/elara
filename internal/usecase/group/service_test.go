@@ -37,7 +37,7 @@ func newTestStack(t *testing.T) testStack {
 	pap := authz.NewPAP(enforcer, txm)
 
 	return testStack{
-		svc:      group.New(enforcer, repo, txm, pdp, pap),
+		svc:      group.New(repo, txm, pdp, pap),
 		store:    store,
 		enforcer: enforcer,
 		repo:     repo,

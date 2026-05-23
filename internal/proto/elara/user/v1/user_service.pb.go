@@ -172,8 +172,13 @@ func (x *GetUserRequest) GetEmail() string {
 }
 
 type GetUserResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	User  *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	// All group IDs the user currently belongs to, regardless of whether
+	// the caller has read access to those groups. Required so the user
+	// edit UI can submit a canonical full set back through UpdateUserGroups
+	// (the server diffs and authorizes only the symmetric difference).
+	GroupIds      []string `protobuf:"bytes,2,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -211,6 +216,13 @@ func (*GetUserResponse) Descriptor() ([]byte, []int) {
 func (x *GetUserResponse) GetUser() *User {
 	if x != nil {
 		return x.User
+	}
+	return nil
+}
+
+func (x *GetUserResponse) GetGroupIds() []string {
+	if x != nil {
+		return x.GroupIds
 	}
 	return nil
 }
@@ -610,9 +622,10 @@ const file_elara_user_v1_user_service_proto_rawDesc = "" +
 	"pagination\x18\x02 \x01(\v2#.elara.common.v1.PaginationResponseR\n" +
 	"pagination\"&\n" +
 	"\x0eGetUserRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\":\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"W\n" +
 	"\x0fGetUserResponse\x12'\n" +
-	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\"h\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\x12\x1b\n" +
+	"\tgroup_ids\x18\x02 \x03(\tR\bgroupIds\"h\n" +
 	"\x11CreateUserRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12)\n" +

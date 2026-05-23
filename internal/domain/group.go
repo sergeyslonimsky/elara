@@ -2,8 +2,6 @@ package domain
 
 import (
 	"fmt"
-	"slices"
-	"strings"
 	"time"
 )
 
@@ -30,13 +28,18 @@ type GroupListParams struct {
 	Sort   SortParams
 }
 
+// Group is the bbolt-persisted entity plus a transient view of its
+// membership. Members is the source-of-truth view from Casbin g-rules
+// (`g, <email>, group:<name>, "*"`) and is populated by the service layer
+// after fetch — it is never written back to bbolt. Use the membership
+// usecases (UpdateGroupMembers, UpdateUserGroups) to mutate it.
 type Group struct {
 	ID          string
 	Name        string
 	Description string
-	Members     []string // emails
+	Members     []string // emails — transient, enriched from Casbin
 	System      bool     // protected from delete/rename; set by Seed, never by the API
-	Version     int64    // for optimistic locking
+	Version     int64    // for optimistic locking on metadata only
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -72,37 +75,5 @@ func (g *Group) Validate() error {
 		)
 	}
 
-	for _, email := range g.Members {
-		if email == "" || !strings.Contains(email, "@") {
-			return NewValidationError("members", "member email must be a valid email address")
-		}
-	}
-
 	return nil
-}
-
-func (g *Group) AddMember(email string) error {
-	if email == "" || !strings.Contains(email, "@") {
-		return NewValidationError("email", "email must be a valid email address")
-	}
-
-	if slices.Contains(g.Members, email) {
-		return NewAlreadyExistsError("member", email)
-	}
-
-	g.Members = append(g.Members, email)
-
-	return nil
-}
-
-func (g *Group) RemoveMember(email string) error {
-	for i, m := range g.Members {
-		if m == email {
-			g.Members = append(g.Members[:i], g.Members[i+1:]...)
-
-			return nil
-		}
-	}
-
-	return NewNotFoundError("member", email)
 }

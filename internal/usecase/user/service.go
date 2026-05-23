@@ -5,7 +5,6 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
@@ -69,17 +68,15 @@ func (a BoltGroupReader) WithTx(tx storage.Tx) GroupReader {
 }
 
 type Service struct {
-	enforcer *casbin.Enforcer
-	store    store
-	users    *bbolt.UserRepo
-	groups   GroupReader
-	txm      storage.TxManager
-	pdp      *authz.PDP
-	pap      *authz.PAP
+	store  store
+	users  *bbolt.UserRepo
+	groups GroupReader
+	txm    storage.TxManager
+	pdp    *authz.PDP
+	pap    *authz.PAP
 }
 
 func New(
-	enforcer *casbin.Enforcer,
 	store store,
 	users *bbolt.UserRepo,
 	groups GroupReader,
@@ -88,12 +85,11 @@ func New(
 	pap *authz.PAP,
 ) *Service {
 	return &Service{
-		enforcer: enforcer,
-		store:    store,
-		users:    users,
-		groups:   groups,
-		txm:      txm,
-		pdp:      pdp,
-		pap:      pap,
+		store:  store,
+		users:  users,
+		groups: groups,
+		txm:    txm,
+		pdp:    pdp,
+		pap:    pap,
 	}
 }

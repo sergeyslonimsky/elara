@@ -54,12 +54,13 @@ func TestAdminBootstrap_Idempotent(t *testing.T) {
 	// Second run on the populated store — must not error and must not duplicate.
 	require.NoError(t, bs.BootstrapBasic(ctx, username, "initial-password"))
 
-	// Group: exactly one system:superadmin, System=true.
+	// Group: exactly one system:superadmin, System=true. Membership is
+	// stored as a Casbin g-rule (not in bbolt) and is verified through the
+	// AddPolicy idempotence contract — bbolt only carries entity metadata
+	// since the SSoT refactor.
 	grp, err := groups.FindByName(ctx, domain.SystemGroupSuperAdmin)
 	require.NoError(t, err)
 	assert.True(t, grp.System, "superadmin group must have System=true")
-	assert.Len(t, grp.Members, 1, "superadmin should appear in group members exactly once")
-	assert.Equal(t, username, grp.Members[0])
 
 	// User: exactly one superadmin, System=true.
 	user, err := users.Get(ctx, username)

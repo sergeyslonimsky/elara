@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 	groupuc "github.com/sergeyslonimsky/elara/internal/usecase/group"
 	"github.com/sergeyslonimsky/elara/internal/util/sliceutil"
@@ -32,7 +32,7 @@ type UpdateGroupsResult struct {
 // The handler is responsible for the coarse authentication and the
 // resource-class authz gate (ObjectUser:Write plus ObjectGroup:Write when
 // the request carries any groups). This method enforces the fine-grained
-// per-delta checks inside the same transaction as the Casbin g-rule sync:
+// per-delta checks inside the same transaction as the membership write:
 //
 //  1. For every added or removed group, the actor must hold
 //     ObjectGroup:Write on "group:<id>". Groups unchanged between current and
@@ -41,10 +41,10 @@ type UpdateGroupsResult struct {
 //  2. For every added group, the actor must hold every permission the group
 //     grants (anti-escalation; see groupuc.AuthorizeGrantToUser).
 //
-// All PDP reads inside the closure observe a stable policy snapshot:
-// casbin.Enforcer serializes WriteTx, so no concurrent policy mutation can
-// commit between authorization and the membership write — this is why a
-// TOCTOU window doesn't exist here.
+// All PDP reads inside the closure observe a stable policy snapshot: PAP
+// serializes Write, so no concurrent policy mutation can commit between
+// authorization and the membership write — this is why a TOCTOU window
+// doesn't exist here.
 //
 // The bbolt User record is unchanged — group memberships live exclusively in
 // Casbin g-rules of the form `g, <email>, group:<name>, "*"`.
@@ -55,7 +55,7 @@ func (s *Service) UpdateGroups(
 ) (*UpdateGroupsResult, error) {
 	var result *UpdateGroupsResult
 
-	err := s.enforcer.WriteTx(ctx, s.txm, func(tx storage.Tx, txe *casbin.TxEnforcer) error {
+	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
 		user, err := s.users.WithTx(tx).Get(ctx, data.Email)
 		if err != nil {
 			return fmt.Errorf("get user: %w", err)
@@ -68,7 +68,7 @@ func (s *Service) UpdateGroups(
 			return err
 		}
 
-		currentIDs, currentNamesByID, err := currentUserGroupIDs(ctx, s.enforcer, groups, user.Email)
+		currentIDs, currentNamesByID, err := currentUserGroupIDs(ctx, s.pap, groups, user.Email)
 		if err != nil {
 			return err
 		}
@@ -80,13 +80,16 @@ func (s *Service) UpdateGroups(
 		}
 
 		for _, id := range added {
-			if err := groupuc.AuthorizeGrantToUser(s.pdp, txe, actor, desired[id].Name); err != nil {
+			if err := groupuc.AuthorizeGrantToUser(s.pdp, w, actor, desired[id].Name); err != nil {
 				return fmt.Errorf("grant group %s: %w", id, err)
 			}
 		}
 
-		if err := applyMembershipDeltas(txe, user.Email, added, removed, desired, currentNamesByID); err != nil {
-			return err
+		addedNames := mapIDsToNames(added, func(id string) string { return desired[id].Name })
+		removedNames := mapIDsToNames(removed, func(id string) string { return currentNamesByID[id] })
+
+		if err := w.ApplyUserMembershipDeltas(user.Email, addedNames, removedNames); err != nil {
+			return fmt.Errorf("pap apply user memberships: %w", err)
 		}
 
 		result = &UpdateGroupsResult{User: user, GroupIDs: data.GroupIDs}
@@ -141,31 +144,25 @@ func loadGroupsByIDs(ctx context.Context, repo GroupReader, ids []string) (map[s
 	return out, nil
 }
 
-// currentUserGroupIDs reads the user's current Casbin g-rules and resolves
-// each group-subject to its ID via FindByName. Nested-group memberships and
-// non-group subjects are skipped, matching the convention in
-// usecase/user/service_list.go.
+// currentUserGroupIDs reads the user's current group memberships through PAP
+// and resolves each group name to its ID via the per-tx GroupReader. The
+// caller gets both the ordered ID slice (for diffing) and a name lookup
+// keyed by ID (for the removal path, which needs the casbin subject name).
 func currentUserGroupIDs(
 	ctx context.Context,
-	enforcer *casbin.Enforcer,
+	pap *authz.PAP,
 	repo GroupReader,
 	email string,
 ) ([]string, map[string]string, error) {
-	subjects, err := enforcer.GetRolesForUser(email, domain.MembershipDomain)
+	names, err := pap.UserGroupNames(email)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get user memberships: %w", err)
+		return nil, nil, fmt.Errorf("pap user group names: %w", err)
 	}
 
-	ids := make([]string, 0, len(subjects))
-	namesByID := make(map[string]string, len(subjects))
+	ids := make([]string, 0, len(names))
+	namesByID := make(map[string]string, len(names))
 
-	for _, subject := range subjects {
-		if !casbin.IsGroupSubject(subject) {
-			continue
-		}
-
-		name := casbin.GroupNameFromSubject(subject)
-
+	for _, name := range names {
 		g, err := repo.FindByName(ctx, name)
 		if err != nil {
 			return nil, nil, fmt.Errorf("find group by name %s: %w", name, err)
@@ -178,29 +175,11 @@ func currentUserGroupIDs(
 	return ids, namesByID, nil
 }
 
-// applyMembershipDeltas applies the resolved add/remove deltas to Casbin
-// g-rules. Names are looked up via the per-state maps populated upstream so
-// we never re-query bbolt inside the inner loop.
-func applyMembershipDeltas(
-	txe *casbin.TxEnforcer,
-	email string,
-	added, removed []string,
-	desired map[string]*domain.Group,
-	currentNamesByID map[string]string,
-) error {
-	for _, id := range removed {
-		name := currentNamesByID[id]
-		if err := txe.RemoveRoleForUser(email, casbin.GroupSubject(name), domain.MembershipDomain); err != nil {
-			return fmt.Errorf("remove membership %s: %w", id, err)
-		}
+func mapIDsToNames(ids []string, lookup func(string) string) []string {
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, lookup(id))
 	}
 
-	for _, id := range added {
-		name := desired[id].Name
-		if err := txe.AddRoleForUser(email, casbin.GroupSubject(name), domain.MembershipDomain); err != nil {
-			return fmt.Errorf("add membership %s: %w", id, err)
-		}
-	}
-
-	return nil
+	return out
 }

@@ -38,7 +38,6 @@ func TestAuthGroupMetaRoundTrip(t *testing.T) {
 	g := &domain.Group{
 		ID:        "group-1",
 		Name:      "Group 1",
-		Members:   []string{"a@example.com", "b@example.com"},
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -47,9 +46,6 @@ func TestAuthGroupMetaRoundTrip(t *testing.T) {
 	got := authGroupMetaToDomain(meta)
 
 	assert.Equal(t, g, got)
-	// Verify deep copy of Members
-	meta.Members[0] = "changed"
-	assert.Equal(t, "a@example.com", g.Members[0])
 }
 
 func TestAuthTokenMetaRoundTrip(t *testing.T) {

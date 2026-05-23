@@ -1,8 +1,9 @@
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { User as UserIcon } from "lucide-react";
+import { UserCog, User as UserIcon } from "lucide-react";
 import { DataTable } from "@/components/data-table";
+import { Button } from "@/components/ui/button";
 import {
 	Empty,
 	EmptyDescription,
@@ -16,9 +17,15 @@ interface UserTableProps {
 	users: User[];
 	isLoading: boolean;
 	query?: string;
+	onEditGroups: (user: User) => void;
 }
 
-export function UserTable({ users, isLoading, query }: UserTableProps) {
+export function UserTable({
+	users,
+	isLoading,
+	query,
+	onEditGroups,
+}: UserTableProps) {
 	const columns: ColumnDef<User>[] = [
 		{
 			accessorKey: "email",
@@ -52,6 +59,25 @@ export function UserTable({ users, isLoading, query }: UserTableProps) {
 					: null;
 				return date ? format(date, "PPP p") : "-";
 			},
+		},
+		{
+			id: "actions",
+			header: () => <div className="text-right">Actions</div>,
+			cell: ({ row }) => (
+				<div className="flex justify-end gap-1">
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						onClick={(e) => {
+							e.stopPropagation();
+							onEditGroups(row.original);
+						}}
+						title="Edit Groups"
+					>
+						<UserCog className="h-4 w-4" />
+					</Button>
+				</div>
+			),
 		},
 	];
 

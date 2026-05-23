@@ -111,7 +111,6 @@ func (r *GroupRepo) Update(_ context.Context, group *domain.Group) error {
 
 		existing.Name = group.Name
 		existing.Description = group.Description
-		existing.Members = group.Members
 		existing.Version = group.Version
 		existing.UpdatedAt = time.Now()
 
@@ -266,8 +265,6 @@ func sortGroups(groups []*domain.Group, params domain.SortParams) {
 		var less bool
 
 		switch params.Field {
-		case "members":
-			less = len(a.Members) < len(b.Members)
 		case "modified":
 			less = a.UpdatedAt.Before(b.UpdatedAt)
 		default:

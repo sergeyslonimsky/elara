@@ -117,6 +117,7 @@ export function EditGroupDialog({
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const [members, setMembers] = useState<string[]>([]);
+	const [memberInput, setMemberInput] = useState("");
 	const [permissions, setPermissions] = useState<PermissionAssignment[]>([]);
 	const [version, setVersion] = useState<bigint>(0n);
 
@@ -126,6 +127,7 @@ export function EditGroupDialog({
 			setName(g.name);
 			setDescription(g.description);
 			setMembers([...g.members]);
+			setMemberInput("");
 			setPermissions([...g.permissions]);
 			setVersion(g.version);
 		}
@@ -136,6 +138,7 @@ export function EditGroupDialog({
 			toast.success("Group updated");
 			onOpenChange(false);
 			invalidate(queryClient, "groups");
+			invalidate(queryClient, "group");
 		},
 		onError: toastError,
 	});
@@ -191,11 +194,14 @@ export function EditGroupDialog({
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
+		const pending = memberInput.trim();
+		const finalMembers =
+			pending && !members.includes(pending) ? [...members, pending] : members;
 		mutation.mutate({
 			id: group?.id ?? "",
 			name,
 			description,
-			members,
+			members: finalMembers,
 			permissions,
 			version,
 		});
@@ -290,15 +296,17 @@ export function EditGroupDialog({
 								{canEditMetadata && (
 									<div className="flex gap-2">
 										<Input
-											placeholder="Add user email..."
+											placeholder="Add user email and press Enter..."
 											className="h-8 text-xs"
+											value={memberInput}
+											onChange={(e) => setMemberInput(e.target.value)}
 											onKeyDown={(e) => {
 												if (e.key === "Enter") {
 													e.preventDefault();
-													const val = e.currentTarget.value.trim();
+													const val = memberInput.trim();
 													if (val && !members.includes(val)) {
 														setMembers([...members, val]);
-														e.currentTarget.value = "";
+														setMemberInput("");
 													}
 												}
 											}}

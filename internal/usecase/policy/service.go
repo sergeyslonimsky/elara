@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 )
 
 //go:generate mockgen -destination=mocks/service_mock.go -package=policy_mock -source=service.go
@@ -18,19 +17,14 @@ type groupFinder interface {
 	FindByName(ctx context.Context, name string) (*domain.Group, error)
 }
 
-// Service grants and revokes group->role assignments through atomic Casbin
-// writes (Enforcer.WriteTx). enforcer is a concrete pointer because WriteTx
-// hands out a *TxEnforcer; tests use a real Enforcer + bbolt rather than mocks.
+// Service grants and revokes group→role assignments through the
+// authorization administration point. Casbin specifics (subject string
+// shape, in-tx rule writes) live entirely behind PAP.
 type Service struct {
-	enforcer *casbin.Enforcer
-	groups   groupFinder
-	txm      storage.TxManager
+	pap    *authz.PAP
+	groups groupFinder
 }
 
-func New(enforcer *casbin.Enforcer, groups groupFinder, txm storage.TxManager) *Service {
-	return &Service{
-		enforcer: enforcer,
-		groups:   groups,
-		txm:      txm,
-	}
+func New(pap *authz.PAP, groups groupFinder) *Service {
+	return &Service{pap: pap, groups: groups}
 }

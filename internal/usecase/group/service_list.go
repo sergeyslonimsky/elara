@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 )
 
 // ListParams carries pagination, sort, and search options accepted by List.
@@ -47,18 +46,8 @@ func (s *Service) List(ctx context.Context, user domain.AuthInfo, params ListPar
 		}, nil
 	}
 
-	// EffectiveDomains for object=group yields domains in the "group:<name>"
-	// subject form. Strip the prefix; non-group entries (defensive) are
-	// ignored — Wildcard already covers them.
-	names := make(map[string]struct{}, len(scope.Explicit))
-	for d := range scope.Explicit {
-		if casbin.IsGroupSubject(d) {
-			names[casbin.GroupNameFromSubject(d)] = struct{}{}
-		}
-	}
-
 	filter := domain.GroupFilter{
-		Names:    names,
+		Names:    s.pap.GroupNamesFromScope(scope),
 		Wildcard: scope.Wildcard,
 		Search:   params.Query,
 	}
@@ -71,6 +60,10 @@ func (s *Service) List(ctx context.Context, user domain.AuthInfo, params ListPar
 	groups, total, err := s.store.List(ctx, filter, repoParams)
 	if err != nil {
 		return nil, fmt.Errorf("list groups: %w", err)
+	}
+
+	for _, g := range groups {
+		g.Members = s.pap.GroupMembers(g.Name)
 	}
 
 	return &ListResult{

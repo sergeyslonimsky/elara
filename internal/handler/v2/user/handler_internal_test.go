@@ -94,7 +94,7 @@ func TestUserHandler_GetUser(t *testing.T) {
 					Return(nil)
 				uc := user_mock.NewMockusecase(ctrl)
 				uc.EXPECT().Get(gomock.Any(), email).
-					Return(&domain.User{Email: email, Name: "Alice"}, nil)
+					Return(&useruc.GetResult{User: &domain.User{Email: email, Name: "Alice"}}, nil)
 
 				return New(az, uc, config.AuthTypeOIDC)
 			},

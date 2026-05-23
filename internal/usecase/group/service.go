@@ -6,7 +6,6 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
@@ -22,26 +21,23 @@ import (
 // concrete types. Tests use a real bbolt + real Enforcer integration helper
 // instead of mocks (see service_test.go).
 type Service struct {
-	enforcer *casbin.Enforcer
-	store    *bbolt.GroupRepo
-	txm      storage.TxManager
-	pdp      *authz.PDP
-	pap      *authz.PAP
+	store *bbolt.GroupRepo
+	txm   storage.TxManager
+	pdp   *authz.PDP
+	pap   *authz.PAP
 }
 
 func New(
-	enforcer *casbin.Enforcer,
 	store *bbolt.GroupRepo,
 	txm storage.TxManager,
 	pdp *authz.PDP,
 	pap *authz.PAP,
 ) *Service {
 	return &Service{
-		enforcer: enforcer,
-		store:    store,
-		txm:      txm,
-		pdp:      pdp,
-		pap:      pap,
+		store: store,
+		txm:   txm,
+		pdp:   pdp,
+		pap:   pap,
 	}
 }
 

@@ -39,6 +39,11 @@ message GetUserRequest {
 
 message GetUserResponse {
   User user = 1;
+  // All group IDs the user currently belongs to, regardless of whether
+  // the caller has read access to those groups. Required so the user
+  // edit UI can submit a canonical full set back through UpdateUserGroups
+  // (the server diffs and authorizes only the symmetric difference).
+  repeated string group_ids = 2;
 }
 
 message CreateUserRequest {

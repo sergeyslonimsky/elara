@@ -199,13 +199,11 @@ func (x *GetGroupResponse) GetGroup() *Group {
 }
 
 type UpdateGroupRequest struct {
-	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Id            string                     `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                     `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                     `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Permissions   []*v1.PermissionAssignment `protobuf:"bytes,4,rep,name=permissions,proto3" json:"permissions,omitempty"`
-	Members       []string                   `protobuf:"bytes,5,rep,name=members,proto3" json:"members,omitempty"`
-	Version       int64                      `protobuf:"varint,6,opt,name=version,proto3" json:"version,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Version       int64                  `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -261,20 +259,6 @@ func (x *UpdateGroupRequest) GetDescription() string {
 	return ""
 }
 
-func (x *UpdateGroupRequest) GetPermissions() []*v1.PermissionAssignment {
-	if x != nil {
-		return x.Permissions
-	}
-	return nil
-}
-
-func (x *UpdateGroupRequest) GetMembers() []string {
-	if x != nil {
-		return x.Members
-	}
-	return nil
-}
-
 func (x *UpdateGroupRequest) GetVersion() int64 {
 	if x != nil {
 		return x.Version
@@ -326,6 +310,202 @@ func (x *UpdateGroupResponse) GetGroup() *Group {
 	return nil
 }
 
+type UpdateGroupMembersRequest struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	GroupId string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	// Canonical full desired set of member emails. The server diffs against
+	// current Casbin g-rules and only operates on the symmetric difference.
+	Members       []string `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateGroupMembersRequest) Reset() {
+	*x = UpdateGroupMembersRequest{}
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateGroupMembersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateGroupMembersRequest) ProtoMessage() {}
+
+func (x *UpdateGroupMembersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateGroupMembersRequest.ProtoReflect.Descriptor instead.
+func (*UpdateGroupMembersRequest) Descriptor() ([]byte, []int) {
+	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *UpdateGroupMembersRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *UpdateGroupMembersRequest) GetMembers() []string {
+	if x != nil {
+		return x.Members
+	}
+	return nil
+}
+
+type UpdateGroupMembersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Group         *Group                 `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateGroupMembersResponse) Reset() {
+	*x = UpdateGroupMembersResponse{}
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateGroupMembersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateGroupMembersResponse) ProtoMessage() {}
+
+func (x *UpdateGroupMembersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateGroupMembersResponse.ProtoReflect.Descriptor instead.
+func (*UpdateGroupMembersResponse) Descriptor() ([]byte, []int) {
+	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UpdateGroupMembersResponse) GetGroup() *Group {
+	if x != nil {
+		return x.Group
+	}
+	return nil
+}
+
+type UpdateGroupPermissionsRequest struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	GroupId string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	// Canonical full desired set of permissions. The server diffs against
+	// current Casbin p-rules and only operates on the symmetric difference.
+	Permissions   []*v1.PermissionAssignment `protobuf:"bytes,2,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateGroupPermissionsRequest) Reset() {
+	*x = UpdateGroupPermissionsRequest{}
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateGroupPermissionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateGroupPermissionsRequest) ProtoMessage() {}
+
+func (x *UpdateGroupPermissionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateGroupPermissionsRequest.ProtoReflect.Descriptor instead.
+func (*UpdateGroupPermissionsRequest) Descriptor() ([]byte, []int) {
+	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *UpdateGroupPermissionsRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *UpdateGroupPermissionsRequest) GetPermissions() []*v1.PermissionAssignment {
+	if x != nil {
+		return x.Permissions
+	}
+	return nil
+}
+
+type UpdateGroupPermissionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Group         *Group                 `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateGroupPermissionsResponse) Reset() {
+	*x = UpdateGroupPermissionsResponse{}
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateGroupPermissionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateGroupPermissionsResponse) ProtoMessage() {}
+
+func (x *UpdateGroupPermissionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateGroupPermissionsResponse.ProtoReflect.Descriptor instead.
+func (*UpdateGroupPermissionsResponse) Descriptor() ([]byte, []int) {
+	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *UpdateGroupPermissionsResponse) GetGroup() *Group {
+	if x != nil {
+		return x.Group
+	}
+	return nil
+}
+
 type DeleteGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -335,7 +515,7 @@ type DeleteGroupRequest struct {
 
 func (x *DeleteGroupRequest) Reset() {
 	*x = DeleteGroupRequest{}
-	mi := &file_elara_group_v1_group_service_proto_msgTypes[6]
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -347,7 +527,7 @@ func (x *DeleteGroupRequest) String() string {
 func (*DeleteGroupRequest) ProtoMessage() {}
 
 func (x *DeleteGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_group_v1_group_service_proto_msgTypes[6]
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -360,7 +540,7 @@ func (x *DeleteGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteGroupRequest.ProtoReflect.Descriptor instead.
 func (*DeleteGroupRequest) Descriptor() ([]byte, []int) {
-	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{6}
+	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DeleteGroupRequest) GetId() string {
@@ -378,7 +558,7 @@ type DeleteGroupResponse struct {
 
 func (x *DeleteGroupResponse) Reset() {
 	*x = DeleteGroupResponse{}
-	mi := &file_elara_group_v1_group_service_proto_msgTypes[7]
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -390,7 +570,7 @@ func (x *DeleteGroupResponse) String() string {
 func (*DeleteGroupResponse) ProtoMessage() {}
 
 func (x *DeleteGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_group_v1_group_service_proto_msgTypes[7]
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -403,7 +583,7 @@ func (x *DeleteGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteGroupResponse.ProtoReflect.Descriptor instead.
 func (*DeleteGroupResponse) Descriptor() ([]byte, []int) {
-	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{7}
+	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{11}
 }
 
 type ListGroupsRequest struct {
@@ -416,7 +596,7 @@ type ListGroupsRequest struct {
 
 func (x *ListGroupsRequest) Reset() {
 	*x = ListGroupsRequest{}
-	mi := &file_elara_group_v1_group_service_proto_msgTypes[8]
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -428,7 +608,7 @@ func (x *ListGroupsRequest) String() string {
 func (*ListGroupsRequest) ProtoMessage() {}
 
 func (x *ListGroupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_group_v1_group_service_proto_msgTypes[8]
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -441,7 +621,7 @@ func (x *ListGroupsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGroupsRequest.ProtoReflect.Descriptor instead.
 func (*ListGroupsRequest) Descriptor() ([]byte, []int) {
-	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{8}
+	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListGroupsRequest) GetPagination() *v1.PaginationRequest {
@@ -468,7 +648,7 @@ type ListGroupsResponse struct {
 
 func (x *ListGroupsResponse) Reset() {
 	*x = ListGroupsResponse{}
-	mi := &file_elara_group_v1_group_service_proto_msgTypes[9]
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -480,7 +660,7 @@ func (x *ListGroupsResponse) String() string {
 func (*ListGroupsResponse) ProtoMessage() {}
 
 func (x *ListGroupsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_group_v1_group_service_proto_msgTypes[9]
+	mi := &file_elara_group_v1_group_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -493,7 +673,7 @@ func (x *ListGroupsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGroupsResponse.ProtoReflect.Descriptor instead.
 func (*ListGroupsResponse) Descriptor() ([]byte, []int) {
-	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{9}
+	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListGroupsResponse) GetGroups() []*Group {
@@ -522,15 +702,23 @@ const file_elara_group_v1_group_service_proto_rawDesc = "" +
 	"\x0fGetGroupRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"?\n" +
 	"\x10GetGroupResponse\x12+\n" +
-	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\"\xd7\x01\n" +
+	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\"t\n" +
 	"\x12UpdateGroupRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12G\n" +
-	"\vpermissions\x18\x04 \x03(\v2%.elara.common.v1.PermissionAssignmentR\vpermissions\x12\x18\n" +
-	"\amembers\x18\x05 \x03(\tR\amembers\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\x03R\aversion\"B\n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x18\n" +
+	"\aversion\x18\x04 \x01(\x03R\aversion\"B\n" +
 	"\x13UpdateGroupResponse\x12+\n" +
+	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\"P\n" +
+	"\x19UpdateGroupMembersRequest\x12\x19\n" +
+	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x18\n" +
+	"\amembers\x18\x02 \x03(\tR\amembers\"I\n" +
+	"\x1aUpdateGroupMembersResponse\x12+\n" +
+	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\"\x83\x01\n" +
+	"\x1dUpdateGroupPermissionsRequest\x12\x19\n" +
+	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12G\n" +
+	"\vpermissions\x18\x02 \x03(\v2%.elara.common.v1.PermissionAssignmentR\vpermissions\"M\n" +
+	"\x1eUpdateGroupPermissionsResponse\x12+\n" +
 	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\"$\n" +
 	"\x12DeleteGroupRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
@@ -544,11 +732,13 @@ const file_elara_group_v1_group_service_proto_rawDesc = "" +
 	"\x06groups\x18\x01 \x03(\v2\x15.elara.group.v1.GroupR\x06groups\x12C\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2#.elara.common.v1.PaginationResponseR\n" +
-	"pagination2\xba\x03\n" +
+	"pagination2\xa0\x05\n" +
 	"\fGroupService\x12V\n" +
 	"\vCreateGroup\x12\".elara.group.v1.CreateGroupRequest\x1a#.elara.group.v1.CreateGroupResponse\x12M\n" +
 	"\bGetGroup\x12\x1f.elara.group.v1.GetGroupRequest\x1a .elara.group.v1.GetGroupResponse\x12V\n" +
-	"\vUpdateGroup\x12\".elara.group.v1.UpdateGroupRequest\x1a#.elara.group.v1.UpdateGroupResponse\x12V\n" +
+	"\vUpdateGroup\x12\".elara.group.v1.UpdateGroupRequest\x1a#.elara.group.v1.UpdateGroupResponse\x12k\n" +
+	"\x12UpdateGroupMembers\x12).elara.group.v1.UpdateGroupMembersRequest\x1a*.elara.group.v1.UpdateGroupMembersResponse\x12w\n" +
+	"\x16UpdateGroupPermissions\x12-.elara.group.v1.UpdateGroupPermissionsRequest\x1a..elara.group.v1.UpdateGroupPermissionsResponse\x12V\n" +
 	"\vDeleteGroup\x12\".elara.group.v1.DeleteGroupRequest\x1a#.elara.group.v1.DeleteGroupResponse\x12S\n" +
 	"\n" +
 	"ListGroups\x12!.elara.group.v1.ListGroupsRequest\x1a\".elara.group.v1.ListGroupsResponseB\xc9\x01\n" +
@@ -566,46 +756,56 @@ func file_elara_group_v1_group_service_proto_rawDescGZIP() []byte {
 	return file_elara_group_v1_group_service_proto_rawDescData
 }
 
-var file_elara_group_v1_group_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_elara_group_v1_group_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_elara_group_v1_group_service_proto_goTypes = []any{
-	(*CreateGroupRequest)(nil),      // 0: elara.group.v1.CreateGroupRequest
-	(*CreateGroupResponse)(nil),     // 1: elara.group.v1.CreateGroupResponse
-	(*GetGroupRequest)(nil),         // 2: elara.group.v1.GetGroupRequest
-	(*GetGroupResponse)(nil),        // 3: elara.group.v1.GetGroupResponse
-	(*UpdateGroupRequest)(nil),      // 4: elara.group.v1.UpdateGroupRequest
-	(*UpdateGroupResponse)(nil),     // 5: elara.group.v1.UpdateGroupResponse
-	(*DeleteGroupRequest)(nil),      // 6: elara.group.v1.DeleteGroupRequest
-	(*DeleteGroupResponse)(nil),     // 7: elara.group.v1.DeleteGroupResponse
-	(*ListGroupsRequest)(nil),       // 8: elara.group.v1.ListGroupsRequest
-	(*ListGroupsResponse)(nil),      // 9: elara.group.v1.ListGroupsResponse
-	(*Group)(nil),                   // 10: elara.group.v1.Group
-	(*v1.PermissionAssignment)(nil), // 11: elara.common.v1.PermissionAssignment
-	(*v1.PaginationRequest)(nil),    // 12: elara.common.v1.PaginationRequest
-	(*v1.PaginationResponse)(nil),   // 13: elara.common.v1.PaginationResponse
+	(*CreateGroupRequest)(nil),             // 0: elara.group.v1.CreateGroupRequest
+	(*CreateGroupResponse)(nil),            // 1: elara.group.v1.CreateGroupResponse
+	(*GetGroupRequest)(nil),                // 2: elara.group.v1.GetGroupRequest
+	(*GetGroupResponse)(nil),               // 3: elara.group.v1.GetGroupResponse
+	(*UpdateGroupRequest)(nil),             // 4: elara.group.v1.UpdateGroupRequest
+	(*UpdateGroupResponse)(nil),            // 5: elara.group.v1.UpdateGroupResponse
+	(*UpdateGroupMembersRequest)(nil),      // 6: elara.group.v1.UpdateGroupMembersRequest
+	(*UpdateGroupMembersResponse)(nil),     // 7: elara.group.v1.UpdateGroupMembersResponse
+	(*UpdateGroupPermissionsRequest)(nil),  // 8: elara.group.v1.UpdateGroupPermissionsRequest
+	(*UpdateGroupPermissionsResponse)(nil), // 9: elara.group.v1.UpdateGroupPermissionsResponse
+	(*DeleteGroupRequest)(nil),             // 10: elara.group.v1.DeleteGroupRequest
+	(*DeleteGroupResponse)(nil),            // 11: elara.group.v1.DeleteGroupResponse
+	(*ListGroupsRequest)(nil),              // 12: elara.group.v1.ListGroupsRequest
+	(*ListGroupsResponse)(nil),             // 13: elara.group.v1.ListGroupsResponse
+	(*Group)(nil),                          // 14: elara.group.v1.Group
+	(*v1.PermissionAssignment)(nil),        // 15: elara.common.v1.PermissionAssignment
+	(*v1.PaginationRequest)(nil),           // 16: elara.common.v1.PaginationRequest
+	(*v1.PaginationResponse)(nil),          // 17: elara.common.v1.PaginationResponse
 }
 var file_elara_group_v1_group_service_proto_depIdxs = []int32{
-	10, // 0: elara.group.v1.CreateGroupResponse.group:type_name -> elara.group.v1.Group
-	10, // 1: elara.group.v1.GetGroupResponse.group:type_name -> elara.group.v1.Group
-	11, // 2: elara.group.v1.UpdateGroupRequest.permissions:type_name -> elara.common.v1.PermissionAssignment
-	10, // 3: elara.group.v1.UpdateGroupResponse.group:type_name -> elara.group.v1.Group
-	12, // 4: elara.group.v1.ListGroupsRequest.pagination:type_name -> elara.common.v1.PaginationRequest
-	10, // 5: elara.group.v1.ListGroupsResponse.groups:type_name -> elara.group.v1.Group
-	13, // 6: elara.group.v1.ListGroupsResponse.pagination:type_name -> elara.common.v1.PaginationResponse
-	0,  // 7: elara.group.v1.GroupService.CreateGroup:input_type -> elara.group.v1.CreateGroupRequest
-	2,  // 8: elara.group.v1.GroupService.GetGroup:input_type -> elara.group.v1.GetGroupRequest
-	4,  // 9: elara.group.v1.GroupService.UpdateGroup:input_type -> elara.group.v1.UpdateGroupRequest
-	6,  // 10: elara.group.v1.GroupService.DeleteGroup:input_type -> elara.group.v1.DeleteGroupRequest
-	8,  // 11: elara.group.v1.GroupService.ListGroups:input_type -> elara.group.v1.ListGroupsRequest
-	1,  // 12: elara.group.v1.GroupService.CreateGroup:output_type -> elara.group.v1.CreateGroupResponse
-	3,  // 13: elara.group.v1.GroupService.GetGroup:output_type -> elara.group.v1.GetGroupResponse
-	5,  // 14: elara.group.v1.GroupService.UpdateGroup:output_type -> elara.group.v1.UpdateGroupResponse
-	7,  // 15: elara.group.v1.GroupService.DeleteGroup:output_type -> elara.group.v1.DeleteGroupResponse
-	9,  // 16: elara.group.v1.GroupService.ListGroups:output_type -> elara.group.v1.ListGroupsResponse
-	12, // [12:17] is the sub-list for method output_type
-	7,  // [7:12] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	14, // 0: elara.group.v1.CreateGroupResponse.group:type_name -> elara.group.v1.Group
+	14, // 1: elara.group.v1.GetGroupResponse.group:type_name -> elara.group.v1.Group
+	14, // 2: elara.group.v1.UpdateGroupResponse.group:type_name -> elara.group.v1.Group
+	14, // 3: elara.group.v1.UpdateGroupMembersResponse.group:type_name -> elara.group.v1.Group
+	15, // 4: elara.group.v1.UpdateGroupPermissionsRequest.permissions:type_name -> elara.common.v1.PermissionAssignment
+	14, // 5: elara.group.v1.UpdateGroupPermissionsResponse.group:type_name -> elara.group.v1.Group
+	16, // 6: elara.group.v1.ListGroupsRequest.pagination:type_name -> elara.common.v1.PaginationRequest
+	14, // 7: elara.group.v1.ListGroupsResponse.groups:type_name -> elara.group.v1.Group
+	17, // 8: elara.group.v1.ListGroupsResponse.pagination:type_name -> elara.common.v1.PaginationResponse
+	0,  // 9: elara.group.v1.GroupService.CreateGroup:input_type -> elara.group.v1.CreateGroupRequest
+	2,  // 10: elara.group.v1.GroupService.GetGroup:input_type -> elara.group.v1.GetGroupRequest
+	4,  // 11: elara.group.v1.GroupService.UpdateGroup:input_type -> elara.group.v1.UpdateGroupRequest
+	6,  // 12: elara.group.v1.GroupService.UpdateGroupMembers:input_type -> elara.group.v1.UpdateGroupMembersRequest
+	8,  // 13: elara.group.v1.GroupService.UpdateGroupPermissions:input_type -> elara.group.v1.UpdateGroupPermissionsRequest
+	10, // 14: elara.group.v1.GroupService.DeleteGroup:input_type -> elara.group.v1.DeleteGroupRequest
+	12, // 15: elara.group.v1.GroupService.ListGroups:input_type -> elara.group.v1.ListGroupsRequest
+	1,  // 16: elara.group.v1.GroupService.CreateGroup:output_type -> elara.group.v1.CreateGroupResponse
+	3,  // 17: elara.group.v1.GroupService.GetGroup:output_type -> elara.group.v1.GetGroupResponse
+	5,  // 18: elara.group.v1.GroupService.UpdateGroup:output_type -> elara.group.v1.UpdateGroupResponse
+	7,  // 19: elara.group.v1.GroupService.UpdateGroupMembers:output_type -> elara.group.v1.UpdateGroupMembersResponse
+	9,  // 20: elara.group.v1.GroupService.UpdateGroupPermissions:output_type -> elara.group.v1.UpdateGroupPermissionsResponse
+	11, // 21: elara.group.v1.GroupService.DeleteGroup:output_type -> elara.group.v1.DeleteGroupResponse
+	13, // 22: elara.group.v1.GroupService.ListGroups:output_type -> elara.group.v1.ListGroupsResponse
+	16, // [16:23] is the sub-list for method output_type
+	9,  // [9:16] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_elara_group_v1_group_service_proto_init() }
@@ -620,7 +820,7 @@ func file_elara_group_v1_group_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_group_v1_group_service_proto_rawDesc), len(file_elara_group_v1_group_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

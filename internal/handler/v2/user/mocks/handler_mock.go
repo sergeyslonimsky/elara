@@ -110,10 +110,10 @@ func (mr *MockusecaseMockRecorder) Delete(ctx, targetEmail any) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *Mockusecase) Get(ctx context.Context, email string) (*domain.User, error) {
+func (m *Mockusecase) Get(ctx context.Context, email string) (*user.GetResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, email)
-	ret0, _ := ret[0].(*domain.User)
+	ret0, _ := ret[0].(*user.GetResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

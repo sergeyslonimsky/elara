@@ -6,6 +6,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 	"github.com/sergeyslonimsky/elara/internal/usecase/policy"
 	policymock "github.com/sergeyslonimsky/elara/internal/usecase/policy/mocks"
@@ -28,9 +29,10 @@ func setupService(t *testing.T) (*policy.Service, *casbin.Enforcer, storage.TxMa
 	t.Helper()
 
 	_, enforcer, txm := bbolttest.OpenStack(t)
+	pap := authz.NewPAP(enforcer, txm)
 
 	ctrl := gomock.NewController(t)
 	m := &mocks{groups: policymock.NewMockgroupFinder(ctrl)}
 
-	return policy.New(enforcer, m.groups, txm), enforcer, txm, m
+	return policy.New(pap, m.groups), enforcer, txm, m
 }

@@ -55,7 +55,7 @@ type Services struct {
 
 // NewServices constructs every domain service. Pure wiring: no DB writes,
 // no policy seeding — those live in Bootstrap.
-func NewServices(
+func NewServices( //nolint:funlen // wiring-only: one constructor call per usecase
 	ctx context.Context,
 	a *Adapters,
 	cfg config.Config,
@@ -92,7 +92,6 @@ func NewServices(
 		Webhook:  webhookuc.New(pdp, a.WebhookRepo, a.WebhookDispatcher),
 		Profile:  profileuc.New(pdp, a.AuthUsers, a.AuthUsers, sessionManager),
 		User: useruc.New(
-			enforcer,
 			a.AuthUsers,
 			a.AuthUsers,
 			useruc.NewBoltGroupReader(a.AuthGroups),
@@ -100,8 +99,8 @@ func NewServices(
 			pdp,
 			pap,
 		),
-		Group:  groupuc.New(enforcer, a.AuthGroups, txm, pdp, pap),
-		Policy: policyuc.New(enforcer, a.AuthGroups, txm),
+		Group:  groupuc.New(a.AuthGroups, txm, pdp, pap),
+		Policy: policyuc.New(pap, a.AuthGroups),
 		Token:  tokenuc.New(pdp, a.AuthTokens),
 
 		Authz:          authzSvc,

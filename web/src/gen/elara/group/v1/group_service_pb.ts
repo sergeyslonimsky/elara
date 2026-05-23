@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/group/v1/group_service.proto.
  */
 export const file_elara_group_v1_group_service: GenFile = /*@__PURE__*/
-  fileDesc("CiJlbGFyYS9ncm91cC92MS9ncm91cF9zZXJ2aWNlLnByb3RvEg5lbGFyYS5ncm91cC52MSIiChJDcmVhdGVHcm91cFJlcXVlc3QSDAoEbmFtZRgBIAEoCSI7ChNDcmVhdGVHcm91cFJlc3BvbnNlEiQKBWdyb3VwGAEgASgLMhUuZWxhcmEuZ3JvdXAudjEuR3JvdXAiHQoPR2V0R3JvdXBSZXF1ZXN0EgoKAmlkGAEgASgJIjgKEEdldEdyb3VwUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cCKhAQoSVXBkYXRlR3JvdXBSZXF1ZXN0EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSOgoLcGVybWlzc2lvbnMYBCADKAsyJS5lbGFyYS5jb21tb24udjEuUGVybWlzc2lvbkFzc2lnbm1lbnQSDwoHbWVtYmVycxgFIAMoCRIPCgd2ZXJzaW9uGAYgASgDIjsKE1VwZGF0ZUdyb3VwUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cCIgChJEZWxldGVHcm91cFJlcXVlc3QSCgoCaWQYASABKAkiFQoTRGVsZXRlR3JvdXBSZXNwb25zZSJbChFMaXN0R3JvdXBzUmVxdWVzdBI2CgpwYWdpbmF0aW9uGAEgASgLMiIuZWxhcmEuY29tbW9uLnYxLlBhZ2luYXRpb25SZXF1ZXN0Eg4KBnNlYXJjaBgCIAEoCSJ0ChJMaXN0R3JvdXBzUmVzcG9uc2USJQoGZ3JvdXBzGAEgAygLMhUuZWxhcmEuZ3JvdXAudjEuR3JvdXASNwoKcGFnaW5hdGlvbhgCIAEoCzIjLmVsYXJhLmNvbW1vbi52MS5QYWdpbmF0aW9uUmVzcG9uc2UyugMKDEdyb3VwU2VydmljZRJWCgtDcmVhdGVHcm91cBIiLmVsYXJhLmdyb3VwLnYxLkNyZWF0ZUdyb3VwUmVxdWVzdBojLmVsYXJhLmdyb3VwLnYxLkNyZWF0ZUdyb3VwUmVzcG9uc2USTQoIR2V0R3JvdXASHy5lbGFyYS5ncm91cC52MS5HZXRHcm91cFJlcXVlc3QaIC5lbGFyYS5ncm91cC52MS5HZXRHcm91cFJlc3BvbnNlElYKC1VwZGF0ZUdyb3VwEiIuZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBSZXF1ZXN0GiMuZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBSZXNwb25zZRJWCgtEZWxldGVHcm91cBIiLmVsYXJhLmdyb3VwLnYxLkRlbGV0ZUdyb3VwUmVxdWVzdBojLmVsYXJhLmdyb3VwLnYxLkRlbGV0ZUdyb3VwUmVzcG9uc2USUwoKTGlzdEdyb3VwcxIhLmVsYXJhLmdyb3VwLnYxLkxpc3RHcm91cHNSZXF1ZXN0GiIuZWxhcmEuZ3JvdXAudjEuTGlzdEdyb3Vwc1Jlc3BvbnNlQskBChJjb20uZWxhcmEuZ3JvdXAudjFCEUdyb3VwU2VydmljZVByb3RvUAFaRmdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL2dyb3VwL3YxO2dyb3VwdjGiAgNFR1iqAg5FbGFyYS5Hcm91cC5WMcoCDkVsYXJhXEdyb3VwXFYx4gIaRWxhcmFcR3JvdXBcVjFcR1BCTWV0YWRhdGHqAhBFbGFyYTo6R3JvdXA6OlYxYgZwcm90bzM", [file_elara_common_v1_common, file_elara_common_v1_permission, file_elara_group_v1_group]);
+  fileDesc("CiJlbGFyYS9ncm91cC92MS9ncm91cF9zZXJ2aWNlLnByb3RvEg5lbGFyYS5ncm91cC52MSIiChJDcmVhdGVHcm91cFJlcXVlc3QSDAoEbmFtZRgBIAEoCSI7ChNDcmVhdGVHcm91cFJlc3BvbnNlEiQKBWdyb3VwGAEgASgLMhUuZWxhcmEuZ3JvdXAudjEuR3JvdXAiHQoPR2V0R3JvdXBSZXF1ZXN0EgoKAmlkGAEgASgJIjgKEEdldEdyb3VwUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cCJUChJVcGRhdGVHcm91cFJlcXVlc3QSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIPCgd2ZXJzaW9uGAQgASgDIjsKE1VwZGF0ZUdyb3VwUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cCI+ChlVcGRhdGVHcm91cE1lbWJlcnNSZXF1ZXN0EhAKCGdyb3VwX2lkGAEgASgJEg8KB21lbWJlcnMYAiADKAkiQgoaVXBkYXRlR3JvdXBNZW1iZXJzUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cCJtCh1VcGRhdGVHcm91cFBlcm1pc3Npb25zUmVxdWVzdBIQCghncm91cF9pZBgBIAEoCRI6CgtwZXJtaXNzaW9ucxgCIAMoCzIlLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQXNzaWdubWVudCJGCh5VcGRhdGVHcm91cFBlcm1pc3Npb25zUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cCIgChJEZWxldGVHcm91cFJlcXVlc3QSCgoCaWQYASABKAkiFQoTRGVsZXRlR3JvdXBSZXNwb25zZSJbChFMaXN0R3JvdXBzUmVxdWVzdBI2CgpwYWdpbmF0aW9uGAEgASgLMiIuZWxhcmEuY29tbW9uLnYxLlBhZ2luYXRpb25SZXF1ZXN0Eg4KBnNlYXJjaBgCIAEoCSJ0ChJMaXN0R3JvdXBzUmVzcG9uc2USJQoGZ3JvdXBzGAEgAygLMhUuZWxhcmEuZ3JvdXAudjEuR3JvdXASNwoKcGFnaW5hdGlvbhgCIAEoCzIjLmVsYXJhLmNvbW1vbi52MS5QYWdpbmF0aW9uUmVzcG9uc2UyoAUKDEdyb3VwU2VydmljZRJWCgtDcmVhdGVHcm91cBIiLmVsYXJhLmdyb3VwLnYxLkNyZWF0ZUdyb3VwUmVxdWVzdBojLmVsYXJhLmdyb3VwLnYxLkNyZWF0ZUdyb3VwUmVzcG9uc2USTQoIR2V0R3JvdXASHy5lbGFyYS5ncm91cC52MS5HZXRHcm91cFJlcXVlc3QaIC5lbGFyYS5ncm91cC52MS5HZXRHcm91cFJlc3BvbnNlElYKC1VwZGF0ZUdyb3VwEiIuZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBSZXF1ZXN0GiMuZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBSZXNwb25zZRJrChJVcGRhdGVHcm91cE1lbWJlcnMSKS5lbGFyYS5ncm91cC52MS5VcGRhdGVHcm91cE1lbWJlcnNSZXF1ZXN0GiouZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBNZW1iZXJzUmVzcG9uc2USdwoWVXBkYXRlR3JvdXBQZXJtaXNzaW9ucxItLmVsYXJhLmdyb3VwLnYxLlVwZGF0ZUdyb3VwUGVybWlzc2lvbnNSZXF1ZXN0Gi4uZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBQZXJtaXNzaW9uc1Jlc3BvbnNlElYKC0RlbGV0ZUdyb3VwEiIuZWxhcmEuZ3JvdXAudjEuRGVsZXRlR3JvdXBSZXF1ZXN0GiMuZWxhcmEuZ3JvdXAudjEuRGVsZXRlR3JvdXBSZXNwb25zZRJTCgpMaXN0R3JvdXBzEiEuZWxhcmEuZ3JvdXAudjEuTGlzdEdyb3Vwc1JlcXVlc3QaIi5lbGFyYS5ncm91cC52MS5MaXN0R3JvdXBzUmVzcG9uc2VCyQEKEmNvbS5lbGFyYS5ncm91cC52MUIRR3JvdXBTZXJ2aWNlUHJvdG9QAVpGZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvZ3JvdXAvdjE7Z3JvdXB2MaICA0VHWKoCDkVsYXJhLkdyb3VwLlYxygIORWxhcmFcR3JvdXBcVjHiAhpFbGFyYVxHcm91cFxWMVxHUEJNZXRhZGF0YeoCEEVsYXJhOjpHcm91cDo6VjFiBnByb3RvMw", [file_elara_common_v1_common, file_elara_common_v1_permission, file_elara_group_v1_group]);
 
 /**
  * @generated from message elara.group.v1.CreateGroupRequest
@@ -106,17 +106,7 @@ export type UpdateGroupRequest = Message<"elara.group.v1.UpdateGroupRequest"> & 
   description: string;
 
   /**
-   * @generated from field: repeated elara.common.v1.PermissionAssignment permissions = 4;
-   */
-  permissions: PermissionAssignment[];
-
-  /**
-   * @generated from field: repeated string members = 5;
-   */
-  members: string[];
-
-  /**
-   * @generated from field: int64 version = 6;
+   * @generated from field: int64 version = 4;
    */
   version: bigint;
 };
@@ -146,6 +136,90 @@ export const UpdateGroupResponseSchema: GenMessage<UpdateGroupResponse> = /*@__P
   messageDesc(file_elara_group_v1_group_service, 5);
 
 /**
+ * @generated from message elara.group.v1.UpdateGroupMembersRequest
+ */
+export type UpdateGroupMembersRequest = Message<"elara.group.v1.UpdateGroupMembersRequest"> & {
+  /**
+   * @generated from field: string group_id = 1;
+   */
+  groupId: string;
+
+  /**
+   * Canonical full desired set of member emails. The server diffs against
+   * current Casbin g-rules and only operates on the symmetric difference.
+   *
+   * @generated from field: repeated string members = 2;
+   */
+  members: string[];
+};
+
+/**
+ * Describes the message elara.group.v1.UpdateGroupMembersRequest.
+ * Use `create(UpdateGroupMembersRequestSchema)` to create a new message.
+ */
+export const UpdateGroupMembersRequestSchema: GenMessage<UpdateGroupMembersRequest> = /*@__PURE__*/
+  messageDesc(file_elara_group_v1_group_service, 6);
+
+/**
+ * @generated from message elara.group.v1.UpdateGroupMembersResponse
+ */
+export type UpdateGroupMembersResponse = Message<"elara.group.v1.UpdateGroupMembersResponse"> & {
+  /**
+   * @generated from field: elara.group.v1.Group group = 1;
+   */
+  group?: Group;
+};
+
+/**
+ * Describes the message elara.group.v1.UpdateGroupMembersResponse.
+ * Use `create(UpdateGroupMembersResponseSchema)` to create a new message.
+ */
+export const UpdateGroupMembersResponseSchema: GenMessage<UpdateGroupMembersResponse> = /*@__PURE__*/
+  messageDesc(file_elara_group_v1_group_service, 7);
+
+/**
+ * @generated from message elara.group.v1.UpdateGroupPermissionsRequest
+ */
+export type UpdateGroupPermissionsRequest = Message<"elara.group.v1.UpdateGroupPermissionsRequest"> & {
+  /**
+   * @generated from field: string group_id = 1;
+   */
+  groupId: string;
+
+  /**
+   * Canonical full desired set of permissions. The server diffs against
+   * current Casbin p-rules and only operates on the symmetric difference.
+   *
+   * @generated from field: repeated elara.common.v1.PermissionAssignment permissions = 2;
+   */
+  permissions: PermissionAssignment[];
+};
+
+/**
+ * Describes the message elara.group.v1.UpdateGroupPermissionsRequest.
+ * Use `create(UpdateGroupPermissionsRequestSchema)` to create a new message.
+ */
+export const UpdateGroupPermissionsRequestSchema: GenMessage<UpdateGroupPermissionsRequest> = /*@__PURE__*/
+  messageDesc(file_elara_group_v1_group_service, 8);
+
+/**
+ * @generated from message elara.group.v1.UpdateGroupPermissionsResponse
+ */
+export type UpdateGroupPermissionsResponse = Message<"elara.group.v1.UpdateGroupPermissionsResponse"> & {
+  /**
+   * @generated from field: elara.group.v1.Group group = 1;
+   */
+  group?: Group;
+};
+
+/**
+ * Describes the message elara.group.v1.UpdateGroupPermissionsResponse.
+ * Use `create(UpdateGroupPermissionsResponseSchema)` to create a new message.
+ */
+export const UpdateGroupPermissionsResponseSchema: GenMessage<UpdateGroupPermissionsResponse> = /*@__PURE__*/
+  messageDesc(file_elara_group_v1_group_service, 9);
+
+/**
  * @generated from message elara.group.v1.DeleteGroupRequest
  */
 export type DeleteGroupRequest = Message<"elara.group.v1.DeleteGroupRequest"> & {
@@ -160,7 +234,7 @@ export type DeleteGroupRequest = Message<"elara.group.v1.DeleteGroupRequest"> & 
  * Use `create(DeleteGroupRequestSchema)` to create a new message.
  */
 export const DeleteGroupRequestSchema: GenMessage<DeleteGroupRequest> = /*@__PURE__*/
-  messageDesc(file_elara_group_v1_group_service, 6);
+  messageDesc(file_elara_group_v1_group_service, 10);
 
 /**
  * @generated from message elara.group.v1.DeleteGroupResponse
@@ -173,7 +247,7 @@ export type DeleteGroupResponse = Message<"elara.group.v1.DeleteGroupResponse"> 
  * Use `create(DeleteGroupResponseSchema)` to create a new message.
  */
 export const DeleteGroupResponseSchema: GenMessage<DeleteGroupResponse> = /*@__PURE__*/
-  messageDesc(file_elara_group_v1_group_service, 7);
+  messageDesc(file_elara_group_v1_group_service, 11);
 
 /**
  * @generated from message elara.group.v1.ListGroupsRequest
@@ -195,7 +269,7 @@ export type ListGroupsRequest = Message<"elara.group.v1.ListGroupsRequest"> & {
  * Use `create(ListGroupsRequestSchema)` to create a new message.
  */
 export const ListGroupsRequestSchema: GenMessage<ListGroupsRequest> = /*@__PURE__*/
-  messageDesc(file_elara_group_v1_group_service, 8);
+  messageDesc(file_elara_group_v1_group_service, 12);
 
 /**
  * @generated from message elara.group.v1.ListGroupsResponse
@@ -217,7 +291,7 @@ export type ListGroupsResponse = Message<"elara.group.v1.ListGroupsResponse"> & 
  * Use `create(ListGroupsResponseSchema)` to create a new message.
  */
 export const ListGroupsResponseSchema: GenMessage<ListGroupsResponse> = /*@__PURE__*/
-  messageDesc(file_elara_group_v1_group_service, 9);
+  messageDesc(file_elara_group_v1_group_service, 13);
 
 /**
  * @generated from service elara.group.v1.GroupService
@@ -240,12 +314,45 @@ export const GroupService: GenService<{
     output: typeof GetGroupResponseSchema;
   },
   /**
+   * Updates only the group's metadata (name, description). Membership and
+   * permissions are managed by UpdateGroupMembers and UpdateGroupPermissions
+   * respectively — mixing them into one RPC re-introduces the dual-write
+   * drift the split was designed to eliminate.
+   *
    * @generated from rpc elara.group.v1.GroupService.UpdateGroup
    */
   updateGroup: {
     methodKind: "unary";
     input: typeof UpdateGroupRequestSchema;
     output: typeof UpdateGroupResponseSchema;
+  },
+  /**
+   * Replaces the group's membership with the given canonical set. The
+   * server diffs against current Casbin g-rules and operates on the
+   * symmetric difference. Adding a member requires the caller to hold
+   * every permission the group currently grants (anti-escalation);
+   * removal narrows and requires no escalation check.
+   *
+   * @generated from rpc elara.group.v1.GroupService.UpdateGroupMembers
+   */
+  updateGroupMembers: {
+    methodKind: "unary";
+    input: typeof UpdateGroupMembersRequestSchema;
+    output: typeof UpdateGroupMembersResponseSchema;
+  },
+  /**
+   * Replaces the group's permissions with the given canonical set. The
+   * server diffs against current Casbin p-rules. Each added or removed
+   * permission must lie within the actor's own boundary. If the group has
+   * members, the actor must additionally hold every permission the group
+   * will hold post-update.
+   *
+   * @generated from rpc elara.group.v1.GroupService.UpdateGroupPermissions
+   */
+  updateGroupPermissions: {
+    methodKind: "unary";
+    input: typeof UpdateGroupPermissionsRequestSchema;
+    output: typeof UpdateGroupPermissionsResponseSchema;
   },
   /**
    * @generated from rpc elara.group.v1.GroupService.DeleteGroup

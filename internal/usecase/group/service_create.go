@@ -15,8 +15,8 @@ func (s *Service) Create(ctx context.Context, _ domain.AuthInfo, name string) (*
 	group := &domain.Group{
 		ID:        uuid.New().String(),
 		Name:      name,
-		Members:   []string{},
-		Version:   1, // Starting version
+		Members:   []string{}, // fresh group; no Casbin g-rules yet
+		Version:   1,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}

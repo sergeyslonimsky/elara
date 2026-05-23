@@ -185,14 +185,14 @@ func TestService_Get(t *testing.T) {
 		name     string
 		mockFunc func(ctx context.Context, m mocks)
 		wantErr  string
-		want     *domain.User
+		want     *user.GetResult
 	}{
 		{
 			name: "success",
 			mockFunc: func(ctx context.Context, m mocks) {
 				m.store.EXPECT().Get(ctx, targetEmail).Return(u, nil)
 			},
-			want: u,
+			want: &user.GetResult{User: u, GroupIDs: []string{}},
 		},
 		{
 			name: "store fails",

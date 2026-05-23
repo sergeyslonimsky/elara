@@ -4,7 +4,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/handler/v2/permission"
 	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/group/v1"
 	groupuc "github.com/sergeyslonimsky/elara/internal/usecase/group"
 )
@@ -14,8 +13,6 @@ func updateGroupReqToData(req *v1.UpdateGroupRequest) groupuc.UpdateData {
 		ID:          req.GetId(),
 		Name:        req.GetName(),
 		Description: req.GetDescription(),
-		Permissions: permission.AssignmentsToDomain(req.GetPermissions()),
-		Members:     req.GetMembers(),
 		Version:     req.GetVersion(),
 	}
 }

@@ -15,9 +15,36 @@ export const createGroup = GroupService.method.createGroup;
 export const getGroup = GroupService.method.getGroup;
 
 /**
+ * Updates only the group's metadata (name, description). Membership and
+ * permissions are managed by UpdateGroupMembers and UpdateGroupPermissions
+ * respectively — mixing them into one RPC re-introduces the dual-write
+ * drift the split was designed to eliminate.
+ *
  * @generated from rpc elara.group.v1.GroupService.UpdateGroup
  */
 export const updateGroup = GroupService.method.updateGroup;
+
+/**
+ * Replaces the group's membership with the given canonical set. The
+ * server diffs against current Casbin g-rules and operates on the
+ * symmetric difference. Adding a member requires the caller to hold
+ * every permission the group currently grants (anti-escalation);
+ * removal narrows and requires no escalation check.
+ *
+ * @generated from rpc elara.group.v1.GroupService.UpdateGroupMembers
+ */
+export const updateGroupMembers = GroupService.method.updateGroupMembers;
+
+/**
+ * Replaces the group's permissions with the given canonical set. The
+ * server diffs against current Casbin p-rules. Each added or removed
+ * permission must lie within the actor's own boundary. If the group has
+ * members, the actor must additionally hold every permission the group
+ * will hold post-update.
+ *
+ * @generated from rpc elara.group.v1.GroupService.UpdateGroupPermissions
+ */
+export const updateGroupPermissions = GroupService.method.updateGroupPermissions;
 
 /**
  * @generated from rpc elara.group.v1.GroupService.DeleteGroup

@@ -30,7 +30,7 @@ type (
 
 	usecase interface {
 		List(ctx context.Context, params useruc.ListParams) (*useruc.ListResult, error)
-		Get(ctx context.Context, email string) (*domain.User, error)
+		Get(ctx context.Context, email string) (*useruc.GetResult, error)
 		Create(ctx context.Context, email, name, initialPassword string) (*domain.User, error)
 		ResetPassword(ctx context.Context, targetEmail, newPassword string) error
 		Delete(ctx context.Context, targetEmail string) error
@@ -87,12 +87,15 @@ func (h *Handler) GetUser(
 		return nil, v2.ToConnectError(err)
 	}
 
-	user, err := h.uc.Get(ctx, req.Msg.GetEmail())
+	result, err := h.uc.Get(ctx, req.Msg.GetEmail())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	return connect.NewResponse(&userv1.GetUserResponse{User: domainUserToProto(user)}), nil
+	return connect.NewResponse(&userv1.GetUserResponse{
+		User:     domainUserToProto(result.User),
+		GroupIds: result.GroupIDs,
+	}), nil
 }
 
 func (h *Handler) CreateUser(

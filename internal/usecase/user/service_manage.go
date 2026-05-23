@@ -71,7 +71,7 @@ func (s *Service) Delete(ctx context.Context, targetEmail string) error {
 		}
 
 		if err := w.DeleteUser(targetEmail); err != nil {
-			return err
+			return fmt.Errorf("pap delete user: %w", err)
 		}
 
 		return nil
@@ -83,13 +83,37 @@ func (s *Service) Delete(ctx context.Context, targetEmail string) error {
 	return nil
 }
 
-func (s *Service) Get(ctx context.Context, email string) (*domain.User, error) {
+// GetResult bundles a user with the canonical set of group IDs they
+// currently belong to. Group IDs are returned irrespective of the caller's
+// per-group read permission so the user edit UI can submit a full set back
+// through UpdateUserGroups, which itself diffs and authorizes only the
+// symmetric difference.
+type GetResult struct {
+	User     *domain.User
+	GroupIDs []string
+}
+
+func (s *Service) Get(ctx context.Context, email string) (*GetResult, error) {
 	user, err := s.store.Get(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 
-	return user, nil
+	names, err := s.pap.UserGroupNames(email)
+	if err != nil {
+		return nil, fmt.Errorf("get user group names: %w", err)
+	}
+
+	ids := make([]string, 0, len(names))
+	for _, name := range names {
+		g, err := s.groups.FindByName(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("find group by name %s: %w", name, err)
+		}
+		ids = append(ids, g.ID)
+	}
+
+	return &GetResult{User: user, GroupIDs: ids}, nil
 }
 
 func (s *Service) validateLastAdmin(targetEmail string) error {

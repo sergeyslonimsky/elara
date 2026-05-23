@@ -21,11 +21,15 @@ type authUserMeta struct {
 	PasswordChangeRequired bool      `json:"password_change_required,omitempty"`
 }
 
+// authGroupMeta is the bbolt JSON shape for a group entity.
+//
+// Membership (user→group) lives exclusively in Casbin g-rules; this struct
+// only carries the entity metadata bbolt is authoritative for. Old records
+// with a "members" key are silently ignored on read (unknown fields).
 type authGroupMeta struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description,omitempty"`
-	Members     []string  `json:"members"`
 	System      bool      `json:"system,omitempty"`
 	Version     int64     `json:"version,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -76,14 +80,10 @@ func authUserMetaToDomain(m *authUserMeta) *domain.User {
 }
 
 func domainToAuthGroupMeta(g *domain.Group) *authGroupMeta {
-	members := make([]string, len(g.Members))
-	copy(members, g.Members)
-
 	return &authGroupMeta{
 		ID:          g.ID,
 		Name:        g.Name,
 		Description: g.Description,
-		Members:     members,
 		System:      g.System,
 		Version:     g.Version,
 		CreatedAt:   g.CreatedAt,
@@ -91,15 +91,14 @@ func domainToAuthGroupMeta(g *domain.Group) *authGroupMeta {
 	}
 }
 
+// authGroupMetaToDomain returns a Group with Members left nil — callers in
+// the service layer enrich it from Casbin (the source of truth) before the
+// value reaches handlers or proto.
 func authGroupMetaToDomain(m *authGroupMeta) *domain.Group {
-	members := make([]string, len(m.Members))
-	copy(members, m.Members)
-
 	return &domain.Group{
 		ID:          m.ID,
 		Name:        m.Name,
 		Description: m.Description,
-		Members:     members,
 		System:      m.System,
 		Version:     m.Version,
 		CreatedAt:   m.CreatedAt,

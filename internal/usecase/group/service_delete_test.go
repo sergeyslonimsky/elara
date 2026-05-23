@@ -28,11 +28,9 @@ func TestService_Delete(t *testing.T) {
 				created, err := st.svc.Create(t.Context(), adminAuth(), "devops")
 				require.NoError(t, err)
 
-				_, err = st.svc.Update(t.Context(), adminAuth(), group.UpdateData{
-					ID:      created.ID,
-					Name:    "devops",
+				_, err = st.svc.UpdateMembers(t.Context(), adminAuth(), group.UpdateMembersData{
+					GroupID: created.ID,
 					Members: []string{"user1@example.com"},
-					Version: created.Version,
 				})
 				require.NoError(t, err)
 

@@ -153,3 +153,33 @@ func (mr *MockgroupUsecaseMockRecorder) Update(ctx, user, data any) *gomock.Call
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockgroupUsecase)(nil).Update), ctx, user, data)
 }
+
+// UpdateMembers mocks base method.
+func (m *MockgroupUsecase) UpdateMembers(ctx context.Context, user domain.AuthInfo, data group.UpdateMembersData) (*domain.Group, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateMembers", ctx, user, data)
+	ret0, _ := ret[0].(*domain.Group)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateMembers indicates an expected call of UpdateMembers.
+func (mr *MockgroupUsecaseMockRecorder) UpdateMembers(ctx, user, data any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMembers", reflect.TypeOf((*MockgroupUsecase)(nil).UpdateMembers), ctx, user, data)
+}
+
+// UpdatePermissions mocks base method.
+func (m *MockgroupUsecase) UpdatePermissions(ctx context.Context, user domain.AuthInfo, data group.UpdatePermissionsData) (*domain.Group, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePermissions", ctx, user, data)
+	ret0, _ := ret[0].(*domain.Group)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdatePermissions indicates an expected call of UpdatePermissions.
+func (mr *MockgroupUsecaseMockRecorder) UpdatePermissions(ctx, user, data any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePermissions", reflect.TypeOf((*MockgroupUsecase)(nil).UpdatePermissions), ctx, user, data)
+}

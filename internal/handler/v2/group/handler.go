@@ -7,6 +7,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
+	"github.com/sergeyslonimsky/elara/internal/handler/v2/permission"
 	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/group/v1"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	groupuc "github.com/sergeyslonimsky/elara/internal/usecase/group"
@@ -23,6 +24,8 @@ type (
 		Create(ctx context.Context, user domain.AuthInfo, name string) (*domain.Group, error)
 		Get(ctx context.Context, id string) (*domain.Group, error)
 		Update(ctx context.Context, user domain.AuthInfo, data groupuc.UpdateData) (*domain.Group, error)
+		UpdateMembers(ctx context.Context, user domain.AuthInfo, data groupuc.UpdateMembersData) (*domain.Group, error)
+		UpdatePermissions(ctx context.Context, user domain.AuthInfo, data groupuc.UpdatePermissionsData) (*domain.Group, error)
 		Delete(ctx context.Context, user domain.AuthInfo, id string) error
 		List(ctx context.Context, user domain.AuthInfo, params groupuc.ListParams) (*groupuc.ListResult, error)
 	}
@@ -103,6 +106,54 @@ func (h *Handler) UpdateGroup(
 	}
 
 	return connect.NewResponse(&v1.UpdateGroupResponse{Group: domainGroupToProto(group)}), nil
+}
+
+func (h *Handler) UpdateGroupMembers(
+	ctx context.Context,
+	req *connect.Request[v1.UpdateGroupMembersRequest],
+) (*connect.Response[v1.UpdateGroupMembersResponse], error) {
+	user, err := auth.AuthInfoFromContext(ctx)
+	if err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
+	if err = h.authz.RequireUser(user, domain.ObjectGroup, domain.ActionWrite, "group:"+req.Msg.GetGroupId()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
+	group, err := h.uc.UpdateMembers(ctx, user, groupuc.UpdateMembersData{
+		GroupID: req.Msg.GetGroupId(),
+		Members: req.Msg.GetMembers(),
+	})
+	if err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&v1.UpdateGroupMembersResponse{Group: domainGroupToProto(group)}), nil
+}
+
+func (h *Handler) UpdateGroupPermissions(
+	ctx context.Context,
+	req *connect.Request[v1.UpdateGroupPermissionsRequest],
+) (*connect.Response[v1.UpdateGroupPermissionsResponse], error) {
+	user, err := auth.AuthInfoFromContext(ctx)
+	if err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
+	if err = h.authz.RequireUser(user, domain.ObjectGroup, domain.ActionWrite, "group:"+req.Msg.GetGroupId()); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
+	group, err := h.uc.UpdatePermissions(ctx, user, groupuc.UpdatePermissionsData{
+		GroupID:     req.Msg.GetGroupId(),
+		Permissions: permission.AssignmentsToDomain(req.Msg.GetPermissions()),
+	})
+	if err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&v1.UpdateGroupPermissionsResponse{Group: domainGroupToProto(group)}), nil
 }
 
 func (h *Handler) DeleteGroup(
