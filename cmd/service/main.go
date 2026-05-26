@@ -72,6 +72,17 @@ func run() error {
 		return fmt.Errorf("bootstrap: %w", err)
 	}
 
+	// Reload Casbin's in-memory model from bbolt. Bootstrap writes p- and
+	// g-rules directly through PolicyRepo (it must, because the rules are
+	// what the enforcer would otherwise load on construction). On a fresh
+	// DB those rules land in bbolt but never enter the enforcer cache that
+	// was loaded before bootstrap ran — without this reload the superadmin's
+	// (*,*,*) wildcard is invisible until the next process restart, which
+	// presents to the operator as "logged in as admin but only see Dashboard".
+	if err := svc.Enforcer.LoadPolicy(); err != nil {
+		return fmt.Errorf("reload casbin policy after bootstrap: %w", err)
+	}
+
 	// Background worker: fan-out webhook delivery. Lives for the lifetime of
 	// ctx — app.App's signal handler cancels ctx on shutdown, the dispatcher
 	// drains and exits.

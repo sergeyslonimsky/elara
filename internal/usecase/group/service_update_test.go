@@ -149,7 +149,7 @@ func TestService_Update(t *testing.T) {
 				return adminAuth(), group.UpdateData{
 					ID:                      "missing-id",
 					Name:                    "any-name",
-					ExpectedMetadataVersion: int64Ptr(0),
+					ExpectedMetadataVersion: new(int64(0)),
 				}
 			},
 			wantErr: "get group",
@@ -781,7 +781,7 @@ func TestService_UpdateMembers(t *testing.T) {
 				return adminAuth(), group.UpdateMembersData{
 					GroupID:                "missing-id",
 					AddEmails:              []string{"alice@example.com"},
-					ExpectedMembersVersion: int64Ptr(0),
+					ExpectedMembersVersion: new(int64(0)),
 				}
 			},
 			wantErr: "get group",
@@ -1082,7 +1082,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 					Add: []domain.Permission{
 						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
 					},
-					ExpectedPermissionsVersion: int64Ptr(0),
+					ExpectedPermissionsVersion: new(int64(0)),
 				}
 			},
 			wantErr: "get group",

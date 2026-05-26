@@ -9,7 +9,6 @@ package accessv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -86,7 +85,7 @@ var File_elara_access_v1_policy_proto protoreflect.FileDescriptor
 
 const file_elara_access_v1_policy_proto_rawDesc = "" +
 	"\n" +
-	"\x1celara/access/v1/policy.proto\x12\x0felara.access.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"R\n" +
+	"\x1celara/access/v1/policy.proto\x12\x0felara.access.v1\"R\n" +
 	"\n" +
 	"PolicyRule\x12\x18\n" +
 	"\asubject\x18\x01 \x01(\tR\asubject\x12\x16\n" +

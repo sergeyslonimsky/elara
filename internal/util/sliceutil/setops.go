@@ -42,7 +42,7 @@ func In[T comparable](s []T, set map[T]struct{}) []T {
 // FirstOverlap reports the first element appearing in both a and b, or
 // the zero value with ok=false when the two slices are disjoint. Used to
 // reject inputs where the same item is requested for both add and remove.
-func FirstOverlap[T comparable](a, b []T) (T, bool) {
+func FirstOverlap[T comparable](a, b []T) (T, bool) { //nolint:ireturn //generic type
 	var zero T
 	if len(a) == 0 || len(b) == 0 {
 		return zero, false

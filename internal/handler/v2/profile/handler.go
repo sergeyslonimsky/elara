@@ -89,7 +89,7 @@ func (h *Handler) ChangePassword(
 	}
 
 	resp := connect.NewResponse(&profilev1.ChangePasswordResponse{})
-	cookie := &http.Cookie{ //nolint:gosec //Secure set from config
+	cookie := &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    token,
 		HttpOnly: true,
@@ -109,7 +109,7 @@ func (h *Handler) Logout(
 	_ = h.uc.Logout(ctx)
 	resp := connect.NewResponse(&profilev1.LogoutResponse{})
 
-	cookie := &http.Cookie{ //nolint:gosec //Secure set from config
+	cookie := &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    "",
 		HttpOnly: true,

@@ -38,19 +38,13 @@ func (s *Service) Update(
 			return err
 		}
 		if err := domain.CheckVersion(data.ExpectedMetadataVersion, existing.MetadataVersion); err != nil {
-			return err
+			return fmt.Errorf("check version: %w", err)
 		}
 
 		oldName := existing.Name
 		if data.Name != oldName {
-			// Names are not the primary key but every Casbin subject and
-			// every PAP.UserGroupNames consumer keys off them. Two groups
-			// with the same name break FindByName-based lookups silently.
-			switch other, err := s.store.WithTx(tx).FindByName(ctx, data.Name); {
-			case err == nil && other != nil && other.ID != existing.ID:
-				return domain.NewAlreadyExistsError("group", data.Name)
-			case err != nil && !errors.Is(err, domain.ErrNotFound):
-				return fmt.Errorf("check name uniqueness: %w", err)
+			if err := s.ensureNameUnique(ctx, tx, existing.ID, data.Name); err != nil {
+				return err
 			}
 		}
 		existing.Name = data.Name
@@ -74,6 +68,22 @@ func (s *Service) Update(
 	}
 
 	return updated, nil
+}
+
+// ensureNameUnique returns an AlreadyExists error if a different group
+// already owns newName. Names are not the primary key but every Casbin
+// subject and every PAP.UserGroupNames consumer keys off them — two groups
+// sharing a name break FindByName-based lookups silently.
+func (s *Service) ensureNameUnique(ctx context.Context, tx storage.Tx, selfID, newName string) error {
+	other, err := s.store.WithTx(tx).FindByName(ctx, newName)
+	switch {
+	case err == nil && other != nil && other.ID != selfID:
+		return fmt.Errorf("check name uniqueness: %w", domain.NewAlreadyExistsError("group", newName))
+	case err != nil && !errors.Is(err, domain.ErrNotFound):
+		return fmt.Errorf("check name uniqueness: %w", err)
+	}
+
+	return nil
 }
 
 // UpdateMembersData carries the explicit add/remove delta for membership.
@@ -115,7 +125,7 @@ func (s *Service) UpdateMembers(
 			return err
 		}
 		if err := domain.CheckVersion(data.ExpectedMembersVersion, existing.MembersVersion); err != nil {
-			return err
+			return fmt.Errorf("check version: %w", err)
 		}
 
 		current := s.pap.GroupMembers(existing.Name)
@@ -125,7 +135,7 @@ func (s *Service) UpdateMembers(
 
 		if len(added) > 0 {
 			if err := s.scope.RequireMembershipGrant(actor.Email, existing.Name); err != nil {
-				return err
+				return fmt.Errorf("require membership grant: %w", err)
 			}
 		}
 
@@ -138,14 +148,8 @@ func (s *Service) UpdateMembers(
 			return nil
 		}
 
-		if err := w.ApplyMemberDeltas(existing.Name, added, removed); err != nil {
-			return fmt.Errorf("apply member deltas: %w", err)
-		}
-
-		existing.MembersVersion++
-		existing.UpdatedAt = time.Now().UTC()
-		if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
-			return fmt.Errorf(errUpdateGroup, err)
+		if err := s.commitMemberDelta(ctx, tx, w, existing, added, removed); err != nil {
+			return err
 		}
 
 		post := sliceutil.ComposePost(current, added, removed)
@@ -206,7 +210,7 @@ func (s *Service) UpdatePermissions(
 			return err
 		}
 		if err := domain.CheckVersion(data.ExpectedPermissionsVersion, existing.PermissionsVersion); err != nil {
-			return err
+			return fmt.Errorf("check version: %w", err)
 		}
 
 		current, err := w.GroupPermissions(existing.Name)
@@ -221,7 +225,7 @@ func (s *Service) UpdatePermissions(
 			return err
 		}
 
-		if len(added) == 0 && len(removed) == 0 {
+		if len(added)+len(removed) == 0 {
 			result = &UpdatePermissionsResult{Group: existing, Permissions: current}
 
 			return nil
@@ -232,14 +236,8 @@ func (s *Service) UpdatePermissions(
 			return err
 		}
 
-		if err := w.ApplyPermissionDeltas(existing.Name, added, removed); err != nil {
-			return fmt.Errorf("apply permission deltas: %w", err)
-		}
-
-		existing.PermissionsVersion++
-		existing.UpdatedAt = time.Now().UTC()
-		if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
-			return fmt.Errorf(errUpdateGroup, err)
+		if err := s.commitPermissionDelta(ctx, tx, w, existing, added, removed); err != nil {
+			return err
 		}
 
 		result = &UpdatePermissionsResult{Group: existing, Permissions: post}
@@ -251,6 +249,52 @@ func (s *Service) UpdatePermissions(
 	}
 
 	return result, nil
+}
+
+// commitMemberDelta applies the membership delta in the PAP and persists
+// the bumped MembersVersion. Extracted from UpdateMembers to keep that
+// function under the cyclop threshold; the steps must remain in this order
+// because the store row carries MembersVersion as the optimistic-lock seed
+// for subsequent calls.
+func (s *Service) commitMemberDelta(
+	ctx context.Context,
+	tx storage.Tx,
+	w *authz.PAPTx,
+	existing *domain.Group,
+	added, removed []string,
+) error {
+	if err := w.ApplyMemberDeltas(existing.Name, added, removed); err != nil {
+		return fmt.Errorf("apply member deltas: %w", err)
+	}
+	existing.MembersVersion++
+	existing.UpdatedAt = time.Now().UTC()
+	if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
+		return fmt.Errorf(errUpdateGroup, err)
+	}
+
+	return nil
+}
+
+// commitPermissionDelta applies the permission delta in the PAP and
+// persists the bumped PermissionsVersion. Mirrors commitMemberDelta; lives
+// here so UpdatePermissions stays under the cyclop threshold.
+func (s *Service) commitPermissionDelta(
+	ctx context.Context,
+	tx storage.Tx,
+	w *authz.PAPTx,
+	existing *domain.Group,
+	added, removed []domain.Permission,
+) error {
+	if err := w.ApplyPermissionDeltas(existing.Name, added, removed); err != nil {
+		return fmt.Errorf("apply permission deltas: %w", err)
+	}
+	existing.PermissionsVersion++
+	existing.UpdatedAt = time.Now().UTC()
+	if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
+		return fmt.Errorf(errUpdateGroup, err)
+	}
+
+	return nil
 }
 
 // boundaryCheckPerms asserts each effectively-added permission lies within

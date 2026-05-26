@@ -45,10 +45,10 @@ func TestService_Create(t *testing.T) {
 		// Password is stored as a bcrypt hash, not the plaintext.
 		assert.NotEqual(t, "initial-password", persisted.PasswordHash)
 		require.NoError(t, auth.VerifyPassword(persisted.PasswordHash, "initial-password"))
-		// No initial groups requested → MembershipVersion stays at zero.
-		assert.Equal(t, int64(0), persisted.MembershipVersion)
+		// No initial groups → MembershipVersion initialised to 1 (proto3 omits 0).
+		assert.Equal(t, int64(1), persisted.MembershipVersion)
 		assert.Empty(t, res.GroupIDs)
-		assert.Equal(t, int64(0), res.MembershipVersion)
+		assert.Equal(t, int64(1), res.MembershipVersion)
 	})
 
 	t.Run("OIDC: empty password sets ProviderOIDC and no password hash", func(t *testing.T) {

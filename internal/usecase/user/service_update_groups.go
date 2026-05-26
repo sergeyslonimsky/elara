@@ -61,58 +61,19 @@ func (s *Service) UpdateGroups(
 			return fmt.Errorf("get user: %w", err)
 		}
 		if err := domain.CheckVersion(data.ExpectedMembershipVersion, user.MembershipVersion); err != nil {
-			return err
+			return fmt.Errorf("check version: %w", err)
 		}
 
-		groups := s.groups.WithTx(tx)
-
-		// Resolve current memberships into (ids, names map keyed by id).
-		currentIDs, currentNamesByID, err := currentUserGroupIDs(ctx, s.pap, groups, user.Email)
-		if err != nil {
-			return err
-		}
-		// Authorize on the requested union (matches proto contract): a
-		// caller who lacks Group:Write on X must not be able to submit
-		// "remove X" and silently learn that the target isn't in X
-		// (no-op success = enumeration oracle).
-		if err := s.authorizeGroupDeltas(actor, data.AddGroupIDs, data.RemoveGroupIDs); err != nil {
-			return err
-		}
-
-		currentSet := sliceutil.ToSet(currentIDs)
-		effectiveAdd := sliceutil.NotIn(data.AddGroupIDs, currentSet)
-		effectiveRemove := sliceutil.In(data.RemoveGroupIDs, currentSet)
-
-		// Resolve added group ids to (id -> group) for anti-escalation and
-		// for the casbin-name needed by ApplyUserMembershipDeltas.
-		addedGroups, err := loadGroupsByIDs(ctx, groups, effectiveAdd)
+		delta, err := s.computeGroupDelta(ctx, tx, actor, user.Email, data)
 		if err != nil {
 			return err
 		}
 
-		// Anti-escalation on each effective add.
-		for _, id := range effectiveAdd {
-			if err := s.scope.RequireMembershipGrant(actor.Email, addedGroups[id].Name); err != nil {
-				return fmt.Errorf("grant group %s: %w", id, err)
-			}
-		}
+		// `visible_group_ids` is scope-filtered so the response cannot
+		// enumerate memberships outside the caller's read scope.
+		visible := filterVisibleGroupIDs(s.pdp, actor.Email, delta.postIDs)
 
-		addedNames := make([]string, 0, len(effectiveAdd))
-		for _, id := range effectiveAdd {
-			addedNames = append(addedNames, addedGroups[id].Name)
-		}
-		removedNames := make([]string, 0, len(effectiveRemove))
-		for _, id := range effectiveRemove {
-			removedNames = append(removedNames, currentNamesByID[id])
-		}
-
-		// Compose the post-state group-id list and filter it through the
-		// caller's Group:Read scope — the proto field is `visible_group_ids`
-		// and must not expose memberships outside scope (enumeration leak).
-		postIDs := sliceutil.ComposePost(currentIDs, effectiveAdd, effectiveRemove)
-		visible := filterVisibleGroupIDs(s.pdp, actor.Email, postIDs)
-
-		if len(addedNames) == 0 && len(removedNames) == 0 {
+		if len(delta.addedNames)+len(delta.removedNames) == 0 {
 			// No-op apply but optimistic-lock check already passed; return
 			// current state without bumping the counter.
 			result = &UpdateGroupsResult{
@@ -124,13 +85,8 @@ func (s *Service) UpdateGroups(
 			return nil
 		}
 
-		if err := w.ApplyUserMembershipDeltas(user.Email, addedNames, removedNames); err != nil {
-			return fmt.Errorf("pap apply user memberships: %w", err)
-		}
-
-		user.MembershipVersion++
-		if err := s.store.WithTx(tx).SetMembershipVersion(ctx, user.Email, user.MembershipVersion); err != nil {
-			return fmt.Errorf("persist membership version: %w", err)
+		if err := s.applyMembershipDelta(ctx, tx, w, user, delta.addedNames, delta.removedNames); err != nil {
+			return err
 		}
 
 		result = &UpdateGroupsResult{
@@ -146,6 +102,94 @@ func (s *Service) UpdateGroups(
 	}
 
 	return result, nil
+}
+
+// groupDelta carries the resolved membership delta UpdateGroups needs to
+// apply the change and render the post-state response. Lives next to its
+// only producer/consumer so the field meaning stays close to the logic.
+type groupDelta struct {
+	addedNames   []string
+	removedNames []string
+	postIDs      []string
+}
+
+// computeGroupDelta resolves the requested add/remove union into casbin
+// names and the post-state id list, enforcing both the Group:Write
+// authorization (per requested id) and the anti-escalation invariant (per
+// effectively added group). Extracted from UpdateGroups so the orchestrator
+// stays under the cyclop threshold.
+func (s *Service) computeGroupDelta(
+	ctx context.Context,
+	tx storage.Tx,
+	actor domain.AuthInfo,
+	email string,
+	data UpdateGroupsData,
+) (groupDelta, error) {
+	groups := s.groups.WithTx(tx)
+
+	currentIDs, currentNamesByID, err := currentUserGroupIDs(ctx, s.pap, groups, email)
+	if err != nil {
+		return groupDelta{}, err
+	}
+	// Authorize on the requested union (matches proto contract): a caller
+	// who lacks Group:Write on X must not be able to submit "remove X" and
+	// silently learn that the target isn't in X (no-op success =
+	// enumeration oracle).
+	if err := s.authorizeGroupDeltas(actor, data.AddGroupIDs, data.RemoveGroupIDs); err != nil {
+		return groupDelta{}, err
+	}
+
+	currentSet := sliceutil.ToSet(currentIDs)
+	effectiveAdd := sliceutil.NotIn(data.AddGroupIDs, currentSet)
+	effectiveRemove := sliceutil.In(data.RemoveGroupIDs, currentSet)
+
+	// Resolve added group ids to (id -> group) for anti-escalation and for
+	// the casbin-name needed by ApplyUserMembershipDeltas.
+	addedGroups, err := loadGroupsByIDs(ctx, groups, effectiveAdd)
+	if err != nil {
+		return groupDelta{}, err
+	}
+
+	addedNames := make([]string, 0, len(effectiveAdd))
+	for _, id := range effectiveAdd {
+		if err := s.scope.RequireMembershipGrant(actor.Email, addedGroups[id].Name); err != nil {
+			return groupDelta{}, fmt.Errorf("grant group %s: %w", id, err)
+		}
+		addedNames = append(addedNames, addedGroups[id].Name)
+	}
+
+	removedNames := make([]string, 0, len(effectiveRemove))
+	for _, id := range effectiveRemove {
+		removedNames = append(removedNames, currentNamesByID[id])
+	}
+
+	return groupDelta{
+		addedNames:   addedNames,
+		removedNames: removedNames,
+		postIDs:      sliceutil.ComposePost(currentIDs, effectiveAdd, effectiveRemove),
+	}, nil
+}
+
+// applyMembershipDelta writes the casbin g-rule change and persists the
+// bumped MembershipVersion. Order matters — the version is the optimistic
+// lock seed for subsequent UpdateGroups calls — so the steps must stay in
+// this sequence inside the surrounding PAP write transaction.
+func (s *Service) applyMembershipDelta(
+	ctx context.Context,
+	tx storage.Tx,
+	w *authz.PAPTx,
+	user *domain.User,
+	addedNames, removedNames []string,
+) error {
+	if err := w.ApplyUserMembershipDeltas(user.Email, addedNames, removedNames); err != nil {
+		return fmt.Errorf("pap apply user memberships: %w", err)
+	}
+	user.MembershipVersion++
+	if err := s.store.WithTx(tx).SetMembershipVersion(ctx, user.Email, user.MembershipVersion); err != nil {
+		return fmt.Errorf("persist membership version: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) authorizeGroupDeltas(actor domain.AuthInfo, added, removed []string) error {

@@ -225,7 +225,7 @@ func TestService_UpdateGroups_Version(t *testing.T) {
 		_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
 			Email:                     targetEmail,
 			AddGroupIDs:               []string{writableID},
-			ExpectedMembershipVersion: int64Ptr(5),
+			ExpectedMembershipVersion: new(int64(5)),
 		})
 		require.ErrorIs(t, err, domain.ErrVersionConflict)
 
@@ -245,7 +245,7 @@ func TestService_UpdateGroups_Version(t *testing.T) {
 		res, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
 			Email:                     targetEmail,
 			AddGroupIDs:               []string{writableID},
-			ExpectedMembershipVersion: int64Ptr(0),
+			ExpectedMembershipVersion: new(int64(0)),
 		})
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), res.MembershipVersion)
@@ -271,7 +271,7 @@ func TestService_UpdateGroups_Version(t *testing.T) {
 		res, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
 			Email:                     targetEmail,
 			AddGroupIDs:               []string{writableID},
-			ExpectedMembershipVersion: int64Ptr(1),
+			ExpectedMembershipVersion: new(int64(1)),
 		})
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), res.MembershipVersion)

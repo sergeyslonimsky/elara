@@ -141,7 +141,7 @@ func (h *Handler) OIDCCallback(
 
 	resp := connect.NewResponse(&authv1.OIDCCallbackResponse{})
 
-	cookie := &http.Cookie{ //nolint:gosec //Secure set from config
+	cookie := &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    sessionToken,
 		HttpOnly: true,
@@ -174,7 +174,7 @@ func (h *Handler) BasicLogin(
 		PasswordChangeRequired: user.PasswordChangeRequired,
 	})
 
-	cookie := &http.Cookie{ //nolint:gosec //Secure set from config
+	cookie := &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    sessionToken,
 		HttpOnly: true,

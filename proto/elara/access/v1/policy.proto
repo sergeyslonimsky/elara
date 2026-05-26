@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package elara.access.v1;
 
-import "google/protobuf/timestamp.proto";
-
 message PolicyRule {
   string subject = 1;
   string domain = 2;

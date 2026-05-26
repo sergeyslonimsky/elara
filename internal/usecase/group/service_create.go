@@ -148,7 +148,7 @@ func (s *Service) persistEntity(ctx context.Context, tx storage.Tx, data CreateD
 	// repo's own collision check doesn't catch duplicate names.
 	switch existing, err := s.store.WithTx(tx).FindByName(ctx, data.Name); {
 	case err == nil && existing != nil:
-		return nil, domain.NewAlreadyExistsError("group", data.Name)
+		return nil, fmt.Errorf("check name uniqueness: %w", domain.NewAlreadyExistsError("group", data.Name))
 	case err != nil && !errors.Is(err, domain.ErrNotFound):
 		return nil, fmt.Errorf("check name uniqueness: %w", err)
 	}

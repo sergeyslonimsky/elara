@@ -65,6 +65,8 @@ func ActionToProto(s string) commonv1.PermissionAction {
 		return commonv1.PermissionAction_PERMISSION_ACTION_READ
 	case domain.ActionWrite:
 		return commonv1.PermissionAction_PERMISSION_ACTION_WRITE
+	case domain.ActionCreate:
+		return commonv1.PermissionAction_PERMISSION_ACTION_CREATE
 	case domain.ActionAll:
 		return commonv1.PermissionAction_PERMISSION_ACTION_ALL
 	default:
@@ -81,6 +83,8 @@ func ActionToDomain(a commonv1.PermissionAction) string {
 		return domain.ActionRead
 	case commonv1.PermissionAction_PERMISSION_ACTION_WRITE:
 		return domain.ActionWrite
+	case commonv1.PermissionAction_PERMISSION_ACTION_CREATE:
+		return domain.ActionCreate
 	case commonv1.PermissionAction_PERMISSION_ACTION_ALL:
 		return domain.ActionAll
 	case commonv1.PermissionAction_PERMISSION_ACTION_UNSPECIFIED:

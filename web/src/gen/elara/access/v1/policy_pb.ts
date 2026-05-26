@@ -4,14 +4,13 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
-import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file elara/access/v1/policy.proto.
  */
 export const file_elara_access_v1_policy: GenFile = /*@__PURE__*/
-  fileDesc("ChxlbGFyYS9hY2Nlc3MvdjEvcG9saWN5LnByb3RvEg9lbGFyYS5hY2Nlc3MudjEiOwoKUG9saWN5UnVsZRIPCgdzdWJqZWN0GAEgASgJEg4KBmRvbWFpbhgCIAEoCRIMCgRyb2xlGAMgASgJQsoBChNjb20uZWxhcmEuYWNjZXNzLnYxQgtQb2xpY3lQcm90b1ABWkhnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9hY2Nlc3MvdjE7YWNjZXNzdjGiAgNFQViqAg9FbGFyYS5BY2Nlc3MuVjHKAg9FbGFyYVxBY2Nlc3NcVjHiAhtFbGFyYVxBY2Nlc3NcVjFcR1BCTWV0YWRhdGHqAhFFbGFyYTo6QWNjZXNzOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChxlbGFyYS9hY2Nlc3MvdjEvcG9saWN5LnByb3RvEg9lbGFyYS5hY2Nlc3MudjEiOwoKUG9saWN5UnVsZRIPCgdzdWJqZWN0GAEgASgJEg4KBmRvbWFpbhgCIAEoCRIMCgRyb2xlGAMgASgJQsoBChNjb20uZWxhcmEuYWNjZXNzLnYxQgtQb2xpY3lQcm90b1ABWkhnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9hY2Nlc3MvdjE7YWNjZXNzdjGiAgNFQViqAg9FbGFyYS5BY2Nlc3MuVjHKAg9FbGFyYVxBY2Nlc3NcVjHiAhtFbGFyYVxBY2Nlc3NcVjFcR1BCTWV0YWRhdGHqAhFFbGFyYTo6QWNjZXNzOjpWMWIGcHJvdG8z");
 
 /**
  * @generated from message elara.access.v1.PolicyRule

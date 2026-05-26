@@ -146,8 +146,9 @@ func (s *Service) persistUser(ctx context.Context, tx storage.Tx, user *domain.U
 
 // applyInitialGroups adds the new user to each initial group with full
 // anti-escalation. Returns the final group-id slice (echoed back to the
-// caller) and the resulting MembershipVersion (1 if any groups added,
-// 0 otherwise).
+// caller). MembershipVersion is always initialised to 1: proto3 JSON omits
+// int64(0), which would make optimistic concurrency impossible on the very
+// first UpdateUserGroups call for users created without initial groups.
 func (s *Service) applyInitialGroups(
 	ctx context.Context,
 	tx storage.Tx,
@@ -156,8 +157,13 @@ func (s *Service) applyInitialGroups(
 	user *domain.User,
 	ids []string,
 ) ([]string, int64, error) {
+	const initialVersion = int64(1)
+	if err := s.store.WithTx(tx).SetMembershipVersion(ctx, user.Email, initialVersion); err != nil {
+		return nil, 0, fmt.Errorf("persist initial membership version: %w", err)
+	}
+
 	if len(ids) == 0 {
-		return []string{}, 0, nil
+		return []string{}, initialVersion, nil
 	}
 
 	// Re-check Group:Write inside the tx: preauthorize ran outside and a
@@ -186,11 +192,8 @@ func (s *Service) applyInitialGroups(
 	if err := w.ApplyUserMembershipDeltas(user.Email, names, nil); err != nil {
 		return nil, 0, fmt.Errorf("pap apply user memberships: %w", err)
 	}
-	if err := s.store.WithTx(tx).SetMembershipVersion(ctx, user.Email, 1); err != nil {
-		return nil, 0, fmt.Errorf("persist membership version: %w", err)
-	}
 
-	return append([]string(nil), ids...), 1, nil
+	return append([]string(nil), ids...), initialVersion, nil
 }
 
 // Delete removes the user along with all their memberships.
@@ -263,7 +266,7 @@ func (s *Service) Get(ctx context.Context, actor domain.AuthInfo, email string) 
 
 	visible, err := s.scope.VisibleUserGroupIDs(ctx, actor.Email, email)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("visible user group ids: %w", err)
 	}
 
 	return &GetResult{

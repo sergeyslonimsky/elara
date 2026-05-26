@@ -29,10 +29,6 @@ const (
 func adminActor() domain.AuthInfo { return domain.AuthInfo{Email: adminEmail} }
 func actor() domain.AuthInfo      { return domain.AuthInfo{Email: actorEmail} }
 
-// int64Ptr is the optional-optimistic-lock pointer helper used across the
-// UpdateGroups cases. Matches the sibling group package convention.
-func int64Ptr(v int64) *int64 { return &v }
-
 // ---- real integration stack --------------------------------------------------
 
 // realStack bundles every dependency a test might need to seed bbolt and

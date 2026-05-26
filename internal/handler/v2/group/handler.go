@@ -92,7 +92,12 @@ func (h *Handler) GetGroup(
 		return nil, v2.ToConnectError(err)
 	}
 
-	if err = h.authz.RequireUser(user, domain.ObjectGroup, domain.ActionRead, domain.GroupResource(req.Msg.GetId())); err != nil {
+	if err = h.authz.RequireUser(
+		user,
+		domain.ObjectGroup,
+		domain.ActionRead,
+		domain.GroupResource(req.Msg.GetId()),
+	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -117,7 +122,12 @@ func (h *Handler) UpdateGroup(
 		return nil, v2.ToConnectError(err)
 	}
 
-	if err = h.authz.RequireUser(user, domain.ObjectGroup, domain.ActionWrite, domain.GroupResource(req.Msg.GetId())); err != nil {
+	if err = h.authz.RequireUser(
+		user,
+		domain.ObjectGroup,
+		domain.ActionWrite,
+		domain.GroupResource(req.Msg.GetId()),
+	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -143,7 +153,12 @@ func (h *Handler) UpdateGroupMembers(
 		return nil, v2.ToConnectError(err)
 	}
 
-	if err = h.authz.RequireUser(user, domain.ObjectGroup, domain.ActionWrite, domain.GroupResource(req.Msg.GetGroupId())); err != nil {
+	if err = h.authz.RequireUser(
+		user,
+		domain.ObjectGroup,
+		domain.ActionWrite,
+		domain.GroupResource(req.Msg.GetGroupId()),
+	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -172,7 +187,12 @@ func (h *Handler) UpdateGroupPermissions(
 		return nil, v2.ToConnectError(err)
 	}
 
-	if err = h.authz.RequireUser(user, domain.ObjectGroup, domain.ActionWrite, domain.GroupResource(req.Msg.GetGroupId())); err != nil {
+	if err = h.authz.RequireUser(
+		user,
+		domain.ObjectGroup,
+		domain.ActionWrite,
+		domain.GroupResource(req.Msg.GetGroupId()),
+	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -201,7 +221,12 @@ func (h *Handler) DeleteGroup(
 		return nil, v2.ToConnectError(err)
 	}
 
-	if err = h.authz.RequireUser(user, domain.ObjectGroup, domain.ActionWrite, domain.GroupResource(req.Msg.GetId())); err != nil {
+	if err = h.authz.RequireUser(
+		user,
+		domain.ObjectGroup,
+		domain.ActionWrite,
+		domain.GroupResource(req.Msg.GetId()),
+	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

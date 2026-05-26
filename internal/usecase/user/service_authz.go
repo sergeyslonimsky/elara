@@ -17,7 +17,7 @@ import (
 //     elevates the actor beyond their own boundary.
 func (s *Service) authorizeUserWrite(ctx context.Context, actor domain.AuthInfo, targetEmail string) error {
 	if err := s.scope.RequireWriteUser(ctx, actor.Email, targetEmail); err != nil {
-		return err
+		return fmt.Errorf("require write user: %w", err)
 	}
 
 	return s.checkAntiEscalation(actor, targetEmail)

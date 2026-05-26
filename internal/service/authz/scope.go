@@ -74,54 +74,6 @@ func (s *Scope) FilterVisibleUsers(ctx context.Context, actor string, candidates
 	return out
 }
 
-// resolveTargetGroups loads target's full group set in one place. Used by
-// every method that needs to fan out over target's memberships
-// (CanRead/CanWriteUser, FilterVisibleUsers, VisibleUserGroupIDs,
-// RequireWriteUser). Pulling the UserGroupNames → FindByName loop into a
-// single helper means a future change to the resolution path updates one
-// site, not five.
-//
-// Resolution errors propagate to the caller; callers that prefer
-// fail-closed-bool semantics simply discard the error.
-func (s *Scope) resolveTargetGroups(ctx context.Context, target string) ([]*domain.Group, error) {
-	names, err := s.pap.UserGroupNames(target)
-	if err != nil {
-		return nil, fmt.Errorf("pap user group names: %w", err)
-	}
-
-	out := make([]*domain.Group, 0, len(names))
-	for _, name := range names {
-		g, err := s.groups.FindByName(ctx, name)
-		if err != nil {
-			return nil, fmt.Errorf("find group by name %s: %w", name, err)
-		}
-		out = append(out, g)
-	}
-
-	return out, nil
-}
-
-// targetInGroupScope reports whether at least one of target's groups
-// satisfies `holds(actor, g.ID)`. Resolution errors propagate; callers
-// that want fail-closed-bool semantics discard them.
-func (s *Scope) targetInGroupScope(
-	ctx context.Context,
-	actor, target string,
-	holds func(actor, groupID string) bool,
-) (bool, error) {
-	groups, err := s.resolveTargetGroups(ctx, target)
-	if err != nil {
-		return false, err
-	}
-	for _, g := range groups {
-		if holds(actor, g.ID) {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
 // VisibleUserGroupIDs returns the IDs of target's groups on which actor
 // holds Group:Read. Mirrors the GetUser response contract: memberships
 // outside the actor's read scope are filtered out, not enumerated.
@@ -183,4 +135,52 @@ func (s *Scope) RequireWriteUser(ctx context.Context, actor, target string) erro
 	}
 
 	return nil
+}
+
+// resolveTargetGroups loads target's full group set in one place. Used by
+// every method that needs to fan out over target's memberships
+// (CanRead/CanWriteUser, FilterVisibleUsers, VisibleUserGroupIDs,
+// RequireWriteUser). Pulling the UserGroupNames → FindByName loop into a
+// single helper means a future change to the resolution path updates one
+// site, not five.
+//
+// Resolution errors propagate to the caller; callers that prefer
+// fail-closed-bool semantics simply discard the error.
+func (s *Scope) resolveTargetGroups(ctx context.Context, target string) ([]*domain.Group, error) {
+	names, err := s.pap.UserGroupNames(target)
+	if err != nil {
+		return nil, fmt.Errorf("pap user group names: %w", err)
+	}
+
+	out := make([]*domain.Group, 0, len(names))
+	for _, name := range names {
+		g, err := s.groups.FindByName(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("find group by name %s: %w", name, err)
+		}
+		out = append(out, g)
+	}
+
+	return out, nil
+}
+
+// targetInGroupScope reports whether at least one of target's groups
+// satisfies `holds(actor, g.ID)`. Resolution errors propagate; callers
+// that want fail-closed-bool semantics discard them.
+func (s *Scope) targetInGroupScope(
+	ctx context.Context,
+	actor, target string,
+	holds func(actor, groupID string) bool,
+) (bool, error) {
+	groups, err := s.resolveTargetGroups(ctx, target)
+	if err != nil {
+		return false, err
+	}
+	for _, g := range groups {
+		if holds(actor, g.ID) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

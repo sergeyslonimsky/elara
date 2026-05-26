@@ -39,29 +39,29 @@ func (a BoltUserReader) Get(ctx context.Context, email string) (*domain.User, er
 	return a.repo.Get(ctx, email)
 }
 
-//nolint:wrapcheck
+//nolint:wrapcheck // pure pass-through adapter; usecase wraps at call site.
 func (a BoltUserReader) List(
 	ctx context.Context, filter domain.UserFilter, params domain.UserListParams,
 ) ([]*domain.User, int, error) {
 	return a.repo.List(ctx, filter, params)
 }
 
-//nolint:wrapcheck
+//nolint:wrapcheck // pure pass-through adapter; usecase wraps at call site.
 func (a BoltUserReader) Upsert(ctx context.Context, user *domain.User) error {
 	return a.repo.Upsert(ctx, user)
 }
 
-//nolint:wrapcheck
+//nolint:wrapcheck // pure pass-through adapter; usecase wraps at call site.
 func (a BoltUserReader) Delete(ctx context.Context, email string) error {
 	return a.repo.Delete(ctx, email)
 }
 
-//nolint:wrapcheck
+//nolint:wrapcheck // pure pass-through adapter; usecase wraps at call site.
 func (a BoltUserReader) SetPassword(ctx context.Context, email, hash string, changeRequired bool) error {
 	return a.repo.SetPassword(ctx, email, hash, changeRequired)
 }
 
-//nolint:wrapcheck
+//nolint:wrapcheck // pure pass-through adapter; usecase wraps at call site.
 func (a BoltUserReader) SetMembershipVersion(ctx context.Context, email string, version int64) error {
 	return a.repo.SetMembershipVersion(ctx, email, version)
 }
@@ -90,17 +90,17 @@ func NewBoltGroupReader(repo *bbolt.GroupRepo) BoltGroupReader {
 	return BoltGroupReader{repo: repo}
 }
 
-//nolint:wrapcheck
+//nolint:wrapcheck // pure pass-through adapter; usecase wraps at call site.
 func (a BoltGroupReader) Get(ctx context.Context, id string) (*domain.Group, error) {
 	return a.repo.Get(ctx, id)
 }
 
-//nolint:wrapcheck
+//nolint:wrapcheck // pure pass-through adapter; usecase wraps at call site.
 func (a BoltGroupReader) FindByName(ctx context.Context, name string) (*domain.Group, error) {
 	return a.repo.FindByName(ctx, name)
 }
 
-//nolint:ireturn
+//nolint:ireturn // interface return is required by the GroupReader contract.
 func (a BoltGroupReader) WithTx(tx storage.Tx) GroupReader {
 	return BoltGroupReader{repo: a.repo.WithTx(tx)}
 }
