@@ -7,10 +7,10 @@
 package userv1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -174,13 +174,13 @@ func (x *GetUserRequest) GetEmail() string {
 type GetUserResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	User  *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	// All group IDs the user currently belongs to, regardless of whether
-	// the caller has read access to those groups. Required so the user
-	// edit UI can submit a canonical full set back through UpdateUserGroups
-	// (the server diffs and authorizes only the symmetric difference).
-	GroupIds      []string `protobuf:"bytes,2,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Group IDs the user belongs to AND on which the caller holds Group:Read.
+	// Memberships outside the caller's read scope are not exposed.
+	VisibleGroupIds []string `protobuf:"bytes,2,rep,name=visible_group_ids,json=visibleGroupIds,proto3" json:"visible_group_ids,omitempty"`
+	// Opaque token for optimistic concurrency on UpdateUserGroups.
+	MembershipVersion int64 `protobuf:"varint,3,opt,name=membership_version,json=membershipVersion,proto3" json:"membership_version,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *GetUserResponse) Reset() {
@@ -220,18 +220,29 @@ func (x *GetUserResponse) GetUser() *User {
 	return nil
 }
 
-func (x *GetUserResponse) GetGroupIds() []string {
+func (x *GetUserResponse) GetVisibleGroupIds() []string {
 	if x != nil {
-		return x.GroupIds
+		return x.VisibleGroupIds
 	}
 	return nil
 }
 
+func (x *GetUserResponse) GetMembershipVersion() int64 {
+	if x != nil {
+		return x.MembershipVersion
+	}
+	return 0
+}
+
 type CreateUserRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Email           string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	InitialPassword string                 `protobuf:"bytes,3,opt,name=initial_password,json=initialPassword,proto3" json:"initial_password,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Email string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Name  string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// Required in basic-auth mode, must be empty in OIDC mode (enforced server-side).
+	InitialPassword string `protobuf:"bytes,3,opt,name=initial_password,json=initialPassword,proto3" json:"initial_password,omitempty"`
+	// Optional: groups the new user joins atomically with creation.
+	// Same authorization rules as UpdateUserGroups apply to each id.
+	InitialGroupIds []string `protobuf:"bytes,4,rep,name=initial_group_ids,json=initialGroupIds,proto3" json:"initial_group_ids,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -287,11 +298,20 @@ func (x *CreateUserRequest) GetInitialPassword() string {
 	return ""
 }
 
+func (x *CreateUserRequest) GetInitialGroupIds() []string {
+	if x != nil {
+		return x.InitialGroupIds
+	}
+	return nil
+}
+
 type CreateUserResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	User              *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	GroupIds          []string               `protobuf:"bytes,2,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty"`
+	MembershipVersion int64                  `protobuf:"varint,3,opt,name=membership_version,json=membershipVersion,proto3" json:"membership_version,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *CreateUserResponse) Reset() {
@@ -329,6 +349,20 @@ func (x *CreateUserResponse) GetUser() *User {
 		return x.User
 	}
 	return nil
+}
+
+func (x *CreateUserResponse) GetGroupIds() []string {
+	if x != nil {
+		return x.GroupIds
+	}
+	return nil
+}
+
+func (x *CreateUserResponse) GetMembershipVersion() int64 {
+	if x != nil {
+		return x.MembershipVersion
+	}
+	return 0
 }
 
 type ResetUserPasswordRequest struct {
@@ -500,14 +534,15 @@ func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
 }
 
 type UpdateUserGroupsRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Email string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	// Group IDs the user should belong to after the call. The set is
-	// canonical; the server diffs against current memberships and only
-	// operates on the symmetric difference.
-	GroupIds      []string `protobuf:"bytes,2,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Email          string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	AddGroupIds    []string               `protobuf:"bytes,2,rep,name=add_group_ids,json=addGroupIds,proto3" json:"add_group_ids,omitempty"`
+	RemoveGroupIds []string               `protobuf:"bytes,3,rep,name=remove_group_ids,json=removeGroupIds,proto3" json:"remove_group_ids,omitempty"`
+	// Optional optimistic lock. When set, server returns FAILED_PRECONDITION
+	// if current membership_version != expected_version.
+	ExpectedVersion *int64 `protobuf:"varint,4,opt,name=expected_version,json=expectedVersion,proto3,oneof" json:"expected_version,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *UpdateUserGroupsRequest) Reset() {
@@ -547,19 +582,34 @@ func (x *UpdateUserGroupsRequest) GetEmail() string {
 	return ""
 }
 
-func (x *UpdateUserGroupsRequest) GetGroupIds() []string {
+func (x *UpdateUserGroupsRequest) GetAddGroupIds() []string {
 	if x != nil {
-		return x.GroupIds
+		return x.AddGroupIds
 	}
 	return nil
 }
 
+func (x *UpdateUserGroupsRequest) GetRemoveGroupIds() []string {
+	if x != nil {
+		return x.RemoveGroupIds
+	}
+	return nil
+}
+
+func (x *UpdateUserGroupsRequest) GetExpectedVersion() int64 {
+	if x != nil && x.ExpectedVersion != nil {
+		return *x.ExpectedVersion
+	}
+	return 0
+}
+
 type UpdateUserGroupsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	GroupIds      []string               `protobuf:"bytes,2,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	User              *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	VisibleGroupIds   []string               `protobuf:"bytes,2,rep,name=visible_group_ids,json=visibleGroupIds,proto3" json:"visible_group_ids,omitempty"`
+	MembershipVersion int64                  `protobuf:"varint,3,opt,name=membership_version,json=membershipVersion,proto3" json:"membership_version,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *UpdateUserGroupsResponse) Reset() {
@@ -599,52 +649,74 @@ func (x *UpdateUserGroupsResponse) GetUser() *User {
 	return nil
 }
 
-func (x *UpdateUserGroupsResponse) GetGroupIds() []string {
+func (x *UpdateUserGroupsResponse) GetVisibleGroupIds() []string {
 	if x != nil {
-		return x.GroupIds
+		return x.VisibleGroupIds
 	}
 	return nil
+}
+
+func (x *UpdateUserGroupsResponse) GetMembershipVersion() int64 {
+	if x != nil {
+		return x.MembershipVersion
+	}
+	return 0
 }
 
 var File_elara_user_v1_user_service_proto protoreflect.FileDescriptor
 
 const file_elara_user_v1_user_service_proto_rawDesc = "" +
 	"\n" +
-	" elara/user/v1/user_service.proto\x12\relara.user.v1\x1a\x1celara/common/v1/common.proto\x1a\x18elara/user/v1/user.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"n\n" +
+	" elara/user/v1/user_service.proto\x12\relara.user.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1celara/common/v1/common.proto\x1a\x18elara/user/v1/user.proto\"x\n" +
 	"\x10ListUsersRequest\x12B\n" +
 	"\n" +
 	"pagination\x18\x01 \x01(\v2\".elara.common.v1.PaginationRequestR\n" +
-	"pagination\x12\x16\n" +
-	"\x06search\x18\x02 \x01(\tR\x06search\"\x83\x01\n" +
+	"pagination\x12 \n" +
+	"\x06search\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06search\"\x83\x01\n" +
 	"\x11ListUsersResponse\x12)\n" +
 	"\x05users\x18\x01 \x03(\v2\x13.elara.user.v1.UserR\x05users\x12C\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2#.elara.common.v1.PaginationResponseR\n" +
-	"pagination\"&\n" +
-	"\x0eGetUserRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\"W\n" +
+	"pagination\"2\n" +
+	"\x0eGetUserRequest\x12 \n" +
+	"\x05email\x18\x01 \x01(\tB\n" +
+	"\xbaH\a\xc8\x01\x01r\x02`\x01R\x05email\"\x95\x01\n" +
 	"\x0fGetUserResponse\x12'\n" +
-	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\x12\x1b\n" +
-	"\tgroup_ids\x18\x02 \x03(\tR\bgroupIds\"h\n" +
-	"\x11CreateUserRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12)\n" +
-	"\x10initial_password\x18\x03 \x01(\tR\x0finitialPassword\"=\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\x12*\n" +
+	"\x11visible_group_ids\x18\x02 \x03(\tR\x0fvisibleGroupIds\x12-\n" +
+	"\x12membership_version\x18\x03 \x01(\x03R\x11membershipVersion\"\xba\x01\n" +
+	"\x11CreateUserRequest\x12 \n" +
+	"\x05email\x18\x01 \x01(\tB\n" +
+	"\xbaH\a\xc8\x01\x01r\x02`\x01R\x05email\x12\x1e\n" +
+	"\x04name\x18\x02 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\x80\x02R\x04name\x12)\n" +
+	"\x10initial_password\x18\x03 \x01(\tR\x0finitialPassword\x128\n" +
+	"\x11initial_group_ids\x18\x04 \x03(\tB\f\xbaH\t\x92\x01\x06\"\x04r\x02\x10\x01R\x0finitialGroupIds\"\x89\x01\n" +
 	"\x12CreateUserResponse\x12'\n" +
-	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\"S\n" +
-	"\x18ResetUserPasswordRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12!\n" +
-	"\fnew_password\x18\x02 \x01(\tR\vnewPassword\"\x1b\n" +
-	"\x19ResetUserPasswordResponse\")\n" +
-	"\x11DeleteUserRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\"\x14\n" +
-	"\x12DeleteUserResponse\"L\n" +
-	"\x17UpdateUserGroupsRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1b\n" +
-	"\tgroup_ids\x18\x02 \x03(\tR\bgroupIds\"`\n" +
-	"\x18UpdateUserGroupsResponse\x12'\n" +
 	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\x12\x1b\n" +
-	"\tgroup_ids\x18\x02 \x03(\tR\bgroupIds2\x9a\x04\n" +
+	"\tgroup_ids\x18\x02 \x03(\tR\bgroupIds\x12-\n" +
+	"\x12membership_version\x18\x03 \x01(\x03R\x11membershipVersion\"k\n" +
+	"\x18ResetUserPasswordRequest\x12 \n" +
+	"\x05email\x18\x01 \x01(\tB\n" +
+	"\xbaH\a\xc8\x01\x01r\x02`\x01R\x05email\x12-\n" +
+	"\fnew_password\x18\x02 \x01(\tB\n" +
+	"\xbaH\a\xc8\x01\x01r\x02\x10\x01R\vnewPassword\"\x1b\n" +
+	"\x19ResetUserPasswordResponse\"5\n" +
+	"\x11DeleteUserRequest\x12 \n" +
+	"\x05email\x18\x01 \x01(\tB\n" +
+	"\xbaH\a\xc8\x01\x01r\x02`\x01R\x05email\"\x14\n" +
+	"\x12DeleteUserResponse\"\xf3\x01\n" +
+	"\x17UpdateUserGroupsRequest\x12 \n" +
+	"\x05email\x18\x01 \x01(\tB\n" +
+	"\xbaH\a\xc8\x01\x01r\x02`\x01R\x05email\x120\n" +
+	"\radd_group_ids\x18\x02 \x03(\tB\f\xbaH\t\x92\x01\x06\"\x04r\x02\x10\x01R\vaddGroupIds\x126\n" +
+	"\x10remove_group_ids\x18\x03 \x03(\tB\f\xbaH\t\x92\x01\x06\"\x04r\x02\x10\x01R\x0eremoveGroupIds\x127\n" +
+	"\x10expected_version\x18\x04 \x01(\x03B\a\xbaH\x04\"\x02(\x00H\x00R\x0fexpectedVersion\x88\x01\x01B\x13\n" +
+	"\x11_expected_version\"\x9e\x01\n" +
+	"\x18UpdateUserGroupsResponse\x12'\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\x12*\n" +
+	"\x11visible_group_ids\x18\x02 \x03(\tR\x0fvisibleGroupIds\x12-\n" +
+	"\x12membership_version\x18\x03 \x01(\x03R\x11membershipVersion2\x9a\x04\n" +
 	"\vUserService\x12N\n" +
 	"\tListUsers\x12\x1f.elara.user.v1.ListUsersRequest\x1a .elara.user.v1.ListUsersResponse\x12H\n" +
 	"\aGetUser\x12\x1d.elara.user.v1.GetUserRequest\x1a\x1e.elara.user.v1.GetUserResponse\x12Q\n" +
@@ -718,6 +790,7 @@ func file_elara_user_v1_user_service_proto_init() {
 		return
 	}
 	file_elara_user_v1_user_proto_init()
+	file_elara_user_v1_user_service_proto_msgTypes[10].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

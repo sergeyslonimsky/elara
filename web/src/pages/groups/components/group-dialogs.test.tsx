@@ -1,24 +1,33 @@
 import { create } from "@bufbuild/protobuf";
 import { AbilityBuilder, createMongoAbility } from "@casl/ability";
 import { useMutation, useQuery } from "@connectrpc/connect-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppAbility } from "@/auth/ability";
 import { useAuth } from "@/components/auth-provider";
 import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
 import { TestProviders } from "@/test/test-utils";
-import { EditGroupDialog } from "./group-dialogs";
+import { CreateGroupDialog, DeleteGroupDialog } from "./group-dialogs";
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 	const actual = await importOriginal<Record<string, unknown>>();
 	return {
 		...actual,
-		useQuery: vi.fn(),
+		useQuery: vi.fn(() => ({ data: { groups: [] }, isLoading: false })),
 		useMutation: vi.fn(() => ({
 			mutate: vi.fn(),
 			mutateAsync: vi.fn(),
 			isPending: false,
 		})),
+	};
+});
+
+vi.mock("@tanstack/react-query", async (importOriginal) => {
+	const actual = await importOriginal<Record<string, unknown>>();
+	return {
+		...actual,
+		useQueryClient: vi.fn(() => ({ invalidateQueries: vi.fn() })),
 	};
 });
 
@@ -30,142 +39,246 @@ vi.mock("@/components/auth-provider", async (importOriginal) => {
 	};
 });
 
+function setupAuth(canWriteGroups: string[] = []) {
+	const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+	for (const name of canWriteGroups) {
+		can("write", "Group", { domain: `group:${name}` });
+	}
+	vi.mocked(useAuth).mockReturnValue({
+		state: {
+			status: "authenticated",
+			ability: build(),
+			authType: 0,
+			user: { email: "admin@example.com", name: "Admin" },
+		},
+		logout: vi.fn(),
+	} as unknown as ReturnType<typeof useAuth>);
+}
+
 vi.mock("sonner", async (importOriginal) => {
 	const actual = await importOriginal<Record<string, unknown>>();
 	return {
 		...actual,
-		toast: {
-			success: vi.fn(),
-			error: vi.fn(),
-		},
+		toast: { success: vi.fn(), error: vi.fn() },
 	};
 });
 
-describe("EditGroupDialog", () => {
-	const mockGroup = create(GroupSchema, {
-		id: "group-1",
-		name: "test-group",
-		description: "Initial description",
-		members: ["user1@example.com"],
-		permissions: [
-			{ object: 1, action: 1, domain: "ns1" }, // Namespace Read on ns1
-			{ object: 2, action: 2, domain: "ns2" }, // Config Write on ns2
-		],
-		version: 1n,
-	});
+const mockGroup = create(GroupSchema, {
+	id: "group-1",
+	name: "test-group",
+	description: "Test group",
+	isSystem: false,
+	metadataVersion: 1n,
+	membersVersion: 1n,
+	permissionsVersion: 1n,
+});
 
-	const mockMutation = {
-		mutate: vi.fn(),
-		isPending: false,
-	};
-
+describe("CreateGroupDialog", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		vi.mocked(useMutation).mockReturnValue(mockMutation as any);
+		setupAuth();
+		vi.mocked(useQuery).mockReturnValue({
+			data: { groups: [] },
+			isLoading: false,
+		} as unknown as ReturnType<typeof useQuery>);
 	});
 
-	test("Readonly Passthrough: can edit metadata but not all permissions", async () => {
-		// Use real Ability for realistic behavior
-		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-
-		// Manager rules:
-		can("write", "Group", { domain: "group:test-group" });
-		can("write", "Namespace", { domain: "ns1" });
-		// No permission for ns2
-
-		const ability = build();
-
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: ability,
-				user: { email: "user@example.com", name: "User" },
-			},
-			logout: vi.fn(),
-		} as any);
-
-		vi.mocked(useQuery).mockReturnValue({
-			data: { group: mockGroup },
-			isLoading: false,
-		} as any);
-
+	test("renders dialog with name field", () => {
 		render(
 			<TestProviders>
-				<EditGroupDialog group={mockGroup} open={true} onOpenChange={vi.fn()} />
+				<CreateGroupDialog open={true} onOpenChange={vi.fn()} />
 			</TestProviders>,
 		);
 
+		expect(
+			screen.getByRole("heading", { name: /create group/i }),
+		).toBeInTheDocument();
+		expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
+	});
+
+	test("Create button stays disabled until a valid name is entered", async () => {
+		const ue = userEvent.setup();
+
+		render(
+			<TestProviders>
+				<CreateGroupDialog open={true} onOpenChange={vi.fn()} />
+			</TestProviders>,
+		);
+
+		const createBtn = screen.getByRole("button", { name: /^create$/i });
+		expect(createBtn).toBeDisabled();
+
+		// Type something then clear — Zod should report "Name is required"
+		await ue.type(screen.getByLabelText(/name/i), "x");
+		await ue.clear(screen.getByLabelText(/name/i));
+
+		expect(screen.getByText(/name is required/i)).toBeInTheDocument();
+		expect(createBtn).toBeDisabled();
+
+		// Valid name — error clears, button enables
+		await ue.type(screen.getByLabelText(/name/i), "developers");
 		await waitFor(() => {
-			expect(screen.getByLabelText(/name/i)).toHaveValue("test-group");
+			expect(createBtn).not.toBeDisabled();
 		});
+	});
 
-		// Metadata should be editable (matches group rule)
-		expect(screen.getByLabelText(/name/i)).not.toBeDisabled();
+	test("submitting with members includes them in the payload", async () => {
+		const ue = userEvent.setup();
+		const mockMutate = vi.fn();
 
-		// Members should be editable (uses group write permission)
-		// Check for '×' button on the member badge
-		expect(screen.getByText("×")).toBeInTheDocument();
+		vi.mocked(useMutation).mockReturnValue({
+			mutate: mockMutate,
+			mutateAsync: vi.fn(),
+			isPending: false,
+		} as unknown as ReturnType<typeof useMutation>);
 
-		// Permissions:
-		// ns1 permission should be editable (Remove button visible)
-		expect(screen.getByText(/Namespace/i)).toBeInTheDocument();
-		expect(screen.getByText(/ns1/i)).toBeInTheDocument();
-		expect(screen.getByText("Remove")).toBeInTheDocument();
+		render(
+			<TestProviders>
+				<CreateGroupDialog open={true} onOpenChange={vi.fn()} />
+			</TestProviders>,
+		);
 
-		// ns2 permission should be READ ONLY
-		expect(screen.getByText(/Config/i)).toBeInTheDocument();
-		expect(screen.getByText(/ns2/i)).toBeInTheDocument();
-		expect(screen.getAllByText("READ ONLY")[0]).toBeInTheDocument();
+		await ue.type(screen.getByLabelText(/^name$/i), "my-group");
+		await ue.type(
+			screen.getByPlaceholderText("user@example.com"),
+			"alice@example.com",
+		);
+		await ue.click(screen.getByRole("button", { name: /^add$/i }));
 
-		// Mutation should include BOTH permissions (passthrough)
-		fireEvent.change(screen.getByLabelText(/name/i), {
-			target: { value: "new-name" },
-		});
-		fireEvent.click(screen.getByText("Save Changes"));
+		await ue.click(screen.getByRole("button", { name: /^create$/i }));
 
-		expect(mockMutation.mutate).toHaveBeenCalledWith(
+		expect(mockMutate).toHaveBeenCalledWith(
 			expect.objectContaining({
-				name: "new-name",
-				permissions: expect.arrayContaining([
-					expect.objectContaining({ domain: "ns1" }),
-					expect.objectContaining({ domain: "ns2" }),
-				]),
+				name: "my-group",
+				initialMembers: ["alice@example.com"],
 			}),
 		);
 	});
 
-	test("Full readonly: cannot edit metadata", async () => {
-		const { build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-		const ability = build(); // Empty ability
+	test("ticking a manager group includes it in initialManagerGroupIds", async () => {
+		const ue = userEvent.setup();
+		const mockMutate = vi.fn();
 
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: ability,
-				user: { email: "user@example.com", name: "User" },
-			},
-			logout: vi.fn(),
-		} as any);
-
+		setupAuth(["developers"]);
 		vi.mocked(useQuery).mockReturnValue({
-			data: { group: mockGroup },
+			data: {
+				groups: [
+					create(GroupSchema, {
+						id: "mgr-1",
+						name: "developers",
+						isSystem: false,
+						metadataVersion: 1n,
+						membersVersion: 1n,
+						permissionsVersion: 1n,
+					}),
+				],
+			},
 			isLoading: false,
-		} as any);
+		} as unknown as ReturnType<typeof useQuery>);
+		vi.mocked(useMutation).mockReturnValue({
+			mutate: mockMutate,
+			mutateAsync: vi.fn(),
+			isPending: false,
+		} as unknown as ReturnType<typeof useMutation>);
 
 		render(
 			<TestProviders>
-				<EditGroupDialog group={mockGroup} open={true} onOpenChange={vi.fn()} />
+				<CreateGroupDialog open={true} onOpenChange={vi.fn()} />
 			</TestProviders>,
 		);
 
+		await ue.type(screen.getByLabelText(/^name$/i), "my-group");
+		await ue.click(screen.getByRole("checkbox", { name: "developers" }));
+		await ue.click(screen.getByRole("button", { name: /^create$/i }));
+
+		expect(mockMutate).toHaveBeenCalledWith(
+			expect.objectContaining({
+				name: "my-group",
+				initialManagerGroupIds: ["mgr-1"],
+			}),
+		);
+	});
+});
+
+describe("DeleteGroupDialog", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	test("typing wrong name keeps Delete button disabled", async () => {
+		const ue = userEvent.setup();
+
+		render(
+			<TestProviders>
+				<DeleteGroupDialog
+					group={mockGroup}
+					open={true}
+					onOpenChange={vi.fn()}
+				/>
+			</TestProviders>,
+		);
+
+		await ue.type(screen.getByLabelText(/confirm group name/i), "wrong-name");
+
+		expect(
+			screen.getByRole("button", { name: /delete group/i }),
+		).toBeDisabled();
+	});
+
+	test("typing correct name enables Delete button", async () => {
+		const ue = userEvent.setup();
+
+		render(
+			<TestProviders>
+				<DeleteGroupDialog
+					group={mockGroup}
+					open={true}
+					onOpenChange={vi.fn()}
+				/>
+			</TestProviders>,
+		);
+
+		await ue.type(screen.getByLabelText(/confirm group name/i), "test-group");
+
 		await waitFor(() => {
-			expect(screen.getByLabelText(/name/i)).toHaveValue("test-group");
+			expect(
+				screen.getByRole("button", { name: /delete group/i }),
+			).not.toBeDisabled();
+		});
+	});
+
+	test("success path invalidates groups", async () => {
+		const ue = userEvent.setup();
+		const mockInvalidate = vi.fn();
+
+		const { useQueryClient } = await import("@tanstack/react-query");
+		vi.mocked(useQueryClient).mockReturnValue({
+			invalidateQueries: mockInvalidate,
+		} as unknown as ReturnType<typeof useQueryClient>);
+
+		let onSuccess: (() => void) | undefined;
+		vi.mocked(useMutation).mockImplementation((_method, opts) => {
+			onSuccess = opts?.onSuccess as () => void;
+			return {
+				mutate: vi.fn(() => onSuccess?.()),
+				mutateAsync: vi.fn(),
+				isPending: false,
+			} as unknown as ReturnType<typeof useMutation>;
 		});
 
-		// Name input should be disabled
-		expect(screen.getByLabelText(/name/i)).toBeDisabled();
+		render(
+			<TestProviders>
+				<DeleteGroupDialog
+					group={mockGroup}
+					open={true}
+					onOpenChange={vi.fn()}
+				/>
+			</TestProviders>,
+		);
 
-		// Save button should be disabled
-		expect(screen.getByText("Save Changes")).toBeDisabled();
+		await ue.type(screen.getByLabelText(/confirm group name/i), "test-group");
+		await ue.click(screen.getByRole("button", { name: /delete group/i }));
+
+		expect(mockInvalidate).toHaveBeenCalled();
 	});
 });

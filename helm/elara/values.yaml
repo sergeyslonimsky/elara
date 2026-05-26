@@ -157,6 +157,13 @@ config:
     etcd:
       # -- etcd-compatible gRPC API port.
       port: 2379
+    auth:
+      # -- Enable bearer-token authentication on the etcd-compatible gRPC API
+      # (port 2379) and mount the TokenService ConnectRPC endpoint on the
+      # HTTP port. When false (default) the etcd gRPC surface is public to
+      # everyone with network reachability — fine for fully internal clusters,
+      # required for multi-tenant. Independent of `ui.auth.enabled`.
+      enabled: false
     history:
       # -- Max historical client events retained in memory.
       maxRecords: 1000

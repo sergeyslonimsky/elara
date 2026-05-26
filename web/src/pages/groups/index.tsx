@@ -1,6 +1,7 @@
 import { useQuery } from "@connectrpc/connect-query";
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useAuth } from "@/components/auth-provider";
 import { ErrorCard } from "@/components/error-card";
 import { PageShell } from "@/components/page-shell";
@@ -14,11 +15,11 @@ import { useTableState } from "@/hooks/use-table-state";
 import {
 	CreateGroupDialog,
 	DeleteGroupDialog,
-	EditGroupDialog,
 } from "./components/group-dialogs";
 import { GroupTable } from "./components/group-table";
 
 export function GroupsPage() {
+	const navigate = useNavigate();
 	const { state } = useAuth();
 	const {
 		offset,
@@ -33,7 +34,6 @@ export function GroupsPage() {
 	} = useTableState();
 
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
-	const [editingGroup, setEditingGroup] = useState<Group | null>(null);
 	const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
 
 	const { data, isLoading, error, refetch, isFetching } = useQuery(listGroups, {
@@ -78,7 +78,7 @@ export function GroupsPage() {
 						groups={data?.groups ?? []}
 						isLoading={isLoading}
 						query={query}
-						onEdit={setEditingGroup}
+						onRowClick={(group) => navigate(`/groups/${group.id}`)}
 						onDelete={setDeletingGroup}
 					/>
 				)}
@@ -94,13 +94,8 @@ export function GroupsPage() {
 
 			<CreateGroupDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
 
-			<EditGroupDialog
-				group={editingGroup}
-				open={!!editingGroup}
-				onOpenChange={(open) => !open && setEditingGroup(null)}
-			/>
-
 			<DeleteGroupDialog
+				key={deletingGroup?.id ?? "none"}
 				group={deletingGroup}
 				open={!!deletingGroup}
 				onOpenChange={(open) => !open && setDeletingGroup(null)}

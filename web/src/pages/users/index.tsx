@@ -1,18 +1,17 @@
 import { useQuery } from "@connectrpc/connect-query";
-import { useState } from "react";
+import { useNavigate } from "react-router";
 import { ErrorCard } from "@/components/error-card";
 import { PageShell } from "@/components/page-shell";
 import { PaginationControls } from "@/components/pagination-controls";
 import { SearchInput } from "@/components/search-input";
 import { SkeletonList } from "@/components/skeleton-list";
-import type { User } from "@/gen/elara/user/v1/user_pb";
 import { listUsers } from "@/gen/elara/user/v1/user_service-UserService_connectquery";
 import { useTableState } from "@/hooks/use-table-state";
 import { CreateUserDialog } from "./components/create-user-dialog";
-import { EditUserGroupsDialog } from "./components/edit-user-groups-dialog";
 import { UserTable } from "./components/user-table";
 
 export function UsersPage() {
+	const navigate = useNavigate();
 	const {
 		offset,
 		pageSize,
@@ -29,8 +28,6 @@ export function UsersPage() {
 		pagination: { limit: pageSize, offset },
 		search: query,
 	});
-
-	const [editingGroupsFor, setEditingGroupsFor] = useState<User | null>(null);
 
 	return (
 		<PageShell
@@ -60,7 +57,9 @@ export function UsersPage() {
 						users={data?.users ?? []}
 						isLoading={isLoading}
 						query={query}
-						onEditGroups={setEditingGroupsFor}
+						onRowClick={(user) => {
+							navigate(`/users/${encodeURIComponent(user.email)}`);
+						}}
 					/>
 				)}
 
@@ -72,12 +71,6 @@ export function UsersPage() {
 					onPageSizeChange={setPageSize}
 				/>
 			</div>
-
-			<EditUserGroupsDialog
-				user={editingGroupsFor}
-				open={!!editingGroupsFor}
-				onOpenChange={(open) => !open && setEditingGroupsFor(null)}
-			/>
 		</PageShell>
 	);
 }

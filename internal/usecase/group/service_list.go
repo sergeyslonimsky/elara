@@ -62,9 +62,9 @@ func (s *Service) List(ctx context.Context, user domain.AuthInfo, params ListPar
 		return nil, fmt.Errorf("list groups: %w", err)
 	}
 
-	for _, g := range groups {
-		g.Members = s.pap.GroupMembers(g.Name)
-	}
+	// Members and permissions are not enriched on List — the response is the
+	// metadata view only. Callers needing the full composed view fetch
+	// individual groups through Get.
 
 	return &ListResult{
 		Groups: groups,

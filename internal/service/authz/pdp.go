@@ -8,9 +8,13 @@ import (
 	"sort"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 )
 
-const casbinRuleLen = 4
+// pRuleLen is the column count of a Casbin p-rule projected by
+// GetImplicitPermissionsForUser / GetPolicy: [sub, dom, obj, act].
+// Sibling gRuleNativeLen in pap.go covers g-rules.
+const pRuleLen = 4
 
 type enforcer interface {
 	GetImplicitPermissionsForUser(user string) ([][]string, error)
@@ -36,7 +40,7 @@ func (p *PDP) EffectiveDomains(principal, object, action string) DomainSet {
 	var domains []string
 	for _, rule := range rules {
 		// rule format: [sub, dom, obj, act]
-		if len(rule) < casbinRuleLen {
+		if len(rule) < pRuleLen {
 			continue
 		}
 
@@ -62,6 +66,71 @@ func (p *PDP) Has(principal string, perm domain.Permission) bool {
 	return ok
 }
 
+// HasGroupRead reports whether actor holds Group:Read on group:<id>.
+func (p *PDP) HasGroupRead(actor, groupID string) bool {
+	return p.Has(actor, domain.Permission{
+		Object: domain.ObjectGroup,
+		Action: domain.ActionRead,
+		Domain: domain.GroupResource(groupID),
+	})
+}
+
+// HasGroupWrite reports whether actor holds Group:Write on group:<id>.
+func (p *PDP) HasGroupWrite(actor, groupID string) bool {
+	return p.Has(actor, domain.Permission{
+		Object: domain.ObjectGroup,
+		Action: domain.ActionWrite,
+		Domain: domain.GroupResource(groupID),
+	})
+}
+
+// HasUserReadGlobal reports whether actor holds the global User:Read *.
+// (User permissions are global by convention — see permission.proto.)
+func (p *PDP) HasUserReadGlobal(actor string) bool {
+	return p.Has(actor, domain.Permission{
+		Object: domain.ObjectUser,
+		Action: domain.ActionRead,
+		Domain: domain.DomainAll,
+	})
+}
+
+// HasUserWriteGlobal reports whether actor holds the global User:Write *.
+func (p *PDP) HasUserWriteGlobal(actor string) bool {
+	return p.Has(actor, domain.Permission{
+		Object: domain.ObjectUser,
+		Action: domain.ActionWrite,
+		Domain: domain.DomainAll,
+	})
+}
+
+// HasGroupCreate reports whether actor holds the global Group:Create *.
+// Group creation has no scoped variant in our model (see proto comment).
+func (p *PDP) HasGroupCreate(actor string) bool {
+	return p.Has(actor, domain.Permission{
+		Object: domain.ObjectGroup,
+		Action: domain.ActionCreate,
+		Domain: domain.DomainAll,
+	})
+}
+
+// HasUserCreateGlobal reports whether actor holds the global User:Create *.
+// User creation is either fully privileged (this) or derived through the
+// caller supplying initial_group_ids backed by Group:Write — see CreateUser.
+func (p *PDP) HasUserCreateGlobal(actor string) bool {
+	return p.Has(actor, domain.Permission{
+		Object: domain.ObjectUser,
+		Action: domain.ActionCreate,
+		Domain: domain.DomainAll,
+	})
+}
+
+// HasForGroup reports whether the group (as a Casbin subject) holds `perm`.
+// Used by anti-escalation cascade checks where the principal is a group
+// rather than a user — hides the subject-string convention from callers.
+func (p *PDP) HasForGroup(groupName string, perm domain.Permission) bool {
+	return p.Has(casbin.GroupSubject(groupName), perm)
+}
+
 // ListPermissions returns all effective permissions for the given principal,
 // deduplicated and sorted deterministically by (Object, Action, Domain).
 // Wildcards in any field are returned as-is using domain.ObjectAll / ActionAll
@@ -77,7 +146,7 @@ func (p *PDP) ListPermissions(principal string) ([]domain.Permission, error) {
 
 	for _, rule := range rules {
 		// rule format: [sub, dom, obj, act]; skip malformed.
-		if len(rule) < casbinRuleLen {
+		if len(rule) < pRuleLen {
 			continue
 		}
 

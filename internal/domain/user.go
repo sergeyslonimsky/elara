@@ -48,6 +48,10 @@ type User struct {
 	LastLoginAt            time.Time
 	PasswordHash           string
 	PasswordChangeRequired bool
+	// Optimistic-lock counter for group memberships. Bumped on every
+	// UpdateUserGroups apply. Bbolt is authoritative — the value reflects
+	// the last successful mutation through the membership usecase.
+	MembershipVersion int64
 }
 
 func (u *User) EnsureMutable() error {

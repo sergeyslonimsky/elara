@@ -67,6 +67,7 @@ func NewServices( //nolint:funlen // wiring-only: one constructor call per useca
 	txm := bbolt.NewTxManager(a.Store.DB())
 	pdp := authz.NewPDP(enforcer)
 	pap := authz.NewPAP(enforcer, txm)
+	scope := authz.NewScope(pdp, pap, a.AuthGroups)
 	authzSvc := authz.NewAuthz(pdp)
 	adminBootstrap := auth.NewAdminBootstrap(txm, a.AuthUsers, a.AuthGroups, a.AuthPolicy)
 
@@ -92,14 +93,13 @@ func NewServices( //nolint:funlen // wiring-only: one constructor call per useca
 		Webhook:  webhookuc.New(pdp, a.WebhookRepo, a.WebhookDispatcher),
 		Profile:  profileuc.New(pdp, a.AuthUsers, a.AuthUsers, sessionManager),
 		User: useruc.New(
-			a.AuthUsers,
-			a.AuthUsers,
+			useruc.NewBoltUserReader(a.AuthUsers),
 			useruc.NewBoltGroupReader(a.AuthGroups),
-			txm,
 			pdp,
 			pap,
+			scope,
 		),
-		Group:  groupuc.New(a.AuthGroups, txm, pdp, pap),
+		Group:  groupuc.New(a.AuthGroups, pdp, pap, scope),
 		Policy: policyuc.New(pap, a.AuthGroups),
 		Token:  tokenuc.New(pdp, a.AuthTokens),
 

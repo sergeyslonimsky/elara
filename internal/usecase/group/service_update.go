@@ -2,6 +2,7 @@ package group
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,20 +13,18 @@ import (
 )
 
 // UpdateData carries the metadata-only fields the group entity owns in
-// bbolt. Members and Permissions are managed by UpdateMembers and
-// UpdatePermissions respectively — Casbin is the source of truth for both,
-// so mixing them into this call would re-introduce the dual-write drift the
-// split was meant to eliminate.
+// bbolt. Members and permissions are managed by UpdateMembers and
+// UpdatePermissions respectively.
 type UpdateData struct {
-	ID          string
-	Name        string
-	Description string
-	Version     int64
+	ID                      string
+	Name                    string
+	Description             string
+	ExpectedMetadataVersion *int64
 }
 
-// Update mutates a group's metadata (name, description) under optimistic
-// concurrency control. Membership and permissions are intentionally not
-// accepted here.
+// Update mutates a group's metadata (name, description). MetadataVersion
+// is bumped and the Casbin subject is renamed in the same transaction when
+// the name changes.
 func (s *Service) Update(
 	ctx context.Context,
 	_ domain.AuthInfo,
@@ -34,14 +33,33 @@ func (s *Service) Update(
 	var updated *domain.Group
 
 	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
-		existing, err := s.loadGroupForUpdate(ctx, tx, data.ID, data.Version)
+		existing, err := s.loadMutableGroup(ctx, tx, data.ID)
 		if err != nil {
+			return err
+		}
+		if err := domain.CheckVersion(data.ExpectedMetadataVersion, existing.MetadataVersion); err != nil {
 			return err
 		}
 
 		oldName := existing.Name
-		if err := s.applyEntityUpdate(ctx, tx, existing, data); err != nil {
-			return err
+		if data.Name != oldName {
+			// Names are not the primary key but every Casbin subject and
+			// every PAP.UserGroupNames consumer keys off them. Two groups
+			// with the same name break FindByName-based lookups silently.
+			switch other, err := s.store.WithTx(tx).FindByName(ctx, data.Name); {
+			case err == nil && other != nil && other.ID != existing.ID:
+				return domain.NewAlreadyExistsError("group", data.Name)
+			case err != nil && !errors.Is(err, domain.ErrNotFound):
+				return fmt.Errorf("check name uniqueness: %w", err)
+			}
+		}
+		existing.Name = data.Name
+		existing.Description = data.Description
+		existing.MetadataVersion++
+		existing.UpdatedAt = time.Now().UTC()
+
+		if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
+			return fmt.Errorf(errUpdateGroup, err)
 		}
 		updated = existing
 
@@ -55,76 +73,83 @@ func (s *Service) Update(
 		return nil, fmt.Errorf("update group: %w", err)
 	}
 
-	updated.Members = s.pap.GroupMembers(updated.Name)
-
 	return updated, nil
 }
 
-func (s *Service) applyEntityUpdate(
-	ctx context.Context,
-	tx storage.Tx,
-	existing *domain.Group,
-	data UpdateData,
-) error {
-	existing.Name = data.Name
-	existing.Description = data.Description
-	existing.Version++
-	existing.UpdatedAt = time.Now().UTC()
-
-	if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
-		return fmt.Errorf(errUpdateGroup, err)
-	}
-
-	return nil
-}
-
-// UpdateMembersData carries the canonical desired member set for a group.
-// Members is the full set; the service diffs against the current Casbin
-// state and only operates on the symmetric difference.
+// UpdateMembersData carries the explicit add/remove delta for membership.
 type UpdateMembersData struct {
-	GroupID string
-	Members []string
+	GroupID                string
+	AddEmails              []string
+	RemoveEmails           []string
+	ExpectedMembersVersion *int64
 }
 
-// UpdateMembers replaces the group's membership g-rules with the given set.
+// UpdateMembersResult bundles the updated group with the member list
+// visible to the caller (filtered per derived User:Read).
+type UpdateMembersResult struct {
+	Group          *domain.Group
+	VisibleMembers []string
+}
+
+// UpdateMembers applies an explicit membership delta. Add of an existing
+// member is a no-op; remove of an absent member is a no-op. An email
+// appearing in both add_emails and remove_emails returns InvalidArgument.
 //
-// Authorization (anti-escalation): adding a member is equivalent to
-// granting them every permission the group currently holds, so the actor
-// must hold every one of those permissions. Removal narrows and requires
-// no escalation check.
+// Anti-escalation: each effective added email receives the group's full
+// permission set, so the actor must hold every one of those permissions.
+// Removals narrow and skip the escalation check.
 func (s *Service) UpdateMembers(
 	ctx context.Context,
-	user domain.AuthInfo,
+	actor domain.AuthInfo,
 	data UpdateMembersData,
-) (*domain.Group, error) {
-	var updated *domain.Group
+) (*UpdateMembersResult, error) {
+	if v, dup := sliceutil.FirstOverlap(data.AddEmails, data.RemoveEmails); dup {
+		return nil, domain.NewValidationError("email", fmt.Sprintf("%q appears in both add and remove", v))
+	}
+
+	var result *UpdateMembersResult
 
 	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
 		existing, err := s.loadMutableGroup(ctx, tx, data.GroupID)
 		if err != nil {
 			return err
 		}
+		if err := domain.CheckVersion(data.ExpectedMembersVersion, existing.MembersVersion); err != nil {
+			return err
+		}
 
 		current := s.pap.GroupMembers(existing.Name)
-		added, removed := sliceutil.Diff(current, data.Members)
+		currentSet := sliceutil.ToSet(current)
+		added := sliceutil.NotIn(data.AddEmails, currentSet)
+		removed := sliceutil.In(data.RemoveEmails, currentSet)
 
 		if len(added) > 0 {
-			groupPerms, err := w.GroupPermissions(existing.Name)
-			if err != nil {
-				return fmt.Errorf("pap group permissions: %w", err)
+			if err := s.scope.RequireMembershipGrant(actor.Email, existing.Name); err != nil {
+				return err
 			}
-			for _, p := range groupPerms {
-				if !s.pdp.Has(user.Email, p) {
-					return domain.ErrPermissionEscalation
-				}
+		}
+
+		if len(added) == 0 && len(removed) == 0 {
+			result = &UpdateMembersResult{
+				Group:          existing,
+				VisibleMembers: s.filterVisibleMembers(ctx, actor, current),
 			}
+
+			return nil
 		}
 
 		if err := w.ApplyMemberDeltas(existing.Name, added, removed); err != nil {
 			return fmt.Errorf("apply member deltas: %w", err)
 		}
 
-		updated = existing
+		existing.MembersVersion++
+		existing.UpdatedAt = time.Now().UTC()
+		if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
+			return fmt.Errorf(errUpdateGroup, err)
+		}
+
+		post := sliceutil.ComposePost(current, added, removed)
+		result = &UpdateMembersResult{Group: existing, VisibleMembers: s.filterVisibleMembers(ctx, actor, post)}
 
 		return nil
 	})
@@ -132,71 +157,92 @@ func (s *Service) UpdateMembers(
 		return nil, fmt.Errorf("update group members: %w", err)
 	}
 
-	updated.Members = s.pap.GroupMembers(updated.Name)
-
-	return updated, nil
+	return result, nil
 }
 
-// UpdatePermissionsData carries the canonical desired permission set for a
-// group. The service diffs against current Casbin policy and operates only
-// on the symmetric difference.
+// UpdatePermissionsData carries the explicit add/remove delta for the
+// group's permission set.
 type UpdatePermissionsData struct {
-	GroupID     string
+	GroupID                    string
+	Add                        []domain.Permission
+	Remove                     []domain.Permission
+	ExpectedPermissionsVersion *int64
+}
+
+// UpdatePermissionsResult bundles the updated group with its current
+// permission set.
+type UpdatePermissionsResult struct {
+	Group       *domain.Group
 	Permissions []domain.Permission
 }
 
-// UpdatePermissions replaces the group's permission p-rules with the given
-// set.
+// UpdatePermissions applies an explicit permission delta. Add of an
+// existing permission is a no-op; remove of an absent permission is a
+// no-op. A permission in both add and remove returns InvalidArgument.
 //
-// Authorization: each added or removed permission must lie within the
-// actor's own boundary (delta check). Additionally, if the group has
-// members, the actor must hold every permission the group will hold
-// post-update — because the change cascades to existing members.
+// Anti-escalation:
+//   - per-delta: actor must hold each effectively-added permission.
+//   - cascade: if the group has members and any delta applies, actor
+//     must hold every permission the group will hold post-update —
+//     because the change cascades to existing members through their
+//     membership g-rules.
 func (s *Service) UpdatePermissions(
 	ctx context.Context,
-	user domain.AuthInfo,
+	actor domain.AuthInfo,
 	data UpdatePermissionsData,
-) (*domain.Group, error) {
-	var updated *domain.Group
+) (*UpdatePermissionsResult, error) {
+	if p, dup := sliceutil.FirstOverlap(data.Add, data.Remove); dup {
+		return nil, domain.NewValidationError(
+			"permissions",
+			fmt.Sprintf("%s:%s on %s appears in both add and remove", p.Object, p.Action, p.Domain),
+		)
+	}
+
+	var result *UpdatePermissionsResult
 
 	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
 		existing, err := s.loadMutableGroup(ctx, tx, data.GroupID)
 		if err != nil {
 			return err
 		}
+		if err := domain.CheckVersion(data.ExpectedPermissionsVersion, existing.PermissionsVersion); err != nil {
+			return err
+		}
 
-		oldPerms, err := w.GroupPermissions(existing.Name)
+		current, err := w.GroupPermissions(existing.Name)
 		if err != nil {
 			return fmt.Errorf("pap group permissions: %w", err)
 		}
+		currentSet := sliceutil.ToSet(current)
+		added := sliceutil.NotIn(data.Add, currentSet)
+		removed := sliceutil.In(data.Remove, currentSet)
 
-		pAdded, pRemoved := sliceutil.Diff(oldPerms, data.Permissions)
-
-		for _, p := range pAdded {
-			if !s.pdp.Has(user.Email, p) {
-				return domain.ErrPermissionEscalation
-			}
-		}
-		for _, p := range pRemoved {
-			if !s.pdp.Has(user.Email, p) {
-				return domain.ErrPermissionEscalation
-			}
+		if err := s.boundaryCheckPerms(actor, added); err != nil {
+			return err
 		}
 
-		members := s.pap.GroupMembers(existing.Name)
-		if len(members) > 0 {
-			for _, p := range data.Permissions {
-				if !s.pdp.Has(user.Email, p) {
-					return domain.ErrPermissionEscalation
-				}
-			}
+		if len(added) == 0 && len(removed) == 0 {
+			result = &UpdatePermissionsResult{Group: existing, Permissions: current}
+
+			return nil
 		}
 
-		if err := w.ApplyPermissionDeltas(existing.Name, pAdded, pRemoved); err != nil {
+		post := sliceutil.ComposePost(current, added, removed)
+		if err := s.cascadeCheckPerms(actor, existing.Name, post); err != nil {
+			return err
+		}
+
+		if err := w.ApplyPermissionDeltas(existing.Name, added, removed); err != nil {
 			return fmt.Errorf("apply permission deltas: %w", err)
 		}
 
-		updated = existing
+		existing.PermissionsVersion++
+		existing.UpdatedAt = time.Now().UTC()
+		if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
+			return fmt.Errorf(errUpdateGroup, err)
+		}
+
+		result = &UpdatePermissionsResult{Group: existing, Permissions: post}
 
 		return nil
 	})
@@ -204,7 +250,34 @@ func (s *Service) UpdatePermissions(
 		return nil, fmt.Errorf("update group permissions: %w", err)
 	}
 
-	updated.Members = s.pap.GroupMembers(updated.Name)
+	return result, nil
+}
 
-	return updated, nil
+// boundaryCheckPerms asserts each effectively-added permission lies within
+// the actor's own permission set.
+func (s *Service) boundaryCheckPerms(actor domain.AuthInfo, added []domain.Permission) error {
+	for _, p := range added {
+		if !s.pdp.Has(actor.Email, p) {
+			return domain.ErrPermissionEscalation
+		}
+	}
+
+	return nil
+}
+
+// cascadeCheckPerms asserts that if the group has members, the actor holds
+// every permission the group will hold post-update — because the change
+// cascades to existing members through their membership g-rules. Called
+// only when an effective delta exists (no-op deltas skip this check).
+func (s *Service) cascadeCheckPerms(actor domain.AuthInfo, groupName string, post []domain.Permission) error {
+	if len(s.pap.GroupMembers(groupName)) == 0 {
+		return nil
+	}
+	for _, p := range post {
+		if !s.pdp.Has(actor.Email, p) {
+			return domain.ErrPermissionEscalation
+		}
+	}
+
+	return nil
 }

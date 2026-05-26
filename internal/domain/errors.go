@@ -66,3 +66,21 @@ func NewAlreadyExistsError(resource, identifier string) error {
 func NewConflictError(expected, actual int64) error {
 	return fmt.Errorf("expected version %d, got %d: %w", expected, actual, ErrVersionConflict)
 }
+
+// CheckVersion compares the optional caller-supplied expected version
+// against the current value. Nil expected means the caller opted out of
+// optimistic concurrency; matching values pass; a mismatch returns
+// ErrVersionConflict.
+//
+// Lives here rather than in a usecase package so every Update* flow that
+// exposes optimistic locking shares the same contract.
+func CheckVersion(expected *int64, current int64) error {
+	if expected == nil {
+		return nil
+	}
+	if *expected != current {
+		return ErrVersionConflict
+	}
+
+	return nil
+}

@@ -17,7 +17,6 @@ func TestGroup_Validate(t *testing.T) {
 	validGroup := domain.Group{
 		ID:        "group-1",
 		Name:      "Admins",
-		Members:   []string{"alice@example.com", "bob@example.com"},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

@@ -31,6 +31,19 @@ func NewPAP(enforcer *casbin.Enforcer, txm storage.TxManager) *PAP {
 // Write opens a Casbin write transaction and hands the per-tx administration
 // surface to fn. The storage.Tx is exposed so callers can combine PAP
 // mutations with bbolt repo writes in the same atomic step.
+//
+// Read consistency inside fn:
+//   - Mutations made through `w *PAPTx` go to the per-tx PolicyRepo and
+//     are NOT visible to PDP / parent-PAP reads until commit (applyOpsToCache).
+//   - PDP.Has, PAP.GroupPermissions, PAP.GroupMembers and similar all read
+//     the pre-tx in-memory snapshot. That snapshot is stable for the duration
+//     of the Write because PAP.Write holds the bbolt write lock — no other
+//     writer can interleave.
+//   - Practical rule: if you intend to mutate X and then re-check X in the
+//     same Write, route the read through `w` (e.g. PAPTx.GroupPermissions).
+//     For checks against unchanged subjects (today: anti-escalation against
+//     the actor's own perms or the target group's pre-existing perms), the
+//     parent-snapshot helpers are safe.
 func (p *PAP) Write(
 	ctx context.Context,
 	fn func(tx storage.Tx, w *PAPTx) error,
@@ -130,13 +143,37 @@ func (p *PAP) MembersOfScope(scope DomainSet) map[string]struct{} {
 	return users
 }
 
+// GroupPermissions returns the permission set currently attached to the
+// group, reading from the in-memory Casbin snapshot. Use this when only a
+// read is needed (e.g. composing GetGroup / ListGroups responses) and
+// inside a PAP.Write closure only when the surrounding code does NOT
+// mutate the same group's p-rules — otherwise call PAPTx.GroupPermissions
+// to observe in-tx state. See PAP.Write docstring for the read-consistency
+// contract.
+//
+// p-rules are filtered to length 4 (subject, dom, obj, act); shorter rows
+// are skipped defensively. Order is unspecified.
+func (p *PAP) GroupPermissions(name string) []domain.Permission {
+	subject := casbin.GroupSubject(name)
+
+	out := make([]domain.Permission, 0)
+	for _, r := range p.enforcer.GetPolicy() {
+		if len(r) < pRuleLen || r[0] != subject {
+			continue
+		}
+		out = append(out, domain.Permission{Domain: r[1], Object: r[2], Action: r[3]})
+	}
+
+	return out
+}
+
 // GroupMembers returns the emails of users currently in the given group,
 // reading from the in-memory Casbin snapshot. Nested-group subjects are
 // filtered out (matching the convention used by MembersOfScope) so the
 // returned set contains only user emails. Order is unspecified.
 //
 // Casbin is the source of truth for membership — bbolt does not persist
-// this relation. See domain.Group.Members for the transient view.
+// this relation.
 func (p *PAP) GroupMembers(name string) []string {
 	raw := p.enforcer.GetMembersOfGroup(casbin.GroupSubject(name))
 	out := make([]string, 0, len(raw))

@@ -16,6 +16,7 @@ data:
 
   # gRPC server (etcd-compatible API)
   CLIENT_ETCD_PORT: {{ .Values.config.client.etcd.port | quote }}
+  CLIENT_AUTH_ENABLED: {{ .Values.config.client.auth.enabled | quote }}
 
   # Service identity (used as Prometheus / OTel resource labels)
   SERVICE_NAME: {{ include "elara.serviceName" . | quote }}

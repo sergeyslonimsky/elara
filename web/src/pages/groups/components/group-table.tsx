@@ -1,7 +1,7 @@
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Settings2, Trash2, UsersRound } from "lucide-react";
+import { Trash2, UsersRound } from "lucide-react";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,7 @@ interface GroupTableProps {
 	groups: Group[];
 	isLoading: boolean;
 	query?: string;
-	onEdit: (group: Group) => void;
+	onRowClick: (group: Group) => void;
 	onDelete: (group: Group) => void;
 }
 
@@ -25,9 +25,9 @@ export function GroupTable({
 	groups,
 	isLoading,
 	query,
-	onEdit,
+	onRowClick,
 	onDelete,
-}: GroupTableProps) {
+}: Readonly<GroupTableProps>) {
 	const columns: ColumnDef<Group>[] = [
 		{
 			accessorKey: "name",
@@ -49,11 +49,6 @@ export function GroupTable({
 			),
 		},
 		{
-			id: "members",
-			header: "Members",
-			cell: ({ row }) => <span>{row.original.members.length} member(s)</span>,
-		},
-		{
 			accessorKey: "createdAt",
 			header: "Created At",
 			cell: ({ row }) => {
@@ -68,17 +63,6 @@ export function GroupTable({
 			header: () => <div className="text-right">Actions</div>,
 			cell: ({ row }) => (
 				<div className="flex justify-end gap-1">
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						onClick={(e) => {
-							e.stopPropagation();
-							onEdit(row.original);
-						}}
-						title="Edit Group"
-					>
-						<Settings2 className="h-4 w-4" />
-					</Button>
 					<Button
 						variant="ghost"
 						size="icon-sm"
@@ -119,7 +103,7 @@ export function GroupTable({
 			columns={columns}
 			data={groups}
 			nameColumnWidth="w-[30%]"
-			onRowClick={(group) => onEdit(group)}
+			onRowClick={onRowClick}
 		/>
 	);
 }

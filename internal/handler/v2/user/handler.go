@@ -11,6 +11,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
+	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	userv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	useruc "github.com/sergeyslonimsky/elara/internal/usecase/user"
@@ -24,16 +25,12 @@ var (
 )
 
 type (
-	authz interface {
-		Require(ctx context.Context, object, action, domainStr string) error
-	}
-
 	usecase interface {
-		List(ctx context.Context, params useruc.ListParams) (*useruc.ListResult, error)
-		Get(ctx context.Context, email string) (*useruc.GetResult, error)
-		Create(ctx context.Context, email, name, initialPassword string) (*domain.User, error)
-		ResetPassword(ctx context.Context, targetEmail, newPassword string) error
-		Delete(ctx context.Context, targetEmail string) error
+		List(ctx context.Context, actor domain.AuthInfo, params useruc.ListParams) (*useruc.ListResult, error)
+		Get(ctx context.Context, actor domain.AuthInfo, email string) (*useruc.GetResult, error)
+		Create(ctx context.Context, actor domain.AuthInfo, data useruc.CreateData) (*useruc.CreateResult, error)
+		ResetPassword(ctx context.Context, actor domain.AuthInfo, targetEmail, newPassword string) error
+		Delete(ctx context.Context, actor domain.AuthInfo, targetEmail string) error
 		UpdateGroups(
 			ctx context.Context,
 			actor domain.AuthInfo,
@@ -43,30 +40,34 @@ type (
 )
 
 // Handler implements userv1connect.UserServiceHandler.
+//
+// All RPCs derive their per-target authorization inside the usecase layer
+// (see user_service.proto comments). The handler is responsible only for
+// authentication, request-shape translation, and the basic-auth-only
+// feature gate on the two password/destroy operations.
 type Handler struct {
-	authz    authz
 	uc       usecase
 	authType config.AuthType
 }
 
-// New returns a new Handler.
-func New(
-	authz authz,
-	uc usecase,
-	authType config.AuthType,
-) *Handler {
-	return &Handler{
-		authz:    authz,
-		uc:       uc,
-		authType: authType,
-	}
+func New(uc usecase, authType config.AuthType) *Handler {
+	return &Handler{uc: uc, authType: authType}
 }
 
 func (h *Handler) ListUsers(
 	ctx context.Context,
-	_ *connect.Request[userv1.ListUsersRequest],
+	req *connect.Request[userv1.ListUsersRequest],
 ) (*connect.Response[userv1.ListUsersResponse], error) {
-	result, err := h.uc.List(ctx, useruc.ListParams{})
+	actor, err := auth.AuthInfoFromContext(ctx)
+	if err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
+	result, err := h.uc.List(ctx, actor, useruc.ListParams{
+		Limit:  int(req.Msg.GetPagination().GetLimit()),
+		Offset: int(req.Msg.GetPagination().GetOffset()),
+		Query:  req.Msg.GetSearch(),
+	})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -76,25 +77,34 @@ func (h *Handler) ListUsers(
 		protos = append(protos, domainUserToProto(u))
 	}
 
-	return connect.NewResponse(&userv1.ListUsersResponse{Users: protos}), nil
+	return connect.NewResponse(&userv1.ListUsersResponse{
+		Users: protos,
+		Pagination: &commonv1.PaginationResponse{
+			Total:  int32(result.Total),
+			Limit:  int32(result.Limit),
+			Offset: int32(result.Offset),
+		},
+	}), nil
 }
 
 func (h *Handler) GetUser(
 	ctx context.Context,
 	req *connect.Request[userv1.GetUserRequest],
 ) (*connect.Response[userv1.GetUserResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectUser, domain.ActionRead, domain.DomainAll); err != nil {
+	actor, err := auth.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	result, err := h.uc.Get(ctx, req.Msg.GetEmail())
+	result, err := h.uc.Get(ctx, actor, req.Msg.GetEmail())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
 	return connect.NewResponse(&userv1.GetUserResponse{
-		User:     domainUserToProto(result.User),
-		GroupIds: result.GroupIDs,
+		User:              domainUserToProto(result.User),
+		VisibleGroupIds:   result.VisibleGroupIDs,
+		MembershipVersion: result.MembershipVersion,
 	}), nil
 }
 
@@ -102,7 +112,8 @@ func (h *Handler) CreateUser(
 	ctx context.Context,
 	req *connect.Request[userv1.CreateUserRequest],
 ) (*connect.Response[userv1.CreateUserResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectUser, domain.ActionCreate, domain.DomainAll); err != nil {
+	actor, err := auth.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -114,48 +125,43 @@ func (h *Handler) CreateUser(
 	}
 
 	if h.authType == config.AuthTypeOIDC && req.Msg.GetInitialPassword() != "" {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errOIDCWithPassword,
-		)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errOIDCWithPassword)
 	}
-
 	if h.authType == config.AuthTypeBasicAuth && req.Msg.GetInitialPassword() == "" {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errBasicAuthWithNoPassword,
-		)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errBasicAuthWithNoPassword)
 	}
 
-	user, err := h.uc.Create(ctx, req.Msg.GetEmail(), req.Msg.GetName(), req.Msg.GetInitialPassword())
+	result, err := h.uc.Create(ctx, actor, useruc.CreateData{
+		Email:           req.Msg.GetEmail(),
+		Name:            req.Msg.GetName(),
+		InitialPassword: req.Msg.GetInitialPassword(),
+		InitialGroupIDs: req.Msg.GetInitialGroupIds(),
+	})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	return connect.NewResponse(&userv1.CreateUserResponse{User: domainUserToProto(user)}), nil
+	return connect.NewResponse(&userv1.CreateUserResponse{
+		User:              domainUserToProto(result.User),
+		GroupIds:          result.GroupIDs,
+		MembershipVersion: result.MembershipVersion,
+	}), nil
 }
 
 func (h *Handler) ResetUserPassword(
 	ctx context.Context,
 	req *connect.Request[userv1.ResetUserPasswordRequest],
 ) (*connect.Response[userv1.ResetUserPasswordResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectUser, domain.ActionWrite, domain.DomainAll); err != nil {
+	actor, err := auth.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	if h.authType != config.AuthTypeBasicAuth {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf(
-				"password reset is not available: auth type is %s: %w",
-				h.authType,
-				domain.ErrFeatureNotAvailable,
-			),
-		)
+	if err := h.requireBasicAuth("password reset"); err != nil {
+		return nil, err
 	}
 
-	err := h.uc.ResetPassword(ctx, req.Msg.GetEmail(), req.Msg.GetNewPassword())
-	if err != nil {
+	if err := h.uc.ResetPassword(ctx, actor, req.Msg.GetEmail(), req.Msg.GetNewPassword()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -166,37 +172,25 @@ func (h *Handler) DeleteUser(
 	ctx context.Context,
 	req *connect.Request[userv1.DeleteUserRequest],
 ) (*connect.Response[userv1.DeleteUserResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectUser, domain.ActionWrite, domain.DomainAll); err != nil {
+	actor, err := auth.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	if h.authType != config.AuthTypeBasicAuth {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf(
-				"user deletion is not available: auth type is %s: %w",
-				h.authType,
-				domain.ErrFeatureNotAvailable,
-			),
-		)
+	if err := h.requireBasicAuth("user deletion"); err != nil {
+		return nil, err
 	}
 
-	if err := h.uc.Delete(ctx, req.Msg.GetEmail()); err != nil {
+	if err := h.uc.Delete(ctx, actor, req.Msg.GetEmail()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
 	return connect.NewResponse(&userv1.DeleteUserResponse{}), nil
 }
 
-// UpdateUserGroups replaces the target user's group memberships with the
-// requested set of group IDs.
-//
-// The handler enforces the coarse resource-class gate (ObjectUser:Write
-// always, ObjectGroup:Write when the request carries any group changes) so
-// that an unauthorized caller fails fast without driving a full WriteTx.
-// The usecase then layers the per-delta checks — ObjectGroup:Write on each
-// affected group plus anti-escalation on additions — inside the same
-// transaction as the Casbin g-rule sync.
+// UpdateUserGroups applies an explicit add/remove delta to the target
+// user's group memberships. All per-id authorization and anti-escalation
+// checks happen inside the usecase, under the PAP write transaction.
 func (h *Handler) UpdateUserGroups(
 	ctx context.Context,
 	req *connect.Request[userv1.UpdateUserGroupsRequest],
@@ -206,28 +200,35 @@ func (h *Handler) UpdateUserGroups(
 		return nil, v2.ToConnectError(err)
 	}
 
-	if err := h.authz.Require(ctx, domain.ObjectUser, domain.ActionWrite, domain.DomainAll); err != nil {
-		return nil, v2.ToConnectError(err)
-	}
-
-	if len(req.Msg.GetGroupIds()) > 0 {
-		if err := h.authz.Require(ctx, domain.ObjectGroup, domain.ActionWrite, domain.DomainAll); err != nil {
-			return nil, v2.ToConnectError(err)
-		}
-	}
-
 	result, err := h.uc.UpdateGroups(ctx, actor, useruc.UpdateGroupsData{
-		Email:    req.Msg.GetEmail(),
-		GroupIDs: req.Msg.GetGroupIds(),
+		Email:                     req.Msg.GetEmail(),
+		AddGroupIDs:               req.Msg.GetAddGroupIds(),
+		RemoveGroupIDs:            req.Msg.GetRemoveGroupIds(),
+		ExpectedMembershipVersion: req.Msg.ExpectedVersion,
 	})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
 	return connect.NewResponse(&userv1.UpdateUserGroupsResponse{
-		User:     domainUserToProto(result.User),
-		GroupIds: result.GroupIDs,
+		User:              domainUserToProto(result.User),
+		VisibleGroupIds:   result.VisibleGroupIDs,
+		MembershipVersion: result.MembershipVersion,
 	}), nil
+}
+
+// requireBasicAuth wraps the auth-type feature gate used by ResetUserPassword
+// and DeleteUser. The two operations are basic-auth-only — under OIDC the
+// IdP owns lifecycle.
+func (h *Handler) requireBasicAuth(operation string) error {
+	if h.authType == config.AuthTypeBasicAuth {
+		return nil
+	}
+
+	return connect.NewError(
+		connect.CodeInvalidArgument,
+		fmt.Errorf("%s is not available: auth type is %s: %w", operation, h.authType, domain.ErrFeatureNotAvailable),
+	)
 }
 
 func domainUserToProto(u *domain.User) *userv1.User {
@@ -242,5 +243,6 @@ func domainUserToProto(u *domain.User) *userv1.User {
 		Provider:    u.Provider,
 		CreatedAt:   timestamppb.New(u.CreatedAt),
 		LastLoginAt: timestamppb.New(u.LastLoginAt),
+		IsSystem:    u.System,
 	}
 }

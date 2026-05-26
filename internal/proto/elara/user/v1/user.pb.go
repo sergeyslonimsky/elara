@@ -23,13 +23,17 @@ const (
 )
 
 type User struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Picture       string                 `protobuf:"bytes,3,opt,name=picture,proto3" json:"picture,omitempty"`
-	Provider      string                 `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LastLoginAt   *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_login_at,json=lastLoginAt,proto3" json:"last_login_at,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Email       string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Name        string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Picture     string                 `protobuf:"bytes,3,opt,name=picture,proto3" json:"picture,omitempty"`
+	Provider    string                 `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
+	CreatedAt   *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastLoginAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_login_at,json=lastLoginAt,proto3" json:"last_login_at,omitempty"`
+	// is_system flags built-in users (e.g. the bootstrap superadmin) that
+	// the server protects from deletion. Clients should disable destructive
+	// UI actions when this is true.
+	IsSystem      bool `protobuf:"varint,7,opt,name=is_system,json=isSystem,proto3" json:"is_system,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -106,11 +110,18 @@ func (x *User) GetLastLoginAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *User) GetIsSystem() bool {
+	if x != nil {
+		return x.IsSystem
+	}
+	return false
+}
+
 var File_elara_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_elara_user_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\x18elara/user/v1/user.proto\x12\relara.user.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe1\x01\n" +
+	"\x18elara/user/v1/user.proto\x12\relara.user.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfe\x01\n" +
 	"\x04User\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -118,7 +129,8 @@ const file_elara_user_v1_user_proto_rawDesc = "" +
 	"\bprovider\x18\x04 \x01(\tR\bprovider\x129\n" +
 	"\n" +
 	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12>\n" +
-	"\rlast_login_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAtB\xba\x01\n" +
+	"\rlast_login_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vlastLoginAt\x12\x1b\n" +
+	"\tis_system\x18\a \x01(\bR\bisSystemB\xba\x01\n" +
 	"\x11com.elara.user.v1B\tUserProtoP\x01ZDgithub.com/sergeyslonimsky/elara/internal/proto/elara/user/v1;userv1\xa2\x02\x03EUX\xaa\x02\rElara.User.V1\xca\x02\rElara\\User\\V1\xe2\x02\x19Elara\\User\\V1\\GPBMetadata\xea\x02\x0fElara::User::V1b\x06proto3"
 
 var (

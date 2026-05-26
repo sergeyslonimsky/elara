@@ -4,18 +4,18 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import { file_buf_validate_validate } from "../../../buf/validate/validate_pb";
 import type { PaginationRequest, PaginationResponse } from "../../common/v1/common_pb";
 import { file_elara_common_v1_common } from "../../common/v1/common_pb";
 import type { User } from "./user_pb";
 import { file_elara_user_v1_user } from "./user_pb";
-import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file elara/user/v1/user_service.proto.
  */
 export const file_elara_user_v1_user_service: GenFile = /*@__PURE__*/
-  fileDesc("CiBlbGFyYS91c2VyL3YxL3VzZXJfc2VydmljZS5wcm90bxINZWxhcmEudXNlci52MSJaChBMaXN0VXNlcnNSZXF1ZXN0EjYKCnBhZ2luYXRpb24YASABKAsyIi5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlcXVlc3QSDgoGc2VhcmNoGAIgASgJInAKEUxpc3RVc2Vyc1Jlc3BvbnNlEiIKBXVzZXJzGAEgAygLMhMuZWxhcmEudXNlci52MS5Vc2VyEjcKCnBhZ2luYXRpb24YAiABKAsyIy5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlc3BvbnNlIh8KDkdldFVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIkcKD0dldFVzZXJSZXNwb25zZRIhCgR1c2VyGAEgASgLMhMuZWxhcmEudXNlci52MS5Vc2VyEhEKCWdyb3VwX2lkcxgCIAMoCSJKChFDcmVhdGVVc2VyUmVxdWVzdBINCgVlbWFpbBgBIAEoCRIMCgRuYW1lGAIgASgJEhgKEGluaXRpYWxfcGFzc3dvcmQYAyABKAkiNwoSQ3JlYXRlVXNlclJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5lbGFyYS51c2VyLnYxLlVzZXIiPwoYUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIbChlSZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlIiIKEURlbGV0ZVVzZXJSZXF1ZXN0Eg0KBWVtYWlsGAEgASgJIhQKEkRlbGV0ZVVzZXJSZXNwb25zZSI7ChdVcGRhdGVVc2VyR3JvdXBzUmVxdWVzdBINCgVlbWFpbBgBIAEoCRIRCglncm91cF9pZHMYAiADKAkiUAoYVXBkYXRlVXNlckdyb3Vwc1Jlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5lbGFyYS51c2VyLnYxLlVzZXISEQoJZ3JvdXBfaWRzGAIgAygJMpoECgtVc2VyU2VydmljZRJOCglMaXN0VXNlcnMSHy5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1JlcXVlc3QaIC5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1Jlc3BvbnNlEkgKB0dldFVzZXISHS5lbGFyYS51c2VyLnYxLkdldFVzZXJSZXF1ZXN0Gh4uZWxhcmEudXNlci52MS5HZXRVc2VyUmVzcG9uc2USUQoKQ3JlYXRlVXNlchIgLmVsYXJhLnVzZXIudjEuQ3JlYXRlVXNlclJlcXVlc3QaIS5lbGFyYS51c2VyLnYxLkNyZWF0ZVVzZXJSZXNwb25zZRJmChFSZXNldFVzZXJQYXNzd29yZBInLmVsYXJhLnVzZXIudjEuUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0GiguZWxhcmEudXNlci52MS5SZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlElEKCkRlbGV0ZVVzZXISIC5lbGFyYS51c2VyLnYxLkRlbGV0ZVVzZXJSZXF1ZXN0GiEuZWxhcmEudXNlci52MS5EZWxldGVVc2VyUmVzcG9uc2USYwoQVXBkYXRlVXNlckdyb3VwcxImLmVsYXJhLnVzZXIudjEuVXBkYXRlVXNlckdyb3Vwc1JlcXVlc3QaJy5lbGFyYS51c2VyLnYxLlVwZGF0ZVVzZXJHcm91cHNSZXNwb25zZULBAQoRY29tLmVsYXJhLnVzZXIudjFCEFVzZXJTZXJ2aWNlUHJvdG9QAVpEZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvdXNlci92MTt1c2VydjGiAgNFVViqAg1FbGFyYS5Vc2VyLlYxygINRWxhcmFcVXNlclxWMeICGUVsYXJhXFVzZXJcVjFcR1BCTWV0YWRhdGHqAg9FbGFyYTo6VXNlcjo6VjFiBnByb3RvMw", [file_elara_common_v1_common, file_elara_user_v1_user, file_google_protobuf_timestamp]);
+  fileDesc("CiBlbGFyYS91c2VyL3YxL3VzZXJfc2VydmljZS5wcm90bxINZWxhcmEudXNlci52MSJkChBMaXN0VXNlcnNSZXF1ZXN0EjYKCnBhZ2luYXRpb24YASABKAsyIi5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlcXVlc3QSGAoGc2VhcmNoGAIgASgJQgi6SAVyAxiAAiJwChFMaXN0VXNlcnNSZXNwb25zZRIiCgV1c2VycxgBIAMoCzITLmVsYXJhLnVzZXIudjEuVXNlchI3CgpwYWdpbmF0aW9uGAIgASgLMiMuZWxhcmEuY29tbW9uLnYxLlBhZ2luYXRpb25SZXNwb25zZSIrCg5HZXRVc2VyUmVxdWVzdBIZCgVlbWFpbBgBIAEoCUIKukgHyAEBcgJgASJrCg9HZXRVc2VyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLnVzZXIudjEuVXNlchIZChF2aXNpYmxlX2dyb3VwX2lkcxgCIAMoCRIaChJtZW1iZXJzaGlwX3ZlcnNpb24YAyABKAMiiwEKEUNyZWF0ZVVzZXJSZXF1ZXN0EhkKBWVtYWlsGAEgASgJQgq6SAfIAQFyAmABEhgKBG5hbWUYAiABKAlCCrpIB3IFEAEYgAISGAoQaW5pdGlhbF9wYXNzd29yZBgDIAEoCRInChFpbml0aWFsX2dyb3VwX2lkcxgEIAMoCUIMukgJkgEGIgRyAhABImYKEkNyZWF0ZVVzZXJSZXNwb25zZRIhCgR1c2VyGAEgASgLMhMuZWxhcmEudXNlci52MS5Vc2VyEhEKCWdyb3VwX2lkcxgCIAMoCRIaChJtZW1iZXJzaGlwX3ZlcnNpb24YAyABKAMiVwoYUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0EhkKBWVtYWlsGAEgASgJQgq6SAfIAQFyAmABEiAKDG5ld19wYXNzd29yZBgCIAEoCUIKukgHyAEBcgIQASIbChlSZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlIi4KEURlbGV0ZVVzZXJSZXF1ZXN0EhkKBWVtYWlsGAEgASgJQgq6SAfIAQFyAmABIhQKEkRlbGV0ZVVzZXJSZXNwb25zZSK+AQoXVXBkYXRlVXNlckdyb3Vwc1JlcXVlc3QSGQoFZW1haWwYASABKAlCCrpIB8gBAXICYAESIwoNYWRkX2dyb3VwX2lkcxgCIAMoCUIMukgJkgEGIgRyAhABEiYKEHJlbW92ZV9ncm91cF9pZHMYAyADKAlCDLpICZIBBiIEcgIQARImChBleHBlY3RlZF92ZXJzaW9uGAQgASgDQge6SAQiAigASACIAQFCEwoRX2V4cGVjdGVkX3ZlcnNpb24idAoYVXBkYXRlVXNlckdyb3Vwc1Jlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5lbGFyYS51c2VyLnYxLlVzZXISGQoRdmlzaWJsZV9ncm91cF9pZHMYAiADKAkSGgoSbWVtYmVyc2hpcF92ZXJzaW9uGAMgASgDMpoECgtVc2VyU2VydmljZRJOCglMaXN0VXNlcnMSHy5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1JlcXVlc3QaIC5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1Jlc3BvbnNlEkgKB0dldFVzZXISHS5lbGFyYS51c2VyLnYxLkdldFVzZXJSZXF1ZXN0Gh4uZWxhcmEudXNlci52MS5HZXRVc2VyUmVzcG9uc2USUQoKQ3JlYXRlVXNlchIgLmVsYXJhLnVzZXIudjEuQ3JlYXRlVXNlclJlcXVlc3QaIS5lbGFyYS51c2VyLnYxLkNyZWF0ZVVzZXJSZXNwb25zZRJmChFSZXNldFVzZXJQYXNzd29yZBInLmVsYXJhLnVzZXIudjEuUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0GiguZWxhcmEudXNlci52MS5SZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlElEKCkRlbGV0ZVVzZXISIC5lbGFyYS51c2VyLnYxLkRlbGV0ZVVzZXJSZXF1ZXN0GiEuZWxhcmEudXNlci52MS5EZWxldGVVc2VyUmVzcG9uc2USYwoQVXBkYXRlVXNlckdyb3VwcxImLmVsYXJhLnVzZXIudjEuVXBkYXRlVXNlckdyb3Vwc1JlcXVlc3QaJy5lbGFyYS51c2VyLnYxLlVwZGF0ZVVzZXJHcm91cHNSZXNwb25zZULBAQoRY29tLmVsYXJhLnVzZXIudjFCEFVzZXJTZXJ2aWNlUHJvdG9QAVpEZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvdXNlci92MTt1c2VydjGiAgNFVViqAg1FbGFyYS5Vc2VyLlYxygINRWxhcmFcVXNlclxWMeICGUVsYXJhXFVzZXJcVjFcR1BCTWV0YWRhdGHqAg9FbGFyYTo6VXNlcjo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_elara_common_v1_common, file_elara_user_v1_user]);
 
 /**
  * @generated from message elara.user.v1.ListUsersRequest
@@ -88,14 +88,19 @@ export type GetUserResponse = Message<"elara.user.v1.GetUserResponse"> & {
   user?: User;
 
   /**
-   * All group IDs the user currently belongs to, regardless of whether
-   * the caller has read access to those groups. Required so the user
-   * edit UI can submit a canonical full set back through UpdateUserGroups
-   * (the server diffs and authorizes only the symmetric difference).
+   * Group IDs the user belongs to AND on which the caller holds Group:Read.
+   * Memberships outside the caller's read scope are not exposed.
    *
-   * @generated from field: repeated string group_ids = 2;
+   * @generated from field: repeated string visible_group_ids = 2;
    */
-  groupIds: string[];
+  visibleGroupIds: string[];
+
+  /**
+   * Opaque token for optimistic concurrency on UpdateUserGroups.
+   *
+   * @generated from field: int64 membership_version = 3;
+   */
+  membershipVersion: bigint;
 };
 
 /**
@@ -120,9 +125,19 @@ export type CreateUserRequest = Message<"elara.user.v1.CreateUserRequest"> & {
   name: string;
 
   /**
+   * Required in basic-auth mode, must be empty in OIDC mode (enforced server-side).
+   *
    * @generated from field: string initial_password = 3;
    */
   initialPassword: string;
+
+  /**
+   * Optional: groups the new user joins atomically with creation.
+   * Same authorization rules as UpdateUserGroups apply to each id.
+   *
+   * @generated from field: repeated string initial_group_ids = 4;
+   */
+  initialGroupIds: string[];
 };
 
 /**
@@ -140,6 +155,16 @@ export type CreateUserResponse = Message<"elara.user.v1.CreateUserResponse"> & {
    * @generated from field: elara.user.v1.User user = 1;
    */
   user?: User;
+
+  /**
+   * @generated from field: repeated string group_ids = 2;
+   */
+  groupIds: string[];
+
+  /**
+   * @generated from field: int64 membership_version = 3;
+   */
+  membershipVersion: bigint;
 };
 
 /**
@@ -224,13 +249,22 @@ export type UpdateUserGroupsRequest = Message<"elara.user.v1.UpdateUserGroupsReq
   email: string;
 
   /**
-   * Group IDs the user should belong to after the call. The set is
-   * canonical; the server diffs against current memberships and only
-   * operates on the symmetric difference.
-   *
-   * @generated from field: repeated string group_ids = 2;
+   * @generated from field: repeated string add_group_ids = 2;
    */
-  groupIds: string[];
+  addGroupIds: string[];
+
+  /**
+   * @generated from field: repeated string remove_group_ids = 3;
+   */
+  removeGroupIds: string[];
+
+  /**
+   * Optional optimistic lock. When set, server returns FAILED_PRECONDITION
+   * if current membership_version != expected_version.
+   *
+   * @generated from field: optional int64 expected_version = 4;
+   */
+  expectedVersion?: bigint;
 };
 
 /**
@@ -250,9 +284,14 @@ export type UpdateUserGroupsResponse = Message<"elara.user.v1.UpdateUserGroupsRe
   user?: User;
 
   /**
-   * @generated from field: repeated string group_ids = 2;
+   * @generated from field: repeated string visible_group_ids = 2;
    */
-  groupIds: string[];
+  visibleGroupIds: string[];
+
+  /**
+   * @generated from field: int64 membership_version = 3;
+   */
+  membershipVersion: bigint;
 };
 
 /**
@@ -267,6 +306,16 @@ export const UpdateUserGroupsResponseSchema: GenMessage<UpdateUserGroupsResponse
  */
 export const UserService: GenService<{
   /**
+   * Lists users.
+   *
+   * Authorization:
+   *   - User:Read * (global) returns every user.
+   *   - Without User:Read *, the result is derived through Group:Read: only
+   *     users who belong to at least one group the caller can read are
+   *     returned. Unassigned users are invisible in this mode.
+   * An empty result (no User:Read * and no Group:Read scope) is not an
+   * error — pagination returns an empty page.
+   *
    * @generated from rpc elara.user.v1.UserService.ListUsers
    */
   listUsers: {
@@ -275,6 +324,14 @@ export const UserService: GenService<{
     output: typeof ListUsersResponseSchema;
   },
   /**
+   * Fetches a single user by email.
+   *
+   * Authorization:
+   *   - User:Read * (global), OR
+   *   - target ∈ any group the caller can read (derived through Group:Read).
+   * visible_group_ids in the response is independently filtered by the
+   * caller's Group:Read scope — memberships outside it are not exposed.
+   *
    * @generated from rpc elara.user.v1.UserService.GetUser
    */
   getUser: {
@@ -283,6 +340,13 @@ export const UserService: GenService<{
     output: typeof GetUserResponseSchema;
   },
   /**
+   * Create a user.
+   *
+   * Authorization:
+   *   - User:Create * (global), OR
+   *   - initial_group_ids non-empty AND caller holds Group:Write on every id
+   *     (with anti-escalation cascading from those groups).
+   *
    * @generated from rpc elara.user.v1.UserService.CreateUser
    */
   createUser: {
@@ -291,7 +355,14 @@ export const UserService: GenService<{
     output: typeof CreateUserResponseSchema;
   },
   /**
-   * Admin-only — resets the target user's password and sets password_change_required
+   * Admin-only — resets the target user's password and sets password_change_required.
+   * Basic-auth mode only.
+   *
+   * Authorization:
+   *   - User:Write * (global), OR
+   *   - target ∈ any group on which caller holds Group:Write.
+   * Plus anti-escalation: caller must hold every permission the target
+   * currently has (impersonation cannot escalate privilege).
    *
    * @generated from rpc elara.user.v1.UserService.ResetUserPassword
    */
@@ -301,7 +372,10 @@ export const UserService: GenService<{
     output: typeof ResetUserPasswordResponseSchema;
   },
   /**
-   * Admin-only, basic-auth mode only
+   * Admin-only — deletes the user and all their memberships.
+   * Basic-auth mode only.
+   *
+   * Authorization: same as ResetUserPassword.
    *
    * @generated from rpc elara.user.v1.UserService.DeleteUser
    */
@@ -311,12 +385,19 @@ export const UserService: GenService<{
     output: typeof DeleteUserResponseSchema;
   },
   /**
-   * Replaces the target user's group memberships with the given set.
-   * The caller must hold ObjectGroup:Write on every group whose membership
-   * changes (added or removed). Adding a user to a group additionally
-   * requires that the caller holds every permission the target group
-   * grants (anti-escalation). Groups present in both the current and
-   * desired state are no-ops and require no permission.
+   * Updates the target user's group memberships using an explicit delta.
+   * Adding a group the user already belongs to is a no-op; removing from
+   * one they're not in is a no-op. Including the same group in both
+   * add_group_ids and remove_group_ids returns INVALID_ARGUMENT.
+   *
+   * Authorization (per id in add_group_ids ∪ remove_group_ids):
+   *   - caller must hold Group:Write on the group.
+   * Anti-escalation applies on each add_group_ids entry (caller must hold
+   * every permission the group currently grants). Removals narrow and
+   * require no escalation check.
+   *
+   * If expected_version is set and current membership_version differs,
+   * returns FAILED_PRECONDITION — even if the net change would be a no-op.
    *
    * @generated from rpc elara.user.v1.UserService.UpdateUserGroups
    */

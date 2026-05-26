@@ -19,32 +19,32 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// Mockstore is a mock of store interface.
-type Mockstore struct {
+// MockUserReader is a mock of UserReader interface.
+type MockUserReader struct {
 	ctrl     *gomock.Controller
-	recorder *MockstoreMockRecorder
+	recorder *MockUserReaderMockRecorder
 	isgomock struct{}
 }
 
-// MockstoreMockRecorder is the mock recorder for Mockstore.
-type MockstoreMockRecorder struct {
-	mock *Mockstore
+// MockUserReaderMockRecorder is the mock recorder for MockUserReader.
+type MockUserReaderMockRecorder struct {
+	mock *MockUserReader
 }
 
-// NewMockstore creates a new mock instance.
-func NewMockstore(ctrl *gomock.Controller) *Mockstore {
-	mock := &Mockstore{ctrl: ctrl}
-	mock.recorder = &MockstoreMockRecorder{mock}
+// NewMockUserReader creates a new mock instance.
+func NewMockUserReader(ctrl *gomock.Controller) *MockUserReader {
+	mock := &MockUserReader{ctrl: ctrl}
+	mock.recorder = &MockUserReaderMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockstore) EXPECT() *MockstoreMockRecorder {
+func (m *MockUserReader) EXPECT() *MockUserReaderMockRecorder {
 	return m.recorder
 }
 
 // Delete mocks base method.
-func (m *Mockstore) Delete(ctx context.Context, email string) error {
+func (m *MockUserReader) Delete(ctx context.Context, email string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, email)
 	ret0, _ := ret[0].(error)
@@ -52,13 +52,13 @@ func (m *Mockstore) Delete(ctx context.Context, email string) error {
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockstoreMockRecorder) Delete(ctx, email any) *gomock.Call {
+func (mr *MockUserReaderMockRecorder) Delete(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockstore)(nil).Delete), ctx, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUserReader)(nil).Delete), ctx, email)
 }
 
 // Get mocks base method.
-func (m *Mockstore) Get(ctx context.Context, email string) (*domain.User, error) {
+func (m *MockUserReader) Get(ctx context.Context, email string) (*domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, email)
 	ret0, _ := ret[0].(*domain.User)
@@ -67,13 +67,13 @@ func (m *Mockstore) Get(ctx context.Context, email string) (*domain.User, error)
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockstoreMockRecorder) Get(ctx, email any) *gomock.Call {
+func (mr *MockUserReaderMockRecorder) Get(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockstore)(nil).Get), ctx, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUserReader)(nil).Get), ctx, email)
 }
 
 // List mocks base method.
-func (m *Mockstore) List(ctx context.Context, filter domain.UserFilter, params domain.UserListParams) ([]*domain.User, int, error) {
+func (m *MockUserReader) List(ctx context.Context, filter domain.UserFilter, params domain.UserListParams) ([]*domain.User, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, filter, params)
 	ret0, _ := ret[0].([]*domain.User)
@@ -83,13 +83,27 @@ func (m *Mockstore) List(ctx context.Context, filter domain.UserFilter, params d
 }
 
 // List indicates an expected call of List.
-func (mr *MockstoreMockRecorder) List(ctx, filter, params any) *gomock.Call {
+func (mr *MockUserReaderMockRecorder) List(ctx, filter, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstore)(nil).List), ctx, filter, params)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserReader)(nil).List), ctx, filter, params)
+}
+
+// SetMembershipVersion mocks base method.
+func (m *MockUserReader) SetMembershipVersion(ctx context.Context, email string, version int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetMembershipVersion", ctx, email, version)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetMembershipVersion indicates an expected call of SetMembershipVersion.
+func (mr *MockUserReaderMockRecorder) SetMembershipVersion(ctx, email, version any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMembershipVersion", reflect.TypeOf((*MockUserReader)(nil).SetMembershipVersion), ctx, email, version)
 }
 
 // SetPassword mocks base method.
-func (m *Mockstore) SetPassword(ctx context.Context, email, hash string, changeRequired bool) error {
+func (m *MockUserReader) SetPassword(ctx context.Context, email, hash string, changeRequired bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetPassword", ctx, email, hash, changeRequired)
 	ret0, _ := ret[0].(error)
@@ -97,13 +111,13 @@ func (m *Mockstore) SetPassword(ctx context.Context, email, hash string, changeR
 }
 
 // SetPassword indicates an expected call of SetPassword.
-func (mr *MockstoreMockRecorder) SetPassword(ctx, email, hash, changeRequired any) *gomock.Call {
+func (mr *MockUserReaderMockRecorder) SetPassword(ctx, email, hash, changeRequired any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*Mockstore)(nil).SetPassword), ctx, email, hash, changeRequired)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockUserReader)(nil).SetPassword), ctx, email, hash, changeRequired)
 }
 
 // Upsert mocks base method.
-func (m *Mockstore) Upsert(ctx context.Context, arg1 *domain.User) error {
+func (m *MockUserReader) Upsert(ctx context.Context, arg1 *domain.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Upsert", ctx, arg1)
 	ret0, _ := ret[0].(error)
@@ -111,9 +125,23 @@ func (m *Mockstore) Upsert(ctx context.Context, arg1 *domain.User) error {
 }
 
 // Upsert indicates an expected call of Upsert.
-func (mr *MockstoreMockRecorder) Upsert(ctx, arg1 any) *gomock.Call {
+func (mr *MockUserReaderMockRecorder) Upsert(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*Mockstore)(nil).Upsert), ctx, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockUserReader)(nil).Upsert), ctx, arg1)
+}
+
+// WithTx mocks base method.
+func (m *MockUserReader) WithTx(tx storage.Tx) user.UserReader {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithTx", tx)
+	ret0, _ := ret[0].(user.UserReader)
+	return ret0
+}
+
+// WithTx indicates an expected call of WithTx.
+func (mr *MockUserReaderMockRecorder) WithTx(tx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockUserReader)(nil).WithTx), tx)
 }
 
 // MockGroupReader is a mock of GroupReader interface.

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 const defaultListLimit = 20
@@ -26,55 +25,41 @@ type ListResult struct {
 	Offset int
 }
 
-// List returns users the authenticated caller can see, scoped via the groups
-// they are allowed to read (EL-4 §7, T5.4).
+// List returns users visible to the caller using a two-tier authorization
+// model:
 //
-// Flow:
-//  1. effective = pdp.EffectiveDomains(caller, "group", "read") — the groups
-//     the caller can see, in "group:<name>" subject form.
-//  2. If Wildcard: AnyUser=true, no member roll-up.
-//  3. Otherwise: PAP.MembersOfScope rolls up group members into a username
-//     set; that's the read scope.
-//  4. Repo filter applies the set + search; pagination/sort live on the repo.
-//  5. Empty effective scope → empty list, not 403 (acceptance: empty
-//     responses → empty list).
-func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return nil, domain.ErrUnauthorized
-	}
-
+//  1. User:Read * (global) — full unfiltered list (subject to search/pagination).
+//  2. Otherwise — derived through Group:Read: only users who belong to at
+//     least one group the caller can read are returned. Unassigned users
+//     are invisible in this mode.
+//
+// An empty result (neither User:Read * nor any Group:Read scope) is not
+// an error; pagination returns an empty page.
+func (s *Service) List(ctx context.Context, actor domain.AuthInfo, params ListParams) (*ListResult, error) {
 	limit := params.Limit
 	if limit <= 0 {
 		limit = defaultListLimit
 	}
 
-	groupScope := s.pdp.EffectiveDomains(claims.Email, domain.ObjectGroup, domain.ActionRead)
-
 	filter := domain.UserFilter{Search: params.Query}
 
-	switch {
-	case groupScope.Wildcard:
+	// Fast path: global User:Read.
+	if s.pdp.HasUserReadGlobal(actor.Email) {
 		filter.AnyUser = true
-	case groupScope.IsEmpty():
-		return &ListResult{
-			Users:  []*domain.User{},
-			Total:  0,
-			Limit:  limit,
-			Offset: params.Offset,
-		}, nil
-	default:
-		usernames := s.pap.MembersOfScope(groupScope)
-		if len(usernames) == 0 {
-			return &ListResult{
-				Users:  []*domain.User{},
-				Total:  0,
-				Limit:  limit,
-				Offset: params.Offset,
-			}, nil
+	} else {
+		groupScope := s.pdp.EffectiveDomains(actor.Email, domain.ObjectGroup, domain.ActionRead)
+		switch {
+		case groupScope.Wildcard:
+			filter.AnyUser = true
+		case groupScope.IsEmpty():
+			return emptyList(limit, params.Offset), nil
+		default:
+			usernames := s.pap.MembersOfScope(groupScope)
+			if len(usernames) == 0 {
+				return emptyList(limit, params.Offset), nil
+			}
+			filter.Usernames = usernames
 		}
-
-		filter.Usernames = usernames
 	}
 
 	repoParams := domain.UserListParams{
@@ -94,4 +79,13 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 		Limit:  limit,
 		Offset: params.Offset,
 	}, nil
+}
+
+func emptyList(limit, offset int) *ListResult {
+	return &ListResult{
+		Users:  []*domain.User{},
+		Total:  0,
+		Limit:  limit,
+		Offset: offset,
+	}
 }

@@ -1,12 +1,13 @@
 import { create } from "@bufbuild/protobuf";
-import { subject } from "@casl/ability";
+import { AbilityBuilder, createMongoAbility, subject } from "@casl/ability";
 import { describe, expect, it } from "vitest";
 import {
 	PermissionAction,
 	PermissionAssignmentSchema,
 	PermissionObject,
 } from "@/gen/elara/common/v1/permission_pb";
-import { buildAbility } from "./ability";
+import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
+import { type AppAbility, buildAbility, canManageGroup } from "./ability";
 
 const pa = (
 	object: PermissionObject,
@@ -94,5 +95,42 @@ describe("buildAbility", () => {
 		expect(ability.can("create", subject("Config", { domain: "app-1" }))).toBe(
 			true,
 		);
+	});
+});
+
+describe("canManageGroup", () => {
+	it("returns false when isSystem=true, even with matching write rule", () => {
+		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+		can("write", "Group", { domain: "group:foo" });
+		const ability = build();
+		const group = create(GroupSchema, {
+			id: "g1",
+			name: "foo",
+			isSystem: true,
+		});
+		expect(canManageGroup(ability, group)).toBe(false);
+	});
+
+	it("returns true when ability has write Group { domain: 'group:foo' } and group is not system", () => {
+		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+		can("write", "Group", { domain: "group:foo" });
+		const ability = build();
+		const group = create(GroupSchema, {
+			id: "g1",
+			name: "foo",
+			isSystem: false,
+		});
+		expect(canManageGroup(ability, group)).toBe(true);
+	});
+
+	it("returns false when ability lacks the rule", () => {
+		const { build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+		const ability = build();
+		const group = create(GroupSchema, {
+			id: "g1",
+			name: "foo",
+			isSystem: false,
+		});
+		expect(canManageGroup(ability, group)).toBe(false);
 	});
 });

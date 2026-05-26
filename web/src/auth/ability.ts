@@ -3,12 +3,14 @@ import {
 	createMongoAbility,
 	type InferSubjects,
 	type MongoAbility,
+	subject,
 } from "@casl/ability";
 import {
 	PermissionAction,
 	type PermissionAssignment,
 	PermissionObject,
 } from "@/gen/elara/common/v1/permission_pb";
+import type { Group } from "@/gen/elara/group/v1/group_pb";
 
 export type Action = "read" | "write" | "create";
 
@@ -79,6 +81,21 @@ export function subjectOf(obj: PermissionObject): SubjectName | "all" {
 	}
 }
 
+export function formatAction(action: PermissionAction): string {
+	switch (action) {
+		case PermissionAction.READ:
+			return "READ";
+		case PermissionAction.WRITE:
+			return "WRITE";
+		case PermissionAction.CREATE:
+			return "CREATE";
+		case PermissionAction.ALL:
+			return "ALL";
+		default:
+			return "UNKNOWN";
+	}
+}
+
 export function displayObject(obj: PermissionObject): string {
 	switch (obj) {
 		case PermissionObject.NAMESPACE:
@@ -98,6 +115,15 @@ export function displayObject(obj: PermissionObject): string {
 		default:
 			return "Unknown";
 	}
+}
+
+export function groupSubject(group: Pick<Group, "name">) {
+	return subject("Group", { domain: `group:${group.name}` });
+}
+
+export function canManageGroup(ability: AppAbility, group: Group): boolean {
+	if (group.isSystem) return false;
+	return ability.can("write", groupSubject(group));
 }
 
 export function buildAbility(perms: PermissionAssignment[]): AppAbility {

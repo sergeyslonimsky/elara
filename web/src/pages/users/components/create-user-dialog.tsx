@@ -1,13 +1,19 @@
-import { useMutation } from "@connectrpc/connect-query";
+import { useMutation, useQuery } from "@connectrpc/connect-query";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
+import { canManageGroup } from "@/auth/ability";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -16,53 +22,32 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import { listGroups } from "@/gen/elara/group/v1/group_service-GroupService_connectquery";
 import { createUser } from "@/gen/elara/user/v1/user_service-UserService_connectquery";
-import { invalidate } from "@/lib/queries";
+import { invalidate, invalidateUserGroupGraph } from "@/lib/queries";
 import { toastError } from "@/lib/toast";
 
 const MIN_PASSWORD_LENGTH = 8;
-const EMAIL_REGEX = /^.+@.+\..+$/;
 
-interface CreateUserFormValues {
-	email: string;
-	name: string;
-	initialPassword: string;
-}
-
-export function validateCreateUserForm(
-	values: CreateUserFormValues,
-	authType: AuthType,
-): Record<string, string> {
-	const errors: Record<string, string> = {};
-
-	const email = values.email.trim();
-	if (!email) {
-		errors.email = "Email is required";
-	} else if (!EMAIL_REGEX.test(email)) {
-		errors.email = "Invalid email format";
-	}
-
-	if (!values.name.trim()) {
-		errors.name = "Name is required";
-	}
-
-	if (authType === AuthType.BASIC) {
-		if (!values.initialPassword) {
-			errors.initialPassword = "Password is required";
-		} else if (values.initialPassword.length < MIN_PASSWORD_LENGTH) {
-			errors.initialPassword = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
-		}
-	}
-
-	return errors;
+function makeSchema(isBasicAuth: boolean) {
+	return z.object({
+		email: z.string().email("Invalid email format"),
+		name: z.string().min(1, "Name is required"),
+		initialPassword: isBasicAuth
+			? z
+					.string()
+					.min(
+						MIN_PASSWORD_LENGTH,
+						`Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+					)
+			: z.string().optional(),
+		initialGroupIds: z.array(z.string()),
+	});
 }
 
 export function CreateUserDialog() {
 	const { state } = useAuth();
 	const [open, setOpen] = useState(false);
-	const [email, setEmail] = useState("");
-	const [name, setName] = useState("");
-	const [initialPassword, setInitialPassword] = useState("");
 	const queryClient = useQueryClient();
 
 	const canCreate =
@@ -73,20 +58,51 @@ export function CreateUserDialog() {
 			: AuthType.UNSPECIFIED;
 	const isBasicAuth = authType === AuthType.BASIC;
 
-	const errors = useMemo(
-		() => validateCreateUserForm({ email, name, initialPassword }, authType),
-		[email, name, initialPassword, authType],
+	const schema = makeSchema(isBasicAuth);
+	type FormValues = z.infer<typeof schema>;
+
+	const form = useForm<FormValues>({
+		resolver: zodResolver(schema),
+		defaultValues: {
+			email: "",
+			name: "",
+			initialPassword: "",
+			initialGroupIds: [],
+		},
+		mode: "onChange",
+	});
+
+	useEffect(() => {
+		if (!open) {
+			form.reset({
+				email: "",
+				name: "",
+				initialPassword: "",
+				initialGroupIds: [],
+			});
+		}
+	}, [open, form]);
+
+	// Load groups so the caller can pre-assign memberships.
+	const { data: groupsData, isLoading: groupsLoading } = useQuery(
+		listGroups,
+		{ pagination: { limit: 1000, offset: 0 } },
+		{ enabled: open },
 	);
-	const hasErrors = Object.keys(errors).length > 0;
+	const ability = state.status === "authenticated" ? state.ability : null;
+	const manageableGroups = (groupsData?.groups ?? []).filter((g) =>
+		ability ? canManageGroup(ability, g) : false,
+	);
 
 	const mutation = useMutation(createUser, {
-		onSuccess: () => {
-			toast.success(`User "${email}" created`);
+		onSuccess: (_data, vars) => {
+			toast.success(`User "${vars.email}" created`);
 			setOpen(false);
-			setEmail("");
-			setName("");
-			setInitialPassword("");
-			invalidate(queryClient, "users");
+			if (vars.initialGroupIds && vars.initialGroupIds.length > 0) {
+				invalidateUserGroupGraph(queryClient);
+			} else {
+				invalidate(queryClient, "users");
+			}
 		},
 		onError: toastError,
 	});
@@ -95,6 +111,27 @@ export function CreateUserDialog() {
 		return null;
 	}
 
+	const onSubmit = (values: FormValues) => {
+		mutation.mutate({
+			email: values.email.trim(),
+			name: values.name.trim(),
+			initialPassword: isBasicAuth ? (values.initialPassword ?? "") : "",
+			initialGroupIds: values.initialGroupIds,
+		});
+	};
+
+	const selectedGroupIds = form.watch("initialGroupIds");
+
+	const toggleGroup = (id: string) => {
+		const current = new Set(selectedGroupIds);
+		if (current.has(id)) current.delete(id);
+		else current.add(id);
+		form.setValue("initialGroupIds", Array.from(current), {
+			shouldDirty: true,
+			shouldValidate: true,
+		});
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger render={<Button size="sm" />}>
@@ -102,56 +139,98 @@ export function CreateUserDialog() {
 				New User
 			</DialogTrigger>
 			<DialogContent>
-				<form
-					onSubmit={(e) => {
-						e.preventDefault();
-						if (hasErrors) return;
-						mutation.mutate({
-							email: email.trim(),
-							name: name.trim(),
-							initialPassword: isBasicAuth ? initialPassword : "",
-						});
-					}}
-				>
+				<form onSubmit={form.handleSubmit(onSubmit)}>
 					<DialogHeader>
 						<DialogTitle>Create User</DialogTitle>
+						<DialogDescription>
+							Create a user account. Group memberships can be assigned now or
+							later from the user's detail page.
+						</DialogDescription>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<Field>
-							<FieldLabel>Email</FieldLabel>
+							<FieldLabel htmlFor="cu-email">Email</FieldLabel>
 							<Input
+								id="cu-email"
 								type="email"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
 								placeholder="user@example.com"
-								required
+								{...form.register("email")}
 							/>
+							{form.formState.errors.email && (
+								<p className="text-xs text-destructive">
+									{form.formState.errors.email.message}
+								</p>
+							)}
 						</Field>
 						<Field>
-							<FieldLabel>Name</FieldLabel>
+							<FieldLabel htmlFor="cu-name">Name</FieldLabel>
 							<Input
-								value={name}
-								onChange={(e) => setName(e.target.value)}
+								id="cu-name"
 								placeholder="Jane Doe"
-								required
+								{...form.register("name")}
 							/>
+							{form.formState.errors.name && (
+								<p className="text-xs text-destructive">
+									{form.formState.errors.name.message}
+								</p>
+							)}
 						</Field>
 						{isBasicAuth && (
 							<Field>
-								<FieldLabel>Initial password</FieldLabel>
+								<FieldLabel htmlFor="cu-password">Initial password</FieldLabel>
 								<Input
+									id="cu-password"
 									type="password"
-									value={initialPassword}
-									onChange={(e) => setInitialPassword(e.target.value)}
 									placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
-									required
-									minLength={MIN_PASSWORD_LENGTH}
+									{...form.register("initialPassword")}
 								/>
+								{form.formState.errors.initialPassword && (
+									<p className="text-xs text-destructive">
+										{form.formState.errors.initialPassword.message}
+									</p>
+								)}
 							</Field>
+						)}
+						{groupsLoading ? (
+							<Field>
+								<FieldLabel>Initial groups (optional)</FieldLabel>
+								<p className="text-xs text-muted-foreground">Loading groups…</p>
+							</Field>
+						) : (
+							manageableGroups.length > 0 && (
+								<Field>
+									<FieldLabel>Initial groups (optional)</FieldLabel>
+									<div className="max-h-48 overflow-y-auto rounded-md border divide-y">
+										{manageableGroups.map((g) => {
+											const cbId = `cu-group-${g.id}`;
+											const checked = selectedGroupIds.includes(g.id);
+											return (
+												<div
+													key={g.id}
+													className="flex items-center gap-2 p-2 text-sm"
+												>
+													<Checkbox
+														id={cbId}
+														checked={checked}
+														onCheckedChange={() => toggleGroup(g.id)}
+														aria-label={g.name}
+													/>
+													<label htmlFor={cbId} className="cursor-pointer">
+														{g.name}
+													</label>
+												</div>
+											);
+										})}
+									</div>
+								</Field>
+							)
 						)}
 					</div>
 					<DialogFooter>
-						<Button type="submit" disabled={mutation.isPending || hasErrors}>
+						<Button
+							type="submit"
+							disabled={!form.formState.isValid || mutation.isPending}
+						>
 							{mutation.isPending ? "Creating..." : "Create"}
 						</Button>
 					</DialogFooter>

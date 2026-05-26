@@ -50,3 +50,11 @@ const (
 	ActionRead   = "read"
 	ActionWrite  = "write"
 )
+
+// GroupResource returns the canonical Casbin domain string for a permission
+// scoped to a single group: "group:<id>". Use this everywhere a permission
+// like `Group:Write group:<id>` is constructed — never concatenate the
+// "group:" prefix inline.
+func GroupResource(id string) string {
+	return "group:" + id
+}

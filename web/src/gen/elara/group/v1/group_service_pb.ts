@@ -4,6 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import { file_buf_validate_validate } from "../../../buf/validate/validate_pb";
 import type { PaginationRequest, PaginationResponse } from "../../common/v1/common_pb";
 import { file_elara_common_v1_common } from "../../common/v1/common_pb";
 import type { PermissionAssignment } from "../../common/v1/permission_pb";
@@ -16,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/group/v1/group_service.proto.
  */
 export const file_elara_group_v1_group_service: GenFile = /*@__PURE__*/
-  fileDesc("CiJlbGFyYS9ncm91cC92MS9ncm91cF9zZXJ2aWNlLnByb3RvEg5lbGFyYS5ncm91cC52MSIiChJDcmVhdGVHcm91cFJlcXVlc3QSDAoEbmFtZRgBIAEoCSI7ChNDcmVhdGVHcm91cFJlc3BvbnNlEiQKBWdyb3VwGAEgASgLMhUuZWxhcmEuZ3JvdXAudjEuR3JvdXAiHQoPR2V0R3JvdXBSZXF1ZXN0EgoKAmlkGAEgASgJIjgKEEdldEdyb3VwUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cCJUChJVcGRhdGVHcm91cFJlcXVlc3QSCgoCaWQYASABKAkSDAoEbmFtZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIPCgd2ZXJzaW9uGAQgASgDIjsKE1VwZGF0ZUdyb3VwUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cCI+ChlVcGRhdGVHcm91cE1lbWJlcnNSZXF1ZXN0EhAKCGdyb3VwX2lkGAEgASgJEg8KB21lbWJlcnMYAiADKAkiQgoaVXBkYXRlR3JvdXBNZW1iZXJzUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cCJtCh1VcGRhdGVHcm91cFBlcm1pc3Npb25zUmVxdWVzdBIQCghncm91cF9pZBgBIAEoCRI6CgtwZXJtaXNzaW9ucxgCIAMoCzIlLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQXNzaWdubWVudCJGCh5VcGRhdGVHcm91cFBlcm1pc3Npb25zUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cCIgChJEZWxldGVHcm91cFJlcXVlc3QSCgoCaWQYASABKAkiFQoTRGVsZXRlR3JvdXBSZXNwb25zZSJbChFMaXN0R3JvdXBzUmVxdWVzdBI2CgpwYWdpbmF0aW9uGAEgASgLMiIuZWxhcmEuY29tbW9uLnYxLlBhZ2luYXRpb25SZXF1ZXN0Eg4KBnNlYXJjaBgCIAEoCSJ0ChJMaXN0R3JvdXBzUmVzcG9uc2USJQoGZ3JvdXBzGAEgAygLMhUuZWxhcmEuZ3JvdXAudjEuR3JvdXASNwoKcGFnaW5hdGlvbhgCIAEoCzIjLmVsYXJhLmNvbW1vbi52MS5QYWdpbmF0aW9uUmVzcG9uc2UyoAUKDEdyb3VwU2VydmljZRJWCgtDcmVhdGVHcm91cBIiLmVsYXJhLmdyb3VwLnYxLkNyZWF0ZUdyb3VwUmVxdWVzdBojLmVsYXJhLmdyb3VwLnYxLkNyZWF0ZUdyb3VwUmVzcG9uc2USTQoIR2V0R3JvdXASHy5lbGFyYS5ncm91cC52MS5HZXRHcm91cFJlcXVlc3QaIC5lbGFyYS5ncm91cC52MS5HZXRHcm91cFJlc3BvbnNlElYKC1VwZGF0ZUdyb3VwEiIuZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBSZXF1ZXN0GiMuZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBSZXNwb25zZRJrChJVcGRhdGVHcm91cE1lbWJlcnMSKS5lbGFyYS5ncm91cC52MS5VcGRhdGVHcm91cE1lbWJlcnNSZXF1ZXN0GiouZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBNZW1iZXJzUmVzcG9uc2USdwoWVXBkYXRlR3JvdXBQZXJtaXNzaW9ucxItLmVsYXJhLmdyb3VwLnYxLlVwZGF0ZUdyb3VwUGVybWlzc2lvbnNSZXF1ZXN0Gi4uZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBQZXJtaXNzaW9uc1Jlc3BvbnNlElYKC0RlbGV0ZUdyb3VwEiIuZWxhcmEuZ3JvdXAudjEuRGVsZXRlR3JvdXBSZXF1ZXN0GiMuZWxhcmEuZ3JvdXAudjEuRGVsZXRlR3JvdXBSZXNwb25zZRJTCgpMaXN0R3JvdXBzEiEuZWxhcmEuZ3JvdXAudjEuTGlzdEdyb3Vwc1JlcXVlc3QaIi5lbGFyYS5ncm91cC52MS5MaXN0R3JvdXBzUmVzcG9uc2VCyQEKEmNvbS5lbGFyYS5ncm91cC52MUIRR3JvdXBTZXJ2aWNlUHJvdG9QAVpGZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvZ3JvdXAvdjE7Z3JvdXB2MaICA0VHWKoCDkVsYXJhLkdyb3VwLlYxygIORWxhcmFcR3JvdXBcVjHiAhpFbGFyYVxHcm91cFxWMVxHUEJNZXRhZGF0YeoCEEVsYXJhOjpHcm91cDo6VjFiBnByb3RvMw", [file_elara_common_v1_common, file_elara_common_v1_permission, file_elara_group_v1_group]);
+  fileDesc("CiJlbGFyYS9ncm91cC92MS9ncm91cF9zZXJ2aWNlLnByb3RvEg5lbGFyYS5ncm91cC52MSLpAQoSQ3JlYXRlR3JvdXBSZXF1ZXN0EhgKBG5hbWUYASABKAlCCrpIB3IFEAEYgAESHQoLZGVzY3JpcHRpb24YAiABKAlCCLpIBXIDGIAIEiUKD2luaXRpYWxfbWVtYmVycxgDIAMoCUIMukgJkgEGIgRyAmABEkIKE2luaXRpYWxfcGVybWlzc2lvbnMYBCADKAsyJS5lbGFyYS5jb21tb24udjEuUGVybWlzc2lvbkFzc2lnbm1lbnQSLwoZaW5pdGlhbF9tYW5hZ2VyX2dyb3VwX2lkcxgFIAMoCUIMukgJkgEGIgRyAhABIpABChNDcmVhdGVHcm91cFJlc3BvbnNlEiQKBWdyb3VwGAEgASgLMhUuZWxhcmEuZ3JvdXAudjEuR3JvdXASFwoPdmlzaWJsZV9tZW1iZXJzGAIgAygJEjoKC3Blcm1pc3Npb25zGAMgAygLMiUuZWxhcmEuY29tbW9uLnYxLlBlcm1pc3Npb25Bc3NpZ25tZW50IiUKD0dldEdyb3VwUmVxdWVzdBISCgJpZBgBIAEoCUIGukgDyAEBIo0BChBHZXRHcm91cFJlc3BvbnNlEiQKBWdyb3VwGAEgASgLMhUuZWxhcmEuZ3JvdXAudjEuR3JvdXASFwoPdmlzaWJsZV9tZW1iZXJzGAIgAygJEjoKC3Blcm1pc3Npb25zGAMgAygLMiUuZWxhcmEuY29tbW9uLnYxLlBlcm1pc3Npb25Bc3NpZ25tZW50IrABChJVcGRhdGVHcm91cFJlcXVlc3QSEgoCaWQYASABKAlCBrpIA8gBARIYCgRuYW1lGAIgASgJQgq6SAdyBRABGIABEh0KC2Rlc2NyaXB0aW9uGAMgASgJQgi6SAVyAxiACBIvChlleHBlY3RlZF9tZXRhZGF0YV92ZXJzaW9uGAQgASgDQge6SAQiAigASACIAQFCHAoaX2V4cGVjdGVkX21ldGFkYXRhX3ZlcnNpb24iOwoTVXBkYXRlR3JvdXBSZXNwb25zZRIkCgVncm91cBgBIAEoCzIVLmVsYXJhLmdyb3VwLnYxLkdyb3VwIskBChlVcGRhdGVHcm91cE1lbWJlcnNSZXF1ZXN0EhgKCGdyb3VwX2lkGAEgASgJQga6SAPIAQESIAoKYWRkX2VtYWlscxgCIAMoCUIMukgJkgEGIgRyAmABEiMKDXJlbW92ZV9lbWFpbHMYAyADKAlCDLpICZIBBiIEcgJgARIuChhleHBlY3RlZF9tZW1iZXJzX3ZlcnNpb24YBCABKANCB7pIBCICKABIAIgBAUIbChlfZXhwZWN0ZWRfbWVtYmVyc192ZXJzaW9uIlsKGlVwZGF0ZUdyb3VwTWVtYmVyc1Jlc3BvbnNlEiQKBWdyb3VwGAEgASgLMhUuZWxhcmEuZ3JvdXAudjEuR3JvdXASFwoPdmlzaWJsZV9tZW1iZXJzGAIgAygJIvkBCh1VcGRhdGVHcm91cFBlcm1pc3Npb25zUmVxdWVzdBIYCghncm91cF9pZBgBIAEoCUIGukgDyAEBEjIKA2FkZBgCIAMoCzIlLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQXNzaWdubWVudBI1CgZyZW1vdmUYAyADKAsyJS5lbGFyYS5jb21tb24udjEuUGVybWlzc2lvbkFzc2lnbm1lbnQSMgocZXhwZWN0ZWRfcGVybWlzc2lvbnNfdmVyc2lvbhgEIAEoA0IHukgEIgIoAEgAiAEBQh8KHV9leHBlY3RlZF9wZXJtaXNzaW9uc192ZXJzaW9uIoIBCh5VcGRhdGVHcm91cFBlcm1pc3Npb25zUmVzcG9uc2USJAoFZ3JvdXAYASABKAsyFS5lbGFyYS5ncm91cC52MS5Hcm91cBI6CgtwZXJtaXNzaW9ucxgCIAMoCzIlLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQXNzaWdubWVudCIoChJEZWxldGVHcm91cFJlcXVlc3QSEgoCaWQYASABKAlCBrpIA8gBASIVChNEZWxldGVHcm91cFJlc3BvbnNlImUKEUxpc3RHcm91cHNSZXF1ZXN0EjYKCnBhZ2luYXRpb24YASABKAsyIi5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlcXVlc3QSGAoGc2VhcmNoGAIgASgJQgi6SAVyAxiAAiJ0ChJMaXN0R3JvdXBzUmVzcG9uc2USJQoGZ3JvdXBzGAEgAygLMhUuZWxhcmEuZ3JvdXAudjEuR3JvdXASNwoKcGFnaW5hdGlvbhgCIAEoCzIjLmVsYXJhLmNvbW1vbi52MS5QYWdpbmF0aW9uUmVzcG9uc2UyoAUKDEdyb3VwU2VydmljZRJWCgtDcmVhdGVHcm91cBIiLmVsYXJhLmdyb3VwLnYxLkNyZWF0ZUdyb3VwUmVxdWVzdBojLmVsYXJhLmdyb3VwLnYxLkNyZWF0ZUdyb3VwUmVzcG9uc2USTQoIR2V0R3JvdXASHy5lbGFyYS5ncm91cC52MS5HZXRHcm91cFJlcXVlc3QaIC5lbGFyYS5ncm91cC52MS5HZXRHcm91cFJlc3BvbnNlElYKC1VwZGF0ZUdyb3VwEiIuZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBSZXF1ZXN0GiMuZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBSZXNwb25zZRJrChJVcGRhdGVHcm91cE1lbWJlcnMSKS5lbGFyYS5ncm91cC52MS5VcGRhdGVHcm91cE1lbWJlcnNSZXF1ZXN0GiouZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBNZW1iZXJzUmVzcG9uc2USdwoWVXBkYXRlR3JvdXBQZXJtaXNzaW9ucxItLmVsYXJhLmdyb3VwLnYxLlVwZGF0ZUdyb3VwUGVybWlzc2lvbnNSZXF1ZXN0Gi4uZWxhcmEuZ3JvdXAudjEuVXBkYXRlR3JvdXBQZXJtaXNzaW9uc1Jlc3BvbnNlElYKC0RlbGV0ZUdyb3VwEiIuZWxhcmEuZ3JvdXAudjEuRGVsZXRlR3JvdXBSZXF1ZXN0GiMuZWxhcmEuZ3JvdXAudjEuRGVsZXRlR3JvdXBSZXNwb25zZRJTCgpMaXN0R3JvdXBzEiEuZWxhcmEuZ3JvdXAudjEuTGlzdEdyb3Vwc1JlcXVlc3QaIi5lbGFyYS5ncm91cC52MS5MaXN0R3JvdXBzUmVzcG9uc2VCyQEKEmNvbS5lbGFyYS5ncm91cC52MUIRR3JvdXBTZXJ2aWNlUHJvdG9QAVpGZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvZ3JvdXAvdjE7Z3JvdXB2MaICA0VHWKoCDkVsYXJhLkdyb3VwLlYxygIORWxhcmFcR3JvdXBcVjHiAhpFbGFyYVxHcm91cFxWMVxHUEJNZXRhZGF0YeoCEEVsYXJhOjpHcm91cDo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_elara_common_v1_common, file_elara_common_v1_permission, file_elara_group_v1_group]);
 
 /**
  * @generated from message elara.group.v1.CreateGroupRequest
@@ -26,6 +27,35 @@ export type CreateGroupRequest = Message<"elara.group.v1.CreateGroupRequest"> & 
    * @generated from field: string name = 1;
    */
   name: string;
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description: string;
+
+  /**
+   * Emails of users to add as members on creation. Each email must exist.
+   *
+   * @generated from field: repeated string initial_members = 3;
+   */
+  initialMembers: string[];
+
+  /**
+   * Permissions granted to the new group on creation.
+   *
+   * @generated from field: repeated elara.common.v1.PermissionAssignment initial_permissions = 4;
+   */
+  initialPermissions: PermissionAssignment[];
+
+  /**
+   * Group IDs that will receive `Group:Write group:<new-id>` permission on
+   * the new group. Without this the new group is only manageable by holders
+   * of Group:Write * (e.g. superadmin).
+   * Typically the caller's own administrative group(s).
+   *
+   * @generated from field: repeated string initial_manager_group_ids = 5;
+   */
+  initialManagerGroupIds: string[];
 };
 
 /**
@@ -43,6 +73,18 @@ export type CreateGroupResponse = Message<"elara.group.v1.CreateGroupResponse"> 
    * @generated from field: elara.group.v1.Group group = 1;
    */
   group?: Group;
+
+  /**
+   * Members visible to the caller — same filter as GetGroupResponse.
+   *
+   * @generated from field: repeated string visible_members = 2;
+   */
+  visibleMembers: string[];
+
+  /**
+   * @generated from field: repeated elara.common.v1.PermissionAssignment permissions = 3;
+   */
+  permissions: PermissionAssignment[];
 };
 
 /**
@@ -77,6 +119,22 @@ export type GetGroupResponse = Message<"elara.group.v1.GetGroupResponse"> & {
    * @generated from field: elara.group.v1.Group group = 1;
    */
   group?: Group;
+
+  /**
+   * Members visible to the caller (per the derived User:Read rule —
+   * see user_service.proto). Invisible members are not exposed.
+   *
+   * @generated from field: repeated string visible_members = 2;
+   */
+  visibleMembers: string[];
+
+  /**
+   * Full permission set of the group. Visibility derives from holding
+   * Group:Read on the group itself — no extra per-permission filter.
+   *
+   * @generated from field: repeated elara.common.v1.PermissionAssignment permissions = 3;
+   */
+  permissions: PermissionAssignment[];
 };
 
 /**
@@ -106,9 +164,9 @@ export type UpdateGroupRequest = Message<"elara.group.v1.UpdateGroupRequest"> & 
   description: string;
 
   /**
-   * @generated from field: int64 version = 4;
+   * @generated from field: optional int64 expected_metadata_version = 4;
    */
-  version: bigint;
+  expectedMetadataVersion?: bigint;
 };
 
 /**
@@ -145,12 +203,19 @@ export type UpdateGroupMembersRequest = Message<"elara.group.v1.UpdateGroupMembe
   groupId: string;
 
   /**
-   * Canonical full desired set of member emails. The server diffs against
-   * current Casbin g-rules and only operates on the symmetric difference.
-   *
-   * @generated from field: repeated string members = 2;
+   * @generated from field: repeated string add_emails = 2;
    */
-  members: string[];
+  addEmails: string[];
+
+  /**
+   * @generated from field: repeated string remove_emails = 3;
+   */
+  removeEmails: string[];
+
+  /**
+   * @generated from field: optional int64 expected_members_version = 4;
+   */
+  expectedMembersVersion?: bigint;
 };
 
 /**
@@ -168,6 +233,11 @@ export type UpdateGroupMembersResponse = Message<"elara.group.v1.UpdateGroupMemb
    * @generated from field: elara.group.v1.Group group = 1;
    */
   group?: Group;
+
+  /**
+   * @generated from field: repeated string visible_members = 2;
+   */
+  visibleMembers: string[];
 };
 
 /**
@@ -187,12 +257,19 @@ export type UpdateGroupPermissionsRequest = Message<"elara.group.v1.UpdateGroupP
   groupId: string;
 
   /**
-   * Canonical full desired set of permissions. The server diffs against
-   * current Casbin p-rules and only operates on the symmetric difference.
-   *
-   * @generated from field: repeated elara.common.v1.PermissionAssignment permissions = 2;
+   * @generated from field: repeated elara.common.v1.PermissionAssignment add = 2;
    */
-  permissions: PermissionAssignment[];
+  add: PermissionAssignment[];
+
+  /**
+   * @generated from field: repeated elara.common.v1.PermissionAssignment remove = 3;
+   */
+  remove: PermissionAssignment[];
+
+  /**
+   * @generated from field: optional int64 expected_permissions_version = 4;
+   */
+  expectedPermissionsVersion?: bigint;
 };
 
 /**
@@ -210,6 +287,11 @@ export type UpdateGroupPermissionsResponse = Message<"elara.group.v1.UpdateGroup
    * @generated from field: elara.group.v1.Group group = 1;
    */
   group?: Group;
+
+  /**
+   * @generated from field: repeated elara.common.v1.PermissionAssignment permissions = 2;
+   */
+  permissions: PermissionAssignment[];
 };
 
 /**
@@ -298,6 +380,16 @@ export const ListGroupsResponseSchema: GenMessage<ListGroupsResponse> = /*@__PUR
  */
 export const GroupService: GenService<{
   /**
+   * Create a group.
+   *
+   * Authorization: Group:Create * (global).
+   * Anti-escalation:
+   *   - caller must hold every permission in initial_permissions;
+   *   - for each id in initial_manager_group_ids the caller must hold
+   *     Group:Write on the group AND the group must hold every permission
+   *     in initial_permissions (cascade — its existing members will inherit
+   *     the new Group:Write group:<new-id>).
+   *
    * @generated from rpc elara.group.v1.GroupService.CreateGroup
    */
   createGroup: {
@@ -306,6 +398,14 @@ export const GroupService: GenService<{
     output: typeof CreateGroupResponseSchema;
   },
   /**
+   * Fetches a single group by id.
+   *
+   * Authorization: Group:Read group:<id> (or Group:Read * — wildcard match).
+   * visible_members in the response is filtered through the derived
+   * User:Read rule (see user_service.proto). The full permission set of
+   * the group is always returned — visibility derives from holding
+   * Group:Read on the group itself, no extra per-permission filter.
+   *
    * @generated from rpc elara.group.v1.GroupService.GetGroup
    */
   getGroup: {
@@ -314,10 +414,12 @@ export const GroupService: GenService<{
     output: typeof GetGroupResponseSchema;
   },
   /**
-   * Updates only the group's metadata (name, description). Membership and
-   * permissions are managed by UpdateGroupMembers and UpdateGroupPermissions
-   * respectively — mixing them into one RPC re-introduces the dual-write
-   * drift the split was designed to eliminate.
+   * Updates only metadata (name, description).
+   *
+   * Authorization: Group:Write group:<id>.
+   * Members and permissions are managed by UpdateGroupMembers and
+   * UpdateGroupPermissions respectively — mixing them here would
+   * re-introduce the dual-write drift the split was designed to eliminate.
    *
    * @generated from rpc elara.group.v1.GroupService.UpdateGroup
    */
@@ -327,11 +429,17 @@ export const GroupService: GenService<{
     output: typeof UpdateGroupResponseSchema;
   },
   /**
-   * Replaces the group's membership with the given canonical set. The
-   * server diffs against current Casbin g-rules and operates on the
-   * symmetric difference. Adding a member requires the caller to hold
-   * every permission the group currently grants (anti-escalation);
-   * removal narrows and requires no escalation check.
+   * Explicit delta on group membership.
+   * Adding an existing member is a no-op; removing an absent one is a no-op.
+   * Same email in both add_emails and remove_emails returns INVALID_ARGUMENT.
+   *
+   * Authorization: Group:Write group:<group_id>.
+   * Anti-escalation: each add_emails entry receives the group's full
+   * permission set, so the caller must hold every one of those permissions.
+   * Removals require no escalation check.
+   *
+   * If expected_members_version is set and current members_version differs,
+   * returns FAILED_PRECONDITION — even if the net change would be a no-op.
    *
    * @generated from rpc elara.group.v1.GroupService.UpdateGroupMembers
    */
@@ -341,11 +449,19 @@ export const GroupService: GenService<{
     output: typeof UpdateGroupMembersResponseSchema;
   },
   /**
-   * Replaces the group's permissions with the given canonical set. The
-   * server diffs against current Casbin p-rules. Each added or removed
-   * permission must lie within the actor's own boundary. If the group has
-   * members, the actor must additionally hold every permission the group
-   * will hold post-update.
+   * Explicit delta on group permissions.
+   * Adding an existing permission is a no-op; removing an absent one is a no-op.
+   * Same permission in both add and remove returns INVALID_ARGUMENT.
+   *
+   * Authorization: Group:Write group:<group_id>.
+   * Anti-escalation:
+   *   - per-delta: caller must hold each permission in add (boundary check);
+   *   - cascade: if the group has members, caller must hold every permission
+   *     the group will hold post-update.
+   *
+   * If expected_permissions_version is set and current permissions_version
+   * differs, returns FAILED_PRECONDITION — even if the net change would be
+   * a no-op.
    *
    * @generated from rpc elara.group.v1.GroupService.UpdateGroupPermissions
    */
@@ -355,6 +471,14 @@ export const GroupService: GenService<{
     output: typeof UpdateGroupPermissionsResponseSchema;
   },
   /**
+   * Deletes a group along with all its membership and permission rules.
+   *
+   * Authorization: Group:Write group:<id>.
+   * System groups (is_system=true) cannot be deleted — returns
+   * FAILED_PRECONDITION. The entity, its p-rules, and its g-rules
+   * (both directions: members and roles) are removed atomically in one
+   * Casbin write transaction.
+   *
    * @generated from rpc elara.group.v1.GroupService.DeleteGroup
    */
   deleteGroup: {
@@ -363,6 +487,14 @@ export const GroupService: GenService<{
     output: typeof DeleteGroupResponseSchema;
   },
   /**
+   * Lists groups visible to the caller.
+   *
+   * Authorization:
+   *   - Group:Read * (global) returns every group.
+   *   - Without Group:Read *, only groups for which the caller holds
+   *     Group:Read group:<id> are returned.
+   * An empty result is not an error — pagination returns an empty page.
+   *
    * @generated from rpc elara.group.v1.GroupService.ListGroups
    */
   listGroups: {

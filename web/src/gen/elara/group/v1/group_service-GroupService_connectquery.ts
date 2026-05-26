@@ -5,53 +5,103 @@
 import { GroupService } from "./group_service_pb";
 
 /**
+ * Create a group.
+ *
+ * Authorization: Group:Create * (global).
+ * Anti-escalation:
+ *   - caller must hold every permission in initial_permissions;
+ *   - for each id in initial_manager_group_ids the caller must hold
+ *     Group:Write on the group AND the group must hold every permission
+ *     in initial_permissions (cascade — its existing members will inherit
+ *     the new Group:Write group:<new-id>).
+ *
  * @generated from rpc elara.group.v1.GroupService.CreateGroup
  */
 export const createGroup = GroupService.method.createGroup;
 
 /**
+ * Fetches a single group by id.
+ *
+ * Authorization: Group:Read group:<id> (or Group:Read * — wildcard match).
+ * visible_members in the response is filtered through the derived
+ * User:Read rule (see user_service.proto). The full permission set of
+ * the group is always returned — visibility derives from holding
+ * Group:Read on the group itself, no extra per-permission filter.
+ *
  * @generated from rpc elara.group.v1.GroupService.GetGroup
  */
 export const getGroup = GroupService.method.getGroup;
 
 /**
- * Updates only the group's metadata (name, description). Membership and
- * permissions are managed by UpdateGroupMembers and UpdateGroupPermissions
- * respectively — mixing them into one RPC re-introduces the dual-write
- * drift the split was designed to eliminate.
+ * Updates only metadata (name, description).
+ *
+ * Authorization: Group:Write group:<id>.
+ * Members and permissions are managed by UpdateGroupMembers and
+ * UpdateGroupPermissions respectively — mixing them here would
+ * re-introduce the dual-write drift the split was designed to eliminate.
  *
  * @generated from rpc elara.group.v1.GroupService.UpdateGroup
  */
 export const updateGroup = GroupService.method.updateGroup;
 
 /**
- * Replaces the group's membership with the given canonical set. The
- * server diffs against current Casbin g-rules and operates on the
- * symmetric difference. Adding a member requires the caller to hold
- * every permission the group currently grants (anti-escalation);
- * removal narrows and requires no escalation check.
+ * Explicit delta on group membership.
+ * Adding an existing member is a no-op; removing an absent one is a no-op.
+ * Same email in both add_emails and remove_emails returns INVALID_ARGUMENT.
+ *
+ * Authorization: Group:Write group:<group_id>.
+ * Anti-escalation: each add_emails entry receives the group's full
+ * permission set, so the caller must hold every one of those permissions.
+ * Removals require no escalation check.
+ *
+ * If expected_members_version is set and current members_version differs,
+ * returns FAILED_PRECONDITION — even if the net change would be a no-op.
  *
  * @generated from rpc elara.group.v1.GroupService.UpdateGroupMembers
  */
 export const updateGroupMembers = GroupService.method.updateGroupMembers;
 
 /**
- * Replaces the group's permissions with the given canonical set. The
- * server diffs against current Casbin p-rules. Each added or removed
- * permission must lie within the actor's own boundary. If the group has
- * members, the actor must additionally hold every permission the group
- * will hold post-update.
+ * Explicit delta on group permissions.
+ * Adding an existing permission is a no-op; removing an absent one is a no-op.
+ * Same permission in both add and remove returns INVALID_ARGUMENT.
+ *
+ * Authorization: Group:Write group:<group_id>.
+ * Anti-escalation:
+ *   - per-delta: caller must hold each permission in add (boundary check);
+ *   - cascade: if the group has members, caller must hold every permission
+ *     the group will hold post-update.
+ *
+ * If expected_permissions_version is set and current permissions_version
+ * differs, returns FAILED_PRECONDITION — even if the net change would be
+ * a no-op.
  *
  * @generated from rpc elara.group.v1.GroupService.UpdateGroupPermissions
  */
 export const updateGroupPermissions = GroupService.method.updateGroupPermissions;
 
 /**
+ * Deletes a group along with all its membership and permission rules.
+ *
+ * Authorization: Group:Write group:<id>.
+ * System groups (is_system=true) cannot be deleted — returns
+ * FAILED_PRECONDITION. The entity, its p-rules, and its g-rules
+ * (both directions: members and roles) are removed atomically in one
+ * Casbin write transaction.
+ *
  * @generated from rpc elara.group.v1.GroupService.DeleteGroup
  */
 export const deleteGroup = GroupService.method.deleteGroup;
 
 /**
+ * Lists groups visible to the caller.
+ *
+ * Authorization:
+ *   - Group:Read * (global) returns every group.
+ *   - Without Group:Read *, only groups for which the caller holds
+ *     Group:Read group:<id> are returned.
+ * An empty result is not an error — pagination returns an empty page.
+ *
  * @generated from rpc elara.group.v1.GroupService.ListGroups
  */
 export const listGroups = GroupService.method.listGroups;

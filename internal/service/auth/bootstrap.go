@@ -145,7 +145,6 @@ func (a *AdminBootstrap) ensureSuperAdminGroup(ctx context.Context, tx storage.T
 	group = &domain.Group{
 		ID:        uuid.New().String(),
 		Name:      domain.SystemGroupSuperAdmin,
-		Members:   []string{},
 		System:    true,
 		CreatedAt: now,
 		UpdatedAt: now,

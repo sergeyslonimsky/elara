@@ -29,7 +29,7 @@ func TestService_List(t *testing.T) {
 				seedAdminWildcard(t, st)
 
 				for _, n := range []string{"alpha", "beta", "gamma"} {
-					_, err := st.svc.Create(t.Context(), adminAuth(), n)
+					_, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: n})
 					require.NoError(t, err)
 				}
 
@@ -51,7 +51,7 @@ func TestService_List(t *testing.T) {
 				t.Helper()
 
 				for _, n := range []string{"dev", "prod"} {
-					_, err := st.svc.Create(t.Context(), adminAuth(), n)
+					_, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: n})
 					require.NoError(t, err)
 				}
 
@@ -83,7 +83,7 @@ func TestService_List(t *testing.T) {
 				t.Helper()
 
 				for _, n := range []string{"dev", "prod"} {
-					_, err := st.svc.Create(t.Context(), adminAuth(), n)
+					_, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: n})
 					require.NoError(t, err)
 				}
 
@@ -120,7 +120,7 @@ func TestService_List(t *testing.T) {
 				seedAdminWildcard(t, st)
 
 				for _, n := range []string{"a", "b", "c", "d", "e", "f"} {
-					_, err := st.svc.Create(t.Context(), adminAuth(), n)
+					_, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: n})
 					require.NoError(t, err)
 				}
 

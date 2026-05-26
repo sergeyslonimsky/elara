@@ -70,3 +70,15 @@ export function invalidateAllConfigData(client: QueryClient): void {
 	invalidate(client, "config");
 	invalidate(client, "configHistory");
 }
+
+/**
+ * Invalidate everything affected by a user↔group membership change.
+ * Used by UpdateUserGroups, UpdateGroupMembers, CreateUser/Group with initial
+ * members, and DeleteUser.
+ */
+export function invalidateUserGroupGraph(client: QueryClient): void {
+	invalidate(client, "users");
+	invalidate(client, "user");
+	invalidate(client, "groups");
+	invalidate(client, "group");
+}

@@ -1,8 +1,11 @@
+import { create } from "@bufbuild/protobuf";
 import { Ability } from "@casl/ability";
 import { useQuery } from "@connectrpc/connect-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { useAuth } from "@/components/auth-provider";
+import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
 import { TestProviders } from "@/test/test-utils";
 import { GroupsPage } from "./index";
 
@@ -19,7 +22,6 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 	};
 });
 
-// Mock useAuth to control permissions
 vi.mock("@/components/auth-provider", async (importOriginal) => {
 	const actual = await importOriginal<Record<string, unknown>>();
 	return {
@@ -28,37 +30,50 @@ vi.mock("@/components/auth-provider", async (importOriginal) => {
 	};
 });
 
+const mockNavigate = vi.fn();
+vi.mock("react-router", async (importOriginal) => {
+	const actual = await importOriginal<Record<string, unknown>>();
+	return {
+		...actual,
+		useNavigate: () => mockNavigate,
+	};
+});
+
 describe("GroupsPage", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 
-		// Default auth state: authenticated with write permissions
 		vi.mocked(useAuth).mockReturnValue({
 			state: {
 				status: "authenticated",
 				ability: new Ability([{ action: "write", subject: "Group" }]),
+				authType: 0,
 				user: { email: "admin@example.com", name: "Admin" },
 			},
 			logout: vi.fn(),
-		} as any);
+		} as unknown as ReturnType<typeof useAuth>);
 	});
 
 	test("renders group list", () => {
 		vi.mocked(useQuery).mockReturnValue({
 			data: {
 				groups: [
-					{
+					create(GroupSchema, {
 						id: "group-1",
 						name: "Developers",
-						members: ["user1@example.com"],
-						createdAt: { seconds: 1234567890n, nanos: 0 },
-					},
-					{
+						isSystem: false,
+						metadataVersion: 1n,
+						membersVersion: 1n,
+						permissionsVersion: 1n,
+					}),
+					create(GroupSchema, {
 						id: "group-2",
 						name: "Admins",
-						members: ["admin@example.com", "user2@example.com"],
-						createdAt: { seconds: 1234567890n, nanos: 0 },
-					},
+						isSystem: false,
+						metadataVersion: 1n,
+						membersVersion: 1n,
+						permissionsVersion: 1n,
+					}),
 				],
 				pagination: { total: 2 },
 			},
@@ -66,7 +81,7 @@ describe("GroupsPage", () => {
 			error: null,
 			refetch: vi.fn(),
 			isFetching: false,
-		} as any);
+		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
 			<TestProviders>
@@ -76,18 +91,30 @@ describe("GroupsPage", () => {
 
 		expect(screen.getByText("Developers")).toBeInTheDocument();
 		expect(screen.getByText("Admins")).toBeInTheDocument();
-		expect(screen.getByText("1 member(s)")).toBeInTheDocument();
-		expect(screen.getByText("2 member(s)")).toBeInTheDocument();
 	});
 
-	test("pagination interaction", () => {
+	test("row click navigates to group detail", async () => {
+		const ue = userEvent.setup();
+
 		vi.mocked(useQuery).mockReturnValue({
-			data: { groups: [], pagination: { total: 50 } },
+			data: {
+				groups: [
+					create(GroupSchema, {
+						id: "group-1",
+						name: "Developers",
+						isSystem: false,
+						metadataVersion: 1n,
+						membersVersion: 1n,
+						permissionsVersion: 1n,
+					}),
+				],
+				pagination: { total: 1 },
+			},
 			isLoading: false,
 			error: null,
 			refetch: vi.fn(),
 			isFetching: false,
-		} as any);
+		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
 			<TestProviders>
@@ -95,8 +122,27 @@ describe("GroupsPage", () => {
 			</TestProviders>,
 		);
 
-		const nextButton = screen.getByRole("button", { name: /next/i });
-		fireEvent.click(nextButton);
+		await ue.click(screen.getByText("Developers"));
+		expect(mockNavigate).toHaveBeenCalledWith("/groups/group-1");
+	});
+
+	test("pagination interaction", async () => {
+		const ue = userEvent.setup();
+		vi.mocked(useQuery).mockReturnValue({
+			data: { groups: [], pagination: { total: 50 } },
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+			isFetching: false,
+		} as unknown as ReturnType<typeof useQuery>);
+
+		render(
+			<TestProviders>
+				<GroupsPage />
+			</TestProviders>,
+		);
+
+		await ue.click(screen.getByRole("button", { name: /next/i }));
 
 		expect(useQuery).toHaveBeenCalledWith(
 			expect.anything(),

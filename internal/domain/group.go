@@ -28,24 +28,24 @@ type GroupListParams struct {
 	Sort   SortParams
 }
 
-// Group is the bbolt-persisted entity plus a transient view of its
-// membership. Members is the source-of-truth view from Casbin g-rules
-// (`g, <email>, group:<name>, "*"`) and is populated by the service layer
-// after fetch — it is never written back to bbolt. Use the membership
-// usecases (UpdateGroupMembers, UpdateUserGroups) to mutate it.
+// Group is the bbolt-persisted entity. Members and permissions live in
+// Casbin (g-rules / p-rules); the service layer composes them with this
+// entity at the response boundary and they never round-trip through bbolt.
+//
+// Three independent optimistic-lock counters let concurrent edits to
+// metadata, members, and permissions proceed without false conflicts —
+// see the proto comment on the wire-level message for the full contract.
 type Group struct {
-	ID          string
-	Name        string
-	Description string
-	Members     []string // emails — transient, enriched from Casbin
-	System      bool     // protected from delete/rename; set by Seed, never by the API
-	Version     int64    // for optimistic locking on metadata only
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID                 string
+	Name               string
+	Description        string
+	System             bool // protected from delete/rename; set by Seed, never by the API
+	MetadataVersion    int64
+	MembersVersion     int64
+	PermissionsVersion int64
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
-
-// SystemUserSuperAdmin is the username of the break-glass superuser.
-const SystemUserSuperAdmin = "superadmin"
 
 func (g *Group) EnsureMutable() error {
 	if g.System {

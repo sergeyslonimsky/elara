@@ -81,18 +81,18 @@ func (m *MockgroupUsecase) EXPECT() *MockgroupUsecaseMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockgroupUsecase) Create(ctx context.Context, user domain.AuthInfo, name string) (*domain.Group, error) {
+func (m *MockgroupUsecase) Create(ctx context.Context, user domain.AuthInfo, data group.CreateData) (*group.CreateResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, user, name)
-	ret0, _ := ret[0].(*domain.Group)
+	ret := m.ctrl.Call(m, "Create", ctx, user, data)
+	ret0, _ := ret[0].(*group.CreateResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockgroupUsecaseMockRecorder) Create(ctx, user, name any) *gomock.Call {
+func (mr *MockgroupUsecaseMockRecorder) Create(ctx, user, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockgroupUsecase)(nil).Create), ctx, user, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockgroupUsecase)(nil).Create), ctx, user, data)
 }
 
 // Delete mocks base method.
@@ -110,18 +110,18 @@ func (mr *MockgroupUsecaseMockRecorder) Delete(ctx, user, id any) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockgroupUsecase) Get(ctx context.Context, id string) (*domain.Group, error) {
+func (m *MockgroupUsecase) Get(ctx context.Context, user domain.AuthInfo, id string) (*group.GetResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
-	ret0, _ := ret[0].(*domain.Group)
+	ret := m.ctrl.Call(m, "Get", ctx, user, id)
+	ret0, _ := ret[0].(*group.GetResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockgroupUsecaseMockRecorder) Get(ctx, id any) *gomock.Call {
+func (mr *MockgroupUsecaseMockRecorder) Get(ctx, user, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockgroupUsecase)(nil).Get), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockgroupUsecase)(nil).Get), ctx, user, id)
 }
 
 // List mocks base method.
@@ -155,10 +155,10 @@ func (mr *MockgroupUsecaseMockRecorder) Update(ctx, user, data any) *gomock.Call
 }
 
 // UpdateMembers mocks base method.
-func (m *MockgroupUsecase) UpdateMembers(ctx context.Context, user domain.AuthInfo, data group.UpdateMembersData) (*domain.Group, error) {
+func (m *MockgroupUsecase) UpdateMembers(ctx context.Context, user domain.AuthInfo, data group.UpdateMembersData) (*group.UpdateMembersResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateMembers", ctx, user, data)
-	ret0, _ := ret[0].(*domain.Group)
+	ret0, _ := ret[0].(*group.UpdateMembersResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -170,10 +170,10 @@ func (mr *MockgroupUsecaseMockRecorder) UpdateMembers(ctx, user, data any) *gomo
 }
 
 // UpdatePermissions mocks base method.
-func (m *MockgroupUsecase) UpdatePermissions(ctx context.Context, user domain.AuthInfo, data group.UpdatePermissionsData) (*domain.Group, error) {
+func (m *MockgroupUsecase) UpdatePermissions(ctx context.Context, user domain.AuthInfo, data group.UpdatePermissionsData) (*group.UpdatePermissionsResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdatePermissions", ctx, user, data)
-	ret0, _ := ret[0].(*domain.Group)
+	ret0, _ := ret[0].(*group.UpdatePermissionsResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

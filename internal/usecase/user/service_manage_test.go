@@ -1,513 +1,403 @@
 package user_test
 
 import (
-	"context"
+	"errors"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
 	"github.com/sergeyslonimsky/elara/internal/usecase/user"
 )
 
-// Authorization for UserService.* is enforced in the handler layer (EL-4 M9);
-// these tests cover only the business logic remaining in the usecase
-// (validation, self-deletion guard, last-admin guard, List scoping).
-
-func contextWithAdmin(ctx context.Context) context.Context {
-	return auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
-}
+// ---- Create ------------------------------------------------------------------
 
 func TestService_Create(t *testing.T) {
 	t.Parallel()
 
-	const (
-		email    = "new-user@example.com"
-		name     = "New User"
-		password = "initial-password"
-	)
+	const newEmail = "new-user@example.com"
 
-	tests := []struct {
-		name     string
-		email    string
-		password string
-		mockFunc func(ctx context.Context, m mocks)
-		wantErr  string
-		want     *domain.User
-	}{
-		{
-			name:     "success",
-			email:    email,
-			password: password,
-			mockFunc: func(ctx context.Context, m mocks) {
-				m.store.EXPECT().Upsert(ctx, gomock.AssignableToTypeOf(&domain.User{})).Return(nil)
-				m.store.EXPECT().SetPassword(ctx, email, gomock.Any(), true).Return(nil)
-			},
-			want: &domain.User{Email: email, Name: name, Provider: domain.ProviderBasicAuth},
-		},
-		{
-			name:     "OIDC pre-create (empty password)",
-			email:    email,
-			password: "",
-			mockFunc: func(ctx context.Context, m mocks) {
-				m.store.EXPECT().Upsert(ctx, gomock.Cond(func(x any) bool {
-					u, ok := x.(*domain.User)
+	t.Run("basic-auth: stores user, password hash, and password_change_required=true", func(t *testing.T) {
+		t.Parallel()
 
-					return ok && u.Provider == domain.ProviderOIDC
-				})).Return(nil)
-			},
-			want: &domain.User{Email: email, Name: name, Provider: domain.ProviderOIDC},
-		},
-		{
-			name:     "validation error",
-			email:    "invalid-email",
-			password: password,
-			mockFunc: func(_ context.Context, _ mocks) {},
-			wantErr:  "validate user",
-		},
-		{
-			name:     "upsert fails",
-			email:    email,
-			password: password,
-			mockFunc: func(ctx context.Context, m mocks) {
-				m.store.EXPECT().Upsert(ctx, gomock.Any()).Return(assert.AnError)
-			},
-			wantErr: "upsert user",
-		},
-		{
-			name:     "set password fails",
-			email:    email,
-			password: password,
-			mockFunc: func(ctx context.Context, m mocks) {
-				m.store.EXPECT().Upsert(ctx, gomock.Any()).Return(nil)
-				m.store.EXPECT().SetPassword(ctx, email, gomock.Any(), true).Return(assert.AnError)
-			},
-			wantErr: "set password",
-		},
-	}
+		st := setupServiceReal(t)
+		seedAdminAll(t, st)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			sut, m, _, _ := setupService(t)
-			ctx := t.Context()
-			tt.mockFunc(ctx, m)
-
-			got, err := sut.Create(ctx, tt.email, name, tt.password)
-
-			if tt.wantErr != "" {
-				require.ErrorContains(t, err, tt.wantErr)
-
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+		res, err := st.svc.Create(t.Context(), adminActor(), user.CreateData{
+			Email:           newEmail,
+			Name:            "New User",
+			InitialPassword: "initial-password",
 		})
-	}
+		require.NoError(t, err)
+		require.NotNil(t, res)
+
+		// Persisted bbolt state matches the result and the input.
+		persisted, err := st.users.Get(t.Context(), newEmail)
+		require.NoError(t, err)
+		assert.Equal(t, newEmail, persisted.Email)
+		assert.Equal(t, "New User", persisted.Name)
+		assert.Equal(t, domain.ProviderBasicAuth, persisted.Provider)
+		assert.True(t, persisted.PasswordChangeRequired)
+		// Password is stored as a bcrypt hash, not the plaintext.
+		assert.NotEqual(t, "initial-password", persisted.PasswordHash)
+		require.NoError(t, auth.VerifyPassword(persisted.PasswordHash, "initial-password"))
+		// No initial groups requested → MembershipVersion stays at zero.
+		assert.Equal(t, int64(0), persisted.MembershipVersion)
+		assert.Empty(t, res.GroupIDs)
+		assert.Equal(t, int64(0), res.MembershipVersion)
+	})
+
+	t.Run("OIDC: empty password sets ProviderOIDC and no password hash", func(t *testing.T) {
+		t.Parallel()
+
+		st := setupServiceReal(t)
+		seedAdminAll(t, st)
+
+		res, err := st.svc.Create(t.Context(), adminActor(), user.CreateData{
+			Email: newEmail,
+			Name:  "OIDC User",
+		})
+		require.NoError(t, err)
+		assert.Equal(t, domain.ProviderOIDC, res.User.Provider)
+
+		persisted, err := st.users.Get(t.Context(), newEmail)
+		require.NoError(t, err)
+		assert.Equal(t, domain.ProviderOIDC, persisted.Provider)
+		assert.Empty(t, persisted.PasswordHash)
+		assert.False(t, persisted.PasswordChangeRequired)
+	})
+
+	t.Run("with initial groups: persists memberships and bumps version to 1", func(t *testing.T) {
+		t.Parallel()
+
+		st := setupServiceReal(t)
+		seedAdminAll(t, st)
+		seedGroup(t, st, "g1", "devs")
+		seedGroup(t, st, "g2", "platform")
+
+		res, err := st.svc.Create(t.Context(), adminActor(), user.CreateData{
+			Email:           newEmail,
+			Name:            "New User",
+			InitialPassword: "initial-password",
+			InitialGroupIDs: []string{"g1", "g2"},
+		})
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []string{"g1", "g2"}, res.GroupIDs)
+		assert.Equal(t, int64(1), res.MembershipVersion)
+
+		// Casbin g-rules reflect the membership additions.
+		roles, err := st.enforcer.GetRolesForUser(newEmail, domain.MembershipDomain)
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []string{casbin.GroupSubject("devs"), casbin.GroupSubject("platform")}, roles)
+
+		// bbolt MembershipVersion mirrors the result.
+		persisted, err := st.users.Get(t.Context(), newEmail)
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), persisted.MembershipVersion)
+	})
+
+	t.Run("forbidden: no User:Create * and no initial groups", func(t *testing.T) {
+		t.Parallel()
+
+		st := setupServiceReal(t)
+		// Actor has nothing — proto requires User:Create * OR (groups +
+		// Group:Write). Reject before any tx is opened.
+
+		_, err := st.svc.Create(t.Context(), actor(), user.CreateData{
+			Email: newEmail,
+			Name:  "New User",
+		})
+		require.ErrorIs(t, err, domain.ErrForbidden)
+
+		// Nothing persisted: bbolt does not know about the user.
+		_, err = st.users.Get(t.Context(), newEmail)
+		require.ErrorIs(t, err, domain.ErrNotFound)
+	})
+
+	t.Run("forbidden: initial groups supplied but actor lacks Group:Write on one", func(t *testing.T) {
+		t.Parallel()
+
+		st := setupServiceReal(t)
+		seedGroup(t, st, "g1", "devs")
+		seedGroup(t, st, "g2", "platform")
+
+		// Actor only has Group:Write on g1.
+		addPolicies(t, st, [][4]string{
+			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
+		})
+
+		_, err := st.svc.Create(t.Context(), actor(), user.CreateData{
+			Email:           newEmail,
+			Name:            "New User",
+			InitialPassword: "p",
+			InitialGroupIDs: []string{"g1", "g2"},
+		})
+		require.ErrorIs(t, err, domain.ErrForbidden)
+
+		// No user persisted, no g-rules added.
+		_, err = st.users.Get(t.Context(), newEmail)
+		require.ErrorIs(t, err, domain.ErrNotFound)
+	})
+
+	t.Run("anti-escalation: blocks add of group with permissions actor lacks", func(t *testing.T) {
+		t.Parallel()
+
+		st := setupServiceReal(t)
+		seedGroup(t, st, "g1", "elevated")
+
+		// elevated group grants config:write on ns-a; actor has only
+		// Group:Write on g1 (no config:write of its own).
+		addPolicies(t, st, [][4]string{
+			{casbin.GroupSubject("elevated"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
+			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
+		})
+
+		_, err := st.svc.Create(t.Context(), actor(), user.CreateData{
+			Email:           newEmail,
+			Name:            "New User",
+			InitialPassword: "p",
+			InitialGroupIDs: []string{"g1"},
+		})
+		require.ErrorIs(t, err, domain.ErrPermissionEscalation)
+
+		// Tx rolled back: no user, no g-rules.
+		_, err = st.users.Get(t.Context(), newEmail)
+		require.ErrorIs(t, err, domain.ErrNotFound)
+		roles, err := st.enforcer.GetRolesForUser(newEmail, domain.MembershipDomain)
+		require.NoError(t, err)
+		assert.Empty(t, roles)
+	})
+
+	t.Run("validation error: invalid email", func(t *testing.T) {
+		t.Parallel()
+
+		st := setupServiceReal(t)
+		seedAdminAll(t, st)
+
+		_, err := st.svc.Create(t.Context(), adminActor(), user.CreateData{
+			Email:           "invalid-email",
+			Name:            "X",
+			InitialPassword: "p",
+		})
+		require.ErrorContains(t, err, "validate user")
+		require.True(t, domain.IsValidationError(err))
+	})
 }
+
+// TestService_Create_UpsertErrorWrapped exercises the error-wrapping contract
+// when the underlying store fails during the in-tx Upsert. Mock-based, fault
+// injection only.
+func TestService_Create_UpsertErrorWrapped(t *testing.T) {
+	t.Parallel()
+
+	m := setupServiceWithMockStore(t)
+	seedAdminAllOnMockStack(t, m)
+
+	m.store.EXPECT().
+		Upsert(gomock.Any(), gomock.AssignableToTypeOf(&domain.User{})).
+		Return(errors.New("boom"))
+
+	_, err := m.svc.Create(t.Context(), adminActor(), user.CreateData{
+		Email:           "new-user@example.com",
+		Name:            "New User",
+		InitialPassword: "initial-password",
+	})
+	require.ErrorContains(t, err, "upsert user")
+	require.ErrorContains(t, err, "boom")
+}
+
+// ---- Delete ------------------------------------------------------------------
 
 func TestService_Delete(t *testing.T) {
 	t.Parallel()
 
-	const (
-		adminEmail  = "admin@example.com"
-		targetEmail = "target@example.com"
-	)
-
-	t.Run("unauthorized (no claims) -> ErrUnauthorized", func(t *testing.T) {
+	t.Run("happy path: admin deletes target — bbolt row and g-rules gone", func(t *testing.T) {
 		t.Parallel()
 
-		sut, _, _, _ := setupService(t)
+		st := setupServiceReal(t)
+		seedAdminAll(t, st)
+		seedUser(t, st, targetEmail)
+		seedGroup(t, st, "g1", "devs")
+		addMemberships(t, st, []struct{ User, GroupName string }{
+			{targetEmail, "devs"},
+		})
 
-		err := sut.Delete(t.Context(), targetEmail)
-		require.ErrorIs(t, err, domain.ErrUnauthorized)
+		err := st.svc.Delete(t.Context(), adminActor(), targetEmail)
+		require.NoError(t, err)
+
+		_, err = st.users.Get(t.Context(), targetEmail)
+		require.ErrorIs(t, err, domain.ErrNotFound)
+		roles, err := st.enforcer.GetRolesForUser(targetEmail, domain.MembershipDomain)
+		require.NoError(t, err)
+		assert.Empty(t, roles)
 	})
 
-	t.Run("self-deletion is rejected", func(t *testing.T) {
+	t.Run("rejects self-delete", func(t *testing.T) {
 		t.Parallel()
 
-		sut, _, _, _ := setupService(t)
-		ctx := auth.WithClaims(t.Context(), &auth.Claims{Email: targetEmail})
+		st := setupServiceReal(t)
 
-		err := sut.Delete(ctx, targetEmail)
+		err := st.svc.Delete(t.Context(), adminActor(), adminEmail)
 		require.ErrorContains(t, err, "cannot delete your own account")
+		require.True(t, domain.IsValidationError(err))
 	})
 
-	t.Run("user not found", func(t *testing.T) {
+	t.Run("not found: missing user returns wrapped ErrNotFound", func(t *testing.T) {
 		t.Parallel()
 
-		sut, m, _, _ := setupService(t)
-		ctx := auth.WithClaims(t.Context(), &auth.Claims{Email: adminEmail})
+		st := setupServiceReal(t)
+		seedAdminAll(t, st)
 
-		m.store.EXPECT().Get(ctx, targetEmail).Return(nil, domain.ErrNotFound)
-
-		err := sut.Delete(ctx, targetEmail)
+		err := st.svc.Delete(t.Context(), adminActor(), "ghost@example.com")
+		require.ErrorIs(t, err, domain.ErrNotFound)
 		require.ErrorContains(t, err, "get user")
 	})
 
-	t.Run("success removes user and Casbin rules atomically", func(t *testing.T) {
+	t.Run("forbidden when actor has no scope over target", func(t *testing.T) {
 		t.Parallel()
 
-		sut, m, _, _ := setupService(t)
-		ctx := auth.WithClaims(t.Context(), &auth.Claims{Email: adminEmail})
+		st := setupServiceReal(t)
+		seedUser(t, st, targetEmail)
 
-		// The mocked store has no Casbin admin grant, so the last-admin guard
-		// is satisfied. Store.Get returns the target user; the WriteTx path
-		// then writes through the real bbolt UserRepo (whose Delete will
-		// return NotFound because we never seeded it). We accept that and
-		// assert the error wrapping, not full integration of users + casbin.
-		m.store.EXPECT().Get(ctx, targetEmail).Return(&domain.User{Email: targetEmail}, nil)
+		err := st.svc.Delete(t.Context(), actor(), targetEmail)
+		require.ErrorIs(t, err, domain.ErrForbidden)
 
-		err := sut.Delete(ctx, targetEmail)
-		// The real UserRepo returns NotFound on an unseeded user; we wrap as
-		// "delete user". A fully-integrated test would also seed the user via
-		// users.Upsert and then assert successful removal; this remains an
-		// open follow-up.
-		require.ErrorContains(t, err, "delete user")
+		// Target still exists.
+		_, err = st.users.Get(t.Context(), targetEmail)
+		require.NoError(t, err)
+	})
+
+	t.Run("anti-escalation: actor lacks one of target's permissions", func(t *testing.T) {
+		t.Parallel()
+
+		st := setupServiceReal(t)
+		seedUser(t, st, targetEmail)
+		seedGroup(t, st, "g1", "devs")
+		addMemberships(t, st, []struct{ User, GroupName string }{
+			{targetEmail, "devs"},
+		})
+
+		// Actor: Group:Write on g1 (can write the target) but NO config:write
+		// permission that the target's group grants.
+		addPolicies(t, st, [][4]string{
+			{casbin.GroupSubject("devs"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
+			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
+		})
+
+		err := st.svc.Delete(t.Context(), actor(), targetEmail)
+		require.ErrorIs(t, err, domain.ErrPermissionEscalation)
+
+		_, err = st.users.Get(t.Context(), targetEmail)
+		require.NoError(t, err)
+	})
+
+	t.Run("last-admin guard: refuses to delete sole holder of admin role", func(t *testing.T) {
+		t.Parallel()
+
+		st := setupServiceReal(t)
+		// Sole admin: a separate actor (so self-delete check doesn't shadow
+		// the last-admin guard) is the unique RoleAdmin/* holder. The caller
+		// holds the wildcard User:Write needed to reach the guard.
+		seedUser(t, st, targetEmail)
+		addPolicies(t, st, [][4]string{
+			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+		})
+		// Assign target the admin role on the wildcard domain so they are
+		// the sole holder of the admin grant.
+		addRoleForUser(t, st, targetEmail, domain.RoleAdmin, domain.DomainAll)
+
+		err := st.svc.Delete(t.Context(), adminActor(), targetEmail)
+		require.ErrorContains(t, err, "cannot delete the last admin")
+		require.True(t, domain.IsValidationError(err))
+
+		// Target still exists.
+		_, err = st.users.Get(t.Context(), targetEmail)
+		require.NoError(t, err)
 	})
 }
+
+// ---- Get ---------------------------------------------------------------------
 
 func TestService_Get(t *testing.T) {
 	t.Parallel()
 
-	const targetEmail = "user@example.com"
-	u := &domain.User{Email: targetEmail}
+	t.Run("happy path with User:Read *: returns user and no visible groups when target has none", func(t *testing.T) {
+		t.Parallel()
 
-	tests := []struct {
-		name     string
-		mockFunc func(ctx context.Context, m mocks)
-		wantErr  string
-		want     *user.GetResult
-	}{
-		{
-			name: "success",
-			mockFunc: func(ctx context.Context, m mocks) {
-				m.store.EXPECT().Get(ctx, targetEmail).Return(u, nil)
-			},
-			want: &user.GetResult{User: u, GroupIDs: []string{}},
-		},
-		{
-			name: "store fails",
-			mockFunc: func(ctx context.Context, m mocks) {
-				m.store.EXPECT().Get(ctx, targetEmail).Return(nil, assert.AnError)
-			},
-			wantErr: "get user",
-		},
-	}
+		st := setupServiceReal(t)
+		seedAdminAll(t, st)
+		seedUser(t, st, targetEmail)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+		got, err := st.svc.Get(t.Context(), adminActor(), targetEmail)
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		assert.Equal(t, targetEmail, got.User.Email)
+		assert.Empty(t, got.VisibleGroupIDs)
+		assert.Equal(t, int64(0), got.MembershipVersion)
+	})
 
-			sut, m, _, _ := setupService(t)
-			ctx := t.Context()
-			tt.mockFunc(ctx, m)
+	t.Run("out-of-scope returns ErrNotFound (not Forbidden) for enumeration safety", func(t *testing.T) {
+		t.Parallel()
 
-			got, err := sut.Get(ctx, targetEmail)
+		st := setupServiceReal(t)
+		seedUser(t, st, targetEmail)
 
-			if tt.wantErr != "" {
-				require.ErrorContains(t, err, tt.wantErr)
+		_, err := st.svc.Get(t.Context(), actor(), targetEmail)
+		require.ErrorIs(t, err, domain.ErrNotFound)
+	})
 
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+	t.Run("missing user returns ErrNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		st := setupServiceReal(t)
+		seedAdminAll(t, st)
+
+		_, err := st.svc.Get(t.Context(), adminActor(), "ghost@example.com")
+		require.ErrorIs(t, err, domain.ErrNotFound)
+	})
+
+	t.Run("VisibleGroupIDs is filtered through Group:Read", func(t *testing.T) {
+		t.Parallel()
+
+		st := setupServiceReal(t)
+		seedUser(t, st, targetEmail)
+		seedGroup(t, st, "visible", "visible-grp")
+		seedGroup(t, st, "hidden", "hidden-grp")
+		addMemberships(t, st, []struct{ User, GroupName string }{
+			{targetEmail, "visible-grp"},
+			{targetEmail, "hidden-grp"},
 		})
-	}
+
+		// Actor can read group:visible only (also Group:Read used to grant
+		// scope over the user itself).
+		addPolicies(t, st, [][4]string{
+			{actorEmail, domain.GroupResource("visible"), domain.ObjectGroup, domain.ActionRead},
+		})
+
+		got, err := st.svc.Get(t.Context(), actor(), targetEmail)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"visible"}, got.VisibleGroupIDs)
+	})
 }
 
-// List uses an integration stack because Service.List depends on
-// enforcer.GetMembersOfGroup (concrete *casbin.Enforcer, not an interface).
-// Wildcard-scope cases keep the mocked store so we can lock filter shape and
-// inject store errors; explicit-scope cases use the real UserRepo so members
-// resolved through Casbin actually pass through the bbolt filter.
-
-func TestService_List_Unauthenticated(t *testing.T) {
+// TestService_Get_StoreErrorWrapped is the lone mock-based test for Get —
+// pinning the error-wrapping message when the store returns an arbitrary
+// failure.
+func TestService_Get_StoreErrorWrapped(t *testing.T) {
 	t.Parallel()
 
-	sut, _, _, _ := setupService(t)
+	m := setupServiceWithMockStore(t)
+	seedAdminAllOnMockStack(t, m)
 
-	_, err := sut.List(t.Context(), user.ListParams{})
-	require.ErrorIs(t, err, domain.ErrUnauthorized)
-}
-
-func TestService_List_WildcardScope_ForwardsAnyUserAndDefaults(t *testing.T) {
-	t.Parallel()
-
-	sut, m, store, enforcer := setupService(t)
-	ctx := t.Context()
-	txm := bbolt.NewTxManager(store.DB())
-
-	// Grant admin (*,*,*) so EffectiveDomains returns wildcard.
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddPolicy(
-			"admin@example.com",
-			domain.DomainAll,
-			domain.ObjectAll,
-			domain.ActionAll,
-		)
-	}))
-
-	want := []*domain.User{{Email: "a@example.com"}, {Email: "b@example.com"}}
-
-	reqCtx := contextWithAdmin(ctx)
 	m.store.EXPECT().
-		List(
-			reqCtx,
-			domain.UserFilter{AnyUser: true, Search: "ali"},
-			domain.UserListParams{Limit: 20, Offset: 0, Sort: domain.SortParams{}},
-		).
-		Return(want, 2, nil)
+		Get(gomock.Any(), targetEmail).
+		Return(nil, errors.New("disk failure"))
 
-	got, err := sut.List(reqCtx, user.ListParams{Query: "ali"})
-	require.NoError(t, err)
-	assert.Equal(t, want, got.Users)
-	assert.Equal(t, 2, got.Total)
-	// Lock default limit literal.
-	assert.Equal(t, 20, got.Limit)
-	assert.Equal(t, 0, got.Offset)
-}
-
-func TestService_List_WildcardScope_PaginationForwarded(t *testing.T) {
-	t.Parallel()
-
-	sut, m, store, enforcer := setupService(t)
-	ctx := t.Context()
-	txm := bbolt.NewTxManager(store.DB())
-
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddPolicy(
-			"admin@example.com",
-			domain.DomainAll,
-			domain.ObjectAll,
-			domain.ActionAll,
-		)
-	}))
-
-	reqCtx := contextWithAdmin(ctx)
-	m.store.EXPECT().
-		List(
-			reqCtx,
-			domain.UserFilter{AnyUser: true},
-			domain.UserListParams{Limit: 5, Offset: 10, Sort: domain.SortParams{}},
-		).
-		Return(nil, 0, nil)
-
-	got, err := sut.List(reqCtx, user.ListParams{Limit: 5, Offset: 10})
-	require.NoError(t, err)
-	assert.Equal(t, 5, got.Limit)
-	assert.Equal(t, 10, got.Offset)
-}
-
-func TestService_List_WildcardScope_StoreErrorWrapped(t *testing.T) {
-	t.Parallel()
-
-	sut, m, store, enforcer := setupService(t)
-	ctx := t.Context()
-	txm := bbolt.NewTxManager(store.DB())
-
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddPolicy(
-			"admin@example.com",
-			domain.DomainAll,
-			domain.ObjectAll,
-			domain.ActionAll,
-		)
-	}))
-
-	reqCtx := contextWithAdmin(ctx)
-	m.store.EXPECT().
-		List(reqCtx, gomock.Any(), gomock.Any()).
-		Return(nil, 0, assert.AnError)
-
-	_, err := sut.List(reqCtx, user.ListParams{})
-	require.ErrorContains(t, err, "list users:")
-}
-
-func TestService_List_EmptyScopeReturnsEmpty_StoreNotCalled(t *testing.T) {
-	t.Parallel()
-
-	// Using setupService (mocked store) without any EXPECT proves the store
-	// is never invoked: gomock fails the test on unexpected calls.
-	sut, _, _, _ := setupService(t)
-	ctx := auth.WithClaims(t.Context(), &auth.Claims{Email: "nobody@example.com"})
-
-	got, err := sut.List(ctx, user.ListParams{})
-	require.NoError(t, err)
-	assert.Empty(t, got.Users)
-	assert.Equal(t, 0, got.Total)
-	assert.Equal(t, 20, got.Limit)
-}
-
-func TestService_List_ExplicitScope_RollsUpMembers(t *testing.T) {
-	t.Parallel()
-
-	sut, store, enforcer, users := setupServiceReal(t)
-	ctx := t.Context()
-	txm := bbolt.NewTxManager(store.DB())
-
-	// Caller has read on group:dev and group:platform.
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		if err := txe.AddPolicy(
-			"delegated@example.com",
-			casbin.GroupSubject("dev"),
-			domain.ObjectGroup,
-			domain.ActionRead,
-		); err != nil {
-			return err
-		}
-
-		return txe.AddPolicy(
-			"delegated@example.com",
-			casbin.GroupSubject("platform"),
-			domain.ObjectGroup,
-			domain.ActionRead,
-		)
-	}))
-
-	// Seed group memberships (g-rules).
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		for _, m := range []struct{ user, group string }{
-			{"alice@x", "dev"},
-			{"bob@x", "dev"},
-			{"bob@x", "platform"},
-			{"charlie@x", "platform"},
-			{"outsider@x", "other"},
-		} {
-			if err := txe.AddRoleForUser(m.user, casbin.GroupSubject(m.group), domain.MembershipDomain); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}))
-
-	// Seed user records; outsider must not appear in results.
-	for _, email := range []string{"alice@x", "bob@x", "charlie@x", "outsider@x"} {
-		require.NoError(t, users.Upsert(ctx, &domain.User{
-			Email:       email,
-			Name:        email,
-			Provider:    domain.ProviderBasicAuth,
-			LastLoginAt: time.Now(),
-		}))
-	}
-
-	reqCtx := auth.WithClaims(ctx, &auth.Claims{Email: "delegated@example.com"})
-	got, err := sut.List(reqCtx, user.ListParams{})
-	require.NoError(t, err)
-	assert.Equal(t, 3, got.Total)
-	require.Len(t, got.Users, 3)
-
-	emails := []string{got.Users[0].Email, got.Users[1].Email, got.Users[2].Email}
-	assert.ElementsMatch(t, []string{"alice@x", "bob@x", "charlie@x"}, emails)
-}
-
-func TestService_List_ExplicitScope_NestedGroupSubjectsSkipped(t *testing.T) {
-	t.Parallel()
-
-	sut, store, enforcer, users := setupServiceReal(t)
-	ctx := t.Context()
-	txm := bbolt.NewTxManager(store.DB())
-
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddPolicy(
-			"delegated@example.com",
-			casbin.GroupSubject("dev"),
-			domain.ObjectGroup,
-			domain.ActionRead,
-		)
-	}))
-
-	// Members include a nested-group subject which must be skipped by List.
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		if err := txe.AddRoleForUser("alice@x", casbin.GroupSubject("dev"), domain.MembershipDomain); err != nil {
-			return err
-		}
-
-		return txe.AddRoleForUser(
-			casbin.GroupSubject("nested"),
-			casbin.GroupSubject("dev"),
-			domain.MembershipDomain,
-		)
-	}))
-
-	require.NoError(t, users.Upsert(ctx, &domain.User{
-		Email: "alice@x", Name: "Alice", Provider: domain.ProviderBasicAuth,
-	}))
-
-	reqCtx := auth.WithClaims(ctx, &auth.Claims{Email: "delegated@example.com"})
-	got, err := sut.List(reqCtx, user.ListParams{})
-	require.NoError(t, err)
-	require.Len(t, got.Users, 1)
-	assert.Equal(t, "alice@x", got.Users[0].Email)
-}
-
-func TestService_List_ExplicitScope_GroupsVisibleButNoMembers_StoreNotCalled(t *testing.T) {
-	t.Parallel()
-
-	// Real stack but no users seeded; the early-return branch must fire when
-	// the rolled-up username set is empty so the repo scan never happens.
-	sut, store, enforcer, _ := setupServiceReal(t)
-	ctx := t.Context()
-	txm := bbolt.NewTxManager(store.DB())
-
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddPolicy(
-			"delegated@example.com",
-			casbin.GroupSubject("empty"),
-			domain.ObjectGroup,
-			domain.ActionRead,
-		)
-	}))
-
-	reqCtx := auth.WithClaims(ctx, &auth.Claims{Email: "delegated@example.com"})
-	got, err := sut.List(reqCtx, user.ListParams{})
-	require.NoError(t, err)
-	assert.Empty(t, got.Users)
-	assert.Equal(t, 0, got.Total)
-	assert.Equal(t, 20, got.Limit)
-}
-
-func TestService_List_ExplicitScope_SearchForwarded(t *testing.T) {
-	t.Parallel()
-
-	sut, store, enforcer, users := setupServiceReal(t)
-	ctx := t.Context()
-	txm := bbolt.NewTxManager(store.DB())
-
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddPolicy(
-			"delegated@example.com",
-			casbin.GroupSubject("dev"),
-			domain.ObjectGroup,
-			domain.ActionRead,
-		)
-	}))
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		if err := txe.AddRoleForUser("alice@x", casbin.GroupSubject("dev"), domain.MembershipDomain); err != nil {
-			return err
-		}
-
-		return txe.AddRoleForUser("bob@x", casbin.GroupSubject("dev"), domain.MembershipDomain)
-	}))
-	for _, u := range []*domain.User{
-		{Email: "alice@x", Name: "Alice", Provider: domain.ProviderBasicAuth},
-		{Email: "bob@x", Name: "Bob", Provider: domain.ProviderBasicAuth},
-	} {
-		require.NoError(t, users.Upsert(ctx, u))
-	}
-
-	reqCtx := auth.WithClaims(ctx, &auth.Claims{Email: "delegated@example.com"})
-	got, err := sut.List(reqCtx, user.ListParams{Query: "ALI"})
-	require.NoError(t, err)
-	require.Len(t, got.Users, 1)
-	assert.Equal(t, "alice@x", got.Users[0].Email)
+	_, err := m.svc.Get(t.Context(), adminActor(), targetEmail)
+	require.ErrorContains(t, err, "get user")
+	require.ErrorContains(t, err, "disk failure")
 }

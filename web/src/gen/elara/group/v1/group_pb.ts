@@ -4,8 +4,6 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
-import type { PermissionAssignment } from "../../common/v1/permission_pb";
-import { file_elara_common_v1_permission } from "../../common/v1/permission_pb";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
@@ -14,9 +12,19 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/group/v1/group.proto.
  */
 export const file_elara_group_v1_group: GenFile = /*@__PURE__*/
-  fileDesc("ChplbGFyYS9ncm91cC92MS9ncm91cC5wcm90bxIOZWxhcmEuZ3JvdXAudjEihwIKBUdyb3VwEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSDwoHbWVtYmVycxgDIAMoCRIuCgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgp1cGRhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglpc19zeXN0ZW0YBiABKAgSEwoLZGVzY3JpcHRpb24YByABKAkSDwoHdmVyc2lvbhgIIAEoAxI6CgtwZXJtaXNzaW9ucxgJIAMoCzIlLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQXNzaWdubWVudELCAQoSY29tLmVsYXJhLmdyb3VwLnYxQgpHcm91cFByb3RvUAFaRmdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL2dyb3VwL3YxO2dyb3VwdjGiAgNFR1iqAg5FbGFyYS5Hcm91cC5WMcoCDkVsYXJhXEdyb3VwXFYx4gIaRWxhcmFcR3JvdXBcVjFcR1BCTWV0YWRhdGHqAhBFbGFyYTo6R3JvdXA6OlYxYgZwcm90bzM", [file_elara_common_v1_permission, file_google_protobuf_timestamp]);
+  fileDesc("ChplbGFyYS9ncm91cC92MS9ncm91cC5wcm90bxIOZWxhcmEuZ3JvdXAudjEi+QEKBUdyb3VwEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSEQoJaXNfc3lzdGVtGAQgASgIEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKEG1ldGFkYXRhX3ZlcnNpb24YByABKAMSFwoPbWVtYmVyc192ZXJzaW9uGAggASgDEhsKE3Blcm1pc3Npb25zX3ZlcnNpb24YCSABKANCwgEKEmNvbS5lbGFyYS5ncm91cC52MUIKR3JvdXBQcm90b1ABWkZnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9ncm91cC92MTtncm91cHYxogIDRUdYqgIORWxhcmEuR3JvdXAuVjHKAg5FbGFyYVxHcm91cFxWMeICGkVsYXJhXEdyb3VwXFYxXEdQQk1ldGFkYXRh6gIQRWxhcmE6Okdyb3VwOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
+ * Group entity metadata.
+ *
+ * Members and permissions are NOT carried on this message — they are
+ * returned alongside the group via GetGroupResponse / UpdateGroup*Response.
+ * The split lets caller-scope filtering apply uniformly and avoids the
+ * dual-write drift between bbolt and Casbin that the SSoT refactor closed.
+ *
+ * Three independent optimistic-lock counters let concurrent edits to
+ * metadata, members, and permissions proceed without false conflicts.
+ *
  * @generated from message elara.group.v1.Group
  */
 export type Group = Message<"elara.group.v1.Group"> & {
@@ -31,43 +39,43 @@ export type Group = Message<"elara.group.v1.Group"> & {
   name: string;
 
   /**
-   * @generated from field: repeated string members = 3;
-   */
-  members: string[];
-
-  /**
-   * @generated from field: google.protobuf.Timestamp created_at = 4;
-   */
-  createdAt?: Timestamp;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp updated_at = 5;
-   */
-  updatedAt?: Timestamp;
-
-  /**
-   * is_system flags built-in groups (e.g. `admins`) that the server protects
-   * from deletion, renaming, and removing their last member. Clients should
-   * disable destructive UI actions when this is true.
-   *
-   * @generated from field: bool is_system = 6;
-   */
-  isSystem: boolean;
-
-  /**
-   * @generated from field: string description = 7;
+   * @generated from field: string description = 3;
    */
   description: string;
 
   /**
-   * @generated from field: int64 version = 8;
+   * is_system flags built-in groups (e.g. system:superadmin) that the
+   * server protects from deletion and renaming. Clients should disable
+   * destructive UI actions when this is true.
+   *
+   * @generated from field: bool is_system = 4;
    */
-  version: bigint;
+  isSystem: boolean;
 
   /**
-   * @generated from field: repeated elara.common.v1.PermissionAssignment permissions = 9;
+   * @generated from field: google.protobuf.Timestamp created_at = 5;
    */
-  permissions: PermissionAssignment[];
+  createdAt?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_at = 6;
+   */
+  updatedAt?: Timestamp;
+
+  /**
+   * @generated from field: int64 metadata_version = 7;
+   */
+  metadataVersion: bigint;
+
+  /**
+   * @generated from field: int64 members_version = 8;
+   */
+  membersVersion: bigint;
+
+  /**
+   * @generated from field: int64 permissions_version = 9;
+   */
+  permissionsVersion: bigint;
 };
 
 /**

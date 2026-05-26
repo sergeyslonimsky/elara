@@ -60,6 +60,10 @@ func (r *UserRepo) Upsert(_ context.Context, user *domain.User) error {
 			}
 			user.PasswordHash = m.PasswordHash
 			user.PasswordChangeRequired = m.PasswordChangeRequired
+			// Membership version is owned by the membership usecase — Upsert
+			// preserves whatever bbolt already holds so concurrent OIDC
+			// logins don't reset the optimistic-lock counter.
+			user.MembershipVersion = m.MembershipVersion
 		}
 
 		data, err := json.Marshal(domainToAuthUserMeta(user))
@@ -71,6 +75,41 @@ func (r *UserRepo) Upsert(_ context.Context, user *domain.User) error {
 	})
 	if err != nil {
 		return fmt.Errorf("upsert user: %w", err)
+	}
+
+	return nil
+}
+
+// SetMembershipVersion bumps the optimistic-lock counter for group
+// memberships. Owned by the membership usecase — must run inside the same
+// PAP write transaction as the underlying g-rule changes.
+// Returns domain.ErrNotFound if the user does not exist.
+func (r *UserRepo) SetMembershipVersion(_ context.Context, email string, version int64) error {
+	err := r.update(func(tx storage.Tx) error {
+		b := tx.Bucket([]byte(bucketAuthUsers))
+		key := []byte(email)
+
+		existing := b.Get(key)
+		if existing == nil {
+			return domain.NewNotFoundError("user", email)
+		}
+
+		var m authUserMeta
+		if err := json.Unmarshal(existing, &m); err != nil {
+			return fmt.Errorf(errUnmarshalUser, err)
+		}
+
+		m.MembershipVersion = version
+
+		data, err := json.Marshal(m)
+		if err != nil {
+			return fmt.Errorf("marshal user: %w", err)
+		}
+
+		return b.Put(key, data)
+	})
+	if err != nil {
+		return fmt.Errorf("set membership version: %w", err)
 	}
 
 	return nil

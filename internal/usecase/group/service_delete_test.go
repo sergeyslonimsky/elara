@@ -25,19 +25,19 @@ func TestService_Delete(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), "devops")
+				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "devops"})
 				require.NoError(t, err)
 
 				_, err = st.svc.UpdateMembers(t.Context(), adminAuth(), group.UpdateMembersData{
-					GroupID: created.ID,
-					Members: []string{"user1@example.com"},
+					GroupID:   created.Group.ID,
+					AddEmails: []string{"user1@example.com"},
 				})
 				require.NoError(t, err)
 
 				require.NotEmpty(t, st.enforcer.GetMembersOfGroup(casbin.GroupSubject("devops")),
 					"precondition: group has members")
 
-				return created.ID
+				return created.Group.ID
 			},
 			assert: func(t *testing.T, st testStack) {
 				t.Helper()
@@ -74,7 +74,7 @@ func TestService_Delete(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			_, err = st.svc.Get(t.Context(), id)
+			_, err = st.svc.Get(t.Context(), adminAuth(), id)
 			require.ErrorContains(t, err, "get group")
 
 			if tt.assert != nil {

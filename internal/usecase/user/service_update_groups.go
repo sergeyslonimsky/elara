@@ -7,92 +7,137 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
-	groupuc "github.com/sergeyslonimsky/elara/internal/usecase/group"
 	"github.com/sergeyslonimsky/elara/internal/util/sliceutil"
 )
 
-// UpdateGroupsData carries the desired membership state for a single user.
-// GroupIDs is the canonical desired set: the server diffs against current
-// memberships and only operates on the symmetric difference.
+// UpdateGroupsData carries the explicit membership delta for one user.
+// Adding a group the user already belongs to is a no-op; removing one they
+// aren't in is a no-op. Same id in both add and remove returns
+// InvalidArgument.
 type UpdateGroupsData struct {
-	Email    string
-	GroupIDs []string
+	Email                     string
+	AddGroupIDs               []string
+	RemoveGroupIDs            []string
+	ExpectedMembershipVersion *int64
 }
 
-// UpdateGroupsResult mirrors the post-update state. GroupIDs equals
-// data.GroupIDs on success and is included so callers don't need to re-fetch.
+// UpdateGroupsResult mirrors the post-update state. VisibleGroupIDs is
+// scope-filtered the same way GetUser's result is — out-of-scope
+// memberships are not exposed so the response can't be used to enumerate
+// groups the caller cannot read.
 type UpdateGroupsResult struct {
-	User     *domain.User
-	GroupIDs []string
+	User              *domain.User
+	VisibleGroupIDs   []string
+	MembershipVersion int64
 }
 
-// UpdateGroups replaces the target user's group memberships with the given
-// set of group IDs.
+// UpdateGroups applies an explicit add/remove delta to the target user's
+// group memberships.
 //
-// The handler is responsible for the coarse authentication and the
-// resource-class authz gate (ObjectUser:Write plus ObjectGroup:Write when
-// the request carries any groups). This method enforces the fine-grained
-// per-delta checks inside the same transaction as the membership write:
+// Authorization (per id in AddGroupIDs ∪ RemoveGroupIDs):
+//   - actor must hold Group:Write on the group.
 //
-//  1. For every added or removed group, the actor must hold
-//     ObjectGroup:Write on "group:<id>". Groups unchanged between current and
-//     desired state require no permission, so a UI that returns read-only
-//     groups untouched is naturally allowed.
-//  2. For every added group, the actor must hold every permission the group
-//     grants (anti-escalation; see groupuc.AuthorizeGrantToUser).
+// Anti-escalation: for each effective add, the actor must hold every
+// permission the group currently grants. Removals narrow and skip the
+// escalation check.
 //
-// All PDP reads inside the closure observe a stable policy snapshot: PAP
-// serializes Write, so no concurrent policy mutation can commit between
-// authorization and the membership write — this is why a TOCTOU window
-// doesn't exist here.
-//
-// The bbolt User record is unchanged — group memberships live exclusively in
-// Casbin g-rules of the form `g, <email>, group:<name>, "*"`.
+// Optimistic concurrency: if ExpectedMembershipVersion is set and current
+// User.MembershipVersion differs, returns domain.ErrVersionConflict even
+// when the net delta would be a no-op.
 func (s *Service) UpdateGroups(
 	ctx context.Context,
 	actor domain.AuthInfo,
 	data UpdateGroupsData,
 ) (*UpdateGroupsResult, error) {
+	if id, dup := sliceutil.FirstOverlap(data.AddGroupIDs, data.RemoveGroupIDs); dup {
+		return nil, domain.NewValidationError("group_id", fmt.Sprintf("%q appears in both add and remove", id))
+	}
+
 	var result *UpdateGroupsResult
 
 	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
-		user, err := s.users.WithTx(tx).Get(ctx, data.Email)
+		user, err := s.store.WithTx(tx).Get(ctx, data.Email)
 		if err != nil {
 			return fmt.Errorf("get user: %w", err)
+		}
+		if err := domain.CheckVersion(data.ExpectedMembershipVersion, user.MembershipVersion); err != nil {
+			return err
 		}
 
 		groups := s.groups.WithTx(tx)
 
-		desired, err := loadGroupsByIDs(ctx, groups, data.GroupIDs)
-		if err != nil {
-			return err
-		}
-
+		// Resolve current memberships into (ids, names map keyed by id).
 		currentIDs, currentNamesByID, err := currentUserGroupIDs(ctx, s.pap, groups, user.Email)
 		if err != nil {
 			return err
 		}
-
-		added, removed := sliceutil.Diff(currentIDs, data.GroupIDs)
-
-		if err := s.authorizeGroupDeltas(actor, added, removed); err != nil {
+		// Authorize on the requested union (matches proto contract): a
+		// caller who lacks Group:Write on X must not be able to submit
+		// "remove X" and silently learn that the target isn't in X
+		// (no-op success = enumeration oracle).
+		if err := s.authorizeGroupDeltas(actor, data.AddGroupIDs, data.RemoveGroupIDs); err != nil {
 			return err
 		}
 
-		for _, id := range added {
-			if err := groupuc.AuthorizeGrantToUser(s.pdp, w, actor, desired[id].Name); err != nil {
+		currentSet := sliceutil.ToSet(currentIDs)
+		effectiveAdd := sliceutil.NotIn(data.AddGroupIDs, currentSet)
+		effectiveRemove := sliceutil.In(data.RemoveGroupIDs, currentSet)
+
+		// Resolve added group ids to (id -> group) for anti-escalation and
+		// for the casbin-name needed by ApplyUserMembershipDeltas.
+		addedGroups, err := loadGroupsByIDs(ctx, groups, effectiveAdd)
+		if err != nil {
+			return err
+		}
+
+		// Anti-escalation on each effective add.
+		for _, id := range effectiveAdd {
+			if err := s.scope.RequireMembershipGrant(actor.Email, addedGroups[id].Name); err != nil {
 				return fmt.Errorf("grant group %s: %w", id, err)
 			}
 		}
 
-		addedNames := mapIDsToNames(added, func(id string) string { return desired[id].Name })
-		removedNames := mapIDsToNames(removed, func(id string) string { return currentNamesByID[id] })
+		addedNames := make([]string, 0, len(effectiveAdd))
+		for _, id := range effectiveAdd {
+			addedNames = append(addedNames, addedGroups[id].Name)
+		}
+		removedNames := make([]string, 0, len(effectiveRemove))
+		for _, id := range effectiveRemove {
+			removedNames = append(removedNames, currentNamesByID[id])
+		}
+
+		// Compose the post-state group-id list and filter it through the
+		// caller's Group:Read scope — the proto field is `visible_group_ids`
+		// and must not expose memberships outside scope (enumeration leak).
+		postIDs := sliceutil.ComposePost(currentIDs, effectiveAdd, effectiveRemove)
+		visible := filterVisibleGroupIDs(s.pdp, actor.Email, postIDs)
+
+		if len(addedNames) == 0 && len(removedNames) == 0 {
+			// No-op apply but optimistic-lock check already passed; return
+			// current state without bumping the counter.
+			result = &UpdateGroupsResult{
+				User:              user,
+				VisibleGroupIDs:   visible,
+				MembershipVersion: user.MembershipVersion,
+			}
+
+			return nil
+		}
 
 		if err := w.ApplyUserMembershipDeltas(user.Email, addedNames, removedNames); err != nil {
 			return fmt.Errorf("pap apply user memberships: %w", err)
 		}
 
-		result = &UpdateGroupsResult{User: user, GroupIDs: data.GroupIDs}
+		user.MembershipVersion++
+		if err := s.store.WithTx(tx).SetMembershipVersion(ctx, user.Email, user.MembershipVersion); err != nil {
+			return fmt.Errorf("persist membership version: %w", err)
+		}
+
+		result = &UpdateGroupsResult{
+			User:              user,
+			VisibleGroupIDs:   visible,
+			MembershipVersion: user.MembershipVersion,
+		}
 
 		return nil
 	})
@@ -104,32 +149,34 @@ func (s *Service) UpdateGroups(
 }
 
 func (s *Service) authorizeGroupDeltas(actor domain.AuthInfo, added, removed []string) error {
-	for _, id := range added {
-		if !s.pdp.Has(actor.Email, domain.Permission{
-			Object: domain.ObjectGroup,
-			Action: domain.ActionWrite,
-			Domain: "group:" + id,
-		}) {
-			return domain.ErrForbidden
-		}
-	}
-
-	for _, id := range removed {
-		if !s.pdp.Has(actor.Email, domain.Permission{
-			Object: domain.ObjectGroup,
-			Action: domain.ActionWrite,
-			Domain: "group:" + id,
-		}) {
-			return domain.ErrForbidden
+	for _, ids := range [...][]string{added, removed} {
+		for _, id := range ids {
+			if !s.pdp.HasGroupWrite(actor.Email, id) {
+				return domain.ErrForbidden
+			}
 		}
 	}
 
 	return nil
 }
 
+// filterVisibleGroupIDs returns the subset of ids on which actor holds
+// Group:Read, preserving order. Used to scope GetUser/UpdateGroups
+// responses so the proto's `visible_group_ids` field can't enumerate
+// memberships outside the caller's read scope.
+func filterVisibleGroupIDs(pdp *authz.PDP, actor string, ids []string) []string {
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if pdp.HasGroupRead(actor, id) {
+			out = append(out, id)
+		}
+	}
+
+	return out
+}
+
 // loadGroupsByIDs fetches each requested group inside the current tx and
-// returns them keyed by ID. A missing or invalid ID surfaces as the repo's
-// Get error and aborts the transaction.
+// returns them keyed by ID.
 func loadGroupsByIDs(ctx context.Context, repo GroupReader, ids []string) (map[string]*domain.Group, error) {
 	out := make(map[string]*domain.Group, len(ids))
 	for _, id := range ids {
@@ -137,17 +184,14 @@ func loadGroupsByIDs(ctx context.Context, repo GroupReader, ids []string) (map[s
 		if err != nil {
 			return nil, fmt.Errorf("get group %s: %w", id, err)
 		}
-
 		out[id] = g
 	}
 
 	return out, nil
 }
 
-// currentUserGroupIDs reads the user's current group memberships through PAP
-// and resolves each group name to its ID via the per-tx GroupReader. The
-// caller gets both the ordered ID slice (for diffing) and a name lookup
-// keyed by ID (for the removal path, which needs the casbin subject name).
+// currentUserGroupIDs reads current memberships through PAP and resolves
+// each group name to its ID via the per-tx GroupReader.
 func currentUserGroupIDs(
 	ctx context.Context,
 	pap *authz.PAP,
@@ -167,19 +211,9 @@ func currentUserGroupIDs(
 		if err != nil {
 			return nil, nil, fmt.Errorf("find group by name %s: %w", name, err)
 		}
-
 		ids = append(ids, g.ID)
 		namesByID[g.ID] = g.Name
 	}
 
 	return ids, namesByID, nil
-}
-
-func mapIDsToNames(ids []string, lookup func(string) string) []string {
-	out := make([]string, 0, len(ids))
-	for _, id := range ids {
-		out = append(out, lookup(id))
-	}
-
-	return out
 }

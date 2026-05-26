@@ -47,8 +47,8 @@ func (r *GroupRepo) Create(_ context.Context, group *domain.Group) error {
 		now := time.Now()
 		group.CreatedAt = now
 		group.UpdatedAt = now
-		if group.Version == 0 {
-			group.Version = 1
+		if group.MetadataVersion == 0 {
+			group.MetadataVersion = 1
 		}
 
 		data, err := json.Marshal(domainToAuthGroupMeta(group))
@@ -111,7 +111,9 @@ func (r *GroupRepo) Update(_ context.Context, group *domain.Group) error {
 
 		existing.Name = group.Name
 		existing.Description = group.Description
-		existing.Version = group.Version
+		existing.MetadataVersion = group.MetadataVersion
+		existing.MembersVersion = group.MembersVersion
+		existing.PermissionsVersion = group.PermissionsVersion
 		existing.UpdatedAt = time.Now()
 
 		group.CreatedAt = existing.CreatedAt

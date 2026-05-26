@@ -74,6 +74,14 @@ pluggable storage backends (PostgreSQL, S3) are on the roadmap.
   username/password (`basic-auth`) and OpenID Connect (`oidc`). Session tokens
   are signed JWTs stored in HttpOnly cookies. First login forces a password
   change; admins can reset any user's password without an email flow.
+- **Users, groups & RBAC** — caller-scoped `UserService` and `GroupService`
+  ConnectRPC APIs plus dedicated Web UI pages. Permissions are
+  `(object, action, domain)` triples grouped via membership; explicit
+  add/remove deltas and per-axis optimistic-lock versions keep concurrent
+  edits safe. Anti-escalation is enforced server-side.
+- **etcd API bearer tokens** — optional `client.auth.enabled` mode gates
+  the etcd-compatible gRPC API behind tokens minted via the Web UI and
+  exposes the `TokenService` ConnectRPC endpoint for CRUD.
 - **Observability** — optional Prometheus `/metrics` and OTLP tracing.
 - **Kube-native Helm chart** with StatefulSet, ServiceMonitor, NetworkPolicy, JSON Schema validation, and a smoke test.
 
@@ -106,6 +114,14 @@ operator workflow:
   Deletion is blocked while the namespace still has configs.
 - **Clients** — live list of connected etcd-compatible clients, with
   recent events and basic history.
+- **Users / Groups** (when auth is enabled) — list + detail pages for each.
+  User detail has Profile + Groups tabs and admin actions (Reset password,
+  Delete user) gated to basic-auth mode. Group detail splits Metadata,
+  Members, and Permissions into independent tabs, each with its own save
+  + optimistic-lock version. See
+  [Users, groups & RBAC](#users-groups--rbac).
+- **Webhooks** — list, edit, and inspect delivery history of HTTP push
+  notifications. See [Webhooks](#webhooks) below.
 
 ### etcd-compatible CLI
 
@@ -586,9 +602,11 @@ ui:
 ```
 
 On first boot Elara creates the admin user from `basicAuth.username` /
-`basicAuth.password` and forces a password change on the first login. Admins
-can create additional users and reset passwords from the Web UI or via the
-`UserService` API.
+`basicAuth.password` and places them in the `system:superadmin` group, then
+forces a password change on first login. Admins manage additional users,
+group memberships, and permissions from the Web UI or via the
+`UserService` / `GroupService` ConnectRPC APIs — see
+[Users, groups & RBAC](#users-groups--rbac).
 
 ### OIDC
 
@@ -637,6 +655,115 @@ permissions. Useful for local development and CI; do not use in production.
 See [helm/elara/README.md](helm/elara/README.md#with-basic-auth-username--password)
 for Helm install examples including the `existingSecret` pattern for production.
 
+### etcd-compatible API tokens
+
+The etcd-compatible gRPC API (port 2379) is **public by default** — anyone
+who can reach the port can read and write. To gate it behind bearer tokens,
+enable `client.auth.enabled`:
+
+```yaml
+client:
+  auth:
+    enabled: true
+```
+
+When enabled the service mounts the `elara.token.v1.TokenService`
+ConnectRPC endpoint on the HTTP port so admins can mint and revoke tokens
+from the Web UI, and an interceptor on the gRPC server validates every
+incoming request. `client.auth.enabled` is independent of `ui.auth.enabled` —
+you can run open UI / locked gRPC or vice versa.
+
+## Users, groups & RBAC
+
+When `ui.auth.enabled: true`, Elara enforces a small role-based access
+control model over the entire ConnectRPC API. Users are identified by email
+(basic-auth credentials or OIDC subject); groups bundle permissions and act
+as the unit of delegation; permissions are stored as Casbin rules in the
+same bbolt file as configs.
+
+### Permission model
+
+A permission is a `(object, action, domain)` triple. Objects and actions are
+proto enums in `elara.common.v1`:
+
+| Object       | Domain key meaning                                  |
+|--------------|-----------------------------------------------------|
+| `Namespace`  | namespace name (`prod`, `staging`, `*`)             |
+| `Config`     | namespace name (configs inherit namespace scope)    |
+| `User`       | `*` only — User permissions are always global       |
+| `Group`      | `group:<name>` (e.g. `group:devs`) or `*`           |
+| `Token`      | `*` (admin-only)                                    |
+| `Webhook`    | `*`                                                 |
+| `All`        | `*` — superadmin catch-all                          |
+
+| Action  | Meaning                                                |
+|---------|--------------------------------------------------------|
+| `Read`  | Get / List                                             |
+| `Write` | Create / Update / Delete (write covers all mutations)  |
+| `Create`| Create only — distinct from Write for User/Group       |
+| `All`   | Expands to Read+Write+Create on the same `(object, domain)` |
+
+The bootstrap admin (from `basicAuth.username` or `oidc.adminEmail`) is
+placed in the **`system:superadmin`** group, which holds the single
+`(All, All, *)` rule. That group is system-managed: it cannot be deleted
+or renamed.
+
+### ConnectRPC APIs
+
+- **`elara.user.v1.UserService`** —
+  `ListUsers`, `GetUser`, `CreateUser`, `UpdateUserGroups`,
+  `ResetUserPassword` (basic-auth only), `DeleteUser` (basic-auth only).
+  Membership updates use explicit deltas (`add_group_ids` / `remove_group_ids`)
+  with an `expected_version` token for optimistic concurrency.
+- **`elara.group.v1.GroupService`** —
+  `CreateGroup`, `GetGroup`, `UpdateGroup` (metadata only),
+  `UpdateGroupMembers` (delta), `UpdateGroupPermissions` (delta),
+  `DeleteGroup`, `ListGroups`. Each group carries three independent
+  optimistic-lock versions (`metadata_version`, `members_version`,
+  `permissions_version`) so concurrent edits to one axis don't conflict
+  with edits to another.
+- **`elara.access.v1.AccessService`** — coarse-grained policy queries
+  for the UI's CASL layer (`Me`, `ListMyPermissions`).
+- **`elara.token.v1.TokenService`** (mounted only when `client.auth.enabled`)
+  — mint / list / revoke bearer tokens for the etcd-compatible gRPC API.
+
+All RPCs enforce two checks server-side:
+
+1. **Authorization boundary** — caller must hold the required
+   `(object, action)` permission on the target's domain (or hold the
+   global `*` variant).
+2. **Anti-escalation** — for every permission added to a group, or every
+   membership added to a group with permissions, the caller must already
+   hold every permission the target would gain. You cannot make someone
+   else more powerful than yourself.
+
+Stale `expected_version` tokens return `FAILED_PRECONDITION` so two
+concurrent edits never silently overwrite each other.
+
+### Web UI flows
+
+- **Users page** — paginated list with row-click navigation to a detail page.
+  Detail page has a Profile tab (read-only attributes) and a Groups tab
+  (toggle memberships with delta-based save). Reset Password and Delete User
+  actions live in the detail-page header dropdown and only appear in
+  basic-auth mode.
+- **Groups page** — paginated list with row-click navigation. Detail page
+  has three independent tabs (Metadata, Members, Permissions); each saves
+  via its own RPC, so a stale member list doesn't block a name edit.
+- **Visibility** is caller-scoped: `GetUser` returns only the group memberships
+  the caller can read; `GetGroup` returns only the members the caller can
+  read. Deltas operate over the visible slice — invisible memberships are
+  preserved on save.
+- System groups and the bootstrap admin (`is_system=true`) are read-only in
+  the UI; the server enforces this independently.
+
+### CASL on the frontend
+
+The Web UI builds a CASL ability from `ListMyPermissions` and uses it to
+gate UI affordances. The server remains authoritative — client-side checks
+are hints to disable controls before round-tripping. Any successful API
+call must still pass the server-side checks above.
+
 ## Local development
 
 ```bash
@@ -678,6 +805,8 @@ Key defaults:
 | Key                                      | Env var                                    | Default        |
 |------------------------------------------|--------------------------------------------|----------------|
 | `ui.server.port`                         | `UI_SERVER_PORT`                           | `8080`         |
+| `ui.server.readTimeout`                  | `UI_SERVER_READTIMEOUT`                    | `0s` (library) |
+| `ui.server.writeTimeout`                 | `UI_SERVER_WRITETIMEOUT`                   | `24h`          |
 | `ui.auth.enabled`                        | `UI_AUTH_ENABLED`                          | `false`        |
 | `ui.auth.type`                           | `UI_AUTH_TYPE`                             | `basic-auth`   |
 | `ui.auth.basicAuth.username`             | `UI_AUTH_BASICAUTH_USERNAME`               | `""`           |
@@ -686,14 +815,22 @@ Key defaults:
 | `ui.auth.oidc.clientId`                  | `UI_AUTH_OIDC_CLIENTID`                    | `""`           |
 | `ui.auth.oidc.clientSecret`              | `UI_AUTH_OIDC_CLIENTSECRET`                | `""`           |
 | `ui.auth.oidc.redirectUrl`               | `UI_AUTH_OIDC_REDIRECTURL`                 | `""`           |
+| `ui.auth.oidc.scopes`                    | `UI_AUTH_OIDC_SCOPES`                      | `openid,email,profile` |
 | `ui.auth.oidc.adminEmail`                | `UI_AUTH_OIDC_ADMINEMAIL`                  | `""`           |
 | `ui.auth.session.secret`                 | `UI_AUTH_SESSION_SECRET`                   | `""`           |
 | `ui.auth.session.ttl`                    | `UI_AUTH_SESSION_TTL`                      | `24h`          |
 | `ui.auth.session.secureCookie`           | `UI_AUTH_SESSION_SECURECOOKIE`             | `false`        |
 | `client.etcd.port`                       | `CLIENT_ETCD_PORT`                         | `2379`         |
+| `client.auth.enabled`                    | `CLIENT_AUTH_ENABLED`                      | `false`        |
+| `client.history.max_records`             | `CLIENT_HISTORY_MAX_RECORDS`               | `1000`         |
+| `client.history.max_age`                 | `CLIENT_HISTORY_MAX_AGE`                   | `720h` (30d)   |
+| `client.recent_events.capacity`          | `CLIENT_RECENT_EVENTS_CAPACITY`            | `100`          |
 | `config.data.path`                       | `CONFIG_DATA_PATH`                         | `./data`       |
+| `service.name`                           | `SERVICE_NAME`                             | `elara`        |
+| `service.version`                        | `SERVICE_VERSION`                          | `""` (chart appVersion) |
 | `metrics.enabled`                        | `METRICS_ENABLED`                          | `false`        |
 | `tracing.enabled`                        | `TRACING_ENABLED`                          | `false`        |
+| `tracing.otlp.endpoint`                  | `TRACING_OTLP_ENDPOINT`                    | `""`           |
 | `log.level`                              | `LOG_LEVEL`                                | `info`         |
 | `log.format`                             | `LOG_FORMAT`                               | `json`         |
 | `log.noSource`                           | `LOG_NOSOURCE`                             | `false`        |

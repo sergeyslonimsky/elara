@@ -51,19 +51,62 @@ const (
 
 // UserServiceClient is a client for the elara.user.v1.UserService service.
 type UserServiceClient interface {
+	// Lists users.
+	//
+	// Authorization:
+	//   - User:Read * (global) returns every user.
+	//   - Without User:Read *, the result is derived through Group:Read: only
+	//     users who belong to at least one group the caller can read are
+	//     returned. Unassigned users are invisible in this mode.
+	//
+	// An empty result (no User:Read * and no Group:Read scope) is not an
+	// error — pagination returns an empty page.
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
+	// Fetches a single user by email.
+	//
+	// Authorization:
+	//   - User:Read * (global), OR
+	//   - target ∈ any group the caller can read (derived through Group:Read).
+	//
+	// visible_group_ids in the response is independently filtered by the
+	// caller's Group:Read scope — memberships outside it are not exposed.
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
+	// Create a user.
+	//
+	// Authorization:
+	//   - User:Create * (global), OR
+	//   - initial_group_ids non-empty AND caller holds Group:Write on every id
+	//     (with anti-escalation cascading from those groups).
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
-	// Admin-only — resets the target user's password and sets password_change_required
+	// Admin-only — resets the target user's password and sets password_change_required.
+	// Basic-auth mode only.
+	//
+	// Authorization:
+	//   - User:Write * (global), OR
+	//   - target ∈ any group on which caller holds Group:Write.
+	//
+	// Plus anti-escalation: caller must hold every permission the target
+	// currently has (impersonation cannot escalate privilege).
 	ResetUserPassword(context.Context, *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error)
-	// Admin-only, basic-auth mode only
+	// Admin-only — deletes the user and all their memberships.
+	// Basic-auth mode only.
+	//
+	// Authorization: same as ResetUserPassword.
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
-	// Replaces the target user's group memberships with the given set.
-	// The caller must hold ObjectGroup:Write on every group whose membership
-	// changes (added or removed). Adding a user to a group additionally
-	// requires that the caller holds every permission the target group
-	// grants (anti-escalation). Groups present in both the current and
-	// desired state are no-ops and require no permission.
+	// Updates the target user's group memberships using an explicit delta.
+	// Adding a group the user already belongs to is a no-op; removing from
+	// one they're not in is a no-op. Including the same group in both
+	// add_group_ids and remove_group_ids returns INVALID_ARGUMENT.
+	//
+	// Authorization (per id in add_group_ids ∪ remove_group_ids):
+	//   - caller must hold Group:Write on the group.
+	//
+	// Anti-escalation applies on each add_group_ids entry (caller must hold
+	// every permission the group currently grants). Removals narrow and
+	// require no escalation check.
+	//
+	// If expected_version is set and current membership_version differs,
+	// returns FAILED_PRECONDITION — even if the net change would be a no-op.
 	UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error)
 }
 
@@ -159,19 +202,62 @@ func (c *userServiceClient) UpdateUserGroups(ctx context.Context, req *connect.R
 
 // UserServiceHandler is an implementation of the elara.user.v1.UserService service.
 type UserServiceHandler interface {
+	// Lists users.
+	//
+	// Authorization:
+	//   - User:Read * (global) returns every user.
+	//   - Without User:Read *, the result is derived through Group:Read: only
+	//     users who belong to at least one group the caller can read are
+	//     returned. Unassigned users are invisible in this mode.
+	//
+	// An empty result (no User:Read * and no Group:Read scope) is not an
+	// error — pagination returns an empty page.
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
+	// Fetches a single user by email.
+	//
+	// Authorization:
+	//   - User:Read * (global), OR
+	//   - target ∈ any group the caller can read (derived through Group:Read).
+	//
+	// visible_group_ids in the response is independently filtered by the
+	// caller's Group:Read scope — memberships outside it are not exposed.
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error)
+	// Create a user.
+	//
+	// Authorization:
+	//   - User:Create * (global), OR
+	//   - initial_group_ids non-empty AND caller holds Group:Write on every id
+	//     (with anti-escalation cascading from those groups).
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
-	// Admin-only — resets the target user's password and sets password_change_required
+	// Admin-only — resets the target user's password and sets password_change_required.
+	// Basic-auth mode only.
+	//
+	// Authorization:
+	//   - User:Write * (global), OR
+	//   - target ∈ any group on which caller holds Group:Write.
+	//
+	// Plus anti-escalation: caller must hold every permission the target
+	// currently has (impersonation cannot escalate privilege).
 	ResetUserPassword(context.Context, *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error)
-	// Admin-only, basic-auth mode only
+	// Admin-only — deletes the user and all their memberships.
+	// Basic-auth mode only.
+	//
+	// Authorization: same as ResetUserPassword.
 	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
-	// Replaces the target user's group memberships with the given set.
-	// The caller must hold ObjectGroup:Write on every group whose membership
-	// changes (added or removed). Adding a user to a group additionally
-	// requires that the caller holds every permission the target group
-	// grants (anti-escalation). Groups present in both the current and
-	// desired state are no-ops and require no permission.
+	// Updates the target user's group memberships using an explicit delta.
+	// Adding a group the user already belongs to is a no-op; removing from
+	// one they're not in is a no-op. Including the same group in both
+	// add_group_ids and remove_group_ids returns INVALID_ARGUMENT.
+	//
+	// Authorization (per id in add_group_ids ∪ remove_group_ids):
+	//   - caller must hold Group:Write on the group.
+	//
+	// Anti-escalation applies on each add_group_ids entry (caller must hold
+	// every permission the group currently grants). Removals narrow and
+	// require no escalation check.
+	//
+	// If expected_version is set and current membership_version differs,
+	// returns FAILED_PRECONDITION — even if the net change would be a no-op.
 	UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error)
 }
 

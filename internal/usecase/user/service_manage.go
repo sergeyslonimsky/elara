@@ -10,66 +10,218 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
-// Authorization for all UserService methods is enforced in the handler layer
-// (EL-4 M9: `(User, Create|Read|Write, *)`). The usecase still needs claims
-// from context for `Delete` self-protection ("cannot delete your own account").
+// CreateData carries the parameters accepted by Create.
+//
+// InitialGroupIDs are applied atomically with the user record. The handler
+// gate already covers the coarse permission; this usecase enforces the
+// per-group authz + anti-escalation invariants the same way UpdateGroups
+// does for an existing user.
+type CreateData struct {
+	Email           string
+	Name            string
+	InitialPassword string // required basic-auth; must be empty in OIDC (handler-enforced)
+	InitialGroupIDs []string
+}
 
-func (s *Service) Create(ctx context.Context, email, name, initialPassword string) (*domain.User, error) {
+// CreateResult bundles the user record with the canonical membership state
+// just-after-creation so the handler can render the response.
+type CreateResult struct {
+	User              *domain.User
+	GroupIDs          []string
+	MembershipVersion int64
+}
+
+// Create creates a new user.
+//
+// Authorization (per proto contract):
+//   - User:Create * (global), OR
+//   - InitialGroupIDs is non-empty AND actor holds Group:Write on each id.
+//
+// The fast-fail pre-check before opening the tx (s.preauthorize) covers
+// both clauses; the per-id Group:Write loop runs again inside the tx
+// alongside RequireMembershipGrant so concurrent revocation between
+// pre-check and apply cannot bypass the gate.
+func (s *Service) Create(ctx context.Context, actor domain.AuthInfo, data CreateData) (*CreateResult, error) {
+	user, err := newUserFromCreateData(data)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.preauthorize(actor, data.InitialGroupIDs); err != nil {
+		return nil, err
+	}
+
+	var result *CreateResult
+
+	err = s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
+		if err := s.persistUser(ctx, tx, user, data.InitialPassword); err != nil {
+			return err
+		}
+		groupIDs, version, err := s.applyInitialGroups(ctx, tx, w, actor, user, data.InitialGroupIDs)
+		if err != nil {
+			return err
+		}
+		user.MembershipVersion = version
+		result = &CreateResult{User: user, GroupIDs: groupIDs, MembershipVersion: version}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create user transaction: %w", err)
+	}
+
+	return result, nil
+}
+
+// newUserFromCreateData builds a validated User entity from request data.
+// Provider is derived from whether InitialPassword is set — the handler
+// has already ensured the password/auth-type combination is valid.
+func newUserFromCreateData(data CreateData) (*domain.User, error) {
 	user := &domain.User{
-		Email:    email,
-		Name:     name,
+		Email:    data.Email,
+		Name:     data.Name,
 		Provider: domain.ProviderBasicAuth,
 	}
-
-	if initialPassword == "" {
+	if data.InitialPassword == "" {
 		user.Provider = domain.ProviderOIDC
 	}
-
 	if err := user.Validate(); err != nil {
 		return nil, fmt.Errorf("validate user: %w", err)
-	}
-
-	if err := s.store.Upsert(ctx, user); err != nil {
-		return nil, fmt.Errorf("upsert user: %w", err)
-	}
-
-	if initialPassword != "" {
-		hash, err := auth.HashPassword(initialPassword)
-		if err != nil {
-			return nil, fmt.Errorf("hash password: %w", err)
-		}
-
-		if err := s.store.SetPassword(ctx, email, hash, true); err != nil {
-			return nil, fmt.Errorf("set password: %w", err)
-		}
 	}
 
 	return user, nil
 }
 
-func (s *Service) Delete(ctx context.Context, targetEmail string) error {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
-		return domain.ErrUnauthorized
+// preauthorize is the fast-fail authorization check that runs before any
+// transaction is opened. It implements the proto's "User:Create * OR
+// initial_group_ids non-empty + Group:Write on each id" gate.
+//
+// The actual enforcement happens inside the tx (authorizeInitialGroups +
+// RequireMembershipGrant) so concurrent revocation between this pre-check
+// and the apply is caught — preauthorize is purely an optimization.
+func (s *Service) preauthorize(actor domain.AuthInfo, ids []string) error {
+	if s.pdp.HasUserCreateGlobal(actor.Email) {
+		return nil
+	}
+	if len(ids) == 0 {
+		return domain.ErrForbidden
 	}
 
-	if claims.Email == targetEmail {
+	return s.authorizeInitialGroups(actor, ids)
+}
+
+// authorizeInitialGroups checks Group:Write per id. Called both pre-tx
+// (via preauthorize) and inside the tx (via applyInitialGroups) — the
+// duplicate is intentional: pre-check avoids opening a tx when the caller
+// clearly has no scope, in-tx check closes the TOCTOU window.
+func (s *Service) authorizeInitialGroups(actor domain.AuthInfo, ids []string) error {
+	for _, id := range ids {
+		if !s.pdp.HasGroupWrite(actor.Email, id) {
+			return domain.ErrForbidden
+		}
+	}
+
+	return nil
+}
+
+// persistUser writes the user record and (in basic-auth mode) the initial
+// password hash, marking password_change_required on first login.
+func (s *Service) persistUser(ctx context.Context, tx storage.Tx, user *domain.User, initialPassword string) error {
+	if err := s.store.WithTx(tx).Upsert(ctx, user); err != nil {
+		return fmt.Errorf("upsert user: %w", err)
+	}
+	if initialPassword == "" {
+		return nil
+	}
+	hash, err := auth.HashPassword(initialPassword)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+	if err := s.store.WithTx(tx).SetPassword(ctx, user.Email, hash, true); err != nil {
+		return fmt.Errorf("set password: %w", err)
+	}
+
+	return nil
+}
+
+// applyInitialGroups adds the new user to each initial group with full
+// anti-escalation. Returns the final group-id slice (echoed back to the
+// caller) and the resulting MembershipVersion (1 if any groups added,
+// 0 otherwise).
+func (s *Service) applyInitialGroups(
+	ctx context.Context,
+	tx storage.Tx,
+	w *authz.PAPTx,
+	actor domain.AuthInfo,
+	user *domain.User,
+	ids []string,
+) ([]string, int64, error) {
+	if len(ids) == 0 {
+		return []string{}, 0, nil
+	}
+
+	// Re-check Group:Write inside the tx: preauthorize ran outside and a
+	// concurrent admin could have revoked the actor's scope between then
+	// and now. Mirrors the in-tx pattern used by DeleteUser/ResetPassword.
+	if err := s.authorizeInitialGroups(actor, ids); err != nil {
+		return nil, 0, err
+	}
+
+	groups := s.groups.WithTx(tx)
+	desired, err := loadGroupsByIDs(ctx, groups, ids)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	for _, id := range ids {
+		if err := s.scope.RequireMembershipGrant(actor.Email, desired[id].Name); err != nil {
+			return nil, 0, fmt.Errorf("grant group %s: %w", id, err)
+		}
+	}
+
+	names := make([]string, 0, len(ids))
+	for _, id := range ids {
+		names = append(names, desired[id].Name)
+	}
+	if err := w.ApplyUserMembershipDeltas(user.Email, names, nil); err != nil {
+		return nil, 0, fmt.Errorf("pap apply user memberships: %w", err)
+	}
+	if err := s.store.WithTx(tx).SetMembershipVersion(ctx, user.Email, 1); err != nil {
+		return nil, 0, fmt.Errorf("persist membership version: %w", err)
+	}
+
+	return append([]string(nil), ids...), 1, nil
+}
+
+// Delete removes the user along with all their memberships.
+//
+// Authorization: User:Write * (global) OR derived (target ∈ any group with
+// Group:Write). Plus anti-escalation: caller must hold every permission
+// target currently has (impersonation cannot escalate privilege).
+//
+// Self-delete is rejected. The last-admin guard prevents deleting the only
+// remaining holder of the wildcard admin grant.
+//
+// All checks run inside PAP.Write so they observe the same snapshot as the
+// apply step: no TOCTOU window between authorize and delete.
+func (s *Service) Delete(ctx context.Context, actor domain.AuthInfo, targetEmail string) error {
+	if actor.Email == targetEmail {
 		return domain.NewValidationError("email", "cannot delete your own account")
 	}
 
-	if _, err := s.store.Get(ctx, targetEmail); err != nil {
-		return fmt.Errorf("get user: %w", err)
-	}
-
-	if err := s.validateLastAdmin(targetEmail); err != nil {
-		return err
-	}
-
 	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
-		if err := s.users.WithTx(tx).Delete(ctx, targetEmail); err != nil {
+		if _, err := s.store.WithTx(tx).Get(ctx, targetEmail); err != nil {
+			return fmt.Errorf("get user: %w", err)
+		}
+		if err := s.authorizeUserWrite(ctx, actor, targetEmail); err != nil {
+			return err
+		}
+		if err := s.validateLastAdmin(targetEmail); err != nil {
+			return err
+		}
+		if err := s.store.WithTx(tx).Delete(ctx, targetEmail); err != nil {
 			return fmt.Errorf("delete user: %w", err)
 		}
-
 		if err := w.DeleteUser(targetEmail); err != nil {
 			return fmt.Errorf("pap delete user: %w", err)
 		}
@@ -83,37 +235,42 @@ func (s *Service) Delete(ctx context.Context, targetEmail string) error {
 	return nil
 }
 
-// GetResult bundles a user with the canonical set of group IDs they
-// currently belong to. Group IDs are returned irrespective of the caller's
-// per-group read permission so the user edit UI can submit a full set back
-// through UpdateUserGroups, which itself diffs and authorizes only the
-// symmetric difference.
+// GetResult bundles a user with the group IDs visible to the caller and
+// their current membership version. Memberships outside the caller's
+// Group:Read scope are filtered out.
 type GetResult struct {
-	User     *domain.User
-	GroupIDs []string
+	User              *domain.User
+	VisibleGroupIDs   []string
+	MembershipVersion int64
 }
 
-func (s *Service) Get(ctx context.Context, email string) (*GetResult, error) {
+// Get returns the target user along with the subset of their memberships
+// the caller is permitted to see.
+//
+// Authorization: User:Read * OR target ∈ any group caller can read. When
+// the caller has neither, the response is NotFound (not Forbidden), uniform
+// with the missing-user case, so the endpoint cannot be used to enumerate
+// users by email.
+func (s *Service) Get(ctx context.Context, actor domain.AuthInfo, email string) (*GetResult, error) {
 	user, err := s.store.Get(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 
-	names, err := s.pap.UserGroupNames(email)
+	if !s.scope.CanReadUser(ctx, actor.Email, email) {
+		return nil, fmt.Errorf("get user: %w", domain.NewNotFoundError("user", email))
+	}
+
+	visible, err := s.scope.VisibleUserGroupIDs(ctx, actor.Email, email)
 	if err != nil {
-		return nil, fmt.Errorf("get user group names: %w", err)
+		return nil, err
 	}
 
-	ids := make([]string, 0, len(names))
-	for _, name := range names {
-		g, err := s.groups.FindByName(ctx, name)
-		if err != nil {
-			return nil, fmt.Errorf("find group by name %s: %w", name, err)
-		}
-		ids = append(ids, g.ID)
-	}
-
-	return &GetResult{User: user, GroupIDs: ids}, nil
+	return &GetResult{
+		User:              user,
+		VisibleGroupIDs:   visible,
+		MembershipVersion: user.MembershipVersion,
+	}, nil
 }
 
 func (s *Service) validateLastAdmin(targetEmail string) error {

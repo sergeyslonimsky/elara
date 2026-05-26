@@ -35,9 +35,10 @@ func newTestStack(t *testing.T) testStack {
 	repo := bbolt.NewGroupRepo(store)
 	pdp := authz.NewPDP(enforcer)
 	pap := authz.NewPAP(enforcer, txm)
+	scope := authz.NewScope(pdp, pap, repo)
 
 	return testStack{
-		svc:      group.New(repo, txm, pdp, pap),
+		svc:      group.New(repo, pdp, pap, scope),
 		store:    store,
 		enforcer: enforcer,
 		repo:     repo,
@@ -48,6 +49,10 @@ func newTestStack(t *testing.T) testStack {
 func adminAuth() domain.AuthInfo {
 	return domain.AuthInfo{Email: "admin@example.com"}
 }
+
+// int64Ptr is a single-call helper for assembling optional optimistic-lock
+// fields in test data without scattering temporary variables across cases.
+func int64Ptr(v int64) *int64 { return &v }
 
 // seedAdminWildcard grants admin@example.com the (*,*,*) policy used by
 // happy-path cases where the PDP must accept any permission delta.

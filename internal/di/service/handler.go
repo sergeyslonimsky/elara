@@ -94,7 +94,7 @@ func initIAMHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
 		return
 	}
 
-	handlers.Users = userhandler.New(s.Authz, s.User, cfg.UI.Auth.Type)
+	handlers.Users = userhandler.New(s.User, cfg.UI.Auth.Type)
 	handlers.Groups = grouphandler.NewHandler(s.Authz, s.Group)
 	handlers.Access = accesshandler.NewAccessHandler(s.Authz, s.Policy)
 }

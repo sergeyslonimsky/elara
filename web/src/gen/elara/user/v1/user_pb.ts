@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/user/v1/user.proto.
  */
 export const file_elara_user_v1_user: GenFile = /*@__PURE__*/
-  fileDesc("ChhlbGFyYS91c2VyL3YxL3VzZXIucHJvdG8SDWVsYXJhLnVzZXIudjEiqQEKBFVzZXISDQoFZW1haWwYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdwaWN0dXJlGAMgASgJEhAKCHByb3ZpZGVyGAQgASgJEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfbG9naW5fYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQroBChFjb20uZWxhcmEudXNlci52MUIJVXNlclByb3RvUAFaRGdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL3VzZXIvdjE7dXNlcnYxogIDRVVYqgINRWxhcmEuVXNlci5WMcoCDUVsYXJhXFVzZXJcVjHiAhlFbGFyYVxVc2VyXFYxXEdQQk1ldGFkYXRh6gIPRWxhcmE6OlVzZXI6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChhlbGFyYS91c2VyL3YxL3VzZXIucHJvdG8SDWVsYXJhLnVzZXIudjEivAEKBFVzZXISDQoFZW1haWwYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdwaWN0dXJlGAMgASgJEhAKCHByb3ZpZGVyGAQgASgJEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfbG9naW5fYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhEKCWlzX3N5c3RlbRgHIAEoCEK6AQoRY29tLmVsYXJhLnVzZXIudjFCCVVzZXJQcm90b1ABWkRnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS91c2VyL3YxO3VzZXJ2MaICA0VVWKoCDUVsYXJhLlVzZXIuVjHKAg1FbGFyYVxVc2VyXFYx4gIZRWxhcmFcVXNlclxWMVxHUEJNZXRhZGF0YeoCD0VsYXJhOjpVc2VyOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message elara.user.v1.User
@@ -47,6 +47,15 @@ export type User = Message<"elara.user.v1.User"> & {
    * @generated from field: google.protobuf.Timestamp last_login_at = 6;
    */
   lastLoginAt?: Timestamp;
+
+  /**
+   * is_system flags built-in users (e.g. the bootstrap superadmin) that
+   * the server protects from deletion. Clients should disable destructive
+   * UI actions when this is true.
+   *
+   * @generated from field: bool is_system = 7;
+   */
+  isSystem: boolean;
 };
 
 /**

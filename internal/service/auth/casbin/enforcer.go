@@ -133,7 +133,21 @@ func (e *Enforcer) WriteTx(
 
 	if txe != nil {
 		if err := e.applyOpsToCache(txe.ops); err != nil {
-			return fmt.Errorf("sync casbin cache: %w", err)
+			// The bbolt tx is committed; the in-memory cache is now ahead
+			// of or behind the persisted state. Full reload is the only
+			// safe recovery — anything else risks privilege-evaluation
+			// inconsistencies for the rest of the process lifetime.
+			if reloadErr := e.LoadPolicy(); reloadErr != nil {
+				// Reload failed too: persisted state is good but the
+				// cache cannot be reconciled. Panic so the supervisor
+				// restarts us, rather than serve stale authz answers.
+				panic(fmt.Sprintf(
+					"casbin: cache desync after commit and LoadPolicy failed: apply=%v reload=%v",
+					err, reloadErr,
+				))
+			}
+
+			return fmt.Errorf("sync casbin cache (recovered via LoadPolicy): %w", err)
 		}
 	}
 

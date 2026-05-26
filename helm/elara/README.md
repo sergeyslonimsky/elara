@@ -168,6 +168,7 @@ sections:
 | `config.ui.auth.session.secureCookie`            | `true`                          | Add `Secure` flag to session cookie; disable only for HTTP dev       |
 | `config.ui.auth.existingSecret`                  | `""`                            | Use a pre-existing Secret instead of the chart-managed one           |
 | `config.client.etcd.port`                        | `2379`                          | etcd-compatible gRPC API                                             |
+| `config.client.auth.enabled`                     | `false`                         | Bearer-token auth on etcd gRPC + mounts the TokenService             |
 | `config.client.history.*`                        | see `values.yaml`               | Connected-clients history tuning                                     |
 | `config.client.recentEvents.*`                   | see `values.yaml`               | Recent-events ring buffer tuning                                     |
 | `storage.type`                                   | `bbolt`                         | Schema enum: `[bbolt]` today                                         |
@@ -212,11 +213,13 @@ key maps to an env var by **uppercasing and replacing dots with underscores
 | `ui.auth.basicAuth.password`                    | `UI_AUTH_BASICAUTH_PASSWORD`                     | **Secret** |
 | `ui.auth.oidc.clientSecret`                     | `UI_AUTH_OIDC_CLIENTSECRET`                      | **Secret** |
 | `client.etcd.port`                              | `CLIENT_ETCD_PORT`                               | ConfigMap |
+| `client.auth.enabled`                           | `CLIENT_AUTH_ENABLED`                            | ConfigMap |
 | `client.history.max_records`                    | `CLIENT_HISTORY_MAX_RECORDS`                     | ConfigMap |
 | `client.history.max_age`                        | `CLIENT_HISTORY_MAX_AGE`                         | ConfigMap |
 | `client.recent_events.capacity`                 | `CLIENT_RECENT_EVENTS_CAPACITY`                  | ConfigMap |
 | `config.data.path`                              | `CONFIG_DATA_PATH`                               | ConfigMap |
 | `service.name`                                  | `SERVICE_NAME`                                   | ConfigMap |
+| `service.version`                               | `SERVICE_VERSION`                                | ConfigMap |
 | `metrics.enabled`                               | `METRICS_ENABLED`                                | ConfigMap |
 | `tracing.otlp.endpoint`                         | `TRACING_OTLP_ENDPOINT`                          | ConfigMap |
 | `log.level`                                     | `LOG_LEVEL`                                      | ConfigMap |

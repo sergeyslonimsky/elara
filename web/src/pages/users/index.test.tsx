@@ -1,11 +1,14 @@
+import { create } from "@bufbuild/protobuf";
 import { useQuery } from "@connectrpc/connect-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { UserSchema } from "@/gen/elara/user/v1/user_pb";
 import { TestProviders } from "@/test/test-utils";
 import { UsersPage } from "./index";
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
-	const actual = await importOriginal<any>();
+	const actual = await importOriginal<Record<string, unknown>>();
 	return {
 		...actual,
 		useQuery: vi.fn(),
@@ -14,6 +17,15 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 			mutateAsync: vi.fn(),
 			isPending: false,
 		})),
+	};
+});
+
+const mockNavigate = vi.fn();
+vi.mock("react-router", async (importOriginal) => {
+	const actual = await importOriginal<Record<string, unknown>>();
+	return {
+		...actual,
+		useNavigate: () => mockNavigate,
 	};
 });
 
@@ -26,18 +38,16 @@ describe("UsersPage", () => {
 		vi.mocked(useQuery).mockReturnValue({
 			data: {
 				users: [
-					{
+					create(UserSchema, {
 						email: "user1@example.com",
 						name: "User One",
 						provider: "internal",
-						createdAt: { seconds: 1234567890n, nanos: 0 },
-					},
-					{
+					}),
+					create(UserSchema, {
 						email: "user2@example.com",
 						name: "User Two",
 						provider: "oidc",
-						createdAt: { seconds: 1234567890n, nanos: 0 },
-					},
+					}),
 				],
 				pagination: { total: 2 },
 			},
@@ -45,7 +55,7 @@ describe("UsersPage", () => {
 			error: null,
 			refetch: vi.fn(),
 			isFetching: false,
-		} as any);
+		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
 			<TestProviders>
@@ -61,7 +71,37 @@ describe("UsersPage", () => {
 		expect(screen.getByText("oidc")).toBeInTheDocument();
 	});
 
-	test("search interaction", () => {
+	test("row click navigates to user detail", async () => {
+		const ue = userEvent.setup();
+		vi.mocked(useQuery).mockReturnValue({
+			data: {
+				users: [
+					create(UserSchema, {
+						email: "user1@example.com",
+						name: "User One",
+						provider: "internal",
+					}),
+				],
+				pagination: { total: 1 },
+			},
+			isLoading: false,
+			error: null,
+			refetch: vi.fn(),
+			isFetching: false,
+		} as unknown as ReturnType<typeof useQuery>);
+
+		render(
+			<TestProviders>
+				<UsersPage />
+			</TestProviders>,
+		);
+
+		await ue.click(screen.getByText("user1@example.com"));
+		expect(mockNavigate).toHaveBeenCalledWith("/users/user1%40example.com");
+	});
+
+	test("search interaction", async () => {
+		const ue = userEvent.setup();
 		const refetch = vi.fn();
 		vi.mocked(useQuery).mockReturnValue({
 			data: { users: [], pagination: { total: 0 } },
@@ -69,7 +109,7 @@ describe("UsersPage", () => {
 			error: null,
 			refetch,
 			isFetching: false,
-		} as any);
+		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
 			<TestProviders>
@@ -78,10 +118,7 @@ describe("UsersPage", () => {
 		);
 
 		const searchInput = screen.getByPlaceholderText("Search users...");
-		fireEvent.change(searchInput, { target: { value: "test-query" } });
-
-		// Press enter to search
-		fireEvent.keyDown(searchInput, { key: "Enter", code: "Enter" });
+		await ue.type(searchInput, "test-query{Enter}");
 
 		expect(useQuery).toHaveBeenCalledWith(
 			expect.anything(),
@@ -91,7 +128,8 @@ describe("UsersPage", () => {
 		);
 	});
 
-	test("pagination interaction", () => {
+	test("pagination interaction", async () => {
+		const ue = userEvent.setup();
 		vi.mocked(useQuery).mockReturnValue({
 			data: {
 				users: [],
@@ -101,7 +139,7 @@ describe("UsersPage", () => {
 			error: null,
 			refetch: vi.fn(),
 			isFetching: false,
-		} as any);
+		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
 			<TestProviders>
@@ -109,8 +147,7 @@ describe("UsersPage", () => {
 			</TestProviders>,
 		);
 
-		const nextButton = screen.getByRole("button", { name: /next/i });
-		fireEvent.click(nextButton);
+		await ue.click(screen.getByRole("button", { name: /next/i }));
 
 		expect(useQuery).toHaveBeenCalledWith(
 			expect.anything(),
@@ -127,7 +164,7 @@ describe("UsersPage", () => {
 			error: null,
 			refetch: vi.fn(),
 			isFetching: true,
-		} as any);
+		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
 			<TestProviders>
@@ -149,7 +186,7 @@ describe("UsersPage", () => {
 			error: { message: "Failed to fetch" },
 			refetch: vi.fn(),
 			isFetching: false,
-		} as any);
+		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
 			<TestProviders>

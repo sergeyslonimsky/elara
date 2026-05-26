@@ -7,7 +7,6 @@
 package groupv1
 
 import (
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -23,22 +22,31 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Group entity metadata.
+//
+// Members and permissions are NOT carried on this message — they are
+// returned alongside the group via GetGroupResponse / UpdateGroup*Response.
+// The split lets caller-scope filtering apply uniformly and avoids the
+// dual-write drift between bbolt and Casbin that the SSoT refactor closed.
+//
+// Three independent optimistic-lock counters let concurrent edits to
+// metadata, members, and permissions proceed without false conflicts.
 type Group struct {
-	state     protoimpl.MessageState `protogen:"open.v1"`
-	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name      string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Members   []string               `protobuf:"bytes,3,rep,name=members,proto3" json:"members,omitempty"`
-	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	// is_system flags built-in groups (e.g. `admins`) that the server protects
-	// from deletion, renaming, and removing their last member. Clients should
-	// disable destructive UI actions when this is true.
-	IsSystem      bool                       `protobuf:"varint,6,opt,name=is_system,json=isSystem,proto3" json:"is_system,omitempty"`
-	Description   string                     `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty"`
-	Version       int64                      `protobuf:"varint,8,opt,name=version,proto3" json:"version,omitempty"`
-	Permissions   []*v1.PermissionAssignment `protobuf:"bytes,9,rep,name=permissions,proto3" json:"permissions,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name        string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// is_system flags built-in groups (e.g. system:superadmin) that the
+	// server protects from deletion and renaming. Clients should disable
+	// destructive UI actions when this is true.
+	IsSystem           bool                   `protobuf:"varint,4,opt,name=is_system,json=isSystem,proto3" json:"is_system,omitempty"`
+	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt          *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	MetadataVersion    int64                  `protobuf:"varint,7,opt,name=metadata_version,json=metadataVersion,proto3" json:"metadata_version,omitempty"`
+	MembersVersion     int64                  `protobuf:"varint,8,opt,name=members_version,json=membersVersion,proto3" json:"members_version,omitempty"`
+	PermissionsVersion int64                  `protobuf:"varint,9,opt,name=permissions_version,json=permissionsVersion,proto3" json:"permissions_version,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Group) Reset() {
@@ -85,11 +93,18 @@ func (x *Group) GetName() string {
 	return ""
 }
 
-func (x *Group) GetMembers() []string {
+func (x *Group) GetDescription() string {
 	if x != nil {
-		return x.Members
+		return x.Description
 	}
-	return nil
+	return ""
+}
+
+func (x *Group) GetIsSystem() bool {
+	if x != nil {
+		return x.IsSystem
+	}
+	return false
 }
 
 func (x *Group) GetCreatedAt() *timestamppb.Timestamp {
@@ -106,51 +121,44 @@ func (x *Group) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *Group) GetIsSystem() bool {
+func (x *Group) GetMetadataVersion() int64 {
 	if x != nil {
-		return x.IsSystem
-	}
-	return false
-}
-
-func (x *Group) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *Group) GetVersion() int64 {
-	if x != nil {
-		return x.Version
+		return x.MetadataVersion
 	}
 	return 0
 }
 
-func (x *Group) GetPermissions() []*v1.PermissionAssignment {
+func (x *Group) GetMembersVersion() int64 {
 	if x != nil {
-		return x.Permissions
+		return x.MembersVersion
 	}
-	return nil
+	return 0
+}
+
+func (x *Group) GetPermissionsVersion() int64 {
+	if x != nil {
+		return x.PermissionsVersion
+	}
+	return 0
 }
 
 var File_elara_group_v1_group_proto protoreflect.FileDescriptor
 
 const file_elara_group_v1_group_proto_rawDesc = "" +
 	"\n" +
-	"\x1aelara/group/v1/group.proto\x12\x0eelara.group.v1\x1a elara/common/v1/permission.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xdd\x02\n" +
+	"\x1aelara/group/v1/group.proto\x12\x0eelara.group.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe5\x02\n" +
 	"\x05Group\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
-	"\amembers\x18\x03 \x03(\tR\amembers\x129\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1b\n" +
+	"\tis_system\x18\x04 \x01(\bR\bisSystem\x129\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1b\n" +
-	"\tis_system\x18\x06 \x01(\bR\bisSystem\x12 \n" +
-	"\vdescription\x18\a \x01(\tR\vdescription\x12\x18\n" +
-	"\aversion\x18\b \x01(\x03R\aversion\x12G\n" +
-	"\vpermissions\x18\t \x03(\v2%.elara.common.v1.PermissionAssignmentR\vpermissionsB\xc2\x01\n" +
+	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12)\n" +
+	"\x10metadata_version\x18\a \x01(\x03R\x0fmetadataVersion\x12'\n" +
+	"\x0fmembers_version\x18\b \x01(\x03R\x0emembersVersion\x12/\n" +
+	"\x13permissions_version\x18\t \x01(\x03R\x12permissionsVersionB\xc2\x01\n" +
 	"\x12com.elara.group.v1B\n" +
 	"GroupProtoP\x01ZFgithub.com/sergeyslonimsky/elara/internal/proto/elara/group/v1;groupv1\xa2\x02\x03EGX\xaa\x02\x0eElara.Group.V1\xca\x02\x0eElara\\Group\\V1\xe2\x02\x1aElara\\Group\\V1\\GPBMetadata\xea\x02\x10Elara::Group::V1b\x06proto3"
 
@@ -168,19 +176,17 @@ func file_elara_group_v1_group_proto_rawDescGZIP() []byte {
 
 var file_elara_group_v1_group_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_elara_group_v1_group_proto_goTypes = []any{
-	(*Group)(nil),                   // 0: elara.group.v1.Group
-	(*timestamppb.Timestamp)(nil),   // 1: google.protobuf.Timestamp
-	(*v1.PermissionAssignment)(nil), // 2: elara.common.v1.PermissionAssignment
+	(*Group)(nil),                 // 0: elara.group.v1.Group
+	(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
 }
 var file_elara_group_v1_group_proto_depIdxs = []int32{
 	1, // 0: elara.group.v1.Group.created_at:type_name -> google.protobuf.Timestamp
 	1, // 1: elara.group.v1.Group.updated_at:type_name -> google.protobuf.Timestamp
-	2, // 2: elara.group.v1.Group.permissions:type_name -> elara.common.v1.PermissionAssignment
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_elara_group_v1_group_proto_init() }

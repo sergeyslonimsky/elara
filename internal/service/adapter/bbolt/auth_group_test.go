@@ -18,9 +18,8 @@ func TestGroupRepo_Create(t *testing.T) {
 	ctx := t.Context()
 
 	group := &domain.Group{
-		ID:      "admins",
-		Name:    "Administrators",
-		Members: []string{"alice@example.com"},
+		ID:   "admins",
+		Name: "Administrators",
 	}
 
 	err := repo.Create(ctx, group)
@@ -225,9 +224,8 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 	t.Parallel()
 
 	type seedGroup struct {
-		id      string
-		name    string
-		members []string
+		id   string
+		name string
 	}
 
 	tests := []struct {
@@ -328,7 +326,7 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 			ctx := t.Context()
 
 			for _, sg := range tt.seed {
-				g := &domain.Group{ID: sg.id, Name: sg.name, Members: sg.members}
+				g := &domain.Group{ID: sg.id, Name: sg.name}
 				require.NoError(t, repo.Create(ctx, g))
 			}
 
@@ -340,7 +338,7 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 	}
 }
 
-func TestGroupRepo_SystemAndVersion(t *testing.T) {
+func TestGroupRepo_SystemAndVersions(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
@@ -348,26 +346,32 @@ func TestGroupRepo_SystemAndVersion(t *testing.T) {
 	ctx := t.Context()
 
 	group := &domain.Group{
-		ID:      "sys-admins",
-		Name:    "System Admins",
-		System:  true,
-		Version: 42,
+		ID:                 "sys-admins",
+		Name:               "System Admins",
+		System:             true,
+		MetadataVersion:    42,
+		MembersVersion:     7,
+		PermissionsVersion: 13,
 	}
 
-	// Create
+	// Create — passed counters are persisted as-is.
 	require.NoError(t, repo.Create(ctx, group))
-	assert.Equal(t, int64(42), group.Version)
+	assert.Equal(t, int64(42), group.MetadataVersion)
 
 	// Get and verify
 	got, err := repo.Get(ctx, group.ID)
 	require.NoError(t, err)
 	assert.True(t, got.System)
-	assert.Equal(t, int64(42), got.Version)
+	assert.Equal(t, int64(42), got.MetadataVersion)
+	assert.Equal(t, int64(7), got.MembersVersion)
+	assert.Equal(t, int64(13), got.PermissionsVersion)
 
 	// Update (should preserve System flag even if we try to change it)
 	got.Name = "Updated Name"
 	got.System = false
-	got.Version = 43
+	got.MetadataVersion = 43
+	got.MembersVersion = 8
+	got.PermissionsVersion = 14
 	require.NoError(t, repo.Update(ctx, got))
 
 	// Get again
@@ -375,5 +379,7 @@ func TestGroupRepo_SystemAndVersion(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, final.System, "System flag must be preserved from existing record")
 	assert.Equal(t, "Updated Name", final.Name)
-	assert.Equal(t, int64(43), final.Version)
+	assert.Equal(t, int64(43), final.MetadataVersion)
+	assert.Equal(t, int64(8), final.MembersVersion)
+	assert.Equal(t, int64(14), final.PermissionsVersion)
 }

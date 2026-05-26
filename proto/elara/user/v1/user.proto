@@ -11,4 +11,8 @@ message User {
   string provider = 4;
   google.protobuf.Timestamp created_at = 5;
   google.protobuf.Timestamp last_login_at = 6;
+  // is_system flags built-in users (e.g. the bootstrap superadmin) that
+  // the server protects from deletion. Clients should disable destructive
+  // UI actions when this is true.
+  bool is_system = 7;
 }

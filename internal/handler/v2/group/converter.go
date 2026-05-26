@@ -5,17 +5,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/group/v1"
-	groupuc "github.com/sergeyslonimsky/elara/internal/usecase/group"
 )
-
-func updateGroupReqToData(req *v1.UpdateGroupRequest) groupuc.UpdateData {
-	return groupuc.UpdateData{
-		ID:          req.GetId(),
-		Name:        req.GetName(),
-		Description: req.GetDescription(),
-		Version:     req.GetVersion(),
-	}
-}
 
 func domainGroupToProto(g *domain.Group) *v1.Group {
 	if g == nil {
@@ -23,15 +13,14 @@ func domainGroupToProto(g *domain.Group) *v1.Group {
 	}
 
 	return &v1.Group{
-		Id:          g.ID,
-		Name:        g.Name,
-		Members:     g.Members,
-		CreatedAt:   timestamppb.New(g.CreatedAt),
-		UpdatedAt:   timestamppb.New(g.UpdatedAt),
-		IsSystem:    g.System,
-		Description: g.Description,
-		Version:     g.Version,
-		// Permissions are stored in Casbin policy, not on the entity — fetched
-		// separately via PDP. Wiring in M5/M6.
+		Id:                 g.ID,
+		Name:               g.Name,
+		Description:        g.Description,
+		IsSystem:           g.System,
+		CreatedAt:          timestamppb.New(g.CreatedAt),
+		UpdatedAt:          timestamppb.New(g.UpdatedAt),
+		MetadataVersion:    g.MetadataVersion,
+		MembersVersion:     g.MembersVersion,
+		PermissionsVersion: g.PermissionsVersion,
 	}
 }

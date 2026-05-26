@@ -19,21 +19,25 @@ type authUserMeta struct {
 	LastLoginAt            time.Time `json:"last_login_at"`
 	PasswordHash           string    `json:"password_hash,omitempty"`
 	PasswordChangeRequired bool      `json:"password_change_required,omitempty"`
+	MembershipVersion      int64     `json:"membership_version,omitempty"`
 }
 
 // authGroupMeta is the bbolt JSON shape for a group entity.
 //
-// Membership (user→group) lives exclusively in Casbin g-rules; this struct
-// only carries the entity metadata bbolt is authoritative for. Old records
-// with a "members" key are silently ignored on read (unknown fields).
+// Membership (user→group) and permissions live exclusively in Casbin
+// (g-rules / p-rules); this struct only carries the entity metadata
+// bbolt is authoritative for. The three version counters track
+// optimistic-lock state independently per editable slot.
 type authGroupMeta struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description,omitempty"`
-	System      bool      `json:"system,omitempty"`
-	Version     int64     `json:"version,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID                 string    `json:"id"`
+	Name               string    `json:"name"`
+	Description        string    `json:"description,omitempty"`
+	System             bool      `json:"system,omitempty"`
+	MetadataVersion    int64     `json:"metadata_version,omitempty"`
+	MembersVersion     int64     `json:"members_version,omitempty"`
+	PermissionsVersion int64     `json:"permissions_version,omitempty"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 type authTokenMeta struct {
@@ -61,6 +65,7 @@ func domainToAuthUserMeta(u *domain.User) *authUserMeta {
 		LastLoginAt:            u.LastLoginAt,
 		PasswordHash:           u.PasswordHash,
 		PasswordChangeRequired: u.PasswordChangeRequired,
+		MembershipVersion:      u.MembershipVersion,
 	}
 }
 
@@ -76,33 +81,35 @@ func authUserMetaToDomain(m *authUserMeta) *domain.User {
 		LastLoginAt:            m.LastLoginAt,
 		PasswordHash:           m.PasswordHash,
 		PasswordChangeRequired: m.PasswordChangeRequired,
+		MembershipVersion:      m.MembershipVersion,
 	}
 }
 
 func domainToAuthGroupMeta(g *domain.Group) *authGroupMeta {
 	return &authGroupMeta{
-		ID:          g.ID,
-		Name:        g.Name,
-		Description: g.Description,
-		System:      g.System,
-		Version:     g.Version,
-		CreatedAt:   g.CreatedAt,
-		UpdatedAt:   g.UpdatedAt,
+		ID:                 g.ID,
+		Name:               g.Name,
+		Description:        g.Description,
+		System:             g.System,
+		MetadataVersion:    g.MetadataVersion,
+		MembersVersion:     g.MembersVersion,
+		PermissionsVersion: g.PermissionsVersion,
+		CreatedAt:          g.CreatedAt,
+		UpdatedAt:          g.UpdatedAt,
 	}
 }
 
-// authGroupMetaToDomain returns a Group with Members left nil — callers in
-// the service layer enrich it from Casbin (the source of truth) before the
-// value reaches handlers or proto.
 func authGroupMetaToDomain(m *authGroupMeta) *domain.Group {
 	return &domain.Group{
-		ID:          m.ID,
-		Name:        m.Name,
-		Description: m.Description,
-		System:      m.System,
-		Version:     m.Version,
-		CreatedAt:   m.CreatedAt,
-		UpdatedAt:   m.UpdatedAt,
+		ID:                 m.ID,
+		Name:               m.Name,
+		Description:        m.Description,
+		System:             m.System,
+		MetadataVersion:    m.MetadataVersion,
+		MembersVersion:     m.MembersVersion,
+		PermissionsVersion: m.PermissionsVersion,
+		CreatedAt:          m.CreatedAt,
+		UpdatedAt:          m.UpdatedAt,
 	}
 }
 
