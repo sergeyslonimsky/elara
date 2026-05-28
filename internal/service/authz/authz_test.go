@@ -20,8 +20,8 @@ func TestAuthz_Require(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		object   string
-		action   string
+		object   domain.Object
+		action   domain.Action
 		domain   string
 		mockFunc func(context.Context, *gomock.Controller) (*authz.Authz, context.Context)
 		wantErr  string
@@ -29,15 +29,15 @@ func TestAuthz_Require(t *testing.T) {
 	}{
 		{
 			name:   "authorized",
-			object: "config",
-			action: "read",
+			object: domain.ObjectConfig,
+			action: domain.ActionRead,
 			domain: "dom1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authz.Authz, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				pdp := authz_mock.NewMockpdp(ctrl)
 				pdp.EXPECT().Has("user@example.com", domain.Permission{
-					Object: "config",
-					Action: "read",
+					Object: domain.ObjectConfig,
+					Action: domain.ActionRead,
 					Domain: "dom1",
 				}).Return(true)
 
@@ -46,8 +46,8 @@ func TestAuthz_Require(t *testing.T) {
 		},
 		{
 			name:   "unauthenticated",
-			object: "config",
-			action: "read",
+			object: domain.ObjectConfig,
+			action: domain.ActionRead,
 			domain: "dom1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authz.Authz, context.Context) {
 				return authz.NewAuthz(nil), ctx
@@ -57,15 +57,15 @@ func TestAuthz_Require(t *testing.T) {
 		},
 		{
 			name:   "unauthorized",
-			object: "config",
-			action: "read",
+			object: domain.ObjectConfig,
+			action: domain.ActionRead,
 			domain: "dom1",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authz.Authz, context.Context) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				pdp := authz_mock.NewMockpdp(ctrl)
 				pdp.EXPECT().Has("user@example.com", domain.Permission{
-					Object: "config",
-					Action: "read",
+					Object: domain.ObjectConfig,
+					Action: domain.ActionRead,
 					Domain: "dom1",
 				}).Return(false)
 

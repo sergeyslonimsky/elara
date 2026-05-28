@@ -141,8 +141,8 @@ func TestService_Create(t *testing.T) {
 				for _, r := range st.enforcer.GetPolicy() {
 					if r[0] == managerSubject &&
 						r[1] == wantDomain &&
-						r[2] == domain.ObjectGroup &&
-						r[3] == domain.ActionWrite {
+						r[2] == string(domain.ObjectGroup) &&
+						r[3] == string(domain.ActionWrite) {
 						found = true
 
 						break
@@ -196,11 +196,11 @@ func TestService_Create(t *testing.T) {
 				var managerGranted, ownPerm bool
 				for _, r := range st.enforcer.GetPolicy() {
 					if r[0] == managerSubject && r[1] == wantDomain &&
-						r[2] == domain.ObjectGroup && r[3] == domain.ActionWrite {
+						r[2] == string(domain.ObjectGroup) && r[3] == string(domain.ActionWrite) {
 						managerGranted = true
 					}
 					if r[0] == casbin.GroupSubject(in.Name) && r[1] == "dev" &&
-						r[2] == domain.ObjectNamespace && r[3] == domain.ActionWrite {
+						r[2] == string(domain.ObjectNamespace) && r[3] == string(domain.ActionWrite) {
 						ownPerm = true
 					}
 				}
@@ -252,7 +252,12 @@ func TestService_Create_AntiEscalation(t *testing.T) {
 				require.NoError(
 					t,
 					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy("devops@example.com", "dev", domain.ObjectNamespace, domain.ActionWrite)
+						return txe.AddPolicy(
+							"devops@example.com",
+							"dev",
+							string(domain.ObjectNamespace),
+							string(domain.ActionWrite),
+						)
 					}),
 				)
 

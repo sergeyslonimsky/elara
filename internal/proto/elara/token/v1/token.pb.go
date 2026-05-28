@@ -7,6 +7,7 @@
 package tokenv1
 
 import (
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -28,7 +29,7 @@ type Token struct {
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	IssuedBy      string                 `protobuf:"bytes,3,opt,name=issued_by,json=issuedBy,proto3" json:"issued_by,omitempty"`
 	Namespaces    []string               `protobuf:"bytes,4,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
-	Role          string                 `protobuf:"bytes,5,opt,name=role,proto3" json:"role,omitempty"`
+	Permission    v1.PermissionAction    `protobuf:"varint,5,opt,name=permission,proto3,enum=elara.common.v1.PermissionAction" json:"permission,omitempty"`
 	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
 	LastUsedAt    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_used_at,json=lastUsedAt,proto3,oneof" json:"last_used_at,omitempty"`
 	LastUsedIp    string                 `protobuf:"bytes,8,opt,name=last_used_ip,json=lastUsedIp,proto3" json:"last_used_ip,omitempty"`
@@ -95,11 +96,11 @@ func (x *Token) GetNamespaces() []string {
 	return nil
 }
 
-func (x *Token) GetRole() string {
+func (x *Token) GetPermission() v1.PermissionAction {
 	if x != nil {
-		return x.Role
+		return x.Permission
 	}
-	return ""
+	return v1.PermissionAction(0)
 }
 
 func (x *Token) GetExpiresAt() *timestamppb.Timestamp {
@@ -134,15 +135,17 @@ var File_elara_token_v1_token_proto protoreflect.FileDescriptor
 
 const file_elara_token_v1_token_proto_rawDesc = "" +
 	"\n" +
-	"\x1aelara/token/v1/token.proto\x12\x0eelara.token.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfc\x02\n" +
+	"\x1aelara/token/v1/token.proto\x12\x0eelara.token.v1\x1a elara/common/v1/permission.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xab\x03\n" +
 	"\x05Token\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1b\n" +
 	"\tissued_by\x18\x03 \x01(\tR\bissuedBy\x12\x1e\n" +
 	"\n" +
 	"namespaces\x18\x04 \x03(\tR\n" +
-	"namespaces\x12\x12\n" +
-	"\x04role\x18\x05 \x01(\tR\x04role\x12>\n" +
+	"namespaces\x12A\n" +
+	"\n" +
+	"permission\x18\x05 \x01(\x0e2!.elara.common.v1.PermissionActionR\n" +
+	"permission\x12>\n" +
 	"\n" +
 	"expires_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\texpiresAt\x88\x01\x01\x12A\n" +
 	"\flast_used_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampH\x01R\n" +
@@ -171,17 +174,19 @@ func file_elara_token_v1_token_proto_rawDescGZIP() []byte {
 var file_elara_token_v1_token_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_elara_token_v1_token_proto_goTypes = []any{
 	(*Token)(nil),                 // 0: elara.token.v1.Token
-	(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
+	(v1.PermissionAction)(0),      // 1: elara.common.v1.PermissionAction
+	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
 }
 var file_elara_token_v1_token_proto_depIdxs = []int32{
-	1, // 0: elara.token.v1.Token.expires_at:type_name -> google.protobuf.Timestamp
-	1, // 1: elara.token.v1.Token.last_used_at:type_name -> google.protobuf.Timestamp
-	1, // 2: elara.token.v1.Token.created_at:type_name -> google.protobuf.Timestamp
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	1, // 0: elara.token.v1.Token.permission:type_name -> elara.common.v1.PermissionAction
+	2, // 1: elara.token.v1.Token.expires_at:type_name -> google.protobuf.Timestamp
+	2, // 2: elara.token.v1.Token.last_used_at:type_name -> google.protobuf.Timestamp
+	2, // 3: elara.token.v1.Token.created_at:type_name -> google.protobuf.Timestamp
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_elara_token_v1_token_proto_init() }

@@ -77,7 +77,7 @@ func TestTokenRepo_List_ByIssuedBy(t *testing.T) {
 
 	carolTokens, total, err := repo.List(ctx, domain.TokenFilter{
 		AnyNamespace: true,
-		IssuedBy:     "carol@example.com",
+		IssuedBy:     []string{"carol@example.com"},
 	}, domain.TokenListParams{})
 	require.NoError(t, err)
 	assert.Len(t, carolTokens, 2)
@@ -85,7 +85,7 @@ func TestTokenRepo_List_ByIssuedBy(t *testing.T) {
 
 	daveTokens, total, err := repo.List(ctx, domain.TokenFilter{
 		AnyNamespace: true,
-		IssuedBy:     "dave@example.com",
+		IssuedBy:     []string{"dave@example.com"},
 	}, domain.TokenListParams{})
 	require.NoError(t, err)
 	assert.Len(t, daveTokens, 1)
@@ -208,20 +208,20 @@ func TestTokenRepo_List(t *testing.T) {
 			},
 			filter: domain.TokenFilter{
 				AnyNamespace: true,
-				IssuedBy:     "alice@x",
+				IssuedBy:     []string{"alice@x"},
 			},
 			wantIDs:   []string{"a"},
 			wantTotal: 1,
 		},
 		{
-			name: "Search filters case-insensitive substring on Name",
+			name: "QueryParams filter case-insensitive substring on Name",
 			seeds: []seedToken{
 				{id: "a", issuedBy: "u@x", name: "prod-key", namespaces: []string{"ns1"}, createdAt: now},
 				{id: "b", issuedBy: "u@x", name: "stg-key", namespaces: []string{"ns1"}, createdAt: now},
 			},
 			filter: domain.TokenFilter{
 				AnyNamespace: true,
-				Search:       "PROD",
+				QueryParams:  []string{"PROD"},
 			},
 			wantIDs:   []string{"a"},
 			wantTotal: 1,

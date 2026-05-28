@@ -126,7 +126,7 @@ func TestService_Create(t *testing.T) {
 		seedGroup(t, st, "g2", "platform")
 
 		// Actor only has Group:Write on g1.
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
 		})
 
@@ -151,7 +151,7 @@ func TestService_Create(t *testing.T) {
 
 		// elevated group grants config:write on ns-a; actor has only
 		// Group:Write on g1 (no config:write of its own).
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{casbin.GroupSubject("elevated"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
 			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
 		})
@@ -283,7 +283,7 @@ func TestService_Delete(t *testing.T) {
 
 		// Actor: Group:Write on g1 (can write the target) but NO config:write
 		// permission that the target's group grants.
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{casbin.GroupSubject("devs"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
 			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
 		})
@@ -303,12 +303,12 @@ func TestService_Delete(t *testing.T) {
 		// the last-admin guard) is the unique RoleAdmin/* holder. The caller
 		// holds the wildcard User:Write needed to reach the guard.
 		seedUser(t, st, targetEmail)
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 		// Assign target the admin role on the wildcard domain so they are
 		// the sole holder of the admin grant.
-		addRoleForUser(t, st, targetEmail, domain.RoleAdmin, domain.DomainAll)
+		addRoleForUser(t, st, targetEmail, string(domain.RoleAdmin), domain.DomainAll)
 
 		err := st.svc.Delete(t.Context(), adminActor(), targetEmail)
 		require.ErrorContains(t, err, "cannot delete the last admin")
@@ -374,7 +374,7 @@ func TestService_Get(t *testing.T) {
 
 		// Actor can read group:visible only (also Group:Read used to grant
 		// scope over the user itself).
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{actorEmail, domain.GroupResource("visible"), domain.ObjectGroup, domain.ActionRead},
 		})
 

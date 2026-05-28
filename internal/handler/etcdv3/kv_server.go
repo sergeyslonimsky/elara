@@ -62,7 +62,7 @@ func (s *KVServer) Range(ctx context.Context, req *etcdserverpb.RangeRequest) (*
 		return nil, status.Errorf(codes.InvalidArgument, "invalid key encoding: %q", string(req.Key))
 	}
 
-	if err := s.checkRangeAccess(ctx, startNS, endNS, "read"); err != nil {
+	if err := s.checkRangeAccess(ctx, startNS, endNS, domain.ActionRead); err != nil {
 		return nil, err
 	}
 
@@ -109,7 +109,7 @@ func (s *KVServer) Put(ctx context.Context, req *etcdserverpb.PutRequest) (*etcd
 		return nil, status.Errorf(codes.InvalidArgument, "invalid key encoding: %q", string(req.Key))
 	}
 
-	if err := s.checkAccess(ctx, namespace, "write"); err != nil {
+	if err := s.checkAccess(ctx, namespace, domain.ActionWrite); err != nil {
 		return nil, err
 	}
 
@@ -146,7 +146,7 @@ func (s *KVServer) DeleteRange(
 		return nil, status.Errorf(codes.InvalidArgument, "invalid key encoding: %q", string(req.Key))
 	}
 
-	if err := s.checkRangeAccess(ctx, startNS, endNS, "write"); err != nil {
+	if err := s.checkRangeAccess(ctx, startNS, endNS, domain.ActionWrite); err != nil {
 		return nil, err
 	}
 
@@ -245,7 +245,7 @@ func (s *KVServer) Compact(
 	return &etcdserverpb.CompactionResponse{Header: newHeader(rev)}, nil
 }
 
-func (s *KVServer) checkRangeAccess(ctx context.Context, startNS, endNS, action string) error {
+func (s *KVServer) checkRangeAccess(ctx context.Context, startNS, endNS string, action domain.Action) error {
 	if err := s.checkAccess(ctx, startNS, action); err != nil {
 		return err
 	}
@@ -525,7 +525,7 @@ func toKVStatus(err error, op, path string) error {
 	return status.Errorf(codes.Internal, "%s: %v", op, err)
 }
 
-func (s *KVServer) checkAccess(ctx context.Context, namespace, action string) error {
+func (s *KVServer) checkAccess(ctx context.Context, namespace string, action domain.Action) error {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
 		// If auth is disabled, allow all.
@@ -547,7 +547,7 @@ func (s *KVServer) checkAccess(ctx context.Context, namespace, action string) er
 			return status.Errorf(codes.PermissionDenied, "permission denied for namespace %q", namespace)
 		}
 
-		if action == domain.ActionWrite && claims.Role != "writer" {
+		if action == domain.ActionWrite && domain.Role(claims.Role) != domain.RoleWriter {
 			return status.Errorf(codes.PermissionDenied, "permission denied for action %q", action)
 		}
 

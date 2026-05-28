@@ -307,7 +307,14 @@ func (e *Enforcer) applyOpsToCache(ops []op) error { //nolint:cyclop //refactor
 func (e *Enforcer) seedBuiltinPolicies() error {
 	// Columns: {role, domain, object, action}. Roles are granted in every
 	// domain via DomainAll; for the admin role the object is also a wildcard.
-	policies := [][]string{
+	type seedPolicy struct {
+		role   domain.Role
+		dom    string
+		object domain.Object
+		action domain.Action
+	}
+
+	policies := []seedPolicy{
 		// admin — wildcard covers everything
 		{domain.RoleAdmin, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 
@@ -332,8 +339,8 @@ func (e *Enforcer) seedBuiltinPolicies() error {
 	}
 
 	for _, p := range policies {
-		if _, err := e.e.AddPolicy(p[0], p[1], p[2], p[3]); err != nil {
-			return fmt.Errorf("seed built-in policy %v: %w", p, err)
+		if _, err := e.e.AddPolicy(string(p.role), p.dom, string(p.object), string(p.action)); err != nil {
+			return fmt.Errorf("seed built-in policy %+v: %w", p, err)
 		}
 	}
 

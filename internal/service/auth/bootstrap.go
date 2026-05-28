@@ -164,8 +164,8 @@ func (a *AdminBootstrap) ensureSuperAdminPolicy(tx storage.Tx) error {
 	rule := []string{
 		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
 		domain.DomainAll,
-		domain.ObjectAll,
-		domain.ActionAll,
+		string(domain.ObjectAll),
+		string(domain.ActionAll),
 	}
 
 	if err := policy.AddPolicy("p", "p", rule); err != nil {

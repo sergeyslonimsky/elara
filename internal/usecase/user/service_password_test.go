@@ -45,7 +45,7 @@ func TestService_ResetPassword(t *testing.T) {
 		})
 		// No target permissions on the group → anti-escalation passes
 		// trivially. Actor only needs Group:Write on g1.
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
 		})
 
@@ -84,7 +84,7 @@ func TestService_ResetPassword(t *testing.T) {
 
 		// Target inherits config:write on ns-a from group:elevated. Actor
 		// has only Group:Write on g1 (no config:write of its own).
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{casbin.GroupSubject("elevated"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
 			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
 		})

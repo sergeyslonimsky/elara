@@ -67,14 +67,24 @@ func setupServiceReal(t *testing.T) realStack {
 	}
 }
 
+// policyRow is a single p-rule row passed to addPolicies. Object/Action
+// are typed so call sites can use domain.ObjectXxx / domain.ActionXxx
+// constants without string casts.
+type policyRow struct {
+	Sub string
+	Dom string
+	Obj domain.Object
+	Act domain.Action
+}
+
 // addPolicies writes p-rules (subject, domain, object, action) inside a
-// Casbin write transaction. Caller passes a slice of [4]string rows.
-func addPolicies(t *testing.T, st realStack, rules [][4]string) {
+// Casbin write transaction.
+func addPolicies(t *testing.T, st realStack, rules []policyRow) {
 	t.Helper()
 
 	require.NoError(t, st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
 		for _, r := range rules {
-			if err := txe.AddPolicy(r[0], r[1], r[2], r[3]); err != nil {
+			if err := txe.AddPolicy(r.Sub, r.Dom, string(r.Obj), string(r.Act)); err != nil {
 				return err
 			}
 		}
@@ -117,7 +127,7 @@ func addRoleForUser(t *testing.T, st realStack, subject, role, dom string) {
 func seedAdminAll(t *testing.T, st realStack) {
 	t.Helper()
 
-	addPolicies(t, st, [][4]string{
+	addPolicies(t, st, []policyRow{
 		{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 	})
 }
@@ -185,7 +195,7 @@ func seedAdminAllOnMockStack(t *testing.T, m mockStack) {
 	t.Helper()
 
 	require.NoError(t, m.enforcer.WriteTx(t.Context(), m.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddPolicy(adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll)
+		return txe.AddPolicy(adminEmail, domain.DomainAll, string(domain.ObjectAll), string(domain.ActionAll))
 	}))
 }
 
@@ -263,7 +273,7 @@ func TestService_List(t *testing.T) {
 		st := setupServiceReal(t)
 
 		// Actor can read groups: dev and platform.
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{actorEmail, casbin.GroupSubject("dev"), domain.ObjectGroup, domain.ActionRead},
 			{actorEmail, casbin.GroupSubject("platform"), domain.ObjectGroup, domain.ActionRead},
 		})

@@ -29,7 +29,7 @@ func TestAccessHandler_AssignRole(t *testing.T) {
 					Require(gomock.Any(), domain.ObjectPolicy, domain.ActionWrite, domain.DomainAll).
 					Return(nil)
 				uc.EXPECT().
-					AssignRole(gomock.Any(), "group:dev", "ns1", "writer").
+					AssignRole(gomock.Any(), "group:dev", "ns1", domain.RoleWriter).
 					Return(nil)
 			},
 		},
@@ -87,7 +87,7 @@ func TestAccessHandler_RevokeRole(t *testing.T) {
 					Require(gomock.Any(), domain.ObjectPolicy, domain.ActionWrite, domain.DomainAll).
 					Return(nil)
 				uc.EXPECT().
-					RevokeRole(gomock.Any(), "group:dev", "ns1", "writer").
+					RevokeRole(gomock.Any(), "group:dev", "ns1", domain.RoleWriter).
 					Return(nil)
 			},
 		},

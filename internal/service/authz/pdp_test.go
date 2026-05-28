@@ -19,8 +19,8 @@ func TestPDP_EffectiveDomains(t *testing.T) {
 	tests := []struct {
 		name      string
 		principal string
-		object    string
-		action    string
+		object    domain.Object
+		action    domain.Action
 		mockFunc  func(*gomock.Controller) *authz.PDP
 		want      authz.DomainSet
 	}{
@@ -155,7 +155,7 @@ func TestPDP_ListPermissions(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
 				m := authz_mock.NewMockenforcer(ctrl)
 				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
-					{"sub", "ns1", domain.ObjectConfig, domain.ActionRead},
+					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionRead)},
 				}, nil)
 
 				return authz.NewPDP(m)
@@ -169,8 +169,8 @@ func TestPDP_ListPermissions(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
 				m := authz_mock.NewMockenforcer(ctrl)
 				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
-					{"sub", "ns1", domain.ObjectConfig, domain.ActionRead},
-					{"sub", "ns1", domain.ObjectConfig, domain.ActionRead},
+					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionRead)},
+					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionRead)},
 				}, nil)
 
 				return authz.NewPDP(m)
@@ -184,10 +184,10 @@ func TestPDP_ListPermissions(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
 				m := authz_mock.NewMockenforcer(ctrl)
 				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
-					{"sub", "ns2", domain.ObjectUser, domain.ActionRead},
-					{"sub", "ns1", domain.ObjectConfig, domain.ActionWrite},
-					{"sub", "ns1", domain.ObjectConfig, domain.ActionRead},
-					{"sub", "ns2", domain.ObjectConfig, domain.ActionRead},
+					{"sub", "ns2", string(domain.ObjectUser), string(domain.ActionRead)},
+					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionWrite)},
+					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionRead)},
+					{"sub", "ns2", string(domain.ObjectConfig), string(domain.ActionRead)},
 				}, nil)
 
 				return authz.NewPDP(m)
@@ -205,7 +205,7 @@ func TestPDP_ListPermissions(t *testing.T) {
 				m := authz_mock.NewMockenforcer(ctrl)
 				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
 					{"sub", "ns1"},
-					{"sub", "ns1", domain.ObjectConfig, domain.ActionRead},
+					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionRead)},
 				}, nil)
 
 				return authz.NewPDP(m)
@@ -219,7 +219,7 @@ func TestPDP_ListPermissions(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
 				m := authz_mock.NewMockenforcer(ctrl)
 				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
-					{"sub", domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+					{"sub", domain.DomainAll, string(domain.ObjectAll), string(domain.ActionAll)},
 				}, nil)
 
 				return authz.NewPDP(m)

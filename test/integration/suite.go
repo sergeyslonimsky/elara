@@ -29,8 +29,8 @@ type Persona struct {
 // Translates to Casbin p-rule: p, group:<group>, <domain>, <object>, <action>.
 type GroupPerm struct {
 	Group  string
-	Object string
-	Action string
+	Object domain.Object
+	Action domain.Action
 	Domain string
 }
 
@@ -43,7 +43,7 @@ var DefaultGroupPermissions = func() []GroupPerm {
 	// objects every "domain-scoped" group needs read or write on within its namespace(s).
 	// ObjectToken is per-namespace as of EL-4 T9.6: token visibility/management
 	// is gated by (Token, action, ns), not by Namespace:Read or global IAM perms.
-	scopedObjects := []string{
+	scopedObjects := []domain.Object{
 		domain.ObjectNamespace,
 		domain.ObjectConfig,
 		domain.ObjectTransfer,
@@ -53,7 +53,7 @@ var DefaultGroupPermissions = func() []GroupPerm {
 		domain.ObjectToken,
 	}
 
-	addGroup := func(group, action string, namespaces ...string) {
+	addGroup := func(group string, action domain.Action, namespaces ...string) {
 		for _, ns := range namespaces {
 			for _, obj := range scopedObjects {
 				out = append(out, GroupPerm{Group: group, Object: obj, Action: action, Domain: ns})
@@ -235,7 +235,12 @@ func (s *Suite) AddPersona(t *testing.T, email, group string, perms []GroupPerm)
 
 	require.NoError(t, s.Manager.Enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
 		for _, p := range perms {
-			if err := txe.AddPolicy(casbin.GroupSubject(group), p.Domain, p.Object, p.Action); err != nil {
+			if err := txe.AddPolicy(
+				casbin.GroupSubject(group),
+				p.Domain,
+				string(p.Object),
+				string(p.Action),
+			); err != nil {
 				return err
 			}
 		}
@@ -258,7 +263,12 @@ func seedRBAC(t *testing.T, ctx context.Context, enforcer *casbin.Enforcer, txm 
 
 	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
 		for _, p := range DefaultGroupPermissions {
-			if err := txe.AddPolicy(casbin.GroupSubject(p.Group), p.Domain, p.Object, p.Action); err != nil {
+			if err := txe.AddPolicy(
+				casbin.GroupSubject(p.Group),
+				p.Domain,
+				string(p.Object),
+				string(p.Action),
+			); err != nil {
 				return err
 			}
 		}

@@ -5,10 +5,12 @@ package domain
 const SystemGroupSuperAdmin = "system:superadmin"
 
 // Role constants for RBAC policy assignments.
+type Role string
+
 const (
-	RoleAdmin  = "admin"
-	RoleWriter = "writer"
-	RoleReader = "reader"
+	RoleAdmin  Role = "admin"
+	RoleWriter Role = "writer"
+	RoleReader Role = "reader"
 )
 
 // Domain constants. The Casbin domain field (third column of a g-rule, second
@@ -28,27 +30,31 @@ const (
 )
 
 // Object constants for RBAC resource identification.
+type Object string
+
 const (
-	ObjectAll       = "*"
-	ObjectConfig    = "config"
-	ObjectNamespace = "namespace"
-	ObjectToken     = "token"
-	ObjectClient    = "client"
-	ObjectDashboard = "dashboard"
-	ObjectUser      = "user"
-	ObjectGroup     = "group"
-	ObjectPolicy    = "policy"
-	ObjectWebhook   = "webhook"
-	ObjectSchema    = "schema"
-	ObjectTransfer  = "transfer"
+	ObjectAll       Object = "*"
+	ObjectConfig    Object = "config"
+	ObjectNamespace Object = "namespace"
+	ObjectToken     Object = "token"
+	ObjectClient    Object = "client"
+	ObjectDashboard Object = "dashboard"
+	ObjectUser      Object = "user"
+	ObjectGroup     Object = "group"
+	ObjectPolicy    Object = "policy"
+	ObjectWebhook   Object = "webhook"
+	ObjectSchema    Object = "schema"
+	ObjectTransfer  Object = "transfer"
 )
 
 // Action constants for RBAC permission checks.
+type Action string
+
 const (
-	ActionAll    = "*"
-	ActionCreate = "create"
-	ActionRead   = "read"
-	ActionWrite  = "write"
+	ActionAll    Action = "*"
+	ActionCreate Action = "create"
+	ActionRead   Action = "read"
+	ActionWrite  Action = "write"
 )
 
 // GroupResource returns the canonical Casbin domain string for a permission

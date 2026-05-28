@@ -425,8 +425,6 @@ func TestClientsHandler_WatchClients_PushesConnectedEvent(t *testing.T) {
 func TestClientsHandler_WatchClients_PushesDisconnectedEvent(t *testing.T) {
 	t.Parallel()
 
-	disconn := time.Now()
-
 	ctrl := gomock.NewController(t)
 	uc := clientsmock.NewMockusecase(ctrl)
 	uc.EXPECT().ListActive(gomock.Any()).Return(nil, nil).AnyTimes()
@@ -442,7 +440,7 @@ func TestClientsHandler_WatchClients_PushesDisconnectedEvent(t *testing.T) {
 
 	fx.push(t, domain.ClientChange{
 		Kind:   domain.ClientDisconnected,
-		Client: &domain.Client{ID: "gone", DisconnectedAt: &disconn},
+		Client: &domain.Client{ID: "gone", DisconnectedAt: new(time.Now())},
 	})
 
 	got := receiveFrame(t, stream)
@@ -584,11 +582,10 @@ func TestClientsHandler_WatchClient_NotFound(t *testing.T) {
 func TestClientsHandler_WatchClient_AlreadyDisconnected(t *testing.T) {
 	t.Parallel()
 
-	now := time.Now()
 	ctrl := gomock.NewController(t)
 	uc := clientsmock.NewMockusecase(ctrl)
 	uc.EXPECT().Get(gomock.Any(), "x").Return(
-		&domain.Client{ID: "x", DisconnectedAt: &now, ClientName: "svc"},
+		&domain.Client{ID: "x", DisconnectedAt: new(time.Now()), ClientName: "svc"},
 		nil, nil,
 	)
 
@@ -643,8 +640,6 @@ func TestClientsHandler_WatchClient_DisconnectExitsCleanly(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	disconn := now.Add(time.Minute)
-
 	ctrl := gomock.NewController(t)
 	uc := clientsmock.NewMockusecase(ctrl)
 	uc.EXPECT().Get(gomock.Any(), "x").Return(
@@ -662,7 +657,7 @@ func TestClientsHandler_WatchClient_DisconnectExitsCleanly(t *testing.T) {
 
 	fx.push(t, domain.ClientChange{
 		Kind:   domain.ClientDisconnected,
-		Client: &domain.Client{ID: "x", DisconnectedAt: &disconn},
+		Client: &domain.Client{ID: "x", DisconnectedAt: new(now.Add(time.Minute))},
 	})
 
 	got := receiveFrame(t, stream)

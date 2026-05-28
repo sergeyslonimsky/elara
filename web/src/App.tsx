@@ -8,6 +8,7 @@ import { BrowseRoutes } from "@/routes/browse-routes";
 import { ClientsRoutes } from "@/routes/clients-routes";
 import { ConfigRoutes } from "@/routes/config-routes";
 import { NamespacesRoutes } from "@/routes/namespaces-routes";
+import { TokensRoutes } from "@/routes/tokens-routes";
 import { UsersRoutes } from "@/routes/users-routes";
 import { WebhooksRoutes } from "@/routes/webhooks-routes";
 
@@ -28,9 +29,9 @@ function App() {
 					{NamespacesRoutes}
 					{WebhooksRoutes}
 					{UsersRoutes}
+					{TokensRoutes}
 
 					{/* Admin/User Management Placeholders */}
-					<Route path="/tokens" element={<div>Tokens Placeholder</div>} />
 					<Route path="/access" element={<div>Access Placeholder</div>} />
 				</Route>
 

@@ -15,12 +15,12 @@ import (
 
 type (
 	authz interface {
-		Require(ctx context.Context, object, action, domainStr string) error
+		Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error
 	}
 
 	accessUsecase interface {
-		AssignRole(ctx context.Context, subject, dom, role string) error
-		RevokeRole(ctx context.Context, subject, dom, role string) error
+		AssignRole(ctx context.Context, subject, dom string, role domain.Role) error
+		RevokeRole(ctx context.Context, subject, dom string, role domain.Role) error
 		List(ctx context.Context) ([]policyuc.Rule, error)
 	}
 )
@@ -44,7 +44,12 @@ func (h *AccessHandler) AssignRole(
 		return nil, v2.ToConnectError(err)
 	}
 
-	if err := h.uc.AssignRole(ctx, req.Msg.GetSubject(), req.Msg.GetDomain(), req.Msg.GetRole()); err != nil {
+	if err := h.uc.AssignRole(
+		ctx,
+		req.Msg.GetSubject(),
+		req.Msg.GetDomain(),
+		domain.Role(req.Msg.GetRole()),
+	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -59,7 +64,12 @@ func (h *AccessHandler) RevokeRole(
 		return nil, v2.ToConnectError(err)
 	}
 
-	if err := h.uc.RevokeRole(ctx, req.Msg.GetSubject(), req.Msg.GetDomain(), req.Msg.GetRole()); err != nil {
+	if err := h.uc.RevokeRole(
+		ctx,
+		req.Msg.GetSubject(),
+		req.Msg.GetDomain(),
+		domain.Role(req.Msg.GetRole()),
+	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -80,7 +90,7 @@ func (h *AccessHandler) ListPolicies(
 		protos = append(protos, &accessv1.PolicyRule{
 			Subject: r.Subject,
 			Domain:  r.Domain,
-			Role:    r.Role,
+			Role:    string(r.Role),
 		})
 	}
 

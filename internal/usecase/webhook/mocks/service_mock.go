@@ -43,7 +43,7 @@ func (m *Mockpdp) EXPECT() *MockpdpMockRecorder {
 }
 
 // EffectiveDomains mocks base method.
-func (m *Mockpdp) EffectiveDomains(principal, object, action string) authz.DomainSet {
+func (m *Mockpdp) EffectiveDomains(principal string, object domain.Object, action domain.Action) authz.DomainSet {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EffectiveDomains", principal, object, action)
 	ret0, _ := ret[0].(authz.DomainSet)

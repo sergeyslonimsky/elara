@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	policy "github.com/sergeyslonimsky/elara/internal/usecase/policy"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -42,7 +43,7 @@ func (m *Mockauthz) EXPECT() *MockauthzMockRecorder {
 }
 
 // Require mocks base method.
-func (m *Mockauthz) Require(ctx context.Context, object, action, domainStr string) error {
+func (m *Mockauthz) Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
 	ret0, _ := ret[0].(error)
@@ -80,7 +81,7 @@ func (m *MockaccessUsecase) EXPECT() *MockaccessUsecaseMockRecorder {
 }
 
 // AssignRole mocks base method.
-func (m *MockaccessUsecase) AssignRole(ctx context.Context, subject, dom, role string) error {
+func (m *MockaccessUsecase) AssignRole(ctx context.Context, subject, dom string, role domain.Role) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AssignRole", ctx, subject, dom, role)
 	ret0, _ := ret[0].(error)
@@ -109,7 +110,7 @@ func (mr *MockaccessUsecaseMockRecorder) List(ctx any) *gomock.Call {
 }
 
 // RevokeRole mocks base method.
-func (m *MockaccessUsecase) RevokeRole(ctx context.Context, subject, dom, role string) error {
+func (m *MockaccessUsecase) RevokeRole(ctx context.Context, subject, dom string, role domain.Role) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RevokeRole", ctx, subject, dom, role)
 	ret0, _ := ret[0].(error)

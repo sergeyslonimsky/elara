@@ -36,8 +36,8 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 
 	type request struct {
 		domain string
-		object string
-		action string
+		object domain.Object
+		action domain.Action
 		want   bool
 	}
 
@@ -47,8 +47,8 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 	type extraCheck struct {
 		subject string
 		domain  string
-		object  string
-		action  string
+		object  domain.Object
+		action  domain.Action
 		want    bool
 	}
 
@@ -64,7 +64,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
 				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
-				seedRole(t, e, txm, casbin.GroupSubject(devs), domain.RoleAdmin, "prod")
+				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
 
 				return e
 			},
@@ -87,8 +87,8 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 
 				// Group gets admin in prod, then loses it. Exactly one
 				// AddRoleForUser + one RemoveRoleForUser — no per-member loop.
-				seedRole(t, e, txm, casbin.GroupSubject(devs), domain.RoleAdmin, "prod")
-				removeRole(t, e, txm, casbin.GroupSubject(devs), domain.RoleAdmin, "prod")
+				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
+				removeRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
 
 				// Membership rules in domain "*" remain in place — verify the
 				// invariant rather than trusting the absence of a sync loop.
@@ -113,7 +113,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
 				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
-				seedRole(t, e, txm, casbin.GroupSubject(devs), domain.RoleAdmin, "prod")
+				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
 				removeRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
 
 				return e
@@ -127,9 +127,9 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
-				seedRole(t, e, txm, alice, domain.RoleReader, domain.DomainAll)
+				seedRole(t, e, txm, alice, string(domain.RoleReader), domain.DomainAll)
 				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
-				seedRole(t, e, txm, casbin.GroupSubject(devs), domain.RoleAdmin, "prod")
+				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
 
 				return e
 			},
@@ -151,14 +151,14 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 			e := tc.setupFunc(t)
 
 			for _, req := range tc.requests {
-				got, err := e.Enforce(alice, req.domain, req.object, req.action)
+				got, err := e.Enforce(alice, req.domain, string(req.object), string(req.action))
 				require.NoError(t, err)
 				assert.Equalf(t, req.want, got,
 					"Enforce(%q, %q, %q, %q)", alice, req.domain, req.object, req.action)
 			}
 
 			for _, chk := range tc.extraSubjects {
-				got, err := e.Enforce(chk.subject, chk.domain, chk.object, chk.action)
+				got, err := e.Enforce(chk.subject, chk.domain, string(chk.object), string(chk.action))
 				require.NoError(t, err)
 				assert.Equalf(t, chk.want, got,
 					"Enforce(%q, %q, %q, %q)", chk.subject, chk.domain, chk.object, chk.action)

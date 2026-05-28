@@ -8,10 +8,10 @@ import (
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 )
 
-// ObjectToProto maps a domain object string to the proto enum.
+// ObjectToProto maps a domain object to the proto enum.
 // Unknown values yield PERMISSION_OBJECT_UNSPECIFIED.
-func ObjectToProto(s string) commonv1.PermissionObject {
-	switch s {
+func ObjectToProto(o domain.Object) commonv1.PermissionObject {
+	switch o {
 	case domain.ObjectNamespace:
 		return commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE
 	case domain.ObjectConfig:
@@ -31,10 +31,10 @@ func ObjectToProto(s string) commonv1.PermissionObject {
 	}
 }
 
-// ObjectToDomain maps a proto object enum to its domain string constant.
+// ObjectToDomain maps a proto object enum to its domain constant.
 // Returns "" only for PERMISSION_OBJECT_UNSPECIFIED (and unknown enum ints);
 // PERMISSION_OBJECT_ALL maps to domain.ObjectAll.
-func ObjectToDomain(o commonv1.PermissionObject) string {
+func ObjectToDomain(o commonv1.PermissionObject) domain.Object {
 	switch o {
 	case commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE:
 		return domain.ObjectNamespace
@@ -57,10 +57,10 @@ func ObjectToDomain(o commonv1.PermissionObject) string {
 	}
 }
 
-// ActionToProto maps a domain action string to the proto enum.
+// ActionToProto maps a domain action to the proto enum.
 // Unknown values yield PERMISSION_ACTION_UNSPECIFIED.
-func ActionToProto(s string) commonv1.PermissionAction {
-	switch s {
+func ActionToProto(a domain.Action) commonv1.PermissionAction {
+	switch a {
 	case domain.ActionRead:
 		return commonv1.PermissionAction_PERMISSION_ACTION_READ
 	case domain.ActionWrite:
@@ -74,10 +74,10 @@ func ActionToProto(s string) commonv1.PermissionAction {
 	}
 }
 
-// ActionToDomain maps a proto action enum to its domain string constant.
+// ActionToDomain maps a proto action enum to its domain constant.
 // Returns "" only for PERMISSION_ACTION_UNSPECIFIED (and unknown enum ints);
 // PERMISSION_ACTION_ALL maps to domain.ActionAll.
-func ActionToDomain(a commonv1.PermissionAction) string {
+func ActionToDomain(a commonv1.PermissionAction) domain.Action {
 	switch a {
 	case commonv1.PermissionAction_PERMISSION_ACTION_READ:
 		return domain.ActionRead

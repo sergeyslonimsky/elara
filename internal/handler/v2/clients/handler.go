@@ -25,7 +25,7 @@ var errClientNotFound = errors.New("client not found")
 
 type (
 	authz interface {
-		Require(ctx context.Context, object, action, domainStr string) error
+		Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error
 	}
 
 	usecase interface {

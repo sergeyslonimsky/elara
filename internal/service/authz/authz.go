@@ -23,7 +23,7 @@ func NewAuthz(p pdp) *Authz {
 	return &Authz{pdp: p}
 }
 
-func (a *Authz) Require(ctx context.Context, object, action, domainStr string) error {
+func (a *Authz) Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
 		return connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
@@ -36,7 +36,7 @@ func (a *Authz) Require(ctx context.Context, object, action, domainStr string) e
 	return nil
 }
 
-func (a *Authz) RequireUser(user domain.AuthInfo, object, action, domainStr string) error {
+func (a *Authz) RequireUser(user domain.AuthInfo, object domain.Object, action domain.Action, domainStr string) error {
 	if !a.pdp.Has(user.Email, domain.Permission{Object: object, Action: action, Domain: domainStr}) {
 		return connect.NewError(connect.CodePermissionDenied, domain.ErrForbidden)
 	}

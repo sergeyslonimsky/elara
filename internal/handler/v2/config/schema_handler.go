@@ -16,7 +16,7 @@ import (
 
 type (
 	schemaAuthz interface {
-		Require(ctx context.Context, object, action, domainStr string) error
+		Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error
 	}
 
 	schemaUsecase interface {

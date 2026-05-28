@@ -28,7 +28,7 @@ func (t *PAPTx) GroupPermissions(name string) ([]domain.Permission, error) {
 
 	out := make([]domain.Permission, 0, len(rules))
 	for _, r := range rules {
-		out = append(out, domain.Permission{Domain: r[1], Object: r[2], Action: r[3]})
+		out = append(out, domain.Permission{Domain: r[1], Object: domain.Object(r[2]), Action: domain.Action(r[3])})
 	}
 
 	return out, nil
@@ -41,12 +41,12 @@ func (t *PAPTx) ApplyPermissionDeltas(name string, added, removed []domain.Permi
 	subject := casbin.GroupSubject(name)
 
 	for _, p := range removed {
-		if err := t.txe.RemovePolicy(subject, p.Domain, p.Object, p.Action); err != nil {
+		if err := t.txe.RemovePolicy(subject, p.Domain, string(p.Object), string(p.Action)); err != nil {
 			return fmt.Errorf("remove policy: %w", err)
 		}
 	}
 	for _, p := range added {
-		if err := t.txe.AddPolicy(subject, p.Domain, p.Object, p.Action); err != nil {
+		if err := t.txe.AddPolicy(subject, p.Domain, string(p.Object), string(p.Action)); err != nil {
 			return fmt.Errorf("add policy: %w", err)
 		}
 	}
@@ -75,8 +75,8 @@ func (t *PAPTx) ApplyMemberDeltas(name string, added, removed []string) error {
 
 // AssignRoleToGroup attaches a role binding to the group on the given domain
 // (one g-rule of the form `g, group:<name>, role, dom`).
-func (t *PAPTx) AssignRoleToGroup(group, role, dom string) error {
-	if err := t.txe.AddRoleForUser(casbin.GroupSubject(group), role, dom); err != nil {
+func (t *PAPTx) AssignRoleToGroup(group string, role domain.Role, dom string) error {
+	if err := t.txe.AddRoleForUser(casbin.GroupSubject(group), string(role), dom); err != nil {
 		return fmt.Errorf("assign role to group: %w", err)
 	}
 
@@ -84,8 +84,8 @@ func (t *PAPTx) AssignRoleToGroup(group, role, dom string) error {
 }
 
 // RevokeRoleFromGroup removes the matching role binding from the group.
-func (t *PAPTx) RevokeRoleFromGroup(group, role, dom string) error {
-	if err := t.txe.RemoveRoleForUser(casbin.GroupSubject(group), role, dom); err != nil {
+func (t *PAPTx) RevokeRoleFromGroup(group string, role domain.Role, dom string) error {
+	if err := t.txe.RemoveRoleForUser(casbin.GroupSubject(group), string(role), dom); err != nil {
 		return fmt.Errorf("revoke role from group: %w", err)
 	}
 

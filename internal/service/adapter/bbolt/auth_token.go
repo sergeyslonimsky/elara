@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -101,7 +102,7 @@ func (r *TokenRepo) List(
 				return err
 			}
 
-			if filter.IssuedBy != "" && m.IssuedBy != filter.IssuedBy {
+			if len(filter.IssuedBy) > 0 && !slices.Contains(filter.IssuedBy, m.IssuedBy) {
 				return nil
 			}
 
@@ -111,7 +112,11 @@ func (r *TokenRepo) List(
 				return nil
 			}
 
-			if !tokenSearchMatches(tok.Name, filter.Search) {
+			if !tokenExplicitNamespaceMatches(tok, filter.Namespaces) {
+				return nil
+			}
+
+			if !tokenQueryMatches(tok.Name, filter.QueryParams) {
 				return nil
 			}
 
@@ -157,12 +162,37 @@ func tokenNamespaceMatches(t *domain.Token, filter domain.TokenFilter) bool {
 	return false
 }
 
-func tokenSearchMatches(name, search string) bool {
-	if search == "" {
+func tokenQueryMatches(name string, queries []string) bool {
+	if len(queries) == 0 {
 		return true
 	}
 
-	return strings.Contains(strings.ToLower(name), strings.ToLower(search))
+	lower := strings.ToLower(name)
+	for _, q := range queries {
+		if q == "" {
+			continue
+		}
+
+		if strings.Contains(lower, strings.ToLower(q)) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func tokenExplicitNamespaceMatches(t *domain.Token, namespaces []string) bool {
+	if len(namespaces) == 0 {
+		return true
+	}
+
+	for _, ns := range t.Namespaces {
+		if slices.Contains(namespaces, ns) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func sortTokens(tokens []*domain.Token, params domain.SortParams) {

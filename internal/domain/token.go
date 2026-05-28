@@ -16,14 +16,21 @@ const maxTokenNameLen = 128
 // namespaces all fall outside the set are filtered out.
 //
 // IssuedBy is an additional narrowing (admin / UI may want a particular
-// user's tokens). Empty string means "any issuer".
+// user's tokens); a token matches when its issuer is in the list, or the
+// list is empty.
 //
-// Search applies a case-insensitive substring match on Name.
+// Namespaces narrows to tokens that explicitly grant access to at least one
+// of the listed namespaces (independent of NamespaceScopes which enforces
+// the caller's visibility). Empty list disables this filter.
+//
+// QueryParams applies case-insensitive substring matches on Name. A token
+// matches when its name contains any of the entries; empty list disables it.
 type TokenFilter struct {
 	NamespaceScopes map[string]struct{}
 	AnyNamespace    bool
-	IssuedBy        string
-	Search          string
+	IssuedBy        []string
+	Namespaces      []string
+	QueryParams     []string
 }
 
 // TokenListParams carries pagination and sort options for token list queries.
@@ -40,7 +47,7 @@ type Token struct {
 	Name       string
 	TokenHash  string     // SHA-256 hex of raw token
 	Namespaces []string   // explicit list; must be non-empty
-	Role       string     // "writer" or "reader"
+	Role       Role       // "writer" or "reader"
 	ExpiresAt  *time.Time // nil = never expires
 	LastUsedAt *time.Time
 	LastUsedIP string
@@ -72,7 +79,7 @@ func (t *Token) Validate() error {
 		return NewValidationError("tokenHash", "token hash is required")
 	}
 
-	if t.Role != "writer" && t.Role != "reader" {
+	if t.Role != RoleWriter && t.Role != RoleReader {
 		return NewValidationError("role", "role must be writer or reader")
 	}
 
@@ -93,13 +100,15 @@ func (t *Token) NamespaceAllowed(namespace string) bool {
 	return slices.Contains(t.Namespaces, namespace)
 }
 
-// ActionAllowed returns true if the token's role permits the given action ("read" or "write").
-func (t *Token) ActionAllowed(action string) bool {
+// ActionAllowed returns true if the token's role permits the given action.
+func (t *Token) ActionAllowed(action Action) bool {
 	switch t.Role {
-	case "writer":
-		return action == "read" || action == "write"
-	case "reader":
-		return action == "read"
+	case RoleWriter:
+		return action == ActionRead || action == ActionWrite
+	case RoleReader:
+		return action == ActionRead
+	case RoleAdmin:
+		return false
 	}
 
 	return false

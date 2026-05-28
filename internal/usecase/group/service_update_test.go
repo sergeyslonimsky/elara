@@ -292,8 +292,8 @@ func TestService_Update_Boundary(t *testing.T) {
 					return txe.AddPolicy(
 						casbin.GroupSubject(g.Name),
 						"prod",
-						domain.ObjectNamespace,
-						domain.ActionWrite,
+						string(domain.ObjectNamespace),
+						string(domain.ActionWrite),
 					)
 				})
 			},
@@ -306,7 +306,12 @@ func TestService_Update_Boundary(t *testing.T) {
 			principal: "devops@example.com",
 			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.TxManager) {
 				_ = enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-					return txe.AddPolicy(casbin.GroupSubject(g.Name), "dev", domain.ObjectNamespace, domain.ActionWrite)
+					return txe.AddPolicy(
+						casbin.GroupSubject(g.Name),
+						"dev",
+						string(domain.ObjectNamespace),
+						string(domain.ActionWrite),
+					)
 				})
 			},
 			removePerms: []domain.Permission{
@@ -330,8 +335,8 @@ func TestService_Update_Boundary(t *testing.T) {
 					return txe.AddPolicy(
 						casbin.GroupSubject(g.Name),
 						"prod",
-						domain.ObjectNamespace,
-						domain.ActionWrite,
+						string(domain.ObjectNamespace),
+						string(domain.ActionWrite),
 					)
 				})
 			},
@@ -354,7 +359,12 @@ func TestService_Update_Boundary(t *testing.T) {
 				// so cases that depend on a pre-existing member need to seed
 				// the g-rule via casbin.WriteTx. TODO: revisit these cases.
 				_ = enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-					return txe.AddPolicy(casbin.GroupSubject(g.Name), "dev", domain.ObjectNamespace, domain.ActionWrite)
+					return txe.AddPolicy(
+						casbin.GroupSubject(g.Name),
+						"dev",
+						string(domain.ObjectNamespace),
+						string(domain.ActionWrite),
+					)
 				})
 			},
 			permissions: []domain.Permission{
@@ -388,8 +398,8 @@ func TestService_Update_Boundary(t *testing.T) {
 					return txe.AddPolicy(
 						casbin.GroupSubject(g.Name),
 						"prod",
-						domain.ObjectNamespace,
-						domain.ActionWrite,
+						string(domain.ObjectNamespace),
+						string(domain.ActionWrite),
 					)
 				})
 			},
@@ -409,8 +419,18 @@ func TestService_Update_Boundary(t *testing.T) {
 			ctx := t.Context()
 
 			require.NoError(t, st.enforcer.WriteTx(ctx, st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-				_ = txe.AddPolicy("admin@example.com", domain.DomainAll, domain.ObjectAll, domain.ActionAll)
-				_ = txe.AddPolicy("devops@example.com", "dev", domain.ObjectNamespace, domain.ActionWrite)
+				_ = txe.AddPolicy(
+					"admin@example.com",
+					domain.DomainAll,
+					string(domain.ObjectAll),
+					string(domain.ActionAll),
+				)
+				_ = txe.AddPolicy(
+					"devops@example.com",
+					"dev",
+					string(domain.ObjectNamespace),
+					string(domain.ActionWrite),
+				)
 
 				return nil
 			}))
@@ -473,12 +493,10 @@ func TestService_Update_ImmutabilityAndVersion(t *testing.T) {
 				created := &domain.Group{ID: "sys-group-id", Name: "sys-group", System: true, MetadataVersion: 1}
 				require.NoError(t, st.repo.Create(t.Context(), created))
 
-				v := created.MetadataVersion
-
 				return group.UpdateData{
 					ID:                      created.ID,
 					Name:                    "sys-group",
-					ExpectedMetadataVersion: &v,
+					ExpectedMetadataVersion: new(created.MetadataVersion),
 				}
 			},
 			errIs: domain.ErrSystemImmutable,
@@ -700,7 +718,12 @@ func TestService_UpdateMembers(t *testing.T) {
 				require.NoError(
 					t,
 					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy("devops@example.com", "dev", domain.ObjectNamespace, domain.ActionWrite)
+						return txe.AddPolicy(
+							"devops@example.com",
+							"dev",
+							string(domain.ObjectNamespace),
+							string(domain.ActionWrite),
+						)
 					}),
 				)
 
@@ -732,7 +755,12 @@ func TestService_UpdateMembers(t *testing.T) {
 				require.NoError(
 					t,
 					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy("devops@example.com", "dev", domain.ObjectNamespace, domain.ActionWrite)
+						return txe.AddPolicy(
+							"devops@example.com",
+							"dev",
+							string(domain.ObjectNamespace),
+							string(domain.ActionWrite),
+						)
 					}),
 				)
 
@@ -899,7 +927,12 @@ func TestService_UpdatePermissions(t *testing.T) {
 				require.NoError(
 					t,
 					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy("devops@example.com", "dev", domain.ObjectNamespace, domain.ActionWrite)
+						return txe.AddPolicy(
+							"devops@example.com",
+							"dev",
+							string(domain.ObjectNamespace),
+							string(domain.ActionWrite),
+						)
 					}),
 				)
 
@@ -932,7 +965,12 @@ func TestService_UpdatePermissions(t *testing.T) {
 				require.NoError(
 					t,
 					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy("devops@example.com", "dev", domain.ObjectNamespace, domain.ActionWrite)
+						return txe.AddPolicy(
+							"devops@example.com",
+							"dev",
+							string(domain.ObjectNamespace),
+							string(domain.ActionWrite),
+						)
 					}),
 				)
 
@@ -969,7 +1007,12 @@ func TestService_UpdatePermissions(t *testing.T) {
 				require.NoError(
 					t,
 					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy("devops@example.com", "dev", domain.ObjectNamespace, domain.ActionWrite)
+						return txe.AddPolicy(
+							"devops@example.com",
+							"dev",
+							string(domain.ObjectNamespace),
+							string(domain.ActionWrite),
+						)
 					}),
 				)
 

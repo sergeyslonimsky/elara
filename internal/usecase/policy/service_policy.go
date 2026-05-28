@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
@@ -13,13 +14,13 @@ import (
 type Rule struct {
 	Subject string
 	Domain  string
-	Role    string
+	Role    domain.Role
 }
 
 // AssignRole grants the given role to the named group within a domain. Elara
 // only supports role assignments to groups; if you need a single user to have
 // a role, put them in a group and grant the role to that group.
-func (s *Service) AssignRole(ctx context.Context, subject, dom, role string) error {
+func (s *Service) AssignRole(ctx context.Context, subject, dom string, role domain.Role) error {
 	if _, err := s.groups.FindByName(ctx, subject); err != nil {
 		return fmt.Errorf("find group by name: %w", err)
 	}
@@ -34,7 +35,7 @@ func (s *Service) AssignRole(ctx context.Context, subject, dom, role string) err
 }
 
 // RevokeRole removes a role assignment from a group within a domain.
-func (s *Service) RevokeRole(ctx context.Context, subject, dom, role string) error {
+func (s *Service) RevokeRole(ctx context.Context, subject, dom string, role domain.Role) error {
 	if _, err := s.groups.FindByName(ctx, subject); err != nil {
 		return fmt.Errorf("find group by name: %w", err)
 	}

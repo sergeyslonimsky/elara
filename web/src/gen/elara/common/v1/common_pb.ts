@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/common/v1/common.proto.
  */
 export const file_elara_common_v1_common: GenFile = /*@__PURE__*/
-  fileDesc("ChxlbGFyYS9jb21tb24vdjEvY29tbW9uLnByb3RvEg9lbGFyYS5jb21tb24udjEiMgoRUGFnaW5hdGlvblJlcXVlc3QSDQoFbGltaXQYASABKAUSDgoGb2Zmc2V0GAIgASgFIkIKElBhZ2luYXRpb25SZXNwb25zZRINCgV0b3RhbBgBIAEoBRINCgVsaW1pdBgCIAEoBRIOCgZvZmZzZXQYAyABKAUiTwoLU29ydFJlcXVlc3QSDQoFZmllbGQYASABKAkSMQoJZGlyZWN0aW9uGAIgASgOMh4uZWxhcmEuY29tbW9uLnYxLlNvcnREaXJlY3Rpb24qYAoNU29ydERpcmVjdGlvbhIeChpTT1JUX0RJUkVDVElPTl9VTlNQRUNJRklFRBAAEhYKElNPUlRfRElSRUNUSU9OX0FTQxABEhcKE1NPUlRfRElSRUNUSU9OX0RFU0MQAkLKAQoTY29tLmVsYXJhLmNvbW1vbi52MUILQ29tbW9uUHJvdG9QAVpIZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvY29tbW9uL3YxO2NvbW1vbnYxogIDRUNYqgIPRWxhcmEuQ29tbW9uLlYxygIPRWxhcmFcQ29tbW9uXFYx4gIbRWxhcmFcQ29tbW9uXFYxXEdQQk1ldGFkYXRh6gIRRWxhcmE6OkNvbW1vbjo6VjFiBnByb3RvMw");
+  fileDesc("ChxlbGFyYS9jb21tb24vdjEvY29tbW9uLnByb3RvEg9lbGFyYS5jb21tb24udjEiMgoRUGFnaW5hdGlvblJlcXVlc3QSDQoFbGltaXQYASABKAUSDgoGb2Zmc2V0GAIgASgFIkIKElBhZ2luYXRpb25SZXNwb25zZRINCgV0b3RhbBgBIAEoBRINCgVsaW1pdBgCIAEoBRIOCgZvZmZzZXQYAyABKAUiTwoLU29ydFJlcXVlc3QSDQoFZmllbGQYASABKAkSMQoJZGlyZWN0aW9uGAIgASgOMh4uZWxhcmEuY29tbW9uLnYxLlNvcnREaXJlY3Rpb24iUAoMU29ydFJlc3BvbnNlEg0KBWZpZWxkGAEgASgJEjEKCWRpcmVjdGlvbhgCIAEoDjIeLmVsYXJhLmNvbW1vbi52MS5Tb3J0RGlyZWN0aW9uKmAKDVNvcnREaXJlY3Rpb24SHgoaU09SVF9ESVJFQ1RJT05fVU5TUEVDSUZJRUQQABIWChJTT1JUX0RJUkVDVElPTl9BU0MQARIXChNTT1JUX0RJUkVDVElPTl9ERVNDEAJCygEKE2NvbS5lbGFyYS5jb21tb24udjFCC0NvbW1vblByb3RvUAFaSGdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL2NvbW1vbi92MTtjb21tb252MaICA0VDWKoCD0VsYXJhLkNvbW1vbi5WMcoCD0VsYXJhXENvbW1vblxWMeICG0VsYXJhXENvbW1vblxWMVxHUEJNZXRhZGF0YeoCEUVsYXJhOjpDb21tb246OlYxYgZwcm90bzM");
 
 /**
  * @generated from message elara.common.v1.PaginationRequest
@@ -82,6 +82,28 @@ export type SortRequest = Message<"elara.common.v1.SortRequest"> & {
  */
 export const SortRequestSchema: GenMessage<SortRequest> = /*@__PURE__*/
   messageDesc(file_elara_common_v1_common, 2);
+
+/**
+ * @generated from message elara.common.v1.SortResponse
+ */
+export type SortResponse = Message<"elara.common.v1.SortResponse"> & {
+  /**
+   * @generated from field: string field = 1;
+   */
+  field: string;
+
+  /**
+   * @generated from field: elara.common.v1.SortDirection direction = 2;
+   */
+  direction: SortDirection;
+};
+
+/**
+ * Describes the message elara.common.v1.SortResponse.
+ * Use `create(SortResponseSchema)` to create a new message.
+ */
+export const SortResponseSchema: GenMessage<SortResponse> = /*@__PURE__*/
+  messageDesc(file_elara_common_v1_common, 3);
 
 /**
  * @generated from enum elara.common.v1.SortDirection

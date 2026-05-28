@@ -43,7 +43,7 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 		t.Parallel()
 
 		st := updateGroupsSetup(t)
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
@@ -72,7 +72,7 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 
 		st := updateGroupsSetup(t)
 		// Actor can write to writable only; request touches escalate too.
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{actorEmail, domain.GroupResource(writableID), domain.ObjectGroup, domain.ActionWrite},
 		})
 
@@ -95,7 +95,7 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 		t.Parallel()
 
 		st := updateGroupsSetup(t)
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{casbin.GroupSubject("escalate"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
 			{actorEmail, domain.GroupResource(escalateID), domain.ObjectGroup, domain.ActionWrite},
 		})
@@ -115,7 +115,7 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 		t.Parallel()
 
 		st := updateGroupsSetup(t)
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 			{casbin.GroupSubject("escalate"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
 			{actorEmail, domain.GroupResource(escalateID), domain.ObjectGroup, domain.ActionWrite},
@@ -161,7 +161,7 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 		t.Parallel()
 
 		st := updateGroupsSetup(t)
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
@@ -195,7 +195,7 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 		t.Parallel()
 
 		st := updateGroupsSetup(t)
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
@@ -217,7 +217,7 @@ func TestService_UpdateGroups_Version(t *testing.T) {
 		t.Parallel()
 
 		st := updateGroupsSetup(t)
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
@@ -238,7 +238,7 @@ func TestService_UpdateGroups_Version(t *testing.T) {
 		t.Parallel()
 
 		st := updateGroupsSetup(t)
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
@@ -255,7 +255,7 @@ func TestService_UpdateGroups_Version(t *testing.T) {
 		t.Parallel()
 
 		st := updateGroupsSetup(t)
-		addPolicies(t, st, [][4]string{
+		addPolicies(t, st, []policyRow{
 			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
@@ -292,7 +292,7 @@ func TestService_UpdateGroups_VisibleGroupIDs(t *testing.T) {
 	// adding them first, then actor removing nothing while VisibleGroupIDs
 	// is scoped). Easier: admin assigns both groups, then actor (who can
 	// only read writable) reads the result via a no-op UpdateGroups.
-	addPolicies(t, st, [][4]string{
+	addPolicies(t, st, []policyRow{
 		{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		// Actor: Group:Read on writable only — and Group:Write to satisfy
 		// scope check on a remove of writable in a separate case.

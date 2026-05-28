@@ -92,7 +92,7 @@ func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, e
 		Email:      token.IssuedBy,
 		Name:       token.Name,
 		Namespaces: token.Namespaces,
-		Role:       token.Role,
+		Role:       string(token.Role),
 	}
 
 	return auth.WithClaims(ctx, claims), nil

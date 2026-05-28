@@ -75,7 +75,8 @@ func TestAdminBootstrap_Idempotent(t *testing.T) {
 	wildcardCount := 0
 	for _, r := range perms {
 		// ListPermissionsForSubject returns [sub, dom, obj, act].
-		if len(r) >= 4 && r[1] == domain.DomainAll && r[2] == domain.ObjectAll && r[3] == domain.ActionAll {
+		if len(r) >= 4 && r[1] == domain.DomainAll && r[2] == string(domain.ObjectAll) &&
+			r[3] == string(domain.ActionAll) {
 			wildcardCount++
 		}
 	}
@@ -98,8 +99,8 @@ func TestAdminBootstrap_RecoversRemovedPolicy(t *testing.T) {
 	wildcardRule := []string{
 		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
 		domain.DomainAll,
-		domain.ObjectAll,
-		domain.ActionAll,
+		string(domain.ObjectAll),
+		string(domain.ActionAll),
 	}
 	require.NoError(t, policies.RemovePolicy("p", "p", wildcardRule))
 
@@ -112,7 +113,8 @@ func TestAdminBootstrap_RecoversRemovedPolicy(t *testing.T) {
 	found := false
 	for _, r := range perms {
 		// ListPermissionsForSubject returns [sub, dom, obj, act].
-		if len(r) >= 4 && r[1] == domain.DomainAll && r[2] == domain.ObjectAll && r[3] == domain.ActionAll {
+		if len(r) >= 4 && r[1] == domain.DomainAll && r[2] == string(domain.ObjectAll) &&
+			r[3] == string(domain.ActionAll) {
 			found = true
 
 			break

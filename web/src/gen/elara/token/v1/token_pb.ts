@@ -4,6 +4,8 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { PermissionAction } from "../../common/v1/permission_pb";
+import { file_elara_common_v1_permission } from "../../common/v1/permission_pb";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
@@ -12,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/token/v1/token.proto.
  */
 export const file_elara_token_v1_token: GenFile = /*@__PURE__*/
-  fileDesc("ChplbGFyYS90b2tlbi92MS90b2tlbi5wcm90bxIOZWxhcmEudG9rZW4udjEiqAIKBVRva2VuEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEQoJaXNzdWVkX2J5GAMgASgJEhIKCm5hbWVzcGFjZXMYBCADKAkSDAoEcm9sZRgFIAEoCRIzCgpleHBpcmVzX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAiAEBEjUKDGxhc3RfdXNlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAYgBARIUCgxsYXN0X3VzZWRfaXAYCCABKAkSLgoKY3JlYXRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDQoLX2V4cGlyZXNfYXRCDwoNX2xhc3RfdXNlZF9hdELCAQoSY29tLmVsYXJhLnRva2VuLnYxQgpUb2tlblByb3RvUAFaRmdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL3Rva2VuL3YxO3Rva2VudjGiAgNFVFiqAg5FbGFyYS5Ub2tlbi5WMcoCDkVsYXJhXFRva2VuXFYx4gIaRWxhcmFcVG9rZW5cVjFcR1BCTWV0YWRhdGHqAhBFbGFyYTo6VG9rZW46OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChplbGFyYS90b2tlbi92MS90b2tlbi5wcm90bxIOZWxhcmEudG9rZW4udjEi0QIKBVRva2VuEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEQoJaXNzdWVkX2J5GAMgASgJEhIKCm5hbWVzcGFjZXMYBCADKAkSNQoKcGVybWlzc2lvbhgFIAEoDjIhLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQWN0aW9uEjMKCmV4cGlyZXNfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSACIAQESNQoMbGFzdF91c2VkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgBiAEBEhQKDGxhc3RfdXNlZF9pcBgIIAEoCRIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEINCgtfZXhwaXJlc19hdEIPCg1fbGFzdF91c2VkX2F0QsIBChJjb20uZWxhcmEudG9rZW4udjFCClRva2VuUHJvdG9QAVpGZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvdG9rZW4vdjE7dG9rZW52MaICA0VUWKoCDkVsYXJhLlRva2VuLlYxygIORWxhcmFcVG9rZW5cVjHiAhpFbGFyYVxUb2tlblxWMVxHUEJNZXRhZGF0YeoCEEVsYXJhOjpUb2tlbjo6VjFiBnByb3RvMw", [file_elara_common_v1_permission, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message elara.token.v1.Token
@@ -39,9 +41,9 @@ export type Token = Message<"elara.token.v1.Token"> & {
   namespaces: string[];
 
   /**
-   * @generated from field: string role = 5;
+   * @generated from field: elara.common.v1.PermissionAction permission = 5;
    */
-  role: string;
+  permission: PermissionAction;
 
   /**
    * @generated from field: optional google.protobuf.Timestamp expires_at = 6;

@@ -7,6 +7,8 @@
 package tokenv1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -26,7 +28,7 @@ type CreateTokenRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Namespaces    []string               `protobuf:"bytes,2,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
-	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
+	Permission    v1.PermissionAction    `protobuf:"varint,3,opt,name=permission,proto3,enum=elara.common.v1.PermissionAction" json:"permission,omitempty"`
 	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -76,11 +78,11 @@ func (x *CreateTokenRequest) GetNamespaces() []string {
 	return nil
 }
 
-func (x *CreateTokenRequest) GetRole() string {
+func (x *CreateTokenRequest) GetPermission() v1.PermissionAction {
 	if x != nil {
-		return x.Role
+		return x.Permission
 	}
-	return ""
+	return v1.PermissionAction(0)
 }
 
 func (x *CreateTokenRequest) GetExpiresAt() *timestamppb.Timestamp {
@@ -143,8 +145,10 @@ func (x *CreateTokenResponse) GetRawToken() string {
 }
 
 type ListTokensRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	IssuedBy      string                 `protobuf:"bytes,1,opt,name=issued_by,json=issuedBy,proto3" json:"issued_by,omitempty"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Pagination    *v1.PaginationRequest      `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Sorting       *v1.SortRequest            `protobuf:"bytes,2,opt,name=sorting,proto3" json:"sorting,omitempty"`
+	Filters       *ListTokensRequest_Filters `protobuf:"bytes,3,opt,name=filters,proto3" json:"filters,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -179,16 +183,32 @@ func (*ListTokensRequest) Descriptor() ([]byte, []int) {
 	return file_elara_token_v1_token_service_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListTokensRequest) GetIssuedBy() string {
+func (x *ListTokensRequest) GetPagination() *v1.PaginationRequest {
 	if x != nil {
-		return x.IssuedBy
+		return x.Pagination
 	}
-	return ""
+	return nil
+}
+
+func (x *ListTokensRequest) GetSorting() *v1.SortRequest {
+	if x != nil {
+		return x.Sorting
+	}
+	return nil
+}
+
+func (x *ListTokensRequest) GetFilters() *ListTokensRequest_Filters {
+	if x != nil {
+		return x.Filters
+	}
+	return nil
 }
 
 type ListTokensResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Tokens        []*Token               `protobuf:"bytes,1,rep,name=tokens,proto3" json:"tokens,omitempty"`
+	Pagination    *v1.PaginationResponse `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Sorting       *v1.SortResponse       `protobuf:"bytes,2,opt,name=sorting,proto3" json:"sorting,omitempty"`
+	Tokens        []*Token               `protobuf:"bytes,3,rep,name=tokens,proto3" json:"tokens,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -221,6 +241,20 @@ func (x *ListTokensResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListTokensResponse.ProtoReflect.Descriptor instead.
 func (*ListTokensResponse) Descriptor() ([]byte, []int) {
 	return file_elara_token_v1_token_service_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ListTokensResponse) GetPagination() *v1.PaginationResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+func (x *ListTokensResponse) GetSorting() *v1.SortResponse {
+	if x != nil {
+		return x.Sorting
+	}
+	return nil
 }
 
 func (x *ListTokensResponse) GetTokens() []*Token {
@@ -398,33 +432,109 @@ func (*RevokeTokenResponse) Descriptor() ([]byte, []int) {
 	return file_elara_token_v1_token_service_proto_rawDescGZIP(), []int{7}
 }
 
+type ListTokensRequest_Filters struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	QueryParams   []string               `protobuf:"bytes,1,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty"`
+	IssuedBy      []string               `protobuf:"bytes,2,rep,name=issued_by,json=issuedBy,proto3" json:"issued_by,omitempty"`
+	Namespaces    []string               `protobuf:"bytes,3,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTokensRequest_Filters) Reset() {
+	*x = ListTokensRequest_Filters{}
+	mi := &file_elara_token_v1_token_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTokensRequest_Filters) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTokensRequest_Filters) ProtoMessage() {}
+
+func (x *ListTokensRequest_Filters) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_token_v1_token_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTokensRequest_Filters.ProtoReflect.Descriptor instead.
+func (*ListTokensRequest_Filters) Descriptor() ([]byte, []int) {
+	return file_elara_token_v1_token_service_proto_rawDescGZIP(), []int{2, 0}
+}
+
+func (x *ListTokensRequest_Filters) GetQueryParams() []string {
+	if x != nil {
+		return x.QueryParams
+	}
+	return nil
+}
+
+func (x *ListTokensRequest_Filters) GetIssuedBy() []string {
+	if x != nil {
+		return x.IssuedBy
+	}
+	return nil
+}
+
+func (x *ListTokensRequest_Filters) GetNamespaces() []string {
+	if x != nil {
+		return x.Namespaces
+	}
+	return nil
+}
+
 var File_elara_token_v1_token_service_proto protoreflect.FileDescriptor
 
 const file_elara_token_v1_token_service_proto_rawDesc = "" +
 	"\n" +
-	"\"elara/token/v1/token_service.proto\x12\x0eelara.token.v1\x1a\x1aelara/token/v1/token.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xab\x01\n" +
-	"\x12CreateTokenRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
+	"\"elara/token/v1/token_service.proto\x12\x0eelara.token.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1celara/common/v1/common.proto\x1a elara/common/v1/permission.proto\x1a\x1aelara/token/v1/token.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf2\x01\n" +
+	"\x12CreateTokenRequest\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\x12&\n" +
 	"\n" +
-	"namespaces\x18\x02 \x03(\tR\n" +
-	"namespaces\x12\x12\n" +
-	"\x04role\x18\x03 \x01(\tR\x04role\x12>\n" +
+	"namespaces\x18\x02 \x03(\tB\x06\xbaH\x03\xc8\x01\x01R\n" +
+	"namespaces\x12I\n" +
+	"\n" +
+	"permission\x18\x03 \x01(\x0e2!.elara.common.v1.PermissionActionB\x06\xbaH\x03\xc8\x01\x01R\n" +
+	"permission\x12>\n" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\texpiresAt\x88\x01\x01B\r\n" +
 	"\v_expires_at\"_\n" +
 	"\x13CreateTokenResponse\x12+\n" +
 	"\x05token\x18\x01 \x01(\v2\x15.elara.token.v1.TokenR\x05token\x12\x1b\n" +
-	"\traw_token\x18\x02 \x01(\tR\brawToken\"0\n" +
-	"\x11ListTokensRequest\x12\x1b\n" +
-	"\tissued_by\x18\x01 \x01(\tR\bissuedBy\"C\n" +
-	"\x12ListTokensResponse\x12-\n" +
-	"\x06tokens\x18\x01 \x03(\v2\x15.elara.token.v1.TokenR\x06tokens\"!\n" +
-	"\x0fGetTokenRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"?\n" +
+	"\traw_token\x18\x02 \x01(\tR\brawToken\"\xbf\x02\n" +
+	"\x11ListTokensRequest\x12B\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2\".elara.common.v1.PaginationRequestR\n" +
+	"pagination\x126\n" +
+	"\asorting\x18\x02 \x01(\v2\x1c.elara.common.v1.SortRequestR\asorting\x12C\n" +
+	"\afilters\x18\x03 \x01(\v2).elara.token.v1.ListTokensRequest.FiltersR\afilters\x1ai\n" +
+	"\aFilters\x12!\n" +
+	"\fquery_params\x18\x01 \x03(\tR\vqueryParams\x12\x1b\n" +
+	"\tissued_by\x18\x02 \x03(\tR\bissuedBy\x12\x1e\n" +
+	"\n" +
+	"namespaces\x18\x03 \x03(\tR\n" +
+	"namespaces\"\xc1\x01\n" +
+	"\x12ListTokensResponse\x12C\n" +
+	"\n" +
+	"pagination\x18\x01 \x01(\v2#.elara.common.v1.PaginationResponseR\n" +
+	"pagination\x127\n" +
+	"\asorting\x18\x02 \x01(\v2\x1d.elara.common.v1.SortResponseR\asorting\x12-\n" +
+	"\x06tokens\x18\x03 \x03(\v2\x15.elara.token.v1.TokenR\x06tokens\")\n" +
+	"\x0fGetTokenRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x02id\"?\n" +
 	"\x10GetTokenResponse\x12+\n" +
-	"\x05token\x18\x01 \x01(\v2\x15.elara.token.v1.TokenR\x05token\"$\n" +
-	"\x12RevokeTokenRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
+	"\x05token\x18\x01 \x01(\v2\x15.elara.token.v1.TokenR\x05token\",\n" +
+	"\x12RevokeTokenRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x02id\"\x15\n" +
 	"\x13RevokeTokenResponse2\xe2\x02\n" +
 	"\fTokenService\x12V\n" +
 	"\vCreateToken\x12\".elara.token.v1.CreateTokenRequest\x1a#.elara.token.v1.CreateTokenResponse\x12S\n" +
@@ -446,37 +556,49 @@ func file_elara_token_v1_token_service_proto_rawDescGZIP() []byte {
 	return file_elara_token_v1_token_service_proto_rawDescData
 }
 
-var file_elara_token_v1_token_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_elara_token_v1_token_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_elara_token_v1_token_service_proto_goTypes = []any{
-	(*CreateTokenRequest)(nil),    // 0: elara.token.v1.CreateTokenRequest
-	(*CreateTokenResponse)(nil),   // 1: elara.token.v1.CreateTokenResponse
-	(*ListTokensRequest)(nil),     // 2: elara.token.v1.ListTokensRequest
-	(*ListTokensResponse)(nil),    // 3: elara.token.v1.ListTokensResponse
-	(*GetTokenRequest)(nil),       // 4: elara.token.v1.GetTokenRequest
-	(*GetTokenResponse)(nil),      // 5: elara.token.v1.GetTokenResponse
-	(*RevokeTokenRequest)(nil),    // 6: elara.token.v1.RevokeTokenRequest
-	(*RevokeTokenResponse)(nil),   // 7: elara.token.v1.RevokeTokenResponse
-	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
-	(*Token)(nil),                 // 9: elara.token.v1.Token
+	(*CreateTokenRequest)(nil),        // 0: elara.token.v1.CreateTokenRequest
+	(*CreateTokenResponse)(nil),       // 1: elara.token.v1.CreateTokenResponse
+	(*ListTokensRequest)(nil),         // 2: elara.token.v1.ListTokensRequest
+	(*ListTokensResponse)(nil),        // 3: elara.token.v1.ListTokensResponse
+	(*GetTokenRequest)(nil),           // 4: elara.token.v1.GetTokenRequest
+	(*GetTokenResponse)(nil),          // 5: elara.token.v1.GetTokenResponse
+	(*RevokeTokenRequest)(nil),        // 6: elara.token.v1.RevokeTokenRequest
+	(*RevokeTokenResponse)(nil),       // 7: elara.token.v1.RevokeTokenResponse
+	(*ListTokensRequest_Filters)(nil), // 8: elara.token.v1.ListTokensRequest.Filters
+	(v1.PermissionAction)(0),          // 9: elara.common.v1.PermissionAction
+	(*timestamppb.Timestamp)(nil),     // 10: google.protobuf.Timestamp
+	(*Token)(nil),                     // 11: elara.token.v1.Token
+	(*v1.PaginationRequest)(nil),      // 12: elara.common.v1.PaginationRequest
+	(*v1.SortRequest)(nil),            // 13: elara.common.v1.SortRequest
+	(*v1.PaginationResponse)(nil),     // 14: elara.common.v1.PaginationResponse
+	(*v1.SortResponse)(nil),           // 15: elara.common.v1.SortResponse
 }
 var file_elara_token_v1_token_service_proto_depIdxs = []int32{
-	8, // 0: elara.token.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
-	9, // 1: elara.token.v1.CreateTokenResponse.token:type_name -> elara.token.v1.Token
-	9, // 2: elara.token.v1.ListTokensResponse.tokens:type_name -> elara.token.v1.Token
-	9, // 3: elara.token.v1.GetTokenResponse.token:type_name -> elara.token.v1.Token
-	0, // 4: elara.token.v1.TokenService.CreateToken:input_type -> elara.token.v1.CreateTokenRequest
-	2, // 5: elara.token.v1.TokenService.ListTokens:input_type -> elara.token.v1.ListTokensRequest
-	4, // 6: elara.token.v1.TokenService.GetToken:input_type -> elara.token.v1.GetTokenRequest
-	6, // 7: elara.token.v1.TokenService.RevokeToken:input_type -> elara.token.v1.RevokeTokenRequest
-	1, // 8: elara.token.v1.TokenService.CreateToken:output_type -> elara.token.v1.CreateTokenResponse
-	3, // 9: elara.token.v1.TokenService.ListTokens:output_type -> elara.token.v1.ListTokensResponse
-	5, // 10: elara.token.v1.TokenService.GetToken:output_type -> elara.token.v1.GetTokenResponse
-	7, // 11: elara.token.v1.TokenService.RevokeToken:output_type -> elara.token.v1.RevokeTokenResponse
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	9,  // 0: elara.token.v1.CreateTokenRequest.permission:type_name -> elara.common.v1.PermissionAction
+	10, // 1: elara.token.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
+	11, // 2: elara.token.v1.CreateTokenResponse.token:type_name -> elara.token.v1.Token
+	12, // 3: elara.token.v1.ListTokensRequest.pagination:type_name -> elara.common.v1.PaginationRequest
+	13, // 4: elara.token.v1.ListTokensRequest.sorting:type_name -> elara.common.v1.SortRequest
+	8,  // 5: elara.token.v1.ListTokensRequest.filters:type_name -> elara.token.v1.ListTokensRequest.Filters
+	14, // 6: elara.token.v1.ListTokensResponse.pagination:type_name -> elara.common.v1.PaginationResponse
+	15, // 7: elara.token.v1.ListTokensResponse.sorting:type_name -> elara.common.v1.SortResponse
+	11, // 8: elara.token.v1.ListTokensResponse.tokens:type_name -> elara.token.v1.Token
+	11, // 9: elara.token.v1.GetTokenResponse.token:type_name -> elara.token.v1.Token
+	0,  // 10: elara.token.v1.TokenService.CreateToken:input_type -> elara.token.v1.CreateTokenRequest
+	2,  // 11: elara.token.v1.TokenService.ListTokens:input_type -> elara.token.v1.ListTokensRequest
+	4,  // 12: elara.token.v1.TokenService.GetToken:input_type -> elara.token.v1.GetTokenRequest
+	6,  // 13: elara.token.v1.TokenService.RevokeToken:input_type -> elara.token.v1.RevokeTokenRequest
+	1,  // 14: elara.token.v1.TokenService.CreateToken:output_type -> elara.token.v1.CreateTokenResponse
+	3,  // 15: elara.token.v1.TokenService.ListTokens:output_type -> elara.token.v1.ListTokensResponse
+	5,  // 16: elara.token.v1.TokenService.GetToken:output_type -> elara.token.v1.GetTokenResponse
+	7,  // 17: elara.token.v1.TokenService.RevokeToken:output_type -> elara.token.v1.RevokeTokenResponse
+	14, // [14:18] is the sub-list for method output_type
+	10, // [10:14] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_elara_token_v1_token_service_proto_init() }
@@ -492,7 +614,7 @@ func file_elara_token_v1_token_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_token_v1_token_service_proto_rawDesc), len(file_elara_token_v1_token_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

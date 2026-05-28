@@ -14,6 +14,7 @@ import {
 	listGroups,
 } from "@/gen/elara/group/v1/group_service-GroupService_connectquery";
 import { listNamespaces } from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
+import { listTokens } from "@/gen/elara/token/v1/token_service-TokenService_connectquery";
 import {
 	getUser,
 	listUsers,
@@ -45,6 +46,8 @@ const queryKeys = {
 		createConnectQueryKey({ schema: listUsers, cardinality: undefined }),
 	user: () =>
 		createConnectQueryKey({ schema: getUser, cardinality: undefined }),
+	tokens: () =>
+		createConnectQueryKey({ schema: listTokens, cardinality: undefined }),
 } as const;
 
 type QueryKey = keyof typeof queryKeys;

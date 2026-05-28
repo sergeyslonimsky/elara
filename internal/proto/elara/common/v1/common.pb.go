@@ -234,6 +234,58 @@ func (x *SortRequest) GetDirection() SortDirection {
 	return SortDirection_SORT_DIRECTION_UNSPECIFIED
 }
 
+type SortResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Field         string                 `protobuf:"bytes,1,opt,name=field,proto3" json:"field,omitempty"`
+	Direction     SortDirection          `protobuf:"varint,2,opt,name=direction,proto3,enum=elara.common.v1.SortDirection" json:"direction,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SortResponse) Reset() {
+	*x = SortResponse{}
+	mi := &file_elara_common_v1_common_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SortResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SortResponse) ProtoMessage() {}
+
+func (x *SortResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_common_v1_common_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SortResponse.ProtoReflect.Descriptor instead.
+func (*SortResponse) Descriptor() ([]byte, []int) {
+	return file_elara_common_v1_common_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SortResponse) GetField() string {
+	if x != nil {
+		return x.Field
+	}
+	return ""
+}
+
+func (x *SortResponse) GetDirection() SortDirection {
+	if x != nil {
+		return x.Direction
+	}
+	return SortDirection_SORT_DIRECTION_UNSPECIFIED
+}
+
 var File_elara_common_v1_common_proto protoreflect.FileDescriptor
 
 const file_elara_common_v1_common_proto_rawDesc = "" +
@@ -247,6 +299,9 @@ const file_elara_common_v1_common_proto_rawDesc = "" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x03 \x01(\x05R\x06offset\"a\n" +
 	"\vSortRequest\x12\x14\n" +
+	"\x05field\x18\x01 \x01(\tR\x05field\x12<\n" +
+	"\tdirection\x18\x02 \x01(\x0e2\x1e.elara.common.v1.SortDirectionR\tdirection\"b\n" +
+	"\fSortResponse\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12<\n" +
 	"\tdirection\x18\x02 \x01(\x0e2\x1e.elara.common.v1.SortDirectionR\tdirection*`\n" +
 	"\rSortDirection\x12\x1e\n" +
@@ -268,20 +323,22 @@ func file_elara_common_v1_common_proto_rawDescGZIP() []byte {
 }
 
 var file_elara_common_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_elara_common_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_elara_common_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_elara_common_v1_common_proto_goTypes = []any{
 	(SortDirection)(0),         // 0: elara.common.v1.SortDirection
 	(*PaginationRequest)(nil),  // 1: elara.common.v1.PaginationRequest
 	(*PaginationResponse)(nil), // 2: elara.common.v1.PaginationResponse
 	(*SortRequest)(nil),        // 3: elara.common.v1.SortRequest
+	(*SortResponse)(nil),       // 4: elara.common.v1.SortResponse
 }
 var file_elara_common_v1_common_proto_depIdxs = []int32{
 	0, // 0: elara.common.v1.SortRequest.direction:type_name -> elara.common.v1.SortDirection
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 1: elara.common.v1.SortResponse.direction:type_name -> elara.common.v1.SortDirection
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_elara_common_v1_common_proto_init() }
@@ -295,7 +352,7 @@ func file_elara_common_v1_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_common_v1_common_proto_rawDesc), len(file_elara_common_v1_common_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -18,7 +18,7 @@ import (
 
 type (
 	authz interface {
-		RequireUser(user domain.AuthInfo, object, action, domainStr string) error
+		RequireUser(user domain.AuthInfo, object domain.Object, action domain.Action, domainStr string) error
 	}
 
 	groupUsecase interface {

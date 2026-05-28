@@ -16,7 +16,7 @@ func TestObjectToProto(t *testing.T) {
 
 	tests := []struct {
 		name string
-		in   string
+		in   domain.Object
 		want commonv1.PermissionObject
 	}{
 		{name: "namespace", in: domain.ObjectNamespace, want: commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE},
@@ -45,7 +45,7 @@ func TestObjectToDomain(t *testing.T) {
 	tests := []struct {
 		name string
 		in   commonv1.PermissionObject
-		want string
+		want domain.Object
 	}{
 		{name: "unspecified", in: commonv1.PermissionObject_PERMISSION_OBJECT_UNSPECIFIED, want: ""},
 		{name: "namespace", in: commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE, want: domain.ObjectNamespace},
@@ -72,7 +72,7 @@ func TestActionToProto(t *testing.T) {
 
 	tests := []struct {
 		name string
-		in   string
+		in   domain.Action
 		want commonv1.PermissionAction
 	}{
 		{name: "read", in: domain.ActionRead, want: commonv1.PermissionAction_PERMISSION_ACTION_READ},
@@ -97,7 +97,7 @@ func TestActionToDomain(t *testing.T) {
 	tests := []struct {
 		name string
 		in   commonv1.PermissionAction
-		want string
+		want domain.Action
 	}{
 		{name: "unspecified", in: commonv1.PermissionAction_PERMISSION_ACTION_UNSPECIFIED, want: ""},
 		{name: "read", in: commonv1.PermissionAction_PERMISSION_ACTION_READ, want: domain.ActionRead},

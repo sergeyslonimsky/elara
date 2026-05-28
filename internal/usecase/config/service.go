@@ -11,7 +11,7 @@ import (
 
 type (
 	pdp interface {
-		EffectiveDomains(principal, object, action string) authz.DomainSet
+		EffectiveDomains(principal string, object domain.Object, action domain.Action) authz.DomainSet
 	}
 
 	storage interface {

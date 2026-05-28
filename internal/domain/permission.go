@@ -1,7 +1,7 @@
 package domain
 
 type Permission struct {
-	Object string
-	Action string
+	Object Object
+	Action Action
 	Domain string
 }

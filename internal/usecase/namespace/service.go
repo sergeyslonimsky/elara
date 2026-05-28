@@ -13,7 +13,7 @@ import (
 type (
 	pdp interface {
 		Has(principal string, perm domain.Permission) bool
-		EffectiveDomains(principal, object, action string) authz.DomainSet
+		EffectiveDomains(principal string, object domain.Object, action domain.Action) authz.DomainSet
 	}
 
 	store interface {

@@ -61,8 +61,8 @@ func TestService_List(t *testing.T) {
 						return txe.AddPolicy(
 							"delegated@example.com",
 							casbin.GroupSubject("dev"),
-							domain.ObjectGroup,
-							domain.ActionRead,
+							string(domain.ObjectGroup),
+							string(domain.ActionRead),
 						)
 					}),
 				)

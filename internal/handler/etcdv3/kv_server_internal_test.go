@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
@@ -20,7 +21,7 @@ func TestKVServer_CheckAccess_ServiceToken(t *testing.T) {
 		name      string
 		claims    *auth.Claims
 		namespace string
-		action    string
+		action    domain.Action
 		wantCode  codes.Code
 	}{
 		{

@@ -1,12 +1,11 @@
 package token_test
 
 import (
-	"context"
 	"testing"
 
 	"go.uber.org/mock/gomock"
 
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/usecase/token"
 	tokenmock "github.com/sergeyslonimsky/elara/internal/usecase/token/mocks"
 )
@@ -30,6 +29,6 @@ func setupService(t *testing.T) (*token.Service, mocks) {
 	return svc, m
 }
 
-func ctxWithClaims(ctx context.Context, email string) context.Context {
-	return auth.WithClaims(ctx, &auth.Claims{Email: email})
+func authUser(email string) domain.AuthInfo {
+	return domain.AuthInfo{Email: email}
 }

@@ -44,7 +44,7 @@ func (m *Mockauthz) EXPECT() *MockauthzMockRecorder {
 }
 
 // Require mocks base method.
-func (m *Mockauthz) Require(ctx context.Context, object, action, domainStr string) error {
+func (m *Mockauthz) Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
 	ret0, _ := ret[0].(error)

@@ -43,7 +43,7 @@ func (m *Mockauthz) EXPECT() *MockauthzMockRecorder {
 }
 
 // RequireUser mocks base method.
-func (m *Mockauthz) RequireUser(user domain.AuthInfo, object, action, domainStr string) error {
+func (m *Mockauthz) RequireUser(user domain.AuthInfo, object domain.Object, action domain.Action, domainStr string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RequireUser", user, object, action, domainStr)
 	ret0, _ := ret[0].(error)

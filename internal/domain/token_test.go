@@ -220,15 +220,15 @@ func TestToken_ActionAllowed(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		role   string
-		action string
+		role   domain.Role
+		action domain.Action
 		want   bool
 	}{
-		{name: "writer can read", role: "writer", action: "read", want: true},
-		{name: "writer can write", role: "writer", action: "write", want: true},
-		{name: "reader can read", role: "reader", action: "read", want: true},
-		{name: "reader cannot write", role: "reader", action: "write", want: false},
-		{name: "unknown role denied", role: "", action: "read", want: false},
+		{name: "writer can read", role: domain.RoleWriter, action: domain.ActionRead, want: true},
+		{name: "writer can write", role: domain.RoleWriter, action: domain.ActionWrite, want: true},
+		{name: "reader can read", role: domain.RoleReader, action: domain.ActionRead, want: true},
+		{name: "reader cannot write", role: domain.RoleReader, action: domain.ActionWrite, want: false},
+		{name: "unknown role denied", role: "", action: domain.ActionRead, want: false},
 	}
 
 	for _, tt := range tests {

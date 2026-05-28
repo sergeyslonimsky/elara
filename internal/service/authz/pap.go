@@ -62,7 +62,7 @@ func (p *PAP) Write(
 // rule with the group: prefix already stripped from the subject.
 type GroupRoleAssignment struct {
 	Group  string
-	Role   string
+	Role   domain.Role
 	Domain string
 }
 
@@ -84,7 +84,7 @@ func (p *PAP) ListGroupRoleAssignments() []GroupRoleAssignment {
 
 		result = append(result, GroupRoleAssignment{
 			Group:  casbin.GroupNameFromSubject(rule[0]),
-			Role:   rule[1],
+			Role:   domain.Role(rule[1]),
 			Domain: rule[2],
 		})
 	}
@@ -100,7 +100,7 @@ func (p *PAP) AdminAssignmentCount() int {
 	count := 0
 
 	for _, rule := range p.enforcer.GetGroupingPolicy() {
-		if len(rule) == gRuleNativeLen && rule[1] == domain.RoleAdmin && rule[2] == domain.DomainAll {
+		if len(rule) == gRuleNativeLen && domain.Role(rule[1]) == domain.RoleAdmin && rule[2] == domain.DomainAll {
 			count++
 		}
 	}
@@ -161,7 +161,7 @@ func (p *PAP) GroupPermissions(name string) []domain.Permission {
 		if len(r) < pRuleLen || r[0] != subject {
 			continue
 		}
-		out = append(out, domain.Permission{Domain: r[1], Object: r[2], Action: r[3]})
+		out = append(out, domain.Permission{Domain: r[1], Object: domain.Object(r[2]), Action: domain.Action(r[3])})
 	}
 
 	return out
@@ -214,7 +214,7 @@ func (p *PAP) HasDirectAdminAssignment(email string) bool {
 	for _, rule := range p.enforcer.GetGroupingPolicy() {
 		if len(rule) == gRuleNativeLen &&
 			rule[0] == email &&
-			rule[1] == domain.RoleAdmin &&
+			domain.Role(rule[1]) == domain.RoleAdmin &&
 			rule[2] == domain.DomainAll {
 			return true
 		}

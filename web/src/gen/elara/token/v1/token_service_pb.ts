@@ -4,6 +4,11 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import { file_buf_validate_validate } from "../../../buf/validate/validate_pb";
+import type { PaginationRequest, PaginationResponse, SortRequest, SortResponse } from "../../common/v1/common_pb";
+import { file_elara_common_v1_common } from "../../common/v1/common_pb";
+import type { PermissionAction } from "../../common/v1/permission_pb";
+import { file_elara_common_v1_permission } from "../../common/v1/permission_pb";
 import type { Token } from "./token_pb";
 import { file_elara_token_v1_token } from "./token_pb";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
@@ -14,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/token/v1/token_service.proto.
  */
 export const file_elara_token_v1_token_service: GenFile = /*@__PURE__*/
-  fileDesc("CiJlbGFyYS90b2tlbi92MS90b2tlbl9zZXJ2aWNlLnByb3RvEg5lbGFyYS50b2tlbi52MSKIAQoSQ3JlYXRlVG9rZW5SZXF1ZXN0EgwKBG5hbWUYASABKAkSEgoKbmFtZXNwYWNlcxgCIAMoCRIMCgRyb2xlGAMgASgJEjMKCmV4cGlyZXNfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSACIAQFCDQoLX2V4cGlyZXNfYXQiTgoTQ3JlYXRlVG9rZW5SZXNwb25zZRIkCgV0b2tlbhgBIAEoCzIVLmVsYXJhLnRva2VuLnYxLlRva2VuEhEKCXJhd190b2tlbhgCIAEoCSImChFMaXN0VG9rZW5zUmVxdWVzdBIRCglpc3N1ZWRfYnkYASABKAkiOwoSTGlzdFRva2Vuc1Jlc3BvbnNlEiUKBnRva2VucxgBIAMoCzIVLmVsYXJhLnRva2VuLnYxLlRva2VuIh0KD0dldFRva2VuUmVxdWVzdBIKCgJpZBgBIAEoCSI4ChBHZXRUb2tlblJlc3BvbnNlEiQKBXRva2VuGAEgASgLMhUuZWxhcmEudG9rZW4udjEuVG9rZW4iIAoSUmV2b2tlVG9rZW5SZXF1ZXN0EgoKAmlkGAEgASgJIhUKE1Jldm9rZVRva2VuUmVzcG9uc2Uy4gIKDFRva2VuU2VydmljZRJWCgtDcmVhdGVUb2tlbhIiLmVsYXJhLnRva2VuLnYxLkNyZWF0ZVRva2VuUmVxdWVzdBojLmVsYXJhLnRva2VuLnYxLkNyZWF0ZVRva2VuUmVzcG9uc2USUwoKTGlzdFRva2VucxIhLmVsYXJhLnRva2VuLnYxLkxpc3RUb2tlbnNSZXF1ZXN0GiIuZWxhcmEudG9rZW4udjEuTGlzdFRva2Vuc1Jlc3BvbnNlEk0KCEdldFRva2VuEh8uZWxhcmEudG9rZW4udjEuR2V0VG9rZW5SZXF1ZXN0GiAuZWxhcmEudG9rZW4udjEuR2V0VG9rZW5SZXNwb25zZRJWCgtSZXZva2VUb2tlbhIiLmVsYXJhLnRva2VuLnYxLlJldm9rZVRva2VuUmVxdWVzdBojLmVsYXJhLnRva2VuLnYxLlJldm9rZVRva2VuUmVzcG9uc2VCyQEKEmNvbS5lbGFyYS50b2tlbi52MUIRVG9rZW5TZXJ2aWNlUHJvdG9QAVpGZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvdG9rZW4vdjE7dG9rZW52MaICA0VUWKoCDkVsYXJhLlRva2VuLlYxygIORWxhcmFcVG9rZW5cVjHiAhpFbGFyYVxUb2tlblxWMVxHUEJNZXRhZGF0YeoCEEVsYXJhOjpUb2tlbjo6VjFiBnByb3RvMw", [file_elara_token_v1_token, file_google_protobuf_timestamp]);
+  fileDesc("CiJlbGFyYS90b2tlbi92MS90b2tlbl9zZXJ2aWNlLnByb3RvEg5lbGFyYS50b2tlbi52MSLJAQoSQ3JlYXRlVG9rZW5SZXF1ZXN0EhQKBG5hbWUYASABKAlCBrpIA8gBARIaCgpuYW1lc3BhY2VzGAIgAygJQga6SAPIAQESPQoKcGVybWlzc2lvbhgDIAEoDjIhLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQWN0aW9uQga6SAPIAQESMwoKZXhwaXJlc19hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAIgBAUINCgtfZXhwaXJlc19hdCJOChNDcmVhdGVUb2tlblJlc3BvbnNlEiQKBXRva2VuGAEgASgLMhUuZWxhcmEudG9rZW4udjEuVG9rZW4SEQoJcmF3X3Rva2VuGAIgASgJIv4BChFMaXN0VG9rZW5zUmVxdWVzdBI2CgpwYWdpbmF0aW9uGAEgASgLMiIuZWxhcmEuY29tbW9uLnYxLlBhZ2luYXRpb25SZXF1ZXN0Ei0KB3NvcnRpbmcYAiABKAsyHC5lbGFyYS5jb21tb24udjEuU29ydFJlcXVlc3QSOgoHZmlsdGVycxgDIAEoCzIpLmVsYXJhLnRva2VuLnYxLkxpc3RUb2tlbnNSZXF1ZXN0LkZpbHRlcnMaRgoHRmlsdGVycxIUCgxxdWVyeV9wYXJhbXMYASADKAkSEQoJaXNzdWVkX2J5GAIgAygJEhIKCm5hbWVzcGFjZXMYAyADKAkipAEKEkxpc3RUb2tlbnNSZXNwb25zZRI3CgpwYWdpbmF0aW9uGAEgASgLMiMuZWxhcmEuY29tbW9uLnYxLlBhZ2luYXRpb25SZXNwb25zZRIuCgdzb3J0aW5nGAIgASgLMh0uZWxhcmEuY29tbW9uLnYxLlNvcnRSZXNwb25zZRIlCgZ0b2tlbnMYAyADKAsyFS5lbGFyYS50b2tlbi52MS5Ub2tlbiIlCg9HZXRUb2tlblJlcXVlc3QSEgoCaWQYASABKAlCBrpIA8gBASI4ChBHZXRUb2tlblJlc3BvbnNlEiQKBXRva2VuGAEgASgLMhUuZWxhcmEudG9rZW4udjEuVG9rZW4iKAoSUmV2b2tlVG9rZW5SZXF1ZXN0EhIKAmlkGAEgASgJQga6SAPIAQEiFQoTUmV2b2tlVG9rZW5SZXNwb25zZTLiAgoMVG9rZW5TZXJ2aWNlElYKC0NyZWF0ZVRva2VuEiIuZWxhcmEudG9rZW4udjEuQ3JlYXRlVG9rZW5SZXF1ZXN0GiMuZWxhcmEudG9rZW4udjEuQ3JlYXRlVG9rZW5SZXNwb25zZRJTCgpMaXN0VG9rZW5zEiEuZWxhcmEudG9rZW4udjEuTGlzdFRva2Vuc1JlcXVlc3QaIi5lbGFyYS50b2tlbi52MS5MaXN0VG9rZW5zUmVzcG9uc2USTQoIR2V0VG9rZW4SHy5lbGFyYS50b2tlbi52MS5HZXRUb2tlblJlcXVlc3QaIC5lbGFyYS50b2tlbi52MS5HZXRUb2tlblJlc3BvbnNlElYKC1Jldm9rZVRva2VuEiIuZWxhcmEudG9rZW4udjEuUmV2b2tlVG9rZW5SZXF1ZXN0GiMuZWxhcmEudG9rZW4udjEuUmV2b2tlVG9rZW5SZXNwb25zZULJAQoSY29tLmVsYXJhLnRva2VuLnYxQhFUb2tlblNlcnZpY2VQcm90b1ABWkZnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS90b2tlbi92MTt0b2tlbnYxogIDRVRYqgIORWxhcmEuVG9rZW4uVjHKAg5FbGFyYVxUb2tlblxWMeICGkVsYXJhXFRva2VuXFYxXEdQQk1ldGFkYXRh6gIQRWxhcmE6OlRva2VuOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_elara_common_v1_common, file_elara_common_v1_permission, file_elara_token_v1_token, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message elara.token.v1.CreateTokenRequest
@@ -31,9 +36,9 @@ export type CreateTokenRequest = Message<"elara.token.v1.CreateTokenRequest"> & 
   namespaces: string[];
 
   /**
-   * @generated from field: string role = 3;
+   * @generated from field: elara.common.v1.PermissionAction permission = 3;
    */
-  role: string;
+  permission: PermissionAction;
 
   /**
    * @generated from field: optional google.protobuf.Timestamp expires_at = 4;
@@ -75,9 +80,19 @@ export const CreateTokenResponseSchema: GenMessage<CreateTokenResponse> = /*@__P
  */
 export type ListTokensRequest = Message<"elara.token.v1.ListTokensRequest"> & {
   /**
-   * @generated from field: string issued_by = 1;
+   * @generated from field: elara.common.v1.PaginationRequest pagination = 1;
    */
-  issuedBy: string;
+  pagination?: PaginationRequest;
+
+  /**
+   * @generated from field: elara.common.v1.SortRequest sorting = 2;
+   */
+  sorting?: SortRequest;
+
+  /**
+   * @generated from field: elara.token.v1.ListTokensRequest.Filters filters = 3;
+   */
+  filters?: ListTokensRequest_Filters;
 };
 
 /**
@@ -88,11 +103,48 @@ export const ListTokensRequestSchema: GenMessage<ListTokensRequest> = /*@__PURE_
   messageDesc(file_elara_token_v1_token_service, 2);
 
 /**
+ * @generated from message elara.token.v1.ListTokensRequest.Filters
+ */
+export type ListTokensRequest_Filters = Message<"elara.token.v1.ListTokensRequest.Filters"> & {
+  /**
+   * @generated from field: repeated string query_params = 1;
+   */
+  queryParams: string[];
+
+  /**
+   * @generated from field: repeated string issued_by = 2;
+   */
+  issuedBy: string[];
+
+  /**
+   * @generated from field: repeated string namespaces = 3;
+   */
+  namespaces: string[];
+};
+
+/**
+ * Describes the message elara.token.v1.ListTokensRequest.Filters.
+ * Use `create(ListTokensRequest_FiltersSchema)` to create a new message.
+ */
+export const ListTokensRequest_FiltersSchema: GenMessage<ListTokensRequest_Filters> = /*@__PURE__*/
+  messageDesc(file_elara_token_v1_token_service, 2, 0);
+
+/**
  * @generated from message elara.token.v1.ListTokensResponse
  */
 export type ListTokensResponse = Message<"elara.token.v1.ListTokensResponse"> & {
   /**
-   * @generated from field: repeated elara.token.v1.Token tokens = 1;
+   * @generated from field: elara.common.v1.PaginationResponse pagination = 1;
+   */
+  pagination?: PaginationResponse;
+
+  /**
+   * @generated from field: elara.common.v1.SortResponse sorting = 2;
+   */
+  sorting?: SortResponse;
+
+  /**
+   * @generated from field: repeated elara.token.v1.Token tokens = 3;
    */
   tokens: Token[];
 };
