@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { canManageGroup, displayObject, formatAction } from "@/auth/ability";
-import { useAuth } from "@/components/auth-provider";
+import { useAbility } from "@/auth/ability-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ function permKey(p: PermissionAssignment): string {
 
 const PERMISSION_OBJECTS = [
 	PermissionObject.NAMESPACE,
-	PermissionObject.CONFIG,
+	PermissionObject.CLIENT,
 	PermissionObject.USER,
 	PermissionObject.GROUP,
 	PermissionObject.TOKEN,
@@ -49,6 +49,7 @@ const PERMISSION_ACTIONS = [
 	PermissionAction.READ,
 	PermissionAction.WRITE,
 	PermissionAction.CREATE,
+	PermissionAction.DELETE,
 	PermissionAction.ALL,
 ];
 
@@ -56,11 +57,10 @@ export function PermissionsTab({
 	group,
 	permissions,
 }: Readonly<PermissionsTabProps>) {
-	const { state } = useAuth();
+	const ability = useAbility();
 	const queryClient = useQueryClient();
 
-	const ability = state.status === "authenticated" ? state.ability : null;
-	const canEdit = ability ? canManageGroup(ability, group) : false;
+	const canEdit = canManageGroup(ability, group);
 
 	const [addPerms, setAddPerms] = useState<PermissionAssignment[]>([]);
 	const [removeKeys, setRemoveKeys] = useState<Set<string>>(new Set());

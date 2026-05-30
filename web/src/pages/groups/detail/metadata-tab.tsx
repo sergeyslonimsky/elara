@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { canManageGroup } from "@/auth/ability";
-import { useAuth } from "@/components/auth-provider";
+import { useAbility } from "@/auth/ability-context";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -29,11 +29,10 @@ interface MetadataTabProps {
 }
 
 export function MetadataTab({ group }: Readonly<MetadataTabProps>) {
-	const { state } = useAuth();
+	const ability = useAbility();
 	const queryClient = useQueryClient();
 
-	const ability = state.status === "authenticated" ? state.ability : null;
-	const canEdit = ability ? canManageGroup(ability, group) : false;
+	const canEdit = canManageGroup(ability, group);
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(schema),

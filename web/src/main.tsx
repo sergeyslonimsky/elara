@@ -18,6 +18,7 @@ import {
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
+import { AbilityProvider } from "@/auth/ability-context";
 import { AuthProvider } from "@/components/auth-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -76,12 +77,14 @@ createRoot(document.getElementById("root")!).render(
 			<QueryClientProvider client={queryClient}>
 				<BrowserRouter>
 					<AuthProvider>
-						<ThemeProvider defaultTheme="system" storageKey="elara-theme">
-							<TooltipProvider>
-								<App />
-								<Toaster richColors />
-							</TooltipProvider>
-						</ThemeProvider>
+						<AbilityProvider>
+							<ThemeProvider defaultTheme="system" storageKey="elara-theme">
+								<TooltipProvider>
+									<App />
+									<Toaster richColors />
+								</TooltipProvider>
+							</ThemeProvider>
+						</AbilityProvider>
 					</AuthProvider>
 				</BrowserRouter>
 			</QueryClientProvider>

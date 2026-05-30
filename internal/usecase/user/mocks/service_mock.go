@@ -13,10 +13,11 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "go.uber.org/mock/gomock"
+
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	storage "github.com/sergeyslonimsky/elara/internal/service/storage"
 	user "github.com/sergeyslonimsky/elara/internal/usecase/user"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // MockUserReader is a mock of UserReader interface.
@@ -35,6 +36,7 @@ type MockUserReaderMockRecorder struct {
 func NewMockUserReader(ctrl *gomock.Controller) *MockUserReader {
 	mock := &MockUserReader{ctrl: ctrl}
 	mock.recorder = &MockUserReaderMockRecorder{mock}
+
 	return mock
 }
 
@@ -48,13 +50,21 @@ func (m *MockUserReader) Delete(ctx context.Context, email string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, email)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
 func (mr *MockUserReaderMockRecorder) Delete(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUserReader)(nil).Delete), ctx, email)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Delete",
+		reflect.TypeOf((*MockUserReader)(nil).Delete),
+		ctx,
+		email,
+	)
 }
 
 // Get mocks base method.
@@ -63,29 +73,44 @@ func (m *MockUserReader) Get(ctx context.Context, email string) (*domain.User, e
 	ret := m.ctrl.Call(m, "Get", ctx, email)
 	ret0, _ := ret[0].(*domain.User)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockUserReaderMockRecorder) Get(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUserReader)(nil).Get), ctx, email)
 }
 
 // List mocks base method.
-func (m *MockUserReader) List(ctx context.Context, filter domain.UserFilter, params domain.UserListParams) ([]*domain.User, int, error) {
+func (m *MockUserReader) List(
+	ctx context.Context,
+	filter domain.UserFilter,
+	params domain.UserListParams,
+) ([]*domain.User, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, filter, params)
 	ret0, _ := ret[0].([]*domain.User)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
+
 	return ret0, ret1, ret2
 }
 
 // List indicates an expected call of List.
 func (mr *MockUserReaderMockRecorder) List(ctx, filter, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserReader)(nil).List), ctx, filter, params)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"List",
+		reflect.TypeOf((*MockUserReader)(nil).List),
+		ctx,
+		filter,
+		params,
+	)
 }
 
 // SetMembershipVersion mocks base method.
@@ -93,13 +118,22 @@ func (m *MockUserReader) SetMembershipVersion(ctx context.Context, email string,
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetMembershipVersion", ctx, email, version)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // SetMembershipVersion indicates an expected call of SetMembershipVersion.
 func (mr *MockUserReaderMockRecorder) SetMembershipVersion(ctx, email, version any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMembershipVersion", reflect.TypeOf((*MockUserReader)(nil).SetMembershipVersion), ctx, email, version)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"SetMembershipVersion",
+		reflect.TypeOf((*MockUserReader)(nil).SetMembershipVersion),
+		ctx,
+		email,
+		version,
+	)
 }
 
 // SetPassword mocks base method.
@@ -107,13 +141,23 @@ func (m *MockUserReader) SetPassword(ctx context.Context, email, hash string, ch
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetPassword", ctx, email, hash, changeRequired)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // SetPassword indicates an expected call of SetPassword.
 func (mr *MockUserReaderMockRecorder) SetPassword(ctx, email, hash, changeRequired any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockUserReader)(nil).SetPassword), ctx, email, hash, changeRequired)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"SetPassword",
+		reflect.TypeOf((*MockUserReader)(nil).SetPassword),
+		ctx,
+		email,
+		hash,
+		changeRequired,
+	)
 }
 
 // Upsert mocks base method.
@@ -121,13 +165,21 @@ func (m *MockUserReader) Upsert(ctx context.Context, arg1 *domain.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Upsert", ctx, arg1)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Upsert indicates an expected call of Upsert.
 func (mr *MockUserReaderMockRecorder) Upsert(ctx, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockUserReader)(nil).Upsert), ctx, arg1)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Upsert",
+		reflect.TypeOf((*MockUserReader)(nil).Upsert),
+		ctx,
+		arg1,
+	)
 }
 
 // WithTx mocks base method.
@@ -135,12 +187,14 @@ func (m *MockUserReader) WithTx(tx storage.Tx) user.UserReader {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WithTx", tx)
 	ret0, _ := ret[0].(user.UserReader)
+
 	return ret0
 }
 
 // WithTx indicates an expected call of WithTx.
 func (mr *MockUserReaderMockRecorder) WithTx(tx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockUserReader)(nil).WithTx), tx)
 }
 
@@ -160,6 +214,7 @@ type MockGroupReaderMockRecorder struct {
 func NewMockGroupReader(ctrl *gomock.Controller) *MockGroupReader {
 	mock := &MockGroupReader{ctrl: ctrl}
 	mock.recorder = &MockGroupReaderMockRecorder{mock}
+
 	return mock
 }
 
@@ -174,13 +229,21 @@ func (m *MockGroupReader) FindByName(ctx context.Context, name string) (*domain.
 	ret := m.ctrl.Call(m, "FindByName", ctx, name)
 	ret0, _ := ret[0].(*domain.Group)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // FindByName indicates an expected call of FindByName.
 func (mr *MockGroupReaderMockRecorder) FindByName(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByName", reflect.TypeOf((*MockGroupReader)(nil).FindByName), ctx, name)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"FindByName",
+		reflect.TypeOf((*MockGroupReader)(nil).FindByName),
+		ctx,
+		name,
+	)
 }
 
 // Get mocks base method.
@@ -189,12 +252,14 @@ func (m *MockGroupReader) Get(ctx context.Context, id string) (*domain.Group, er
 	ret := m.ctrl.Call(m, "Get", ctx, id)
 	ret0, _ := ret[0].(*domain.Group)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockGroupReaderMockRecorder) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockGroupReader)(nil).Get), ctx, id)
 }
 
@@ -203,11 +268,13 @@ func (m *MockGroupReader) WithTx(tx storage.Tx) user.GroupReader {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WithTx", tx)
 	ret0, _ := ret[0].(user.GroupReader)
+
 	return ret0
 }
 
 // WithTx indicates an expected call of WithTx.
 func (mr *MockGroupReaderMockRecorder) WithTx(tx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockGroupReader)(nil).WithTx), tx)
 }

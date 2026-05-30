@@ -3,10 +3,10 @@ import { useMutation } from "@connectrpc/connect-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { useAuth } from "@/components/auth-provider";
+import { denyAllAbility } from "@/auth/ability";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 import { UserSchema } from "@/gen/elara/user/v1/user_pb";
-import { TestProviders } from "@/test/test-utils";
+import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { UserDetailHeader } from "./user-detail-header";
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
@@ -18,14 +18,6 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 			mutateAsync: vi.fn(),
 			isPending: false,
 		})),
-	};
-});
-
-vi.mock("@/components/auth-provider", async (importOriginal) => {
-	const actual = await importOriginal<Record<string, unknown>>();
-	return {
-		...actual,
-		useAuth: vi.fn(),
 	};
 });
 
@@ -68,18 +60,12 @@ describe("UserDetailHeader", () => {
 	});
 
 	test("hides actions menu when authType is not BASIC", () => {
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: { can: () => true },
-				authType: AuthType.NONE,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(denyAllAbility, {
+			authType: AuthType.NONE,
+		});
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<UserDetailHeader user={regularUser} />
 			</TestProviders>,
 		);
@@ -90,18 +76,12 @@ describe("UserDetailHeader", () => {
 	});
 
 	test("shows actions menu when authType is BASIC", () => {
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: { can: () => true },
-				authType: AuthType.BASIC,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(denyAllAbility, {
+			authType: AuthType.BASIC,
+		});
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<UserDetailHeader user={regularUser} />
 			</TestProviders>,
 		);
@@ -112,18 +92,12 @@ describe("UserDetailHeader", () => {
 	});
 
 	test("system user shows System badge", () => {
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: { can: () => true },
-				authType: AuthType.BASIC,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(denyAllAbility, {
+			authType: AuthType.BASIC,
+		});
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<UserDetailHeader user={systemUser} />
 			</TestProviders>,
 		);
@@ -133,18 +107,12 @@ describe("UserDetailHeader", () => {
 
 	test("clicking Reset password opens dialog", async () => {
 		const ue = userEvent.setup();
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: { can: () => true },
-				authType: AuthType.BASIC,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(denyAllAbility, {
+			authType: AuthType.BASIC,
+		});
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<UserDetailHeader user={regularUser} />
 			</TestProviders>,
 		);

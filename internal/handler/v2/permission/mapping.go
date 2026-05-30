@@ -14,8 +14,8 @@ func ObjectToProto(o domain.Object) commonv1.PermissionObject {
 	switch o {
 	case domain.ObjectNamespace:
 		return commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE
-	case domain.ObjectConfig:
-		return commonv1.PermissionObject_PERMISSION_OBJECT_CONFIG
+	case domain.ObjectClient:
+		return commonv1.PermissionObject_PERMISSION_OBJECT_CLIENT
 	case domain.ObjectUser:
 		return commonv1.PermissionObject_PERMISSION_OBJECT_USER
 	case domain.ObjectGroup:
@@ -38,8 +38,8 @@ func ObjectToDomain(o commonv1.PermissionObject) domain.Object {
 	switch o {
 	case commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE:
 		return domain.ObjectNamespace
-	case commonv1.PermissionObject_PERMISSION_OBJECT_CONFIG:
-		return domain.ObjectConfig
+	case commonv1.PermissionObject_PERMISSION_OBJECT_CLIENT:
+		return domain.ObjectClient
 	case commonv1.PermissionObject_PERMISSION_OBJECT_USER:
 		return domain.ObjectUser
 	case commonv1.PermissionObject_PERMISSION_OBJECT_GROUP:
@@ -67,6 +67,8 @@ func ActionToProto(a domain.Action) commonv1.PermissionAction {
 		return commonv1.PermissionAction_PERMISSION_ACTION_WRITE
 	case domain.ActionCreate:
 		return commonv1.PermissionAction_PERMISSION_ACTION_CREATE
+	case domain.ActionDelete:
+		return commonv1.PermissionAction_PERMISSION_ACTION_DELETE
 	case domain.ActionAll:
 		return commonv1.PermissionAction_PERMISSION_ACTION_ALL
 	default:
@@ -85,6 +87,8 @@ func ActionToDomain(a commonv1.PermissionAction) domain.Action {
 		return domain.ActionWrite
 	case commonv1.PermissionAction_PERMISSION_ACTION_CREATE:
 		return domain.ActionCreate
+	case commonv1.PermissionAction_PERMISSION_ACTION_DELETE:
+		return domain.ActionDelete
 	case commonv1.PermissionAction_PERMISSION_ACTION_ALL:
 		return domain.ActionAll
 	case commonv1.PermissionAction_PERMISSION_ACTION_UNSPECIFIED:

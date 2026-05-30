@@ -30,9 +30,6 @@ function App() {
 					{WebhooksRoutes}
 					{UsersRoutes}
 					{TokensRoutes}
-
-					{/* Admin/User Management Placeholders */}
-					<Route path="/access" element={<div>Access Placeholder</div>} />
 				</Route>
 
 				<Route path="*" element={<NotFoundPage />} />

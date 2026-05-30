@@ -7,13 +7,15 @@
 package tokenv1
 
 import (
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 )
 
 const (
@@ -25,15 +27,15 @@ const (
 
 type Token struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	IssuedBy      string                 `protobuf:"bytes,3,opt,name=issued_by,json=issuedBy,proto3" json:"issued_by,omitempty"`
-	Namespaces    []string               `protobuf:"bytes,4,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
-	Permission    v1.PermissionAction    `protobuf:"varint,5,opt,name=permission,proto3,enum=elara.common.v1.PermissionAction" json:"permission,omitempty"`
-	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
-	LastUsedAt    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_used_at,json=lastUsedAt,proto3,oneof" json:"last_used_at,omitempty"`
-	LastUsedIp    string                 `protobuf:"bytes,8,opt,name=last_used_ip,json=lastUsedIp,proto3" json:"last_used_ip,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Id            string                 `                   protobuf:"bytes,1,opt,name=id,proto3"                                                json:"id,omitempty"`
+	Name          string                 `                   protobuf:"bytes,2,opt,name=name,proto3"                                              json:"name,omitempty"`
+	IssuedBy      string                 `                   protobuf:"bytes,3,opt,name=issued_by,json=issuedBy,proto3"                           json:"issued_by,omitempty"`
+	Namespaces    []string               `                   protobuf:"bytes,4,rep,name=namespaces,proto3"                                        json:"namespaces,omitempty"`
+	Permission    v1.PermissionAction    `                   protobuf:"varint,5,opt,name=permission,proto3,enum=elara.common.v1.PermissionAction" json:"permission,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `                   protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3,oneof"                   json:"expires_at,omitempty"`
+	LastUsedAt    *timestamppb.Timestamp `                   protobuf:"bytes,7,opt,name=last_used_at,json=lastUsedAt,proto3,oneof"                json:"last_used_at,omitempty"`
+	LastUsedIp    string                 `                   protobuf:"bytes,8,opt,name=last_used_ip,json=lastUsedIp,proto3"                      json:"last_used_ip,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `                   protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3"                         json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -58,8 +60,10 @@ func (x *Token) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -72,6 +76,7 @@ func (x *Token) GetId() string {
 	if x != nil {
 		return x.Id
 	}
+
 	return ""
 }
 
@@ -79,6 +84,7 @@ func (x *Token) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
@@ -86,6 +92,7 @@ func (x *Token) GetIssuedBy() string {
 	if x != nil {
 		return x.IssuedBy
 	}
+
 	return ""
 }
 
@@ -93,6 +100,7 @@ func (x *Token) GetNamespaces() []string {
 	if x != nil {
 		return x.Namespaces
 	}
+
 	return nil
 }
 
@@ -100,6 +108,7 @@ func (x *Token) GetPermission() v1.PermissionAction {
 	if x != nil {
 		return x.Permission
 	}
+
 	return v1.PermissionAction(0)
 }
 
@@ -107,6 +116,7 @@ func (x *Token) GetExpiresAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ExpiresAt
 	}
+
 	return nil
 }
 
@@ -114,6 +124,7 @@ func (x *Token) GetLastUsedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.LastUsedAt
 	}
+
 	return nil
 }
 
@@ -121,6 +132,7 @@ func (x *Token) GetLastUsedIp() string {
 	if x != nil {
 		return x.LastUsedIp
 	}
+
 	return ""
 }
 
@@ -128,6 +140,7 @@ func (x *Token) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
+
 	return nil
 }
 
@@ -166,17 +179,25 @@ var (
 
 func file_elara_token_v1_token_proto_rawDescGZIP() []byte {
 	file_elara_token_v1_token_proto_rawDescOnce.Do(func() {
-		file_elara_token_v1_token_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_token_v1_token_proto_rawDesc), len(file_elara_token_v1_token_proto_rawDesc)))
+		file_elara_token_v1_token_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_token_v1_token_proto_rawDesc),
+				len(file_elara_token_v1_token_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_token_v1_token_proto_rawDescData
 }
 
-var file_elara_token_v1_token_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_elara_token_v1_token_proto_goTypes = []any{
-	(*Token)(nil),                 // 0: elara.token.v1.Token
-	(v1.PermissionAction)(0),      // 1: elara.common.v1.PermissionAction
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
-}
+var (
+	file_elara_token_v1_token_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+	file_elara_token_v1_token_proto_goTypes  = []any{
+		(*Token)(nil),                 // 0: elara.token.v1.Token
+		(v1.PermissionAction)(0),      // 1: elara.common.v1.PermissionAction
+		(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	}
+)
 var file_elara_token_v1_token_proto_depIdxs = []int32{
 	1, // 0: elara.token.v1.Token.permission:type_name -> elara.common.v1.PermissionAction
 	2, // 1: elara.token.v1.Token.expires_at:type_name -> google.protobuf.Timestamp
@@ -198,8 +219,11 @@ func file_elara_token_v1_token_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_token_v1_token_proto_rawDesc), len(file_elara_token_v1_token_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_token_v1_token_proto_rawDesc),
+				len(file_elara_token_v1_token_proto_rawDesc),
+			),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,

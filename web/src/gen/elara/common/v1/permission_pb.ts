@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/common/v1/permission.proto.
  */
 export const file_elara_common_v1_permission: GenFile = /*@__PURE__*/
-  fileDesc("CiBlbGFyYS9jb21tb24vdjEvcGVybWlzc2lvbi5wcm90bxIPZWxhcmEuY29tbW9uLnYxIowBChRQZXJtaXNzaW9uQXNzaWdubWVudBIxCgZvYmplY3QYASABKA4yIS5lbGFyYS5jb21tb24udjEuUGVybWlzc2lvbk9iamVjdBIxCgZhY3Rpb24YAiABKA4yIS5lbGFyYS5jb21tb24udjEuUGVybWlzc2lvbkFjdGlvbhIOCgZkb21haW4YAyABKAkqhAIKEFBlcm1pc3Npb25PYmplY3QSIQodUEVSTUlTU0lPTl9PQkpFQ1RfVU5TUEVDSUZJRUQQABIfChtQRVJNSVNTSU9OX09CSkVDVF9OQU1FU1BBQ0UQARIcChhQRVJNSVNTSU9OX09CSkVDVF9DT05GSUcQAhIaChZQRVJNSVNTSU9OX09CSkVDVF9VU0VSEAMSGwoXUEVSTUlTU0lPTl9PQkpFQ1RfR1JPVVAQBBIbChdQRVJNSVNTSU9OX09CSkVDVF9UT0tFThAFEh0KGVBFUk1JU1NJT05fT0JKRUNUX1dFQkhPT0sQBhIZChVQRVJNSVNTSU9OX09CSkVDVF9BTEwQYyqnAQoQUGVybWlzc2lvbkFjdGlvbhIhCh1QRVJNSVNTSU9OX0FDVElPTl9VTlNQRUNJRklFRBAAEhoKFlBFUk1JU1NJT05fQUNUSU9OX1JFQUQQARIbChdQRVJNSVNTSU9OX0FDVElPTl9XUklURRACEhwKGFBFUk1JU1NJT05fQUNUSU9OX0NSRUFURRADEhkKFVBFUk1JU1NJT05fQUNUSU9OX0FMTBBjQs4BChNjb20uZWxhcmEuY29tbW9uLnYxQg9QZXJtaXNzaW9uUHJvdG9QAVpIZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvY29tbW9uL3YxO2NvbW1vbnYxogIDRUNYqgIPRWxhcmEuQ29tbW9uLlYxygIPRWxhcmFcQ29tbW9uXFYx4gIbRWxhcmFcQ29tbW9uXFYxXEdQQk1ldGFkYXRh6gIRRWxhcmE6OkNvbW1vbjo6VjFiBnByb3RvMw");
+  fileDesc("CiBlbGFyYS9jb21tb24vdjEvcGVybWlzc2lvbi5wcm90bxIPZWxhcmEuY29tbW9uLnYxIowBChRQZXJtaXNzaW9uQXNzaWdubWVudBIxCgZvYmplY3QYASABKA4yIS5lbGFyYS5jb21tb24udjEuUGVybWlzc2lvbk9iamVjdBIxCgZhY3Rpb24YAiABKA4yIS5lbGFyYS5jb21tb24udjEuUGVybWlzc2lvbkFjdGlvbhIOCgZkb21haW4YAyABKAkqhAIKEFBlcm1pc3Npb25PYmplY3QSIQodUEVSTUlTU0lPTl9PQkpFQ1RfVU5TUEVDSUZJRUQQABIfChtQRVJNSVNTSU9OX09CSkVDVF9OQU1FU1BBQ0UQARIaChZQRVJNSVNTSU9OX09CSkVDVF9VU0VSEAMSGwoXUEVSTUlTU0lPTl9PQkpFQ1RfR1JPVVAQBBIbChdQRVJNSVNTSU9OX09CSkVDVF9UT0tFThAFEh0KGVBFUk1JU1NJT05fT0JKRUNUX1dFQkhPT0sQBhIcChhQRVJNSVNTSU9OX09CSkVDVF9DTElFTlQQBxIZChVQRVJNSVNTSU9OX09CSkVDVF9BTEwQYyrFAQoQUGVybWlzc2lvbkFjdGlvbhIhCh1QRVJNSVNTSU9OX0FDVElPTl9VTlNQRUNJRklFRBAAEhoKFlBFUk1JU1NJT05fQUNUSU9OX1JFQUQQARIbChdQRVJNSVNTSU9OX0FDVElPTl9XUklURRACEhwKGFBFUk1JU1NJT05fQUNUSU9OX0NSRUFURRADEhwKGFBFUk1JU1NJT05fQUNUSU9OX0RFTEVURRAEEhkKFVBFUk1JU1NJT05fQUNUSU9OX0FMTBBjQs4BChNjb20uZWxhcmEuY29tbW9uLnYxQg9QZXJtaXNzaW9uUHJvdG9QAVpIZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvY29tbW9uL3YxO2NvbW1vbnYxogIDRUNYqgIPRWxhcmEuQ29tbW9uLlYxygIPRWxhcmFcQ29tbW9uXFYx4gIbRWxhcmFcQ29tbW9uXFYxXEdQQk1ldGFkYXRh6gIRRWxhcmE6OkNvbW1vbjo6VjFiBnByb3RvMw");
 
 /**
  * @generated from message elara.common.v1.PermissionAssignment
@@ -49,14 +49,12 @@ export enum PermissionObject {
   UNSPECIFIED = 0,
 
   /**
+   * NAMESPACE is the umbrella for everything scoped to a namespace: configs,
+   * schemas, export/import. There is no separate config/schema/transfer object.
+   *
    * @generated from enum value: PERMISSION_OBJECT_NAMESPACE = 1;
    */
   NAMESPACE = 1,
-
-  /**
-   * @generated from enum value: PERMISSION_OBJECT_CONFIG = 2;
-   */
-  CONFIG = 2,
 
   /**
    * @generated from enum value: PERMISSION_OBJECT_USER = 3;
@@ -77,6 +75,11 @@ export enum PermissionObject {
    * @generated from enum value: PERMISSION_OBJECT_WEBHOOK = 6;
    */
   WEBHOOK = 6,
+
+  /**
+   * @generated from enum value: PERMISSION_OBJECT_CLIENT = 7;
+   */
+  CLIENT = 7,
 
   /**
    * @generated from enum value: PERMISSION_OBJECT_ALL = 99;
@@ -105,6 +108,9 @@ export enum PermissionAction {
   READ = 1,
 
   /**
+   * WRITE implies READ (see domain.ActionGrants). CREATE and DELETE are
+   * independent capabilities (e.g. create/delete a namespace).
+   *
    * @generated from enum value: PERMISSION_ACTION_WRITE = 2;
    */
   WRITE = 2,
@@ -113,6 +119,11 @@ export enum PermissionAction {
    * @generated from enum value: PERMISSION_ACTION_CREATE = 3;
    */
   CREATE = 3,
+
+  /**
+   * @generated from enum value: PERMISSION_ACTION_DELETE = 4;
+   */
+  DELETE = 4,
 
   /**
    * @generated from enum value: PERMISSION_ACTION_ALL = 99;

@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { canManageGroup } from "@/auth/ability";
+import { useAbility } from "@/auth/ability-context";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,11 +48,11 @@ function makeSchema(isBasicAuth: boolean) {
 
 export function CreateUserDialog() {
 	const { state } = useAuth();
+	const ability = useAbility();
 	const [open, setOpen] = useState(false);
 	const queryClient = useQueryClient();
 
-	const canCreate =
-		state.status === "authenticated" && state.ability.can("create", "User");
+	const canCreate = ability.can("create", "User");
 	const authType =
 		state.status === "authenticated" || state.status === "anonymous"
 			? state.authType
@@ -89,9 +90,8 @@ export function CreateUserDialog() {
 		{ pagination: { limit: 1000, offset: 0 } },
 		{ enabled: open },
 	);
-	const ability = state.status === "authenticated" ? state.ability : null;
 	const manageableGroups = (groupsData?.groups ?? []).filter((g) =>
-		ability ? canManageGroup(ability, g) : false,
+		canManageGroup(ability, g),
 	);
 
 	const mutation = useMutation(createUser, {

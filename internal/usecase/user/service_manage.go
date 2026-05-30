@@ -100,7 +100,7 @@ func newUserFromCreateData(data CreateData) (*domain.User, error) {
 // RequireMembershipGrant) so concurrent revocation between this pre-check
 // and the apply is caught — preauthorize is purely an optimization.
 func (s *Service) preauthorize(actor domain.AuthInfo, ids []string) error {
-	if s.pdp.HasUserCreateGlobal(actor.Email) {
+	if s.pdp.HasGlobal(actor.Email, domain.ObjectUser, domain.ActionCreate) {
 		return nil
 	}
 	if len(ids) == 0 {
@@ -116,7 +116,7 @@ func (s *Service) preauthorize(actor domain.AuthInfo, ids []string) error {
 // clearly has no scope, in-tx check closes the TOCTOU window.
 func (s *Service) authorizeInitialGroups(actor domain.AuthInfo, ids []string) error {
 	for _, id := range ids {
-		if !s.pdp.HasGroupWrite(actor.Email, id) {
+		if !s.pdp.HasGroup(actor.Email, id, domain.ActionWrite) {
 			return domain.ErrForbidden
 		}
 	}
@@ -276,8 +276,12 @@ func (s *Service) Get(ctx context.Context, actor domain.AuthInfo, email string) 
 	}, nil
 }
 
+// validateLastAdmin prevents removing the final member of the superadmin
+// group, which would lock everyone out of administration. Admin privilege is
+// held only via membership in domain.SystemGroupSuperAdmin (groups-only RBAC).
 func (s *Service) validateLastAdmin(targetEmail string) error {
-	if s.pap.HasDirectAdminAssignment(targetEmail) && s.pap.AdminAssignmentCount() == 1 {
+	members := s.pap.GroupMembers(domain.SystemGroupSuperAdmin)
+	if len(members) == 1 && members[0] == targetEmail {
 		return domain.NewValidationError("email", "cannot delete the last admin")
 	}
 

@@ -30,11 +30,15 @@ const (
 )
 
 // Object constants for RBAC resource identification.
+//
+// Extension rule: content scoped to a namespace (configs, schemas,
+// export/import) is covered by ObjectNamespace — do NOT add a separate object
+// for it. Add a new object only for a resource with its own lifecycle or
+// access-delegation semantics (e.g. ObjectToken, ObjectWebhook).
 type Object string
 
 const (
 	ObjectAll       Object = "*"
-	ObjectConfig    Object = "config"
 	ObjectNamespace Object = "namespace"
 	ObjectToken     Object = "token"
 	ObjectClient    Object = "client"
@@ -43,11 +47,12 @@ const (
 	ObjectGroup     Object = "group"
 	ObjectPolicy    Object = "policy"
 	ObjectWebhook   Object = "webhook"
-	ObjectSchema    Object = "schema"
-	ObjectTransfer  Object = "transfer"
 )
 
 // Action constants for RBAC permission checks.
+//
+// read/write gate content; write implies read (see ActionGrants). create and
+// delete are independent capabilities (e.g. create/delete a namespace).
 type Action string
 
 const (
@@ -55,7 +60,35 @@ const (
 	ActionCreate Action = "create"
 	ActionRead   Action = "read"
 	ActionWrite  Action = "write"
+	ActionDelete Action = "delete"
 )
+
+// ObjectGrants reports whether a permission granting object `granted` satisfies
+// a request for object `required`. A wildcard grant covers any object.
+//
+// This is the single source of truth for object matching: it backs both the
+// Casbin matcher (registered as "objGrants") and the PDP rule scan, so the two
+// enforcement paths can never drift.
+func ObjectGrants(granted, required Object) bool {
+	return granted == ObjectAll || granted == required
+}
+
+// ActionGrants reports whether a permission granting action `granted` satisfies
+// a request for action `required`. A wildcard grant covers any action, and
+// write implies read (you cannot edit what you cannot read).
+//
+// Single source of truth for action matching: backs both the Casbin matcher
+// (registered as "actGrants") and the PDP rule scan.
+func ActionGrants(granted, required Action) bool {
+	switch {
+	case granted == ActionAll || granted == required:
+		return true
+	case granted == ActionWrite && required == ActionRead:
+		return true
+	default:
+		return false
+	}
+}
 
 // GroupResource returns the canonical Casbin domain string for a permission
 // scoped to a single group: "group:<id>". Use this everywhere a permission

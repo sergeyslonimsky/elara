@@ -7,13 +7,14 @@
 package clientsv1
 
 import (
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (
@@ -28,24 +29,24 @@ const (
 // empty when the client does not advertise them.
 type Client struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	PeerAddress   string                 `protobuf:"bytes,2,opt,name=peer_address,json=peerAddress,proto3" json:"peer_address,omitempty"`
-	UserAgent     string                 `protobuf:"bytes,3,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
-	ClientName    string                 `protobuf:"bytes,4,opt,name=client_name,json=clientName,proto3" json:"client_name,omitempty"`
-	ClientVersion string                 `protobuf:"bytes,5,opt,name=client_version,json=clientVersion,proto3" json:"client_version,omitempty"`
-	K8SNamespace  string                 `protobuf:"bytes,6,opt,name=k8s_namespace,json=k8sNamespace,proto3" json:"k8s_namespace,omitempty"`
-	K8SPod        string                 `protobuf:"bytes,7,opt,name=k8s_pod,json=k8sPod,proto3" json:"k8s_pod,omitempty"`
-	K8SNode       string                 `protobuf:"bytes,8,opt,name=k8s_node,json=k8sNode,proto3" json:"k8s_node,omitempty"`
-	InstanceId    string                 `protobuf:"bytes,9,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	ConnectedAt   *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=connected_at,json=connectedAt,proto3" json:"connected_at,omitempty"`
+	Id            string                 `                   protobuf:"bytes,1,opt,name=id,proto3"                                json:"id,omitempty"`
+	PeerAddress   string                 `                   protobuf:"bytes,2,opt,name=peer_address,json=peerAddress,proto3"     json:"peer_address,omitempty"`
+	UserAgent     string                 `                   protobuf:"bytes,3,opt,name=user_agent,json=userAgent,proto3"         json:"user_agent,omitempty"`
+	ClientName    string                 `                   protobuf:"bytes,4,opt,name=client_name,json=clientName,proto3"       json:"client_name,omitempty"`
+	ClientVersion string                 `                   protobuf:"bytes,5,opt,name=client_version,json=clientVersion,proto3" json:"client_version,omitempty"`
+	K8SNamespace  string                 `                   protobuf:"bytes,6,opt,name=k8s_namespace,json=k8sNamespace,proto3"   json:"k8s_namespace,omitempty"`
+	K8SPod        string                 `                   protobuf:"bytes,7,opt,name=k8s_pod,json=k8sPod,proto3"               json:"k8s_pod,omitempty"`
+	K8SNode       string                 `                   protobuf:"bytes,8,opt,name=k8s_node,json=k8sNode,proto3"             json:"k8s_node,omitempty"`
+	InstanceId    string                 `                   protobuf:"bytes,9,opt,name=instance_id,json=instanceId,proto3"       json:"instance_id,omitempty"`
+	ConnectedAt   *timestamppb.Timestamp `                   protobuf:"bytes,10,opt,name=connected_at,json=connectedAt,proto3"    json:"connected_at,omitempty"`
 	// Set only for historical/disconnected clients.
-	DisconnectedAt *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=disconnected_at,json=disconnectedAt,proto3" json:"disconnected_at,omitempty"`
+	DisconnectedAt *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=disconnected_at,json=disconnectedAt,proto3"  json:"disconnected_at,omitempty"`
 	LastActivityAt *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=last_activity_at,json=lastActivityAt,proto3" json:"last_activity_at,omitempty"`
 	// Total open watches; equals len(active_watch_list) for live clients,
 	// 0 for historical/persisted clients (detail is not persisted).
 	ActiveWatches int32            `protobuf:"varint,13,opt,name=active_watches,json=activeWatches,proto3" json:"active_watches,omitempty"`
-	RequestCounts map[string]int64 `protobuf:"bytes,14,rep,name=request_counts,json=requestCounts,proto3" json:"request_counts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	ErrorCount    int64            `protobuf:"varint,15,opt,name=error_count,json=errorCount,proto3" json:"error_count,omitempty"`
+	RequestCounts map[string]int64 `protobuf:"bytes,14,rep,name=request_counts,json=requestCounts,proto3"  json:"request_counts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	ErrorCount    int64            `protobuf:"varint,15,opt,name=error_count,json=errorCount,proto3"       json:"error_count,omitempty"`
 	// Per-watch detail. Only populated for live clients.
 	ActiveWatchList []*ActiveWatch `protobuf:"bytes,16,rep,name=active_watch_list,json=activeWatchList,proto3" json:"active_watch_list,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -72,8 +73,10 @@ func (x *Client) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -86,6 +89,7 @@ func (x *Client) GetId() string {
 	if x != nil {
 		return x.Id
 	}
+
 	return ""
 }
 
@@ -93,6 +97,7 @@ func (x *Client) GetPeerAddress() string {
 	if x != nil {
 		return x.PeerAddress
 	}
+
 	return ""
 }
 
@@ -100,6 +105,7 @@ func (x *Client) GetUserAgent() string {
 	if x != nil {
 		return x.UserAgent
 	}
+
 	return ""
 }
 
@@ -107,6 +113,7 @@ func (x *Client) GetClientName() string {
 	if x != nil {
 		return x.ClientName
 	}
+
 	return ""
 }
 
@@ -114,6 +121,7 @@ func (x *Client) GetClientVersion() string {
 	if x != nil {
 		return x.ClientVersion
 	}
+
 	return ""
 }
 
@@ -121,6 +129,7 @@ func (x *Client) GetK8SNamespace() string {
 	if x != nil {
 		return x.K8SNamespace
 	}
+
 	return ""
 }
 
@@ -128,6 +137,7 @@ func (x *Client) GetK8SPod() string {
 	if x != nil {
 		return x.K8SPod
 	}
+
 	return ""
 }
 
@@ -135,6 +145,7 @@ func (x *Client) GetK8SNode() string {
 	if x != nil {
 		return x.K8SNode
 	}
+
 	return ""
 }
 
@@ -142,6 +153,7 @@ func (x *Client) GetInstanceId() string {
 	if x != nil {
 		return x.InstanceId
 	}
+
 	return ""
 }
 
@@ -149,6 +161,7 @@ func (x *Client) GetConnectedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ConnectedAt
 	}
+
 	return nil
 }
 
@@ -156,6 +169,7 @@ func (x *Client) GetDisconnectedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.DisconnectedAt
 	}
+
 	return nil
 }
 
@@ -163,6 +177,7 @@ func (x *Client) GetLastActivityAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.LastActivityAt
 	}
+
 	return nil
 }
 
@@ -170,6 +185,7 @@ func (x *Client) GetActiveWatches() int32 {
 	if x != nil {
 		return x.ActiveWatches
 	}
+
 	return 0
 }
 
@@ -177,6 +193,7 @@ func (x *Client) GetRequestCounts() map[string]int64 {
 	if x != nil {
 		return x.RequestCounts
 	}
+
 	return nil
 }
 
@@ -184,6 +201,7 @@ func (x *Client) GetErrorCount() int64 {
 	if x != nil {
 		return x.ErrorCount
 	}
+
 	return 0
 }
 
@@ -191,6 +209,7 @@ func (x *Client) GetActiveWatchList() []*ActiveWatch {
 	if x != nil {
 		return x.ActiveWatchList
 	}
+
 	return nil
 }
 
@@ -198,13 +217,13 @@ func (x *Client) GetActiveWatchList() []*ActiveWatch {
 // etcd-encoded form ("/{namespace}/{path}"); the UI splits them for display.
 type ActiveWatch struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
-	WatchId  int64                  `protobuf:"varint,1,opt,name=watch_id,json=watchId,proto3" json:"watch_id,omitempty"`
-	StartKey string                 `protobuf:"bytes,2,opt,name=start_key,json=startKey,proto3" json:"start_key,omitempty"`
+	WatchId  int64                  `                   protobuf:"varint,1,opt,name=watch_id,json=watchId,proto3"  json:"watch_id,omitempty"`
+	StartKey string                 `                   protobuf:"bytes,2,opt,name=start_key,json=startKey,proto3" json:"start_key,omitempty"`
 	// Empty for single-key watches; "\x00" (single null byte) for "all keys ≥ start".
-	EndKey         string                 `protobuf:"bytes,3,opt,name=end_key,json=endKey,proto3" json:"end_key,omitempty"`
-	StartRevision  int64                  `protobuf:"varint,4,opt,name=start_revision,json=startRevision,proto3" json:"start_revision,omitempty"`
-	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	PrevKv         bool                   `protobuf:"varint,6,opt,name=prev_kv,json=prevKv,proto3" json:"prev_kv,omitempty"`
+	EndKey         string                 `protobuf:"bytes,3,opt,name=end_key,json=endKey,proto3"                  json:"end_key,omitempty"`
+	StartRevision  int64                  `protobuf:"varint,4,opt,name=start_revision,json=startRevision,proto3"   json:"start_revision,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3"            json:"created_at,omitempty"`
+	PrevKv         bool                   `protobuf:"varint,6,opt,name=prev_kv,json=prevKv,proto3"                 json:"prev_kv,omitempty"`
 	ProgressNotify bool                   `protobuf:"varint,7,opt,name=progress_notify,json=progressNotify,proto3" json:"progress_notify,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -230,8 +249,10 @@ func (x *ActiveWatch) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -244,6 +265,7 @@ func (x *ActiveWatch) GetWatchId() int64 {
 	if x != nil {
 		return x.WatchId
 	}
+
 	return 0
 }
 
@@ -251,6 +273,7 @@ func (x *ActiveWatch) GetStartKey() string {
 	if x != nil {
 		return x.StartKey
 	}
+
 	return ""
 }
 
@@ -258,6 +281,7 @@ func (x *ActiveWatch) GetEndKey() string {
 	if x != nil {
 		return x.EndKey
 	}
+
 	return ""
 }
 
@@ -265,6 +289,7 @@ func (x *ActiveWatch) GetStartRevision() int64 {
 	if x != nil {
 		return x.StartRevision
 	}
+
 	return 0
 }
 
@@ -272,6 +297,7 @@ func (x *ActiveWatch) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
+
 	return nil
 }
 
@@ -279,6 +305,7 @@ func (x *ActiveWatch) GetPrevKv() bool {
 	if x != nil {
 		return x.PrevKv
 	}
+
 	return false
 }
 
@@ -286,18 +313,19 @@ func (x *ActiveWatch) GetProgressNotify() bool {
 	if x != nil {
 		return x.ProgressNotify
 	}
+
 	return false
 }
 
 // ClientEvent is one entry in the per-client recent-events ring buffer.
 type ClientEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Method        string                 `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
-	Key           string                 `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
-	Revision      int64                  `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
-	Duration      *durationpb.Duration   `protobuf:"bytes,5,opt,name=duration,proto3" json:"duration,omitempty"`
-	Error         string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	Timestamp     *timestamppb.Timestamp `                   protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Method        string                 `                   protobuf:"bytes,2,opt,name=method,proto3"    json:"method,omitempty"`
+	Key           string                 `                   protobuf:"bytes,3,opt,name=key,proto3"       json:"key,omitempty"`
+	Revision      int64                  `                   protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	Duration      *durationpb.Duration   `                   protobuf:"bytes,5,opt,name=duration,proto3"  json:"duration,omitempty"`
+	Error         string                 `                   protobuf:"bytes,6,opt,name=error,proto3"     json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -322,8 +350,10 @@ func (x *ClientEvent) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -336,6 +366,7 @@ func (x *ClientEvent) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
+
 	return nil
 }
 
@@ -343,6 +374,7 @@ func (x *ClientEvent) GetMethod() string {
 	if x != nil {
 		return x.Method
 	}
+
 	return ""
 }
 
@@ -350,6 +382,7 @@ func (x *ClientEvent) GetKey() string {
 	if x != nil {
 		return x.Key
 	}
+
 	return ""
 }
 
@@ -357,6 +390,7 @@ func (x *ClientEvent) GetRevision() int64 {
 	if x != nil {
 		return x.Revision
 	}
+
 	return 0
 }
 
@@ -364,6 +398,7 @@ func (x *ClientEvent) GetDuration() *durationpb.Duration {
 	if x != nil {
 		return x.Duration
 	}
+
 	return nil
 }
 
@@ -371,6 +406,7 @@ func (x *ClientEvent) GetError() string {
 	if x != nil {
 		return x.Error
 	}
+
 	return ""
 }
 
@@ -429,20 +465,28 @@ var (
 
 func file_elara_clients_v1_clients_proto_rawDescGZIP() []byte {
 	file_elara_clients_v1_clients_proto_rawDescOnce.Do(func() {
-		file_elara_clients_v1_clients_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_clients_v1_clients_proto_rawDesc), len(file_elara_clients_v1_clients_proto_rawDesc)))
+		file_elara_clients_v1_clients_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_clients_v1_clients_proto_rawDesc),
+				len(file_elara_clients_v1_clients_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_clients_v1_clients_proto_rawDescData
 }
 
-var file_elara_clients_v1_clients_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_elara_clients_v1_clients_proto_goTypes = []any{
-	(*Client)(nil),                // 0: elara.clients.v1.Client
-	(*ActiveWatch)(nil),           // 1: elara.clients.v1.ActiveWatch
-	(*ClientEvent)(nil),           // 2: elara.clients.v1.ClientEvent
-	nil,                           // 3: elara.clients.v1.Client.RequestCountsEntry
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
-	(*durationpb.Duration)(nil),   // 5: google.protobuf.Duration
-}
+var (
+	file_elara_clients_v1_clients_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+	file_elara_clients_v1_clients_proto_goTypes  = []any{
+		(*Client)(nil),                // 0: elara.clients.v1.Client
+		(*ActiveWatch)(nil),           // 1: elara.clients.v1.ActiveWatch
+		(*ClientEvent)(nil),           // 2: elara.clients.v1.ClientEvent
+		nil,                           // 3: elara.clients.v1.Client.RequestCountsEntry
+		(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+		(*durationpb.Duration)(nil),   // 5: google.protobuf.Duration
+	}
+)
 var file_elara_clients_v1_clients_proto_depIdxs = []int32{
 	4, // 0: elara.clients.v1.Client.connected_at:type_name -> google.protobuf.Timestamp
 	4, // 1: elara.clients.v1.Client.disconnected_at:type_name -> google.protobuf.Timestamp
@@ -467,8 +511,11 @@ func file_elara_clients_v1_clients_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_clients_v1_clients_proto_rawDesc), len(file_elara_clients_v1_clients_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_clients_v1_clients_proto_rawDesc),
+				len(file_elara_clients_v1_clients_proto_rawDesc),
+			),
 			NumEnums:      0,
 			NumMessages:   4,
 			NumExtensions: 0,

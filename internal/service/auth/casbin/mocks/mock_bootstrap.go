@@ -31,6 +31,7 @@ type MockBootstrapEnforcerMockRecorder struct {
 func NewMockBootstrapEnforcer(ctrl *gomock.Controller) *MockBootstrapEnforcer {
 	mock := &MockBootstrapEnforcer{ctrl: ctrl}
 	mock.recorder = &MockBootstrapEnforcerMockRecorder{mock}
+
 	return mock
 }
 
@@ -44,13 +45,22 @@ func (m *MockBootstrapEnforcer) AddRoleForUser(user, role, domain string) error 
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddRoleForUser", user, role, domain)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // AddRoleForUser indicates an expected call of AddRoleForUser.
 func (mr *MockBootstrapEnforcerMockRecorder) AddRoleForUser(user, role, domain any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRoleForUser", reflect.TypeOf((*MockBootstrapEnforcer)(nil).AddRoleForUser), user, role, domain)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"AddRoleForUser",
+		reflect.TypeOf((*MockBootstrapEnforcer)(nil).AddRoleForUser),
+		user,
+		role,
+		domain,
+	)
 }
 
 // GetRolesForUser mocks base method.
@@ -59,11 +69,19 @@ func (m *MockBootstrapEnforcer) GetRolesForUser(user, domain string) ([]string, 
 	ret := m.ctrl.Call(m, "GetRolesForUser", user, domain)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // GetRolesForUser indicates an expected call of GetRolesForUser.
 func (mr *MockBootstrapEnforcerMockRecorder) GetRolesForUser(user, domain any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRolesForUser", reflect.TypeOf((*MockBootstrapEnforcer)(nil).GetRolesForUser), user, domain)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"GetRolesForUser",
+		reflect.TypeOf((*MockBootstrapEnforcer)(nil).GetRolesForUser),
+		user,
+		domain,
+	)
 }

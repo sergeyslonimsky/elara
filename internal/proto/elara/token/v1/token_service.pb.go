@@ -7,14 +7,16 @@
 package tokenv1
 
 import (
-	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 )
 
 const (
@@ -26,10 +28,10 @@ const (
 
 type CreateTokenRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Namespaces    []string               `protobuf:"bytes,2,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
-	Permission    v1.PermissionAction    `protobuf:"varint,3,opt,name=permission,proto3,enum=elara.common.v1.PermissionAction" json:"permission,omitempty"`
-	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
+	Name          string                 `                   protobuf:"bytes,1,opt,name=name,proto3"                                              json:"name,omitempty"`
+	Namespaces    []string               `                   protobuf:"bytes,2,rep,name=namespaces,proto3"                                        json:"namespaces,omitempty"`
+	Permission    v1.PermissionAction    `                   protobuf:"varint,3,opt,name=permission,proto3,enum=elara.common.v1.PermissionAction" json:"permission,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `                   protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3,oneof"                   json:"expires_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -54,8 +56,10 @@ func (x *CreateTokenRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -68,6 +72,7 @@ func (x *CreateTokenRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
@@ -75,6 +80,7 @@ func (x *CreateTokenRequest) GetNamespaces() []string {
 	if x != nil {
 		return x.Namespaces
 	}
+
 	return nil
 }
 
@@ -82,6 +88,7 @@ func (x *CreateTokenRequest) GetPermission() v1.PermissionAction {
 	if x != nil {
 		return x.Permission
 	}
+
 	return v1.PermissionAction(0)
 }
 
@@ -89,13 +96,14 @@ func (x *CreateTokenRequest) GetExpiresAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ExpiresAt
 	}
+
 	return nil
 }
 
 type CreateTokenResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         *Token                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	RawToken      string                 `protobuf:"bytes,2,opt,name=raw_token,json=rawToken,proto3" json:"raw_token,omitempty"`
+	Token         *Token                 `                   protobuf:"bytes,1,opt,name=token,proto3"                   json:"token,omitempty"`
+	RawToken      string                 `                   protobuf:"bytes,2,opt,name=raw_token,json=rawToken,proto3" json:"raw_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -120,8 +128,10 @@ func (x *CreateTokenResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -134,6 +144,7 @@ func (x *CreateTokenResponse) GetToken() *Token {
 	if x != nil {
 		return x.Token
 	}
+
 	return nil
 }
 
@@ -141,14 +152,15 @@ func (x *CreateTokenResponse) GetRawToken() string {
 	if x != nil {
 		return x.RawToken
 	}
+
 	return ""
 }
 
 type ListTokensRequest struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Pagination    *v1.PaginationRequest      `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	Sorting       *v1.SortRequest            `protobuf:"bytes,2,opt,name=sorting,proto3" json:"sorting,omitempty"`
-	Filters       *ListTokensRequest_Filters `protobuf:"bytes,3,opt,name=filters,proto3" json:"filters,omitempty"`
+	Pagination    *v1.PaginationRequest      `                   protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Sorting       *v1.SortRequest            `                   protobuf:"bytes,2,opt,name=sorting,proto3"    json:"sorting,omitempty"`
+	Filters       *ListTokensRequest_Filters `                   protobuf:"bytes,3,opt,name=filters,proto3"    json:"filters,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -173,8 +185,10 @@ func (x *ListTokensRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -187,6 +201,7 @@ func (x *ListTokensRequest) GetPagination() *v1.PaginationRequest {
 	if x != nil {
 		return x.Pagination
 	}
+
 	return nil
 }
 
@@ -194,6 +209,7 @@ func (x *ListTokensRequest) GetSorting() *v1.SortRequest {
 	if x != nil {
 		return x.Sorting
 	}
+
 	return nil
 }
 
@@ -201,14 +217,15 @@ func (x *ListTokensRequest) GetFilters() *ListTokensRequest_Filters {
 	if x != nil {
 		return x.Filters
 	}
+
 	return nil
 }
 
 type ListTokensResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Pagination    *v1.PaginationResponse `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	Sorting       *v1.SortResponse       `protobuf:"bytes,2,opt,name=sorting,proto3" json:"sorting,omitempty"`
-	Tokens        []*Token               `protobuf:"bytes,3,rep,name=tokens,proto3" json:"tokens,omitempty"`
+	Pagination    *v1.PaginationResponse `                   protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Sorting       *v1.SortResponse       `                   protobuf:"bytes,2,opt,name=sorting,proto3"    json:"sorting,omitempty"`
+	Tokens        []*Token               `                   protobuf:"bytes,3,rep,name=tokens,proto3"     json:"tokens,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -233,8 +250,10 @@ func (x *ListTokensResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -247,6 +266,7 @@ func (x *ListTokensResponse) GetPagination() *v1.PaginationResponse {
 	if x != nil {
 		return x.Pagination
 	}
+
 	return nil
 }
 
@@ -254,6 +274,7 @@ func (x *ListTokensResponse) GetSorting() *v1.SortResponse {
 	if x != nil {
 		return x.Sorting
 	}
+
 	return nil
 }
 
@@ -261,12 +282,13 @@ func (x *ListTokensResponse) GetTokens() []*Token {
 	if x != nil {
 		return x.Tokens
 	}
+
 	return nil
 }
 
 type GetTokenRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            string                 `                   protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -291,8 +313,10 @@ func (x *GetTokenRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -305,12 +329,13 @@ func (x *GetTokenRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
+
 	return ""
 }
 
 type GetTokenResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         *Token                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Token         *Token                 `                   protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -335,8 +360,10 @@ func (x *GetTokenResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -349,12 +376,13 @@ func (x *GetTokenResponse) GetToken() *Token {
 	if x != nil {
 		return x.Token
 	}
+
 	return nil
 }
 
 type RevokeTokenRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            string                 `                   protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -379,8 +407,10 @@ func (x *RevokeTokenRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -393,6 +423,7 @@ func (x *RevokeTokenRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
+
 	return ""
 }
 
@@ -422,8 +453,10 @@ func (x *RevokeTokenResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -434,9 +467,9 @@ func (*RevokeTokenResponse) Descriptor() ([]byte, []int) {
 
 type ListTokensRequest_Filters struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	QueryParams   []string               `protobuf:"bytes,1,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty"`
-	IssuedBy      []string               `protobuf:"bytes,2,rep,name=issued_by,json=issuedBy,proto3" json:"issued_by,omitempty"`
-	Namespaces    []string               `protobuf:"bytes,3,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
+	QueryParams   []string               `                   protobuf:"bytes,1,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty"`
+	IssuedBy      []string               `                   protobuf:"bytes,2,rep,name=issued_by,json=issuedBy,proto3"       json:"issued_by,omitempty"`
+	Namespaces    []string               `                   protobuf:"bytes,3,rep,name=namespaces,proto3"                    json:"namespaces,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -461,8 +494,10 @@ func (x *ListTokensRequest_Filters) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -475,6 +510,7 @@ func (x *ListTokensRequest_Filters) GetQueryParams() []string {
 	if x != nil {
 		return x.QueryParams
 	}
+
 	return nil
 }
 
@@ -482,6 +518,7 @@ func (x *ListTokensRequest_Filters) GetIssuedBy() []string {
 	if x != nil {
 		return x.IssuedBy
 	}
+
 	return nil
 }
 
@@ -489,6 +526,7 @@ func (x *ListTokensRequest_Filters) GetNamespaces() []string {
 	if x != nil {
 		return x.Namespaces
 	}
+
 	return nil
 }
 
@@ -551,30 +589,38 @@ var (
 
 func file_elara_token_v1_token_service_proto_rawDescGZIP() []byte {
 	file_elara_token_v1_token_service_proto_rawDescOnce.Do(func() {
-		file_elara_token_v1_token_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_token_v1_token_service_proto_rawDesc), len(file_elara_token_v1_token_service_proto_rawDesc)))
+		file_elara_token_v1_token_service_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_token_v1_token_service_proto_rawDesc),
+				len(file_elara_token_v1_token_service_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_token_v1_token_service_proto_rawDescData
 }
 
-var file_elara_token_v1_token_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_elara_token_v1_token_service_proto_goTypes = []any{
-	(*CreateTokenRequest)(nil),        // 0: elara.token.v1.CreateTokenRequest
-	(*CreateTokenResponse)(nil),       // 1: elara.token.v1.CreateTokenResponse
-	(*ListTokensRequest)(nil),         // 2: elara.token.v1.ListTokensRequest
-	(*ListTokensResponse)(nil),        // 3: elara.token.v1.ListTokensResponse
-	(*GetTokenRequest)(nil),           // 4: elara.token.v1.GetTokenRequest
-	(*GetTokenResponse)(nil),          // 5: elara.token.v1.GetTokenResponse
-	(*RevokeTokenRequest)(nil),        // 6: elara.token.v1.RevokeTokenRequest
-	(*RevokeTokenResponse)(nil),       // 7: elara.token.v1.RevokeTokenResponse
-	(*ListTokensRequest_Filters)(nil), // 8: elara.token.v1.ListTokensRequest.Filters
-	(v1.PermissionAction)(0),          // 9: elara.common.v1.PermissionAction
-	(*timestamppb.Timestamp)(nil),     // 10: google.protobuf.Timestamp
-	(*Token)(nil),                     // 11: elara.token.v1.Token
-	(*v1.PaginationRequest)(nil),      // 12: elara.common.v1.PaginationRequest
-	(*v1.SortRequest)(nil),            // 13: elara.common.v1.SortRequest
-	(*v1.PaginationResponse)(nil),     // 14: elara.common.v1.PaginationResponse
-	(*v1.SortResponse)(nil),           // 15: elara.common.v1.SortResponse
-}
+var (
+	file_elara_token_v1_token_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+	file_elara_token_v1_token_service_proto_goTypes  = []any{
+		(*CreateTokenRequest)(nil),        // 0: elara.token.v1.CreateTokenRequest
+		(*CreateTokenResponse)(nil),       // 1: elara.token.v1.CreateTokenResponse
+		(*ListTokensRequest)(nil),         // 2: elara.token.v1.ListTokensRequest
+		(*ListTokensResponse)(nil),        // 3: elara.token.v1.ListTokensResponse
+		(*GetTokenRequest)(nil),           // 4: elara.token.v1.GetTokenRequest
+		(*GetTokenResponse)(nil),          // 5: elara.token.v1.GetTokenResponse
+		(*RevokeTokenRequest)(nil),        // 6: elara.token.v1.RevokeTokenRequest
+		(*RevokeTokenResponse)(nil),       // 7: elara.token.v1.RevokeTokenResponse
+		(*ListTokensRequest_Filters)(nil), // 8: elara.token.v1.ListTokensRequest.Filters
+		(v1.PermissionAction)(0),          // 9: elara.common.v1.PermissionAction
+		(*timestamppb.Timestamp)(nil),     // 10: google.protobuf.Timestamp
+		(*Token)(nil),                     // 11: elara.token.v1.Token
+		(*v1.PaginationRequest)(nil),      // 12: elara.common.v1.PaginationRequest
+		(*v1.SortRequest)(nil),            // 13: elara.common.v1.SortRequest
+		(*v1.PaginationResponse)(nil),     // 14: elara.common.v1.PaginationResponse
+		(*v1.SortResponse)(nil),           // 15: elara.common.v1.SortResponse
+	}
+)
 var file_elara_token_v1_token_service_proto_depIdxs = []int32{
 	9,  // 0: elara.token.v1.CreateTokenRequest.permission:type_name -> elara.common.v1.PermissionAction
 	10, // 1: elara.token.v1.CreateTokenRequest.expires_at:type_name -> google.protobuf.Timestamp
@@ -611,8 +657,11 @@ func file_elara_token_v1_token_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_token_v1_token_service_proto_rawDesc), len(file_elara_token_v1_token_service_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_token_v1_token_service_proto_rawDesc),
+				len(file_elara_token_v1_token_service_proto_rawDesc),
+			),
 			NumEnums:      0,
 			NumMessages:   9,
 			NumExtensions: 0,

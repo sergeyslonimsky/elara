@@ -7,12 +7,13 @@
 package clientsv1
 
 import (
-	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -50,6 +51,7 @@ var (
 func (x WatchClientsResponse_Kind) Enum() *WatchClientsResponse_Kind {
 	p := new(WatchClientsResponse_Kind)
 	*p = x
+
 	return p
 }
 
@@ -102,6 +104,7 @@ var (
 func (x WatchClientResponse_Kind) Enum() *WatchClientResponse_Kind {
 	p := new(WatchClientResponse_Kind)
 	*p = x
+
 	return p
 }
 
@@ -152,8 +155,10 @@ func (x *ListActiveClientsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -164,7 +169,7 @@ func (*ListActiveClientsRequest) Descriptor() ([]byte, []int) {
 
 type ListActiveClientsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Clients       []*Client              `protobuf:"bytes,1,rep,name=clients,proto3" json:"clients,omitempty"`
+	Clients       []*Client              `                   protobuf:"bytes,1,rep,name=clients,proto3" json:"clients,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -189,8 +194,10 @@ func (x *ListActiveClientsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -203,12 +210,13 @@ func (x *ListActiveClientsResponse) GetClients() []*Client {
 	if x != nil {
 		return x.Clients
 	}
+
 	return nil
 }
 
 type GetClientRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            string                 `                   protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -233,8 +241,10 @@ func (x *GetClientRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -247,12 +257,13 @@ func (x *GetClientRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
+
 	return ""
 }
 
 type GetClientResponse struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
-	Client *Client                `protobuf:"bytes,1,opt,name=client,proto3" json:"client,omitempty"`
+	Client *Client                `                   protobuf:"bytes,1,opt,name=client,proto3" json:"client,omitempty"`
 	// Recent in-memory events (oldest first). Capacity is bounded server-side.
 	RecentEvents  []*ClientEvent `protobuf:"bytes,2,rep,name=recent_events,json=recentEvents,proto3" json:"recent_events,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -279,8 +290,10 @@ func (x *GetClientResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -293,6 +306,7 @@ func (x *GetClientResponse) GetClient() *Client {
 	if x != nil {
 		return x.Client
 	}
+
 	return nil
 }
 
@@ -300,6 +314,7 @@ func (x *GetClientResponse) GetRecentEvents() []*ClientEvent {
 	if x != nil {
 		return x.RecentEvents
 	}
+
 	return nil
 }
 
@@ -331,8 +346,10 @@ func (x *ListHistoricalConnectionsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -345,6 +362,7 @@ func (x *ListHistoricalConnectionsRequest) GetLimit() int32 {
 	if x != nil {
 		return x.Limit
 	}
+
 	return 0
 }
 
@@ -376,8 +394,10 @@ func (x *ListHistoricalConnectionsResponse) ProtoReflect() protoreflect.Message 
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -390,6 +410,7 @@ func (x *ListHistoricalConnectionsResponse) GetClients() []*Client {
 	if x != nil {
 		return x.Clients
 	}
+
 	return nil
 }
 
@@ -419,8 +440,10 @@ func (x *WatchClientsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -431,7 +454,7 @@ func (*WatchClientsRequest) Descriptor() ([]byte, []int) {
 
 type WatchClientsResponse struct {
 	state protoimpl.MessageState    `protogen:"open.v1"`
-	Kind  WatchClientsResponse_Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=elara.clients.v1.WatchClientsResponse_Kind" json:"kind,omitempty"`
+	Kind  WatchClientsResponse_Kind `                   protobuf:"varint,1,opt,name=kind,proto3,enum=elara.clients.v1.WatchClientsResponse_Kind" json:"kind,omitempty"`
 	// For SNAPSHOT: full active-client list at this moment.
 	// For CONNECTED/DISCONNECTED: single-element list with the affected client.
 	Clients       []*Client `protobuf:"bytes,2,rep,name=clients,proto3" json:"clients,omitempty"`
@@ -459,8 +482,10 @@ func (x *WatchClientsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -473,6 +498,7 @@ func (x *WatchClientsResponse) GetKind() WatchClientsResponse_Kind {
 	if x != nil {
 		return x.Kind
 	}
+
 	return WatchClientsResponse_KIND_UNSPECIFIED
 }
 
@@ -480,13 +506,14 @@ func (x *WatchClientsResponse) GetClients() []*Client {
 	if x != nil {
 		return x.Clients
 	}
+
 	return nil
 }
 
 type ListClientSessionsRequest struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
-	ClientName   string                 `protobuf:"bytes,1,opt,name=client_name,json=clientName,proto3" json:"client_name,omitempty"`
-	K8SNamespace string                 `protobuf:"bytes,2,opt,name=k8s_namespace,json=k8sNamespace,proto3" json:"k8s_namespace,omitempty"`
+	ClientName   string                 `                   protobuf:"bytes,1,opt,name=client_name,json=clientName,proto3"     json:"client_name,omitempty"`
+	K8SNamespace string                 `                   protobuf:"bytes,2,opt,name=k8s_namespace,json=k8sNamespace,proto3" json:"k8s_namespace,omitempty"`
 	// Connection ID to exclude (typically the active session being viewed).
 	CurrentId string `protobuf:"bytes,3,opt,name=current_id,json=currentId,proto3" json:"current_id,omitempty"`
 	// 0 → server default.
@@ -515,8 +542,10 @@ func (x *ListClientSessionsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -529,6 +558,7 @@ func (x *ListClientSessionsRequest) GetClientName() string {
 	if x != nil {
 		return x.ClientName
 	}
+
 	return ""
 }
 
@@ -536,6 +566,7 @@ func (x *ListClientSessionsRequest) GetK8SNamespace() string {
 	if x != nil {
 		return x.K8SNamespace
 	}
+
 	return ""
 }
 
@@ -543,6 +574,7 @@ func (x *ListClientSessionsRequest) GetCurrentId() string {
 	if x != nil {
 		return x.CurrentId
 	}
+
 	return ""
 }
 
@@ -550,6 +582,7 @@ func (x *ListClientSessionsRequest) GetLimit() int32 {
 	if x != nil {
 		return x.Limit
 	}
+
 	return 0
 }
 
@@ -581,8 +614,10 @@ func (x *ListClientSessionsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -595,12 +630,13 @@ func (x *ListClientSessionsResponse) GetSessions() []*Client {
 	if x != nil {
 		return x.Sessions
 	}
+
 	return nil
 }
 
 type WatchClientRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            string                 `                   protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -625,8 +661,10 @@ func (x *WatchClientRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -639,12 +677,13 @@ func (x *WatchClientRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
+
 	return ""
 }
 
 type WatchClientResponse struct {
 	state protoimpl.MessageState   `protogen:"open.v1"`
-	Kind  WatchClientResponse_Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=elara.clients.v1.WatchClientResponse_Kind" json:"kind,omitempty"`
+	Kind  WatchClientResponse_Kind `                   protobuf:"varint,1,opt,name=kind,proto3,enum=elara.clients.v1.WatchClientResponse_Kind" json:"kind,omitempty"`
 	// For SNAPSHOT and DISCONNECTED: full snapshot of this client.
 	Client *Client `protobuf:"bytes,2,opt,name=client,proto3" json:"client,omitempty"`
 	// For REQUEST_RECORDED: the per-RPC event detail.
@@ -673,8 +712,10 @@ func (x *WatchClientResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -687,6 +728,7 @@ func (x *WatchClientResponse) GetKind() WatchClientResponse_Kind {
 	if x != nil {
 		return x.Kind
 	}
+
 	return WatchClientResponse_KIND_UNSPECIFIED
 }
 
@@ -694,6 +736,7 @@ func (x *WatchClientResponse) GetClient() *Client {
 	if x != nil {
 		return x.Client
 	}
+
 	return nil
 }
 
@@ -701,6 +744,7 @@ func (x *WatchClientResponse) GetEvent() *ClientEvent {
 	if x != nil {
 		return x.Event
 	}
+
 	return nil
 }
 
@@ -766,31 +810,39 @@ var (
 
 func file_elara_clients_v1_clients_service_proto_rawDescGZIP() []byte {
 	file_elara_clients_v1_clients_service_proto_rawDescOnce.Do(func() {
-		file_elara_clients_v1_clients_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_clients_v1_clients_service_proto_rawDesc), len(file_elara_clients_v1_clients_service_proto_rawDesc)))
+		file_elara_clients_v1_clients_service_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_clients_v1_clients_service_proto_rawDesc),
+				len(file_elara_clients_v1_clients_service_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_clients_v1_clients_service_proto_rawDescData
 }
 
-var file_elara_clients_v1_clients_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_elara_clients_v1_clients_service_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
-var file_elara_clients_v1_clients_service_proto_goTypes = []any{
-	(WatchClientsResponse_Kind)(0),            // 0: elara.clients.v1.WatchClientsResponse.Kind
-	(WatchClientResponse_Kind)(0),             // 1: elara.clients.v1.WatchClientResponse.Kind
-	(*ListActiveClientsRequest)(nil),          // 2: elara.clients.v1.ListActiveClientsRequest
-	(*ListActiveClientsResponse)(nil),         // 3: elara.clients.v1.ListActiveClientsResponse
-	(*GetClientRequest)(nil),                  // 4: elara.clients.v1.GetClientRequest
-	(*GetClientResponse)(nil),                 // 5: elara.clients.v1.GetClientResponse
-	(*ListHistoricalConnectionsRequest)(nil),  // 6: elara.clients.v1.ListHistoricalConnectionsRequest
-	(*ListHistoricalConnectionsResponse)(nil), // 7: elara.clients.v1.ListHistoricalConnectionsResponse
-	(*WatchClientsRequest)(nil),               // 8: elara.clients.v1.WatchClientsRequest
-	(*WatchClientsResponse)(nil),              // 9: elara.clients.v1.WatchClientsResponse
-	(*ListClientSessionsRequest)(nil),         // 10: elara.clients.v1.ListClientSessionsRequest
-	(*ListClientSessionsResponse)(nil),        // 11: elara.clients.v1.ListClientSessionsResponse
-	(*WatchClientRequest)(nil),                // 12: elara.clients.v1.WatchClientRequest
-	(*WatchClientResponse)(nil),               // 13: elara.clients.v1.WatchClientResponse
-	(*Client)(nil),                            // 14: elara.clients.v1.Client
-	(*ClientEvent)(nil),                       // 15: elara.clients.v1.ClientEvent
-}
+var (
+	file_elara_clients_v1_clients_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+	file_elara_clients_v1_clients_service_proto_msgTypes  = make([]protoimpl.MessageInfo, 12)
+	file_elara_clients_v1_clients_service_proto_goTypes   = []any{
+		(WatchClientsResponse_Kind)(0),            // 0: elara.clients.v1.WatchClientsResponse.Kind
+		(WatchClientResponse_Kind)(0),             // 1: elara.clients.v1.WatchClientResponse.Kind
+		(*ListActiveClientsRequest)(nil),          // 2: elara.clients.v1.ListActiveClientsRequest
+		(*ListActiveClientsResponse)(nil),         // 3: elara.clients.v1.ListActiveClientsResponse
+		(*GetClientRequest)(nil),                  // 4: elara.clients.v1.GetClientRequest
+		(*GetClientResponse)(nil),                 // 5: elara.clients.v1.GetClientResponse
+		(*ListHistoricalConnectionsRequest)(nil),  // 6: elara.clients.v1.ListHistoricalConnectionsRequest
+		(*ListHistoricalConnectionsResponse)(nil), // 7: elara.clients.v1.ListHistoricalConnectionsResponse
+		(*WatchClientsRequest)(nil),               // 8: elara.clients.v1.WatchClientsRequest
+		(*WatchClientsResponse)(nil),              // 9: elara.clients.v1.WatchClientsResponse
+		(*ListClientSessionsRequest)(nil),         // 10: elara.clients.v1.ListClientSessionsRequest
+		(*ListClientSessionsResponse)(nil),        // 11: elara.clients.v1.ListClientSessionsResponse
+		(*WatchClientRequest)(nil),                // 12: elara.clients.v1.WatchClientRequest
+		(*WatchClientResponse)(nil),               // 13: elara.clients.v1.WatchClientResponse
+		(*Client)(nil),                            // 14: elara.clients.v1.Client
+		(*ClientEvent)(nil),                       // 15: elara.clients.v1.ClientEvent
+	}
+)
 var file_elara_clients_v1_clients_service_proto_depIdxs = []int32{
 	14, // 0: elara.clients.v1.ListActiveClientsResponse.clients:type_name -> elara.clients.v1.Client
 	14, // 1: elara.clients.v1.GetClientResponse.client:type_name -> elara.clients.v1.Client
@@ -830,8 +882,11 @@ func file_elara_clients_v1_clients_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_clients_v1_clients_service_proto_rawDesc), len(file_elara_clients_v1_clients_service_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_clients_v1_clients_service_proto_rawDesc),
+				len(file_elara_clients_v1_clients_service_proto_rawDesc),
+			),
 			NumEnums:      2,
 			NumMessages:   12,
 			NumExtensions: 0,

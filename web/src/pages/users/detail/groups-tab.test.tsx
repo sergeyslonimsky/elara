@@ -5,10 +5,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppAbility } from "@/auth/ability";
-import { useAuth } from "@/components/auth-provider";
 import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
 import { UserSchema } from "@/gen/elara/user/v1/user_pb";
-import { TestProviders } from "@/test/test-utils";
+import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { GroupsTab } from "./groups-tab";
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
@@ -21,14 +20,6 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 			mutateAsync: vi.fn(),
 			isPending: false,
 		})),
-	};
-});
-
-vi.mock("@/components/auth-provider", async (importOriginal) => {
-	const actual = await importOriginal<Record<string, unknown>>();
-	return {
-		...actual,
-		useAuth: vi.fn(),
 	};
 });
 
@@ -86,15 +77,7 @@ describe("GroupsTab", () => {
 
 	test("renders group rows with checkboxes", () => {
 		const ability = setupAbility(["developers"]);
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
 			data: { groups: [editableGroup, systemGroup, readOnlyGroup] },
@@ -102,7 +85,7 @@ describe("GroupsTab", () => {
 		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
 					visibleGroupIds={["g1"]}
@@ -120,15 +103,7 @@ describe("GroupsTab", () => {
 
 	test("save button is disabled when no changes staged", () => {
 		const ability = setupAbility(["developers"]);
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
 			data: { groups: [editableGroup] },
@@ -136,7 +111,7 @@ describe("GroupsTab", () => {
 		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
 					visibleGroupIds={["g1"]}
@@ -155,15 +130,7 @@ describe("GroupsTab", () => {
 		const mockMutate = vi.fn();
 
 		const ability = setupAbility(["developers"]);
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
 			data: { groups: [editableGroup] },
@@ -177,7 +144,7 @@ describe("GroupsTab", () => {
 		} as unknown as ReturnType<typeof useMutation>);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
 					visibleGroupIds={["g1"]}
@@ -213,15 +180,7 @@ describe("GroupsTab", () => {
 		const mockMutate = vi.fn();
 
 		const ability = setupAbility(["developers"]);
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
 			data: { groups: [editableGroup] },
@@ -235,7 +194,7 @@ describe("GroupsTab", () => {
 		} as unknown as ReturnType<typeof useMutation>);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
 					visibleGroupIds={[]}
@@ -258,15 +217,7 @@ describe("GroupsTab", () => {
 
 	test("system group checkbox is disabled", () => {
 		const ability = setupAbility([]);
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
 			data: { groups: [systemGroup] },
@@ -274,7 +225,7 @@ describe("GroupsTab", () => {
 		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
 					visibleGroupIds={[]}
@@ -292,15 +243,7 @@ describe("GroupsTab", () => {
 		const ue = userEvent.setup();
 
 		const ability = setupAbility(["developers"]);
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
 			data: { groups: [editableGroup] },
@@ -308,7 +251,7 @@ describe("GroupsTab", () => {
 		} as unknown as ReturnType<typeof useQuery>);
 
 		const { rerender } = render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
 					visibleGroupIds={[]}
@@ -325,7 +268,7 @@ describe("GroupsTab", () => {
 
 		// Imitate a background refetch — same server state, new array reference
 		rerender(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
 					visibleGroupIds={[]}
@@ -346,15 +289,7 @@ describe("GroupsTab", () => {
 		const { toast } = await import("sonner");
 
 		const ability = setupAbility(["developers"]);
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
 			data: { groups: [editableGroup] },
@@ -372,7 +307,7 @@ describe("GroupsTab", () => {
 		});
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
 					visibleGroupIds={[]}

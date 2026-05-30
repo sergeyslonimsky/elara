@@ -1,7 +1,7 @@
 import { subject } from "@casl/ability";
 import { Database, Lock, ShieldCheck } from "lucide-react";
 import { Link } from "react-router";
-import { useAuth } from "@/components/auth-provider";
+import { useAbility } from "@/auth/ability-context";
 import { ExportDialog } from "@/components/export-dialog";
 import { ImportDialog } from "@/components/import-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -19,10 +19,17 @@ import { EditDialog } from "./edit-dialog";
 import { LockButton } from "./lock-button";
 
 export function NamespaceCard({ ns }: Readonly<{ ns: Namespace }>) {
-	const { state } = useAuth();
-	const canWrite =
-		state.status === "authenticated" &&
-		state.ability.can("write", subject("Namespace", { domain: ns.name }));
+	const ability = useAbility();
+	const canWrite = ability.can(
+		"write",
+		subject("Namespace", { domain: ns.name }),
+	);
+	// Deleting the namespace itself is a distinct capability from editing its
+	// content (configs). Only a delete grant (or *) exposes the delete action.
+	const canDelete = ability.can(
+		"delete",
+		subject("Namespace", { domain: ns.name }),
+	);
 
 	return (
 		<Card className="rounded-xl">
@@ -36,14 +43,16 @@ export function NamespaceCard({ ns }: Readonly<{ ns: Namespace }>) {
 						<CardTitle className="text-base">{ns.name}</CardTitle>
 						{ns.locked && <Lock className="h-3 w-3 text-amber-500" />}
 					</Link>
-					{canWrite && (
+					{(canWrite || canDelete) && (
 						<div className="flex gap-1">
-							<EditDialog
-								name={ns.name}
-								currentDescription={ns.description}
-								locked={ns.locked}
-							/>
-							<DeleteButton name={ns.name} locked={ns.locked} />
+							{canWrite && (
+								<EditDialog
+									name={ns.name}
+									currentDescription={ns.description}
+									locked={ns.locked}
+								/>
+							)}
+							{canDelete && <DeleteButton name={ns.name} locked={ns.locked} />}
 						</div>
 					)}
 				</div>

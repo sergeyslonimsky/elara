@@ -110,17 +110,6 @@ func addMemberships(t *testing.T, st realStack, rows []struct{ User, GroupName s
 	}))
 }
 
-// addRoleForUser writes a single (subject, role, domain) g-rule inside a
-// Casbin write transaction. Used when a test needs to grant the admin role
-// directly (e.g. the last-admin guard).
-func addRoleForUser(t *testing.T, st realStack, subject, role, dom string) {
-	t.Helper()
-
-	require.NoError(t, st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddRoleForUser(subject, role, dom)
-	}))
-}
-
 // seedAdminAll grants admin@example.com the (*,*,*) policy. Most usecase
 // tests want this so that authorization checks resolve to true and the
 // test focuses on the surrounding business logic.

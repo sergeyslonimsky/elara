@@ -5,12 +5,14 @@
 package groupv1connect
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/group/v1"
 	http "net/http"
 	strings "strings"
+
+	connect "connectrpc.com/connect"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/group/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -65,7 +67,10 @@ type GroupServiceClient interface {
 	//     Group:Write on the group AND the group must hold every permission
 	//     in initial_permissions (cascade — its existing members will inherit
 	//     the new Group:Write group:<new-id>).
-	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.CreateGroupResponse], error)
+	CreateGroup(
+		context.Context,
+		*connect.Request[v1.CreateGroupRequest],
+	) (*connect.Response[v1.CreateGroupResponse], error)
 	// Fetches a single group by id.
 	//
 	// Authorization: Group:Read group:<id> (or Group:Read * — wildcard match).
@@ -80,7 +85,10 @@ type GroupServiceClient interface {
 	// Members and permissions are managed by UpdateGroupMembers and
 	// UpdateGroupPermissions respectively — mixing them here would
 	// re-introduce the dual-write drift the split was designed to eliminate.
-	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.UpdateGroupResponse], error)
+	UpdateGroup(
+		context.Context,
+		*connect.Request[v1.UpdateGroupRequest],
+	) (*connect.Response[v1.UpdateGroupResponse], error)
 	// Explicit delta on group membership.
 	// Adding an existing member is a no-op; removing an absent one is a no-op.
 	// Same email in both add_emails and remove_emails returns INVALID_ARGUMENT.
@@ -92,7 +100,10 @@ type GroupServiceClient interface {
 	//
 	// If expected_members_version is set and current members_version differs,
 	// returns FAILED_PRECONDITION — even if the net change would be a no-op.
-	UpdateGroupMembers(context.Context, *connect.Request[v1.UpdateGroupMembersRequest]) (*connect.Response[v1.UpdateGroupMembersResponse], error)
+	UpdateGroupMembers(
+		context.Context,
+		*connect.Request[v1.UpdateGroupMembersRequest],
+	) (*connect.Response[v1.UpdateGroupMembersResponse], error)
 	// Explicit delta on group permissions.
 	// Adding an existing permission is a no-op; removing an absent one is a no-op.
 	// Same permission in both add and remove returns INVALID_ARGUMENT.
@@ -106,7 +117,10 @@ type GroupServiceClient interface {
 	// If expected_permissions_version is set and current permissions_version
 	// differs, returns FAILED_PRECONDITION — even if the net change would be
 	// a no-op.
-	UpdateGroupPermissions(context.Context, *connect.Request[v1.UpdateGroupPermissionsRequest]) (*connect.Response[v1.UpdateGroupPermissionsResponse], error)
+	UpdateGroupPermissions(
+		context.Context,
+		*connect.Request[v1.UpdateGroupPermissionsRequest],
+	) (*connect.Response[v1.UpdateGroupPermissionsResponse], error)
 	// Deletes a group along with all its membership and permission rules.
 	//
 	// Authorization: Group:Write group:<id>.
@@ -114,7 +128,10 @@ type GroupServiceClient interface {
 	// FAILED_PRECONDITION. The entity, its p-rules, and its g-rules
 	// (both directions: members and roles) are removed atomically in one
 	// Casbin write transaction.
-	DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[v1.DeleteGroupResponse], error)
+	DeleteGroup(
+		context.Context,
+		*connect.Request[v1.DeleteGroupRequest],
+	) (*connect.Response[v1.DeleteGroupResponse], error)
 	// Lists groups visible to the caller.
 	//
 	// Authorization:
@@ -123,7 +140,10 @@ type GroupServiceClient interface {
 	//     Group:Read group:<id> are returned.
 	//
 	// An empty result is not an error — pagination returns an empty page.
-	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
+	ListGroups(
+		context.Context,
+		*connect.Request[v1.ListGroupsRequest],
+	) (*connect.Response[v1.ListGroupsResponse], error)
 }
 
 // NewGroupServiceClient constructs a client for the elara.group.v1.GroupService service. By
@@ -133,9 +153,14 @@ type GroupServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewGroupServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) GroupServiceClient {
+func NewGroupServiceClient(
+	httpClient connect.HTTPClient,
+	baseURL string,
+	opts ...connect.ClientOption,
+) GroupServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	groupServiceMethods := v1.File_elara_group_v1_group_service_proto.Services().ByName("GroupService").Methods()
+
 	return &groupServiceClient{
 		createGroup: connect.NewClient[v1.CreateGroupRequest, v1.CreateGroupResponse](
 			httpClient,
@@ -194,37 +219,58 @@ type groupServiceClient struct {
 }
 
 // CreateGroup calls elara.group.v1.GroupService.CreateGroup.
-func (c *groupServiceClient) CreateGroup(ctx context.Context, req *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.CreateGroupResponse], error) {
+func (c *groupServiceClient) CreateGroup(
+	ctx context.Context,
+	req *connect.Request[v1.CreateGroupRequest],
+) (*connect.Response[v1.CreateGroupResponse], error) {
 	return c.createGroup.CallUnary(ctx, req)
 }
 
 // GetGroup calls elara.group.v1.GroupService.GetGroup.
-func (c *groupServiceClient) GetGroup(ctx context.Context, req *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.GetGroupResponse], error) {
+func (c *groupServiceClient) GetGroup(
+	ctx context.Context,
+	req *connect.Request[v1.GetGroupRequest],
+) (*connect.Response[v1.GetGroupResponse], error) {
 	return c.getGroup.CallUnary(ctx, req)
 }
 
 // UpdateGroup calls elara.group.v1.GroupService.UpdateGroup.
-func (c *groupServiceClient) UpdateGroup(ctx context.Context, req *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.UpdateGroupResponse], error) {
+func (c *groupServiceClient) UpdateGroup(
+	ctx context.Context,
+	req *connect.Request[v1.UpdateGroupRequest],
+) (*connect.Response[v1.UpdateGroupResponse], error) {
 	return c.updateGroup.CallUnary(ctx, req)
 }
 
 // UpdateGroupMembers calls elara.group.v1.GroupService.UpdateGroupMembers.
-func (c *groupServiceClient) UpdateGroupMembers(ctx context.Context, req *connect.Request[v1.UpdateGroupMembersRequest]) (*connect.Response[v1.UpdateGroupMembersResponse], error) {
+func (c *groupServiceClient) UpdateGroupMembers(
+	ctx context.Context,
+	req *connect.Request[v1.UpdateGroupMembersRequest],
+) (*connect.Response[v1.UpdateGroupMembersResponse], error) {
 	return c.updateGroupMembers.CallUnary(ctx, req)
 }
 
 // UpdateGroupPermissions calls elara.group.v1.GroupService.UpdateGroupPermissions.
-func (c *groupServiceClient) UpdateGroupPermissions(ctx context.Context, req *connect.Request[v1.UpdateGroupPermissionsRequest]) (*connect.Response[v1.UpdateGroupPermissionsResponse], error) {
+func (c *groupServiceClient) UpdateGroupPermissions(
+	ctx context.Context,
+	req *connect.Request[v1.UpdateGroupPermissionsRequest],
+) (*connect.Response[v1.UpdateGroupPermissionsResponse], error) {
 	return c.updateGroupPermissions.CallUnary(ctx, req)
 }
 
 // DeleteGroup calls elara.group.v1.GroupService.DeleteGroup.
-func (c *groupServiceClient) DeleteGroup(ctx context.Context, req *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[v1.DeleteGroupResponse], error) {
+func (c *groupServiceClient) DeleteGroup(
+	ctx context.Context,
+	req *connect.Request[v1.DeleteGroupRequest],
+) (*connect.Response[v1.DeleteGroupResponse], error) {
 	return c.deleteGroup.CallUnary(ctx, req)
 }
 
 // ListGroups calls elara.group.v1.GroupService.ListGroups.
-func (c *groupServiceClient) ListGroups(ctx context.Context, req *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error) {
+func (c *groupServiceClient) ListGroups(
+	ctx context.Context,
+	req *connect.Request[v1.ListGroupsRequest],
+) (*connect.Response[v1.ListGroupsResponse], error) {
 	return c.listGroups.CallUnary(ctx, req)
 }
 
@@ -239,7 +285,10 @@ type GroupServiceHandler interface {
 	//     Group:Write on the group AND the group must hold every permission
 	//     in initial_permissions (cascade — its existing members will inherit
 	//     the new Group:Write group:<new-id>).
-	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.CreateGroupResponse], error)
+	CreateGroup(
+		context.Context,
+		*connect.Request[v1.CreateGroupRequest],
+	) (*connect.Response[v1.CreateGroupResponse], error)
 	// Fetches a single group by id.
 	//
 	// Authorization: Group:Read group:<id> (or Group:Read * — wildcard match).
@@ -254,7 +303,10 @@ type GroupServiceHandler interface {
 	// Members and permissions are managed by UpdateGroupMembers and
 	// UpdateGroupPermissions respectively — mixing them here would
 	// re-introduce the dual-write drift the split was designed to eliminate.
-	UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.UpdateGroupResponse], error)
+	UpdateGroup(
+		context.Context,
+		*connect.Request[v1.UpdateGroupRequest],
+	) (*connect.Response[v1.UpdateGroupResponse], error)
 	// Explicit delta on group membership.
 	// Adding an existing member is a no-op; removing an absent one is a no-op.
 	// Same email in both add_emails and remove_emails returns INVALID_ARGUMENT.
@@ -266,7 +318,10 @@ type GroupServiceHandler interface {
 	//
 	// If expected_members_version is set and current members_version differs,
 	// returns FAILED_PRECONDITION — even if the net change would be a no-op.
-	UpdateGroupMembers(context.Context, *connect.Request[v1.UpdateGroupMembersRequest]) (*connect.Response[v1.UpdateGroupMembersResponse], error)
+	UpdateGroupMembers(
+		context.Context,
+		*connect.Request[v1.UpdateGroupMembersRequest],
+	) (*connect.Response[v1.UpdateGroupMembersResponse], error)
 	// Explicit delta on group permissions.
 	// Adding an existing permission is a no-op; removing an absent one is a no-op.
 	// Same permission in both add and remove returns INVALID_ARGUMENT.
@@ -280,7 +335,10 @@ type GroupServiceHandler interface {
 	// If expected_permissions_version is set and current permissions_version
 	// differs, returns FAILED_PRECONDITION — even if the net change would be
 	// a no-op.
-	UpdateGroupPermissions(context.Context, *connect.Request[v1.UpdateGroupPermissionsRequest]) (*connect.Response[v1.UpdateGroupPermissionsResponse], error)
+	UpdateGroupPermissions(
+		context.Context,
+		*connect.Request[v1.UpdateGroupPermissionsRequest],
+	) (*connect.Response[v1.UpdateGroupPermissionsResponse], error)
 	// Deletes a group along with all its membership and permission rules.
 	//
 	// Authorization: Group:Write group:<id>.
@@ -288,7 +346,10 @@ type GroupServiceHandler interface {
 	// FAILED_PRECONDITION. The entity, its p-rules, and its g-rules
 	// (both directions: members and roles) are removed atomically in one
 	// Casbin write transaction.
-	DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[v1.DeleteGroupResponse], error)
+	DeleteGroup(
+		context.Context,
+		*connect.Request[v1.DeleteGroupRequest],
+	) (*connect.Response[v1.DeleteGroupResponse], error)
 	// Lists groups visible to the caller.
 	//
 	// Authorization:
@@ -297,7 +358,10 @@ type GroupServiceHandler interface {
 	//     Group:Read group:<id> are returned.
 	//
 	// An empty result is not an error — pagination returns an empty page.
-	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
+	ListGroups(
+		context.Context,
+		*connect.Request[v1.ListGroupsRequest],
+	) (*connect.Response[v1.ListGroupsResponse], error)
 }
 
 // NewGroupServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -349,6 +413,7 @@ func NewGroupServiceHandler(svc GroupServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(groupServiceMethods.ByName("ListGroups")),
 		connect.WithHandlerOptions(opts...),
 	)
+
 	return "/elara.group.v1.GroupService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case GroupServiceCreateGroupProcedure:
@@ -374,30 +439,72 @@ func NewGroupServiceHandler(svc GroupServiceHandler, opts ...connect.HandlerOpti
 // UnimplementedGroupServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedGroupServiceHandler struct{}
 
-func (UnimplementedGroupServiceHandler) CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.CreateGroupResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.group.v1.GroupService.CreateGroup is not implemented"))
+func (UnimplementedGroupServiceHandler) CreateGroup(
+	context.Context,
+	*connect.Request[v1.CreateGroupRequest],
+) (*connect.Response[v1.CreateGroupResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.group.v1.GroupService.CreateGroup is not implemented"),
+	)
 }
 
-func (UnimplementedGroupServiceHandler) GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.GetGroupResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.group.v1.GroupService.GetGroup is not implemented"))
+func (UnimplementedGroupServiceHandler) GetGroup(
+	context.Context,
+	*connect.Request[v1.GetGroupRequest],
+) (*connect.Response[v1.GetGroupResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.group.v1.GroupService.GetGroup is not implemented"),
+	)
 }
 
-func (UnimplementedGroupServiceHandler) UpdateGroup(context.Context, *connect.Request[v1.UpdateGroupRequest]) (*connect.Response[v1.UpdateGroupResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.group.v1.GroupService.UpdateGroup is not implemented"))
+func (UnimplementedGroupServiceHandler) UpdateGroup(
+	context.Context,
+	*connect.Request[v1.UpdateGroupRequest],
+) (*connect.Response[v1.UpdateGroupResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.group.v1.GroupService.UpdateGroup is not implemented"),
+	)
 }
 
-func (UnimplementedGroupServiceHandler) UpdateGroupMembers(context.Context, *connect.Request[v1.UpdateGroupMembersRequest]) (*connect.Response[v1.UpdateGroupMembersResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.group.v1.GroupService.UpdateGroupMembers is not implemented"))
+func (UnimplementedGroupServiceHandler) UpdateGroupMembers(
+	context.Context,
+	*connect.Request[v1.UpdateGroupMembersRequest],
+) (*connect.Response[v1.UpdateGroupMembersResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.group.v1.GroupService.UpdateGroupMembers is not implemented"),
+	)
 }
 
-func (UnimplementedGroupServiceHandler) UpdateGroupPermissions(context.Context, *connect.Request[v1.UpdateGroupPermissionsRequest]) (*connect.Response[v1.UpdateGroupPermissionsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.group.v1.GroupService.UpdateGroupPermissions is not implemented"))
+func (UnimplementedGroupServiceHandler) UpdateGroupPermissions(
+	context.Context,
+	*connect.Request[v1.UpdateGroupPermissionsRequest],
+) (*connect.Response[v1.UpdateGroupPermissionsResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.group.v1.GroupService.UpdateGroupPermissions is not implemented"),
+	)
 }
 
-func (UnimplementedGroupServiceHandler) DeleteGroup(context.Context, *connect.Request[v1.DeleteGroupRequest]) (*connect.Response[v1.DeleteGroupResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.group.v1.GroupService.DeleteGroup is not implemented"))
+func (UnimplementedGroupServiceHandler) DeleteGroup(
+	context.Context,
+	*connect.Request[v1.DeleteGroupRequest],
+) (*connect.Response[v1.DeleteGroupResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.group.v1.GroupService.DeleteGroup is not implemented"),
+	)
 }
 
-func (UnimplementedGroupServiceHandler) ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.group.v1.GroupService.ListGroups is not implemented"))
+func (UnimplementedGroupServiceHandler) ListGroups(
+	context.Context,
+	*connect.Request[v1.ListGroupsRequest],
+) (*connect.Response[v1.ListGroupsResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.group.v1.GroupService.ListGroups is not implemented"),
+	)
 }

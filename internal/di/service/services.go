@@ -14,9 +14,9 @@ import (
 	clientsuc "github.com/sergeyslonimsky/elara/internal/usecase/clients"
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 	dashboarduc "github.com/sergeyslonimsky/elara/internal/usecase/dashboard"
+	filteruc "github.com/sergeyslonimsky/elara/internal/usecase/filter"
 	groupuc "github.com/sergeyslonimsky/elara/internal/usecase/group"
 	nsuc "github.com/sergeyslonimsky/elara/internal/usecase/namespace"
-	policyuc "github.com/sergeyslonimsky/elara/internal/usecase/policy"
 	profileuc "github.com/sergeyslonimsky/elara/internal/usecase/profile"
 	schemauc "github.com/sergeyslonimsky/elara/internal/usecase/schema"
 	tokenuc "github.com/sergeyslonimsky/elara/internal/usecase/token"
@@ -38,9 +38,9 @@ type Services struct {
 	Profile   *profileuc.Service
 	User      *useruc.Service
 	Group     *groupuc.Service
-	Policy    *policyuc.Service
 	Token     *tokenuc.Service
 	Auth      *authuc.Service
+	Filter    *filteruc.Service
 
 	// Authz is the shared per-RPC authorization gate used by v2 handlers.
 	// It is exposed on Services so V2Handlers wiring can pass it into each
@@ -55,7 +55,7 @@ type Services struct {
 
 // NewServices constructs every domain service. Pure wiring: no DB writes,
 // no policy seeding — those live in Bootstrap.
-func NewServices( //nolint:funlen // wiring-only: one constructor call per usecase
+func NewServices(
 	ctx context.Context,
 	a *Adapters,
 	cfg config.Config,
@@ -100,41 +100,59 @@ func NewServices( //nolint:funlen // wiring-only: one constructor call per useca
 			scope,
 		),
 		Group:  groupuc.New(a.AuthGroups, pdp, pap, scope),
-		Policy: policyuc.New(pap, a.AuthGroups),
 		Token:  tokenuc.New(pdp, a.AuthTokens),
+		Filter: filteruc.New(pdp, a.NamespaceRepo, a.AuthGroups, a.AuthUsers),
 
 		Authz:          authzSvc,
 		AdminBootstrap: adminBootstrap,
 	}
 
-	if cfg.UI.Auth.Enabled {
-		var oidcProvider *auth.OIDCProvider
-
-		if cfg.UI.Auth.Type == config.AuthTypeOIDC {
-			provider, err := auth.NewOIDCProvider(ctx, auth.OIDCConfig{
-				IssuerURL:    cfg.UI.Auth.OIDC.IssuerURL,
-				ClientID:     cfg.UI.Auth.OIDC.ClientID,
-				ClientSecret: cfg.UI.Auth.OIDC.ClientSecret,
-				RedirectURL:  cfg.UI.Auth.OIDC.RedirectURL,
-				Scopes:       cfg.UI.Auth.OIDC.Scopes,
-			})
-			if err != nil {
-				return nil, fmt.Errorf("create oidc provider: %w", err)
-			}
-
-			oidcProvider = provider
-		}
-
-		if cfg.UI.Auth.Type != config.AuthTypeNone {
-			services.Auth = authuc.New(
-				oidcProvider,
-				a.AuthUsers,
-				sessionManager,
-				adminBootstrap,
-				cfg.UI.Auth.OIDC.AdminEmail,
-			)
-		}
+	if err := configureAuthService(ctx, services, a, cfg, sessionManager, adminBootstrap); err != nil {
+		return nil, err
 	}
 
 	return services, nil
+}
+
+// configureAuthService wires the auth usecase (and its OIDC provider, when
+// configured) onto services when UI auth is enabled. Split out of NewServices
+// to keep the constructor focused on plain dependency wiring.
+func configureAuthService(
+	ctx context.Context,
+	services *Services,
+	a *Adapters,
+	cfg config.Config,
+	sessionManager *auth.SessionManager,
+	adminBootstrap *auth.AdminBootstrap,
+) error {
+	if !cfg.UI.Auth.Enabled || cfg.UI.Auth.Type == config.AuthTypeNone {
+		return nil
+	}
+
+	var oidcProvider *auth.OIDCProvider
+
+	if cfg.UI.Auth.Type == config.AuthTypeOIDC {
+		provider, err := auth.NewOIDCProvider(ctx, auth.OIDCConfig{
+			IssuerURL:    cfg.UI.Auth.OIDC.IssuerURL,
+			ClientID:     cfg.UI.Auth.OIDC.ClientID,
+			ClientSecret: cfg.UI.Auth.OIDC.ClientSecret,
+			RedirectURL:  cfg.UI.Auth.OIDC.RedirectURL,
+			Scopes:       cfg.UI.Auth.OIDC.Scopes,
+		})
+		if err != nil {
+			return fmt.Errorf("create oidc provider: %w", err)
+		}
+
+		oidcProvider = provider
+	}
+
+	services.Auth = authuc.New(
+		oidcProvider,
+		a.AuthUsers,
+		sessionManager,
+		adminBootstrap,
+		cfg.UI.Auth.OIDC.AdminEmail,
+	)
+
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 )
 
 //go:generate mockgen -destination=mocks/service_mock.go -package=clients_mock -source=service.go
@@ -16,6 +17,7 @@ const historyScanLimit = 1000
 type (
 	pdp interface {
 		Has(principal string, perm domain.Permission) bool
+		EffectiveDomains(principal string, object domain.Object, action domain.Action) authz.DomainSet
 	}
 
 	activeSource interface {

@@ -53,7 +53,7 @@ func TestService_Import(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
-					Object: domain.ObjectTransfer,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionWrite,
 					Domain: "my-ns",
 				}).Return(true)
@@ -96,7 +96,7 @@ func TestService_Import(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
-					Object: domain.ObjectTransfer,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionWrite,
 					Domain: "*",
 				}).Return(true)
@@ -132,7 +132,7 @@ func TestService_Import(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
-					Object: domain.ObjectTransfer,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionWrite,
 					Domain: "my-ns",
 				}).Return(true)
@@ -166,7 +166,7 @@ func TestService_Import(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
-					Object: domain.ObjectTransfer,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionWrite,
 					Domain: "my-ns",
 				}).Return(true)
@@ -205,7 +205,7 @@ func TestService_Import(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
-					Object: domain.ObjectTransfer,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionWrite,
 					Domain: "my-ns",
 				}).Return(true)
@@ -287,7 +287,7 @@ func TestService_Import(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
-					Object: domain.ObjectTransfer,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionWrite,
 					Domain: "*",
 				}).Return(false)
@@ -316,7 +316,7 @@ func TestService_Import(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has("test@example.com", domain.Permission{
-					Object: domain.ObjectTransfer,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionWrite,
 					Domain: "my-ns",
 				}).Return(false)

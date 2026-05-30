@@ -44,10 +44,10 @@ func NewScope(pdp *PDP, pap *PAP, groups GroupResolver) *Scope {
 // CanWriteUser; for the imperative form that surfaces the error, see
 // RequireWriteUser.
 func (s *Scope) CanReadUser(ctx context.Context, actor, target string) bool {
-	if s.pdp.HasUserReadGlobal(actor) {
+	if s.pdp.HasGlobal(actor, domain.ObjectUser, domain.ActionRead) {
 		return true
 	}
-	ok, _ := s.targetInGroupScope(ctx, actor, target, s.pdp.HasGroupRead)
+	ok, _ := s.targetInGroupScope(ctx, actor, target, domain.ActionRead)
 
 	return ok
 }
@@ -60,13 +60,13 @@ func (s *Scope) FilterVisibleUsers(ctx context.Context, actor string, candidates
 	if len(candidates) == 0 {
 		return candidates
 	}
-	if s.pdp.HasUserReadGlobal(actor) {
+	if s.pdp.HasGlobal(actor, domain.ObjectUser, domain.ActionRead) {
 		return candidates
 	}
 
 	out := make([]string, 0, len(candidates))
 	for _, c := range candidates {
-		if ok, _ := s.targetInGroupScope(ctx, actor, c, s.pdp.HasGroupRead); ok {
+		if ok, _ := s.targetInGroupScope(ctx, actor, c, domain.ActionRead); ok {
 			out = append(out, c)
 		}
 	}
@@ -88,7 +88,7 @@ func (s *Scope) VisibleUserGroupIDs(ctx context.Context, actor, target string) (
 
 	out := make([]string, 0, len(groups))
 	for _, g := range groups {
-		if s.pdp.HasGroupRead(actor, g.ID) {
+		if s.pdp.HasGroup(actor, g.ID, domain.ActionRead) {
 			out = append(out, g.ID)
 		}
 	}
@@ -123,10 +123,10 @@ func (s *Scope) RequireMembershipGrant(actor, groupName string) error {
 // as CanWriteUser but returning domain.ErrForbidden when the actor's scope
 // excludes the target. Resolution errors propagate as wrapped errors.
 func (s *Scope) RequireWriteUser(ctx context.Context, actor, target string) error {
-	if s.pdp.HasUserWriteGlobal(actor) {
+	if s.pdp.HasGlobal(actor, domain.ObjectUser, domain.ActionWrite) {
 		return nil
 	}
-	ok, err := s.targetInGroupScope(ctx, actor, target, s.pdp.HasGroupWrite)
+	ok, err := s.targetInGroupScope(ctx, actor, target, domain.ActionWrite)
 	if err != nil {
 		return err
 	}
@@ -164,20 +164,20 @@ func (s *Scope) resolveTargetGroups(ctx context.Context, target string) ([]*doma
 	return out, nil
 }
 
-// targetInGroupScope reports whether at least one of target's groups
-// satisfies `holds(actor, g.ID)`. Resolution errors propagate; callers
-// that want fail-closed-bool semantics discard them.
+// targetInGroupScope reports whether actor holds `action` on at least one of
+// target's groups. Resolution errors propagate; callers that want
+// fail-closed-bool semantics discard them.
 func (s *Scope) targetInGroupScope(
 	ctx context.Context,
 	actor, target string,
-	holds func(actor, groupID string) bool,
+	action domain.Action,
 ) (bool, error) {
 	groups, err := s.resolveTargetGroups(ctx, target)
 	if err != nil {
 		return false, err
 	}
 	for _, g := range groups {
-		if holds(actor, g.ID) {
+		if s.pdp.HasGroup(actor, g.ID, action) {
 			return true, nil
 		}
 	}

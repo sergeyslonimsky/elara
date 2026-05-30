@@ -21,7 +21,7 @@ func (s *Service) requireTransferWrite(ctx context.Context, namespace string) er
 	}
 
 	if !s.pdp.Has(claims.Email, domain.Permission{
-		Object: domain.ObjectTransfer,
+		Object: domain.ObjectNamespace,
 		Action: domain.ActionWrite,
 		Domain: namespace,
 	}) {

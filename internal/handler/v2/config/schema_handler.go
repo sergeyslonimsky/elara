@@ -41,7 +41,7 @@ func (h *SchemaHandler) AttachSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.AttachSchemaRequest],
 ) (*connect.Response[configv1.AttachSchemaResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectSchema, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -63,7 +63,7 @@ func (h *SchemaHandler) DetachSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.DetachSchemaRequest],
 ) (*connect.Response[configv1.DetachSchemaResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectSchema, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -78,7 +78,7 @@ func (h *SchemaHandler) GetSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.GetSchemaRequest],
 ) (*connect.Response[configv1.GetSchemaResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectSchema, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -96,7 +96,7 @@ func (h *SchemaHandler) GetEffectiveSchema(
 	ctx context.Context,
 	req *connect.Request[configv1.GetEffectiveSchemaRequest],
 ) (*connect.Response[configv1.GetEffectiveSchemaResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectSchema, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

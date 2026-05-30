@@ -18,7 +18,7 @@ func (s *Service) List(ctx context.Context, namespace string) ([]*domain.SchemaA
 	}
 
 	if !s.pdp.Has(claims.Email, domain.Permission{
-		Object: domain.ObjectSchema,
+		Object: domain.ObjectNamespace,
 		Action: domain.ActionRead,
 		Domain: namespace,
 	}) {

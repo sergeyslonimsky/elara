@@ -11,6 +11,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 )
 
 func TestService_ListActive(t *testing.T) {
@@ -45,6 +46,33 @@ func TestService_ListActive(t *testing.T) {
 				{ID: "a", ConnectedAt: now},
 				{ID: "b", ConnectedAt: now.Add(time.Second)},
 				{ID: "c", ConnectedAt: now.Add(2 * time.Second)},
+			},
+		},
+		{
+			name: "non-admin sees only clients watching readable namespaces",
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				m.pdp.EXPECT().
+					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Return(false)
+				m.pdp.EXPECT().
+					EffectiveDomains("test@example.com", domain.ObjectNamespace, domain.ActionRead).
+					Return(authz.NewDomainSet("prod"))
+
+				m.active.EXPECT().ListActive().Return([]*domain.Client{
+					{ID: "prod", ConnectedAt: now, ActiveWatchList: []domain.ActiveWatch{{StartKey: "/prod/api.json"}}},
+					{
+						ID:              "dev",
+						ConnectedAt:     now.Add(time.Second),
+						ActiveWatchList: []domain.ActiveWatch{{StartKey: "/dev/api.json"}},
+					},
+					{ID: "nowatch", ConnectedAt: now.Add(2 * time.Second)},
+				})
+
+				return ctx
+			},
+			want: []*domain.Client{
+				{ID: "prod", ConnectedAt: now, ActiveWatchList: []domain.ActiveWatch{{StartKey: "/prod/api.json"}}},
 			},
 		},
 		{

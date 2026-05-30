@@ -43,11 +43,10 @@ var DefaultGroupPermissions = func() []GroupPerm {
 	// objects every "domain-scoped" group needs read or write on within its namespace(s).
 	// ObjectToken is per-namespace as of EL-4 T9.6: token visibility/management
 	// is gated by (Token, action, ns), not by Namespace:Read or global IAM perms.
+	// Namespace is the umbrella for config/schema/transfer content; webhook and
+	// token remain distinct namespace-scoped objects.
 	scopedObjects := []domain.Object{
 		domain.ObjectNamespace,
-		domain.ObjectConfig,
-		domain.ObjectTransfer,
-		domain.ObjectSchema,
 		domain.ObjectDashboard,
 		domain.ObjectWebhook,
 		domain.ObjectToken,

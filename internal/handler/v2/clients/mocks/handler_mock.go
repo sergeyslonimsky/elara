@@ -13,9 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "go.uber.org/mock/gomock"
+
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	clientsv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/clients/v1"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockauthz is a mock of authz interface.
@@ -34,6 +35,7 @@ type MockauthzMockRecorder struct {
 func NewMockauthz(ctrl *gomock.Controller) *Mockauthz {
 	mock := &Mockauthz{ctrl: ctrl}
 	mock.recorder = &MockauthzMockRecorder{mock}
+
 	return mock
 }
 
@@ -47,13 +49,23 @@ func (m *Mockauthz) Require(ctx context.Context, object domain.Object, action do
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Require indicates an expected call of Require.
 func (mr *MockauthzMockRecorder) Require(ctx, object, action, domainStr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*Mockauthz)(nil).Require), ctx, object, action, domainStr)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Require",
+		reflect.TypeOf((*Mockauthz)(nil).Require),
+		ctx,
+		object,
+		action,
+		domainStr,
+	)
 }
 
 // Mockusecase is a mock of usecase interface.
@@ -72,6 +84,7 @@ type MockusecaseMockRecorder struct {
 func NewMockusecase(ctrl *gomock.Controller) *Mockusecase {
 	mock := &Mockusecase{ctrl: ctrl}
 	mock.recorder = &MockusecaseMockRecorder{mock}
+
 	return mock
 }
 
@@ -87,12 +100,14 @@ func (m *Mockusecase) Get(ctx context.Context, id string) (*domain.Client, []dom
 	ret0, _ := ret[0].(*domain.Client)
 	ret1, _ := ret[1].([]domain.ClientEvent)
 	ret2, _ := ret[2].(error)
+
 	return ret0, ret1, ret2
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockusecaseMockRecorder) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockusecase)(nil).Get), ctx, id)
 }
 
@@ -102,13 +117,20 @@ func (m *Mockusecase) ListActive(ctx context.Context) ([]*domain.Client, error) 
 	ret := m.ctrl.Call(m, "ListActive", ctx)
 	ret0, _ := ret[0].([]*domain.Client)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // ListActive indicates an expected call of ListActive.
 func (mr *MockusecaseMockRecorder) ListActive(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListActive", reflect.TypeOf((*Mockusecase)(nil).ListActive), ctx)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"ListActive",
+		reflect.TypeOf((*Mockusecase)(nil).ListActive),
+		ctx,
+	)
 }
 
 // ListHistorical mocks base method.
@@ -117,28 +139,51 @@ func (m *Mockusecase) ListHistorical(ctx context.Context, limit int) ([]*domain.
 	ret := m.ctrl.Call(m, "ListHistorical", ctx, limit)
 	ret0, _ := ret[0].([]*domain.Client)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // ListHistorical indicates an expected call of ListHistorical.
 func (mr *MockusecaseMockRecorder) ListHistorical(ctx, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListHistorical", reflect.TypeOf((*Mockusecase)(nil).ListHistorical), ctx, limit)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"ListHistorical",
+		reflect.TypeOf((*Mockusecase)(nil).ListHistorical),
+		ctx,
+		limit,
+	)
 }
 
 // ListSessions mocks base method.
-func (m *Mockusecase) ListSessions(ctx context.Context, clientName, k8sNamespace, currentID string, limit int) ([]*domain.Client, error) {
+func (m *Mockusecase) ListSessions(
+	ctx context.Context,
+	clientName, k8sNamespace, currentID string,
+	limit int,
+) ([]*domain.Client, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListSessions", ctx, clientName, k8sNamespace, currentID, limit)
 	ret0, _ := ret[0].([]*domain.Client)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // ListSessions indicates an expected call of ListSessions.
 func (mr *MockusecaseMockRecorder) ListSessions(ctx, clientName, k8sNamespace, currentID, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSessions", reflect.TypeOf((*Mockusecase)(nil).ListSessions), ctx, clientName, k8sNamespace, currentID, limit)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"ListSessions",
+		reflect.TypeOf((*Mockusecase)(nil).ListSessions),
+		ctx,
+		clientName,
+		k8sNamespace,
+		currentID,
+		limit,
+	)
 }
 
 // SubscribeChanges mocks base method.
@@ -148,13 +193,20 @@ func (m *Mockusecase) SubscribeChanges(ctx context.Context) (<-chan domain.Clien
 	ret0, _ := ret[0].(<-chan domain.ClientChange)
 	ret1, _ := ret[1].(func())
 	ret2, _ := ret[2].(error)
+
 	return ret0, ret1, ret2
 }
 
 // SubscribeChanges indicates an expected call of SubscribeChanges.
 func (mr *MockusecaseMockRecorder) SubscribeChanges(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscribeChanges", reflect.TypeOf((*Mockusecase)(nil).SubscribeChanges), ctx)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"SubscribeChanges",
+		reflect.TypeOf((*Mockusecase)(nil).SubscribeChanges),
+		ctx,
+	)
 }
 
 // SubscribeClient mocks base method.
@@ -164,13 +216,21 @@ func (m *Mockusecase) SubscribeClient(ctx context.Context, connID string) (<-cha
 	ret0, _ := ret[0].(<-chan domain.ClientChange)
 	ret1, _ := ret[1].(func())
 	ret2, _ := ret[2].(error)
+
 	return ret0, ret1, ret2
 }
 
 // SubscribeClient indicates an expected call of SubscribeClient.
 func (mr *MockusecaseMockRecorder) SubscribeClient(ctx, connID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscribeClient", reflect.TypeOf((*Mockusecase)(nil).SubscribeClient), ctx, connID)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"SubscribeClient",
+		reflect.TypeOf((*Mockusecase)(nil).SubscribeClient),
+		ctx,
+		connID,
+	)
 }
 
 // MockwatchSender is a mock of watchSender interface.
@@ -189,6 +249,7 @@ type MockwatchSenderMockRecorder struct {
 func NewMockwatchSender(ctrl *gomock.Controller) *MockwatchSender {
 	mock := &MockwatchSender{ctrl: ctrl}
 	mock.recorder = &MockwatchSenderMockRecorder{mock}
+
 	return mock
 }
 
@@ -202,12 +263,14 @@ func (m *MockwatchSender) Send(resp *clientsv1.WatchClientsResponse) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", resp)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Send indicates an expected call of Send.
 func (mr *MockwatchSenderMockRecorder) Send(resp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockwatchSender)(nil).Send), resp)
 }
 
@@ -227,6 +290,7 @@ type MockwatchClientSenderMockRecorder struct {
 func NewMockwatchClientSender(ctrl *gomock.Controller) *MockwatchClientSender {
 	mock := &MockwatchClientSender{ctrl: ctrl}
 	mock.recorder = &MockwatchClientSenderMockRecorder{mock}
+
 	return mock
 }
 
@@ -240,11 +304,18 @@ func (m *MockwatchClientSender) Send(resp *clientsv1.WatchClientResponse) error 
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", resp)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Send indicates an expected call of Send.
 func (mr *MockwatchClientSenderMockRecorder) Send(resp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockwatchClientSender)(nil).Send), resp)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Send",
+		reflect.TypeOf((*MockwatchClientSender)(nil).Send),
+		resp,
+	)
 }

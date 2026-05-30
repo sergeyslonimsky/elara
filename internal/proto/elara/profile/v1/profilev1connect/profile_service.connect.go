@@ -5,12 +5,14 @@
 package profilev1connect
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1"
 	http "net/http"
 	strings "strings"
+
+	connect "connectrpc.com/connect"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -47,7 +49,10 @@ type ProfileServiceClient interface {
 	Me(context.Context, *connect.Request[v1.MeRequest]) (*connect.Response[v1.MeResponse], error)
 	// Basic-auth flow — changes the current user's password
 	// current_password is required unless password_change_required is true in the session
-	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
+	ChangePassword(
+		context.Context,
+		*connect.Request[v1.ChangePasswordRequest],
+	) (*connect.Response[v1.ChangePasswordResponse], error)
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 }
 
@@ -58,9 +63,16 @@ type ProfileServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewProfileServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ProfileServiceClient {
+func NewProfileServiceClient(
+	httpClient connect.HTTPClient,
+	baseURL string,
+	opts ...connect.ClientOption,
+) ProfileServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	profileServiceMethods := v1.File_elara_profile_v1_profile_service_proto.Services().ByName("ProfileService").Methods()
+	profileServiceMethods := v1.File_elara_profile_v1_profile_service_proto.Services().
+		ByName("ProfileService").
+		Methods()
+
 	return &profileServiceClient{
 		me: connect.NewClient[v1.MeRequest, v1.MeResponse](
 			httpClient,
@@ -91,17 +103,26 @@ type profileServiceClient struct {
 }
 
 // Me calls elara.profile.v1.ProfileService.Me.
-func (c *profileServiceClient) Me(ctx context.Context, req *connect.Request[v1.MeRequest]) (*connect.Response[v1.MeResponse], error) {
+func (c *profileServiceClient) Me(
+	ctx context.Context,
+	req *connect.Request[v1.MeRequest],
+) (*connect.Response[v1.MeResponse], error) {
 	return c.me.CallUnary(ctx, req)
 }
 
 // ChangePassword calls elara.profile.v1.ProfileService.ChangePassword.
-func (c *profileServiceClient) ChangePassword(ctx context.Context, req *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error) {
+func (c *profileServiceClient) ChangePassword(
+	ctx context.Context,
+	req *connect.Request[v1.ChangePasswordRequest],
+) (*connect.Response[v1.ChangePasswordResponse], error) {
 	return c.changePassword.CallUnary(ctx, req)
 }
 
 // Logout calls elara.profile.v1.ProfileService.Logout.
-func (c *profileServiceClient) Logout(ctx context.Context, req *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error) {
+func (c *profileServiceClient) Logout(
+	ctx context.Context,
+	req *connect.Request[v1.LogoutRequest],
+) (*connect.Response[v1.LogoutResponse], error) {
 	return c.logout.CallUnary(ctx, req)
 }
 
@@ -110,7 +131,10 @@ type ProfileServiceHandler interface {
 	Me(context.Context, *connect.Request[v1.MeRequest]) (*connect.Response[v1.MeResponse], error)
 	// Basic-auth flow — changes the current user's password
 	// current_password is required unless password_change_required is true in the session
-	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error)
+	ChangePassword(
+		context.Context,
+		*connect.Request[v1.ChangePasswordRequest],
+	) (*connect.Response[v1.ChangePasswordResponse], error)
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error)
 }
 
@@ -120,7 +144,9 @@ type ProfileServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewProfileServiceHandler(svc ProfileServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	profileServiceMethods := v1.File_elara_profile_v1_profile_service_proto.Services().ByName("ProfileService").Methods()
+	profileServiceMethods := v1.File_elara_profile_v1_profile_service_proto.Services().
+		ByName("ProfileService").
+		Methods()
 	profileServiceMeHandler := connect.NewUnaryHandler(
 		ProfileServiceMeProcedure,
 		svc.Me,
@@ -139,6 +165,7 @@ func NewProfileServiceHandler(svc ProfileServiceHandler, opts ...connect.Handler
 		connect.WithSchema(profileServiceMethods.ByName("Logout")),
 		connect.WithHandlerOptions(opts...),
 	)
+
 	return "/elara.profile.v1.ProfileService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ProfileServiceMeProcedure:
@@ -156,14 +183,32 @@ func NewProfileServiceHandler(svc ProfileServiceHandler, opts ...connect.Handler
 // UnimplementedProfileServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedProfileServiceHandler struct{}
 
-func (UnimplementedProfileServiceHandler) Me(context.Context, *connect.Request[v1.MeRequest]) (*connect.Response[v1.MeResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.profile.v1.ProfileService.Me is not implemented"))
+func (UnimplementedProfileServiceHandler) Me(
+	context.Context,
+	*connect.Request[v1.MeRequest],
+) (*connect.Response[v1.MeResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.profile.v1.ProfileService.Me is not implemented"),
+	)
 }
 
-func (UnimplementedProfileServiceHandler) ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.ChangePasswordResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.profile.v1.ProfileService.ChangePassword is not implemented"))
+func (UnimplementedProfileServiceHandler) ChangePassword(
+	context.Context,
+	*connect.Request[v1.ChangePasswordRequest],
+) (*connect.Response[v1.ChangePasswordResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.profile.v1.ProfileService.ChangePassword is not implemented"),
+	)
 }
 
-func (UnimplementedProfileServiceHandler) Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[v1.LogoutResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.profile.v1.ProfileService.Logout is not implemented"))
+func (UnimplementedProfileServiceHandler) Logout(
+	context.Context,
+	*connect.Request[v1.LogoutRequest],
+) (*connect.Response[v1.LogoutResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.profile.v1.ProfileService.Logout is not implemented"),
+	)
 }

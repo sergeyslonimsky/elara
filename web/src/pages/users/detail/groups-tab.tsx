@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { canManageGroup } from "@/auth/ability";
-import { useAuth } from "@/components/auth-provider";
+import { useAbility } from "@/auth/ability-context";
 import { SkeletonList } from "@/components/skeleton-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,14 +27,13 @@ export function GroupsTab({
 	visibleGroupIds,
 	membershipVersion,
 }: Readonly<GroupsTabProps>) {
-	const { state } = useAuth();
+	const ability = useAbility();
 	const queryClient = useQueryClient();
 
 	const { data: groupsData, isLoading } = useQuery(listGroups, {
 		pagination: { limit: 1000, offset: 0 },
 	});
 
-	const ability = state.status === "authenticated" ? state.ability : null;
 	const allGroups = groupsData?.groups ?? [];
 
 	// Local delta state — independent of server data, so background refetches
@@ -51,7 +50,7 @@ export function GroupsTab({
 	};
 
 	const toggle = (g: Group) => {
-		if (!ability || !canManageGroup(ability, g)) return;
+		if (!canManageGroup(ability, g)) return;
 		const id = g.id;
 		const isMember = visibleSet.has(id);
 		if (isMember) {
@@ -117,7 +116,7 @@ export function GroupsTab({
 					</p>
 				)}
 				{allGroups.map((g) => {
-					const editable = ability ? canManageGroup(ability, g) : false;
+					const editable = canManageGroup(ability, g);
 					const checked = isChecked(g.id);
 					const checkboxId = `group-cb-${g.id}`;
 					return (

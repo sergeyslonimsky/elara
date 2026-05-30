@@ -44,7 +44,7 @@ func (s *Service) List(ctx context.Context, actor domain.AuthInfo, params ListPa
 	filter := domain.UserFilter{Search: params.Query}
 
 	// Fast path: global User:Read.
-	if s.pdp.HasUserReadGlobal(actor.Email) {
+	if s.pdp.HasGlobal(actor.Email, domain.ObjectUser, domain.ActionRead) {
 		filter.AnyUser = true
 	} else {
 		groupScope := s.pdp.EffectiveDomains(actor.Email, domain.ObjectGroup, domain.ActionRead)

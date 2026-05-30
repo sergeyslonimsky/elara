@@ -13,9 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "go.uber.org/mock/gomock"
+
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	authz "github.com/sergeyslonimsky/elara/internal/service/authz"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockpdp is a mock of pdp interface.
@@ -34,6 +35,7 @@ type MockpdpMockRecorder struct {
 func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
 	mock := &Mockpdp{ctrl: ctrl}
 	mock.recorder = &MockpdpMockRecorder{mock}
+
 	return mock
 }
 
@@ -47,13 +49,22 @@ func (m *Mockpdp) EffectiveDomains(principal string, object domain.Object, actio
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EffectiveDomains", principal, object, action)
 	ret0, _ := ret[0].(authz.DomainSet)
+
 	return ret0
 }
 
 // EffectiveDomains indicates an expected call of EffectiveDomains.
 func (mr *MockpdpMockRecorder) EffectiveDomains(principal, object, action any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveDomains", reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains), principal, object, action)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"EffectiveDomains",
+		reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains),
+		principal,
+		object,
+		action,
+	)
 }
 
 // Mockstorage is a mock of storage interface.
@@ -72,6 +83,7 @@ type MockstorageMockRecorder struct {
 func NewMockstorage(ctrl *gomock.Controller) *Mockstorage {
 	mock := &Mockstorage{ctrl: ctrl}
 	mock.recorder = &MockstorageMockRecorder{mock}
+
 	return mock
 }
 
@@ -85,13 +97,21 @@ func (m *Mockstorage) Create(ctx context.Context, cfg *domain.Config) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, cfg)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Create indicates an expected call of Create.
 func (mr *MockstorageMockRecorder) Create(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockstorage)(nil).Create), ctx, cfg)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Create",
+		reflect.TypeOf((*Mockstorage)(nil).Create),
+		ctx,
+		cfg,
+	)
 }
 
 // Delete mocks base method.
@@ -100,13 +120,22 @@ func (m *Mockstorage) Delete(ctx context.Context, path, namespace string) (int64
 	ret := m.ctrl.Call(m, "Delete", ctx, path, namespace)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Delete indicates an expected call of Delete.
 func (mr *MockstorageMockRecorder) Delete(ctx, path, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockstorage)(nil).Delete), ctx, path, namespace)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Delete",
+		reflect.TypeOf((*Mockstorage)(nil).Delete),
+		ctx,
+		path,
+		namespace,
+	)
 }
 
 // Get mocks base method.
@@ -115,58 +144,107 @@ func (m *Mockstorage) Get(ctx context.Context, path, namespace string) (*domain.
 	ret := m.ctrl.Call(m, "Get", ctx, path, namespace)
 	ret0, _ := ret[0].(*domain.Config)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockstorageMockRecorder) Get(ctx, path, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockstorage)(nil).Get), ctx, path, namespace)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Get",
+		reflect.TypeOf((*Mockstorage)(nil).Get),
+		ctx,
+		path,
+		namespace,
+	)
 }
 
 // GetAtRevision mocks base method.
-func (m *Mockstorage) GetAtRevision(ctx context.Context, path, namespace string, revision int64) (*domain.HistoryEntry, error) {
+func (m *Mockstorage) GetAtRevision(
+	ctx context.Context,
+	path, namespace string,
+	revision int64,
+) (*domain.HistoryEntry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAtRevision", ctx, path, namespace, revision)
 	ret0, _ := ret[0].(*domain.HistoryEntry)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // GetAtRevision indicates an expected call of GetAtRevision.
 func (mr *MockstorageMockRecorder) GetAtRevision(ctx, path, namespace, revision any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAtRevision", reflect.TypeOf((*Mockstorage)(nil).GetAtRevision), ctx, path, namespace, revision)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"GetAtRevision",
+		reflect.TypeOf((*Mockstorage)(nil).GetAtRevision),
+		ctx,
+		path,
+		namespace,
+		revision,
+	)
 }
 
 // GetConfigHistory mocks base method.
-func (m *Mockstorage) GetConfigHistory(ctx context.Context, path, namespace string, limit int) ([]*domain.HistoryEntry, error) {
+func (m *Mockstorage) GetConfigHistory(
+	ctx context.Context,
+	path, namespace string,
+	limit int,
+) ([]*domain.HistoryEntry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfigHistory", ctx, path, namespace, limit)
 	ret0, _ := ret[0].([]*domain.HistoryEntry)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // GetConfigHistory indicates an expected call of GetConfigHistory.
 func (mr *MockstorageMockRecorder) GetConfigHistory(ctx, path, namespace, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigHistory", reflect.TypeOf((*Mockstorage)(nil).GetConfigHistory), ctx, path, namespace, limit)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"GetConfigHistory",
+		reflect.TypeOf((*Mockstorage)(nil).GetConfigHistory),
+		ctx,
+		path,
+		namespace,
+		limit,
+	)
 }
 
 // ListSummariesByPrefix mocks base method.
-func (m *Mockstorage) ListSummariesByPrefix(ctx context.Context, pathPrefix, namespace string) ([]*domain.ConfigSummary, error) {
+func (m *Mockstorage) ListSummariesByPrefix(
+	ctx context.Context,
+	pathPrefix, namespace string,
+) ([]*domain.ConfigSummary, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListSummariesByPrefix", ctx, pathPrefix, namespace)
 	ret0, _ := ret[0].([]*domain.ConfigSummary)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // ListSummariesByPrefix indicates an expected call of ListSummariesByPrefix.
 func (mr *MockstorageMockRecorder) ListSummariesByPrefix(ctx, pathPrefix, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSummariesByPrefix", reflect.TypeOf((*Mockstorage)(nil).ListSummariesByPrefix), ctx, pathPrefix, namespace)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"ListSummariesByPrefix",
+		reflect.TypeOf((*Mockstorage)(nil).ListSummariesByPrefix),
+		ctx,
+		pathPrefix,
+		namespace,
+	)
 }
 
 // LockConfig mocks base method.
@@ -174,13 +252,22 @@ func (m *Mockstorage) LockConfig(ctx context.Context, namespace, path string) er
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LockConfig", ctx, namespace, path)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // LockConfig indicates an expected call of LockConfig.
 func (mr *MockstorageMockRecorder) LockConfig(ctx, namespace, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockConfig", reflect.TypeOf((*Mockstorage)(nil).LockConfig), ctx, namespace, path)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"LockConfig",
+		reflect.TypeOf((*Mockstorage)(nil).LockConfig),
+		ctx,
+		namespace,
+		path,
+	)
 }
 
 // SearchByPath mocks base method.
@@ -189,13 +276,22 @@ func (m *Mockstorage) SearchByPath(ctx context.Context, query, namespace string)
 	ret := m.ctrl.Call(m, "SearchByPath", ctx, query, namespace)
 	ret0, _ := ret[0].([]*domain.ConfigSummary)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // SearchByPath indicates an expected call of SearchByPath.
 func (mr *MockstorageMockRecorder) SearchByPath(ctx, query, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchByPath", reflect.TypeOf((*Mockstorage)(nil).SearchByPath), ctx, query, namespace)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"SearchByPath",
+		reflect.TypeOf((*Mockstorage)(nil).SearchByPath),
+		ctx,
+		query,
+		namespace,
+	)
 }
 
 // UnlockConfig mocks base method.
@@ -203,13 +299,22 @@ func (m *Mockstorage) UnlockConfig(ctx context.Context, namespace, path string) 
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnlockConfig", ctx, namespace, path)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // UnlockConfig indicates an expected call of UnlockConfig.
 func (mr *MockstorageMockRecorder) UnlockConfig(ctx, namespace, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlockConfig", reflect.TypeOf((*Mockstorage)(nil).UnlockConfig), ctx, namespace, path)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"UnlockConfig",
+		reflect.TypeOf((*Mockstorage)(nil).UnlockConfig),
+		ctx,
+		namespace,
+		path,
+	)
 }
 
 // Update mocks base method.
@@ -217,13 +322,21 @@ func (m *Mockstorage) Update(ctx context.Context, cfg *domain.Config) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, cfg)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Update indicates an expected call of Update.
 func (mr *MockstorageMockRecorder) Update(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*Mockstorage)(nil).Update), ctx, cfg)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Update",
+		reflect.TypeOf((*Mockstorage)(nil).Update),
+		ctx,
+		cfg,
+	)
 }
 
 // Mockwatcher is a mock of watcher interface.
@@ -242,6 +355,7 @@ type MockwatcherMockRecorder struct {
 func NewMockwatcher(ctrl *gomock.Controller) *Mockwatcher {
 	mock := &Mockwatcher{ctrl: ctrl}
 	mock.recorder = &MockwatcherMockRecorder{mock}
+
 	return mock
 }
 
@@ -259,7 +373,14 @@ func (m *Mockwatcher) NotifyConfigLocked(ctx context.Context, cfg *domain.Config
 // NotifyConfigLocked indicates an expected call of NotifyConfigLocked.
 func (mr *MockwatcherMockRecorder) NotifyConfigLocked(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyConfigLocked", reflect.TypeOf((*Mockwatcher)(nil).NotifyConfigLocked), ctx, cfg)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"NotifyConfigLocked",
+		reflect.TypeOf((*Mockwatcher)(nil).NotifyConfigLocked),
+		ctx,
+		cfg,
+	)
 }
 
 // NotifyConfigUnlocked mocks base method.
@@ -271,7 +392,14 @@ func (m *Mockwatcher) NotifyConfigUnlocked(ctx context.Context, cfg *domain.Conf
 // NotifyConfigUnlocked indicates an expected call of NotifyConfigUnlocked.
 func (mr *MockwatcherMockRecorder) NotifyConfigUnlocked(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyConfigUnlocked", reflect.TypeOf((*Mockwatcher)(nil).NotifyConfigUnlocked), ctx, cfg)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"NotifyConfigUnlocked",
+		reflect.TypeOf((*Mockwatcher)(nil).NotifyConfigUnlocked),
+		ctx,
+		cfg,
+	)
 }
 
 // NotifyCreated mocks base method.
@@ -283,7 +411,14 @@ func (m *Mockwatcher) NotifyCreated(ctx context.Context, cfg *domain.Config) {
 // NotifyCreated indicates an expected call of NotifyCreated.
 func (mr *MockwatcherMockRecorder) NotifyCreated(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyCreated", reflect.TypeOf((*Mockwatcher)(nil).NotifyCreated), ctx, cfg)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"NotifyCreated",
+		reflect.TypeOf((*Mockwatcher)(nil).NotifyCreated),
+		ctx,
+		cfg,
+	)
 }
 
 // NotifyDeleted mocks base method.
@@ -295,7 +430,16 @@ func (m *Mockwatcher) NotifyDeleted(ctx context.Context, path, namespace string,
 // NotifyDeleted indicates an expected call of NotifyDeleted.
 func (mr *MockwatcherMockRecorder) NotifyDeleted(ctx, path, namespace, revision any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyDeleted", reflect.TypeOf((*Mockwatcher)(nil).NotifyDeleted), ctx, path, namespace, revision)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"NotifyDeleted",
+		reflect.TypeOf((*Mockwatcher)(nil).NotifyDeleted),
+		ctx,
+		path,
+		namespace,
+		revision,
+	)
 }
 
 // NotifyUpdated mocks base method.
@@ -307,7 +451,14 @@ func (m *Mockwatcher) NotifyUpdated(ctx context.Context, cfg *domain.Config) {
 // NotifyUpdated indicates an expected call of NotifyUpdated.
 func (mr *MockwatcherMockRecorder) NotifyUpdated(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyUpdated", reflect.TypeOf((*Mockwatcher)(nil).NotifyUpdated), ctx, cfg)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"NotifyUpdated",
+		reflect.TypeOf((*Mockwatcher)(nil).NotifyUpdated),
+		ctx,
+		cfg,
+	)
 }
 
 // Subscribe mocks base method.
@@ -316,13 +467,22 @@ func (m *Mockwatcher) Subscribe(ctx context.Context, pathPrefix, namespace strin
 	ret := m.ctrl.Call(m, "Subscribe", ctx, pathPrefix, namespace)
 	ret0, _ := ret[0].(<-chan domain.WatchEvent)
 	ret1, _ := ret[1].(func())
+
 	return ret0, ret1
 }
 
 // Subscribe indicates an expected call of Subscribe.
 func (mr *MockwatcherMockRecorder) Subscribe(ctx, pathPrefix, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*Mockwatcher)(nil).Subscribe), ctx, pathPrefix, namespace)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Subscribe",
+		reflect.TypeOf((*Mockwatcher)(nil).Subscribe),
+		ctx,
+		pathPrefix,
+		namespace,
+	)
 }
 
 // MocknamespaceProvider is a mock of namespaceProvider interface.
@@ -341,6 +501,7 @@ type MocknamespaceProviderMockRecorder struct {
 func NewMocknamespaceProvider(ctrl *gomock.Controller) *MocknamespaceProvider {
 	mock := &MocknamespaceProvider{ctrl: ctrl}
 	mock.recorder = &MocknamespaceProviderMockRecorder{mock}
+
 	return mock
 }
 
@@ -355,13 +516,21 @@ func (m *MocknamespaceProvider) Get(ctx context.Context, name string) (*domain.N
 	ret := m.ctrl.Call(m, "Get", ctx, name)
 	ret0, _ := ret[0].(*domain.Namespace)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MocknamespaceProviderMockRecorder) Get(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MocknamespaceProvider)(nil).Get), ctx, name)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Get",
+		reflect.TypeOf((*MocknamespaceProvider)(nil).Get),
+		ctx,
+		name,
+	)
 }
 
 // UpdateTimestamp mocks base method.
@@ -369,13 +538,21 @@ func (m *MocknamespaceProvider) UpdateTimestamp(ctx context.Context, name string
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateTimestamp", ctx, name)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // UpdateTimestamp indicates an expected call of UpdateTimestamp.
 func (mr *MocknamespaceProviderMockRecorder) UpdateTimestamp(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTimestamp", reflect.TypeOf((*MocknamespaceProvider)(nil).UpdateTimestamp), ctx, name)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"UpdateTimestamp",
+		reflect.TypeOf((*MocknamespaceProvider)(nil).UpdateTimestamp),
+		ctx,
+		name,
+	)
 }
 
 // MockschemaValidator is a mock of schemaValidator interface.
@@ -394,6 +571,7 @@ type MockschemaValidatorMockRecorder struct {
 func NewMockschemaValidator(ctrl *gomock.Controller) *MockschemaValidator {
 	mock := &MockschemaValidator{ctrl: ctrl}
 	mock.recorder = &MockschemaValidatorMockRecorder{mock}
+
 	return mock
 }
 
@@ -403,15 +581,30 @@ func (m *MockschemaValidator) EXPECT() *MockschemaValidatorMockRecorder {
 }
 
 // Validate mocks base method.
-func (m *MockschemaValidator) Validate(ctx context.Context, namespace, configPath, content string, format domain.Format) error {
+func (m *MockschemaValidator) Validate(
+	ctx context.Context,
+	namespace, configPath, content string,
+	format domain.Format,
+) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Validate", ctx, namespace, configPath, content, format)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Validate indicates an expected call of Validate.
 func (mr *MockschemaValidatorMockRecorder) Validate(ctx, namespace, configPath, content, format any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockschemaValidator)(nil).Validate), ctx, namespace, configPath, content, format)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Validate",
+		reflect.TypeOf((*MockschemaValidator)(nil).Validate),
+		ctx,
+		namespace,
+		configPath,
+		content,
+		format,
+	)
 }

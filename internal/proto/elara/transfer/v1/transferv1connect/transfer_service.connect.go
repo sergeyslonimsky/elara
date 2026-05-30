@@ -5,12 +5,14 @@
 package transferv1connect
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
 	http "net/http"
 	strings "strings"
+
+	connect "connectrpc.com/connect"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -46,9 +48,15 @@ const (
 
 // TransferServiceClient is a client for the elara.transfer.v1.TransferService service.
 type TransferServiceClient interface {
-	ExportNamespace(context.Context, *connect.Request[v1.ExportNamespaceRequest]) (*connect.Response[v1.ExportNamespaceResponse], error)
+	ExportNamespace(
+		context.Context,
+		*connect.Request[v1.ExportNamespaceRequest],
+	) (*connect.Response[v1.ExportNamespaceResponse], error)
 	ExportAll(context.Context, *connect.Request[v1.ExportAllRequest]) (*connect.Response[v1.ExportAllResponse], error)
-	ImportNamespace(context.Context, *connect.Request[v1.ImportNamespaceRequest]) (*connect.Response[v1.ImportNamespaceResponse], error)
+	ImportNamespace(
+		context.Context,
+		*connect.Request[v1.ImportNamespaceRequest],
+	) (*connect.Response[v1.ImportNamespaceResponse], error)
 }
 
 // NewTransferServiceClient constructs a client for the elara.transfer.v1.TransferService service.
@@ -58,9 +66,16 @@ type TransferServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewTransferServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) TransferServiceClient {
+func NewTransferServiceClient(
+	httpClient connect.HTTPClient,
+	baseURL string,
+	opts ...connect.ClientOption,
+) TransferServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	transferServiceMethods := v1.File_elara_transfer_v1_transfer_service_proto.Services().ByName("TransferService").Methods()
+	transferServiceMethods := v1.File_elara_transfer_v1_transfer_service_proto.Services().
+		ByName("TransferService").
+		Methods()
+
 	return &transferServiceClient{
 		exportNamespace: connect.NewClient[v1.ExportNamespaceRequest, v1.ExportNamespaceResponse](
 			httpClient,
@@ -91,25 +106,40 @@ type transferServiceClient struct {
 }
 
 // ExportNamespace calls elara.transfer.v1.TransferService.ExportNamespace.
-func (c *transferServiceClient) ExportNamespace(ctx context.Context, req *connect.Request[v1.ExportNamespaceRequest]) (*connect.Response[v1.ExportNamespaceResponse], error) {
+func (c *transferServiceClient) ExportNamespace(
+	ctx context.Context,
+	req *connect.Request[v1.ExportNamespaceRequest],
+) (*connect.Response[v1.ExportNamespaceResponse], error) {
 	return c.exportNamespace.CallUnary(ctx, req)
 }
 
 // ExportAll calls elara.transfer.v1.TransferService.ExportAll.
-func (c *transferServiceClient) ExportAll(ctx context.Context, req *connect.Request[v1.ExportAllRequest]) (*connect.Response[v1.ExportAllResponse], error) {
+func (c *transferServiceClient) ExportAll(
+	ctx context.Context,
+	req *connect.Request[v1.ExportAllRequest],
+) (*connect.Response[v1.ExportAllResponse], error) {
 	return c.exportAll.CallUnary(ctx, req)
 }
 
 // ImportNamespace calls elara.transfer.v1.TransferService.ImportNamespace.
-func (c *transferServiceClient) ImportNamespace(ctx context.Context, req *connect.Request[v1.ImportNamespaceRequest]) (*connect.Response[v1.ImportNamespaceResponse], error) {
+func (c *transferServiceClient) ImportNamespace(
+	ctx context.Context,
+	req *connect.Request[v1.ImportNamespaceRequest],
+) (*connect.Response[v1.ImportNamespaceResponse], error) {
 	return c.importNamespace.CallUnary(ctx, req)
 }
 
 // TransferServiceHandler is an implementation of the elara.transfer.v1.TransferService service.
 type TransferServiceHandler interface {
-	ExportNamespace(context.Context, *connect.Request[v1.ExportNamespaceRequest]) (*connect.Response[v1.ExportNamespaceResponse], error)
+	ExportNamespace(
+		context.Context,
+		*connect.Request[v1.ExportNamespaceRequest],
+	) (*connect.Response[v1.ExportNamespaceResponse], error)
 	ExportAll(context.Context, *connect.Request[v1.ExportAllRequest]) (*connect.Response[v1.ExportAllResponse], error)
-	ImportNamespace(context.Context, *connect.Request[v1.ImportNamespaceRequest]) (*connect.Response[v1.ImportNamespaceResponse], error)
+	ImportNamespace(
+		context.Context,
+		*connect.Request[v1.ImportNamespaceRequest],
+	) (*connect.Response[v1.ImportNamespaceResponse], error)
 }
 
 // NewTransferServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -118,7 +148,9 @@ type TransferServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewTransferServiceHandler(svc TransferServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	transferServiceMethods := v1.File_elara_transfer_v1_transfer_service_proto.Services().ByName("TransferService").Methods()
+	transferServiceMethods := v1.File_elara_transfer_v1_transfer_service_proto.Services().
+		ByName("TransferService").
+		Methods()
 	transferServiceExportNamespaceHandler := connect.NewUnaryHandler(
 		TransferServiceExportNamespaceProcedure,
 		svc.ExportNamespace,
@@ -137,6 +169,7 @@ func NewTransferServiceHandler(svc TransferServiceHandler, opts ...connect.Handl
 		connect.WithSchema(transferServiceMethods.ByName("ImportNamespace")),
 		connect.WithHandlerOptions(opts...),
 	)
+
 	return "/elara.transfer.v1.TransferService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TransferServiceExportNamespaceProcedure:
@@ -154,14 +187,32 @@ func NewTransferServiceHandler(svc TransferServiceHandler, opts ...connect.Handl
 // UnimplementedTransferServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedTransferServiceHandler struct{}
 
-func (UnimplementedTransferServiceHandler) ExportNamespace(context.Context, *connect.Request[v1.ExportNamespaceRequest]) (*connect.Response[v1.ExportNamespaceResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.transfer.v1.TransferService.ExportNamespace is not implemented"))
+func (UnimplementedTransferServiceHandler) ExportNamespace(
+	context.Context,
+	*connect.Request[v1.ExportNamespaceRequest],
+) (*connect.Response[v1.ExportNamespaceResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.transfer.v1.TransferService.ExportNamespace is not implemented"),
+	)
 }
 
-func (UnimplementedTransferServiceHandler) ExportAll(context.Context, *connect.Request[v1.ExportAllRequest]) (*connect.Response[v1.ExportAllResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.transfer.v1.TransferService.ExportAll is not implemented"))
+func (UnimplementedTransferServiceHandler) ExportAll(
+	context.Context,
+	*connect.Request[v1.ExportAllRequest],
+) (*connect.Response[v1.ExportAllResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.transfer.v1.TransferService.ExportAll is not implemented"),
+	)
 }
 
-func (UnimplementedTransferServiceHandler) ImportNamespace(context.Context, *connect.Request[v1.ImportNamespaceRequest]) (*connect.Response[v1.ImportNamespaceResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.transfer.v1.TransferService.ImportNamespace is not implemented"))
+func (UnimplementedTransferServiceHandler) ImportNamespace(
+	context.Context,
+	*connect.Request[v1.ImportNamespaceRequest],
+) (*connect.Response[v1.ImportNamespaceResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.transfer.v1.TransferService.ImportNamespace is not implemented"),
+	)
 }

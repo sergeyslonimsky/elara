@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { canManageGroup } from "@/auth/ability";
-import { useAuth } from "@/components/auth-provider";
+import { useAbility } from "@/auth/ability-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -51,8 +51,7 @@ export function CreateGroupDialog({
 	onOpenChange,
 }: Readonly<CreateGroupDialogProps>) {
 	const queryClient = useQueryClient();
-	const { state } = useAuth();
-	const ability = state.status === "authenticated" ? state.ability : null;
+	const ability = useAbility();
 
 	const [memberInput, setMemberInput] = useState("");
 	const [memberError, setMemberError] = useState<string | null>(null);
@@ -87,7 +86,7 @@ export function CreateGroupDialog({
 		{ enabled: open },
 	);
 	const manageableGroups = (groupsData?.groups ?? []).filter((g) =>
-		ability ? canManageGroup(ability, g) : false,
+		canManageGroup(ability, g),
 	);
 
 	const mutation = useMutation(createGroup, {

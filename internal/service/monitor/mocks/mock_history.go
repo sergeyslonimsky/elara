@@ -14,8 +14,9 @@ import (
 	reflect "reflect"
 	time "time"
 
-	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	gomock "go.uber.org/mock/gomock"
+
+	domain "github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 // MockClientHistoryRepo is a mock of ClientHistoryRepo interface.
@@ -34,6 +35,7 @@ type MockClientHistoryRepoMockRecorder struct {
 func NewMockClientHistoryRepo(ctrl *gomock.Controller) *MockClientHistoryRepo {
 	mock := &MockClientHistoryRepo{ctrl: ctrl}
 	mock.recorder = &MockClientHistoryRepoMockRecorder{mock}
+
 	return mock
 }
 
@@ -48,13 +50,20 @@ func (m *MockClientHistoryRepo) Count(ctx context.Context) (int, error) {
 	ret := m.ctrl.Call(m, "Count", ctx)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Count indicates an expected call of Count.
 func (mr *MockClientHistoryRepoMockRecorder) Count(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockClientHistoryRepo)(nil).Count), ctx)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Count",
+		reflect.TypeOf((*MockClientHistoryRepo)(nil).Count),
+		ctx,
+	)
 }
 
 // DeleteOlderThan mocks base method.
@@ -63,13 +72,21 @@ func (m *MockClientHistoryRepo) DeleteOlderThan(ctx context.Context, cutoff time
 	ret := m.ctrl.Call(m, "DeleteOlderThan", ctx, cutoff)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // DeleteOlderThan indicates an expected call of DeleteOlderThan.
 func (mr *MockClientHistoryRepoMockRecorder) DeleteOlderThan(ctx, cutoff any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOlderThan", reflect.TypeOf((*MockClientHistoryRepo)(nil).DeleteOlderThan), ctx, cutoff)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"DeleteOlderThan",
+		reflect.TypeOf((*MockClientHistoryRepo)(nil).DeleteOlderThan),
+		ctx,
+		cutoff,
+	)
 }
 
 // DeleteOldest mocks base method.
@@ -78,13 +95,21 @@ func (m *MockClientHistoryRepo) DeleteOldest(ctx context.Context, n int) (int, e
 	ret := m.ctrl.Call(m, "DeleteOldest", ctx, n)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // DeleteOldest indicates an expected call of DeleteOldest.
 func (mr *MockClientHistoryRepoMockRecorder) DeleteOldest(ctx, n any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOldest", reflect.TypeOf((*MockClientHistoryRepo)(nil).DeleteOldest), ctx, n)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"DeleteOldest",
+		reflect.TypeOf((*MockClientHistoryRepo)(nil).DeleteOldest),
+		ctx,
+		n,
+	)
 }
 
 // List mocks base method.
@@ -93,28 +118,50 @@ func (m *MockClientHistoryRepo) List(ctx context.Context, limit int) ([]*domain.
 	ret := m.ctrl.Call(m, "List", ctx, limit)
 	ret0, _ := ret[0].([]*domain.Client)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockClientHistoryRepoMockRecorder) List(ctx, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockClientHistoryRepo)(nil).List), ctx, limit)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"List",
+		reflect.TypeOf((*MockClientHistoryRepo)(nil).List),
+		ctx,
+		limit,
+	)
 }
 
 // ListByClient mocks base method.
-func (m *MockClientHistoryRepo) ListByClient(ctx context.Context, clientName, k8sNamespace string, limit int) ([]*domain.Client, error) {
+func (m *MockClientHistoryRepo) ListByClient(
+	ctx context.Context,
+	clientName, k8sNamespace string,
+	limit int,
+) ([]*domain.Client, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListByClient", ctx, clientName, k8sNamespace, limit)
 	ret0, _ := ret[0].([]*domain.Client)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // ListByClient indicates an expected call of ListByClient.
 func (mr *MockClientHistoryRepoMockRecorder) ListByClient(ctx, clientName, k8sNamespace, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByClient", reflect.TypeOf((*MockClientHistoryRepo)(nil).ListByClient), ctx, clientName, k8sNamespace, limit)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"ListByClient",
+		reflect.TypeOf((*MockClientHistoryRepo)(nil).ListByClient),
+		ctx,
+		clientName,
+		k8sNamespace,
+		limit,
+	)
 }
 
 // Save mocks base method.
@@ -122,11 +169,19 @@ func (m *MockClientHistoryRepo) Save(ctx context.Context, c *domain.Client) erro
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Save", ctx, c)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Save indicates an expected call of Save.
 func (mr *MockClientHistoryRepoMockRecorder) Save(ctx, c any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockClientHistoryRepo)(nil).Save), ctx, c)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Save",
+		reflect.TypeOf((*MockClientHistoryRepo)(nil).Save),
+		ctx,
+		c,
+	)
 }

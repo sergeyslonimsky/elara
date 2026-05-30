@@ -13,7 +13,6 @@ import (
 
 // pRuleLen is the column count of a Casbin p-rule projected by
 // GetImplicitPermissionsForUser / GetPolicy: [sub, dom, obj, act].
-// Sibling gRuleNativeLen in pap.go covers g-rules.
 const pRuleLen = 4
 
 type enforcer interface {
@@ -37,9 +36,6 @@ func (p *PDP) EffectiveDomains(principal string, object domain.Object, action do
 		return NewDomainSet()
 	}
 
-	objStr := string(object)
-	actStr := string(action)
-
 	var domains []string
 	for _, rule := range rules {
 		// rule format: [sub, dom, obj, act]
@@ -47,10 +43,11 @@ func (p *PDP) EffectiveDomains(principal string, object domain.Object, action do
 			continue
 		}
 
-		obj := rule[2]
-		act := rule[3]
-
-		if (obj == objStr || obj == "*") && (act == actStr || act == "*") {
+		// Same matching semantics as the Casbin matcher (domain.ObjectGrants /
+		// ActionGrants): wildcards and write⊇read. Keeps this scan and Enforce
+		// in agreement — e.g. a namespace:write grant surfaces for a read query.
+		if domain.ObjectGrants(domain.Object(rule[2]), object) &&
+			domain.ActionGrants(domain.Action(rule[3]), action) {
 			domains = append(domains, rule[1])
 		}
 	}
@@ -69,60 +66,25 @@ func (p *PDP) Has(principal string, perm domain.Permission) bool {
 	return ok
 }
 
-// HasGroupRead reports whether actor holds Group:Read on group:<id>.
-func (p *PDP) HasGroupRead(actor, groupID string) bool {
+// HasGroup reports whether actor holds the given action on group:<id>.
+// Hides the group:<id> domain convention from callers.
+func (p *PDP) HasGroup(actor, groupID string, action domain.Action) bool {
 	return p.Has(actor, domain.Permission{
 		Object: domain.ObjectGroup,
-		Action: domain.ActionRead,
+		Action: action,
 		Domain: domain.GroupResource(groupID),
 	})
 }
 
-// HasGroupWrite reports whether actor holds Group:Write on group:<id>.
-func (p *PDP) HasGroupWrite(actor, groupID string) bool {
+// HasGlobal reports whether actor holds the given (object, action) on the
+// global "*" domain. Used for objects whose permissions are global by
+// convention — e.g. User:Read/Write/Create and Group:Create (see
+// permission.proto). User creation may also be derived through the caller
+// supplying initial_group_ids backed by Group:Write — see CreateUser.
+func (p *PDP) HasGlobal(actor string, object domain.Object, action domain.Action) bool {
 	return p.Has(actor, domain.Permission{
-		Object: domain.ObjectGroup,
-		Action: domain.ActionWrite,
-		Domain: domain.GroupResource(groupID),
-	})
-}
-
-// HasUserReadGlobal reports whether actor holds the global User:Read *.
-// (User permissions are global by convention — see permission.proto.)
-func (p *PDP) HasUserReadGlobal(actor string) bool {
-	return p.Has(actor, domain.Permission{
-		Object: domain.ObjectUser,
-		Action: domain.ActionRead,
-		Domain: domain.DomainAll,
-	})
-}
-
-// HasUserWriteGlobal reports whether actor holds the global User:Write *.
-func (p *PDP) HasUserWriteGlobal(actor string) bool {
-	return p.Has(actor, domain.Permission{
-		Object: domain.ObjectUser,
-		Action: domain.ActionWrite,
-		Domain: domain.DomainAll,
-	})
-}
-
-// HasGroupCreate reports whether actor holds the global Group:Create *.
-// Group creation has no scoped variant in our model (see proto comment).
-func (p *PDP) HasGroupCreate(actor string) bool {
-	return p.Has(actor, domain.Permission{
-		Object: domain.ObjectGroup,
-		Action: domain.ActionCreate,
-		Domain: domain.DomainAll,
-	})
-}
-
-// HasUserCreateGlobal reports whether actor holds the global User:Create *.
-// User creation is either fully privileged (this) or derived through the
-// caller supplying initial_group_ids backed by Group:Write — see CreateUser.
-func (p *PDP) HasUserCreateGlobal(actor string) bool {
-	return p.Has(actor, domain.Permission{
-		Object: domain.ObjectUser,
-		Action: domain.ActionCreate,
+		Object: object,
+		Action: action,
 		Domain: domain.DomainAll,
 	})
 }

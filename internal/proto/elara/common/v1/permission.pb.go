@@ -7,11 +7,12 @@
 package commonv1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -25,13 +26,15 @@ type PermissionObject int32
 
 const (
 	PermissionObject_PERMISSION_OBJECT_UNSPECIFIED PermissionObject = 0
-	PermissionObject_PERMISSION_OBJECT_NAMESPACE   PermissionObject = 1
-	PermissionObject_PERMISSION_OBJECT_CONFIG      PermissionObject = 2
-	PermissionObject_PERMISSION_OBJECT_USER        PermissionObject = 3
-	PermissionObject_PERMISSION_OBJECT_GROUP       PermissionObject = 4
-	PermissionObject_PERMISSION_OBJECT_TOKEN       PermissionObject = 5
-	PermissionObject_PERMISSION_OBJECT_WEBHOOK     PermissionObject = 6
-	PermissionObject_PERMISSION_OBJECT_ALL         PermissionObject = 99
+	// NAMESPACE is the umbrella for everything scoped to a namespace: configs,
+	// schemas, export/import. There is no separate config/schema/transfer object.
+	PermissionObject_PERMISSION_OBJECT_NAMESPACE PermissionObject = 1
+	PermissionObject_PERMISSION_OBJECT_USER      PermissionObject = 3
+	PermissionObject_PERMISSION_OBJECT_GROUP     PermissionObject = 4
+	PermissionObject_PERMISSION_OBJECT_TOKEN     PermissionObject = 5
+	PermissionObject_PERMISSION_OBJECT_WEBHOOK   PermissionObject = 6
+	PermissionObject_PERMISSION_OBJECT_CLIENT    PermissionObject = 7
+	PermissionObject_PERMISSION_OBJECT_ALL       PermissionObject = 99
 )
 
 // Enum value maps for PermissionObject.
@@ -39,21 +42,21 @@ var (
 	PermissionObject_name = map[int32]string{
 		0:  "PERMISSION_OBJECT_UNSPECIFIED",
 		1:  "PERMISSION_OBJECT_NAMESPACE",
-		2:  "PERMISSION_OBJECT_CONFIG",
 		3:  "PERMISSION_OBJECT_USER",
 		4:  "PERMISSION_OBJECT_GROUP",
 		5:  "PERMISSION_OBJECT_TOKEN",
 		6:  "PERMISSION_OBJECT_WEBHOOK",
+		7:  "PERMISSION_OBJECT_CLIENT",
 		99: "PERMISSION_OBJECT_ALL",
 	}
 	PermissionObject_value = map[string]int32{
 		"PERMISSION_OBJECT_UNSPECIFIED": 0,
 		"PERMISSION_OBJECT_NAMESPACE":   1,
-		"PERMISSION_OBJECT_CONFIG":      2,
 		"PERMISSION_OBJECT_USER":        3,
 		"PERMISSION_OBJECT_GROUP":       4,
 		"PERMISSION_OBJECT_TOKEN":       5,
 		"PERMISSION_OBJECT_WEBHOOK":     6,
+		"PERMISSION_OBJECT_CLIENT":      7,
 		"PERMISSION_OBJECT_ALL":         99,
 	}
 )
@@ -61,6 +64,7 @@ var (
 func (x PermissionObject) Enum() *PermissionObject {
 	p := new(PermissionObject)
 	*p = x
+
 	return p
 }
 
@@ -90,9 +94,12 @@ type PermissionAction int32
 const (
 	PermissionAction_PERMISSION_ACTION_UNSPECIFIED PermissionAction = 0
 	PermissionAction_PERMISSION_ACTION_READ        PermissionAction = 1
-	PermissionAction_PERMISSION_ACTION_WRITE       PermissionAction = 2
-	PermissionAction_PERMISSION_ACTION_CREATE      PermissionAction = 3
-	PermissionAction_PERMISSION_ACTION_ALL         PermissionAction = 99
+	// WRITE implies READ (see domain.ActionGrants). CREATE and DELETE are
+	// independent capabilities (e.g. create/delete a namespace).
+	PermissionAction_PERMISSION_ACTION_WRITE  PermissionAction = 2
+	PermissionAction_PERMISSION_ACTION_CREATE PermissionAction = 3
+	PermissionAction_PERMISSION_ACTION_DELETE PermissionAction = 4
+	PermissionAction_PERMISSION_ACTION_ALL    PermissionAction = 99
 )
 
 // Enum value maps for PermissionAction.
@@ -102,6 +109,7 @@ var (
 		1:  "PERMISSION_ACTION_READ",
 		2:  "PERMISSION_ACTION_WRITE",
 		3:  "PERMISSION_ACTION_CREATE",
+		4:  "PERMISSION_ACTION_DELETE",
 		99: "PERMISSION_ACTION_ALL",
 	}
 	PermissionAction_value = map[string]int32{
@@ -109,6 +117,7 @@ var (
 		"PERMISSION_ACTION_READ":        1,
 		"PERMISSION_ACTION_WRITE":       2,
 		"PERMISSION_ACTION_CREATE":      3,
+		"PERMISSION_ACTION_DELETE":      4,
 		"PERMISSION_ACTION_ALL":         99,
 	}
 )
@@ -116,6 +125,7 @@ var (
 func (x PermissionAction) Enum() *PermissionAction {
 	p := new(PermissionAction)
 	*p = x
+
 	return p
 }
 
@@ -142,9 +152,9 @@ func (PermissionAction) EnumDescriptor() ([]byte, []int) {
 
 type PermissionAssignment struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Object        PermissionObject       `protobuf:"varint,1,opt,name=object,proto3,enum=elara.common.v1.PermissionObject" json:"object,omitempty"`
-	Action        PermissionAction       `protobuf:"varint,2,opt,name=action,proto3,enum=elara.common.v1.PermissionAction" json:"action,omitempty"`
-	Domain        string                 `protobuf:"bytes,3,opt,name=domain,proto3" json:"domain,omitempty"`
+	Object        PermissionObject       `                   protobuf:"varint,1,opt,name=object,proto3,enum=elara.common.v1.PermissionObject" json:"object,omitempty"`
+	Action        PermissionAction       `                   protobuf:"varint,2,opt,name=action,proto3,enum=elara.common.v1.PermissionAction" json:"action,omitempty"`
+	Domain        string                 `                   protobuf:"bytes,3,opt,name=domain,proto3"                                        json:"domain,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -169,8 +179,10 @@ func (x *PermissionAssignment) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -183,6 +195,7 @@ func (x *PermissionAssignment) GetObject() PermissionObject {
 	if x != nil {
 		return x.Object
 	}
+
 	return PermissionObject_PERMISSION_OBJECT_UNSPECIFIED
 }
 
@@ -190,6 +203,7 @@ func (x *PermissionAssignment) GetAction() PermissionAction {
 	if x != nil {
 		return x.Action
 	}
+
 	return PermissionAction_PERMISSION_ACTION_UNSPECIFIED
 }
 
@@ -197,6 +211,7 @@ func (x *PermissionAssignment) GetDomain() string {
 	if x != nil {
 		return x.Domain
 	}
+
 	return ""
 }
 
@@ -211,18 +226,19 @@ const file_elara_common_v1_permission_proto_rawDesc = "" +
 	"\x06domain\x18\x03 \x01(\tR\x06domain*\x84\x02\n" +
 	"\x10PermissionObject\x12!\n" +
 	"\x1dPERMISSION_OBJECT_UNSPECIFIED\x10\x00\x12\x1f\n" +
-	"\x1bPERMISSION_OBJECT_NAMESPACE\x10\x01\x12\x1c\n" +
-	"\x18PERMISSION_OBJECT_CONFIG\x10\x02\x12\x1a\n" +
+	"\x1bPERMISSION_OBJECT_NAMESPACE\x10\x01\x12\x1a\n" +
 	"\x16PERMISSION_OBJECT_USER\x10\x03\x12\x1b\n" +
 	"\x17PERMISSION_OBJECT_GROUP\x10\x04\x12\x1b\n" +
 	"\x17PERMISSION_OBJECT_TOKEN\x10\x05\x12\x1d\n" +
-	"\x19PERMISSION_OBJECT_WEBHOOK\x10\x06\x12\x19\n" +
-	"\x15PERMISSION_OBJECT_ALL\x10c*\xa7\x01\n" +
+	"\x19PERMISSION_OBJECT_WEBHOOK\x10\x06\x12\x1c\n" +
+	"\x18PERMISSION_OBJECT_CLIENT\x10\a\x12\x19\n" +
+	"\x15PERMISSION_OBJECT_ALL\x10c*\xc5\x01\n" +
 	"\x10PermissionAction\x12!\n" +
 	"\x1dPERMISSION_ACTION_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16PERMISSION_ACTION_READ\x10\x01\x12\x1b\n" +
 	"\x17PERMISSION_ACTION_WRITE\x10\x02\x12\x1c\n" +
-	"\x18PERMISSION_ACTION_CREATE\x10\x03\x12\x19\n" +
+	"\x18PERMISSION_ACTION_CREATE\x10\x03\x12\x1c\n" +
+	"\x18PERMISSION_ACTION_DELETE\x10\x04\x12\x19\n" +
 	"\x15PERMISSION_ACTION_ALL\x10cB\xce\x01\n" +
 	"\x13com.elara.common.v1B\x0fPermissionProtoP\x01ZHgithub.com/sergeyslonimsky/elara/internal/proto/elara/common/v1;commonv1\xa2\x02\x03ECX\xaa\x02\x0fElara.Common.V1\xca\x02\x0fElara\\Common\\V1\xe2\x02\x1bElara\\Common\\V1\\GPBMetadata\xea\x02\x11Elara::Common::V1b\x06proto3"
 
@@ -233,18 +249,26 @@ var (
 
 func file_elara_common_v1_permission_proto_rawDescGZIP() []byte {
 	file_elara_common_v1_permission_proto_rawDescOnce.Do(func() {
-		file_elara_common_v1_permission_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_common_v1_permission_proto_rawDesc), len(file_elara_common_v1_permission_proto_rawDesc)))
+		file_elara_common_v1_permission_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_common_v1_permission_proto_rawDesc),
+				len(file_elara_common_v1_permission_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_common_v1_permission_proto_rawDescData
 }
 
-var file_elara_common_v1_permission_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_elara_common_v1_permission_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_elara_common_v1_permission_proto_goTypes = []any{
-	(PermissionObject)(0),        // 0: elara.common.v1.PermissionObject
-	(PermissionAction)(0),        // 1: elara.common.v1.PermissionAction
-	(*PermissionAssignment)(nil), // 2: elara.common.v1.PermissionAssignment
-}
+var (
+	file_elara_common_v1_permission_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+	file_elara_common_v1_permission_proto_msgTypes  = make([]protoimpl.MessageInfo, 1)
+	file_elara_common_v1_permission_proto_goTypes   = []any{
+		(PermissionObject)(0),        // 0: elara.common.v1.PermissionObject
+		(PermissionAction)(0),        // 1: elara.common.v1.PermissionAction
+		(*PermissionAssignment)(nil), // 2: elara.common.v1.PermissionAssignment
+	}
+)
 var file_elara_common_v1_permission_proto_depIdxs = []int32{
 	0, // 0: elara.common.v1.PermissionAssignment.object:type_name -> elara.common.v1.PermissionObject
 	1, // 1: elara.common.v1.PermissionAssignment.action:type_name -> elara.common.v1.PermissionAction
@@ -263,8 +287,11 @@ func file_elara_common_v1_permission_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_common_v1_permission_proto_rawDesc), len(file_elara_common_v1_permission_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_common_v1_permission_proto_rawDesc),
+				len(file_elara_common_v1_permission_proto_rawDesc),
+			),
 			NumEnums:      2,
 			NumMessages:   1,
 			NumExtensions: 0,

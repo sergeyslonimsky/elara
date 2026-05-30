@@ -35,7 +35,7 @@ g = _, _, _
 e = some(where (p.eft == allow))
 
 [matchers]
-m = g(r.sub, p.sub, r.dom) && (r.dom == p.dom || p.dom == "*") && keyMatch(r.obj, p.obj) && (r.act == p.act || p.act == "*")
+m = g(r.sub, p.sub, r.dom) && (p.dom == "*" || r.dom == p.dom) && objGrants(p.obj, r.obj) && actGrants(p.act, r.act)
 `
 
 // gRuleNativeLen is the number of elements returned by GetGroupingPolicy() (without type prefix): [user, role, domain].
@@ -77,28 +77,29 @@ func NewEnforcer(policies *bbolt.PolicyRepo) (*Enforcer, error) {
 	// would not match a query g(alice, group:devs, "prod").
 	e.AddNamedDomainMatchingFunc("g", "keyMatch", util.KeyMatch)
 
-	// Disable AutoSave during initial seeding so we can do a single atomic save.
-	e.EnableAutoSave(false)
+	// Object/action matching is delegated to domain.ObjectGrants/ActionGrants so
+	// the matcher and the PDP rule scan share a single source of truth (wildcard
+	// objects/actions and the write⊇read rule). See internal/domain/rbac.go.
+	e.AddFunction("objGrants", func(args ...any) (any, error) {
+		granted, _ := args[0].(string)
+		required, _ := args[1].(string)
 
-	enforcer := &Enforcer{e: e, policies: policies}
+		return domain.ObjectGrants(domain.Object(granted), domain.Object(required)), nil
+	})
+	e.AddFunction("actGrants", func(args ...any) (any, error) {
+		granted, _ := args[0].(string)
+		required, _ := args[1].(string)
 
-	pRules, _ := e.GetPolicy()
-	gRules, _ := e.GetGroupingPolicy()
-
-	if len(pRules) == 0 && len(gRules) == 0 {
-		if err := enforcer.seedBuiltinPolicies(); err != nil {
-			return nil, err
-		}
-
-		if err := e.SavePolicy(); err != nil {
-			return nil, fmt.Errorf("save seeded policy: %w", err)
-		}
-	}
+		return domain.ActionGrants(domain.Action(granted), domain.Action(required)), nil
+	})
 
 	// AutoSave stays off permanently. Runtime mutations flow through
 	// WithTx/WriteTx; in-memory model is updated via applyOpsToCache after
-	// the underlying transaction commits successfully.
-	return enforcer, nil
+	// the underlying transaction commits successfully. The superadmin group and
+	// its membership are seeded by AdminBootstrap, not here.
+	e.EnableAutoSave(false)
+
+	return &Enforcer{e: e, policies: policies}, nil
 }
 
 // WithTx returns a per-transaction view of the enforcer. All mutations on the
@@ -298,49 +299,6 @@ func (e *Enforcer) applyOpsToCache(ops []op) error { //nolint:cyclop //refactor
 			if _, err := e.e.DeleteUser(o.user); err != nil {
 				return fmt.Errorf("cache delete user: %w", err)
 			}
-		}
-	}
-
-	return nil
-}
-
-func (e *Enforcer) seedBuiltinPolicies() error {
-	// Columns: {role, domain, object, action}. Roles are granted in every
-	// domain via DomainAll; for the admin role the object is also a wildcard.
-	type seedPolicy struct {
-		role   domain.Role
-		dom    string
-		object domain.Object
-		action domain.Action
-	}
-
-	policies := []seedPolicy{
-		// admin — wildcard covers everything
-		{domain.RoleAdmin, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
-
-		// writer
-		{domain.RoleWriter, domain.DomainAll, domain.ObjectConfig, domain.ActionRead},
-		{domain.RoleWriter, domain.DomainAll, domain.ObjectConfig, domain.ActionWrite},
-		{domain.RoleWriter, domain.DomainAll, domain.ObjectNamespace, domain.ActionRead},
-		{domain.RoleWriter, domain.DomainAll, domain.ObjectWebhook, domain.ActionRead},
-		{domain.RoleWriter, domain.DomainAll, domain.ObjectSchema, domain.ActionRead},
-		{domain.RoleWriter, domain.DomainAll, domain.ObjectClient, domain.ActionRead},
-		{domain.RoleWriter, domain.DomainAll, domain.ObjectDashboard, domain.ActionRead},
-		{domain.RoleWriter, domain.DomainAll, domain.ObjectToken, domain.ActionRead},
-		{domain.RoleWriter, domain.DomainAll, domain.ObjectToken, domain.ActionWrite},
-
-		// reader
-		{domain.RoleReader, domain.DomainAll, domain.ObjectConfig, domain.ActionRead},
-		{domain.RoleReader, domain.DomainAll, domain.ObjectNamespace, domain.ActionRead},
-		{domain.RoleReader, domain.DomainAll, domain.ObjectClient, domain.ActionRead},
-		{domain.RoleReader, domain.DomainAll, domain.ObjectDashboard, domain.ActionRead},
-		{domain.RoleReader, domain.DomainAll, domain.ObjectToken, domain.ActionRead},
-		{domain.RoleReader, domain.DomainAll, domain.ObjectToken, domain.ActionWrite},
-	}
-
-	for _, p := range policies {
-		if _, err := e.e.AddPolicy(string(p.role), p.dom, string(p.object), string(p.action)); err != nil {
-			return fmt.Errorf("seed built-in policy %+v: %w", p, err)
 		}
 	}
 

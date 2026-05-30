@@ -2,9 +2,9 @@ import { create } from "@bufbuild/protobuf";
 import { useQuery } from "@connectrpc/connect-query";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { useAuth } from "@/components/auth-provider";
+import { denyAllAbility } from "@/auth/ability";
 import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
-import { TestProviders } from "@/test/test-utils";
+import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { GroupDetailPage } from "./index";
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
@@ -29,22 +29,6 @@ vi.mock("react-router", async (importOriginal) => {
 	};
 });
 
-vi.mock("@/components/auth-provider", async (importOriginal) => {
-	const actual = await importOriginal<Record<string, unknown>>();
-	return {
-		...actual,
-		useAuth: vi.fn(() => ({
-			state: {
-				status: "authenticated",
-				ability: { can: () => false },
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		})),
-	};
-});
-
 vi.mock("@tanstack/react-query", async (importOriginal) => {
 	const actual = await importOriginal<Record<string, unknown>>();
 	return {
@@ -54,17 +38,10 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
 });
 
 describe("GroupDetailPage", () => {
+	const authContext = authenticatedContext(denyAllAbility);
+
 	beforeEach(() => {
 		vi.clearAllMocks();
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: { can: () => false },
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
 	});
 
 	test("renders skeleton while loading", () => {
@@ -75,7 +52,10 @@ describe("GroupDetailPage", () => {
 		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
-			<TestProviders initialEntries={["/groups/group-1"]}>
+			<TestProviders
+				initialEntries={["/groups/group-1"]}
+				authContext={authContext}
+			>
 				<GroupDetailPage />
 			</TestProviders>,
 		);
@@ -92,7 +72,10 @@ describe("GroupDetailPage", () => {
 		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
-			<TestProviders initialEntries={["/groups/group-1"]}>
+			<TestProviders
+				initialEntries={["/groups/group-1"]}
+				authContext={authContext}
+			>
 				<GroupDetailPage />
 			</TestProviders>,
 		);
@@ -118,7 +101,10 @@ describe("GroupDetailPage", () => {
 		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
-			<TestProviders initialEntries={["/groups/group-1"]}>
+			<TestProviders
+				initialEntries={["/groups/group-1"]}
+				authContext={authContext}
+			>
 				<GroupDetailPage />
 			</TestProviders>,
 		);

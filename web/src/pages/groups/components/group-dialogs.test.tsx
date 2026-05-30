@@ -5,9 +5,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppAbility } from "@/auth/ability";
-import { useAuth } from "@/components/auth-provider";
+import type { AuthContextType } from "@/components/auth-provider";
 import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
-import { TestProviders } from "@/test/test-utils";
+import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { CreateGroupDialog, DeleteGroupDialog } from "./group-dialogs";
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
@@ -31,28 +31,12 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
 	};
 });
 
-vi.mock("@/components/auth-provider", async (importOriginal) => {
-	const actual = await importOriginal<Record<string, unknown>>();
-	return {
-		...actual,
-		useAuth: vi.fn(),
-	};
-});
-
-function setupAuth(canWriteGroups: string[] = []) {
+function setupAuth(canWriteGroups: string[] = []): AuthContextType {
 	const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 	for (const name of canWriteGroups) {
 		can("write", "Group", { domain: `group:${name}` });
 	}
-	vi.mocked(useAuth).mockReturnValue({
-		state: {
-			status: "authenticated",
-			ability: build(),
-			authType: 0,
-			user: { email: "admin@example.com", name: "Admin" },
-		},
-		logout: vi.fn(),
-	} as unknown as ReturnType<typeof useAuth>);
+	return authenticatedContext(build());
 }
 
 vi.mock("sonner", async (importOriginal) => {
@@ -74,9 +58,11 @@ const mockGroup = create(GroupSchema, {
 });
 
 describe("CreateGroupDialog", () => {
+	let authContext: AuthContextType;
+
 	beforeEach(() => {
 		vi.clearAllMocks();
-		setupAuth();
+		authContext = setupAuth();
 		vi.mocked(useQuery).mockReturnValue({
 			data: { groups: [] },
 			isLoading: false,
@@ -85,7 +71,7 @@ describe("CreateGroupDialog", () => {
 
 	test("renders dialog with name field", () => {
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<CreateGroupDialog open={true} onOpenChange={vi.fn()} />
 			</TestProviders>,
 		);
@@ -100,7 +86,7 @@ describe("CreateGroupDialog", () => {
 		const ue = userEvent.setup();
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<CreateGroupDialog open={true} onOpenChange={vi.fn()} />
 			</TestProviders>,
 		);
@@ -133,7 +119,7 @@ describe("CreateGroupDialog", () => {
 		} as unknown as ReturnType<typeof useMutation>);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<CreateGroupDialog open={true} onOpenChange={vi.fn()} />
 			</TestProviders>,
 		);
@@ -159,7 +145,7 @@ describe("CreateGroupDialog", () => {
 		const ue = userEvent.setup();
 		const mockMutate = vi.fn();
 
-		setupAuth(["developers"]);
+		authContext = setupAuth(["developers"]);
 		vi.mocked(useQuery).mockReturnValue({
 			data: {
 				groups: [
@@ -182,7 +168,7 @@ describe("CreateGroupDialog", () => {
 		} as unknown as ReturnType<typeof useMutation>);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<CreateGroupDialog open={true} onOpenChange={vi.fn()} />
 			</TestProviders>,
 		);

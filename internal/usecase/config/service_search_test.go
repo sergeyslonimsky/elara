@@ -48,7 +48,7 @@ func TestService_Search(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.pdp.EXPECT().
-					EffectiveDomains("user@example.com", domain.ObjectConfig, domain.ActionRead).
+					EffectiveDomains("user@example.com", domain.ObjectNamespace, domain.ActionRead).
 					Return(authz.NewDomainSet())
 
 				return ctx
@@ -65,7 +65,7 @@ func TestService_Search(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.pdp.EXPECT().
-					EffectiveDomains("user@example.com", domain.ObjectConfig, domain.ActionRead).
+					EffectiveDomains("user@example.com", domain.ObjectNamespace, domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 				m.storage.EXPECT().SearchByPath(ctx, "app", "").Return(results, nil)
 
@@ -83,7 +83,7 @@ func TestService_Search(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				m.pdp.EXPECT().
-					EffectiveDomains("user@example.com", domain.ObjectConfig, domain.ActionRead).
+					EffectiveDomains("user@example.com", domain.ObjectNamespace, domain.ActionRead).
 					Return(authz.NewDomainSet("prod"))
 				m.storage.EXPECT().SearchByPath(ctx, "app", "").Return(results, nil)
 

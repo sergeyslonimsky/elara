@@ -4,20 +4,25 @@ package elara.common.v1;
 
 enum PermissionObject {
   PERMISSION_OBJECT_UNSPECIFIED = 0;
+  // NAMESPACE is the umbrella for everything scoped to a namespace: configs,
+  // schemas, export/import. There is no separate config/schema/transfer object.
   PERMISSION_OBJECT_NAMESPACE = 1;
-  PERMISSION_OBJECT_CONFIG = 2;
   PERMISSION_OBJECT_USER = 3;
   PERMISSION_OBJECT_GROUP = 4;
   PERMISSION_OBJECT_TOKEN = 5;
   PERMISSION_OBJECT_WEBHOOK = 6;
+  PERMISSION_OBJECT_CLIENT = 7;
   PERMISSION_OBJECT_ALL = 99;
 }
 
 enum PermissionAction {
   PERMISSION_ACTION_UNSPECIFIED = 0;
   PERMISSION_ACTION_READ = 1;
+  // WRITE implies READ (see domain.ActionGrants). CREATE and DELETE are
+  // independent capabilities (e.g. create/delete a namespace).
   PERMISSION_ACTION_WRITE = 2;
   PERMISSION_ACTION_CREATE = 3;
+  PERMISSION_ACTION_DELETE = 4;
   PERMISSION_ACTION_ALL = 99;
 }
 

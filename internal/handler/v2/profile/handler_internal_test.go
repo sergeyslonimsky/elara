@@ -80,7 +80,7 @@ func TestProfileHandler_Me_permissions_mapping(t *testing.T) {
 		Email: "alice@example.com",
 		Name:  "Alice",
 		Permissions: []domain.Permission{
-			{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+			{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
 			{Object: domain.ObjectAll, Action: domain.ActionAll, Domain: domain.DomainAll},
 		},
 	}, nil)
@@ -95,7 +95,7 @@ func TestProfileHandler_Me_permissions_mapping(t *testing.T) {
 	perms := resp.Msg.GetPermissions()
 	require.Len(t, perms, 2)
 
-	assert.Equal(t, commonv1.PermissionObject_PERMISSION_OBJECT_CONFIG, perms[0].GetObject())
+	assert.Equal(t, commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE, perms[0].GetObject())
 	assert.Equal(t, commonv1.PermissionAction_PERMISSION_ACTION_READ, perms[0].GetAction())
 	assert.Equal(t, "ns1", perms[0].GetDomain())
 

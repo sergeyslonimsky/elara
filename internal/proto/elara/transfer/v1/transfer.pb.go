@@ -7,11 +7,12 @@
 package transferv1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -46,6 +47,7 @@ var (
 func (x BundleEncoding) Enum() *BundleEncoding {
 	p := new(BundleEncoding)
 	*p = x
+
 	return p
 }
 
@@ -95,6 +97,7 @@ var (
 func (x ZipLayout) Enum() *ZipLayout {
 	p := new(ZipLayout)
 	*p = x
+
 	return p
 }
 
@@ -147,6 +150,7 @@ var (
 func (x ConflictResolution) Enum() *ConflictResolution {
 	p := new(ConflictResolution)
 	*p = x
+
 	return p
 }
 
@@ -173,9 +177,9 @@ func (ConflictResolution) EnumDescriptor() ([]byte, []int) {
 
 type ImportError struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"      json:"path,omitempty"`
+	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Message       string                 `                   protobuf:"bytes,3,opt,name=message,proto3"   json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -200,8 +204,10 @@ func (x *ImportError) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -214,6 +220,7 @@ func (x *ImportError) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
+
 	return ""
 }
 
@@ -221,6 +228,7 @@ func (x *ImportError) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
+
 	return ""
 }
 
@@ -228,6 +236,7 @@ func (x *ImportError) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
+
 	return ""
 }
 
@@ -262,19 +271,27 @@ var (
 
 func file_elara_transfer_v1_transfer_proto_rawDescGZIP() []byte {
 	file_elara_transfer_v1_transfer_proto_rawDescOnce.Do(func() {
-		file_elara_transfer_v1_transfer_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_transfer_v1_transfer_proto_rawDesc), len(file_elara_transfer_v1_transfer_proto_rawDesc)))
+		file_elara_transfer_v1_transfer_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_transfer_v1_transfer_proto_rawDesc),
+				len(file_elara_transfer_v1_transfer_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_transfer_v1_transfer_proto_rawDescData
 }
 
-var file_elara_transfer_v1_transfer_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_elara_transfer_v1_transfer_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_elara_transfer_v1_transfer_proto_goTypes = []any{
-	(BundleEncoding)(0),     // 0: elara.transfer.v1.BundleEncoding
-	(ZipLayout)(0),          // 1: elara.transfer.v1.ZipLayout
-	(ConflictResolution)(0), // 2: elara.transfer.v1.ConflictResolution
-	(*ImportError)(nil),     // 3: elara.transfer.v1.ImportError
-}
+var (
+	file_elara_transfer_v1_transfer_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+	file_elara_transfer_v1_transfer_proto_msgTypes  = make([]protoimpl.MessageInfo, 1)
+	file_elara_transfer_v1_transfer_proto_goTypes   = []any{
+		(BundleEncoding)(0),     // 0: elara.transfer.v1.BundleEncoding
+		(ZipLayout)(0),          // 1: elara.transfer.v1.ZipLayout
+		(ConflictResolution)(0), // 2: elara.transfer.v1.ConflictResolution
+		(*ImportError)(nil),     // 3: elara.transfer.v1.ImportError
+	}
+)
 var file_elara_transfer_v1_transfer_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
@@ -291,8 +308,11 @@ func file_elara_transfer_v1_transfer_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_transfer_v1_transfer_proto_rawDesc), len(file_elara_transfer_v1_transfer_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_transfer_v1_transfer_proto_rawDesc),
+				len(file_elara_transfer_v1_transfer_proto_rawDesc),
+			),
 			NumEnums:      3,
 			NumMessages:   1,
 			NumExtensions: 0,

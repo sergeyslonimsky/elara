@@ -4,11 +4,10 @@ import { useMutation, useQuery } from "@connectrpc/connect-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import type { AppAbility } from "@/auth/ability";
-import { useAuth } from "@/components/auth-provider";
+import { type AppAbility, denyAllAbility } from "@/auth/ability";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
-import { TestProviders } from "@/test/test-utils";
+import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { CreateUserDialog } from "./create-user-dialog";
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
@@ -24,13 +23,11 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 	};
 });
 
-vi.mock("@/components/auth-provider", async (importOriginal) => {
-	const actual = await importOriginal<Record<string, unknown>>();
-	return {
-		...actual,
-		useAuth: vi.fn(),
-	};
-});
+function canCreateUserAbility(): AppAbility {
+	const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
+	can("create", "User");
+	return build();
+}
 
 vi.mock("@tanstack/react-query", async (importOriginal) => {
 	const actual = await importOriginal<Record<string, unknown>>();
@@ -54,18 +51,12 @@ describe("CreateUserDialog", () => {
 	});
 
 	test("renders nothing when user lacks create permission", () => {
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: { can: () => false },
-				authType: AuthType.NONE,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(denyAllAbility, {
+			authType: AuthType.NONE,
+		});
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<CreateUserDialog />
 			</TestProviders>,
 		);
@@ -76,18 +67,12 @@ describe("CreateUserDialog", () => {
 	});
 
 	test("renders create button when user has permission", () => {
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: { can: () => true },
-				authType: AuthType.NONE,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(canCreateUserAbility(), {
+			authType: AuthType.NONE,
+		});
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<CreateUserDialog />
 			</TestProviders>,
 		);
@@ -107,18 +92,12 @@ describe("CreateUserDialog", () => {
 			isPending: false,
 		} as unknown as ReturnType<typeof useMutation>);
 
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: { can: () => true },
-				authType: AuthType.BASIC,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(canCreateUserAbility(), {
+			authType: AuthType.BASIC,
+		});
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<CreateUserDialog />
 			</TestProviders>,
 		);
@@ -157,16 +136,9 @@ describe("CreateUserDialog", () => {
 		can("create", "User");
 		can("write", "Group", { domain: "group:developers" });
 		const ability = build();
-
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: AuthType.BASIC,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability, {
+			authType: AuthType.BASIC,
+		});
 
 		vi.mocked(useQuery).mockReturnValue({
 			data: {
@@ -191,7 +163,7 @@ describe("CreateUserDialog", () => {
 		} as unknown as ReturnType<typeof useMutation>);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<CreateUserDialog />
 			</TestProviders>,
 		);

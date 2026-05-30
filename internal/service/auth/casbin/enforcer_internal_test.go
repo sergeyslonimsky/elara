@@ -150,7 +150,12 @@ func TestEnforcer_WriteTx_EnforceSeesRulesAfterCommit(t *testing.T) {
 	e, txm, _ := freshEnforcerAndTxM(t)
 
 	err := e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *TxEnforcer) error {
-		// Use built-in admin role for end-to-end Enforce check.
+		// Attach a wildcard capability bundle to the admin subject, then link
+		// alice to it — both committed in the same tx for the end-to-end check.
+		if err := txe.AddPolicy("admin", "*", "*", "*"); err != nil {
+			return err
+		}
+
 		return txe.AddRoleForUser("alice", "admin", "*")
 	})
 	require.NoError(t, err)
@@ -181,7 +186,9 @@ func TestEnforcer_LoadPolicy(t *testing.T) {
 
 			e, _, policies := freshEnforcerAndTxM(t)
 
-			// Out-of-band: write a g-rule directly via PolicyRepo (bypasses enforcer cache).
+			// Out-of-band: write the admin capability bundle and a g-rule
+			// directly via PolicyRepo (bypasses the enforcer cache).
+			require.NoError(t, policies.AddPolicy("p", "p", []string{"admin", "*", "*", "*"}))
 			require.NoError(t, policies.AddPolicy("g", "g", tt.gRule))
 
 			// Before LoadPolicy: cache does not see the rule.

@@ -195,7 +195,7 @@ func (s *Service) applyMembershipDelta(
 func (s *Service) authorizeGroupDeltas(actor domain.AuthInfo, added, removed []string) error {
 	for _, ids := range [...][]string{added, removed} {
 		for _, id := range ids {
-			if !s.pdp.HasGroupWrite(actor.Email, id) {
+			if !s.pdp.HasGroup(actor.Email, id, domain.ActionWrite) {
 				return domain.ErrForbidden
 			}
 		}
@@ -211,7 +211,7 @@ func (s *Service) authorizeGroupDeltas(actor domain.AuthInfo, added, removed []s
 func filterVisibleGroupIDs(pdp *authz.PDP, actor string, ids []string) []string {
 	out := make([]string, 0, len(ids))
 	for _, id := range ids {
-		if pdp.HasGroupRead(actor, id) {
+		if pdp.HasGroup(actor, id, domain.ActionRead) {
 			out = append(out, id)
 		}
 	}

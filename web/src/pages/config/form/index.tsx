@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
-import { useAuth } from "@/components/auth-provider";
+import { useAbility } from "@/auth/ability-context";
 import { PageShell } from "@/components/page-shell";
 import { PathBreadcrumb } from "@/components/path-breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -126,10 +126,11 @@ export function ConfigFormPage() {
 		}
 	};
 
-	const { state: authState } = useAuth();
-	const canWriteConfig =
-		authState.status === "authenticated" &&
-		authState.ability.can("write", subject("Namespace", { domain: namespace }));
+	const ability = useAbility();
+	const canWriteConfig = ability.can(
+		"write",
+		subject("Namespace", { domain: namespace }),
+	);
 
 	const isPending = createMutation.isPending || updateMutation.isPending;
 	const backTo = isEdit

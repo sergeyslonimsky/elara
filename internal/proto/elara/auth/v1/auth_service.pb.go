@@ -7,11 +7,12 @@
 package authv1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -47,8 +48,10 @@ func (x *GetAuthInfoRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -59,7 +62,7 @@ func (*GetAuthInfoRequest) Descriptor() ([]byte, []int) {
 
 type GetAuthInfoResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AuthType      AuthType               `protobuf:"varint,1,opt,name=auth_type,json=authType,proto3,enum=elara.auth.v1.AuthType" json:"auth_type,omitempty"`
+	AuthType      AuthType               `                   protobuf:"varint,1,opt,name=auth_type,json=authType,proto3,enum=elara.auth.v1.AuthType" json:"auth_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -84,8 +87,10 @@ func (x *GetAuthInfoResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -98,6 +103,7 @@ func (x *GetAuthInfoResponse) GetAuthType() AuthType {
 	if x != nil {
 		return x.AuthType
 	}
+
 	return AuthType_AUTH_TYPE_UNSPECIFIED
 }
 
@@ -127,8 +133,10 @@ func (x *OIDCLoginRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -139,7 +147,7 @@ func (*OIDCLoginRequest) Descriptor() ([]byte, []int) {
 
 type OIDCLoginResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	RedirectUrl   string                 `protobuf:"bytes,1,opt,name=redirect_url,json=redirectUrl,proto3" json:"redirect_url,omitempty"`
+	RedirectUrl   string                 `                   protobuf:"bytes,1,opt,name=redirect_url,json=redirectUrl,proto3" json:"redirect_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -164,8 +172,10 @@ func (x *OIDCLoginResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -178,13 +188,14 @@ func (x *OIDCLoginResponse) GetRedirectUrl() string {
 	if x != nil {
 		return x.RedirectUrl
 	}
+
 	return ""
 }
 
 type OIDCCallbackRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
-	State         string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	Code          string                 `                   protobuf:"bytes,1,opt,name=code,proto3"  json:"code,omitempty"`
+	State         string                 `                   protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -209,8 +220,10 @@ func (x *OIDCCallbackRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -223,6 +236,7 @@ func (x *OIDCCallbackRequest) GetCode() string {
 	if x != nil {
 		return x.Code
 	}
+
 	return ""
 }
 
@@ -230,6 +244,7 @@ func (x *OIDCCallbackRequest) GetState() string {
 	if x != nil {
 		return x.State
 	}
+
 	return ""
 }
 
@@ -259,8 +274,10 @@ func (x *OIDCCallbackResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -271,8 +288,8 @@ func (*OIDCCallbackResponse) Descriptor() ([]byte, []int) {
 
 type BasicLoginRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	Email         string                 `                   protobuf:"bytes,1,opt,name=email,proto3"    json:"email,omitempty"`
+	Password      string                 `                   protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -297,8 +314,10 @@ func (x *BasicLoginRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -311,6 +330,7 @@ func (x *BasicLoginRequest) GetEmail() string {
 	if x != nil {
 		return x.Email
 	}
+
 	return ""
 }
 
@@ -318,12 +338,13 @@ func (x *BasicLoginRequest) GetPassword() string {
 	if x != nil {
 		return x.Password
 	}
+
 	return ""
 }
 
 type BasicLoginResponse struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	PasswordChangeRequired bool                   `protobuf:"varint,1,opt,name=password_change_required,json=passwordChangeRequired,proto3" json:"password_change_required,omitempty"`
+	PasswordChangeRequired bool                   `                   protobuf:"varint,1,opt,name=password_change_required,json=passwordChangeRequired,proto3" json:"password_change_required,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -348,8 +369,10 @@ func (x *BasicLoginResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -362,6 +385,7 @@ func (x *BasicLoginResponse) GetPasswordChangeRequired() bool {
 	if x != nil {
 		return x.PasswordChangeRequired
 	}
+
 	return false
 }
 
@@ -400,23 +424,31 @@ var (
 
 func file_elara_auth_v1_auth_service_proto_rawDescGZIP() []byte {
 	file_elara_auth_v1_auth_service_proto_rawDescOnce.Do(func() {
-		file_elara_auth_v1_auth_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_auth_v1_auth_service_proto_rawDesc), len(file_elara_auth_v1_auth_service_proto_rawDesc)))
+		file_elara_auth_v1_auth_service_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_auth_v1_auth_service_proto_rawDesc),
+				len(file_elara_auth_v1_auth_service_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_auth_v1_auth_service_proto_rawDescData
 }
 
-var file_elara_auth_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
-var file_elara_auth_v1_auth_service_proto_goTypes = []any{
-	(*GetAuthInfoRequest)(nil),   // 0: elara.auth.v1.GetAuthInfoRequest
-	(*GetAuthInfoResponse)(nil),  // 1: elara.auth.v1.GetAuthInfoResponse
-	(*OIDCLoginRequest)(nil),     // 2: elara.auth.v1.OIDCLoginRequest
-	(*OIDCLoginResponse)(nil),    // 3: elara.auth.v1.OIDCLoginResponse
-	(*OIDCCallbackRequest)(nil),  // 4: elara.auth.v1.OIDCCallbackRequest
-	(*OIDCCallbackResponse)(nil), // 5: elara.auth.v1.OIDCCallbackResponse
-	(*BasicLoginRequest)(nil),    // 6: elara.auth.v1.BasicLoginRequest
-	(*BasicLoginResponse)(nil),   // 7: elara.auth.v1.BasicLoginResponse
-	(AuthType)(0),                // 8: elara.auth.v1.AuthType
-}
+var (
+	file_elara_auth_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+	file_elara_auth_v1_auth_service_proto_goTypes  = []any{
+		(*GetAuthInfoRequest)(nil),   // 0: elara.auth.v1.GetAuthInfoRequest
+		(*GetAuthInfoResponse)(nil),  // 1: elara.auth.v1.GetAuthInfoResponse
+		(*OIDCLoginRequest)(nil),     // 2: elara.auth.v1.OIDCLoginRequest
+		(*OIDCLoginResponse)(nil),    // 3: elara.auth.v1.OIDCLoginResponse
+		(*OIDCCallbackRequest)(nil),  // 4: elara.auth.v1.OIDCCallbackRequest
+		(*OIDCCallbackResponse)(nil), // 5: elara.auth.v1.OIDCCallbackResponse
+		(*BasicLoginRequest)(nil),    // 6: elara.auth.v1.BasicLoginRequest
+		(*BasicLoginResponse)(nil),   // 7: elara.auth.v1.BasicLoginResponse
+		(AuthType)(0),                // 8: elara.auth.v1.AuthType
+	}
+)
 var file_elara_auth_v1_auth_service_proto_depIdxs = []int32{
 	8, // 0: elara.auth.v1.GetAuthInfoResponse.auth_type:type_name -> elara.auth.v1.AuthType
 	0, // 1: elara.auth.v1.AuthService.GetAuthInfo:input_type -> elara.auth.v1.GetAuthInfoRequest
@@ -443,8 +475,11 @@ func file_elara_auth_v1_auth_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_auth_v1_auth_service_proto_rawDesc), len(file_elara_auth_v1_auth_service_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_auth_v1_auth_service_proto_rawDesc),
+				len(file_elara_auth_v1_auth_service_proto_rawDesc),
+			),
 			NumEnums:      0,
 			NumMessages:   8,
 			NumExtensions: 0,

@@ -57,7 +57,7 @@ func TestService_Me(t *testing.T) {
 				m.pdp.EXPECT().
 					ListPermissions(email).
 					Return([]domain.Permission{
-						{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
 						{Object: domain.ObjectUser, Action: domain.ActionRead, Domain: "ns2"},
 					}, nil)
 
@@ -67,7 +67,7 @@ func TestService_Me(t *testing.T) {
 				Email: email,
 				Name:  name,
 				Permissions: []domain.Permission{
-					{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+					{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
 					{Object: domain.ObjectUser, Action: domain.ActionRead, Domain: "ns2"},
 				},
 			},

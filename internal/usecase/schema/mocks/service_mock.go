@@ -13,8 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	gomock "go.uber.org/mock/gomock"
+
+	domain "github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 // Mockpdp is a mock of pdp interface.
@@ -33,6 +34,7 @@ type MockpdpMockRecorder struct {
 func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
 	mock := &Mockpdp{ctrl: ctrl}
 	mock.recorder = &MockpdpMockRecorder{mock}
+
 	return mock
 }
 
@@ -46,12 +48,14 @@ func (m *Mockpdp) Has(principal string, perm domain.Permission) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Has", principal, perm)
 	ret0, _ := ret[0].(bool)
+
 	return ret0
 }
 
 // Has indicates an expected call of Has.
 func (mr *MockpdpMockRecorder) Has(principal, perm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*Mockpdp)(nil).Has), principal, perm)
 }
 
@@ -71,6 +75,7 @@ type MockstoreMockRecorder struct {
 func NewMockstore(ctrl *gomock.Controller) *Mockstore {
 	mock := &Mockstore{ctrl: ctrl}
 	mock.recorder = &MockstoreMockRecorder{mock}
+
 	return mock
 }
 
@@ -84,12 +89,14 @@ func (m *Mockstore) Attach(ctx context.Context, s *domain.SchemaAttachment) erro
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Attach", ctx, s)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Attach indicates an expected call of Attach.
 func (mr *MockstoreMockRecorder) Attach(ctx, s any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Attach", reflect.TypeOf((*Mockstore)(nil).Attach), ctx, s)
 }
 
@@ -98,13 +105,22 @@ func (m *Mockstore) Detach(ctx context.Context, namespace, pathPattern string) e
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Detach", ctx, namespace, pathPattern)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Detach indicates an expected call of Detach.
 func (mr *MockstoreMockRecorder) Detach(ctx, namespace, pathPattern any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Detach", reflect.TypeOf((*Mockstore)(nil).Detach), ctx, namespace, pathPattern)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Detach",
+		reflect.TypeOf((*Mockstore)(nil).Detach),
+		ctx,
+		namespace,
+		pathPattern,
+	)
 }
 
 // Get mocks base method.
@@ -113,13 +129,22 @@ func (m *Mockstore) Get(ctx context.Context, namespace, pathPattern string) (*do
 	ret := m.ctrl.Call(m, "Get", ctx, namespace, pathPattern)
 	ret0, _ := ret[0].(*domain.SchemaAttachment)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockstoreMockRecorder) Get(ctx, namespace, pathPattern any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockstore)(nil).Get), ctx, namespace, pathPattern)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Get",
+		reflect.TypeOf((*Mockstore)(nil).Get),
+		ctx,
+		namespace,
+		pathPattern,
+	)
 }
 
 // List mocks base method.
@@ -128,13 +153,21 @@ func (m *Mockstore) List(ctx context.Context, namespace string) ([]*domain.Schem
 	ret := m.ctrl.Call(m, "List", ctx, namespace)
 	ret0, _ := ret[0].([]*domain.SchemaAttachment)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockstoreMockRecorder) List(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstore)(nil).List), ctx, namespace)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"List",
+		reflect.TypeOf((*Mockstore)(nil).List),
+		ctx,
+		namespace,
+	)
 }
 
 // MocknsProvider is a mock of nsProvider interface.
@@ -153,6 +186,7 @@ type MocknsProviderMockRecorder struct {
 func NewMocknsProvider(ctrl *gomock.Controller) *MocknsProvider {
 	mock := &MocknsProvider{ctrl: ctrl}
 	mock.recorder = &MocknsProviderMockRecorder{mock}
+
 	return mock
 }
 
@@ -167,11 +201,13 @@ func (m *MocknsProvider) Get(ctx context.Context, name string) (*domain.Namespac
 	ret := m.ctrl.Call(m, "Get", ctx, name)
 	ret0, _ := ret[0].(*domain.Namespace)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MocknsProviderMockRecorder) Get(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MocknsProvider)(nil).Get), ctx, name)
 }

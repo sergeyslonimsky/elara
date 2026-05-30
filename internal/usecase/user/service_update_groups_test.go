@@ -96,7 +96,7 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 
 		st := updateGroupsSetup(t)
 		addPolicies(t, st, []policyRow{
-			{casbin.GroupSubject("escalate"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
+			{casbin.GroupSubject("escalate"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
 			{actorEmail, domain.GroupResource(escalateID), domain.ObjectGroup, domain.ActionWrite},
 		})
 
@@ -117,7 +117,7 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 		st := updateGroupsSetup(t)
 		addPolicies(t, st, []policyRow{
 			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
-			{casbin.GroupSubject("escalate"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
+			{casbin.GroupSubject("escalate"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
 			{actorEmail, domain.GroupResource(escalateID), domain.ObjectGroup, domain.ActionWrite},
 		})
 
@@ -288,17 +288,14 @@ func TestService_UpdateGroups_VisibleGroupIDs(t *testing.T) {
 	t.Parallel()
 
 	st := updateGroupsSetup(t)
-	// Pre-state: target already in escalate (we'll model it via admin
-	// adding them first, then actor removing nothing while VisibleGroupIDs
-	// is scoped). Easier: admin assigns both groups, then actor (who can
-	// only read writable) reads the result via a no-op UpdateGroups.
+	// Admin assigns target to both groups. Actor can read+write writable but
+	// has NO grant on escalate — so escalate must be filtered out of the
+	// VisibleGroupIDs response (enumeration-leak protection). Note write⊇read
+	// (domain.ActionGrants): any escalate grant, even Write, would reveal it.
 	addPolicies(t, st, []policyRow{
 		{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
-		// Actor: Group:Read on writable only — and Group:Write to satisfy
-		// scope check on a remove of writable in a separate case.
 		{actorEmail, domain.GroupResource(writableID), domain.ObjectGroup, domain.ActionRead},
 		{actorEmail, domain.GroupResource(writableID), domain.ObjectGroup, domain.ActionWrite},
-		{actorEmail, domain.GroupResource(escalateID), domain.ObjectGroup, domain.ActionWrite},
 	})
 
 	_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
@@ -307,11 +304,12 @@ func TestService_UpdateGroups_VisibleGroupIDs(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Actor submits no-op (already in both groups). VisibleGroupIDs filters
-	// through Group:Read — escalate must be hidden, writable revealed.
+	// Actor submits a no-op on writable only (target already a member, so no
+	// escalate write is required). VisibleGroupIDs filters target's groups
+	// through the actor's Group:Read scope — escalate hidden, writable revealed.
 	res, err := st.svc.UpdateGroups(t.Context(), actor(), user.UpdateGroupsData{
 		Email:       targetEmail,
-		AddGroupIDs: []string{writableID, escalateID}, // no-op
+		AddGroupIDs: []string{writableID}, // no-op
 	})
 	require.NoError(t, err)
 	assert.Equal(t, []string{writableID}, res.VisibleGroupIDs)

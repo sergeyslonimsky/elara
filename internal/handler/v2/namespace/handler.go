@@ -148,7 +148,7 @@ func (h *Handler) DeleteNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.DeleteNamespaceRequest],
 ) (*connect.Response[namespacev2.DeleteNamespaceResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetName()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionDelete, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

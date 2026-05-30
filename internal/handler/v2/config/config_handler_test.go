@@ -33,7 +33,7 @@ func TestConfigHandler_GetConfig(t *testing.T) {
 	h, az, uc := setupHandler(t)
 
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(nil)
 	uc.EXPECT().
 		Get(gomock.Any(), configuc.GetInput{Path: "/a.json", Namespace: "prod"}).
@@ -52,7 +52,7 @@ func TestConfigHandler_GetConfig_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.GetConfig(
@@ -68,7 +68,7 @@ func TestConfigHandler_GetConfig_Forbidden(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(domain.ErrForbidden)
 
 	_, err := h.GetConfig(
@@ -84,7 +84,7 @@ func TestConfigHandler_GetConfig_NotFound(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(nil)
 	uc.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, domain.ErrNotFound)
 
@@ -102,7 +102,7 @@ func TestConfigHandler_CreateConfig(t *testing.T) {
 	h, az, uc := setupHandler(t)
 
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionCreate, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 	uc.EXPECT().
 		Create(gomock.Any(), &domain.Config{
@@ -125,7 +125,7 @@ func TestConfigHandler_CreateConfig_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionCreate, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.CreateConfig(t.Context(), connect.NewRequest(&configv1.CreateConfigRequest{
@@ -141,7 +141,7 @@ func TestConfigHandler_UpdateConfig(t *testing.T) {
 	h, az, uc := setupHandler(t)
 
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 	uc.EXPECT().
 		Update(gomock.Any(), gomock.Any()).
@@ -159,7 +159,7 @@ func TestConfigHandler_UpdateConfig_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.UpdateConfig(t.Context(), connect.NewRequest(&configv1.UpdateConfigRequest{
@@ -174,7 +174,7 @@ func TestConfigHandler_UpdateConfig_NotFound(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 	uc.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil, domain.ErrNotFound)
 
@@ -190,7 +190,7 @@ func TestConfigHandler_DeleteConfig(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 	uc.EXPECT().
 		Delete(gomock.Any(), configuc.DeleteInput{Path: "/a.json", Namespace: "prod"}).
@@ -208,7 +208,7 @@ func TestConfigHandler_DeleteConfig_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.DeleteConfig(
@@ -224,7 +224,7 @@ func TestConfigHandler_DeleteConfig_NotFound(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 	uc.EXPECT().Delete(gomock.Any(), gomock.Any()).Return(domain.ErrNotFound)
 
@@ -241,7 +241,7 @@ func TestConfigHandler_DeleteConfig_Locked(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 	uc.EXPECT().Delete(gomock.Any(), gomock.Any()).Return(domain.ErrLocked)
 
@@ -258,7 +258,7 @@ func TestConfigHandler_ListConfigs(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(nil)
 	uc.EXPECT().
 		List(gomock.Any(), gomock.Any()).
@@ -279,7 +279,7 @@ func TestConfigHandler_ListConfigs_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.ListConfigs(t.Context(), connect.NewRequest(&configv1.ListConfigsRequest{Namespace: "prod"}))
@@ -292,7 +292,7 @@ func TestConfigHandler_GetConfigHistory(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(nil)
 	uc.EXPECT().
 		History(gomock.Any(), gomock.Any()).
@@ -311,7 +311,7 @@ func TestConfigHandler_GetConfigHistory_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.GetConfigHistory(t.Context(), connect.NewRequest(&configv1.GetConfigHistoryRequest{
@@ -361,10 +361,10 @@ func TestConfigHandler_CopyConfig(t *testing.T) {
 
 	gomock.InOrder(
 		az.EXPECT().
-			Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "ns1").
+			Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "ns1").
 			Return(nil),
 		az.EXPECT().
-			Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "ns2").
+			Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "ns2").
 			Return(nil),
 	)
 	uc.EXPECT().
@@ -393,7 +393,7 @@ func TestConfigHandler_CopyConfig_SourceForbidden(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "ns1").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "ns1").
 		Return(domain.ErrForbidden)
 
 	_, err := h.CopyConfig(t.Context(), connect.NewRequest(&configv1.CopyConfigRequest{
@@ -409,10 +409,10 @@ func TestConfigHandler_CopyConfig_DestForbidden(t *testing.T) {
 	h, az, _ := setupHandler(t)
 	gomock.InOrder(
 		az.EXPECT().
-			Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "ns1").
+			Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "ns1").
 			Return(nil),
 		az.EXPECT().
-			Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "ns2").
+			Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "ns2").
 			Return(domain.ErrForbidden),
 	)
 
@@ -428,7 +428,7 @@ func TestConfigHandler_ValidateConfig(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(nil)
 	uc.EXPECT().
 		Validate(gomock.Any(), gomock.Any()).
@@ -446,7 +446,7 @@ func TestConfigHandler_ValidateConfig_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.ValidateConfig(t.Context(), connect.NewRequest(&configv1.ValidateConfigRequest{
@@ -461,7 +461,7 @@ func TestConfigHandler_GetConfigDiff(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(nil)
 	uc.EXPECT().
 		Diff(gomock.Any(), configuc.DiffInput{Path: "/a.json", Namespace: "prod", V1: 1, V2: 2}).
@@ -479,7 +479,7 @@ func TestConfigHandler_GetConfigDiff_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.GetConfigDiff(t.Context(), connect.NewRequest(&configv1.GetConfigDiffRequest{
@@ -494,7 +494,7 @@ func TestConfigHandler_LockConfig(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 	uc.EXPECT().
 		Lock(gomock.Any(), configuc.LockInput{Namespace: "prod", Path: "/a.json"}).
@@ -512,7 +512,7 @@ func TestConfigHandler_LockConfig_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.LockConfig(t.Context(), connect.NewRequest(&configv1.LockConfigRequest{
@@ -527,7 +527,7 @@ func TestConfigHandler_LockConfig_NotFound(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 	uc.EXPECT().Lock(gomock.Any(), gomock.Any()).Return(domain.ErrNotFound)
 
@@ -544,7 +544,7 @@ func TestConfigHandler_UnlockConfig(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 	uc.EXPECT().
 		Unlock(gomock.Any(), configuc.UnlockInput{Namespace: "prod", Path: "/a.json"}).
@@ -562,7 +562,7 @@ func TestConfigHandler_UnlockConfig_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.UnlockConfig(t.Context(), connect.NewRequest(&configv1.UnlockConfigRequest{
@@ -577,7 +577,7 @@ func TestConfigHandler_GetConfigAtRevision(t *testing.T) {
 
 	h, az, uc := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(nil)
 	uc.EXPECT().
 		GetAtRevision(gomock.Any(), configuc.GetAtRevisionInput{Path: "/a.json", Namespace: "prod", Revision: 1}).
@@ -597,7 +597,7 @@ func TestConfigHandler_GetConfigAtRevision_Unauthorized(t *testing.T) {
 
 	h, az, _ := setupHandler(t)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectConfig, domain.ActionRead, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(domain.ErrUnauthorized)
 
 	_, err := h.GetConfigAtRevision(t.Context(), connect.NewRequest(&configv1.GetConfigAtRevisionRequest{

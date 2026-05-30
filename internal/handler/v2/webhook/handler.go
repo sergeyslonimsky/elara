@@ -51,6 +51,12 @@ func (h *Handler) CreateWebhook(
 		return nil, v2.ToConnectError(err)
 	}
 
+	// A webhook observes config changes in its target namespace, so its creator
+	// must be able to read that namespace (write⊇read covers writers too).
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, ns); err != nil {
+		return nil, v2.ToConnectError(err)
+	}
+
 	w := &domain.Webhook{
 		URL:             req.Msg.GetUrl(),
 		NamespaceFilter: req.Msg.GetNamespaceFilter(),

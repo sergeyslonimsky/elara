@@ -152,7 +152,7 @@ func TestService_Create(t *testing.T) {
 		// elevated group grants config:write on ns-a; actor has only
 		// Group:Write on g1 (no config:write of its own).
 		addPolicies(t, st, []policyRow{
-			{casbin.GroupSubject("elevated"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
+			{casbin.GroupSubject("elevated"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
 			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
 		})
 
@@ -284,7 +284,7 @@ func TestService_Delete(t *testing.T) {
 		// Actor: Group:Write on g1 (can write the target) but NO config:write
 		// permission that the target's group grants.
 		addPolicies(t, st, []policyRow{
-			{casbin.GroupSubject("devs"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
+			{casbin.GroupSubject("devs"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
 			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
 		})
 
@@ -295,20 +295,21 @@ func TestService_Delete(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("last-admin guard: refuses to delete sole holder of admin role", func(t *testing.T) {
+	t.Run("last-admin guard: refuses to delete sole member of superadmin group", func(t *testing.T) {
 		t.Parallel()
 
 		st := setupServiceReal(t)
-		// Sole admin: a separate actor (so self-delete check doesn't shadow
-		// the last-admin guard) is the unique RoleAdmin/* holder. The caller
-		// holds the wildcard User:Write needed to reach the guard.
+		// The caller reaches the guard via a direct wildcard User:Write policy
+		// (not group membership), so it is not itself a superadmin-group member.
 		seedUser(t, st, targetEmail)
 		addPolicies(t, st, []policyRow{
 			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
-		// Assign target the admin role on the wildcard domain so they are
-		// the sole holder of the admin grant.
-		addRoleForUser(t, st, targetEmail, string(domain.RoleAdmin), domain.DomainAll)
+		// Target is the sole member of the superadmin group, so deleting them
+		// would lock everyone out of administration.
+		addMemberships(t, st, []struct{ User, GroupName string }{
+			{targetEmail, domain.SystemGroupSuperAdmin},
+		})
 
 		err := st.svc.Delete(t.Context(), adminActor(), targetEmail)
 		require.ErrorContains(t, err, "cannot delete the last admin")

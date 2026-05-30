@@ -93,13 +93,18 @@ func removePolicy(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, sub, 
 	}))
 }
 
-func TestNewEnforcer_SeedsBuiltinPoliciesOnEmpty(t *testing.T) {
-	t.Parallel()
-
-	e := newTestEnforcer(t, nil)
-
-	rules := e.GetPolicy()
-	assert.Len(t, rules, 16, "expected 16 built-in p rules seeded into empty storage")
+// seedRoleTemplates attaches capability p-rules to the admin/reader/writer
+// subjects. In the groups-only RBAC there are no built-in roles; these subjects
+// are just arbitrary p-rule holders that users/groups are linked to via g-rules.
+// write⊇read is enforced by the matcher (domain.ActionGrants), so the writer
+// bundle only needs a write rule to also grant read.
+func seedRoleTemplates(t *testing.T, e *casbin.Enforcer, txm storage.TxManager) {
+	t.Helper()
+	seedPolicy(t, e, txm, "admin", "*", "*", "*")
+	seedPolicy(t, e, txm, "reader", "*", "config", "read")
+	seedPolicy(t, e, txm, "reader", "*", "namespace", "read")
+	seedPolicy(t, e, txm, "writer", "*", "config", "write")
+	seedPolicy(t, e, txm, "writer", "*", "namespace", "write")
 }
 
 func TestEnforce_AdminCanDoAnything(t *testing.T) {
@@ -107,6 +112,7 @@ func TestEnforce_AdminCanDoAnything(t *testing.T) {
 
 	e, txm := newTestEnforcerWithTxM(t, nil)
 
+	seedRoleTemplates(t, e, txm)
 	seedRole(t, e, txm, "alice", "admin", "*")
 
 	tests := []struct {
@@ -137,6 +143,7 @@ func TestEnforce_ViewerCanReadConfigButNotWrite(t *testing.T) {
 
 	e, txm := newTestEnforcerWithTxM(t, nil)
 
+	seedRoleTemplates(t, e, txm)
 	seedRole(t, e, txm, "bob", "reader", "*")
 
 	t.Run("read config allowed", func(t *testing.T) {
@@ -161,6 +168,7 @@ func TestEnforce_EditorCanReadAndWriteConfig(t *testing.T) {
 
 	e, txm := newTestEnforcerWithTxM(t, nil)
 
+	seedRoleTemplates(t, e, txm)
 	seedRole(t, e, txm, "carol", "writer", "*")
 
 	tests := []struct {
@@ -168,6 +176,7 @@ func TestEnforce_EditorCanReadAndWriteConfig(t *testing.T) {
 		act     string
 		allowed bool
 	}{
+		// write⊇read, so a writer can read; delete is independent of write.
 		{name: "read config", act: "read", allowed: true},
 		{name: "write config", act: "write", allowed: true},
 		{name: "delete config", act: "delete", allowed: false},
@@ -189,7 +198,8 @@ func TestEnforce_NamespaceScoping(t *testing.T) {
 
 	e, txm := newTestEnforcerWithTxM(t, nil)
 
-	// dave has role:viewer only in domain "prod"
+	seedRoleTemplates(t, e, txm)
+	// dave has the reader bundle only in domain "prod"
 	seedRole(t, e, txm, "dave", "reader", "prod")
 
 	t.Run("can read config in prod", func(t *testing.T) {
@@ -214,6 +224,7 @@ func TestAddRoleForUser_ThenEnforce(t *testing.T) {
 
 	e, txm := newTestEnforcerWithTxM(t, nil)
 
+	seedRoleTemplates(t, e, txm)
 	seedRole(t, e, txm, "eve", "writer", "*")
 
 	ok, err := e.Enforce("eve", "*", "namespace", "read")
@@ -226,6 +237,7 @@ func TestRemoveRoleForUser(t *testing.T) {
 
 	e, txm := newTestEnforcerWithTxM(t, nil)
 
+	seedRoleTemplates(t, e, txm)
 	seedRole(t, e, txm, "frank", "writer", "*")
 
 	ok, err := e.Enforce("frank", "*", "config", "write")
@@ -267,13 +279,15 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 		assert.Contains(t, roles, "reader")
 	})
 
-	t.Run("GetPolicy returns builtin p rules", func(t *testing.T) {
+	t.Run("GetPolicy returns added p rules", func(t *testing.T) {
 		t.Parallel()
 
-		e := newTestEnforcer(t, nil)
-		rules := e.GetPolicy()
-		assert.NotEmpty(t, rules, "built-in p rules should be present after init")
-		assert.Len(t, rules, 16, "expected 16 built-in p rules")
+		e, txm := newTestEnforcerWithTxM(t, nil)
+		// No built-in seeding anymore: an empty enforcer has no p-rules.
+		assert.Empty(t, e.GetPolicy())
+
+		seedPolicy(t, e, txm, "group:devs", "dev", "namespace", "write")
+		assert.Len(t, e.GetPolicy(), 1)
 	})
 
 	t.Run("GetGroupingPolicy returns added g rules", func(t *testing.T) {
@@ -328,6 +342,7 @@ func TestEnforcer_Methods(t *testing.T) { // NOSONAR
 		t.Parallel()
 
 		e, txm := newTestEnforcerWithTxM(t, nil)
+		seedRoleTemplates(t, e, txm)
 		seedRole(t, e, txm, "ivan", "writer", "*")
 
 		ok, err := e.Enforce("ivan", "*", "config", "write")

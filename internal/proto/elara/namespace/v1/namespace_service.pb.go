@@ -7,13 +7,15 @@
 package namespacev1
 
 import (
-	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 )
 
 const (
@@ -25,8 +27,8 @@ const (
 
 type CreateNamespaceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Name          string                 `                   protobuf:"bytes,1,opt,name=name,proto3"        json:"name,omitempty"`
+	Description   string                 `                   protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -51,8 +53,10 @@ func (x *CreateNamespaceRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -65,6 +69,7 @@ func (x *CreateNamespaceRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
@@ -72,12 +77,13 @@ func (x *CreateNamespaceRequest) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
+
 	return ""
 }
 
 type CreateNamespaceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     *Namespace             `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Namespace     *Namespace             `                   protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -102,8 +108,10 @@ func (x *CreateNamespaceResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -116,12 +124,13 @@ func (x *CreateNamespaceResponse) GetNamespace() *Namespace {
 	if x != nil {
 		return x.Namespace
 	}
+
 	return nil
 }
 
 type GetNamespaceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name          string                 `                   protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -146,8 +155,10 @@ func (x *GetNamespaceRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -160,12 +171,13 @@ func (x *GetNamespaceRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
 type GetNamespaceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     *Namespace             `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Namespace     *Namespace             `                   protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -190,8 +202,10 @@ func (x *GetNamespaceResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -204,14 +218,15 @@ func (x *GetNamespaceResponse) GetNamespace() *Namespace {
 	if x != nil {
 		return x.Namespace
 	}
+
 	return nil
 }
 
 type ListNamespacesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Pagination    *v1.PaginationRequest  `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	Sort          *v1.SortRequest        `protobuf:"bytes,2,opt,name=sort,proto3" json:"sort,omitempty"`
-	Query         string                 `protobuf:"bytes,3,opt,name=query,proto3" json:"query,omitempty"` // optional: filter namespaces by name substring
+	Pagination    *v1.PaginationRequest  `                   protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Sort          *v1.SortRequest        `                   protobuf:"bytes,2,opt,name=sort,proto3"       json:"sort,omitempty"`
+	Query         string                 `                   protobuf:"bytes,3,opt,name=query,proto3"      json:"query,omitempty"` // optional: filter namespaces by name substring
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -236,8 +251,10 @@ func (x *ListNamespacesRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -250,6 +267,7 @@ func (x *ListNamespacesRequest) GetPagination() *v1.PaginationRequest {
 	if x != nil {
 		return x.Pagination
 	}
+
 	return nil
 }
 
@@ -257,6 +275,7 @@ func (x *ListNamespacesRequest) GetSort() *v1.SortRequest {
 	if x != nil {
 		return x.Sort
 	}
+
 	return nil
 }
 
@@ -264,13 +283,14 @@ func (x *ListNamespacesRequest) GetQuery() string {
 	if x != nil {
 		return x.Query
 	}
+
 	return ""
 }
 
 type ListNamespacesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespaces    []*Namespace           `protobuf:"bytes,1,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
-	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Namespaces    []*Namespace           `                   protobuf:"bytes,1,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
+	Pagination    *v1.PaginationResponse `                   protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -295,8 +315,10 @@ func (x *ListNamespacesResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -309,6 +331,7 @@ func (x *ListNamespacesResponse) GetNamespaces() []*Namespace {
 	if x != nil {
 		return x.Namespaces
 	}
+
 	return nil
 }
 
@@ -316,13 +339,14 @@ func (x *ListNamespacesResponse) GetPagination() *v1.PaginationResponse {
 	if x != nil {
 		return x.Pagination
 	}
+
 	return nil
 }
 
 type UpdateNamespaceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Name          string                 `                   protobuf:"bytes,1,opt,name=name,proto3"        json:"name,omitempty"`
+	Description   string                 `                   protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -347,8 +371,10 @@ func (x *UpdateNamespaceRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -361,6 +387,7 @@ func (x *UpdateNamespaceRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
@@ -368,12 +395,13 @@ func (x *UpdateNamespaceRequest) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
+
 	return ""
 }
 
 type UpdateNamespaceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     *Namespace             `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Namespace     *Namespace             `                   protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -398,8 +426,10 @@ func (x *UpdateNamespaceResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -412,12 +442,13 @@ func (x *UpdateNamespaceResponse) GetNamespace() *Namespace {
 	if x != nil {
 		return x.Namespace
 	}
+
 	return nil
 }
 
 type DeleteNamespaceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name          string                 `                   protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -442,8 +473,10 @@ func (x *DeleteNamespaceRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -456,6 +489,7 @@ func (x *DeleteNamespaceRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
@@ -485,8 +519,10 @@ func (x *DeleteNamespaceResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -497,7 +533,7 @@ func (*DeleteNamespaceResponse) Descriptor() ([]byte, []int) {
 
 type LockNamespaceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name          string                 `                   protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -522,8 +558,10 @@ func (x *LockNamespaceRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -536,6 +574,7 @@ func (x *LockNamespaceRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
@@ -565,8 +604,10 @@ func (x *LockNamespaceResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -577,7 +618,7 @@ func (*LockNamespaceResponse) Descriptor() ([]byte, []int) {
 
 type UnlockNamespaceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name          string                 `                   protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -602,8 +643,10 @@ func (x *UnlockNamespaceRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -616,6 +659,7 @@ func (x *UnlockNamespaceRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
@@ -645,8 +689,10 @@ func (x *UnlockNamespaceResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -713,32 +759,40 @@ var (
 
 func file_elara_namespace_v1_namespace_service_proto_rawDescGZIP() []byte {
 	file_elara_namespace_v1_namespace_service_proto_rawDescOnce.Do(func() {
-		file_elara_namespace_v1_namespace_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_namespace_v1_namespace_service_proto_rawDesc), len(file_elara_namespace_v1_namespace_service_proto_rawDesc)))
+		file_elara_namespace_v1_namespace_service_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_namespace_v1_namespace_service_proto_rawDesc),
+				len(file_elara_namespace_v1_namespace_service_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_namespace_v1_namespace_service_proto_rawDescData
 }
 
-var file_elara_namespace_v1_namespace_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
-var file_elara_namespace_v1_namespace_service_proto_goTypes = []any{
-	(*CreateNamespaceRequest)(nil),  // 0: elara.namespace.v1.CreateNamespaceRequest
-	(*CreateNamespaceResponse)(nil), // 1: elara.namespace.v1.CreateNamespaceResponse
-	(*GetNamespaceRequest)(nil),     // 2: elara.namespace.v1.GetNamespaceRequest
-	(*GetNamespaceResponse)(nil),    // 3: elara.namespace.v1.GetNamespaceResponse
-	(*ListNamespacesRequest)(nil),   // 4: elara.namespace.v1.ListNamespacesRequest
-	(*ListNamespacesResponse)(nil),  // 5: elara.namespace.v1.ListNamespacesResponse
-	(*UpdateNamespaceRequest)(nil),  // 6: elara.namespace.v1.UpdateNamespaceRequest
-	(*UpdateNamespaceResponse)(nil), // 7: elara.namespace.v1.UpdateNamespaceResponse
-	(*DeleteNamespaceRequest)(nil),  // 8: elara.namespace.v1.DeleteNamespaceRequest
-	(*DeleteNamespaceResponse)(nil), // 9: elara.namespace.v1.DeleteNamespaceResponse
-	(*LockNamespaceRequest)(nil),    // 10: elara.namespace.v1.LockNamespaceRequest
-	(*LockNamespaceResponse)(nil),   // 11: elara.namespace.v1.LockNamespaceResponse
-	(*UnlockNamespaceRequest)(nil),  // 12: elara.namespace.v1.UnlockNamespaceRequest
-	(*UnlockNamespaceResponse)(nil), // 13: elara.namespace.v1.UnlockNamespaceResponse
-	(*Namespace)(nil),               // 14: elara.namespace.v1.Namespace
-	(*v1.PaginationRequest)(nil),    // 15: elara.common.v1.PaginationRequest
-	(*v1.SortRequest)(nil),          // 16: elara.common.v1.SortRequest
-	(*v1.PaginationResponse)(nil),   // 17: elara.common.v1.PaginationResponse
-}
+var (
+	file_elara_namespace_v1_namespace_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+	file_elara_namespace_v1_namespace_service_proto_goTypes  = []any{
+		(*CreateNamespaceRequest)(nil),  // 0: elara.namespace.v1.CreateNamespaceRequest
+		(*CreateNamespaceResponse)(nil), // 1: elara.namespace.v1.CreateNamespaceResponse
+		(*GetNamespaceRequest)(nil),     // 2: elara.namespace.v1.GetNamespaceRequest
+		(*GetNamespaceResponse)(nil),    // 3: elara.namespace.v1.GetNamespaceResponse
+		(*ListNamespacesRequest)(nil),   // 4: elara.namespace.v1.ListNamespacesRequest
+		(*ListNamespacesResponse)(nil),  // 5: elara.namespace.v1.ListNamespacesResponse
+		(*UpdateNamespaceRequest)(nil),  // 6: elara.namespace.v1.UpdateNamespaceRequest
+		(*UpdateNamespaceResponse)(nil), // 7: elara.namespace.v1.UpdateNamespaceResponse
+		(*DeleteNamespaceRequest)(nil),  // 8: elara.namespace.v1.DeleteNamespaceRequest
+		(*DeleteNamespaceResponse)(nil), // 9: elara.namespace.v1.DeleteNamespaceResponse
+		(*LockNamespaceRequest)(nil),    // 10: elara.namespace.v1.LockNamespaceRequest
+		(*LockNamespaceResponse)(nil),   // 11: elara.namespace.v1.LockNamespaceResponse
+		(*UnlockNamespaceRequest)(nil),  // 12: elara.namespace.v1.UnlockNamespaceRequest
+		(*UnlockNamespaceResponse)(nil), // 13: elara.namespace.v1.UnlockNamespaceResponse
+		(*Namespace)(nil),               // 14: elara.namespace.v1.Namespace
+		(*v1.PaginationRequest)(nil),    // 15: elara.common.v1.PaginationRequest
+		(*v1.SortRequest)(nil),          // 16: elara.common.v1.SortRequest
+		(*v1.PaginationResponse)(nil),   // 17: elara.common.v1.PaginationResponse
+	}
+)
 var file_elara_namespace_v1_namespace_service_proto_depIdxs = []int32{
 	14, // 0: elara.namespace.v1.CreateNamespaceResponse.namespace:type_name -> elara.namespace.v1.Namespace
 	14, // 1: elara.namespace.v1.GetNamespaceResponse.namespace:type_name -> elara.namespace.v1.Namespace
@@ -777,8 +831,11 @@ func file_elara_namespace_v1_namespace_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_namespace_v1_namespace_service_proto_rawDesc), len(file_elara_namespace_v1_namespace_service_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_namespace_v1_namespace_service_proto_rawDesc),
+				len(file_elara_namespace_v1_namespace_service_proto_rawDesc),
+			),
 			NumEnums:      0,
 			NumMessages:   14,
 			NumExtensions: 0,

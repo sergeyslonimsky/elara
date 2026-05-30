@@ -5,9 +5,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppAbility } from "@/auth/ability";
-import { useAuth } from "@/components/auth-provider";
 import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
-import { TestProviders } from "@/test/test-utils";
+import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { MetadataTab } from "./metadata-tab";
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
@@ -19,14 +18,6 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 			mutateAsync: vi.fn(),
 			isPending: false,
 		})),
-	};
-});
-
-vi.mock("@/components/auth-provider", async (importOriginal) => {
-	const actual = await importOriginal<Record<string, unknown>>();
-	return {
-		...actual,
-		useAuth: vi.fn(),
 	};
 });
 
@@ -65,19 +56,10 @@ describe("MetadataTab", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 		can("write", "Group", { domain: "group:developers" });
 		const ability = build();
-
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<MetadataTab group={mockGroup} />
 			</TestProviders>,
 		);
@@ -90,19 +72,10 @@ describe("MetadataTab", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 		can("write", "Group", { domain: "group:developers" });
 		const ability = build();
-
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<MetadataTab group={mockGroup} />
 			</TestProviders>,
 		);
@@ -121,19 +94,10 @@ describe("MetadataTab", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 		can("write", "Group", { domain: "group:developers" });
 		const ability = build();
-
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<MetadataTab group={systemGroup} />
 			</TestProviders>,
 		);
@@ -151,19 +115,10 @@ describe("MetadataTab", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 		can("write", "Group", { domain: "group:developers" });
 		const ability = build();
-
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		const { rerender } = render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<MetadataTab group={mockGroup} />
 			</TestProviders>,
 		);
@@ -179,7 +134,7 @@ describe("MetadataTab", () => {
 			metadataVersion: 1n,
 		});
 		rerender(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<MetadataTab group={sameVersionRefetch} />
 			</TestProviders>,
 		);
@@ -191,19 +146,10 @@ describe("MetadataTab", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 		can("write", "Group", { domain: "group:developers" });
 		const ability = build();
-
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		const { rerender } = render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<MetadataTab group={mockGroup} />
 			</TestProviders>,
 		);
@@ -217,7 +163,7 @@ describe("MetadataTab", () => {
 			metadataVersion: 2n,
 		});
 		rerender(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<MetadataTab group={bumped} />
 			</TestProviders>,
 		);
@@ -240,19 +186,10 @@ describe("MetadataTab", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 		can("write", "Group", { domain: "group:developers" });
 		const ability = build();
-
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability,
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(ability);
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<MetadataTab group={mockGroup} />
 			</TestProviders>,
 		);

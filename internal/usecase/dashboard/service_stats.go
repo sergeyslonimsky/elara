@@ -29,7 +29,7 @@ func (s *Service) GetStats(ctx context.Context) (*StatsResult, error) {
 
 	for _, ns := range namespaces {
 		if !s.pdp.Has(claims.Email, domain.Permission{
-			Object: domain.ObjectConfig,
+			Object: domain.ObjectNamespace,
 			Action: domain.ActionRead,
 			Domain: ns.Name,
 		}) {

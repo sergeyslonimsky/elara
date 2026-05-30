@@ -65,12 +65,12 @@ func TestService_List(t *testing.T) {
 
 				m.pdp.EXPECT().
 					Has("admin@example.com", domain.Permission{
-						Object: domain.ObjectConfig, Action: domain.ActionWrite, Domain: "dev",
+						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "dev",
 					}).
 					Return(true)
 				m.pdp.EXPECT().
 					Has("admin@example.com", domain.Permission{
-						Object: domain.ObjectConfig, Action: domain.ActionWrite, Domain: "prod",
+						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod",
 					}).
 					Return(false)
 
@@ -109,12 +109,12 @@ func TestService_List(t *testing.T) {
 
 				m.pdp.EXPECT().
 					Has("user@example.com", domain.Permission{
-						Object: domain.ObjectConfig, Action: domain.ActionWrite, Domain: "ns1",
+						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "ns1",
 					}).
 					Return(true)
 				m.pdp.EXPECT().
 					Has("user@example.com", domain.Permission{
-						Object: domain.ObjectConfig, Action: domain.ActionWrite, Domain: "ns3",
+						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "ns3",
 					}).
 					Return(false)
 
@@ -173,7 +173,7 @@ func TestService_List(t *testing.T) {
 				m.store.EXPECT().CountConfigs(ctx, "prod").Return(0, nil)
 				m.pdp.EXPECT().
 					Has("u@example.com", domain.Permission{
-						Object: domain.ObjectConfig, Action: domain.ActionWrite, Domain: "prod",
+						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod",
 					}).
 					Return(true)
 

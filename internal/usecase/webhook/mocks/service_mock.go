@@ -13,9 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "go.uber.org/mock/gomock"
+
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	authz "github.com/sergeyslonimsky/elara/internal/service/authz"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockpdp is a mock of pdp interface.
@@ -34,6 +35,7 @@ type MockpdpMockRecorder struct {
 func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
 	mock := &Mockpdp{ctrl: ctrl}
 	mock.recorder = &MockpdpMockRecorder{mock}
+
 	return mock
 }
 
@@ -47,13 +49,22 @@ func (m *Mockpdp) EffectiveDomains(principal string, object domain.Object, actio
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EffectiveDomains", principal, object, action)
 	ret0, _ := ret[0].(authz.DomainSet)
+
 	return ret0
 }
 
 // EffectiveDomains indicates an expected call of EffectiveDomains.
 func (mr *MockpdpMockRecorder) EffectiveDomains(principal, object, action any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveDomains", reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains), principal, object, action)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"EffectiveDomains",
+		reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains),
+		principal,
+		object,
+		action,
+	)
 }
 
 // Has mocks base method.
@@ -61,12 +72,14 @@ func (m *Mockpdp) Has(principal string, perm domain.Permission) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Has", principal, perm)
 	ret0, _ := ret[0].(bool)
+
 	return ret0
 }
 
 // Has indicates an expected call of Has.
 func (mr *MockpdpMockRecorder) Has(principal, perm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*Mockpdp)(nil).Has), principal, perm)
 }
 
@@ -86,6 +99,7 @@ type MockrepoMockRecorder struct {
 func NewMockrepo(ctrl *gomock.Controller) *Mockrepo {
 	mock := &Mockrepo{ctrl: ctrl}
 	mock.recorder = &MockrepoMockRecorder{mock}
+
 	return mock
 }
 
@@ -99,12 +113,14 @@ func (m *Mockrepo) Create(ctx context.Context, w *domain.Webhook) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, w)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Create indicates an expected call of Create.
 func (mr *MockrepoMockRecorder) Create(ctx, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockrepo)(nil).Create), ctx, w)
 }
 
@@ -113,12 +129,14 @@ func (m *Mockrepo) Delete(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
 func (mr *MockrepoMockRecorder) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockrepo)(nil).Delete), ctx, id)
 }
 
@@ -128,12 +146,14 @@ func (m *Mockrepo) Get(ctx context.Context, id string) (*domain.Webhook, error) 
 	ret := m.ctrl.Call(m, "Get", ctx, id)
 	ret0, _ := ret[0].(*domain.Webhook)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockrepoMockRecorder) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockrepo)(nil).Get), ctx, id)
 }
 
@@ -143,12 +163,14 @@ func (m *Mockrepo) List(ctx context.Context) ([]*domain.Webhook, error) {
 	ret := m.ctrl.Call(m, "List", ctx)
 	ret0, _ := ret[0].([]*domain.Webhook)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockrepoMockRecorder) List(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockrepo)(nil).List), ctx)
 }
 
@@ -157,12 +179,14 @@ func (m *Mockrepo) Update(ctx context.Context, w *domain.Webhook) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, w)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Update indicates an expected call of Update.
 func (mr *MockrepoMockRecorder) Update(ctx, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*Mockrepo)(nil).Update), ctx, w)
 }
 
@@ -182,6 +206,7 @@ type MockdispatcherMockRecorder struct {
 func NewMockdispatcher(ctrl *gomock.Controller) *Mockdispatcher {
 	mock := &Mockdispatcher{ctrl: ctrl}
 	mock.recorder = &MockdispatcherMockRecorder{mock}
+
 	return mock
 }
 
@@ -199,7 +224,13 @@ func (m *Mockdispatcher) ClearHistory(webhookID string) {
 // ClearHistory indicates an expected call of ClearHistory.
 func (mr *MockdispatcherMockRecorder) ClearHistory(webhookID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClearHistory", reflect.TypeOf((*Mockdispatcher)(nil).ClearHistory), webhookID)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"ClearHistory",
+		reflect.TypeOf((*Mockdispatcher)(nil).ClearHistory),
+		webhookID,
+	)
 }
 
 // GetDeliveryHistory mocks base method.
@@ -207,11 +238,18 @@ func (m *Mockdispatcher) GetDeliveryHistory(webhookID string) []domain.DeliveryA
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDeliveryHistory", webhookID)
 	ret0, _ := ret[0].([]domain.DeliveryAttempt)
+
 	return ret0
 }
 
 // GetDeliveryHistory indicates an expected call of GetDeliveryHistory.
 func (mr *MockdispatcherMockRecorder) GetDeliveryHistory(webhookID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeliveryHistory", reflect.TypeOf((*Mockdispatcher)(nil).GetDeliveryHistory), webhookID)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"GetDeliveryHistory",
+		reflect.TypeOf((*Mockdispatcher)(nil).GetDeliveryHistory),
+		webhookID,
+	)
 }

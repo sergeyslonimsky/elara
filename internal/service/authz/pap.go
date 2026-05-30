@@ -9,8 +9,6 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
-const gRuleNativeLen = 3
-
 // PAP (Policy Administration Point) is the write-side complement of PDP.
 //
 // PDP answers "can principal X do Y on Z?" without exposing Casbin to its
@@ -56,56 +54,6 @@ func (p *PAP) Write(
 	}
 
 	return nil
-}
-
-// GroupRoleAssignment is a canonical view of a `g, group:<name>, role, dom`
-// rule with the group: prefix already stripped from the subject.
-type GroupRoleAssignment struct {
-	Group  string
-	Role   domain.Role
-	Domain string
-}
-
-// ListGroupRoleAssignments returns every g-rule whose subject is a group,
-// projected into domain language. Direct user grants and membership rules
-// are filtered out — only group → role bindings are surfaced. Order is
-// unspecified.
-func (p *PAP) ListGroupRoleAssignments() []GroupRoleAssignment {
-	rules := p.enforcer.GetGroupingPolicy()
-	result := make([]GroupRoleAssignment, 0, len(rules))
-
-	for _, rule := range rules {
-		if len(rule) < gRuleNativeLen {
-			continue
-		}
-		if !casbin.IsGroupSubject(rule[0]) {
-			continue
-		}
-
-		result = append(result, GroupRoleAssignment{
-			Group:  casbin.GroupNameFromSubject(rule[0]),
-			Role:   domain.Role(rule[1]),
-			Domain: rule[2],
-		})
-	}
-
-	return result
-}
-
-// AdminAssignmentCount returns the total number of g-rules that grant
-// domain.RoleAdmin on domain.DomainAll, across both direct user grants and
-// group grants. Used by the last-admin guard so the caller can compare it
-// against HasDirectAdminAssignment.
-func (p *PAP) AdminAssignmentCount() int {
-	count := 0
-
-	for _, rule := range p.enforcer.GetGroupingPolicy() {
-		if len(rule) == gRuleNativeLen && domain.Role(rule[1]) == domain.RoleAdmin && rule[2] == domain.DomainAll {
-			count++
-		}
-	}
-
-	return count
 }
 
 // GroupNamesFromScope extracts group names from the scope's explicit
@@ -205,20 +153,4 @@ func (p *PAP) UserGroupNames(email string) ([]string, error) {
 	}
 
 	return out, nil
-}
-
-// HasDirectAdminAssignment reports whether the given email holds a g-rule
-// directly granting domain.RoleAdmin on domain.DomainAll (i.e. not via group
-// membership). Used to detect the bootstrap-admin / single-user-admin case.
-func (p *PAP) HasDirectAdminAssignment(email string) bool {
-	for _, rule := range p.enforcer.GetGroupingPolicy() {
-		if len(rule) == gRuleNativeLen &&
-			rule[0] == email &&
-			domain.Role(rule[1]) == domain.RoleAdmin &&
-			rule[2] == domain.DomainAll {
-			return true
-		}
-	}
-
-	return false
 }

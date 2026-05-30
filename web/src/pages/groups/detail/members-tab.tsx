@@ -6,7 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { canManageGroup } from "@/auth/ability";
-import { useAuth } from "@/components/auth-provider";
+import { useAbility } from "@/auth/ability-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,11 +26,10 @@ export function MembersTab({
 	group,
 	visibleMembers,
 }: Readonly<MembersTabProps>) {
-	const { state } = useAuth();
+	const ability = useAbility();
 	const queryClient = useQueryClient();
 
-	const ability = state.status === "authenticated" ? state.ability : null;
-	const canEdit = ability ? canManageGroup(ability, group) : false;
+	const canEdit = canManageGroup(ability, group);
 
 	const [addEmails, setAddEmails] = useState<string[]>([]);
 	const [removeEmails, setRemoveEmails] = useState<Set<string>>(new Set());

@@ -85,7 +85,7 @@ func TestService_ResetPassword(t *testing.T) {
 		// Target inherits config:write on ns-a from group:elevated. Actor
 		// has only Group:Write on g1 (no config:write of its own).
 		addPolicies(t, st, []policyRow{
-			{casbin.GroupSubject("elevated"), "ns-a", domain.ObjectConfig, domain.ActionWrite},
+			{casbin.GroupSubject("elevated"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
 			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
 		})
 

@@ -112,7 +112,7 @@ func (s *Service) authorizeCreate(
 
 	managerGroups := make([]*domain.Group, 0, len(data.InitialManagerGroupIDs))
 	for _, id := range data.InitialManagerGroupIDs {
-		if !s.pdp.HasGroupWrite(actor.Email, id) {
+		if !s.pdp.HasGroup(actor.Email, id, domain.ActionWrite) {
 			return nil, domain.ErrForbidden
 		}
 		mg, err := s.store.WithTx(tx).Get(ctx, id)

@@ -5,12 +5,14 @@
 package clientsv1connect
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/clients/v1"
 	http "net/http"
 	strings "strings"
+
+	connect "connectrpc.com/connect"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/clients/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -56,25 +58,40 @@ const (
 // ClientsServiceClient is a client for the elara.clients.v1.ClientsService service.
 type ClientsServiceClient interface {
 	// ListActiveClients returns all currently-connected clients.
-	ListActiveClients(context.Context, *connect.Request[v1.ListActiveClientsRequest]) (*connect.Response[v1.ListActiveClientsResponse], error)
+	ListActiveClients(
+		context.Context,
+		*connect.Request[v1.ListActiveClientsRequest],
+	) (*connect.Response[v1.ListActiveClientsResponse], error)
 	// GetClient returns one client (active or recently disconnected) along with
 	// its recent in-memory event log. Recent events are not persisted — for
 	// disconnected clients, recent_events will be empty.
 	GetClient(context.Context, *connect.Request[v1.GetClientRequest]) (*connect.Response[v1.GetClientResponse], error)
 	// ListHistoricalConnections returns past connections, newest first.
-	ListHistoricalConnections(context.Context, *connect.Request[v1.ListHistoricalConnectionsRequest]) (*connect.Response[v1.ListHistoricalConnectionsResponse], error)
+	ListHistoricalConnections(
+		context.Context,
+		*connect.Request[v1.ListHistoricalConnectionsRequest],
+	) (*connect.Response[v1.ListHistoricalConnectionsResponse], error)
 	// ListClientSessions returns past connections of the same logical client
 	// (matched by client_name + k8s_namespace), newest first. The current
 	// session (current_id) is excluded if provided.
-	ListClientSessions(context.Context, *connect.Request[v1.ListClientSessionsRequest]) (*connect.Response[v1.ListClientSessionsResponse], error)
+	ListClientSessions(
+		context.Context,
+		*connect.Request[v1.ListClientSessionsRequest],
+	) (*connect.Response[v1.ListClientSessionsResponse], error)
 	// WatchClients streams live updates: full snapshots on a periodic ticker
 	// plus immediate Connected/Disconnected events. Designed to feed a UI list
 	// view; cancelled when the client closes the stream.
-	WatchClients(context.Context, *connect.Request[v1.WatchClientsRequest]) (*connect.ServerStreamForClient[v1.WatchClientsResponse], error)
+	WatchClients(
+		context.Context,
+		*connect.Request[v1.WatchClientsRequest],
+	) (*connect.ServerStreamForClient[v1.WatchClientsResponse], error)
 	// WatchClient streams live updates for a single client: snapshot updates
 	// (so KPI cards stay live) and per-RPC events (so the activity log can
 	// tail in real time). The stream ends when the client disconnects.
-	WatchClient(context.Context, *connect.Request[v1.WatchClientRequest]) (*connect.ServerStreamForClient[v1.WatchClientResponse], error)
+	WatchClient(
+		context.Context,
+		*connect.Request[v1.WatchClientRequest],
+	) (*connect.ServerStreamForClient[v1.WatchClientResponse], error)
 }
 
 // NewClientsServiceClient constructs a client for the elara.clients.v1.ClientsService service. By
@@ -84,9 +101,16 @@ type ClientsServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewClientsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ClientsServiceClient {
+func NewClientsServiceClient(
+	httpClient connect.HTTPClient,
+	baseURL string,
+	opts ...connect.ClientOption,
+) ClientsServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	clientsServiceMethods := v1.File_elara_clients_v1_clients_service_proto.Services().ByName("ClientsService").Methods()
+	clientsServiceMethods := v1.File_elara_clients_v1_clients_service_proto.Services().
+		ByName("ClientsService").
+		Methods()
+
 	return &clientsServiceClient{
 		listActiveClients: connect.NewClient[v1.ListActiveClientsRequest, v1.ListActiveClientsResponse](
 			httpClient,
@@ -138,57 +162,92 @@ type clientsServiceClient struct {
 }
 
 // ListActiveClients calls elara.clients.v1.ClientsService.ListActiveClients.
-func (c *clientsServiceClient) ListActiveClients(ctx context.Context, req *connect.Request[v1.ListActiveClientsRequest]) (*connect.Response[v1.ListActiveClientsResponse], error) {
+func (c *clientsServiceClient) ListActiveClients(
+	ctx context.Context,
+	req *connect.Request[v1.ListActiveClientsRequest],
+) (*connect.Response[v1.ListActiveClientsResponse], error) {
 	return c.listActiveClients.CallUnary(ctx, req)
 }
 
 // GetClient calls elara.clients.v1.ClientsService.GetClient.
-func (c *clientsServiceClient) GetClient(ctx context.Context, req *connect.Request[v1.GetClientRequest]) (*connect.Response[v1.GetClientResponse], error) {
+func (c *clientsServiceClient) GetClient(
+	ctx context.Context,
+	req *connect.Request[v1.GetClientRequest],
+) (*connect.Response[v1.GetClientResponse], error) {
 	return c.getClient.CallUnary(ctx, req)
 }
 
 // ListHistoricalConnections calls elara.clients.v1.ClientsService.ListHistoricalConnections.
-func (c *clientsServiceClient) ListHistoricalConnections(ctx context.Context, req *connect.Request[v1.ListHistoricalConnectionsRequest]) (*connect.Response[v1.ListHistoricalConnectionsResponse], error) {
+func (c *clientsServiceClient) ListHistoricalConnections(
+	ctx context.Context,
+	req *connect.Request[v1.ListHistoricalConnectionsRequest],
+) (*connect.Response[v1.ListHistoricalConnectionsResponse], error) {
 	return c.listHistoricalConnections.CallUnary(ctx, req)
 }
 
 // ListClientSessions calls elara.clients.v1.ClientsService.ListClientSessions.
-func (c *clientsServiceClient) ListClientSessions(ctx context.Context, req *connect.Request[v1.ListClientSessionsRequest]) (*connect.Response[v1.ListClientSessionsResponse], error) {
+func (c *clientsServiceClient) ListClientSessions(
+	ctx context.Context,
+	req *connect.Request[v1.ListClientSessionsRequest],
+) (*connect.Response[v1.ListClientSessionsResponse], error) {
 	return c.listClientSessions.CallUnary(ctx, req)
 }
 
 // WatchClients calls elara.clients.v1.ClientsService.WatchClients.
-func (c *clientsServiceClient) WatchClients(ctx context.Context, req *connect.Request[v1.WatchClientsRequest]) (*connect.ServerStreamForClient[v1.WatchClientsResponse], error) {
+func (c *clientsServiceClient) WatchClients(
+	ctx context.Context,
+	req *connect.Request[v1.WatchClientsRequest],
+) (*connect.ServerStreamForClient[v1.WatchClientsResponse], error) {
 	return c.watchClients.CallServerStream(ctx, req)
 }
 
 // WatchClient calls elara.clients.v1.ClientsService.WatchClient.
-func (c *clientsServiceClient) WatchClient(ctx context.Context, req *connect.Request[v1.WatchClientRequest]) (*connect.ServerStreamForClient[v1.WatchClientResponse], error) {
+func (c *clientsServiceClient) WatchClient(
+	ctx context.Context,
+	req *connect.Request[v1.WatchClientRequest],
+) (*connect.ServerStreamForClient[v1.WatchClientResponse], error) {
 	return c.watchClient.CallServerStream(ctx, req)
 }
 
 // ClientsServiceHandler is an implementation of the elara.clients.v1.ClientsService service.
 type ClientsServiceHandler interface {
 	// ListActiveClients returns all currently-connected clients.
-	ListActiveClients(context.Context, *connect.Request[v1.ListActiveClientsRequest]) (*connect.Response[v1.ListActiveClientsResponse], error)
+	ListActiveClients(
+		context.Context,
+		*connect.Request[v1.ListActiveClientsRequest],
+	) (*connect.Response[v1.ListActiveClientsResponse], error)
 	// GetClient returns one client (active or recently disconnected) along with
 	// its recent in-memory event log. Recent events are not persisted — for
 	// disconnected clients, recent_events will be empty.
 	GetClient(context.Context, *connect.Request[v1.GetClientRequest]) (*connect.Response[v1.GetClientResponse], error)
 	// ListHistoricalConnections returns past connections, newest first.
-	ListHistoricalConnections(context.Context, *connect.Request[v1.ListHistoricalConnectionsRequest]) (*connect.Response[v1.ListHistoricalConnectionsResponse], error)
+	ListHistoricalConnections(
+		context.Context,
+		*connect.Request[v1.ListHistoricalConnectionsRequest],
+	) (*connect.Response[v1.ListHistoricalConnectionsResponse], error)
 	// ListClientSessions returns past connections of the same logical client
 	// (matched by client_name + k8s_namespace), newest first. The current
 	// session (current_id) is excluded if provided.
-	ListClientSessions(context.Context, *connect.Request[v1.ListClientSessionsRequest]) (*connect.Response[v1.ListClientSessionsResponse], error)
+	ListClientSessions(
+		context.Context,
+		*connect.Request[v1.ListClientSessionsRequest],
+	) (*connect.Response[v1.ListClientSessionsResponse], error)
 	// WatchClients streams live updates: full snapshots on a periodic ticker
 	// plus immediate Connected/Disconnected events. Designed to feed a UI list
 	// view; cancelled when the client closes the stream.
-	WatchClients(context.Context, *connect.Request[v1.WatchClientsRequest], *connect.ServerStream[v1.WatchClientsResponse]) error
+	WatchClients(
+		context.Context,
+		*connect.Request[v1.WatchClientsRequest],
+		*connect.ServerStream[v1.WatchClientsResponse],
+	) error
 	// WatchClient streams live updates for a single client: snapshot updates
 	// (so KPI cards stay live) and per-RPC events (so the activity log can
 	// tail in real time). The stream ends when the client disconnects.
-	WatchClient(context.Context, *connect.Request[v1.WatchClientRequest], *connect.ServerStream[v1.WatchClientResponse]) error
+	WatchClient(
+		context.Context,
+		*connect.Request[v1.WatchClientRequest],
+		*connect.ServerStream[v1.WatchClientResponse],
+	) error
 }
 
 // NewClientsServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -197,7 +256,9 @@ type ClientsServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewClientsServiceHandler(svc ClientsServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	clientsServiceMethods := v1.File_elara_clients_v1_clients_service_proto.Services().ByName("ClientsService").Methods()
+	clientsServiceMethods := v1.File_elara_clients_v1_clients_service_proto.Services().
+		ByName("ClientsService").
+		Methods()
 	clientsServiceListActiveClientsHandler := connect.NewUnaryHandler(
 		ClientsServiceListActiveClientsProcedure,
 		svc.ListActiveClients,
@@ -234,6 +295,7 @@ func NewClientsServiceHandler(svc ClientsServiceHandler, opts ...connect.Handler
 		connect.WithSchema(clientsServiceMethods.ByName("WatchClient")),
 		connect.WithHandlerOptions(opts...),
 	)
+
 	return "/elara.clients.v1.ClientsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ClientsServiceListActiveClientsProcedure:
@@ -257,26 +319,64 @@ func NewClientsServiceHandler(svc ClientsServiceHandler, opts ...connect.Handler
 // UnimplementedClientsServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedClientsServiceHandler struct{}
 
-func (UnimplementedClientsServiceHandler) ListActiveClients(context.Context, *connect.Request[v1.ListActiveClientsRequest]) (*connect.Response[v1.ListActiveClientsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.clients.v1.ClientsService.ListActiveClients is not implemented"))
+func (UnimplementedClientsServiceHandler) ListActiveClients(
+	context.Context,
+	*connect.Request[v1.ListActiveClientsRequest],
+) (*connect.Response[v1.ListActiveClientsResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.clients.v1.ClientsService.ListActiveClients is not implemented"),
+	)
 }
 
-func (UnimplementedClientsServiceHandler) GetClient(context.Context, *connect.Request[v1.GetClientRequest]) (*connect.Response[v1.GetClientResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.clients.v1.ClientsService.GetClient is not implemented"))
+func (UnimplementedClientsServiceHandler) GetClient(
+	context.Context,
+	*connect.Request[v1.GetClientRequest],
+) (*connect.Response[v1.GetClientResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.clients.v1.ClientsService.GetClient is not implemented"),
+	)
 }
 
-func (UnimplementedClientsServiceHandler) ListHistoricalConnections(context.Context, *connect.Request[v1.ListHistoricalConnectionsRequest]) (*connect.Response[v1.ListHistoricalConnectionsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.clients.v1.ClientsService.ListHistoricalConnections is not implemented"))
+func (UnimplementedClientsServiceHandler) ListHistoricalConnections(
+	context.Context,
+	*connect.Request[v1.ListHistoricalConnectionsRequest],
+) (*connect.Response[v1.ListHistoricalConnectionsResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.clients.v1.ClientsService.ListHistoricalConnections is not implemented"),
+	)
 }
 
-func (UnimplementedClientsServiceHandler) ListClientSessions(context.Context, *connect.Request[v1.ListClientSessionsRequest]) (*connect.Response[v1.ListClientSessionsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.clients.v1.ClientsService.ListClientSessions is not implemented"))
+func (UnimplementedClientsServiceHandler) ListClientSessions(
+	context.Context,
+	*connect.Request[v1.ListClientSessionsRequest],
+) (*connect.Response[v1.ListClientSessionsResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.clients.v1.ClientsService.ListClientSessions is not implemented"),
+	)
 }
 
-func (UnimplementedClientsServiceHandler) WatchClients(context.Context, *connect.Request[v1.WatchClientsRequest], *connect.ServerStream[v1.WatchClientsResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("elara.clients.v1.ClientsService.WatchClients is not implemented"))
+func (UnimplementedClientsServiceHandler) WatchClients(
+	context.Context,
+	*connect.Request[v1.WatchClientsRequest],
+	*connect.ServerStream[v1.WatchClientsResponse],
+) error {
+	return connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.clients.v1.ClientsService.WatchClients is not implemented"),
+	)
 }
 
-func (UnimplementedClientsServiceHandler) WatchClient(context.Context, *connect.Request[v1.WatchClientRequest], *connect.ServerStream[v1.WatchClientResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("elara.clients.v1.ClientsService.WatchClient is not implemented"))
+func (UnimplementedClientsServiceHandler) WatchClient(
+	context.Context,
+	*connect.Request[v1.WatchClientRequest],
+	*connect.ServerStream[v1.WatchClientResponse],
+) error {
+	return connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.clients.v1.ClientsService.WatchClient is not implemented"),
+	)
 }

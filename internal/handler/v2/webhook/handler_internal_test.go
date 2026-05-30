@@ -40,6 +40,9 @@ func TestHandler_CreateWebhook(t *testing.T) {
 				az.EXPECT().
 					Require(gomock.Any(), domain.ObjectWebhook, domain.ActionCreate, "production").
 					Return(nil)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "production").
+					Return(nil)
 				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
 					Return(&domain.Webhook{
 						ID:              "gen-id",
@@ -65,6 +68,9 @@ func TestHandler_CreateWebhook(t *testing.T) {
 
 				az.EXPECT().
 					Require(gomock.Any(), domain.ObjectWebhook, domain.ActionCreate, domain.DomainAll).
+					Return(nil)
+				az.EXPECT().
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, domain.DomainAll).
 					Return(nil)
 				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
 					Return(&domain.Webhook{ID: "gen-id", URL: "https://example.com/hook"}, nil)
@@ -102,6 +108,7 @@ func TestHandler_CreateWebhook(t *testing.T) {
 				uc := webhookmock.NewMockusecase(ctrl)
 
 				az.EXPECT().Require(gomock.Any(), domain.ObjectWebhook, domain.ActionCreate, "prod").Return(nil)
+				az.EXPECT().Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").Return(nil)
 				uc.EXPECT().Create(gomock.Any(), gomock.Any()).
 					Return(nil, domain.NewValidationError("url", "url is required"))
 

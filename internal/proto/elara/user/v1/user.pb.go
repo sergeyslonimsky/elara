@@ -7,12 +7,13 @@
 package userv1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -24,12 +25,12 @@ const (
 
 type User struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
-	Email       string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Name        string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Picture     string                 `protobuf:"bytes,3,opt,name=picture,proto3" json:"picture,omitempty"`
-	Provider    string                 `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
-	CreatedAt   *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	LastLoginAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=last_login_at,json=lastLoginAt,proto3" json:"last_login_at,omitempty"`
+	Email       string                 `                   protobuf:"bytes,1,opt,name=email,proto3"                          json:"email,omitempty"`
+	Name        string                 `                   protobuf:"bytes,2,opt,name=name,proto3"                           json:"name,omitempty"`
+	Picture     string                 `                   protobuf:"bytes,3,opt,name=picture,proto3"                        json:"picture,omitempty"`
+	Provider    string                 `                   protobuf:"bytes,4,opt,name=provider,proto3"                       json:"provider,omitempty"`
+	CreatedAt   *timestamppb.Timestamp `                   protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3"      json:"created_at,omitempty"`
+	LastLoginAt *timestamppb.Timestamp `                   protobuf:"bytes,6,opt,name=last_login_at,json=lastLoginAt,proto3" json:"last_login_at,omitempty"`
 	// is_system flags built-in users (e.g. the bootstrap superadmin) that
 	// the server protects from deletion. Clients should disable destructive
 	// UI actions when this is true.
@@ -58,8 +59,10 @@ func (x *User) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -72,6 +75,7 @@ func (x *User) GetEmail() string {
 	if x != nil {
 		return x.Email
 	}
+
 	return ""
 }
 
@@ -79,6 +83,7 @@ func (x *User) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
@@ -86,6 +91,7 @@ func (x *User) GetPicture() string {
 	if x != nil {
 		return x.Picture
 	}
+
 	return ""
 }
 
@@ -93,6 +99,7 @@ func (x *User) GetProvider() string {
 	if x != nil {
 		return x.Provider
 	}
+
 	return ""
 }
 
@@ -100,6 +107,7 @@ func (x *User) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
+
 	return nil
 }
 
@@ -107,6 +115,7 @@ func (x *User) GetLastLoginAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.LastLoginAt
 	}
+
 	return nil
 }
 
@@ -114,6 +123,7 @@ func (x *User) GetIsSystem() bool {
 	if x != nil {
 		return x.IsSystem
 	}
+
 	return false
 }
 
@@ -140,16 +150,24 @@ var (
 
 func file_elara_user_v1_user_proto_rawDescGZIP() []byte {
 	file_elara_user_v1_user_proto_rawDescOnce.Do(func() {
-		file_elara_user_v1_user_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_user_v1_user_proto_rawDesc), len(file_elara_user_v1_user_proto_rawDesc)))
+		file_elara_user_v1_user_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_user_v1_user_proto_rawDesc),
+				len(file_elara_user_v1_user_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_user_v1_user_proto_rawDescData
 }
 
-var file_elara_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_elara_user_v1_user_proto_goTypes = []any{
-	(*User)(nil),                  // 0: elara.user.v1.User
-	(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
-}
+var (
+	file_elara_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+	file_elara_user_v1_user_proto_goTypes  = []any{
+		(*User)(nil),                  // 0: elara.user.v1.User
+		(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
+	}
+)
 var file_elara_user_v1_user_proto_depIdxs = []int32{
 	1, // 0: elara.user.v1.User.created_at:type_name -> google.protobuf.Timestamp
 	1, // 1: elara.user.v1.User.last_login_at:type_name -> google.protobuf.Timestamp
@@ -168,8 +186,11 @@ func file_elara_user_v1_user_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_user_v1_user_proto_rawDesc), len(file_elara_user_v1_user_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_user_v1_user_proto_rawDesc),
+				len(file_elara_user_v1_user_proto_rawDesc),
+			),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,

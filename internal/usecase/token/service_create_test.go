@@ -34,7 +34,7 @@ func TestService_Create(t *testing.T) {
 			},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().Has(callerEmail, domain.Permission{
-					Object: domain.ObjectConfig,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionWrite,
 					Domain: "ns1",
 				}).Return(true)
@@ -50,7 +50,7 @@ func TestService_Create(t *testing.T) {
 			},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().Has(callerEmail, domain.Permission{
-					Object: domain.ObjectConfig,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionWrite,
 					Domain: "ns1",
 				}).Return(false)
@@ -66,7 +66,7 @@ func TestService_Create(t *testing.T) {
 			},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().Has(callerEmail, domain.Permission{
-					Object: domain.ObjectConfig,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionRead,
 					Domain: "ns1",
 				}).Return(false)
@@ -101,7 +101,7 @@ func TestService_Create(t *testing.T) {
 			},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().Has(callerEmail, domain.Permission{
-					Object: domain.ObjectConfig,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionRead,
 					Domain: "ns1",
 				}).Return(true)

@@ -30,6 +30,7 @@ func TestEnforcer_GroupMembershipTransitivity(t *testing.T) {
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, "devops", "writer", "prod")
 				seedRole(t, e, txm, "alice@example.com", "devops", "prod")
 
@@ -48,6 +49,7 @@ func TestEnforcer_GroupMembershipTransitivity(t *testing.T) {
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, "devops", "writer", "prod")
 				seedRole(t, e, txm, "alice@example.com", "devops", "prod")
 				removeRole(t, e, txm, "alice@example.com", "devops", "prod")
@@ -67,6 +69,7 @@ func TestEnforcer_GroupMembershipTransitivity(t *testing.T) {
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, "devops", "writer", "prod")
 				seedRole(t, e, txm, "ops", "writer", "prod")
 				seedRole(t, e, txm, "alice@example.com", "devops", "prod")
@@ -88,6 +91,7 @@ func TestEnforcer_GroupMembershipTransitivity(t *testing.T) {
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, "devops", "writer", "prod")
 				seedRole(t, e, txm, "ops", "writer", "prod")
 				seedRole(t, e, txm, "alice@example.com", "devops", "prod")

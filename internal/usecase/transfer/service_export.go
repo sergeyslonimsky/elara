@@ -136,7 +136,7 @@ func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) 
 
 	for _, ns := range ns {
 		if !s.pdp.Has(claims.Email, domain.Permission{
-			Object: domain.ObjectTransfer,
+			Object: domain.ObjectNamespace,
 			Action: domain.ActionRead,
 			Domain: ns.Name,
 		}) {

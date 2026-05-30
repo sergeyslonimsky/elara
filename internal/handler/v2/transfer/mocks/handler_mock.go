@@ -13,9 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "go.uber.org/mock/gomock"
+
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockauthz is a mock of authz interface.
@@ -34,6 +35,7 @@ type MockauthzMockRecorder struct {
 func NewMockauthz(ctrl *gomock.Controller) *Mockauthz {
 	mock := &Mockauthz{ctrl: ctrl}
 	mock.recorder = &MockauthzMockRecorder{mock}
+
 	return mock
 }
 
@@ -47,13 +49,23 @@ func (m *Mockauthz) Require(ctx context.Context, object domain.Object, action do
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Require indicates an expected call of Require.
 func (mr *MockauthzMockRecorder) Require(ctx, object, action, domainStr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*Mockauthz)(nil).Require), ctx, object, action, domainStr)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Require",
+		reflect.TypeOf((*Mockauthz)(nil).Require),
+		ctx,
+		object,
+		action,
+		domainStr,
+	)
 }
 
 // Mockusecase is a mock of usecase interface.
@@ -72,6 +84,7 @@ type MockusecaseMockRecorder struct {
 func NewMockusecase(ctrl *gomock.Controller) *Mockusecase {
 	mock := &Mockusecase{ctrl: ctrl}
 	mock.recorder = &MockusecaseMockRecorder{mock}
+
 	return mock
 }
 
@@ -81,50 +94,97 @@ func (m *Mockusecase) EXPECT() *MockusecaseMockRecorder {
 }
 
 // ExportAll mocks base method.
-func (m *Mockusecase) ExportAll(ctx context.Context, asZip bool, enc transferv1.BundleEncoding, layout transferv1.ZipLayout) ([]byte, string, string, error) {
+func (m *Mockusecase) ExportAll(
+	ctx context.Context,
+	asZip bool,
+	enc transferv1.BundleEncoding,
+	layout transferv1.ZipLayout,
+) ([]byte, string, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExportAll", ctx, asZip, enc, layout)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(string)
 	ret3, _ := ret[3].(error)
+
 	return ret0, ret1, ret2, ret3
 }
 
 // ExportAll indicates an expected call of ExportAll.
 func (mr *MockusecaseMockRecorder) ExportAll(ctx, asZip, enc, layout any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportAll", reflect.TypeOf((*Mockusecase)(nil).ExportAll), ctx, asZip, enc, layout)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"ExportAll",
+		reflect.TypeOf((*Mockusecase)(nil).ExportAll),
+		ctx,
+		asZip,
+		enc,
+		layout,
+	)
 }
 
 // ExportNamespace mocks base method.
-func (m *Mockusecase) ExportNamespace(ctx context.Context, namespace string, asZip bool, enc transferv1.BundleEncoding) ([]byte, string, string, error) {
+func (m *Mockusecase) ExportNamespace(
+	ctx context.Context,
+	namespace string,
+	asZip bool,
+	enc transferv1.BundleEncoding,
+) ([]byte, string, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExportNamespace", ctx, namespace, asZip, enc)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(string)
 	ret3, _ := ret[3].(error)
+
 	return ret0, ret1, ret2, ret3
 }
 
 // ExportNamespace indicates an expected call of ExportNamespace.
 func (mr *MockusecaseMockRecorder) ExportNamespace(ctx, namespace, asZip, enc any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportNamespace", reflect.TypeOf((*Mockusecase)(nil).ExportNamespace), ctx, namespace, asZip, enc)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"ExportNamespace",
+		reflect.TypeOf((*Mockusecase)(nil).ExportNamespace),
+		ctx,
+		namespace,
+		asZip,
+		enc,
+	)
 }
 
 // Import mocks base method.
-func (m *Mockusecase) Import(ctx context.Context, data []byte, onConflict transferv1.ConflictResolution, dryRun bool, targetNamespace string) (*domain.ImportReport, error) {
+func (m *Mockusecase) Import(
+	ctx context.Context,
+	data []byte,
+	onConflict transferv1.ConflictResolution,
+	dryRun bool,
+	targetNamespace string,
+) (*domain.ImportReport, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Import", ctx, data, onConflict, dryRun, targetNamespace)
 	ret0, _ := ret[0].(*domain.ImportReport)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Import indicates an expected call of Import.
 func (mr *MockusecaseMockRecorder) Import(ctx, data, onConflict, dryRun, targetNamespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*Mockusecase)(nil).Import), ctx, data, onConflict, dryRun, targetNamespace)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Import",
+		reflect.TypeOf((*Mockusecase)(nil).Import),
+		ctx,
+		data,
+		onConflict,
+		dryRun,
+		targetNamespace,
+	)
 }

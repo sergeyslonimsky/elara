@@ -63,16 +63,17 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
 				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
 
 				return e
 			},
 			requests: []request{
-				{domain: "prod", object: domain.ObjectConfig, action: domain.ActionWrite, want: true},
+				{domain: "prod", object: domain.ObjectNamespace, action: domain.ActionWrite, want: true},
 				// group has no role in staging -> no access there even though
 				// the membership rule is in domain "*".
-				{domain: "staging", object: domain.ObjectConfig, action: domain.ActionWrite, want: false},
+				{domain: "staging", object: domain.ObjectNamespace, action: domain.ActionWrite, want: false},
 			},
 		},
 		{
@@ -100,11 +101,11 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 			},
 			requests: []request{
 				// alice loses access via the group revoke...
-				{domain: "prod", object: domain.ObjectConfig, action: domain.ActionWrite, want: false},
+				{domain: "prod", object: domain.ObjectNamespace, action: domain.ActionWrite, want: false},
 			},
 			extraSubjects: []extraCheck{
 				// ...and so does bob, through the same single mutation.
-				{subject: bob, domain: "prod", object: domain.ObjectConfig, action: domain.ActionWrite, want: false},
+				{subject: bob, domain: "prod", object: domain.ObjectNamespace, action: domain.ActionWrite, want: false},
 			},
 		},
 		{
@@ -112,6 +113,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
 				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
 				removeRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
@@ -119,7 +121,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				return e
 			},
 			requests: []request{
-				{domain: "prod", object: domain.ObjectConfig, action: domain.ActionWrite, want: false},
+				{domain: "prod", object: domain.ObjectNamespace, action: domain.ActionWrite, want: false},
 			},
 		},
 		{
@@ -127,6 +129,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 			setupFunc: func(t *testing.T) *casbin.Enforcer {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
+				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, alice, string(domain.RoleReader), domain.DomainAll)
 				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
 				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
@@ -135,11 +138,11 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 			},
 			requests: []request{
 				// Direct reader role grants read in any domain.
-				{domain: "staging", object: domain.ObjectConfig, action: domain.ActionRead, want: true},
+				{domain: "staging", object: domain.ObjectNamespace, action: domain.ActionRead, want: true},
 				// Group-derived admin role grants write in prod only.
-				{domain: "prod", object: domain.ObjectConfig, action: domain.ActionWrite, want: true},
+				{domain: "prod", object: domain.ObjectNamespace, action: domain.ActionWrite, want: true},
 				// Neither path grants write in staging.
-				{domain: "staging", object: domain.ObjectConfig, action: domain.ActionWrite, want: false},
+				{domain: "staging", object: domain.ObjectNamespace, action: domain.ActionWrite, want: false},
 			},
 		},
 	}

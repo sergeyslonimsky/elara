@@ -5,12 +5,14 @@
 package userv1connect
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1"
 	http "net/http"
 	strings "strings"
+
+	connect "connectrpc.com/connect"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -77,7 +79,10 @@ type UserServiceClient interface {
 	//   - User:Create * (global), OR
 	//   - initial_group_ids non-empty AND caller holds Group:Write on every id
 	//     (with anti-escalation cascading from those groups).
-	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
+	CreateUser(
+		context.Context,
+		*connect.Request[v1.CreateUserRequest],
+	) (*connect.Response[v1.CreateUserResponse], error)
 	// Admin-only — resets the target user's password and sets password_change_required.
 	// Basic-auth mode only.
 	//
@@ -87,12 +92,18 @@ type UserServiceClient interface {
 	//
 	// Plus anti-escalation: caller must hold every permission the target
 	// currently has (impersonation cannot escalate privilege).
-	ResetUserPassword(context.Context, *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error)
+	ResetUserPassword(
+		context.Context,
+		*connect.Request[v1.ResetUserPasswordRequest],
+	) (*connect.Response[v1.ResetUserPasswordResponse], error)
 	// Admin-only — deletes the user and all their memberships.
 	// Basic-auth mode only.
 	//
 	// Authorization: same as ResetUserPassword.
-	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
+	DeleteUser(
+		context.Context,
+		*connect.Request[v1.DeleteUserRequest],
+	) (*connect.Response[v1.DeleteUserResponse], error)
 	// Updates the target user's group memberships using an explicit delta.
 	// Adding a group the user already belongs to is a no-op; removing from
 	// one they're not in is a no-op. Including the same group in both
@@ -107,7 +118,10 @@ type UserServiceClient interface {
 	//
 	// If expected_version is set and current membership_version differs,
 	// returns FAILED_PRECONDITION — even if the net change would be a no-op.
-	UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error)
+	UpdateUserGroups(
+		context.Context,
+		*connect.Request[v1.UpdateUserGroupsRequest],
+	) (*connect.Response[v1.UpdateUserGroupsResponse], error)
 }
 
 // NewUserServiceClient constructs a client for the elara.user.v1.UserService service. By default,
@@ -117,9 +131,14 @@ type UserServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) UserServiceClient {
+func NewUserServiceClient(
+	httpClient connect.HTTPClient,
+	baseURL string,
+	opts ...connect.ClientOption,
+) UserServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	userServiceMethods := v1.File_elara_user_v1_user_service_proto.Services().ByName("UserService").Methods()
+
 	return &userServiceClient{
 		listUsers: connect.NewClient[v1.ListUsersRequest, v1.ListUsersResponse](
 			httpClient,
@@ -171,32 +190,50 @@ type userServiceClient struct {
 }
 
 // ListUsers calls elara.user.v1.UserService.ListUsers.
-func (c *userServiceClient) ListUsers(ctx context.Context, req *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error) {
+func (c *userServiceClient) ListUsers(
+	ctx context.Context,
+	req *connect.Request[v1.ListUsersRequest],
+) (*connect.Response[v1.ListUsersResponse], error) {
 	return c.listUsers.CallUnary(ctx, req)
 }
 
 // GetUser calls elara.user.v1.UserService.GetUser.
-func (c *userServiceClient) GetUser(ctx context.Context, req *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error) {
+func (c *userServiceClient) GetUser(
+	ctx context.Context,
+	req *connect.Request[v1.GetUserRequest],
+) (*connect.Response[v1.GetUserResponse], error) {
 	return c.getUser.CallUnary(ctx, req)
 }
 
 // CreateUser calls elara.user.v1.UserService.CreateUser.
-func (c *userServiceClient) CreateUser(ctx context.Context, req *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error) {
+func (c *userServiceClient) CreateUser(
+	ctx context.Context,
+	req *connect.Request[v1.CreateUserRequest],
+) (*connect.Response[v1.CreateUserResponse], error) {
 	return c.createUser.CallUnary(ctx, req)
 }
 
 // ResetUserPassword calls elara.user.v1.UserService.ResetUserPassword.
-func (c *userServiceClient) ResetUserPassword(ctx context.Context, req *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error) {
+func (c *userServiceClient) ResetUserPassword(
+	ctx context.Context,
+	req *connect.Request[v1.ResetUserPasswordRequest],
+) (*connect.Response[v1.ResetUserPasswordResponse], error) {
 	return c.resetUserPassword.CallUnary(ctx, req)
 }
 
 // DeleteUser calls elara.user.v1.UserService.DeleteUser.
-func (c *userServiceClient) DeleteUser(ctx context.Context, req *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error) {
+func (c *userServiceClient) DeleteUser(
+	ctx context.Context,
+	req *connect.Request[v1.DeleteUserRequest],
+) (*connect.Response[v1.DeleteUserResponse], error) {
 	return c.deleteUser.CallUnary(ctx, req)
 }
 
 // UpdateUserGroups calls elara.user.v1.UserService.UpdateUserGroups.
-func (c *userServiceClient) UpdateUserGroups(ctx context.Context, req *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error) {
+func (c *userServiceClient) UpdateUserGroups(
+	ctx context.Context,
+	req *connect.Request[v1.UpdateUserGroupsRequest],
+) (*connect.Response[v1.UpdateUserGroupsResponse], error) {
 	return c.updateUserGroups.CallUnary(ctx, req)
 }
 
@@ -228,7 +265,10 @@ type UserServiceHandler interface {
 	//   - User:Create * (global), OR
 	//   - initial_group_ids non-empty AND caller holds Group:Write on every id
 	//     (with anti-escalation cascading from those groups).
-	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error)
+	CreateUser(
+		context.Context,
+		*connect.Request[v1.CreateUserRequest],
+	) (*connect.Response[v1.CreateUserResponse], error)
 	// Admin-only — resets the target user's password and sets password_change_required.
 	// Basic-auth mode only.
 	//
@@ -238,12 +278,18 @@ type UserServiceHandler interface {
 	//
 	// Plus anti-escalation: caller must hold every permission the target
 	// currently has (impersonation cannot escalate privilege).
-	ResetUserPassword(context.Context, *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error)
+	ResetUserPassword(
+		context.Context,
+		*connect.Request[v1.ResetUserPasswordRequest],
+	) (*connect.Response[v1.ResetUserPasswordResponse], error)
 	// Admin-only — deletes the user and all their memberships.
 	// Basic-auth mode only.
 	//
 	// Authorization: same as ResetUserPassword.
-	DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error)
+	DeleteUser(
+		context.Context,
+		*connect.Request[v1.DeleteUserRequest],
+	) (*connect.Response[v1.DeleteUserResponse], error)
 	// Updates the target user's group memberships using an explicit delta.
 	// Adding a group the user already belongs to is a no-op; removing from
 	// one they're not in is a no-op. Including the same group in both
@@ -258,7 +304,10 @@ type UserServiceHandler interface {
 	//
 	// If expected_version is set and current membership_version differs,
 	// returns FAILED_PRECONDITION — even if the net change would be a no-op.
-	UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error)
+	UpdateUserGroups(
+		context.Context,
+		*connect.Request[v1.UpdateUserGroupsRequest],
+	) (*connect.Response[v1.UpdateUserGroupsResponse], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -304,6 +353,7 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("UpdateUserGroups")),
 		connect.WithHandlerOptions(opts...),
 	)
+
 	return "/elara.user.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceListUsersProcedure:
@@ -327,26 +377,62 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 // UnimplementedUserServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedUserServiceHandler struct{}
 
-func (UnimplementedUserServiceHandler) ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.ListUsers is not implemented"))
+func (UnimplementedUserServiceHandler) ListUsers(
+	context.Context,
+	*connect.Request[v1.ListUsersRequest],
+) (*connect.Response[v1.ListUsersResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.user.v1.UserService.ListUsers is not implemented"),
+	)
 }
 
-func (UnimplementedUserServiceHandler) GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.GetUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.GetUser is not implemented"))
+func (UnimplementedUserServiceHandler) GetUser(
+	context.Context,
+	*connect.Request[v1.GetUserRequest],
+) (*connect.Response[v1.GetUserResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.user.v1.UserService.GetUser is not implemented"),
+	)
 }
 
-func (UnimplementedUserServiceHandler) CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.CreateUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.CreateUser is not implemented"))
+func (UnimplementedUserServiceHandler) CreateUser(
+	context.Context,
+	*connect.Request[v1.CreateUserRequest],
+) (*connect.Response[v1.CreateUserResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.user.v1.UserService.CreateUser is not implemented"),
+	)
 }
 
-func (UnimplementedUserServiceHandler) ResetUserPassword(context.Context, *connect.Request[v1.ResetUserPasswordRequest]) (*connect.Response[v1.ResetUserPasswordResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.ResetUserPassword is not implemented"))
+func (UnimplementedUserServiceHandler) ResetUserPassword(
+	context.Context,
+	*connect.Request[v1.ResetUserPasswordRequest],
+) (*connect.Response[v1.ResetUserPasswordResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.user.v1.UserService.ResetUserPassword is not implemented"),
+	)
 }
 
-func (UnimplementedUserServiceHandler) DeleteUser(context.Context, *connect.Request[v1.DeleteUserRequest]) (*connect.Response[v1.DeleteUserResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.DeleteUser is not implemented"))
+func (UnimplementedUserServiceHandler) DeleteUser(
+	context.Context,
+	*connect.Request[v1.DeleteUserRequest],
+) (*connect.Response[v1.DeleteUserResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.user.v1.UserService.DeleteUser is not implemented"),
+	)
 }
 
-func (UnimplementedUserServiceHandler) UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.UpdateUserGroups is not implemented"))
+func (UnimplementedUserServiceHandler) UpdateUserGroups(
+	context.Context,
+	*connect.Request[v1.UpdateUserGroupsRequest],
+) (*connect.Response[v1.UpdateUserGroupsResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.user.v1.UserService.UpdateUserGroups is not implemented"),
+	)
 }

@@ -13,8 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	storage "github.com/sergeyslonimsky/elara/internal/service/storage"
 	gomock "go.uber.org/mock/gomock"
+
+	storage "github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
 // MockTx is a mock of Tx interface.
@@ -33,6 +34,7 @@ type MockTxMockRecorder struct {
 func NewMockTx(ctrl *gomock.Controller) *MockTx {
 	mock := &MockTx{ctrl: ctrl}
 	mock.recorder = &MockTxMockRecorder{mock}
+
 	return mock
 }
 
@@ -46,12 +48,14 @@ func (m *MockTx) Bucket(name []byte) storage.Bucket {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Bucket", name)
 	ret0, _ := ret[0].(storage.Bucket)
+
 	return ret0
 }
 
 // Bucket indicates an expected call of Bucket.
 func (mr *MockTxMockRecorder) Bucket(name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Bucket", reflect.TypeOf((*MockTx)(nil).Bucket), name)
 }
 
@@ -71,6 +75,7 @@ type MockBucketMockRecorder struct {
 func NewMockBucket(ctrl *gomock.Controller) *MockBucket {
 	mock := &MockBucket{ctrl: ctrl}
 	mock.recorder = &MockBucketMockRecorder{mock}
+
 	return mock
 }
 
@@ -84,12 +89,14 @@ func (m *MockBucket) Delete(key []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", key)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
 func (mr *MockBucketMockRecorder) Delete(key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockBucket)(nil).Delete), key)
 }
 
@@ -98,12 +105,14 @@ func (m *MockBucket) ForEach(fn func([]byte, []byte) error) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ForEach", fn)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // ForEach indicates an expected call of ForEach.
 func (mr *MockBucketMockRecorder) ForEach(fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForEach", reflect.TypeOf((*MockBucket)(nil).ForEach), fn)
 }
 
@@ -112,12 +121,14 @@ func (m *MockBucket) Get(key []byte) []byte {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", key)
 	ret0, _ := ret[0].([]byte)
+
 	return ret0
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockBucketMockRecorder) Get(key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockBucket)(nil).Get), key)
 }
 
@@ -126,12 +137,14 @@ func (m *MockBucket) Put(key, value []byte) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Put", key, value)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Put indicates an expected call of Put.
 func (mr *MockBucketMockRecorder) Put(key, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockBucket)(nil).Put), key, value)
 }
 
@@ -151,6 +164,7 @@ type MockTxManagerMockRecorder struct {
 func NewMockTxManager(ctrl *gomock.Controller) *MockTxManager {
 	mock := &MockTxManager{ctrl: ctrl}
 	mock.recorder = &MockTxManagerMockRecorder{mock}
+
 	return mock
 }
 
@@ -164,12 +178,14 @@ func (m *MockTxManager) Read(ctx context.Context, fn func(storage.Tx) error) err
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Read", ctx, fn)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Read indicates an expected call of Read.
 func (mr *MockTxManagerMockRecorder) Read(ctx, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockTxManager)(nil).Read), ctx, fn)
 }
 
@@ -178,11 +194,13 @@ func (m *MockTxManager) Write(ctx context.Context, fn func(storage.Tx) error) er
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Write", ctx, fn)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Write indicates an expected call of Write.
 func (mr *MockTxManagerMockRecorder) Write(ctx, fn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockTxManager)(nil).Write), ctx, fn)
 }

@@ -41,17 +41,18 @@ describe("buildAbility", () => {
 		expect(ability.can("create", "Group")).toBe(false);
 	});
 
-	it("handles explicit (Config, CREATE, prod) rule", () => {
+	it("handles explicit (Client, CREATE, prod) rule", () => {
 		const ability = buildAbility([
-			pa(PermissionObject.CONFIG, PermissionAction.CREATE, "prod"),
+			pa(PermissionObject.CLIENT, PermissionAction.CREATE, "prod"),
 		]);
-		expect(ability.can("create", subject("Config", { domain: "prod" }))).toBe(
+		expect(ability.can("create", subject("Client", { domain: "prod" }))).toBe(
 			true,
 		);
-		expect(ability.can("create", subject("Config", { domain: "dev" }))).toBe(
+		expect(ability.can("create", subject("Client", { domain: "dev" }))).toBe(
 			false,
 		);
-		expect(ability.can("write", subject("Config", { domain: "prod" }))).toBe(
+		// create is independent of write/read.
+		expect(ability.can("write", subject("Client", { domain: "prod" }))).toBe(
 			false,
 		);
 	});
@@ -67,7 +68,7 @@ describe("buildAbility", () => {
 		expect(ability.can("write", "Namespace")).toBe(false);
 	});
 
-	it("handles explicit domain rules", () => {
+	it("handles explicit domain rules with write⊇read", () => {
 		const ability = buildAbility([
 			pa(PermissionObject.NAMESPACE, PermissionAction.WRITE, "prod"),
 		]);
@@ -77,24 +78,31 @@ describe("buildAbility", () => {
 		expect(ability.can("write", subject("Namespace", { domain: "dev" }))).toBe(
 			false,
 		);
+		// write implies read on the same domain (mirrors domain.ActionGrants).
 		expect(ability.can("read", subject("Namespace", { domain: "prod" }))).toBe(
+			true,
+		);
+		expect(ability.can("read", subject("Namespace", { domain: "dev" }))).toBe(
 			false,
 		);
 	});
 
 	it("handles PermissionAction.ALL for specific domain", () => {
 		const ability = buildAbility([
-			pa(PermissionObject.CONFIG, PermissionAction.ALL, "app-1"),
+			pa(PermissionObject.NAMESPACE, PermissionAction.ALL, "app-1"),
 		]);
-		expect(ability.can("read", subject("Config", { domain: "app-1" }))).toBe(
+		expect(ability.can("read", subject("Namespace", { domain: "app-1" }))).toBe(
 			true,
 		);
-		expect(ability.can("write", subject("Config", { domain: "app-1" }))).toBe(
-			true,
-		);
-		expect(ability.can("create", subject("Config", { domain: "app-1" }))).toBe(
-			true,
-		);
+		expect(
+			ability.can("write", subject("Namespace", { domain: "app-1" })),
+		).toBe(true);
+		expect(
+			ability.can("create", subject("Namespace", { domain: "app-1" })),
+		).toBe(true);
+		expect(
+			ability.can("delete", subject("Namespace", { domain: "app-1" })),
+		).toBe(true);
 	});
 });
 

@@ -13,9 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "go.uber.org/mock/gomock"
+
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	token "github.com/sergeyslonimsky/elara/internal/usecase/token"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockauthz is a mock of authz interface.
@@ -34,6 +35,7 @@ type MockauthzMockRecorder struct {
 func NewMockauthz(ctrl *gomock.Controller) *Mockauthz {
 	mock := &Mockauthz{ctrl: ctrl}
 	mock.recorder = &MockauthzMockRecorder{mock}
+
 	return mock
 }
 
@@ -47,13 +49,23 @@ func (m *Mockauthz) Require(ctx context.Context, object domain.Object, action do
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Require indicates an expected call of Require.
 func (mr *MockauthzMockRecorder) Require(ctx, object, action, domainStr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*Mockauthz)(nil).Require), ctx, object, action, domainStr)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Require",
+		reflect.TypeOf((*Mockauthz)(nil).Require),
+		ctx,
+		object,
+		action,
+		domainStr,
+	)
 }
 
 // Mockusecase is a mock of usecase interface.
@@ -72,6 +84,7 @@ type MockusecaseMockRecorder struct {
 func NewMockusecase(ctrl *gomock.Controller) *Mockusecase {
 	mock := &Mockusecase{ctrl: ctrl}
 	mock.recorder = &MockusecaseMockRecorder{mock}
+
 	return mock
 }
 
@@ -81,19 +94,32 @@ func (m *Mockusecase) EXPECT() *MockusecaseMockRecorder {
 }
 
 // Create mocks base method.
-func (m *Mockusecase) Create(ctx context.Context, user domain.AuthInfo, in token.CreateInput) (*domain.Token, string, error) {
+func (m *Mockusecase) Create(
+	ctx context.Context,
+	user domain.AuthInfo,
+	in token.CreateInput,
+) (*domain.Token, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, user, in)
 	ret0, _ := ret[0].(*domain.Token)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(error)
+
 	return ret0, ret1, ret2
 }
 
 // Create indicates an expected call of Create.
 func (mr *MockusecaseMockRecorder) Create(ctx, user, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockusecase)(nil).Create), ctx, user, in)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Create",
+		reflect.TypeOf((*Mockusecase)(nil).Create),
+		ctx,
+		user,
+		in,
+	)
 }
 
 // Get mocks base method.
@@ -102,28 +128,43 @@ func (m *Mockusecase) Get(ctx context.Context, user domain.AuthInfo, id string) 
 	ret := m.ctrl.Call(m, "Get", ctx, user, id)
 	ret0, _ := ret[0].(*domain.Token)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockusecaseMockRecorder) Get(ctx, user, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockusecase)(nil).Get), ctx, user, id)
 }
 
 // List mocks base method.
-func (m *Mockusecase) List(ctx context.Context, user domain.AuthInfo, params token.ListParams) (*token.ListResult, error) {
+func (m *Mockusecase) List(
+	ctx context.Context,
+	user domain.AuthInfo,
+	params token.ListParams,
+) (*token.ListResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, user, params)
 	ret0, _ := ret[0].(*token.ListResult)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockusecaseMockRecorder) List(ctx, user, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockusecase)(nil).List), ctx, user, params)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"List",
+		reflect.TypeOf((*Mockusecase)(nil).List),
+		ctx,
+		user,
+		params,
+	)
 }
 
 // Revoke mocks base method.
@@ -131,11 +172,20 @@ func (m *Mockusecase) Revoke(ctx context.Context, user domain.AuthInfo, id strin
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Revoke", ctx, user, id)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Revoke indicates an expected call of Revoke.
 func (mr *MockusecaseMockRecorder) Revoke(ctx, user, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*Mockusecase)(nil).Revoke), ctx, user, id)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Revoke",
+		reflect.TypeOf((*Mockusecase)(nil).Revoke),
+		ctx,
+		user,
+		id,
+	)
 }

@@ -21,7 +21,7 @@ func TestSchemaHandler_AttachSchema_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	az := configmock.NewMockschemaAuthz(ctrl)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectSchema, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 
 	uc := configmock.NewMockschemaUsecase(ctrl)
@@ -55,7 +55,7 @@ func TestSchemaHandler_AttachSchema_Unauthorized(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	az := configmock.NewMockschemaAuthz(ctrl)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectSchema, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(domain.ErrUnauthorized)
 	uc := configmock.NewMockschemaUsecase(ctrl)
 
@@ -75,7 +75,7 @@ func TestSchemaHandler_AttachSchema_NamespaceNotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	az := configmock.NewMockschemaAuthz(ctrl)
 	az.EXPECT().
-		Require(gomock.Any(), domain.ObjectSchema, domain.ActionWrite, "prod").
+		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
 		Return(nil)
 	uc := configmock.NewMockschemaUsecase(ctrl)
 	uc.EXPECT().

@@ -5,14 +5,13 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppAbility } from "@/auth/ability";
-import { useAuth } from "@/components/auth-provider";
 import {
 	PermissionAction,
 	PermissionAssignmentSchema,
 	PermissionObject,
 } from "@/gen/elara/common/v1/permission_pb";
 import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
-import { TestProviders } from "@/test/test-utils";
+import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { PermissionsTab } from "./permissions-tab";
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
@@ -24,14 +23,6 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 			mutateAsync: vi.fn(),
 			isPending: false,
 		})),
-	};
-});
-
-vi.mock("@/components/auth-provider", async (importOriginal) => {
-	const actual = await importOriginal<Record<string, unknown>>();
-	return {
-		...actual,
-		useAuth: vi.fn(),
 	};
 });
 
@@ -81,18 +72,10 @@ describe("PermissionsTab", () => {
 	});
 
 	test("renders existing permissions", () => {
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: makeAbility(),
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(makeAbility());
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<PermissionsTab group={mockGroup} permissions={[existingPerm]} />
 			</TestProviders>,
 		);
@@ -104,18 +87,10 @@ describe("PermissionsTab", () => {
 	});
 
 	test("shows empty state when no permissions", () => {
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: makeAbility(),
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(makeAbility());
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<PermissionsTab group={mockGroup} permissions={[]} />
 			</TestProviders>,
 		);
@@ -124,18 +99,10 @@ describe("PermissionsTab", () => {
 	});
 
 	test("save button disabled when no changes", () => {
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: makeAbility(),
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(makeAbility());
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<PermissionsTab group={mockGroup} permissions={[existingPerm]} />
 			</TestProviders>,
 		);
@@ -155,18 +122,10 @@ describe("PermissionsTab", () => {
 			isPending: false,
 		} as unknown as ReturnType<typeof useMutation>);
 
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: makeAbility(),
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(makeAbility());
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<PermissionsTab group={mockGroup} permissions={[existingPerm]} />
 			</TestProviders>,
 		);
@@ -194,18 +153,10 @@ describe("PermissionsTab", () => {
 			isPending: false,
 		} as unknown as ReturnType<typeof useMutation>);
 
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: makeAbility(),
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(makeAbility());
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<PermissionsTab group={mockGroup} permissions={[]} />
 			</TestProviders>,
 		);
@@ -234,18 +185,10 @@ describe("PermissionsTab", () => {
 	});
 
 	test("hides add form and remove buttons when user lacks write permission", () => {
-		vi.mocked(useAuth).mockReturnValue({
-			state: {
-				status: "authenticated",
-				ability: makeAbility(false),
-				authType: 0,
-				user: { email: "readonly@example.com", name: "Readonly" },
-			},
-			logout: vi.fn(),
-		} as unknown as ReturnType<typeof useAuth>);
+		const authContext = authenticatedContext(makeAbility(false));
 
 		render(
-			<TestProviders>
+			<TestProviders authContext={authContext}>
 				<PermissionsTab group={mockGroup} permissions={[existingPerm]} />
 			</TestProviders>,
 		);

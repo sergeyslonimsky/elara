@@ -73,25 +73,6 @@ func (t *PAPTx) ApplyMemberDeltas(name string, added, removed []string) error {
 	return nil
 }
 
-// AssignRoleToGroup attaches a role binding to the group on the given domain
-// (one g-rule of the form `g, group:<name>, role, dom`).
-func (t *PAPTx) AssignRoleToGroup(group string, role domain.Role, dom string) error {
-	if err := t.txe.AddRoleForUser(casbin.GroupSubject(group), string(role), dom); err != nil {
-		return fmt.Errorf("assign role to group: %w", err)
-	}
-
-	return nil
-}
-
-// RevokeRoleFromGroup removes the matching role binding from the group.
-func (t *PAPTx) RevokeRoleFromGroup(group string, role domain.Role, dom string) error {
-	if err := t.txe.RemoveRoleForUser(casbin.GroupSubject(group), string(role), dom); err != nil {
-		return fmt.Errorf("revoke role from group: %w", err)
-	}
-
-	return nil
-}
-
 // ApplyUserMembershipDeltas removes the user from the listed groups and then
 // adds the user to the new ones. Group names are resolved to subjects
 // internally; membership g-rules live on domain.MembershipDomain.

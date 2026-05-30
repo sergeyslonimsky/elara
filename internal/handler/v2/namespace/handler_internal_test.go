@@ -437,7 +437,7 @@ func TestHandler_DeleteNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "empty-ns").
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionDelete, "empty-ns").
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -454,7 +454,7 @@ func TestHandler_DeleteNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "full-ns").
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionDelete, "full-ns").
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -472,7 +472,7 @@ func TestHandler_DeleteNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionDelete, "prod").
 					Return(domain.ErrForbidden)
 				uc := namespace_mock.NewMockusecase(ctrl)
 

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package elara.filter.v1;
+
+import "elara/common/v1/permission.proto";
+import "elara/filter/v1/filter.proto";
+
+service FilterService {
+  rpc GetNamespaces(GetNamespacesRequest) returns (GetNamespacesResponse);
+  rpc GetGroups(GetGroupsRequest) returns (GetGroupsResponse);
+  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+}
+
+message GetNamespacesRequest {
+  Filters filters = 1;
+  repeated elara.common.v1.PermissionAction actions = 2;
+}
+
+message GetNamespacesResponse {
+  repeated Item items = 1;
+}
+
+message GetGroupsRequest {
+  Filters filters = 1;
+  repeated elara.common.v1.PermissionAction actions = 2;
+}
+
+message GetGroupsResponse {
+  repeated Item items = 1;
+}
+
+message GetUsersRequest {
+  Filters filters = 1;
+  repeated elara.common.v1.PermissionAction actions = 2;
+}
+
+message GetUsersResponse {
+  repeated Item items = 1;
+}

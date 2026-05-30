@@ -5,12 +5,14 @@
 package configv1connect
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
 	http "net/http"
 	strings "strings"
+
+	connect "connectrpc.com/connect"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -78,20 +80,59 @@ const (
 
 // ConfigServiceClient is a client for the elara.config.v1.ConfigService service.
 type ConfigServiceClient interface {
-	CreateConfig(context.Context, *connect.Request[v1.CreateConfigRequest]) (*connect.Response[v1.CreateConfigResponse], error)
+	CreateConfig(
+		context.Context,
+		*connect.Request[v1.CreateConfigRequest],
+	) (*connect.Response[v1.CreateConfigResponse], error)
 	GetConfig(context.Context, *connect.Request[v1.GetConfigRequest]) (*connect.Response[v1.GetConfigResponse], error)
-	UpdateConfig(context.Context, *connect.Request[v1.UpdateConfigRequest]) (*connect.Response[v1.UpdateConfigResponse], error)
-	DeleteConfig(context.Context, *connect.Request[v1.DeleteConfigRequest]) (*connect.Response[v1.DeleteConfigResponse], error)
-	ListConfigs(context.Context, *connect.Request[v1.ListConfigsRequest]) (*connect.Response[v1.ListConfigsResponse], error)
-	GetConfigHistory(context.Context, *connect.Request[v1.GetConfigHistoryRequest]) (*connect.Response[v1.GetConfigHistoryResponse], error)
-	GetConfigAtRevision(context.Context, *connect.Request[v1.GetConfigAtRevisionRequest]) (*connect.Response[v1.GetConfigAtRevisionResponse], error)
-	SearchConfigs(context.Context, *connect.Request[v1.SearchConfigsRequest]) (*connect.Response[v1.SearchConfigsResponse], error)
-	CopyConfig(context.Context, *connect.Request[v1.CopyConfigRequest]) (*connect.Response[v1.CopyConfigResponse], error)
-	ValidateConfig(context.Context, *connect.Request[v1.ValidateConfigRequest]) (*connect.Response[v1.ValidateConfigResponse], error)
-	WatchConfigs(context.Context, *connect.Request[v1.WatchConfigsRequest]) (*connect.ServerStreamForClient[v1.WatchConfigsResponse], error)
-	GetConfigDiff(context.Context, *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error)
-	LockConfig(context.Context, *connect.Request[v1.LockConfigRequest]) (*connect.Response[v1.LockConfigResponse], error)
-	UnlockConfig(context.Context, *connect.Request[v1.UnlockConfigRequest]) (*connect.Response[v1.UnlockConfigResponse], error)
+	UpdateConfig(
+		context.Context,
+		*connect.Request[v1.UpdateConfigRequest],
+	) (*connect.Response[v1.UpdateConfigResponse], error)
+	DeleteConfig(
+		context.Context,
+		*connect.Request[v1.DeleteConfigRequest],
+	) (*connect.Response[v1.DeleteConfigResponse], error)
+	ListConfigs(
+		context.Context,
+		*connect.Request[v1.ListConfigsRequest],
+	) (*connect.Response[v1.ListConfigsResponse], error)
+	GetConfigHistory(
+		context.Context,
+		*connect.Request[v1.GetConfigHistoryRequest],
+	) (*connect.Response[v1.GetConfigHistoryResponse], error)
+	GetConfigAtRevision(
+		context.Context,
+		*connect.Request[v1.GetConfigAtRevisionRequest],
+	) (*connect.Response[v1.GetConfigAtRevisionResponse], error)
+	SearchConfigs(
+		context.Context,
+		*connect.Request[v1.SearchConfigsRequest],
+	) (*connect.Response[v1.SearchConfigsResponse], error)
+	CopyConfig(
+		context.Context,
+		*connect.Request[v1.CopyConfigRequest],
+	) (*connect.Response[v1.CopyConfigResponse], error)
+	ValidateConfig(
+		context.Context,
+		*connect.Request[v1.ValidateConfigRequest],
+	) (*connect.Response[v1.ValidateConfigResponse], error)
+	WatchConfigs(
+		context.Context,
+		*connect.Request[v1.WatchConfigsRequest],
+	) (*connect.ServerStreamForClient[v1.WatchConfigsResponse], error)
+	GetConfigDiff(
+		context.Context,
+		*connect.Request[v1.GetConfigDiffRequest],
+	) (*connect.Response[v1.GetConfigDiffResponse], error)
+	LockConfig(
+		context.Context,
+		*connect.Request[v1.LockConfigRequest],
+	) (*connect.Response[v1.LockConfigResponse], error)
+	UnlockConfig(
+		context.Context,
+		*connect.Request[v1.UnlockConfigRequest],
+	) (*connect.Response[v1.UnlockConfigResponse], error)
 }
 
 // NewConfigServiceClient constructs a client for the elara.config.v1.ConfigService service. By
@@ -101,9 +142,14 @@ type ConfigServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewConfigServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ConfigServiceClient {
+func NewConfigServiceClient(
+	httpClient connect.HTTPClient,
+	baseURL string,
+	opts ...connect.ClientOption,
+) ConfigServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	configServiceMethods := v1.File_elara_config_v1_config_service_proto.Services().ByName("ConfigService").Methods()
+
 	return &configServiceClient{
 		createConfig: connect.NewClient[v1.CreateConfigRequest, v1.CreateConfigResponse](
 			httpClient,
@@ -211,91 +257,173 @@ type configServiceClient struct {
 }
 
 // CreateConfig calls elara.config.v1.ConfigService.CreateConfig.
-func (c *configServiceClient) CreateConfig(ctx context.Context, req *connect.Request[v1.CreateConfigRequest]) (*connect.Response[v1.CreateConfigResponse], error) {
+func (c *configServiceClient) CreateConfig(
+	ctx context.Context,
+	req *connect.Request[v1.CreateConfigRequest],
+) (*connect.Response[v1.CreateConfigResponse], error) {
 	return c.createConfig.CallUnary(ctx, req)
 }
 
 // GetConfig calls elara.config.v1.ConfigService.GetConfig.
-func (c *configServiceClient) GetConfig(ctx context.Context, req *connect.Request[v1.GetConfigRequest]) (*connect.Response[v1.GetConfigResponse], error) {
+func (c *configServiceClient) GetConfig(
+	ctx context.Context,
+	req *connect.Request[v1.GetConfigRequest],
+) (*connect.Response[v1.GetConfigResponse], error) {
 	return c.getConfig.CallUnary(ctx, req)
 }
 
 // UpdateConfig calls elara.config.v1.ConfigService.UpdateConfig.
-func (c *configServiceClient) UpdateConfig(ctx context.Context, req *connect.Request[v1.UpdateConfigRequest]) (*connect.Response[v1.UpdateConfigResponse], error) {
+func (c *configServiceClient) UpdateConfig(
+	ctx context.Context,
+	req *connect.Request[v1.UpdateConfigRequest],
+) (*connect.Response[v1.UpdateConfigResponse], error) {
 	return c.updateConfig.CallUnary(ctx, req)
 }
 
 // DeleteConfig calls elara.config.v1.ConfigService.DeleteConfig.
-func (c *configServiceClient) DeleteConfig(ctx context.Context, req *connect.Request[v1.DeleteConfigRequest]) (*connect.Response[v1.DeleteConfigResponse], error) {
+func (c *configServiceClient) DeleteConfig(
+	ctx context.Context,
+	req *connect.Request[v1.DeleteConfigRequest],
+) (*connect.Response[v1.DeleteConfigResponse], error) {
 	return c.deleteConfig.CallUnary(ctx, req)
 }
 
 // ListConfigs calls elara.config.v1.ConfigService.ListConfigs.
-func (c *configServiceClient) ListConfigs(ctx context.Context, req *connect.Request[v1.ListConfigsRequest]) (*connect.Response[v1.ListConfigsResponse], error) {
+func (c *configServiceClient) ListConfigs(
+	ctx context.Context,
+	req *connect.Request[v1.ListConfigsRequest],
+) (*connect.Response[v1.ListConfigsResponse], error) {
 	return c.listConfigs.CallUnary(ctx, req)
 }
 
 // GetConfigHistory calls elara.config.v1.ConfigService.GetConfigHistory.
-func (c *configServiceClient) GetConfigHistory(ctx context.Context, req *connect.Request[v1.GetConfigHistoryRequest]) (*connect.Response[v1.GetConfigHistoryResponse], error) {
+func (c *configServiceClient) GetConfigHistory(
+	ctx context.Context,
+	req *connect.Request[v1.GetConfigHistoryRequest],
+) (*connect.Response[v1.GetConfigHistoryResponse], error) {
 	return c.getConfigHistory.CallUnary(ctx, req)
 }
 
 // GetConfigAtRevision calls elara.config.v1.ConfigService.GetConfigAtRevision.
-func (c *configServiceClient) GetConfigAtRevision(ctx context.Context, req *connect.Request[v1.GetConfigAtRevisionRequest]) (*connect.Response[v1.GetConfigAtRevisionResponse], error) {
+func (c *configServiceClient) GetConfigAtRevision(
+	ctx context.Context,
+	req *connect.Request[v1.GetConfigAtRevisionRequest],
+) (*connect.Response[v1.GetConfigAtRevisionResponse], error) {
 	return c.getConfigAtRevision.CallUnary(ctx, req)
 }
 
 // SearchConfigs calls elara.config.v1.ConfigService.SearchConfigs.
-func (c *configServiceClient) SearchConfigs(ctx context.Context, req *connect.Request[v1.SearchConfigsRequest]) (*connect.Response[v1.SearchConfigsResponse], error) {
+func (c *configServiceClient) SearchConfigs(
+	ctx context.Context,
+	req *connect.Request[v1.SearchConfigsRequest],
+) (*connect.Response[v1.SearchConfigsResponse], error) {
 	return c.searchConfigs.CallUnary(ctx, req)
 }
 
 // CopyConfig calls elara.config.v1.ConfigService.CopyConfig.
-func (c *configServiceClient) CopyConfig(ctx context.Context, req *connect.Request[v1.CopyConfigRequest]) (*connect.Response[v1.CopyConfigResponse], error) {
+func (c *configServiceClient) CopyConfig(
+	ctx context.Context,
+	req *connect.Request[v1.CopyConfigRequest],
+) (*connect.Response[v1.CopyConfigResponse], error) {
 	return c.copyConfig.CallUnary(ctx, req)
 }
 
 // ValidateConfig calls elara.config.v1.ConfigService.ValidateConfig.
-func (c *configServiceClient) ValidateConfig(ctx context.Context, req *connect.Request[v1.ValidateConfigRequest]) (*connect.Response[v1.ValidateConfigResponse], error) {
+func (c *configServiceClient) ValidateConfig(
+	ctx context.Context,
+	req *connect.Request[v1.ValidateConfigRequest],
+) (*connect.Response[v1.ValidateConfigResponse], error) {
 	return c.validateConfig.CallUnary(ctx, req)
 }
 
 // WatchConfigs calls elara.config.v1.ConfigService.WatchConfigs.
-func (c *configServiceClient) WatchConfigs(ctx context.Context, req *connect.Request[v1.WatchConfigsRequest]) (*connect.ServerStreamForClient[v1.WatchConfigsResponse], error) {
+func (c *configServiceClient) WatchConfigs(
+	ctx context.Context,
+	req *connect.Request[v1.WatchConfigsRequest],
+) (*connect.ServerStreamForClient[v1.WatchConfigsResponse], error) {
 	return c.watchConfigs.CallServerStream(ctx, req)
 }
 
 // GetConfigDiff calls elara.config.v1.ConfigService.GetConfigDiff.
-func (c *configServiceClient) GetConfigDiff(ctx context.Context, req *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error) {
+func (c *configServiceClient) GetConfigDiff(
+	ctx context.Context,
+	req *connect.Request[v1.GetConfigDiffRequest],
+) (*connect.Response[v1.GetConfigDiffResponse], error) {
 	return c.getConfigDiff.CallUnary(ctx, req)
 }
 
 // LockConfig calls elara.config.v1.ConfigService.LockConfig.
-func (c *configServiceClient) LockConfig(ctx context.Context, req *connect.Request[v1.LockConfigRequest]) (*connect.Response[v1.LockConfigResponse], error) {
+func (c *configServiceClient) LockConfig(
+	ctx context.Context,
+	req *connect.Request[v1.LockConfigRequest],
+) (*connect.Response[v1.LockConfigResponse], error) {
 	return c.lockConfig.CallUnary(ctx, req)
 }
 
 // UnlockConfig calls elara.config.v1.ConfigService.UnlockConfig.
-func (c *configServiceClient) UnlockConfig(ctx context.Context, req *connect.Request[v1.UnlockConfigRequest]) (*connect.Response[v1.UnlockConfigResponse], error) {
+func (c *configServiceClient) UnlockConfig(
+	ctx context.Context,
+	req *connect.Request[v1.UnlockConfigRequest],
+) (*connect.Response[v1.UnlockConfigResponse], error) {
 	return c.unlockConfig.CallUnary(ctx, req)
 }
 
 // ConfigServiceHandler is an implementation of the elara.config.v1.ConfigService service.
 type ConfigServiceHandler interface {
-	CreateConfig(context.Context, *connect.Request[v1.CreateConfigRequest]) (*connect.Response[v1.CreateConfigResponse], error)
+	CreateConfig(
+		context.Context,
+		*connect.Request[v1.CreateConfigRequest],
+	) (*connect.Response[v1.CreateConfigResponse], error)
 	GetConfig(context.Context, *connect.Request[v1.GetConfigRequest]) (*connect.Response[v1.GetConfigResponse], error)
-	UpdateConfig(context.Context, *connect.Request[v1.UpdateConfigRequest]) (*connect.Response[v1.UpdateConfigResponse], error)
-	DeleteConfig(context.Context, *connect.Request[v1.DeleteConfigRequest]) (*connect.Response[v1.DeleteConfigResponse], error)
-	ListConfigs(context.Context, *connect.Request[v1.ListConfigsRequest]) (*connect.Response[v1.ListConfigsResponse], error)
-	GetConfigHistory(context.Context, *connect.Request[v1.GetConfigHistoryRequest]) (*connect.Response[v1.GetConfigHistoryResponse], error)
-	GetConfigAtRevision(context.Context, *connect.Request[v1.GetConfigAtRevisionRequest]) (*connect.Response[v1.GetConfigAtRevisionResponse], error)
-	SearchConfigs(context.Context, *connect.Request[v1.SearchConfigsRequest]) (*connect.Response[v1.SearchConfigsResponse], error)
-	CopyConfig(context.Context, *connect.Request[v1.CopyConfigRequest]) (*connect.Response[v1.CopyConfigResponse], error)
-	ValidateConfig(context.Context, *connect.Request[v1.ValidateConfigRequest]) (*connect.Response[v1.ValidateConfigResponse], error)
-	WatchConfigs(context.Context, *connect.Request[v1.WatchConfigsRequest], *connect.ServerStream[v1.WatchConfigsResponse]) error
-	GetConfigDiff(context.Context, *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error)
-	LockConfig(context.Context, *connect.Request[v1.LockConfigRequest]) (*connect.Response[v1.LockConfigResponse], error)
-	UnlockConfig(context.Context, *connect.Request[v1.UnlockConfigRequest]) (*connect.Response[v1.UnlockConfigResponse], error)
+	UpdateConfig(
+		context.Context,
+		*connect.Request[v1.UpdateConfigRequest],
+	) (*connect.Response[v1.UpdateConfigResponse], error)
+	DeleteConfig(
+		context.Context,
+		*connect.Request[v1.DeleteConfigRequest],
+	) (*connect.Response[v1.DeleteConfigResponse], error)
+	ListConfigs(
+		context.Context,
+		*connect.Request[v1.ListConfigsRequest],
+	) (*connect.Response[v1.ListConfigsResponse], error)
+	GetConfigHistory(
+		context.Context,
+		*connect.Request[v1.GetConfigHistoryRequest],
+	) (*connect.Response[v1.GetConfigHistoryResponse], error)
+	GetConfigAtRevision(
+		context.Context,
+		*connect.Request[v1.GetConfigAtRevisionRequest],
+	) (*connect.Response[v1.GetConfigAtRevisionResponse], error)
+	SearchConfigs(
+		context.Context,
+		*connect.Request[v1.SearchConfigsRequest],
+	) (*connect.Response[v1.SearchConfigsResponse], error)
+	CopyConfig(
+		context.Context,
+		*connect.Request[v1.CopyConfigRequest],
+	) (*connect.Response[v1.CopyConfigResponse], error)
+	ValidateConfig(
+		context.Context,
+		*connect.Request[v1.ValidateConfigRequest],
+	) (*connect.Response[v1.ValidateConfigResponse], error)
+	WatchConfigs(
+		context.Context,
+		*connect.Request[v1.WatchConfigsRequest],
+		*connect.ServerStream[v1.WatchConfigsResponse],
+	) error
+	GetConfigDiff(
+		context.Context,
+		*connect.Request[v1.GetConfigDiffRequest],
+	) (*connect.Response[v1.GetConfigDiffResponse], error)
+	LockConfig(
+		context.Context,
+		*connect.Request[v1.LockConfigRequest],
+	) (*connect.Response[v1.LockConfigResponse], error)
+	UnlockConfig(
+		context.Context,
+		*connect.Request[v1.UnlockConfigRequest],
+	) (*connect.Response[v1.UnlockConfigResponse], error)
 }
 
 // NewConfigServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -389,6 +517,7 @@ func NewConfigServiceHandler(svc ConfigServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(configServiceMethods.ByName("UnlockConfig")),
 		connect.WithHandlerOptions(opts...),
 	)
+
 	return "/elara.config.v1.ConfigService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ConfigServiceCreateConfigProcedure:
@@ -428,58 +557,143 @@ func NewConfigServiceHandler(svc ConfigServiceHandler, opts ...connect.HandlerOp
 // UnimplementedConfigServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedConfigServiceHandler struct{}
 
-func (UnimplementedConfigServiceHandler) CreateConfig(context.Context, *connect.Request[v1.CreateConfigRequest]) (*connect.Response[v1.CreateConfigResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.CreateConfig is not implemented"))
+func (UnimplementedConfigServiceHandler) CreateConfig(
+	context.Context,
+	*connect.Request[v1.CreateConfigRequest],
+) (*connect.Response[v1.CreateConfigResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.CreateConfig is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) GetConfig(context.Context, *connect.Request[v1.GetConfigRequest]) (*connect.Response[v1.GetConfigResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.GetConfig is not implemented"))
+func (UnimplementedConfigServiceHandler) GetConfig(
+	context.Context,
+	*connect.Request[v1.GetConfigRequest],
+) (*connect.Response[v1.GetConfigResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.GetConfig is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) UpdateConfig(context.Context, *connect.Request[v1.UpdateConfigRequest]) (*connect.Response[v1.UpdateConfigResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.UpdateConfig is not implemented"))
+func (UnimplementedConfigServiceHandler) UpdateConfig(
+	context.Context,
+	*connect.Request[v1.UpdateConfigRequest],
+) (*connect.Response[v1.UpdateConfigResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.UpdateConfig is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) DeleteConfig(context.Context, *connect.Request[v1.DeleteConfigRequest]) (*connect.Response[v1.DeleteConfigResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.DeleteConfig is not implemented"))
+func (UnimplementedConfigServiceHandler) DeleteConfig(
+	context.Context,
+	*connect.Request[v1.DeleteConfigRequest],
+) (*connect.Response[v1.DeleteConfigResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.DeleteConfig is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) ListConfigs(context.Context, *connect.Request[v1.ListConfigsRequest]) (*connect.Response[v1.ListConfigsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.ListConfigs is not implemented"))
+func (UnimplementedConfigServiceHandler) ListConfigs(
+	context.Context,
+	*connect.Request[v1.ListConfigsRequest],
+) (*connect.Response[v1.ListConfigsResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.ListConfigs is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) GetConfigHistory(context.Context, *connect.Request[v1.GetConfigHistoryRequest]) (*connect.Response[v1.GetConfigHistoryResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.GetConfigHistory is not implemented"))
+func (UnimplementedConfigServiceHandler) GetConfigHistory(
+	context.Context,
+	*connect.Request[v1.GetConfigHistoryRequest],
+) (*connect.Response[v1.GetConfigHistoryResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.GetConfigHistory is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) GetConfigAtRevision(context.Context, *connect.Request[v1.GetConfigAtRevisionRequest]) (*connect.Response[v1.GetConfigAtRevisionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.GetConfigAtRevision is not implemented"))
+func (UnimplementedConfigServiceHandler) GetConfigAtRevision(
+	context.Context,
+	*connect.Request[v1.GetConfigAtRevisionRequest],
+) (*connect.Response[v1.GetConfigAtRevisionResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.GetConfigAtRevision is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) SearchConfigs(context.Context, *connect.Request[v1.SearchConfigsRequest]) (*connect.Response[v1.SearchConfigsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.SearchConfigs is not implemented"))
+func (UnimplementedConfigServiceHandler) SearchConfigs(
+	context.Context,
+	*connect.Request[v1.SearchConfigsRequest],
+) (*connect.Response[v1.SearchConfigsResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.SearchConfigs is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) CopyConfig(context.Context, *connect.Request[v1.CopyConfigRequest]) (*connect.Response[v1.CopyConfigResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.CopyConfig is not implemented"))
+func (UnimplementedConfigServiceHandler) CopyConfig(
+	context.Context,
+	*connect.Request[v1.CopyConfigRequest],
+) (*connect.Response[v1.CopyConfigResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.CopyConfig is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) ValidateConfig(context.Context, *connect.Request[v1.ValidateConfigRequest]) (*connect.Response[v1.ValidateConfigResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.ValidateConfig is not implemented"))
+func (UnimplementedConfigServiceHandler) ValidateConfig(
+	context.Context,
+	*connect.Request[v1.ValidateConfigRequest],
+) (*connect.Response[v1.ValidateConfigResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.ValidateConfig is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) WatchConfigs(context.Context, *connect.Request[v1.WatchConfigsRequest], *connect.ServerStream[v1.WatchConfigsResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.WatchConfigs is not implemented"))
+func (UnimplementedConfigServiceHandler) WatchConfigs(
+	context.Context,
+	*connect.Request[v1.WatchConfigsRequest],
+	*connect.ServerStream[v1.WatchConfigsResponse],
+) error {
+	return connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.WatchConfigs is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) GetConfigDiff(context.Context, *connect.Request[v1.GetConfigDiffRequest]) (*connect.Response[v1.GetConfigDiffResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.GetConfigDiff is not implemented"))
+func (UnimplementedConfigServiceHandler) GetConfigDiff(
+	context.Context,
+	*connect.Request[v1.GetConfigDiffRequest],
+) (*connect.Response[v1.GetConfigDiffResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.GetConfigDiff is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) LockConfig(context.Context, *connect.Request[v1.LockConfigRequest]) (*connect.Response[v1.LockConfigResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.LockConfig is not implemented"))
+func (UnimplementedConfigServiceHandler) LockConfig(
+	context.Context,
+	*connect.Request[v1.LockConfigRequest],
+) (*connect.Response[v1.LockConfigResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.LockConfig is not implemented"),
+	)
 }
 
-func (UnimplementedConfigServiceHandler) UnlockConfig(context.Context, *connect.Request[v1.UnlockConfigRequest]) (*connect.Response[v1.UnlockConfigResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.ConfigService.UnlockConfig is not implemented"))
+func (UnimplementedConfigServiceHandler) UnlockConfig(
+	context.Context,
+	*connect.Request[v1.UnlockConfigRequest],
+) (*connect.Response[v1.UnlockConfigResponse], error) {
+	return nil, connect.NewError(
+		connect.CodeUnimplemented,
+		errors.New("elara.config.v1.ConfigService.UnlockConfig is not implemented"),
+	)
 }

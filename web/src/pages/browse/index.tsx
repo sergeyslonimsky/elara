@@ -3,7 +3,7 @@ import { useQuery } from "@connectrpc/connect-query";
 import { FilePlus } from "lucide-react";
 import { useEffect } from "react";
 import { useParams } from "react-router";
-import { useAuth } from "@/components/auth-provider";
+import { useAbility } from "@/auth/ability-context";
 import { DirectoryTable } from "@/components/directory-table";
 import { ErrorCard } from "@/components/error-card";
 import { LockAwareButton } from "@/components/lock-aware-button";
@@ -17,17 +17,15 @@ import { useTableState } from "@/hooks/use-table-state";
 import { NamespaceList } from "./namespace-list";
 
 export function BrowsePage() {
-	const { state } = useAuth();
+	const ability = useAbility();
 	const { namespace, "*": splat = "" } = useParams();
 	const path = namespace ? `/${splat}` : undefined;
 	const tableState = useTableState();
 
-	const canWriteConfig =
-		state.status === "authenticated" &&
-		state.ability.can(
-			"write",
-			subject("Namespace", { domain: namespace ?? "" }),
-		);
+	const canWriteConfig = ability.can(
+		"write",
+		subject("Namespace", { domain: namespace ?? "" }),
+	);
 
 	const {
 		offset,

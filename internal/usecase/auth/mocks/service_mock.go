@@ -13,9 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "go.uber.org/mock/gomock"
+
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	auth "github.com/sergeyslonimsky/elara/internal/service/auth"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // MockoidcProvider is a mock of oidcProvider interface.
@@ -34,6 +35,7 @@ type MockoidcProviderMockRecorder struct {
 func NewMockoidcProvider(ctrl *gomock.Controller) *MockoidcProvider {
 	mock := &MockoidcProvider{ctrl: ctrl}
 	mock.recorder = &MockoidcProviderMockRecorder{mock}
+
 	return mock
 }
 
@@ -47,13 +49,21 @@ func (m *MockoidcProvider) AuthURL(state, nonce string) string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AuthURL", state, nonce)
 	ret0, _ := ret[0].(string)
+
 	return ret0
 }
 
 // AuthURL indicates an expected call of AuthURL.
 func (mr *MockoidcProviderMockRecorder) AuthURL(state, nonce any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthURL", reflect.TypeOf((*MockoidcProvider)(nil).AuthURL), state, nonce)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"AuthURL",
+		reflect.TypeOf((*MockoidcProvider)(nil).AuthURL),
+		state,
+		nonce,
+	)
 }
 
 // Exchange mocks base method.
@@ -62,13 +72,22 @@ func (m *MockoidcProvider) Exchange(ctx context.Context, code, nonce string) (*a
 	ret := m.ctrl.Call(m, "Exchange", ctx, code, nonce)
 	ret0, _ := ret[0].(*auth.Identity)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Exchange indicates an expected call of Exchange.
 func (mr *MockoidcProviderMockRecorder) Exchange(ctx, code, nonce any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exchange", reflect.TypeOf((*MockoidcProvider)(nil).Exchange), ctx, code, nonce)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Exchange",
+		reflect.TypeOf((*MockoidcProvider)(nil).Exchange),
+		ctx,
+		code,
+		nonce,
+	)
 }
 
 // MockuserStore is a mock of userStore interface.
@@ -87,6 +106,7 @@ type MockuserStoreMockRecorder struct {
 func NewMockuserStore(ctrl *gomock.Controller) *MockuserStore {
 	mock := &MockuserStore{ctrl: ctrl}
 	mock.recorder = &MockuserStoreMockRecorder{mock}
+
 	return mock
 }
 
@@ -101,12 +121,14 @@ func (m *MockuserStore) Get(ctx context.Context, email string) (*domain.User, er
 	ret := m.ctrl.Call(m, "Get", ctx, email)
 	ret0, _ := ret[0].(*domain.User)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockuserStoreMockRecorder) Get(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockuserStore)(nil).Get), ctx, email)
 }
 
@@ -115,13 +137,21 @@ func (m *MockuserStore) Upsert(ctx context.Context, user *domain.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Upsert", ctx, user)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // Upsert indicates an expected call of Upsert.
 func (mr *MockuserStoreMockRecorder) Upsert(ctx, user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockuserStore)(nil).Upsert), ctx, user)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Upsert",
+		reflect.TypeOf((*MockuserStore)(nil).Upsert),
+		ctx,
+		user,
+	)
 }
 
 // MocksessionCreator is a mock of sessionCreator interface.
@@ -140,6 +170,7 @@ type MocksessionCreatorMockRecorder struct {
 func NewMocksessionCreator(ctrl *gomock.Controller) *MocksessionCreator {
 	mock := &MocksessionCreator{ctrl: ctrl}
 	mock.recorder = &MocksessionCreatorMockRecorder{mock}
+
 	return mock
 }
 
@@ -154,13 +185,20 @@ func (m *MocksessionCreator) Create(user *domain.User) (string, error) {
 	ret := m.ctrl.Call(m, "Create", user)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
+
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
 func (mr *MocksessionCreatorMockRecorder) Create(user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MocksessionCreator)(nil).Create), user)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"Create",
+		reflect.TypeOf((*MocksessionCreator)(nil).Create),
+		user,
+	)
 }
 
 // MockadminBootstrap is a mock of adminBootstrap interface.
@@ -179,6 +217,7 @@ type MockadminBootstrapMockRecorder struct {
 func NewMockadminBootstrap(ctrl *gomock.Controller) *MockadminBootstrap {
 	mock := &MockadminBootstrap{ctrl: ctrl}
 	mock.recorder = &MockadminBootstrapMockRecorder{mock}
+
 	return mock
 }
 
@@ -192,11 +231,19 @@ func (m *MockadminBootstrap) EnsureMember(ctx context.Context, email string) err
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EnsureMember", ctx, email)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // EnsureMember indicates an expected call of EnsureMember.
 func (mr *MockadminBootstrapMockRecorder) EnsureMember(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureMember", reflect.TypeOf((*MockadminBootstrap)(nil).EnsureMember), ctx, email)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"EnsureMember",
+		reflect.TypeOf((*MockadminBootstrap)(nil).EnsureMember),
+		ctx,
+		email,
+	)
 }

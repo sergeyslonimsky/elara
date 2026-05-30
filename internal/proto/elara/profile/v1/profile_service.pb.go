@@ -7,12 +7,14 @@
 package profilev1
 
 import (
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 )
 
 const (
@@ -48,8 +50,10 @@ func (x *MeRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -60,11 +64,11 @@ func (*MeRequest) Descriptor() ([]byte, []int) {
 
 type MeResponse struct {
 	state                  protoimpl.MessageState     `protogen:"open.v1"`
-	Email                  string                     `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Name                   string                     `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Picture                string                     `protobuf:"bytes,3,opt,name=picture,proto3" json:"picture,omitempty"`
-	PasswordChangeRequired bool                       `protobuf:"varint,4,opt,name=password_change_required,json=passwordChangeRequired,proto3" json:"password_change_required,omitempty"`
-	Permissions            []*v1.PermissionAssignment `protobuf:"bytes,5,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	Email                  string                     `                   protobuf:"bytes,1,opt,name=email,proto3"                                                 json:"email,omitempty"`
+	Name                   string                     `                   protobuf:"bytes,2,opt,name=name,proto3"                                                  json:"name,omitempty"`
+	Picture                string                     `                   protobuf:"bytes,3,opt,name=picture,proto3"                                               json:"picture,omitempty"`
+	PasswordChangeRequired bool                       `                   protobuf:"varint,4,opt,name=password_change_required,json=passwordChangeRequired,proto3" json:"password_change_required,omitempty"`
+	Permissions            []*v1.PermissionAssignment `                   protobuf:"bytes,5,rep,name=permissions,proto3"                                           json:"permissions,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -89,8 +93,10 @@ func (x *MeResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -103,6 +109,7 @@ func (x *MeResponse) GetEmail() string {
 	if x != nil {
 		return x.Email
 	}
+
 	return ""
 }
 
@@ -110,6 +117,7 @@ func (x *MeResponse) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
@@ -117,6 +125,7 @@ func (x *MeResponse) GetPicture() string {
 	if x != nil {
 		return x.Picture
 	}
+
 	return ""
 }
 
@@ -124,6 +133,7 @@ func (x *MeResponse) GetPasswordChangeRequired() bool {
 	if x != nil {
 		return x.PasswordChangeRequired
 	}
+
 	return false
 }
 
@@ -131,13 +141,14 @@ func (x *MeResponse) GetPermissions() []*v1.PermissionAssignment {
 	if x != nil {
 		return x.Permissions
 	}
+
 	return nil
 }
 
 type ChangePasswordRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	CurrentPassword *string                `protobuf:"bytes,1,opt,name=current_password,json=currentPassword,proto3,oneof" json:"current_password,omitempty"`
-	NewPassword     string                 `protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
+	CurrentPassword *string                `                   protobuf:"bytes,1,opt,name=current_password,json=currentPassword,proto3,oneof" json:"current_password,omitempty"`
+	NewPassword     string                 `                   protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3"               json:"new_password,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -162,8 +173,10 @@ func (x *ChangePasswordRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -176,6 +189,7 @@ func (x *ChangePasswordRequest) GetCurrentPassword() string {
 	if x != nil && x.CurrentPassword != nil {
 		return *x.CurrentPassword
 	}
+
 	return ""
 }
 
@@ -183,6 +197,7 @@ func (x *ChangePasswordRequest) GetNewPassword() string {
 	if x != nil {
 		return x.NewPassword
 	}
+
 	return ""
 }
 
@@ -212,8 +227,10 @@ func (x *ChangePasswordResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -248,8 +265,10 @@ func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -284,8 +303,10 @@ func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -327,21 +348,29 @@ var (
 
 func file_elara_profile_v1_profile_service_proto_rawDescGZIP() []byte {
 	file_elara_profile_v1_profile_service_proto_rawDescOnce.Do(func() {
-		file_elara_profile_v1_profile_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_profile_v1_profile_service_proto_rawDesc), len(file_elara_profile_v1_profile_service_proto_rawDesc)))
+		file_elara_profile_v1_profile_service_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_profile_v1_profile_service_proto_rawDesc),
+				len(file_elara_profile_v1_profile_service_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_profile_v1_profile_service_proto_rawDescData
 }
 
-var file_elara_profile_v1_profile_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_elara_profile_v1_profile_service_proto_goTypes = []any{
-	(*MeRequest)(nil),               // 0: elara.profile.v1.MeRequest
-	(*MeResponse)(nil),              // 1: elara.profile.v1.MeResponse
-	(*ChangePasswordRequest)(nil),   // 2: elara.profile.v1.ChangePasswordRequest
-	(*ChangePasswordResponse)(nil),  // 3: elara.profile.v1.ChangePasswordResponse
-	(*LogoutRequest)(nil),           // 4: elara.profile.v1.LogoutRequest
-	(*LogoutResponse)(nil),          // 5: elara.profile.v1.LogoutResponse
-	(*v1.PermissionAssignment)(nil), // 6: elara.common.v1.PermissionAssignment
-}
+var (
+	file_elara_profile_v1_profile_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+	file_elara_profile_v1_profile_service_proto_goTypes  = []any{
+		(*MeRequest)(nil),               // 0: elara.profile.v1.MeRequest
+		(*MeResponse)(nil),              // 1: elara.profile.v1.MeResponse
+		(*ChangePasswordRequest)(nil),   // 2: elara.profile.v1.ChangePasswordRequest
+		(*ChangePasswordResponse)(nil),  // 3: elara.profile.v1.ChangePasswordResponse
+		(*LogoutRequest)(nil),           // 4: elara.profile.v1.LogoutRequest
+		(*LogoutResponse)(nil),          // 5: elara.profile.v1.LogoutResponse
+		(*v1.PermissionAssignment)(nil), // 6: elara.common.v1.PermissionAssignment
+	}
+)
 var file_elara_profile_v1_profile_service_proto_depIdxs = []int32{
 	6, // 0: elara.profile.v1.MeResponse.permissions:type_name -> elara.common.v1.PermissionAssignment
 	0, // 1: elara.profile.v1.ProfileService.Me:input_type -> elara.profile.v1.MeRequest
@@ -366,8 +395,11 @@ func file_elara_profile_v1_profile_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_profile_v1_profile_service_proto_rawDesc), len(file_elara_profile_v1_profile_service_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_profile_v1_profile_service_proto_rawDesc),
+				len(file_elara_profile_v1_profile_service_proto_rawDesc),
+			),
 			NumEnums:      0,
 			NumMessages:   6,
 			NumExtensions: 0,

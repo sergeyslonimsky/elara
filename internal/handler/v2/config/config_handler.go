@@ -53,7 +53,7 @@ func (h *ConfigHandler) CreateConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.CreateConfigRequest],
 ) (*connect.Response[configv2.CreateConfigResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionCreate, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -79,7 +79,7 @@ func (h *ConfigHandler) GetConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.GetConfigRequest],
 ) (*connect.Response[configv2.GetConfigResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -100,7 +100,7 @@ func (h *ConfigHandler) UpdateConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.UpdateConfigRequest],
 ) (*connect.Response[configv2.UpdateConfigResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -127,7 +127,7 @@ func (h *ConfigHandler) DeleteConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.DeleteConfigRequest],
 ) (*connect.Response[configv2.DeleteConfigResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -146,7 +146,7 @@ func (h *ConfigHandler) ListConfigs(
 	ctx context.Context,
 	req *connect.Request[configv2.ListConfigsRequest],
 ) (*connect.Response[configv2.ListConfigsResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -196,7 +196,7 @@ func (h *ConfigHandler) GetConfigHistory(
 	ctx context.Context,
 	req *connect.Request[configv2.GetConfigHistoryRequest],
 ) (*connect.Response[configv2.GetConfigHistoryResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -228,7 +228,7 @@ func (h *ConfigHandler) GetConfigAtRevision(
 	ctx context.Context,
 	req *connect.Request[configv2.GetConfigAtRevisionRequest],
 ) (*connect.Response[configv2.GetConfigAtRevisionResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -295,13 +295,18 @@ func (h *ConfigHandler) CopyConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.CopyConfigRequest],
 ) (*connect.Response[configv2.CopyConfigResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetSourceNamespace()); err != nil {
+	if err := h.authz.Require(
+		ctx,
+		domain.ObjectNamespace,
+		domain.ActionRead,
+		req.Msg.GetSourceNamespace(),
+	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
 	if err := h.authz.Require(
 		ctx,
-		domain.ObjectConfig,
+		domain.ObjectNamespace,
 		domain.ActionWrite,
 		req.Msg.GetDestinationNamespace(),
 	); err != nil {
@@ -327,7 +332,7 @@ func (h *ConfigHandler) ValidateConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.ValidateConfigRequest],
 ) (*connect.Response[configv2.ValidateConfigResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -365,7 +370,7 @@ func (h *ConfigHandler) GetConfigDiff(
 	ctx context.Context,
 	req *connect.Request[configv2.GetConfigDiffRequest],
 ) (*connect.Response[configv2.GetConfigDiffResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -393,7 +398,7 @@ func (h *ConfigHandler) WatchConfigs(
 	req *connect.Request[configv2.WatchConfigsRequest],
 	stream *connect.ServerStream[configv2.WatchConfigsResponse],
 ) error {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
 		return v2.ToConnectError(err)
 	}
 
@@ -431,7 +436,7 @@ func (h *ConfigHandler) LockConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.LockConfigRequest],
 ) (*connect.Response[configv2.LockConfigResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -450,7 +455,7 @@ func (h *ConfigHandler) UnlockConfig(
 	ctx context.Context,
 	req *connect.Request[configv2.UnlockConfigRequest],
 ) (*connect.Response[configv2.UnlockConfigResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectConfig, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

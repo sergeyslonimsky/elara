@@ -155,13 +155,13 @@ func TestPDP_ListPermissions(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
 				m := authz_mock.NewMockenforcer(ctrl)
 				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
-					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionRead)},
+					{"sub", "ns1", string(domain.ObjectNamespace), string(domain.ActionRead)},
 				}, nil)
 
 				return authz.NewPDP(m)
 			},
 			want: []domain.Permission{
-				{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+				{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
 			},
 		},
 		{
@@ -169,14 +169,14 @@ func TestPDP_ListPermissions(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
 				m := authz_mock.NewMockenforcer(ctrl)
 				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
-					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionRead)},
-					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionRead)},
+					{"sub", "ns1", string(domain.ObjectNamespace), string(domain.ActionRead)},
+					{"sub", "ns1", string(domain.ObjectNamespace), string(domain.ActionRead)},
 				}, nil)
 
 				return authz.NewPDP(m)
 			},
 			want: []domain.Permission{
-				{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+				{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
 			},
 		},
 		{
@@ -185,17 +185,17 @@ func TestPDP_ListPermissions(t *testing.T) {
 				m := authz_mock.NewMockenforcer(ctrl)
 				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
 					{"sub", "ns2", string(domain.ObjectUser), string(domain.ActionRead)},
-					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionWrite)},
-					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionRead)},
-					{"sub", "ns2", string(domain.ObjectConfig), string(domain.ActionRead)},
+					{"sub", "ns1", string(domain.ObjectNamespace), string(domain.ActionWrite)},
+					{"sub", "ns1", string(domain.ObjectNamespace), string(domain.ActionRead)},
+					{"sub", "ns2", string(domain.ObjectNamespace), string(domain.ActionRead)},
 				}, nil)
 
 				return authz.NewPDP(m)
 			},
 			want: []domain.Permission{
-				{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
-				{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns2"},
-				{Object: domain.ObjectConfig, Action: domain.ActionWrite, Domain: "ns1"},
+				{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
+				{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns2"},
+				{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "ns1"},
 				{Object: domain.ObjectUser, Action: domain.ActionRead, Domain: "ns2"},
 			},
 		},
@@ -205,13 +205,13 @@ func TestPDP_ListPermissions(t *testing.T) {
 				m := authz_mock.NewMockenforcer(ctrl)
 				m.EXPECT().GetImplicitPermissionsForUser(principal).Return([][]string{
 					{"sub", "ns1"},
-					{"sub", "ns1", string(domain.ObjectConfig), string(domain.ActionRead)},
+					{"sub", "ns1", string(domain.ObjectNamespace), string(domain.ActionRead)},
 				}, nil)
 
 				return authz.NewPDP(m)
 			},
 			want: []domain.Permission{
-				{Object: domain.ObjectConfig, Action: domain.ActionRead, Domain: "ns1"},
+				{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
 			},
 		},
 		{

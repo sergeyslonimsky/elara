@@ -5,13 +5,13 @@ import {
 	Key,
 	LayoutDashboard,
 	Network,
-	Shield,
 	Users,
 	UsersRound,
 	Webhook,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
+import { useAbility } from "@/auth/ability-context";
 import { uiVisibility } from "@/auth/uiVisibility";
 import { useAuth } from "@/components/auth-provider";
 import { Logo } from "@/components/logo";
@@ -33,13 +33,13 @@ export function AppSidebar() {
 	const { pathname } = useLocation();
 	const { namespace } = useParams();
 	const { state } = useAuth();
+	const ability = useAbility();
 	const [adminOpen, setAdminOpen] = useState(true);
 
 	const authType =
 		state.status === "authenticated" ? state.authType : undefined;
 
-	const visibility =
-		state.status === "authenticated" ? uiVisibility(state.ability) : null;
+	const visibility = uiVisibility(ability);
 
 	const navItems = [
 		{
@@ -55,35 +55,35 @@ export function AppSidebar() {
 			icon: FolderTree,
 			isActive:
 				pathname.startsWith("/browse") || pathname.startsWith("/config"),
-			show: visibility?.canSeeConfigsSection ?? false,
+			show: visibility.canSeeConfigsSection,
 		},
 		{
 			title: "Namespaces",
 			href: "/namespaces",
 			icon: Database,
 			isActive: pathname.startsWith("/namespaces"),
-			show: visibility?.canSeeNamespacesSection ?? false,
+			show: visibility.canSeeNamespacesSection,
 		},
 		{
 			title: "Clients",
 			href: "/clients",
 			icon: Network,
 			isActive: pathname.startsWith("/clients"),
-			show: visibility?.canSeeClientsSection ?? false,
+			show: visibility.canSeeClientsSection,
 		},
 		{
 			title: "Webhooks",
 			href: "/webhooks",
 			icon: Webhook,
 			isActive: pathname.startsWith("/webhooks"),
-			show: visibility?.canSeeWebhooksSection ?? false,
+			show: visibility.canSeeWebhooksSection,
 		},
 		{
 			title: "Tokens",
 			href: "/tokens",
 			icon: Key,
 			isActive: pathname.startsWith("/tokens"),
-			show: visibility?.canSeeTokensSection ?? false,
+			show: visibility.canSeeTokensSection,
 		},
 	].filter((item) => item.show);
 
@@ -93,21 +93,14 @@ export function AppSidebar() {
 			href: "/users",
 			icon: Users,
 			isActive: pathname.startsWith("/users"),
-			show: visibility?.canSeeUsersSection ?? false,
+			show: visibility.canSeeUsersSection,
 		},
 		{
 			title: "Groups",
 			href: "/groups",
 			icon: UsersRound,
 			isActive: pathname.startsWith("/groups"),
-			show: visibility?.canSeeGroupsSection ?? false,
-		},
-		{
-			title: "Access",
-			href: "/access",
-			icon: Shield,
-			isActive: pathname.startsWith("/access"),
-			show: visibility?.canManageAccess ?? false,
+			show: visibility.canSeeGroupsSection,
 		},
 	].filter((item) => item.show);
 

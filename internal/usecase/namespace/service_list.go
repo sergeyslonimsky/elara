@@ -91,7 +91,7 @@ func (s *Service) annotatePermissions(callerEmail string, namespaces []*domain.N
 	for _, ns := range namespaces {
 		ns.CanRead = true
 		ns.CanWrite = s.pdp.Has(callerEmail, domain.Permission{
-			Object: domain.ObjectConfig,
+			Object: domain.ObjectNamespace,
 			Action: domain.ActionWrite,
 			Domain: ns.Name,
 		})

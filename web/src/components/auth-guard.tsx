@@ -39,9 +39,6 @@ export function AuthGuard() {
 	if (pathname.startsWith("/groups") && !visibility.canSeeGroupsSection) {
 		return <Navigate to="/" replace />;
 	}
-	if (pathname.startsWith("/access") && !visibility.canManageAccess) {
-		return <Navigate to="/" replace />;
-	}
 	if (pathname.startsWith("/clients") && !visibility.canSeeClientsSection) {
 		return <Navigate to="/" replace />;
 	}

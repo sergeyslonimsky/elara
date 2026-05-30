@@ -36,7 +36,7 @@ func TestService_List(t *testing.T) {
 
 				pdp := schemamock.NewMockpdp(ctrl)
 				pdp.EXPECT().Has(testEmail, domain.Permission{
-					Object: domain.ObjectSchema,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionRead,
 					Domain: "prod",
 				}).Return(true)
@@ -57,7 +57,7 @@ func TestService_List(t *testing.T) {
 
 				pdp := schemamock.NewMockpdp(ctrl)
 				pdp.EXPECT().Has(testEmail, domain.Permission{
-					Object: domain.ObjectSchema,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionRead,
 					Domain: "prod",
 				}).Return(false)
@@ -82,7 +82,7 @@ func TestService_List(t *testing.T) {
 
 				pdp := schemamock.NewMockpdp(ctrl)
 				pdp.EXPECT().Has(testEmail, domain.Permission{
-					Object: domain.ObjectSchema,
+					Object: domain.ObjectNamespace,
 					Action: domain.ActionRead,
 					Domain: "prod",
 				}).Return(true)

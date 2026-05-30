@@ -32,6 +32,7 @@ type MockAdapterMockRecorder struct {
 func NewMockAdapter(ctrl *gomock.Controller) *MockAdapter {
 	mock := &MockAdapter{ctrl: ctrl}
 	mock.recorder = &MockAdapterMockRecorder{mock}
+
 	return mock
 }
 
@@ -45,13 +46,20 @@ func (m *MockAdapter) LoadPolicy(model model.Model) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadPolicy", model)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // LoadPolicy indicates an expected call of LoadPolicy.
 func (mr *MockAdapterMockRecorder) LoadPolicy(model any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPolicy", reflect.TypeOf((*MockAdapter)(nil).LoadPolicy), model)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"LoadPolicy",
+		reflect.TypeOf((*MockAdapter)(nil).LoadPolicy),
+		model,
+	)
 }
 
 // SavePolicy mocks base method.
@@ -59,13 +67,20 @@ func (m *MockAdapter) SavePolicy(model model.Model) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SavePolicy", model)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // SavePolicy indicates an expected call of SavePolicy.
 func (mr *MockAdapterMockRecorder) SavePolicy(model any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SavePolicy", reflect.TypeOf((*MockAdapter)(nil).SavePolicy), model)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"SavePolicy",
+		reflect.TypeOf((*MockAdapter)(nil).SavePolicy),
+		model,
+	)
 }
 
 // AddPolicy mocks base method.
@@ -73,13 +88,22 @@ func (m *MockAdapter) AddPolicy(sec string, ptype string, rule []string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddPolicy", sec, ptype, rule)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // AddPolicy indicates an expected call of AddPolicy.
 func (mr *MockAdapterMockRecorder) AddPolicy(sec, ptype, rule any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPolicy", reflect.TypeOf((*MockAdapter)(nil).AddPolicy), sec, ptype, rule)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"AddPolicy",
+		reflect.TypeOf((*MockAdapter)(nil).AddPolicy),
+		sec,
+		ptype,
+		rule,
+	)
 }
 
 // RemovePolicy mocks base method.
@@ -87,13 +111,22 @@ func (m *MockAdapter) RemovePolicy(sec string, ptype string, rule []string) erro
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RemovePolicy", sec, ptype, rule)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
 // RemovePolicy indicates an expected call of RemovePolicy.
 func (mr *MockAdapterMockRecorder) RemovePolicy(sec, ptype, rule any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemovePolicy", reflect.TypeOf((*MockAdapter)(nil).RemovePolicy), sec, ptype, rule)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"RemovePolicy",
+		reflect.TypeOf((*MockAdapter)(nil).RemovePolicy),
+		sec,
+		ptype,
+		rule,
+	)
 }
 
 // RemoveFilteredPolicy mocks base method.
@@ -105,6 +138,7 @@ func (m *MockAdapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex 
 	}
 	ret := m.ctrl.Call(m, "RemoveFilteredPolicy", varargs...)
 	ret0, _ := ret[0].(error)
+
 	return ret0
 }
 
@@ -112,5 +146,10 @@ func (m *MockAdapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex 
 func (mr *MockAdapterMockRecorder) RemoveFilteredPolicy(sec, ptype, fieldIndex any, fieldValues ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{sec, ptype, fieldIndex}, fieldValues...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveFilteredPolicy", reflect.TypeOf((*MockAdapter)(nil).RemoveFilteredPolicy), varargs...)
+
+	return mr.mock.ctrl.RecordCallWithMethodType(
+		mr.mock,
+		"RemoveFilteredPolicy",
+		reflect.TypeOf((*MockAdapter)(nil).RemoveFilteredPolicy),
+		varargs...)
 }

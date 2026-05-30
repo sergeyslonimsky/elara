@@ -2,8 +2,9 @@ import { create } from "@bufbuild/protobuf";
 import { useQuery } from "@connectrpc/connect-query";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { denyAllAbility } from "@/auth/ability";
 import { UserSchema } from "@/gen/elara/user/v1/user_pb";
-import { TestProviders } from "@/test/test-utils";
+import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { UserDetailPage } from "./index";
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
@@ -28,23 +29,9 @@ vi.mock("react-router", async (importOriginal) => {
 	};
 });
 
-vi.mock("@/components/auth-provider", async (importOriginal) => {
-	const actual = await importOriginal<Record<string, unknown>>();
-	return {
-		...actual,
-		useAuth: vi.fn(() => ({
-			state: {
-				status: "authenticated",
-				ability: { can: () => false },
-				authType: 0,
-				user: { email: "admin@example.com", name: "Admin" },
-			},
-			logout: vi.fn(),
-		})),
-	};
-});
-
 describe("UserDetailPage", () => {
+	const authContext = authenticatedContext(denyAllAbility);
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
@@ -57,7 +44,10 @@ describe("UserDetailPage", () => {
 		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
-			<TestProviders initialEntries={["/users/alice%40example.com"]}>
+			<TestProviders
+				initialEntries={["/users/alice%40example.com"]}
+				authContext={authContext}
+			>
 				<UserDetailPage />
 			</TestProviders>,
 		);
@@ -74,7 +64,10 @@ describe("UserDetailPage", () => {
 		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
-			<TestProviders initialEntries={["/users/alice%40example.com"]}>
+			<TestProviders
+				initialEntries={["/users/alice%40example.com"]}
+				authContext={authContext}
+			>
 				<UserDetailPage />
 			</TestProviders>,
 		);
@@ -96,7 +89,10 @@ describe("UserDetailPage", () => {
 		} as unknown as ReturnType<typeof useQuery>);
 
 		render(
-			<TestProviders initialEntries={["/users/alice%40example.com"]}>
+			<TestProviders
+				initialEntries={["/users/alice%40example.com"]}
+				authContext={authContext}
+			>
 				<UserDetailPage />
 			</TestProviders>,
 		);

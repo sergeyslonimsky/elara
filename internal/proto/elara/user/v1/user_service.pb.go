@@ -7,13 +7,15 @@
 package userv1
 
 import (
-	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 )
 
 const (
@@ -25,8 +27,8 @@ const (
 
 type ListUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Pagination    *v1.PaginationRequest  `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	Search        string                 `protobuf:"bytes,2,opt,name=search,proto3" json:"search,omitempty"`
+	Pagination    *v1.PaginationRequest  `                   protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Search        string                 `                   protobuf:"bytes,2,opt,name=search,proto3"     json:"search,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -51,8 +53,10 @@ func (x *ListUsersRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -65,6 +69,7 @@ func (x *ListUsersRequest) GetPagination() *v1.PaginationRequest {
 	if x != nil {
 		return x.Pagination
 	}
+
 	return nil
 }
 
@@ -72,13 +77,14 @@ func (x *ListUsersRequest) GetSearch() string {
 	if x != nil {
 		return x.Search
 	}
+
 	return ""
 }
 
 type ListUsersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Users         []*User                `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
-	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Users         []*User                `                   protobuf:"bytes,1,rep,name=users,proto3"      json:"users,omitempty"`
+	Pagination    *v1.PaginationResponse `                   protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -103,8 +109,10 @@ func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -117,6 +125,7 @@ func (x *ListUsersResponse) GetUsers() []*User {
 	if x != nil {
 		return x.Users
 	}
+
 	return nil
 }
 
@@ -124,12 +133,13 @@ func (x *ListUsersResponse) GetPagination() *v1.PaginationResponse {
 	if x != nil {
 		return x.Pagination
 	}
+
 	return nil
 }
 
 type GetUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Email         string                 `                   protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -154,8 +164,10 @@ func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -168,12 +180,13 @@ func (x *GetUserRequest) GetEmail() string {
 	if x != nil {
 		return x.Email
 	}
+
 	return ""
 }
 
 type GetUserResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	User  *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	User  *User                  `                   protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	// Group IDs the user belongs to AND on which the caller holds Group:Read.
 	// Memberships outside the caller's read scope are not exposed.
 	VisibleGroupIds []string `protobuf:"bytes,2,rep,name=visible_group_ids,json=visibleGroupIds,proto3" json:"visible_group_ids,omitempty"`
@@ -203,8 +216,10 @@ func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -217,6 +232,7 @@ func (x *GetUserResponse) GetUser() *User {
 	if x != nil {
 		return x.User
 	}
+
 	return nil
 }
 
@@ -224,6 +240,7 @@ func (x *GetUserResponse) GetVisibleGroupIds() []string {
 	if x != nil {
 		return x.VisibleGroupIds
 	}
+
 	return nil
 }
 
@@ -231,13 +248,14 @@ func (x *GetUserResponse) GetMembershipVersion() int64 {
 	if x != nil {
 		return x.MembershipVersion
 	}
+
 	return 0
 }
 
 type CreateUserRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Email string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Name  string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Email string                 `                   protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Name  string                 `                   protobuf:"bytes,2,opt,name=name,proto3"  json:"name,omitempty"`
 	// Required in basic-auth mode, must be empty in OIDC mode (enforced server-side).
 	InitialPassword string `protobuf:"bytes,3,opt,name=initial_password,json=initialPassword,proto3" json:"initial_password,omitempty"`
 	// Optional: groups the new user joins atomically with creation.
@@ -267,8 +285,10 @@ func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -281,6 +301,7 @@ func (x *CreateUserRequest) GetEmail() string {
 	if x != nil {
 		return x.Email
 	}
+
 	return ""
 }
 
@@ -288,6 +309,7 @@ func (x *CreateUserRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
+
 	return ""
 }
 
@@ -295,6 +317,7 @@ func (x *CreateUserRequest) GetInitialPassword() string {
 	if x != nil {
 		return x.InitialPassword
 	}
+
 	return ""
 }
 
@@ -302,14 +325,15 @@ func (x *CreateUserRequest) GetInitialGroupIds() []string {
 	if x != nil {
 		return x.InitialGroupIds
 	}
+
 	return nil
 }
 
 type CreateUserResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	User              *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	GroupIds          []string               `protobuf:"bytes,2,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty"`
-	MembershipVersion int64                  `protobuf:"varint,3,opt,name=membership_version,json=membershipVersion,proto3" json:"membership_version,omitempty"`
+	User              *User                  `                   protobuf:"bytes,1,opt,name=user,proto3"                                       json:"user,omitempty"`
+	GroupIds          []string               `                   protobuf:"bytes,2,rep,name=group_ids,json=groupIds,proto3"                    json:"group_ids,omitempty"`
+	MembershipVersion int64                  `                   protobuf:"varint,3,opt,name=membership_version,json=membershipVersion,proto3" json:"membership_version,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -334,8 +358,10 @@ func (x *CreateUserResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -348,6 +374,7 @@ func (x *CreateUserResponse) GetUser() *User {
 	if x != nil {
 		return x.User
 	}
+
 	return nil
 }
 
@@ -355,6 +382,7 @@ func (x *CreateUserResponse) GetGroupIds() []string {
 	if x != nil {
 		return x.GroupIds
 	}
+
 	return nil
 }
 
@@ -362,13 +390,14 @@ func (x *CreateUserResponse) GetMembershipVersion() int64 {
 	if x != nil {
 		return x.MembershipVersion
 	}
+
 	return 0
 }
 
 type ResetUserPasswordRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	NewPassword   string                 `protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
+	Email         string                 `                   protobuf:"bytes,1,opt,name=email,proto3"                         json:"email,omitempty"`
+	NewPassword   string                 `                   protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -393,8 +422,10 @@ func (x *ResetUserPasswordRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -407,6 +438,7 @@ func (x *ResetUserPasswordRequest) GetEmail() string {
 	if x != nil {
 		return x.Email
 	}
+
 	return ""
 }
 
@@ -414,6 +446,7 @@ func (x *ResetUserPasswordRequest) GetNewPassword() string {
 	if x != nil {
 		return x.NewPassword
 	}
+
 	return ""
 }
 
@@ -443,8 +476,10 @@ func (x *ResetUserPasswordResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -455,7 +490,7 @@ func (*ResetUserPasswordResponse) Descriptor() ([]byte, []int) {
 
 type DeleteUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Email         string                 `                   protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -480,8 +515,10 @@ func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -494,6 +531,7 @@ func (x *DeleteUserRequest) GetEmail() string {
 	if x != nil {
 		return x.Email
 	}
+
 	return ""
 }
 
@@ -523,8 +561,10 @@ func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -535,9 +575,9 @@ func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
 
 type UpdateUserGroupsRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Email          string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	AddGroupIds    []string               `protobuf:"bytes,2,rep,name=add_group_ids,json=addGroupIds,proto3" json:"add_group_ids,omitempty"`
-	RemoveGroupIds []string               `protobuf:"bytes,3,rep,name=remove_group_ids,json=removeGroupIds,proto3" json:"remove_group_ids,omitempty"`
+	Email          string                 `                   protobuf:"bytes,1,opt,name=email,proto3"                                json:"email,omitempty"`
+	AddGroupIds    []string               `                   protobuf:"bytes,2,rep,name=add_group_ids,json=addGroupIds,proto3"       json:"add_group_ids,omitempty"`
+	RemoveGroupIds []string               `                   protobuf:"bytes,3,rep,name=remove_group_ids,json=removeGroupIds,proto3" json:"remove_group_ids,omitempty"`
 	// Optional optimistic lock. When set, server returns FAILED_PRECONDITION
 	// if current membership_version != expected_version.
 	ExpectedVersion *int64 `protobuf:"varint,4,opt,name=expected_version,json=expectedVersion,proto3,oneof" json:"expected_version,omitempty"`
@@ -565,8 +605,10 @@ func (x *UpdateUserGroupsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -579,6 +621,7 @@ func (x *UpdateUserGroupsRequest) GetEmail() string {
 	if x != nil {
 		return x.Email
 	}
+
 	return ""
 }
 
@@ -586,6 +629,7 @@ func (x *UpdateUserGroupsRequest) GetAddGroupIds() []string {
 	if x != nil {
 		return x.AddGroupIds
 	}
+
 	return nil
 }
 
@@ -593,6 +637,7 @@ func (x *UpdateUserGroupsRequest) GetRemoveGroupIds() []string {
 	if x != nil {
 		return x.RemoveGroupIds
 	}
+
 	return nil
 }
 
@@ -600,14 +645,15 @@ func (x *UpdateUserGroupsRequest) GetExpectedVersion() int64 {
 	if x != nil && x.ExpectedVersion != nil {
 		return *x.ExpectedVersion
 	}
+
 	return 0
 }
 
 type UpdateUserGroupsResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	User              *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	VisibleGroupIds   []string               `protobuf:"bytes,2,rep,name=visible_group_ids,json=visibleGroupIds,proto3" json:"visible_group_ids,omitempty"`
-	MembershipVersion int64                  `protobuf:"varint,3,opt,name=membership_version,json=membershipVersion,proto3" json:"membership_version,omitempty"`
+	User              *User                  `                   protobuf:"bytes,1,opt,name=user,proto3"                                       json:"user,omitempty"`
+	VisibleGroupIds   []string               `                   protobuf:"bytes,2,rep,name=visible_group_ids,json=visibleGroupIds,proto3"     json:"visible_group_ids,omitempty"`
+	MembershipVersion int64                  `                   protobuf:"varint,3,opt,name=membership_version,json=membershipVersion,proto3" json:"membership_version,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -632,8 +678,10 @@ func (x *UpdateUserGroupsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
+
 		return ms
 	}
+
 	return mi.MessageOf(x)
 }
 
@@ -646,6 +694,7 @@ func (x *UpdateUserGroupsResponse) GetUser() *User {
 	if x != nil {
 		return x.User
 	}
+
 	return nil
 }
 
@@ -653,6 +702,7 @@ func (x *UpdateUserGroupsResponse) GetVisibleGroupIds() []string {
 	if x != nil {
 		return x.VisibleGroupIds
 	}
+
 	return nil
 }
 
@@ -660,6 +710,7 @@ func (x *UpdateUserGroupsResponse) GetMembershipVersion() int64 {
 	if x != nil {
 		return x.MembershipVersion
 	}
+
 	return 0
 }
 
@@ -735,29 +786,37 @@ var (
 
 func file_elara_user_v1_user_service_proto_rawDescGZIP() []byte {
 	file_elara_user_v1_user_service_proto_rawDescOnce.Do(func() {
-		file_elara_user_v1_user_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_user_v1_user_service_proto_rawDesc), len(file_elara_user_v1_user_service_proto_rawDesc)))
+		file_elara_user_v1_user_service_proto_rawDescData = protoimpl.X.CompressGZIP(
+			unsafe.Slice(
+				unsafe.StringData(file_elara_user_v1_user_service_proto_rawDesc),
+				len(file_elara_user_v1_user_service_proto_rawDesc),
+			),
+		)
 	})
+
 	return file_elara_user_v1_user_service_proto_rawDescData
 }
 
-var file_elara_user_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
-var file_elara_user_v1_user_service_proto_goTypes = []any{
-	(*ListUsersRequest)(nil),          // 0: elara.user.v1.ListUsersRequest
-	(*ListUsersResponse)(nil),         // 1: elara.user.v1.ListUsersResponse
-	(*GetUserRequest)(nil),            // 2: elara.user.v1.GetUserRequest
-	(*GetUserResponse)(nil),           // 3: elara.user.v1.GetUserResponse
-	(*CreateUserRequest)(nil),         // 4: elara.user.v1.CreateUserRequest
-	(*CreateUserResponse)(nil),        // 5: elara.user.v1.CreateUserResponse
-	(*ResetUserPasswordRequest)(nil),  // 6: elara.user.v1.ResetUserPasswordRequest
-	(*ResetUserPasswordResponse)(nil), // 7: elara.user.v1.ResetUserPasswordResponse
-	(*DeleteUserRequest)(nil),         // 8: elara.user.v1.DeleteUserRequest
-	(*DeleteUserResponse)(nil),        // 9: elara.user.v1.DeleteUserResponse
-	(*UpdateUserGroupsRequest)(nil),   // 10: elara.user.v1.UpdateUserGroupsRequest
-	(*UpdateUserGroupsResponse)(nil),  // 11: elara.user.v1.UpdateUserGroupsResponse
-	(*v1.PaginationRequest)(nil),      // 12: elara.common.v1.PaginationRequest
-	(*User)(nil),                      // 13: elara.user.v1.User
-	(*v1.PaginationResponse)(nil),     // 14: elara.common.v1.PaginationResponse
-}
+var (
+	file_elara_user_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+	file_elara_user_v1_user_service_proto_goTypes  = []any{
+		(*ListUsersRequest)(nil),          // 0: elara.user.v1.ListUsersRequest
+		(*ListUsersResponse)(nil),         // 1: elara.user.v1.ListUsersResponse
+		(*GetUserRequest)(nil),            // 2: elara.user.v1.GetUserRequest
+		(*GetUserResponse)(nil),           // 3: elara.user.v1.GetUserResponse
+		(*CreateUserRequest)(nil),         // 4: elara.user.v1.CreateUserRequest
+		(*CreateUserResponse)(nil),        // 5: elara.user.v1.CreateUserResponse
+		(*ResetUserPasswordRequest)(nil),  // 6: elara.user.v1.ResetUserPasswordRequest
+		(*ResetUserPasswordResponse)(nil), // 7: elara.user.v1.ResetUserPasswordResponse
+		(*DeleteUserRequest)(nil),         // 8: elara.user.v1.DeleteUserRequest
+		(*DeleteUserResponse)(nil),        // 9: elara.user.v1.DeleteUserResponse
+		(*UpdateUserGroupsRequest)(nil),   // 10: elara.user.v1.UpdateUserGroupsRequest
+		(*UpdateUserGroupsResponse)(nil),  // 11: elara.user.v1.UpdateUserGroupsResponse
+		(*v1.PaginationRequest)(nil),      // 12: elara.common.v1.PaginationRequest
+		(*User)(nil),                      // 13: elara.user.v1.User
+		(*v1.PaginationResponse)(nil),     // 14: elara.common.v1.PaginationResponse
+	}
+)
 var file_elara_user_v1_user_service_proto_depIdxs = []int32{
 	12, // 0: elara.user.v1.ListUsersRequest.pagination:type_name -> elara.common.v1.PaginationRequest
 	13, // 1: elara.user.v1.ListUsersResponse.users:type_name -> elara.user.v1.User
@@ -794,8 +853,11 @@ func file_elara_user_v1_user_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_user_v1_user_service_proto_rawDesc), len(file_elara_user_v1_user_service_proto_rawDesc)),
+			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
+			RawDescriptor: unsafe.Slice(
+				unsafe.StringData(file_elara_user_v1_user_service_proto_rawDesc),
+				len(file_elara_user_v1_user_service_proto_rawDesc),
+			),
 			NumEnums:      0,
 			NumMessages:   12,
 			NumExtensions: 0,

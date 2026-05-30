@@ -8,11 +8,11 @@ import (
 	"connectrpc.com/validate"
 
 	"github.com/sergeyslonimsky/elara/internal/di/config"
-	accesshandler "github.com/sergeyslonimsky/elara/internal/handler/v2/access"
 	authhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/auth"
 	clientshandler "github.com/sergeyslonimsky/elara/internal/handler/v2/clients"
 	confighandler "github.com/sergeyslonimsky/elara/internal/handler/v2/config"
 	dashboardhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/dashboard"
+	filterhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/filter"
 	grouphandler "github.com/sergeyslonimsky/elara/internal/handler/v2/group"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/interceptor"
 	namespacehandler "github.com/sergeyslonimsky/elara/internal/handler/v2/namespace"
@@ -21,11 +21,11 @@ import (
 	transferhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/transfer"
 	userhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/user"
 	webhookhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/webhook"
-	"github.com/sergeyslonimsky/elara/internal/proto/elara/access/v1/accessv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1/authv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/clients/v1/clientsv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1/configv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/dashboard/v1/dashboardv1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/filter/v1/filterv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/group/v1/groupv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/namespace/v1/namespacev1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1/profilev1connect"
@@ -44,11 +44,11 @@ type V2Handlers struct {
 	Dashboard *dashboardhandler.Handler
 	Transfer  *transferhandler.Handler
 	Webhook   *webhookhandler.Handler
+	Filter    *filterhandler.Handler
 	Auth      *authhandler.Handler
 	Profile   *profilehandler.Handler
 	Users     *userhandler.Handler
 	Groups    *grouphandler.Handler
-	Access    *accesshandler.AccessHandler
 	Tokens    *tokenhandler.Handler
 }
 
@@ -70,6 +70,7 @@ func initCoreHandlers(handlers *V2Handlers, s *Services) {
 	handlers.Dashboard = dashboardhandler.New(s.Dashboard)
 	handlers.Transfer = transferhandler.New(s.Authz, s.Transfer)
 	handlers.Webhook = webhookhandler.New(s.Authz, s.Webhook)
+	handlers.Filter = filterhandler.New(s.Filter)
 }
 
 func initAuthHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
@@ -96,7 +97,6 @@ func initIAMHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
 
 	handlers.Users = userhandler.New(s.User, cfg.UI.Auth.Type)
 	handlers.Groups = grouphandler.NewHandler(s.Authz, s.Group)
-	handlers.Access = accesshandler.NewAccessHandler(s.Authz, s.Policy)
 }
 
 type server interface {
@@ -149,6 +149,9 @@ func V2Routes(server server, handlers *V2Handlers, sessionManager *auth.SessionM
 	path, handler = profilev1connect.NewProfileServiceHandler(handlers.Profile, privateOpts)
 	server.Mount(path, handler)
 
+	path, handler = filterv1connect.NewFilterServiceHandler(handlers.Filter, privateOpts)
+	server.Mount(path, handler)
+
 	if handlers.Users != nil {
 		path, handler = userv1connect.NewUserServiceHandler(handlers.Users, privateOpts)
 		server.Mount(path, handler)
@@ -156,11 +159,6 @@ func V2Routes(server server, handlers *V2Handlers, sessionManager *auth.SessionM
 
 	if handlers.Groups != nil {
 		path, handler = groupv1connect.NewGroupServiceHandler(handlers.Groups, privateOpts)
-		server.Mount(path, handler)
-	}
-
-	if handlers.Access != nil {
-		path, handler = accessv1connect.NewAccessServiceHandler(handlers.Access, privateOpts)
 		server.Mount(path, handler)
 	}
 

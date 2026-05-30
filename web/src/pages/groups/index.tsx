@@ -2,7 +2,7 @@ import { useQuery } from "@connectrpc/connect-query";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useAuth } from "@/components/auth-provider";
+import { Can } from "@/auth/ability-context";
 import { ErrorCard } from "@/components/error-card";
 import { PageShell } from "@/components/page-shell";
 import { PaginationControls } from "@/components/pagination-controls";
@@ -20,7 +20,6 @@ import { GroupTable } from "./components/group-table";
 
 export function GroupsPage() {
 	const navigate = useNavigate();
-	const { state } = useAuth();
 	const {
 		offset,
 		pageSize,
@@ -41,9 +40,6 @@ export function GroupsPage() {
 		search: query,
 	});
 
-	const canCreate =
-		state.status === "authenticated" && state.ability.can("write", "Group");
-
 	return (
 		<PageShell
 			title="Groups"
@@ -61,12 +57,14 @@ export function GroupsPage() {
 		>
 			<div className="flex flex-col gap-4">
 				<div className="flex justify-end">
-					{canCreate && (
-						<Button size="sm" onClick={() => setIsCreateOpen(true)}>
-							<Plus className="mr-1 h-4 w-4" />
-							New Group
-						</Button>
-					)}
+					<Can I="write" a="Group">
+						{() => (
+							<Button size="sm" onClick={() => setIsCreateOpen(true)}>
+								<Plus className="mr-1 h-4 w-4" />
+								New Group
+							</Button>
+						)}
+					</Can>
 				</div>
 
 				{error && <ErrorCard message={error.message} />}

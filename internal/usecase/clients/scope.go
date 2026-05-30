@@ -4,19 +4,23 @@ import (
 	"strings"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/authz"
 )
 
 // scopeChecker decides which clients a caller is allowed to see.
 //
 // Admins (anyone with the global client:read permission) bypass filtering.
 // Everyone else only sees clients with at least one ActiveWatch in a namespace
-// they can read. Clients with no live watches (e.g. historical entries) are
-// invisible to non-admins because we have no per-namespace info to scope by.
+// they can read; the readable-namespace set is resolved once via
+// PDP.EffectiveDomains instead of probing each namespace individually. Clients
+// with no live watches (e.g. historical entries) are invisible to non-admins
+// because we have no per-namespace info to scope by.
 type scopeChecker struct {
-	pdp   pdp
-	email string
 	admin bool
-	cache map[string]bool // namespace → allowed
+	// nsScope is the caller's readable namespaces (object=namespace,
+	// action=read). Only consulted for non-admins; left zero-valued (empty,
+	// non-wildcard) for admins since the admin fast-path short-circuits first.
+	nsScope authz.DomainSet
 }
 
 func newScopeChecker(p pdp, email string) *scopeChecker {
@@ -25,12 +29,12 @@ func newScopeChecker(p pdp, email string) *scopeChecker {
 		Action: domain.ActionRead,
 		Domain: domain.DomainAll,
 	})
+	if admin {
+		return &scopeChecker{admin: true}
+	}
 
 	return &scopeChecker{
-		pdp:   p,
-		email: email,
-		admin: admin,
-		cache: map[string]bool{},
+		nsScope: p.EffectiveDomains(email, domain.ObjectNamespace, domain.ActionRead),
 	}
 }
 
@@ -41,21 +45,7 @@ func (s *scopeChecker) visible(c *domain.Client) bool {
 
 	for _, w := range c.ActiveWatchList {
 		ns := watchKeyNamespace(w.StartKey)
-		if ns == "" {
-			continue
-		}
-
-		allowed, ok := s.cache[ns]
-		if !ok {
-			allowed = s.pdp.Has(s.email, domain.Permission{
-				Object: domain.ObjectConfig,
-				Action: domain.ActionRead,
-				Domain: ns,
-			})
-			s.cache[ns] = allowed
-		}
-
-		if allowed {
+		if ns != "" && s.nsScope.Contains(ns) {
 			return true
 		}
 	}

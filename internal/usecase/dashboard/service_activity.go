@@ -37,7 +37,7 @@ func (s *Service) ListActivity(ctx context.Context, limit int) ([]*domain.Change
 		allowed, ok := allowedNamespace[e.Namespace]
 		if !ok {
 			allowed = s.pdp.Has(claims.Email, domain.Permission{
-				Object: domain.ObjectConfig,
+				Object: domain.ObjectNamespace,
 				Action: domain.ActionRead,
 				Domain: e.Namespace,
 			})

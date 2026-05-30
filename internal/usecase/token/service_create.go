@@ -23,16 +23,16 @@ func (s *Service) Create(ctx context.Context, user domain.AuthInfo, in CreateInp
 	}
 
 	// Role-scope invariant: a token cannot grant more than its creator has on
-	// each namespace. A reader-role token requires (Config, Read, ns); a writer
-	// requires (Config, Write, ns). Handler already verified (Token, Create, ns);
-	// this is the analogue of UpdateGroup's diff-boundary check.
+	// each namespace. A reader-role token requires (Namespace, Read, ns); a
+	// writer requires (Namespace, Write, ns). Handler already verified
+	// (Token, Create, ns); this is the analogue of UpdateGroup's diff-boundary check.
 	action, err := configActionForRole(in.Role)
 	if err != nil {
 		return nil, "", err
 	}
 	for _, ns := range in.Namespaces {
 		if !s.pdp.Has(user.Email, domain.Permission{
-			Object: domain.ObjectConfig,
+			Object: domain.ObjectNamespace,
 			Action: action,
 			Domain: ns,
 		}) {
