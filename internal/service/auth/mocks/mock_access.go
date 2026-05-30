@@ -31,7 +31,6 @@ type MockAccessEnforcerMockRecorder struct {
 func NewMockAccessEnforcer(ctrl *gomock.Controller) *MockAccessEnforcer {
 	mock := &MockAccessEnforcer{ctrl: ctrl}
 	mock.recorder = &MockAccessEnforcerMockRecorder{mock}
-
 	return mock
 }
 
@@ -46,21 +45,11 @@ func (m *MockAccessEnforcer) Enforce(subject, domain, object, action string) (bo
 	ret := m.ctrl.Call(m, "Enforce", subject, domain, object, action)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Enforce indicates an expected call of Enforce.
 func (mr *MockAccessEnforcerMockRecorder) Enforce(subject, domain, object, action any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Enforce",
-		reflect.TypeOf((*MockAccessEnforcer)(nil).Enforce),
-		subject,
-		domain,
-		object,
-		action,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enforce", reflect.TypeOf((*MockAccessEnforcer)(nil).Enforce), subject, domain, object, action)
 }

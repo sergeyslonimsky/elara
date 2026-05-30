@@ -26,10 +26,22 @@ var (
 
 type (
 	usecase interface {
-		List(ctx context.Context, actor domain.AuthInfo, params useruc.ListParams) (*useruc.ListResult, error)
+		List(
+			ctx context.Context,
+			actor domain.AuthInfo,
+			params useruc.ListParams,
+		) (*useruc.ListResult, error)
 		Get(ctx context.Context, actor domain.AuthInfo, email string) (*useruc.GetResult, error)
-		Create(ctx context.Context, actor domain.AuthInfo, data useruc.CreateData) (*useruc.CreateResult, error)
-		ResetPassword(ctx context.Context, actor domain.AuthInfo, targetEmail, newPassword string) error
+		Create(
+			ctx context.Context,
+			actor domain.AuthInfo,
+			data useruc.CreateData,
+		) (*useruc.CreateResult, error)
+		ResetPassword(
+			ctx context.Context,
+			actor domain.AuthInfo,
+			targetEmail, newPassword string,
+		) error
 		Delete(ctx context.Context, actor domain.AuthInfo, targetEmail string) error
 		UpdateGroups(
 			ctx context.Context,
@@ -120,7 +132,10 @@ func (h *Handler) CreateUser(
 	if h.authType == config.AuthTypeNone {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("user creation is not available: auth type is none: %w", domain.ErrFeatureNotAvailable),
+			fmt.Errorf(
+				"user creation is not available: auth type is none: %w",
+				domain.ErrFeatureNotAvailable,
+			),
 		)
 	}
 
@@ -227,7 +242,12 @@ func (h *Handler) requireBasicAuth(operation string) error {
 
 	return connect.NewError(
 		connect.CodeInvalidArgument,
-		fmt.Errorf("%s is not available: auth type is %s: %w", operation, h.authType, domain.ErrFeatureNotAvailable),
+		fmt.Errorf(
+			"%s is not available: auth type is %s: %w",
+			operation,
+			h.authType,
+			domain.ErrFeatureNotAvailable,
+		),
 	)
 }
 

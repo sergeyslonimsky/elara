@@ -21,7 +21,11 @@ type UpdateParams struct {
 // existing webhook's namespace. We do not re-check against the new
 // NamespaceFilter — moving a webhook between namespaces is gated by the same
 // Write right that lets the caller delete-and-recreate.
-func (s *Service) Update(ctx context.Context, id string, params UpdateParams) (*domain.Webhook, error) {
+func (s *Service) Update(
+	ctx context.Context,
+	id string,
+	params UpdateParams,
+) (*domain.Webhook, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized

@@ -68,7 +68,11 @@ func TestSchemaRepo_Attach_Upsert(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "schema-2", got.ID)
 	assert.JSONEq(t, updatedSchema, got.JSONSchema)
-	assert.True(t, originalCreatedAt.Equal(got.CreatedAt), "CreatedAt should be preserved on update")
+	assert.True(
+		t,
+		originalCreatedAt.Equal(got.CreatedAt),
+		"CreatedAt should be preserved on update",
+	)
 }
 
 func TestSchemaRepo_Detach(t *testing.T) {

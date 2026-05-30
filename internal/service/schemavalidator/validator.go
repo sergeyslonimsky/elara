@@ -75,7 +75,11 @@ func (s *Validator) Validate(
 
 func (s *Validator) compileSchema(sa *domain.SchemaAttachment) (*jsonschema.Schema, error) {
 	h := sha256.Sum256([]byte(sa.JSONSchema))
-	k := cacheKey{namespace: sa.Namespace, pathPattern: sa.PathPattern, schemaHash: hex.EncodeToString(h[:])}
+	k := cacheKey{
+		namespace:   sa.Namespace,
+		pathPattern: sa.PathPattern,
+		schemaHash:  hex.EncodeToString(h[:]),
+	}
 
 	if compiled, ok := s.cache.get(k); ok {
 		return compiled, nil
@@ -119,7 +123,8 @@ func findBestMatch(schemas []*domain.SchemaAttachment, configPath string) *domai
 		}
 
 		score := specificity(s.PathPattern)
-		if best == nil || score > bestScore || (score == bestScore && s.CreatedAt.Before(best.CreatedAt)) {
+		if best == nil || score > bestScore ||
+			(score == bestScore && s.CreatedAt.Before(best.CreatedAt)) {
 			best = s
 			bestScore = score
 		}
@@ -131,7 +136,16 @@ func findBestMatch(schemas []*domain.SchemaAttachment, configPath string) *domai
 // specificity returns a score inversely proportional to wildcard count.
 // Higher score = more specific = better match.
 func specificity(pattern string) int {
-	wildcards := strings.Count(pattern, "*") + strings.Count(pattern, "?") + strings.Count(pattern, "[")
+	wildcards := strings.Count(
+		pattern,
+		"*",
+	) + strings.Count(
+		pattern,
+		"?",
+	) + strings.Count(
+		pattern,
+		"[",
+	)
 
 	return -wildcards
 }
@@ -186,7 +200,10 @@ func collectViolations(err error) *domain.SchemaValidationError {
 	return &domain.SchemaValidationError{Violations: violations}
 }
 
-func walkViolations(ve *jsonschema.ValidationError, acc []domain.SchemaViolation) []domain.SchemaViolation {
+func walkViolations(
+	ve *jsonschema.ValidationError,
+	acc []domain.SchemaViolation,
+) []domain.SchemaViolation {
 	printer := message.NewPrinter(language.English)
 
 	if len(ve.Causes) == 0 {

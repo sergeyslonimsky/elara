@@ -141,55 +141,61 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 		assert.Empty(t, roles)
 	})
 
-	t.Run("forbidden on remove of group caller lacks Group:Write — proto contract (oracle safety)", func(t *testing.T) {
-		t.Parallel()
+	t.Run(
+		"forbidden on remove of group caller lacks Group:Write — proto contract (oracle safety)",
+		func(t *testing.T) {
+			t.Parallel()
 
-		// authorizeGroupDeltas runs on the REQUESTED union, not the
-		// effective delta. Submitting "remove X" without Group:Write on X
-		// must be Forbidden even when target isn't a member, otherwise the
-		// no-op-success path would leak membership info.
-		st := updateGroupsSetup(t)
+			// authorizeGroupDeltas runs on the REQUESTED union, not the
+			// effective delta. Submitting "remove X" without Group:Write on X
+			// must be Forbidden even when target isn't a member, otherwise the
+			// no-op-success path would leak membership info.
+			st := updateGroupsSetup(t)
 
-		_, err := st.svc.UpdateGroups(t.Context(), actor(), user.UpdateGroupsData{
-			Email:          targetEmail,
-			RemoveGroupIDs: []string{writableID},
-		})
-		require.ErrorIs(t, err, domain.ErrForbidden)
-	})
+			_, err := st.svc.UpdateGroups(t.Context(), actor(), user.UpdateGroupsData{
+				Email:          targetEmail,
+				RemoveGroupIDs: []string{writableID},
+			})
+			require.ErrorIs(t, err, domain.ErrForbidden)
+		},
+	)
 
-	t.Run("idempotent: re-adding existing membership is a no-op, version unchanged", func(t *testing.T) {
-		t.Parallel()
+	t.Run(
+		"idempotent: re-adding existing membership is a no-op, version unchanged",
+		func(t *testing.T) {
+			t.Parallel()
 
-		st := updateGroupsSetup(t)
-		addPolicies(t, st, []policyRow{
-			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
-		})
+			st := updateGroupsSetup(t)
+			addPolicies(t, st, []policyRow{
+				{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+			})
 
-		// First add: version 0 → 1.
-		res1, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-			Email:       targetEmail,
-			AddGroupIDs: []string{writableID},
-		})
-		require.NoError(t, err)
-		require.Equal(t, int64(1), res1.MembershipVersion)
+			// First add: version 0 → 1.
+			res1, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
+				Email:       targetEmail,
+				AddGroupIDs: []string{writableID},
+			})
+			require.NoError(t, err)
+			require.Equal(t, int64(1), res1.MembershipVersion)
 
-		// Second add of same id: effective add is empty, version stays at 1.
-		res2, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-			Email:       targetEmail,
-			AddGroupIDs: []string{writableID},
-		})
-		require.NoError(t, err)
-		assert.Equal(t, int64(1), res2.MembershipVersion)
+			// Second add of same id: effective add is empty, version stays at 1.
+			res2, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
+				Email:       targetEmail,
+				AddGroupIDs: []string{writableID},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, int64(1), res2.MembershipVersion)
 
-		// Persisted version mirrors the no-op contract.
-		persisted, err := st.users.Get(t.Context(), targetEmail)
-		require.NoError(t, err)
-		assert.Equal(t, int64(1), persisted.MembershipVersion)
+			// Persisted version mirrors the no-op contract.
+			persisted, err := st.users.Get(t.Context(), targetEmail)
+			require.NoError(t, err)
+			assert.Equal(t, int64(1), persisted.MembershipVersion)
 
-		roles, err := st.enforcer.GetRolesForUser(targetEmail, domain.MembershipDomain)
-		require.NoError(t, err)
-		assert.Equal(t, []string{casbin.GroupSubject("writable")}, roles)
-	})
+			roles, err := st.enforcer.GetRolesForUser(targetEmail, domain.MembershipDomain)
+			require.NoError(t, err)
+			assert.Equal(t, []string{casbin.GroupSubject("writable")}, roles)
+		},
+	)
 
 	t.Run("rejects id in both add and remove (validation)", func(t *testing.T) {
 		t.Parallel()

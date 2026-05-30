@@ -7,13 +7,12 @@
 package configv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -25,9 +24,9 @@ const (
 
 type AttachSchemaRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `                   protobuf:"bytes,1,opt,name=namespace,proto3"                     json:"namespace,omitempty"`
-	PathPattern   string                 `                   protobuf:"bytes,2,opt,name=path_pattern,json=pathPattern,proto3" json:"path_pattern,omitempty"`
-	JsonSchema    string                 `                   protobuf:"bytes,3,opt,name=json_schema,json=jsonSchema,proto3"   json:"json_schema,omitempty"`
+	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	PathPattern   string                 `protobuf:"bytes,2,opt,name=path_pattern,json=pathPattern,proto3" json:"path_pattern,omitempty"`
+	JsonSchema    string                 `protobuf:"bytes,3,opt,name=json_schema,json=jsonSchema,proto3" json:"json_schema,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -52,10 +51,8 @@ func (x *AttachSchemaRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -68,7 +65,6 @@ func (x *AttachSchemaRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -76,7 +72,6 @@ func (x *AttachSchemaRequest) GetPathPattern() string {
 	if x != nil {
 		return x.PathPattern
 	}
-
 	return ""
 }
 
@@ -84,13 +79,12 @@ func (x *AttachSchemaRequest) GetJsonSchema() string {
 	if x != nil {
 		return x.JsonSchema
 	}
-
 	return ""
 }
 
 type AttachSchemaResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Schema        *SchemaAttachment      `                   protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
+	Schema        *SchemaAttachment      `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -115,10 +109,8 @@ func (x *AttachSchemaResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -131,14 +123,13 @@ func (x *AttachSchemaResponse) GetSchema() *SchemaAttachment {
 	if x != nil {
 		return x.Schema
 	}
-
 	return nil
 }
 
 type DetachSchemaRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `                   protobuf:"bytes,1,opt,name=namespace,proto3"                     json:"namespace,omitempty"`
-	PathPattern   string                 `                   protobuf:"bytes,2,opt,name=path_pattern,json=pathPattern,proto3" json:"path_pattern,omitempty"`
+	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	PathPattern   string                 `protobuf:"bytes,2,opt,name=path_pattern,json=pathPattern,proto3" json:"path_pattern,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -163,10 +154,8 @@ func (x *DetachSchemaRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -179,7 +168,6 @@ func (x *DetachSchemaRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -187,7 +175,6 @@ func (x *DetachSchemaRequest) GetPathPattern() string {
 	if x != nil {
 		return x.PathPattern
 	}
-
 	return ""
 }
 
@@ -217,10 +204,8 @@ func (x *DetachSchemaResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -231,8 +216,8 @@ func (*DetachSchemaResponse) Descriptor() ([]byte, []int) {
 
 type GetSchemaRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `                   protobuf:"bytes,1,opt,name=namespace,proto3"                     json:"namespace,omitempty"`
-	PathPattern   string                 `                   protobuf:"bytes,2,opt,name=path_pattern,json=pathPattern,proto3" json:"path_pattern,omitempty"`
+	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	PathPattern   string                 `protobuf:"bytes,2,opt,name=path_pattern,json=pathPattern,proto3" json:"path_pattern,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -257,10 +242,8 @@ func (x *GetSchemaRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -273,7 +256,6 @@ func (x *GetSchemaRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -281,13 +263,12 @@ func (x *GetSchemaRequest) GetPathPattern() string {
 	if x != nil {
 		return x.PathPattern
 	}
-
 	return ""
 }
 
 type GetSchemaResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Schema        *SchemaAttachment      `                   protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
+	Schema        *SchemaAttachment      `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -312,10 +293,8 @@ func (x *GetSchemaResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -328,14 +307,13 @@ func (x *GetSchemaResponse) GetSchema() *SchemaAttachment {
 	if x != nil {
 		return x.Schema
 	}
-
 	return nil
 }
 
 type GetEffectiveSchemaRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `                   protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Path          string                 `                   protobuf:"bytes,2,opt,name=path,proto3"      json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -360,10 +338,8 @@ func (x *GetEffectiveSchemaRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -376,7 +352,6 @@ func (x *GetEffectiveSchemaRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -384,13 +359,12 @@ func (x *GetEffectiveSchemaRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
 type GetEffectiveSchemaResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Schema        *SchemaAttachment      `                   protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
+	Schema        *SchemaAttachment      `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -415,10 +389,8 @@ func (x *GetEffectiveSchemaResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -431,13 +403,12 @@ func (x *GetEffectiveSchemaResponse) GetSchema() *SchemaAttachment {
 	if x != nil {
 		return x.Schema
 	}
-
 	return nil
 }
 
 type ListSchemasRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `                   protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -462,10 +433,8 @@ func (x *ListSchemasRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -478,13 +447,12 @@ func (x *ListSchemasRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
 type ListSchemasResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Schemas       []*SchemaAttachment    `                   protobuf:"bytes,1,rep,name=schemas,proto3" json:"schemas,omitempty"`
+	Schemas       []*SchemaAttachment    `protobuf:"bytes,1,rep,name=schemas,proto3" json:"schemas,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -509,10 +477,8 @@ func (x *ListSchemasResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -525,7 +491,6 @@ func (x *ListSchemasResponse) GetSchemas() []*SchemaAttachment {
 	if x != nil {
 		return x.Schemas
 	}
-
 	return nil
 }
 
@@ -574,33 +539,25 @@ var (
 
 func file_elara_config_v1_schema_service_proto_rawDescGZIP() []byte {
 	file_elara_config_v1_schema_service_proto_rawDescOnce.Do(func() {
-		file_elara_config_v1_schema_service_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_config_v1_schema_service_proto_rawDesc),
-				len(file_elara_config_v1_schema_service_proto_rawDesc),
-			),
-		)
+		file_elara_config_v1_schema_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_config_v1_schema_service_proto_rawDesc), len(file_elara_config_v1_schema_service_proto_rawDesc)))
 	})
-
 	return file_elara_config_v1_schema_service_proto_rawDescData
 }
 
-var (
-	file_elara_config_v1_schema_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-	file_elara_config_v1_schema_service_proto_goTypes  = []any{
-		(*AttachSchemaRequest)(nil),        // 0: elara.config.v1.AttachSchemaRequest
-		(*AttachSchemaResponse)(nil),       // 1: elara.config.v1.AttachSchemaResponse
-		(*DetachSchemaRequest)(nil),        // 2: elara.config.v1.DetachSchemaRequest
-		(*DetachSchemaResponse)(nil),       // 3: elara.config.v1.DetachSchemaResponse
-		(*GetSchemaRequest)(nil),           // 4: elara.config.v1.GetSchemaRequest
-		(*GetSchemaResponse)(nil),          // 5: elara.config.v1.GetSchemaResponse
-		(*GetEffectiveSchemaRequest)(nil),  // 6: elara.config.v1.GetEffectiveSchemaRequest
-		(*GetEffectiveSchemaResponse)(nil), // 7: elara.config.v1.GetEffectiveSchemaResponse
-		(*ListSchemasRequest)(nil),         // 8: elara.config.v1.ListSchemasRequest
-		(*ListSchemasResponse)(nil),        // 9: elara.config.v1.ListSchemasResponse
-		(*SchemaAttachment)(nil),           // 10: elara.config.v1.SchemaAttachment
-	}
-)
+var file_elara_config_v1_schema_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_elara_config_v1_schema_service_proto_goTypes = []any{
+	(*AttachSchemaRequest)(nil),        // 0: elara.config.v1.AttachSchemaRequest
+	(*AttachSchemaResponse)(nil),       // 1: elara.config.v1.AttachSchemaResponse
+	(*DetachSchemaRequest)(nil),        // 2: elara.config.v1.DetachSchemaRequest
+	(*DetachSchemaResponse)(nil),       // 3: elara.config.v1.DetachSchemaResponse
+	(*GetSchemaRequest)(nil),           // 4: elara.config.v1.GetSchemaRequest
+	(*GetSchemaResponse)(nil),          // 5: elara.config.v1.GetSchemaResponse
+	(*GetEffectiveSchemaRequest)(nil),  // 6: elara.config.v1.GetEffectiveSchemaRequest
+	(*GetEffectiveSchemaResponse)(nil), // 7: elara.config.v1.GetEffectiveSchemaResponse
+	(*ListSchemasRequest)(nil),         // 8: elara.config.v1.ListSchemasRequest
+	(*ListSchemasResponse)(nil),        // 9: elara.config.v1.ListSchemasResponse
+	(*SchemaAttachment)(nil),           // 10: elara.config.v1.SchemaAttachment
+}
 var file_elara_config_v1_schema_service_proto_depIdxs = []int32{
 	10, // 0: elara.config.v1.AttachSchemaResponse.schema:type_name -> elara.config.v1.SchemaAttachment
 	10, // 1: elara.config.v1.GetSchemaResponse.schema:type_name -> elara.config.v1.SchemaAttachment
@@ -632,11 +589,8 @@ func file_elara_config_v1_schema_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_config_v1_schema_service_proto_rawDesc),
-				len(file_elara_config_v1_schema_service_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_config_v1_schema_service_proto_rawDesc), len(file_elara_config_v1_schema_service_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   10,
 			NumExtensions: 0,

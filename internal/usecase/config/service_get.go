@@ -31,7 +31,10 @@ type GetAtRevisionInput struct {
 	Revision  int64
 }
 
-func (s *Service) GetAtRevision(ctx context.Context, in GetAtRevisionInput) (*domain.HistoryEntry, error) {
+func (s *Service) GetAtRevision(
+	ctx context.Context,
+	in GetAtRevisionInput,
+) (*domain.HistoryEntry, error) {
 	if in.Namespace == "" {
 		return nil, domain.NewValidationError("namespace", "namespace is required")
 	}

@@ -45,8 +45,16 @@ func TestService_Create(t *testing.T) {
 				assert.NotEmpty(t, got.Group.ID)
 				assert.Equal(t, in.Name, got.Group.Name)
 				assert.Equal(t, int64(1), got.Group.MetadataVersion)
-				assert.Zero(t, got.Group.MembersVersion, "no initial members → MembersVersion stays 0")
-				assert.Zero(t, got.Group.PermissionsVersion, "no initial perms → PermissionsVersion stays 0")
+				assert.Zero(
+					t,
+					got.Group.MembersVersion,
+					"no initial members → MembersVersion stays 0",
+				)
+				assert.Zero(
+					t,
+					got.Group.PermissionsVersion,
+					"no initial perms → PermissionsVersion stays 0",
+				)
 				assert.Empty(t, got.VisibleMembers)
 				assert.Empty(t, got.Permissions)
 
@@ -122,7 +130,11 @@ func TestService_Create(t *testing.T) {
 				seedAdminWildcard(t, st)
 
 				// Seed a manager group "managers" so it has a stable id.
-				mg, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "managers"})
+				mg, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "managers"},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.CreateData{
@@ -200,11 +212,17 @@ func TestService_Create(t *testing.T) {
 						managerGranted = true
 					}
 					if r[0] == casbin.GroupSubject(in.Name) && r[1] == "dev" &&
-						r[2] == string(domain.ObjectNamespace) && r[3] == string(domain.ActionWrite) {
+						r[2] == string(
+							domain.ObjectNamespace,
+						) && r[3] == string(domain.ActionWrite) {
 						ownPerm = true
 					}
 				}
-				assert.True(t, managerGranted, "manager group must hold Group:Write on the new group")
+				assert.True(
+					t,
+					managerGranted,
+					"manager group must hold Group:Write on the new group",
+				)
 				assert.True(t, ownPerm, "new group must hold its initial permission")
 
 				// And the entity must be retrievable via Get (bbolt commit happened).
@@ -251,20 +269,28 @@ func TestService_Create_AntiEscalation(t *testing.T) {
 				// devops holds dev:Namespace:Write only — granting prod escalates.
 				require.NoError(
 					t,
-					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy(
-							"devops@example.com",
-							"dev",
-							string(domain.ObjectNamespace),
-							string(domain.ActionWrite),
-						)
-					}),
+					st.enforcer.WriteTx(
+						t.Context(),
+						st.txm,
+						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+							return txe.AddPolicy(
+								"devops@example.com",
+								"dev",
+								string(domain.ObjectNamespace),
+								string(domain.ActionWrite),
+							)
+						},
+					),
 				)
 
 				return domain.AuthInfo{Email: "devops@example.com"}, group.CreateData{
 					Name: "escalated",
 					InitialPermissions: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: "prod",
+						},
 					},
 				}
 			},
@@ -279,13 +305,21 @@ func TestService_Create_AntiEscalation(t *testing.T) {
 
 				// Manager group exists but does NOT dominate the initial perm
 				// the caller wants to attach to the new group.
-				mg, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "weak-mgr"})
+				mg, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "weak-mgr"},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.CreateData{
 					Name: "child",
 					InitialPermissions: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: "prod",
+						},
 					},
 					InitialManagerGroupIDs: []string{mg.Group.ID},
 				}

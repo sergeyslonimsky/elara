@@ -166,7 +166,11 @@ func (s *Service) buildNamespaceBundle(
 ) (domain.NamespaceBundle, error) {
 	configs, err := s.configs.ListAllByNamespace(ctx, ns.Name)
 	if err != nil {
-		return domain.NamespaceBundle{}, fmt.Errorf("list configs for namespace %s: %w", ns.Name, err)
+		return domain.NamespaceBundle{}, fmt.Errorf(
+			"list configs for namespace %s: %w",
+			ns.Name,
+			err,
+		)
 	}
 
 	nsBundle := domain.NamespaceBundle{
@@ -193,7 +197,10 @@ func (s *Service) buildNamespaceBundle(
 }
 
 // marshalPerNamespaceZip creates a ZIP with index.json/yaml plus one file per namespace.
-func marshalPerNamespaceZip(bundle domain.AllBundle, enc transferv1.BundleEncoding) ([]byte, error) {
+func marshalPerNamespaceZip(
+	bundle domain.AllBundle,
+	enc transferv1.BundleEncoding,
+) ([]byte, error) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 
@@ -226,7 +233,11 @@ func marshalPerNamespaceZip(bundle domain.AllBundle, enc transferv1.BundleEncodi
 	return buf.Bytes(), nil
 }
 
-func writeZipNamespace(zw *zip.Writer, ns *domain.NamespaceBundle, enc transferv1.BundleEncoding) error {
+func writeZipNamespace(
+	zw *zip.Writer,
+	ns *domain.NamespaceBundle,
+	enc transferv1.BundleEncoding,
+) error {
 	payload, ct, err := marshalBundle(ns, enc)
 	if err != nil {
 		return fmt.Errorf("marshal namespace %s: %w", ns.Namespace, err)

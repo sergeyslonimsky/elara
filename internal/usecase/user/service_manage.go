@@ -41,7 +41,11 @@ type CreateResult struct {
 // both clauses; the per-id Group:Write loop runs again inside the tx
 // alongside RequireMembershipGrant so concurrent revocation between
 // pre-check and apply cannot bypass the gate.
-func (s *Service) Create(ctx context.Context, actor domain.AuthInfo, data CreateData) (*CreateResult, error) {
+func (s *Service) Create(
+	ctx context.Context,
+	actor domain.AuthInfo,
+	data CreateData,
+) (*CreateResult, error) {
 	user, err := newUserFromCreateData(data)
 	if err != nil {
 		return nil, err
@@ -57,7 +61,14 @@ func (s *Service) Create(ctx context.Context, actor domain.AuthInfo, data Create
 		if err := s.persistUser(ctx, tx, user, data.InitialPassword); err != nil {
 			return err
 		}
-		groupIDs, version, err := s.applyInitialGroups(ctx, tx, w, actor, user, data.InitialGroupIDs)
+		groupIDs, version, err := s.applyInitialGroups(
+			ctx,
+			tx,
+			w,
+			actor,
+			user,
+			data.InitialGroupIDs,
+		)
 		if err != nil {
 			return err
 		}
@@ -126,7 +137,12 @@ func (s *Service) authorizeInitialGroups(actor domain.AuthInfo, ids []string) er
 
 // persistUser writes the user record and (in basic-auth mode) the initial
 // password hash, marking password_change_required on first login.
-func (s *Service) persistUser(ctx context.Context, tx storage.Tx, user *domain.User, initialPassword string) error {
+func (s *Service) persistUser(
+	ctx context.Context,
+	tx storage.Tx,
+	user *domain.User,
+	initialPassword string,
+) error {
 	if err := s.store.WithTx(tx).Upsert(ctx, user); err != nil {
 		return fmt.Errorf("upsert user: %w", err)
 	}
@@ -152,7 +168,7 @@ func (s *Service) persistUser(ctx context.Context, tx storage.Tx, user *domain.U
 func (s *Service) applyInitialGroups(
 	ctx context.Context,
 	tx storage.Tx,
-	w *authz.PAPTx,
+	papTx *authz.PAPTx,
 	actor domain.AuthInfo,
 	user *domain.User,
 	ids []string,
@@ -189,7 +205,7 @@ func (s *Service) applyInitialGroups(
 	for _, id := range ids {
 		names = append(names, desired[id].Name)
 	}
-	if err := w.ApplyUserMembershipDeltas(user.Email, names, nil); err != nil {
+	if err := papTx.ApplyUserMembershipDeltas(user.Email, names, nil); err != nil {
 		return nil, 0, fmt.Errorf("pap apply user memberships: %w", err)
 	}
 
@@ -212,7 +228,7 @@ func (s *Service) Delete(ctx context.Context, actor domain.AuthInfo, targetEmail
 		return domain.NewValidationError("email", "cannot delete your own account")
 	}
 
-	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
+	err := s.pap.Write(ctx, func(tx storage.Tx, papTx *authz.PAPTx) error {
 		if _, err := s.store.WithTx(tx).Get(ctx, targetEmail); err != nil {
 			return fmt.Errorf("get user: %w", err)
 		}
@@ -225,7 +241,7 @@ func (s *Service) Delete(ctx context.Context, actor domain.AuthInfo, targetEmail
 		if err := s.store.WithTx(tx).Delete(ctx, targetEmail); err != nil {
 			return fmt.Errorf("delete user: %w", err)
 		}
-		if err := w.DeleteUser(targetEmail); err != nil {
+		if err := papTx.DeleteUser(targetEmail); err != nil {
 			return fmt.Errorf("pap delete user: %w", err)
 		}
 
@@ -254,7 +270,11 @@ type GetResult struct {
 // the caller has neither, the response is NotFound (not Forbidden), uniform
 // with the missing-user case, so the endpoint cannot be used to enumerate
 // users by email.
-func (s *Service) Get(ctx context.Context, actor domain.AuthInfo, email string) (*GetResult, error) {
+func (s *Service) Get(
+	ctx context.Context,
+	actor domain.AuthInfo,
+	email string,
+) (*GetResult, error) {
 	user, err := s.store.Get(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)

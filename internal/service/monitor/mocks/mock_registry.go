@@ -12,9 +12,8 @@ package mock_monitor
 import (
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockHistorySink is a mock of HistorySink interface.
@@ -33,7 +32,6 @@ type MockHistorySinkMockRecorder struct {
 func NewMockHistorySink(ctrl *gomock.Controller) *MockHistorySink {
 	mock := &MockHistorySink{ctrl: ctrl}
 	mock.recorder = &MockHistorySinkMockRecorder{mock}
-
 	return mock
 }
 
@@ -51,11 +49,5 @@ func (m *MockHistorySink) Record(snapshot *domain.Client) {
 // Record indicates an expected call of Record.
 func (mr *MockHistorySinkMockRecorder) Record(snapshot any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Record",
-		reflect.TypeOf((*MockHistorySink)(nil).Record),
-		snapshot,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Record", reflect.TypeOf((*MockHistorySink)(nil).Record), snapshot)
 }

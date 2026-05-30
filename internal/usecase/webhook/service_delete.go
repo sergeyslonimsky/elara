@@ -16,7 +16,7 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		return domain.ErrUnauthorized
 	}
 
-	w, err := s.repo.Get(ctx, id)
+	webhook, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return fmt.Errorf("get webhook: %w", err)
 	}
@@ -24,7 +24,7 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	if !s.pdp.Has(claims.Email, domain.Permission{
 		Object: domain.ObjectWebhook,
 		Action: domain.ActionWrite,
-		Domain: webhookDomain(w),
+		Domain: webhookDomain(webhook),
 	}) {
 		return domain.ErrForbidden
 	}

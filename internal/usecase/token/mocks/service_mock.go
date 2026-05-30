@@ -13,10 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	authz "github.com/sergeyslonimsky/elara/internal/service/authz"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockpdp is a mock of pdp interface.
@@ -35,7 +34,6 @@ type MockpdpMockRecorder struct {
 func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
 	mock := &Mockpdp{ctrl: ctrl}
 	mock.recorder = &MockpdpMockRecorder{mock}
-
 	return mock
 }
 
@@ -49,22 +47,13 @@ func (m *Mockpdp) EffectiveDomains(principal string, object domain.Object, actio
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EffectiveDomains", principal, object, action)
 	ret0, _ := ret[0].(authz.DomainSet)
-
 	return ret0
 }
 
 // EffectiveDomains indicates an expected call of EffectiveDomains.
 func (mr *MockpdpMockRecorder) EffectiveDomains(principal, object, action any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"EffectiveDomains",
-		reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains),
-		principal,
-		object,
-		action,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveDomains", reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains), principal, object, action)
 }
 
 // Has mocks base method.
@@ -72,14 +61,12 @@ func (m *Mockpdp) Has(principal string, perm domain.Permission) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Has", principal, perm)
 	ret0, _ := ret[0].(bool)
-
 	return ret0
 }
 
 // Has indicates an expected call of Has.
 func (mr *MockpdpMockRecorder) Has(principal, perm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*Mockpdp)(nil).Has), principal, perm)
 }
 
@@ -99,7 +86,6 @@ type MockstoreMockRecorder struct {
 func NewMockstore(ctrl *gomock.Controller) *Mockstore {
 	mock := &Mockstore{ctrl: ctrl}
 	mock.recorder = &MockstoreMockRecorder{mock}
-
 	return mock
 }
 
@@ -113,21 +99,13 @@ func (m *Mockstore) Create(ctx context.Context, token *domain.Token) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, token)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Create indicates an expected call of Create.
 func (mr *MockstoreMockRecorder) Create(ctx, token any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Create",
-		reflect.TypeOf((*Mockstore)(nil).Create),
-		ctx,
-		token,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockstore)(nil).Create), ctx, token)
 }
 
 // Delete mocks base method.
@@ -135,14 +113,12 @@ func (m *Mockstore) Delete(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
 func (mr *MockstoreMockRecorder) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockstore)(nil).Delete), ctx, id)
 }
 
@@ -152,42 +128,27 @@ func (m *Mockstore) GetByID(ctx context.Context, id string) (*domain.Token, erro
 	ret := m.ctrl.Call(m, "GetByID", ctx, id)
 	ret0, _ := ret[0].(*domain.Token)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // GetByID indicates an expected call of GetByID.
 func (mr *MockstoreMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*Mockstore)(nil).GetByID), ctx, id)
 }
 
 // List mocks base method.
-func (m *Mockstore) List(
-	ctx context.Context,
-	filter domain.TokenFilter,
-	params domain.TokenListParams,
-) ([]*domain.Token, int, error) {
+func (m *Mockstore) List(ctx context.Context, filter domain.TokenFilter, params domain.TokenListParams) ([]*domain.Token, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, filter, params)
 	ret0, _ := ret[0].([]*domain.Token)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
-
 	return ret0, ret1, ret2
 }
 
 // List indicates an expected call of List.
 func (mr *MockstoreMockRecorder) List(ctx, filter, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"List",
-		reflect.TypeOf((*Mockstore)(nil).List),
-		ctx,
-		filter,
-		params,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstore)(nil).List), ctx, filter, params)
 }

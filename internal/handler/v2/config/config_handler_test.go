@@ -16,7 +16,9 @@ import (
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
-func setupHandler(t *testing.T) (*config.ConfigHandler, *configmock.Mockauthz, *configmock.MockconfigUsecase) {
+func setupHandler(
+	t *testing.T,
+) (*config.ConfigHandler, *configmock.Mockauthz, *configmock.MockconfigUsecase) {
 	t.Helper()
 
 	ctrl := gomock.NewController(t)
@@ -269,7 +271,10 @@ func TestConfigHandler_ListConfigs(t *testing.T) {
 			Total: 1,
 		}, nil)
 
-	resp, err := h.ListConfigs(t.Context(), connect.NewRequest(&configv1.ListConfigsRequest{Namespace: "prod"}))
+	resp, err := h.ListConfigs(
+		t.Context(),
+		connect.NewRequest(&configv1.ListConfigsRequest{Namespace: "prod"}),
+	)
 	require.NoError(t, err)
 	assert.Len(t, resp.Msg.GetEntries(), 1)
 }
@@ -282,7 +287,10 @@ func TestConfigHandler_ListConfigs_Unauthorized(t *testing.T) {
 		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(domain.ErrUnauthorized)
 
-	_, err := h.ListConfigs(t.Context(), connect.NewRequest(&configv1.ListConfigsRequest{Namespace: "prod"}))
+	_, err := h.ListConfigs(
+		t.Context(),
+		connect.NewRequest(&configv1.ListConfigsRequest{Namespace: "prod"}),
+	)
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 }
@@ -583,11 +591,14 @@ func TestConfigHandler_GetConfigAtRevision(t *testing.T) {
 		GetAtRevision(gomock.Any(), configuc.GetAtRevisionInput{Path: "/a.json", Namespace: "prod", Revision: 1}).
 		Return(&domain.HistoryEntry{Revision: 1, Content: "v1"}, nil)
 
-	resp, err := h.GetConfigAtRevision(t.Context(), connect.NewRequest(&configv1.GetConfigAtRevisionRequest{
-		Path:      "/a.json",
-		Namespace: "prod",
-		Revision:  1,
-	}))
+	resp, err := h.GetConfigAtRevision(
+		t.Context(),
+		connect.NewRequest(&configv1.GetConfigAtRevisionRequest{
+			Path:      "/a.json",
+			Namespace: "prod",
+			Revision:  1,
+		}),
+	)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), resp.Msg.GetEntry().GetRevision())
 }
@@ -600,11 +611,14 @@ func TestConfigHandler_GetConfigAtRevision_Unauthorized(t *testing.T) {
 		Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
 		Return(domain.ErrUnauthorized)
 
-	_, err := h.GetConfigAtRevision(t.Context(), connect.NewRequest(&configv1.GetConfigAtRevisionRequest{
-		Path:      "/a.json",
-		Namespace: "prod",
-		Revision:  1,
-	}))
+	_, err := h.GetConfigAtRevision(
+		t.Context(),
+		connect.NewRequest(&configv1.GetConfigAtRevisionRequest{
+			Path:      "/a.json",
+			Namespace: "prod",
+			Revision:  1,
+		}),
+	)
 	require.Error(t, err)
 	assert.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 }

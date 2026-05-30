@@ -48,8 +48,8 @@ func findBestMatch(schemas []*domain.SchemaAttachment, configPath string) *domai
 	var best *domain.SchemaAttachment
 	bestScore := -1
 
-	for _, s := range schemas {
-		g, err := glob.Compile(s.PathPattern, '/')
+	for _, schema := range schemas {
+		g, err := glob.Compile(schema.PathPattern, '/')
 		if err != nil {
 			continue
 		}
@@ -58,9 +58,10 @@ func findBestMatch(schemas []*domain.SchemaAttachment, configPath string) *domai
 			continue
 		}
 
-		score := specificity(s.PathPattern)
-		if best == nil || score > bestScore || (score == bestScore && s.CreatedAt.Before(best.CreatedAt)) {
-			best = s
+		score := specificity(schema.PathPattern)
+		if best == nil || score > bestScore ||
+			(score == bestScore && schema.CreatedAt.Before(best.CreatedAt)) {
+			best = schema
 			bestScore = score
 		}
 	}
@@ -71,7 +72,16 @@ func findBestMatch(schemas []*domain.SchemaAttachment, configPath string) *domai
 // specificity returns a score inversely proportional to wildcard count.
 // Higher score = more specific = better match.
 func specificity(pattern string) int {
-	wildcards := strings.Count(pattern, "*") + strings.Count(pattern, "?") + strings.Count(pattern, "[")
+	wildcards := strings.Count(
+		pattern,
+		"*",
+	) + strings.Count(
+		pattern,
+		"?",
+	) + strings.Count(
+		pattern,
+		"[",
+	)
 
 	return -wildcards
 }

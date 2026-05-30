@@ -256,7 +256,11 @@ func TestConfigRepo_History(t *testing.T) {
 	history, err = repo.GetConfigHistory(ctx, "/test.json", "default", 10)
 	require.NoError(t, err)
 	assert.Len(t, history, 3)
-	assert.Equal(t, domain.EventTypeCreated, history[2].EventType) // oldest entry has the Created event type
+	assert.Equal(
+		t,
+		domain.EventTypeCreated,
+		history[2].EventType,
+	) // oldest entry has the Created event type
 }
 
 func TestConfigRepo_Changelog(t *testing.T) {
@@ -393,9 +397,18 @@ func TestConfigRepo_ListAllByNamespace(t *testing.T) {
 	repo := bbolt.NewConfigRepo(store)
 	ctx := t.Context()
 
-	require.NoError(t, repo.Create(ctx, &domain.Config{Path: "/a.json", Namespace: "n1", Content: "{}"}))
-	require.NoError(t, repo.Create(ctx, &domain.Config{Path: "/b.json", Namespace: "n1", Content: "{}"}))
-	require.NoError(t, repo.Create(ctx, &domain.Config{Path: "/c.json", Namespace: "n2", Content: "{}"}))
+	require.NoError(
+		t,
+		repo.Create(ctx, &domain.Config{Path: "/a.json", Namespace: "n1", Content: "{}"}),
+	)
+	require.NoError(
+		t,
+		repo.Create(ctx, &domain.Config{Path: "/b.json", Namespace: "n1", Content: "{}"}),
+	)
+	require.NoError(
+		t,
+		repo.Create(ctx, &domain.Config{Path: "/c.json", Namespace: "n2", Content: "{}"}),
+	)
 
 	list, err := repo.ListAllByNamespace(ctx, "n1")
 	require.NoError(t, err)
@@ -414,8 +427,14 @@ func TestConfigRepo_CountByNamespace(t *testing.T) {
 	repo := bbolt.NewConfigRepo(store)
 	ctx := t.Context()
 
-	require.NoError(t, repo.Create(ctx, &domain.Config{Path: "/a.json", Namespace: "n1", Content: "{}"}))
-	require.NoError(t, repo.Create(ctx, &domain.Config{Path: "/b.json", Namespace: "n1", Content: "{}"}))
+	require.NoError(
+		t,
+		repo.Create(ctx, &domain.Config{Path: "/a.json", Namespace: "n1", Content: "{}"}),
+	)
+	require.NoError(
+		t,
+		repo.Create(ctx, &domain.Config{Path: "/b.json", Namespace: "n1", Content: "{}"}),
+	)
 
 	count, err := repo.CountByNamespace(ctx, "n1")
 	require.NoError(t, err)
@@ -434,7 +453,10 @@ func TestConfigRepo_ListConfigPage(t *testing.T) {
 
 	for i := range 3 {
 		path := fmt.Sprintf("/cfg%d.json", i)
-		require.NoError(t, repo.Create(ctx, &domain.Config{Path: path, Namespace: "ns", Content: "{}"}))
+		require.NoError(
+			t,
+			repo.Create(ctx, &domain.Config{Path: path, Namespace: "ns", Content: "{}"}),
+		)
 	}
 
 	// first page: offset 0, limit 2 → cfg0, cfg1

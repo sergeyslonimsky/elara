@@ -138,7 +138,11 @@ func (r *fakeWatchRepo) CurrentRevisionValue(_ context.Context) (int64, error) {
 	return r.rev, nil
 }
 
-func (r *fakeWatchRepo) ListChanges(_ context.Context, since int64, limit int) ([]*domain.ChangelogEntry, error) {
+func (r *fakeWatchRepo) ListChanges(
+	_ context.Context,
+	since int64,
+	limit int,
+) ([]*domain.ChangelogEntry, error) {
 	if r.listErr != nil {
 		return nil, r.listErr
 	}
@@ -159,7 +163,11 @@ func (r *fakeWatchRepo) ListChanges(_ context.Context, since int64, limit int) (
 	return out, nil
 }
 
-func (r *fakeWatchRepo) GetKVAtRevision(_ context.Context, ns, path string, rev int64) ([]byte, error) {
+func (r *fakeWatchRepo) GetKVAtRevision(
+	_ context.Context,
+	ns, path string,
+	rev int64,
+) ([]byte, error) {
 	return r.kvAtRevision[kvKey(rev, ns, path)], nil
 }
 
@@ -180,7 +188,10 @@ type fakeSub struct {
 	canceled  bool
 }
 
-func (p *fakeWatchPublisher) Subscribe(_ context.Context, prefix, ns string) (<-chan domain.WatchEvent, func()) {
+func (p *fakeWatchPublisher) Subscribe(
+	_ context.Context,
+	prefix, ns string,
+) (<-chan domain.WatchEvent, func()) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -418,8 +429,20 @@ func TestWatchServer_HistoricalReplay(t *testing.T) {
 	repo := &fakeWatchRepo{
 		rev: 5,
 		entries: []*domain.ChangelogEntry{
-			{Revision: 2, Type: domain.EventTypeCreated, Path: "/foo", Namespace: "default", Version: 1},
-			{Revision: 4, Type: domain.EventTypeUpdated, Path: "/foo", Namespace: "default", Version: 2},
+			{
+				Revision:  2,
+				Type:      domain.EventTypeCreated,
+				Path:      "/foo",
+				Namespace: "default",
+				Version:   1,
+			},
+			{
+				Revision:  4,
+				Type:      domain.EventTypeUpdated,
+				Path:      "/foo",
+				Namespace: "default",
+				Version:   2,
+			},
 		},
 		kvAtRevision: map[string][]byte{
 			kvKey(2, "default", "/foo"): []byte("v1"),
@@ -474,7 +497,10 @@ func TestWatchServer_HistoricalReplay_DeletesPublished(t *testing.T) {
 
 	stream.pushReq(&etcdserverpb.WatchRequest{
 		RequestUnion: &etcdserverpb.WatchRequest_CreateRequest{
-			CreateRequest: &etcdserverpb.WatchCreateRequest{Key: []byte("/default/foo"), StartRevision: 1},
+			CreateRequest: &etcdserverpb.WatchCreateRequest{
+				Key:           []byte("/default/foo"),
+				StartRevision: 1,
+			},
 		},
 	})
 
@@ -495,7 +521,13 @@ func TestWatchServer_HistoricalDedupesWithRealtime(t *testing.T) {
 	repo := &fakeWatchRepo{
 		rev: 5,
 		entries: []*domain.ChangelogEntry{
-			{Revision: 3, Type: domain.EventTypeCreated, Path: "/foo", Namespace: "default", Version: 1},
+			{
+				Revision:  3,
+				Type:      domain.EventTypeCreated,
+				Path:      "/foo",
+				Namespace: "default",
+				Version:   1,
+			},
 		},
 		kvAtRevision: map[string][]byte{
 			kvKey(3, "default", "/foo"): []byte("v1"),
@@ -751,7 +783,9 @@ func TestWatchServer_Tracker_IncOnCreateDecOnCancel(t *testing.T) {
 		return v
 	})
 
-	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), connIDKeyForTest, "conn-A"))
+	ctx, cancel := context.WithCancel(
+		context.WithValue(context.Background(), connIDKeyForTest, "conn-A"),
+	)
 	defer cancel()
 	stream := newFakeStream(ctx)
 
@@ -820,7 +854,9 @@ func TestWatchServer_Tracker_PassesWatchDetail(t *testing.T) {
 		return v
 	})
 
-	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), connIDKeyForTest, "conn-X"))
+	ctx, cancel := context.WithCancel(
+		context.WithValue(context.Background(), connIDKeyForTest, "conn-X"),
+	)
 	defer cancel()
 	stream := newFakeStream(ctx)
 
@@ -872,7 +908,8 @@ func TestWatchServer_Tracker_NoConnID_NoTracking(t *testing.T) {
 	pub := &fakeWatchPublisher{}
 	tr := newFakeWatchTracker()
 	// extractor returns "" → no tracking
-	ws := etcdv3.NewWatchServer(repo, pub).WithTracker(tr, func(context.Context) string { return "" })
+	ws := etcdv3.NewWatchServer(repo, pub).
+		WithTracker(tr, func(context.Context) string { return "" })
 
 	ctx := t.Context()
 	stream := newFakeStream(ctx)

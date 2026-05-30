@@ -17,7 +17,11 @@ import (
 // view) and outside one (mockable in unit tests).
 type UserReader interface {
 	Get(ctx context.Context, email string) (*domain.User, error)
-	List(ctx context.Context, filter domain.UserFilter, params domain.UserListParams) ([]*domain.User, int, error)
+	List(
+		ctx context.Context,
+		filter domain.UserFilter,
+		params domain.UserListParams,
+	) ([]*domain.User, int, error)
 	Upsert(ctx context.Context, user *domain.User) error
 	Delete(ctx context.Context, email string) error
 	SetPassword(ctx context.Context, email, hash string, changeRequired bool) error
@@ -56,13 +60,23 @@ func (a BoltUserReader) Delete(ctx context.Context, email string) error {
 	return a.repo.Delete(ctx, email)
 }
 
+//
 //nolint:wrapcheck // pure pass-through adapter; usecase wraps at call site.
-func (a BoltUserReader) SetPassword(ctx context.Context, email, hash string, changeRequired bool) error {
+func (a BoltUserReader) SetPassword(
+	ctx context.Context,
+	email, hash string,
+	changeRequired bool,
+) error {
 	return a.repo.SetPassword(ctx, email, hash, changeRequired)
 }
 
+//
 //nolint:wrapcheck // pure pass-through adapter; usecase wraps at call site.
-func (a BoltUserReader) SetMembershipVersion(ctx context.Context, email string, version int64) error {
+func (a BoltUserReader) SetMembershipVersion(
+	ctx context.Context,
+	email string,
+	version int64,
+) error {
 	return a.repo.SetMembershipVersion(ctx, email, version)
 }
 

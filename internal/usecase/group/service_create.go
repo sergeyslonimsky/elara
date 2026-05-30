@@ -49,7 +49,11 @@ type CreateResult struct {
 //  3. applyInitialPermissions  — p-rules on the new subject.
 //  4. applyInitialMembers      — g-rules on the new subject.
 //  5. wireInitialManagers      — Group:Write group:<new-id> on each manager.
-func (s *Service) Create(ctx context.Context, actor domain.AuthInfo, data CreateData) (*CreateResult, error) {
+func (s *Service) Create(
+	ctx context.Context,
+	actor domain.AuthInfo,
+	data CreateData,
+) (*CreateResult, error) {
 	var result *CreateResult
 
 	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
@@ -142,13 +146,20 @@ func (s *Service) authorizeCreate(
 
 // persistEntity allocates the group's id, validates, asserts name uniqueness,
 // and writes it to bbolt. MetadataVersion=1 reflects the create event.
-func (s *Service) persistEntity(ctx context.Context, tx storage.Tx, data CreateData) (*domain.Group, error) {
+func (s *Service) persistEntity(
+	ctx context.Context,
+	tx storage.Tx,
+	data CreateData,
+) (*domain.Group, error) {
 	// Group names must be unique — every Casbin subject and every
 	// FindByName-based lookup keys off them. bbolt is keyed by ID, so the
 	// repo's own collision check doesn't catch duplicate names.
 	switch existing, err := s.store.WithTx(tx).FindByName(ctx, data.Name); {
 	case err == nil && existing != nil:
-		return nil, fmt.Errorf("check name uniqueness: %w", domain.NewAlreadyExistsError("group", data.Name))
+		return nil, fmt.Errorf(
+			"check name uniqueness: %w",
+			domain.NewAlreadyExistsError("group", data.Name),
+		)
 	case err != nil && !errors.Is(err, domain.ErrNotFound):
 		return nil, fmt.Errorf("check name uniqueness: %w", err)
 	}
@@ -173,7 +184,11 @@ func (s *Service) persistEntity(ctx context.Context, tx storage.Tx, data CreateD
 	return group, nil
 }
 
-func (s *Service) applyInitialPermissions(w *authz.PAPTx, group *domain.Group, perms []domain.Permission) error {
+func (s *Service) applyInitialPermissions(
+	w *authz.PAPTx,
+	group *domain.Group,
+	perms []domain.Permission,
+) error {
 	if len(perms) == 0 {
 		return nil
 	}
@@ -199,7 +214,11 @@ func (s *Service) applyInitialMembers(w *authz.PAPTx, group *domain.Group, membe
 
 // wireInitialManagers grants `Group:Write group:<new-id>` to each manager
 // group, so its members can manage the new group post-creation.
-func (s *Service) wireInitialManagers(w *authz.PAPTx, group *domain.Group, managers []*domain.Group) error {
+func (s *Service) wireInitialManagers(
+	w *authz.PAPTx,
+	group *domain.Group,
+	managers []*domain.Group,
+) error {
 	if len(managers) == 0 {
 		return nil
 	}

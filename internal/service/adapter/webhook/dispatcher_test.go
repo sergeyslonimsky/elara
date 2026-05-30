@@ -189,7 +189,12 @@ func TestDispatcher_NonMatchingNamespaceSkipped(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	assert.Never(t, func() bool { return received.Load() > 0 }, 200*time.Millisecond, 10*time.Millisecond)
+	assert.Never(
+		t,
+		func() bool { return received.Load() > 0 },
+		200*time.Millisecond,
+		10*time.Millisecond,
+	)
 }
 
 func TestDispatcher_EventNotDelivered(t *testing.T) {
@@ -237,10 +242,12 @@ func TestDispatcher_EventNotDelivered(t *testing.T) {
 			t.Parallel()
 
 			var received atomic.Int32
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				received.Add(1)
-				w.WriteHeader(http.StatusOK)
-			}))
+			srv := httptest.NewServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					received.Add(1)
+					w.WriteHeader(http.StatusOK)
+				}),
+			)
 			defer srv.Close()
 
 			ctrl := gomock.NewController(t)
@@ -266,7 +273,12 @@ func TestDispatcher_EventNotDelivered(t *testing.T) {
 
 			ch <- tt.event
 
-			assert.Never(t, func() bool { return received.Load() > 0 }, 200*time.Millisecond, 10*time.Millisecond)
+			assert.Never(
+				t,
+				func() bool { return received.Load() > 0 },
+				200*time.Millisecond,
+				10*time.Millisecond,
+			)
 		})
 	}
 }
@@ -616,14 +628,16 @@ func TestDispatcher_RetryOnFailure_EventuallySucceeds(t *testing.T) {
 			t.Parallel()
 
 			var callCount atomic.Int32
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				n := int(callCount.Add(1))
-				if n <= tt.failFirst {
-					w.WriteHeader(http.StatusInternalServerError)
-				} else {
-					w.WriteHeader(http.StatusOK)
-				}
-			}))
+			srv := httptest.NewServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					n := int(callCount.Add(1))
+					if n <= tt.failFirst {
+						w.WriteHeader(http.StatusInternalServerError)
+					} else {
+						w.WriteHeader(http.StatusOK)
+					}
+				}),
+			)
 			defer srv.Close()
 
 			ctrl := gomock.NewController(t)

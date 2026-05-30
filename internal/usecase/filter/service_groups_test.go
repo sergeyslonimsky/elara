@@ -41,8 +41,16 @@ func TestService_Groups(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectGroup, Action: domain.ActionRead, Domain: domain.GroupResource("id-a")},
-					{Object: domain.ObjectGroup, Action: domain.ActionWrite, Domain: domain.GroupResource("id-b")},
+					{
+						Object: domain.ObjectGroup,
+						Action: domain.ActionRead,
+						Domain: domain.GroupResource("id-a"),
+					},
+					{
+						Object: domain.ObjectGroup,
+						Action: domain.ActionWrite,
+						Domain: domain.GroupResource("id-b"),
+					},
 				}, nil)
 
 				groups := filtermock.NewMockgroupLister(ctrl)
@@ -67,7 +75,11 @@ func TestService_Groups(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectGroup, Action: domain.ActionRead, Domain: domain.DomainAll},
+					{
+						Object: domain.ObjectGroup,
+						Action: domain.ActionRead,
+						Domain: domain.DomainAll,
+					},
 				}, nil)
 
 				groups := filtermock.NewMockgroupLister(ctrl)
@@ -87,7 +99,11 @@ func TestService_Groups(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectGroup, Action: domain.ActionRead, Domain: domain.GroupResource("id-a")},
+					{
+						Object: domain.ObjectGroup,
+						Action: domain.ActionRead,
+						Domain: domain.GroupResource("id-a"),
+					},
 				}, nil)
 
 				groups := filtermock.NewMockgroupLister(ctrl)

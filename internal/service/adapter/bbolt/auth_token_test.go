@@ -154,9 +154,21 @@ func TestTokenRepo_List(t *testing.T) {
 		{
 			name: "AnyNamespace returns all sorted by created desc",
 			seeds: []seedToken{
-				{id: "a", issuedBy: "u@x", name: "a", namespaces: []string{"ns1"}, createdAt: earliest},
+				{
+					id:         "a",
+					issuedBy:   "u@x",
+					name:       "a",
+					namespaces: []string{"ns1"},
+					createdAt:  earliest,
+				},
 				{id: "b", issuedBy: "u@x", name: "b", namespaces: []string{"ns1"}, createdAt: now},
-				{id: "c", issuedBy: "u@x", name: "c", namespaces: []string{"ns1"}, createdAt: earlier},
+				{
+					id:         "c",
+					issuedBy:   "u@x",
+					name:       "c",
+					namespaces: []string{"ns1"},
+					createdAt:  earlier,
+				},
 			},
 			filter:    domain.TokenFilter{AnyNamespace: true},
 			params:    domain.TokenListParams{},
@@ -168,7 +180,13 @@ func TestTokenRepo_List(t *testing.T) {
 			seeds: []seedToken{
 				{id: "a", issuedBy: "u@x", name: "a", namespaces: []string{"ns1"}, createdAt: now},
 				{id: "b", issuedBy: "u@x", name: "b", namespaces: []string{"ns2"}, createdAt: now},
-				{id: "c", issuedBy: "u@x", name: "c", namespaces: []string{"ns1"}, createdAt: earlier},
+				{
+					id:         "c",
+					issuedBy:   "u@x",
+					name:       "c",
+					namespaces: []string{"ns1"},
+					createdAt:  earlier,
+				},
 				{id: "d", issuedBy: "u@x", name: "d", namespaces: []string{"ns3"}, createdAt: now},
 			},
 			filter: domain.TokenFilter{
@@ -181,7 +199,13 @@ func TestTokenRepo_List(t *testing.T) {
 		{
 			name: "token with multiple namespaces matches if any overlaps with scope",
 			seeds: []seedToken{
-				{id: "a", issuedBy: "u@x", name: "a", namespaces: []string{"ns1", "ns2"}, createdAt: now},
+				{
+					id:         "a",
+					issuedBy:   "u@x",
+					name:       "a",
+					namespaces: []string{"ns1", "ns2"},
+					createdAt:  now,
+				},
 			},
 			filter: domain.TokenFilter{
 				NamespaceScopes: map[string]struct{}{"ns2": {}},
@@ -203,8 +227,20 @@ func TestTokenRepo_List(t *testing.T) {
 		{
 			name: "IssuedBy filter narrows additionally",
 			seeds: []seedToken{
-				{id: "a", issuedBy: "alice@x", name: "a", namespaces: []string{"ns1"}, createdAt: now},
-				{id: "b", issuedBy: "bob@x", name: "b", namespaces: []string{"ns1"}, createdAt: now},
+				{
+					id:         "a",
+					issuedBy:   "alice@x",
+					name:       "a",
+					namespaces: []string{"ns1"},
+					createdAt:  now,
+				},
+				{
+					id:         "b",
+					issuedBy:   "bob@x",
+					name:       "b",
+					namespaces: []string{"ns1"},
+					createdAt:  now,
+				},
 			},
 			filter: domain.TokenFilter{
 				AnyNamespace: true,
@@ -216,8 +252,20 @@ func TestTokenRepo_List(t *testing.T) {
 		{
 			name: "QueryParams filter case-insensitive substring on Name",
 			seeds: []seedToken{
-				{id: "a", issuedBy: "u@x", name: "prod-key", namespaces: []string{"ns1"}, createdAt: now},
-				{id: "b", issuedBy: "u@x", name: "stg-key", namespaces: []string{"ns1"}, createdAt: now},
+				{
+					id:         "a",
+					issuedBy:   "u@x",
+					name:       "prod-key",
+					namespaces: []string{"ns1"},
+					createdAt:  now,
+				},
+				{
+					id:         "b",
+					issuedBy:   "u@x",
+					name:       "stg-key",
+					namespaces: []string{"ns1"},
+					createdAt:  now,
+				},
 			},
 			filter: domain.TokenFilter{
 				AnyNamespace: true,
@@ -235,17 +283,39 @@ func TestTokenRepo_List(t *testing.T) {
 				{id: "d", issuedBy: "u@x", name: "d", namespaces: []string{"ns1"}, createdAt: now},
 				{id: "e", issuedBy: "u@x", name: "e", namespaces: []string{"ns1"}, createdAt: now},
 			},
-			filter:    domain.TokenFilter{AnyNamespace: true},
-			params:    domain.TokenListParams{Sort: domain.SortParams{Field: "name"}, Offset: 2, Limit: 2},
+			filter: domain.TokenFilter{AnyNamespace: true},
+			params: domain.TokenListParams{
+				Sort:   domain.SortParams{Field: "name"},
+				Offset: 2,
+				Limit:  2,
+			},
 			wantIDs:   []string{"c", "d"},
 			wantTotal: 5,
 		},
 		{
 			name: "sort by name asc",
 			seeds: []seedToken{
-				{id: "a", issuedBy: "u@x", name: "charlie", namespaces: []string{"ns1"}, createdAt: now},
-				{id: "b", issuedBy: "u@x", name: "alpha", namespaces: []string{"ns1"}, createdAt: now},
-				{id: "c", issuedBy: "u@x", name: "bravo", namespaces: []string{"ns1"}, createdAt: now},
+				{
+					id:         "a",
+					issuedBy:   "u@x",
+					name:       "charlie",
+					namespaces: []string{"ns1"},
+					createdAt:  now,
+				},
+				{
+					id:         "b",
+					issuedBy:   "u@x",
+					name:       "alpha",
+					namespaces: []string{"ns1"},
+					createdAt:  now,
+				},
+				{
+					id:         "c",
+					issuedBy:   "u@x",
+					name:       "bravo",
+					namespaces: []string{"ns1"},
+					createdAt:  now,
+				},
 			},
 			filter:    domain.TokenFilter{AnyNamespace: true},
 			params:    domain.TokenListParams{Sort: domain.SortParams{Field: "name"}},

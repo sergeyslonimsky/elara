@@ -20,47 +20,22 @@ linters:
   default: all
 
   disable:
+    # should be enabled
+    - varnamelen
+
     - iface
     # Covered by govet + staticcheck; revive too noisy with exported/package-comments
     - revive
     - depguard
 
     - exhaustruct
-    - forbidigo
-    - gochecknoinits
-    - gocognit       # redundant with cyclop
-    - gocyclo        # redundant with cyclop
-    - godot
-    - goheader
-    - gomodguard
-    - gosmopolitan
-    - grouper
-    - interfacebloat
-    - lll            # redundant with golines
-    - maintidx       # redundant with cyclop
-    - nestif
     - noinlineerr
-    - tparallel       # redundant with paralleltest
-    - tagalign
     - tagliatelle
-    - varnamelen
     - wsl_v5
     - godoclint
 
-    # Not relevant for this project
-    - arangolint
-    - embeddedstructfieldcheck
-    - ginkgolinter
-    - gochecksumtype
-    - goprintffuncname
-    - importas
-    - promlinter
-    - rowserrcheck
-    - spancheck
-    - sqlclosecheck
-    - testableexamples
-    - unqueryvet
-    - zerologlint
+    # deprecated
+    - gomodguard
     - wsl
 
   exclusions:
@@ -77,6 +52,8 @@ linters:
           - err113    # test fakes use errors.New("boom") idiomatically; sentinel errors add noise
           - funlen    # table-driven tests are naturally longer
           - cyclop    # table-driven tests with multiple cases are naturally more complex
+          - maintidx
+          - gocognit
           - wrapcheck
           - dogsled
           - dupl
@@ -96,6 +73,7 @@ linters:
 
     paths:
       - web/
+
   settings:
     exhaustive:
       default-signifies-exhaustive: true
@@ -123,6 +101,8 @@ linters:
         - G301
         # G118: CompileRegex is not always safe — not applicable here.
         - G118
+        # G124: Cookie Secure attribute set from config param
+        - G124
 
     funlen:
       lines: 80
@@ -141,3 +121,14 @@ linters:
 
     unparam:
       check-exported: false
+
+    varnamelen:
+      ignore-names:
+        - ui
+        - id
+        - in
+        - tx
+        - ok
+        - ns
+        - tt
+        - fx

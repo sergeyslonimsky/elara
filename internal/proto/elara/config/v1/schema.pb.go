@@ -7,13 +7,12 @@
 package configv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -25,11 +24,11 @@ const (
 
 type SchemaAttachment struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `                   protobuf:"bytes,1,opt,name=id,proto3"                            json:"id,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3"                     json:"namespace,omitempty"`
-	PathPattern   string                 `                   protobuf:"bytes,3,opt,name=path_pattern,json=pathPattern,proto3" json:"path_pattern,omitempty"`
-	JsonSchema    string                 `                   protobuf:"bytes,4,opt,name=json_schema,json=jsonSchema,proto3"   json:"json_schema,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `                   protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3"     json:"created_at,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	PathPattern   string                 `protobuf:"bytes,3,opt,name=path_pattern,json=pathPattern,proto3" json:"path_pattern,omitempty"`
+	JsonSchema    string                 `protobuf:"bytes,4,opt,name=json_schema,json=jsonSchema,proto3" json:"json_schema,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -54,10 +53,8 @@ func (x *SchemaAttachment) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -70,7 +67,6 @@ func (x *SchemaAttachment) GetId() string {
 	if x != nil {
 		return x.Id
 	}
-
 	return ""
 }
 
@@ -78,7 +74,6 @@ func (x *SchemaAttachment) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -86,7 +81,6 @@ func (x *SchemaAttachment) GetPathPattern() string {
 	if x != nil {
 		return x.PathPattern
 	}
-
 	return ""
 }
 
@@ -94,7 +88,6 @@ func (x *SchemaAttachment) GetJsonSchema() string {
 	if x != nil {
 		return x.JsonSchema
 	}
-
 	return ""
 }
 
@@ -102,15 +95,14 @@ func (x *SchemaAttachment) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
-
 	return nil
 }
 
 type SchemaViolation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"    json:"path,omitempty"`
-	Message       string                 `                   protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Keyword       string                 `                   protobuf:"bytes,3,opt,name=keyword,proto3" json:"keyword,omitempty"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Keyword       string                 `protobuf:"bytes,3,opt,name=keyword,proto3" json:"keyword,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -135,10 +127,8 @@ func (x *SchemaViolation) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -151,7 +141,6 @@ func (x *SchemaViolation) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -159,7 +148,6 @@ func (x *SchemaViolation) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
-
 	return ""
 }
 
@@ -167,13 +155,12 @@ func (x *SchemaViolation) GetKeyword() string {
 	if x != nil {
 		return x.Keyword
 	}
-
 	return ""
 }
 
 type SchemaValidationFailure struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Violations    []*SchemaViolation     `                   protobuf:"bytes,1,rep,name=violations,proto3" json:"violations,omitempty"`
+	Violations    []*SchemaViolation     `protobuf:"bytes,1,rep,name=violations,proto3" json:"violations,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -198,10 +185,8 @@ func (x *SchemaValidationFailure) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -214,7 +199,6 @@ func (x *SchemaValidationFailure) GetViolations() []*SchemaViolation {
 	if x != nil {
 		return x.Violations
 	}
-
 	return nil
 }
 
@@ -248,26 +232,18 @@ var (
 
 func file_elara_config_v1_schema_proto_rawDescGZIP() []byte {
 	file_elara_config_v1_schema_proto_rawDescOnce.Do(func() {
-		file_elara_config_v1_schema_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_config_v1_schema_proto_rawDesc),
-				len(file_elara_config_v1_schema_proto_rawDesc),
-			),
-		)
+		file_elara_config_v1_schema_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_config_v1_schema_proto_rawDesc), len(file_elara_config_v1_schema_proto_rawDesc)))
 	})
-
 	return file_elara_config_v1_schema_proto_rawDescData
 }
 
-var (
-	file_elara_config_v1_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-	file_elara_config_v1_schema_proto_goTypes  = []any{
-		(*SchemaAttachment)(nil),        // 0: elara.config.v1.SchemaAttachment
-		(*SchemaViolation)(nil),         // 1: elara.config.v1.SchemaViolation
-		(*SchemaValidationFailure)(nil), // 2: elara.config.v1.SchemaValidationFailure
-		(*timestamppb.Timestamp)(nil),   // 3: google.protobuf.Timestamp
-	}
-)
+var file_elara_config_v1_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_elara_config_v1_schema_proto_goTypes = []any{
+	(*SchemaAttachment)(nil),        // 0: elara.config.v1.SchemaAttachment
+	(*SchemaViolation)(nil),         // 1: elara.config.v1.SchemaViolation
+	(*SchemaValidationFailure)(nil), // 2: elara.config.v1.SchemaValidationFailure
+	(*timestamppb.Timestamp)(nil),   // 3: google.protobuf.Timestamp
+}
 var file_elara_config_v1_schema_proto_depIdxs = []int32{
 	3, // 0: elara.config.v1.SchemaAttachment.created_at:type_name -> google.protobuf.Timestamp
 	1, // 1: elara.config.v1.SchemaValidationFailure.violations:type_name -> elara.config.v1.SchemaViolation
@@ -286,11 +262,8 @@ func file_elara_config_v1_schema_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_config_v1_schema_proto_rawDesc),
-				len(file_elara_config_v1_schema_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_config_v1_schema_proto_rawDesc), len(file_elara_config_v1_schema_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   3,
 			NumExtensions: 0,

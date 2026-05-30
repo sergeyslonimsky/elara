@@ -131,7 +131,10 @@ func TestRegistry_RegisterPopulatesIdentityImmediately(t *testing.T) {
 func TestRegistry_RecordRequest_IncCountersAndEvents(t *testing.T) {
 	t.Parallel()
 
-	r := NewRegistry(Config{DisableActivityEvents: true}, nil) // disable activity throttle to silence pubs
+	r := NewRegistry(
+		Config{DisableActivityEvents: true},
+		nil,
+	) // disable activity throttle to silence pubs
 	id := r.RegisterConnection(domain.ConnectionInfo{PeerAddress: "p"})
 
 	r.RecordRequest(id, "Put", "/ns/a", 1, 5*time.Millisecond, nil)
@@ -407,7 +410,12 @@ func TestRegistry_PubSub_ActivityDisabledWhenFlagSet(t *testing.T) {
 	for {
 		select {
 		case ev := <-ch:
-			assert.NotEqual(t, domain.ClientActivity, ev.Kind, "Activity events disabled but received one")
+			assert.NotEqual(
+				t,
+				domain.ClientActivity,
+				ev.Kind,
+				"Activity events disabled but received one",
+			)
 		case <-deadline:
 			return
 		}

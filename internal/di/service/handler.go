@@ -103,7 +103,12 @@ type server interface {
 	Mount(pattern string, handler http.Handler)
 }
 
-func V2Routes(server server, handlers *V2Handlers, sessionManager *auth.SessionManager, cfg config.Config) {
+func V2Routes(
+	server server,
+	handlers *V2Handlers,
+	sessionManager *auth.SessionManager,
+	cfg config.Config,
+) {
 	sharedInterceptors := []connect.Interceptor{
 		interceptor.NewRecoveryInterceptor(),
 		interceptor.NewLoggingInterceptor(),
@@ -114,7 +119,10 @@ func V2Routes(server server, handlers *V2Handlers, sessionManager *auth.SessionM
 	privateInterceptors := slices.Clone(sharedInterceptors)
 
 	if cfg.UI.Auth.Enabled && sessionManager != nil {
-		privateInterceptors = append(privateInterceptors, interceptor.NewAuthInterceptor(sessionManager))
+		privateInterceptors = append(
+			privateInterceptors,
+			interceptor.NewAuthInterceptor(sessionManager),
+		)
 	}
 
 	publicOpts := connect.WithInterceptors(publicInterceptors...)

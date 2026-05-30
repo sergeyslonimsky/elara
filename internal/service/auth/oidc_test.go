@@ -89,6 +89,7 @@ func (s *oidcServer) token(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	idTokenClaims := struct {
 		josejwt.Claims
+
 		Email   string   `json:"email"`
 		Name    string   `json:"name"`
 		Picture string   `json:"picture"`

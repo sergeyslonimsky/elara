@@ -17,8 +17,16 @@ import (
 //go:generate mockgen -destination=mocks/handler_mock.go -package=filter_mock -source=handler.go
 
 type filterUsecase interface {
-	Namespaces(ctx context.Context, actor domain.AuthInfo, query filteruc.Query) ([]filteruc.Item, error)
-	Groups(ctx context.Context, actor domain.AuthInfo, query filteruc.Query) ([]filteruc.Item, error)
+	Namespaces(
+		ctx context.Context,
+		actor domain.AuthInfo,
+		query filteruc.Query,
+	) ([]filteruc.Item, error)
+	Groups(
+		ctx context.Context,
+		actor domain.AuthInfo,
+		query filteruc.Query,
+	) ([]filteruc.Item, error)
 	Users(ctx context.Context, actor domain.AuthInfo, query filteruc.Query) ([]filteruc.Item, error)
 }
 

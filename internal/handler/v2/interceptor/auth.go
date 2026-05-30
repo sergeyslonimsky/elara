@@ -46,11 +46,15 @@ func (i *AuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	}
 }
 
-func (i *AuthInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+func (i *AuthInterceptor) WrapStreamingClient(
+	next connect.StreamingClientFunc,
+) connect.StreamingClientFunc {
 	return next
 }
 
-func (i *AuthInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+func (i *AuthInterceptor) WrapStreamingHandler(
+	next connect.StreamingHandlerFunc,
+) connect.StreamingHandlerFunc {
 	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
 		ctx, err := i.authenticate(ctx, conn.RequestHeader())
 		if err != nil {
@@ -65,7 +69,10 @@ func (i *AuthInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc
 	}
 }
 
-func (i *AuthInterceptor) authenticate(ctx context.Context, header http.Header) (context.Context, error) {
+func (i *AuthInterceptor) authenticate(
+	ctx context.Context,
+	header http.Header,
+) (context.Context, error) {
 	cookieValue, err := extractCookie(header, sessionCookieName)
 	if err != nil {
 		return ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)

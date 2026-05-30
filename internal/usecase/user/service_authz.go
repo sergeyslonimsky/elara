@@ -15,7 +15,11 @@ import (
 //  2. Anti-escalation: actor must hold every permission target effectively
 //     has — otherwise a password reset would enable impersonation that
 //     elevates the actor beyond their own boundary.
-func (s *Service) authorizeUserWrite(ctx context.Context, actor domain.AuthInfo, targetEmail string) error {
+func (s *Service) authorizeUserWrite(
+	ctx context.Context,
+	actor domain.AuthInfo,
+	targetEmail string,
+) error {
 	if err := s.scope.RequireWriteUser(ctx, actor.Email, targetEmail); err != nil {
 		return fmt.Errorf("require write user: %w", err)
 	}

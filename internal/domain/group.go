@@ -65,7 +65,10 @@ func (g *Group) Validate() error {
 	}
 
 	if len(g.Name) > maxGroupNameLen {
-		return NewValidationError("name", fmt.Sprintf("group name must be at most %d characters", maxGroupNameLen))
+		return NewValidationError(
+			"name",
+			fmt.Sprintf("group name must be at most %d characters", maxGroupNameLen),
+		)
 	}
 
 	if len(g.Description) > maxDescriptionLen {

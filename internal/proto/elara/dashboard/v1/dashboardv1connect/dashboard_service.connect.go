@@ -5,14 +5,12 @@
 package dashboardv1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/dashboard/v1"
 	http "net/http"
 	strings "strings"
-
-	connect "connectrpc.com/connect"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/dashboard/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -46,10 +44,7 @@ const (
 // DashboardServiceClient is a client for the elara.dashboard.v1.DashboardService service.
 type DashboardServiceClient interface {
 	GetStats(context.Context, *connect.Request[v1.GetStatsRequest]) (*connect.Response[v1.GetStatsResponse], error)
-	ListActivity(
-		context.Context,
-		*connect.Request[v1.ListActivityRequest],
-	) (*connect.Response[v1.ListActivityResponse], error)
+	ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error)
 }
 
 // NewDashboardServiceClient constructs a client for the elara.dashboard.v1.DashboardService
@@ -59,16 +54,9 @@ type DashboardServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewDashboardServiceClient(
-	httpClient connect.HTTPClient,
-	baseURL string,
-	opts ...connect.ClientOption,
-) DashboardServiceClient {
+func NewDashboardServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) DashboardServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	dashboardServiceMethods := v1.File_elara_dashboard_v1_dashboard_service_proto.Services().
-		ByName("DashboardService").
-		Methods()
-
+	dashboardServiceMethods := v1.File_elara_dashboard_v1_dashboard_service_proto.Services().ByName("DashboardService").Methods()
 	return &dashboardServiceClient{
 		getStats: connect.NewClient[v1.GetStatsRequest, v1.GetStatsResponse](
 			httpClient,
@@ -92,28 +80,19 @@ type dashboardServiceClient struct {
 }
 
 // GetStats calls elara.dashboard.v1.DashboardService.GetStats.
-func (c *dashboardServiceClient) GetStats(
-	ctx context.Context,
-	req *connect.Request[v1.GetStatsRequest],
-) (*connect.Response[v1.GetStatsResponse], error) {
+func (c *dashboardServiceClient) GetStats(ctx context.Context, req *connect.Request[v1.GetStatsRequest]) (*connect.Response[v1.GetStatsResponse], error) {
 	return c.getStats.CallUnary(ctx, req)
 }
 
 // ListActivity calls elara.dashboard.v1.DashboardService.ListActivity.
-func (c *dashboardServiceClient) ListActivity(
-	ctx context.Context,
-	req *connect.Request[v1.ListActivityRequest],
-) (*connect.Response[v1.ListActivityResponse], error) {
+func (c *dashboardServiceClient) ListActivity(ctx context.Context, req *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error) {
 	return c.listActivity.CallUnary(ctx, req)
 }
 
 // DashboardServiceHandler is an implementation of the elara.dashboard.v1.DashboardService service.
 type DashboardServiceHandler interface {
 	GetStats(context.Context, *connect.Request[v1.GetStatsRequest]) (*connect.Response[v1.GetStatsResponse], error)
-	ListActivity(
-		context.Context,
-		*connect.Request[v1.ListActivityRequest],
-	) (*connect.Response[v1.ListActivityResponse], error)
+	ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error)
 }
 
 // NewDashboardServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -122,9 +101,7 @@ type DashboardServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewDashboardServiceHandler(svc DashboardServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	dashboardServiceMethods := v1.File_elara_dashboard_v1_dashboard_service_proto.Services().
-		ByName("DashboardService").
-		Methods()
+	dashboardServiceMethods := v1.File_elara_dashboard_v1_dashboard_service_proto.Services().ByName("DashboardService").Methods()
 	dashboardServiceGetStatsHandler := connect.NewUnaryHandler(
 		DashboardServiceGetStatsProcedure,
 		svc.GetStats,
@@ -137,7 +114,6 @@ func NewDashboardServiceHandler(svc DashboardServiceHandler, opts ...connect.Han
 		connect.WithSchema(dashboardServiceMethods.ByName("ListActivity")),
 		connect.WithHandlerOptions(opts...),
 	)
-
 	return "/elara.dashboard.v1.DashboardService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case DashboardServiceGetStatsProcedure:
@@ -153,22 +129,10 @@ func NewDashboardServiceHandler(svc DashboardServiceHandler, opts ...connect.Han
 // UnimplementedDashboardServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedDashboardServiceHandler struct{}
 
-func (UnimplementedDashboardServiceHandler) GetStats(
-	context.Context,
-	*connect.Request[v1.GetStatsRequest],
-) (*connect.Response[v1.GetStatsResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.dashboard.v1.DashboardService.GetStats is not implemented"),
-	)
+func (UnimplementedDashboardServiceHandler) GetStats(context.Context, *connect.Request[v1.GetStatsRequest]) (*connect.Response[v1.GetStatsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.dashboard.v1.DashboardService.GetStats is not implemented"))
 }
 
-func (UnimplementedDashboardServiceHandler) ListActivity(
-	context.Context,
-	*connect.Request[v1.ListActivityRequest],
-) (*connect.Response[v1.ListActivityResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.dashboard.v1.DashboardService.ListActivity is not implemented"),
-	)
+func (UnimplementedDashboardServiceHandler) ListActivity(context.Context, *connect.Request[v1.ListActivityRequest]) (*connect.Response[v1.ListActivityResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.dashboard.v1.DashboardService.ListActivity is not implemented"))
 }

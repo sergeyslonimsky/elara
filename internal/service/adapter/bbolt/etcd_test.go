@@ -102,7 +102,16 @@ func TestConfigRepo_RangeQuery_SingleKey_Missing(t *testing.T) {
 	store := newTestStore(t)
 	repo := bboltadapter.NewConfigRepo(store)
 
-	kvs, more, err := repo.RangeQuery(context.Background(), "default", "/missing", "", "", 0, 0, false)
+	kvs, more, err := repo.RangeQuery(
+		context.Background(),
+		"default",
+		"/missing",
+		"",
+		"",
+		0,
+		0,
+		false,
+	)
 	require.NoError(t, err)
 	assert.Empty(t, kvs)
 	assert.False(t, more)
@@ -263,7 +272,12 @@ func TestConfigRepo_RangeQuery_ValueIsCopy(t *testing.T) {
 	kvs2, _, err := repo.RangeQuery(ctx, "default", "/foo", "", "", 0, 0, false)
 	require.NoError(t, err)
 	require.Len(t, kvs2, 1)
-	assert.Equal(t, []byte("original"), kvs2[0].Value, "storage must be unaffected by caller mutation")
+	assert.Equal(
+		t,
+		[]byte("original"),
+		kvs2[0].Value,
+		"storage must be unaffected by caller mutation",
+	)
 }
 
 // -----------------------------------------------------------------------------
@@ -312,7 +326,14 @@ func TestConfigRepo_DeleteRangeKeys_NothingMatches(t *testing.T) {
 	store := newTestStore(t)
 	repo := bboltadapter.NewConfigRepo(store)
 
-	deleted, newRev, err := repo.DeleteRangeKeys(context.Background(), "default", "/missing", "", "", false)
+	deleted, newRev, err := repo.DeleteRangeKeys(
+		context.Background(),
+		"default",
+		"/missing",
+		"",
+		"",
+		false,
+	)
 	require.NoError(t, err)
 	assert.Empty(t, deleted)
 	assert.Equal(t, int64(0), newRev, "nothing deleted → revision unchanged (0)")

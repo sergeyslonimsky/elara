@@ -5,14 +5,12 @@
 package configv1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
 	http "net/http"
 	strings "strings"
-
-	connect "connectrpc.com/connect"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -53,23 +51,11 @@ const (
 
 // SchemaServiceClient is a client for the elara.config.v1.SchemaService service.
 type SchemaServiceClient interface {
-	AttachSchema(
-		context.Context,
-		*connect.Request[v1.AttachSchemaRequest],
-	) (*connect.Response[v1.AttachSchemaResponse], error)
-	DetachSchema(
-		context.Context,
-		*connect.Request[v1.DetachSchemaRequest],
-	) (*connect.Response[v1.DetachSchemaResponse], error)
+	AttachSchema(context.Context, *connect.Request[v1.AttachSchemaRequest]) (*connect.Response[v1.AttachSchemaResponse], error)
+	DetachSchema(context.Context, *connect.Request[v1.DetachSchemaRequest]) (*connect.Response[v1.DetachSchemaResponse], error)
 	GetSchema(context.Context, *connect.Request[v1.GetSchemaRequest]) (*connect.Response[v1.GetSchemaResponse], error)
-	GetEffectiveSchema(
-		context.Context,
-		*connect.Request[v1.GetEffectiveSchemaRequest],
-	) (*connect.Response[v1.GetEffectiveSchemaResponse], error)
-	ListSchemas(
-		context.Context,
-		*connect.Request[v1.ListSchemasRequest],
-	) (*connect.Response[v1.ListSchemasResponse], error)
+	GetEffectiveSchema(context.Context, *connect.Request[v1.GetEffectiveSchemaRequest]) (*connect.Response[v1.GetEffectiveSchemaResponse], error)
+	ListSchemas(context.Context, *connect.Request[v1.ListSchemasRequest]) (*connect.Response[v1.ListSchemasResponse], error)
 }
 
 // NewSchemaServiceClient constructs a client for the elara.config.v1.SchemaService service. By
@@ -79,14 +65,9 @@ type SchemaServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewSchemaServiceClient(
-	httpClient connect.HTTPClient,
-	baseURL string,
-	opts ...connect.ClientOption,
-) SchemaServiceClient {
+func NewSchemaServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) SchemaServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	schemaServiceMethods := v1.File_elara_config_v1_schema_service_proto.Services().ByName("SchemaService").Methods()
-
 	return &schemaServiceClient{
 		attachSchema: connect.NewClient[v1.AttachSchemaRequest, v1.AttachSchemaResponse](
 			httpClient,
@@ -131,64 +112,37 @@ type schemaServiceClient struct {
 }
 
 // AttachSchema calls elara.config.v1.SchemaService.AttachSchema.
-func (c *schemaServiceClient) AttachSchema(
-	ctx context.Context,
-	req *connect.Request[v1.AttachSchemaRequest],
-) (*connect.Response[v1.AttachSchemaResponse], error) {
+func (c *schemaServiceClient) AttachSchema(ctx context.Context, req *connect.Request[v1.AttachSchemaRequest]) (*connect.Response[v1.AttachSchemaResponse], error) {
 	return c.attachSchema.CallUnary(ctx, req)
 }
 
 // DetachSchema calls elara.config.v1.SchemaService.DetachSchema.
-func (c *schemaServiceClient) DetachSchema(
-	ctx context.Context,
-	req *connect.Request[v1.DetachSchemaRequest],
-) (*connect.Response[v1.DetachSchemaResponse], error) {
+func (c *schemaServiceClient) DetachSchema(ctx context.Context, req *connect.Request[v1.DetachSchemaRequest]) (*connect.Response[v1.DetachSchemaResponse], error) {
 	return c.detachSchema.CallUnary(ctx, req)
 }
 
 // GetSchema calls elara.config.v1.SchemaService.GetSchema.
-func (c *schemaServiceClient) GetSchema(
-	ctx context.Context,
-	req *connect.Request[v1.GetSchemaRequest],
-) (*connect.Response[v1.GetSchemaResponse], error) {
+func (c *schemaServiceClient) GetSchema(ctx context.Context, req *connect.Request[v1.GetSchemaRequest]) (*connect.Response[v1.GetSchemaResponse], error) {
 	return c.getSchema.CallUnary(ctx, req)
 }
 
 // GetEffectiveSchema calls elara.config.v1.SchemaService.GetEffectiveSchema.
-func (c *schemaServiceClient) GetEffectiveSchema(
-	ctx context.Context,
-	req *connect.Request[v1.GetEffectiveSchemaRequest],
-) (*connect.Response[v1.GetEffectiveSchemaResponse], error) {
+func (c *schemaServiceClient) GetEffectiveSchema(ctx context.Context, req *connect.Request[v1.GetEffectiveSchemaRequest]) (*connect.Response[v1.GetEffectiveSchemaResponse], error) {
 	return c.getEffectiveSchema.CallUnary(ctx, req)
 }
 
 // ListSchemas calls elara.config.v1.SchemaService.ListSchemas.
-func (c *schemaServiceClient) ListSchemas(
-	ctx context.Context,
-	req *connect.Request[v1.ListSchemasRequest],
-) (*connect.Response[v1.ListSchemasResponse], error) {
+func (c *schemaServiceClient) ListSchemas(ctx context.Context, req *connect.Request[v1.ListSchemasRequest]) (*connect.Response[v1.ListSchemasResponse], error) {
 	return c.listSchemas.CallUnary(ctx, req)
 }
 
 // SchemaServiceHandler is an implementation of the elara.config.v1.SchemaService service.
 type SchemaServiceHandler interface {
-	AttachSchema(
-		context.Context,
-		*connect.Request[v1.AttachSchemaRequest],
-	) (*connect.Response[v1.AttachSchemaResponse], error)
-	DetachSchema(
-		context.Context,
-		*connect.Request[v1.DetachSchemaRequest],
-	) (*connect.Response[v1.DetachSchemaResponse], error)
+	AttachSchema(context.Context, *connect.Request[v1.AttachSchemaRequest]) (*connect.Response[v1.AttachSchemaResponse], error)
+	DetachSchema(context.Context, *connect.Request[v1.DetachSchemaRequest]) (*connect.Response[v1.DetachSchemaResponse], error)
 	GetSchema(context.Context, *connect.Request[v1.GetSchemaRequest]) (*connect.Response[v1.GetSchemaResponse], error)
-	GetEffectiveSchema(
-		context.Context,
-		*connect.Request[v1.GetEffectiveSchemaRequest],
-	) (*connect.Response[v1.GetEffectiveSchemaResponse], error)
-	ListSchemas(
-		context.Context,
-		*connect.Request[v1.ListSchemasRequest],
-	) (*connect.Response[v1.ListSchemasResponse], error)
+	GetEffectiveSchema(context.Context, *connect.Request[v1.GetEffectiveSchemaRequest]) (*connect.Response[v1.GetEffectiveSchemaResponse], error)
+	ListSchemas(context.Context, *connect.Request[v1.ListSchemasRequest]) (*connect.Response[v1.ListSchemasResponse], error)
 }
 
 // NewSchemaServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -228,7 +182,6 @@ func NewSchemaServiceHandler(svc SchemaServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(schemaServiceMethods.ByName("ListSchemas")),
 		connect.WithHandlerOptions(opts...),
 	)
-
 	return "/elara.config.v1.SchemaService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SchemaServiceAttachSchemaProcedure:
@@ -250,52 +203,22 @@ func NewSchemaServiceHandler(svc SchemaServiceHandler, opts ...connect.HandlerOp
 // UnimplementedSchemaServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSchemaServiceHandler struct{}
 
-func (UnimplementedSchemaServiceHandler) AttachSchema(
-	context.Context,
-	*connect.Request[v1.AttachSchemaRequest],
-) (*connect.Response[v1.AttachSchemaResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.config.v1.SchemaService.AttachSchema is not implemented"),
-	)
+func (UnimplementedSchemaServiceHandler) AttachSchema(context.Context, *connect.Request[v1.AttachSchemaRequest]) (*connect.Response[v1.AttachSchemaResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.SchemaService.AttachSchema is not implemented"))
 }
 
-func (UnimplementedSchemaServiceHandler) DetachSchema(
-	context.Context,
-	*connect.Request[v1.DetachSchemaRequest],
-) (*connect.Response[v1.DetachSchemaResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.config.v1.SchemaService.DetachSchema is not implemented"),
-	)
+func (UnimplementedSchemaServiceHandler) DetachSchema(context.Context, *connect.Request[v1.DetachSchemaRequest]) (*connect.Response[v1.DetachSchemaResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.SchemaService.DetachSchema is not implemented"))
 }
 
-func (UnimplementedSchemaServiceHandler) GetSchema(
-	context.Context,
-	*connect.Request[v1.GetSchemaRequest],
-) (*connect.Response[v1.GetSchemaResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.config.v1.SchemaService.GetSchema is not implemented"),
-	)
+func (UnimplementedSchemaServiceHandler) GetSchema(context.Context, *connect.Request[v1.GetSchemaRequest]) (*connect.Response[v1.GetSchemaResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.SchemaService.GetSchema is not implemented"))
 }
 
-func (UnimplementedSchemaServiceHandler) GetEffectiveSchema(
-	context.Context,
-	*connect.Request[v1.GetEffectiveSchemaRequest],
-) (*connect.Response[v1.GetEffectiveSchemaResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.config.v1.SchemaService.GetEffectiveSchema is not implemented"),
-	)
+func (UnimplementedSchemaServiceHandler) GetEffectiveSchema(context.Context, *connect.Request[v1.GetEffectiveSchemaRequest]) (*connect.Response[v1.GetEffectiveSchemaResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.SchemaService.GetEffectiveSchema is not implemented"))
 }
 
-func (UnimplementedSchemaServiceHandler) ListSchemas(
-	context.Context,
-	*connect.Request[v1.ListSchemasRequest],
-) (*connect.Response[v1.ListSchemasResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.config.v1.SchemaService.ListSchemas is not implemented"),
-	)
+func (UnimplementedSchemaServiceHandler) ListSchemas(context.Context, *connect.Request[v1.ListSchemasRequest]) (*connect.Response[v1.ListSchemasResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.config.v1.SchemaService.ListSchemas is not implemented"))
 }

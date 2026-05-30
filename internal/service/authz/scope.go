@@ -56,7 +56,11 @@ func (s *Scope) CanReadUser(ctx context.Context, actor, target string) bool {
 // per CanReadUser, preserving order. Fast path: global User:Read returns
 // the input as-is. Resolution errors per candidate are treated as "not
 // visible" (fail closed) — consistent with CanReadUser.
-func (s *Scope) FilterVisibleUsers(ctx context.Context, actor string, candidates []string) []string {
+func (s *Scope) FilterVisibleUsers(
+	ctx context.Context,
+	actor string,
+	candidates []string,
+) []string {
 	if len(candidates) == 0 {
 		return candidates
 	}

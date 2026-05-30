@@ -8,7 +8,10 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
-func (s *Service) ChangePassword(ctx context.Context, currentPassword, newPassword string) (string, error) {
+func (s *Service) ChangePassword(
+	ctx context.Context,
+	currentPassword, newPassword string,
+) (string, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
 		return "", domain.ErrUnauthorized

@@ -19,14 +19,46 @@ func TestObjectToProto(t *testing.T) {
 		in   domain.Object
 		want commonv1.PermissionObject
 	}{
-		{name: "namespace", in: domain.ObjectNamespace, want: commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE},
-		{name: "client", in: domain.ObjectClient, want: commonv1.PermissionObject_PERMISSION_OBJECT_CLIENT},
-		{name: "user", in: domain.ObjectUser, want: commonv1.PermissionObject_PERMISSION_OBJECT_USER},
-		{name: "group", in: domain.ObjectGroup, want: commonv1.PermissionObject_PERMISSION_OBJECT_GROUP},
-		{name: "token", in: domain.ObjectToken, want: commonv1.PermissionObject_PERMISSION_OBJECT_TOKEN},
-		{name: "webhook", in: domain.ObjectWebhook, want: commonv1.PermissionObject_PERMISSION_OBJECT_WEBHOOK},
-		{name: "all wildcard", in: domain.ObjectAll, want: commonv1.PermissionObject_PERMISSION_OBJECT_ALL},
-		{name: "unknown", in: "what-is-this", want: commonv1.PermissionObject_PERMISSION_OBJECT_UNSPECIFIED},
+		{
+			name: "namespace",
+			in:   domain.ObjectNamespace,
+			want: commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE,
+		},
+		{
+			name: "client",
+			in:   domain.ObjectClient,
+			want: commonv1.PermissionObject_PERMISSION_OBJECT_CLIENT,
+		},
+		{
+			name: "user",
+			in:   domain.ObjectUser,
+			want: commonv1.PermissionObject_PERMISSION_OBJECT_USER,
+		},
+		{
+			name: "group",
+			in:   domain.ObjectGroup,
+			want: commonv1.PermissionObject_PERMISSION_OBJECT_GROUP,
+		},
+		{
+			name: "token",
+			in:   domain.ObjectToken,
+			want: commonv1.PermissionObject_PERMISSION_OBJECT_TOKEN,
+		},
+		{
+			name: "webhook",
+			in:   domain.ObjectWebhook,
+			want: commonv1.PermissionObject_PERMISSION_OBJECT_WEBHOOK,
+		},
+		{
+			name: "all wildcard",
+			in:   domain.ObjectAll,
+			want: commonv1.PermissionObject_PERMISSION_OBJECT_ALL,
+		},
+		{
+			name: "unknown",
+			in:   "what-is-this",
+			want: commonv1.PermissionObject_PERMISSION_OBJECT_UNSPECIFIED,
+		},
 		{name: "empty", in: "", want: commonv1.PermissionObject_PERMISSION_OBJECT_UNSPECIFIED},
 	}
 
@@ -47,14 +79,46 @@ func TestObjectToDomain(t *testing.T) {
 		in   commonv1.PermissionObject
 		want domain.Object
 	}{
-		{name: "unspecified", in: commonv1.PermissionObject_PERMISSION_OBJECT_UNSPECIFIED, want: ""},
-		{name: "namespace", in: commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE, want: domain.ObjectNamespace},
-		{name: "client", in: commonv1.PermissionObject_PERMISSION_OBJECT_CLIENT, want: domain.ObjectClient},
-		{name: "user", in: commonv1.PermissionObject_PERMISSION_OBJECT_USER, want: domain.ObjectUser},
-		{name: "group", in: commonv1.PermissionObject_PERMISSION_OBJECT_GROUP, want: domain.ObjectGroup},
-		{name: "token", in: commonv1.PermissionObject_PERMISSION_OBJECT_TOKEN, want: domain.ObjectToken},
-		{name: "webhook", in: commonv1.PermissionObject_PERMISSION_OBJECT_WEBHOOK, want: domain.ObjectWebhook},
-		{name: "all wildcard", in: commonv1.PermissionObject_PERMISSION_OBJECT_ALL, want: domain.ObjectAll},
+		{
+			name: "unspecified",
+			in:   commonv1.PermissionObject_PERMISSION_OBJECT_UNSPECIFIED,
+			want: "",
+		},
+		{
+			name: "namespace",
+			in:   commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE,
+			want: domain.ObjectNamespace,
+		},
+		{
+			name: "client",
+			in:   commonv1.PermissionObject_PERMISSION_OBJECT_CLIENT,
+			want: domain.ObjectClient,
+		},
+		{
+			name: "user",
+			in:   commonv1.PermissionObject_PERMISSION_OBJECT_USER,
+			want: domain.ObjectUser,
+		},
+		{
+			name: "group",
+			in:   commonv1.PermissionObject_PERMISSION_OBJECT_GROUP,
+			want: domain.ObjectGroup,
+		},
+		{
+			name: "token",
+			in:   commonv1.PermissionObject_PERMISSION_OBJECT_TOKEN,
+			want: domain.ObjectToken,
+		},
+		{
+			name: "webhook",
+			in:   commonv1.PermissionObject_PERMISSION_OBJECT_WEBHOOK,
+			want: domain.ObjectWebhook,
+		},
+		{
+			name: "all wildcard",
+			in:   commonv1.PermissionObject_PERMISSION_OBJECT_ALL,
+			want: domain.ObjectAll,
+		},
 		{name: "unknown int", in: commonv1.PermissionObject(999), want: ""},
 	}
 
@@ -75,12 +139,36 @@ func TestActionToProto(t *testing.T) {
 		in   domain.Action
 		want commonv1.PermissionAction
 	}{
-		{name: "read", in: domain.ActionRead, want: commonv1.PermissionAction_PERMISSION_ACTION_READ},
-		{name: "write", in: domain.ActionWrite, want: commonv1.PermissionAction_PERMISSION_ACTION_WRITE},
-		{name: "create", in: domain.ActionCreate, want: commonv1.PermissionAction_PERMISSION_ACTION_CREATE},
-		{name: "delete", in: domain.ActionDelete, want: commonv1.PermissionAction_PERMISSION_ACTION_DELETE},
-		{name: "all wildcard", in: domain.ActionAll, want: commonv1.PermissionAction_PERMISSION_ACTION_ALL},
-		{name: "unknown", in: "bogus", want: commonv1.PermissionAction_PERMISSION_ACTION_UNSPECIFIED},
+		{
+			name: "read",
+			in:   domain.ActionRead,
+			want: commonv1.PermissionAction_PERMISSION_ACTION_READ,
+		},
+		{
+			name: "write",
+			in:   domain.ActionWrite,
+			want: commonv1.PermissionAction_PERMISSION_ACTION_WRITE,
+		},
+		{
+			name: "create",
+			in:   domain.ActionCreate,
+			want: commonv1.PermissionAction_PERMISSION_ACTION_CREATE,
+		},
+		{
+			name: "delete",
+			in:   domain.ActionDelete,
+			want: commonv1.PermissionAction_PERMISSION_ACTION_DELETE,
+		},
+		{
+			name: "all wildcard",
+			in:   domain.ActionAll,
+			want: commonv1.PermissionAction_PERMISSION_ACTION_ALL,
+		},
+		{
+			name: "unknown",
+			in:   "bogus",
+			want: commonv1.PermissionAction_PERMISSION_ACTION_UNSPECIFIED,
+		},
 		{name: "empty", in: "", want: commonv1.PermissionAction_PERMISSION_ACTION_UNSPECIFIED},
 	}
 
@@ -101,12 +189,36 @@ func TestActionToDomain(t *testing.T) {
 		in   commonv1.PermissionAction
 		want domain.Action
 	}{
-		{name: "unspecified", in: commonv1.PermissionAction_PERMISSION_ACTION_UNSPECIFIED, want: ""},
-		{name: "read", in: commonv1.PermissionAction_PERMISSION_ACTION_READ, want: domain.ActionRead},
-		{name: "write", in: commonv1.PermissionAction_PERMISSION_ACTION_WRITE, want: domain.ActionWrite},
-		{name: "create", in: commonv1.PermissionAction_PERMISSION_ACTION_CREATE, want: domain.ActionCreate},
-		{name: "delete", in: commonv1.PermissionAction_PERMISSION_ACTION_DELETE, want: domain.ActionDelete},
-		{name: "all wildcard", in: commonv1.PermissionAction_PERMISSION_ACTION_ALL, want: domain.ActionAll},
+		{
+			name: "unspecified",
+			in:   commonv1.PermissionAction_PERMISSION_ACTION_UNSPECIFIED,
+			want: "",
+		},
+		{
+			name: "read",
+			in:   commonv1.PermissionAction_PERMISSION_ACTION_READ,
+			want: domain.ActionRead,
+		},
+		{
+			name: "write",
+			in:   commonv1.PermissionAction_PERMISSION_ACTION_WRITE,
+			want: domain.ActionWrite,
+		},
+		{
+			name: "create",
+			in:   commonv1.PermissionAction_PERMISSION_ACTION_CREATE,
+			want: domain.ActionCreate,
+		},
+		{
+			name: "delete",
+			in:   commonv1.PermissionAction_PERMISSION_ACTION_DELETE,
+			want: domain.ActionDelete,
+		},
+		{
+			name: "all wildcard",
+			in:   commonv1.PermissionAction_PERMISSION_ACTION_ALL,
+			want: domain.ActionAll,
+		},
 		{name: "unknown int", in: commonv1.PermissionAction(999), want: ""},
 	}
 
@@ -206,7 +318,11 @@ func TestAssignmentToDomain(t *testing.T) {
 				Action: commonv1.PermissionAction_PERMISSION_ACTION_READ,
 				Domain: "ns1",
 			},
-			want:   domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
+			want: domain.Permission{
+				Object: domain.ObjectNamespace,
+				Action: domain.ActionRead,
+				Domain: "ns1",
+			},
 			wantOK: true,
 		},
 		{
@@ -216,7 +332,11 @@ func TestAssignmentToDomain(t *testing.T) {
 				Action: commonv1.PermissionAction_PERMISSION_ACTION_DELETE,
 				Domain: "ns1",
 			},
-			want:   domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionDelete, Domain: "ns1"},
+			want: domain.Permission{
+				Object: domain.ObjectNamespace,
+				Action: domain.ActionDelete,
+				Domain: "ns1",
+			},
 			wantOK: true,
 		},
 		{
@@ -226,7 +346,11 @@ func TestAssignmentToDomain(t *testing.T) {
 				Action: commonv1.PermissionAction_PERMISSION_ACTION_ALL,
 				Domain: domain.DomainAll,
 			},
-			want:   domain.Permission{Object: domain.ObjectAll, Action: domain.ActionAll, Domain: domain.DomainAll},
+			want: domain.Permission{
+				Object: domain.ObjectAll,
+				Action: domain.ActionAll,
+				Domain: domain.DomainAll,
+			},
 			wantOK: true,
 		},
 	}

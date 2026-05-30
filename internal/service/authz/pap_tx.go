@@ -28,7 +28,14 @@ func (t *PAPTx) GroupPermissions(name string) ([]domain.Permission, error) {
 
 	out := make([]domain.Permission, 0, len(rules))
 	for _, r := range rules {
-		out = append(out, domain.Permission{Domain: r[1], Object: domain.Object(r[2]), Action: domain.Action(r[3])})
+		out = append(
+			out,
+			domain.Permission{
+				Domain: r[1],
+				Object: domain.Object(r[2]),
+				Action: domain.Action(r[3]),
+			},
+		)
 	}
 
 	return out, nil

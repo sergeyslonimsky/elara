@@ -55,7 +55,15 @@ func adminAuth() domain.AuthInfo {
 func seedAdminWildcard(t *testing.T, st testStack) {
 	t.Helper()
 
-	require.NoError(t, st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddPolicy("admin@example.com", domain.DomainAll, string(domain.ObjectAll), string(domain.ActionAll))
-	}))
+	require.NoError(
+		t,
+		st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			return txe.AddPolicy(
+				"admin@example.com",
+				domain.DomainAll,
+				string(domain.ObjectAll),
+				string(domain.ActionAll),
+			)
+		}),
+	)
 }

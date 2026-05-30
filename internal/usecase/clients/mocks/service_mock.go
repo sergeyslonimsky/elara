@@ -13,10 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	authz "github.com/sergeyslonimsky/elara/internal/service/authz"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockpdp is a mock of pdp interface.
@@ -35,7 +34,6 @@ type MockpdpMockRecorder struct {
 func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
 	mock := &Mockpdp{ctrl: ctrl}
 	mock.recorder = &MockpdpMockRecorder{mock}
-
 	return mock
 }
 
@@ -49,22 +47,13 @@ func (m *Mockpdp) EffectiveDomains(principal string, object domain.Object, actio
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EffectiveDomains", principal, object, action)
 	ret0, _ := ret[0].(authz.DomainSet)
-
 	return ret0
 }
 
 // EffectiveDomains indicates an expected call of EffectiveDomains.
 func (mr *MockpdpMockRecorder) EffectiveDomains(principal, object, action any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"EffectiveDomains",
-		reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains),
-		principal,
-		object,
-		action,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveDomains", reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains), principal, object, action)
 }
 
 // Has mocks base method.
@@ -72,14 +61,12 @@ func (m *Mockpdp) Has(principal string, perm domain.Permission) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Has", principal, perm)
 	ret0, _ := ret[0].(bool)
-
 	return ret0
 }
 
 // Has indicates an expected call of Has.
 func (mr *MockpdpMockRecorder) Has(principal, perm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*Mockpdp)(nil).Has), principal, perm)
 }
 
@@ -99,7 +86,6 @@ type MockactiveSourceMockRecorder struct {
 func NewMockactiveSource(ctrl *gomock.Controller) *MockactiveSource {
 	mock := &MockactiveSource{ctrl: ctrl}
 	mock.recorder = &MockactiveSourceMockRecorder{mock}
-
 	return mock
 }
 
@@ -113,14 +99,12 @@ func (m *MockactiveSource) Get(connID string) *domain.Client {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", connID)
 	ret0, _ := ret[0].(*domain.Client)
-
 	return ret0
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockactiveSourceMockRecorder) Get(connID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockactiveSource)(nil).Get), connID)
 }
 
@@ -129,19 +113,13 @@ func (m *MockactiveSource) ListActive() []*domain.Client {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListActive")
 	ret0, _ := ret[0].([]*domain.Client)
-
 	return ret0
 }
 
 // ListActive indicates an expected call of ListActive.
 func (mr *MockactiveSourceMockRecorder) ListActive() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"ListActive",
-		reflect.TypeOf((*MockactiveSource)(nil).ListActive),
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListActive", reflect.TypeOf((*MockactiveSource)(nil).ListActive))
 }
 
 // RecentEvents mocks base method.
@@ -149,20 +127,13 @@ func (m *MockactiveSource) RecentEvents(connID string) []domain.ClientEvent {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RecentEvents", connID)
 	ret0, _ := ret[0].([]domain.ClientEvent)
-
 	return ret0
 }
 
 // RecentEvents indicates an expected call of RecentEvents.
 func (mr *MockactiveSourceMockRecorder) RecentEvents(connID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"RecentEvents",
-		reflect.TypeOf((*MockactiveSource)(nil).RecentEvents),
-		connID,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecentEvents", reflect.TypeOf((*MockactiveSource)(nil).RecentEvents), connID)
 }
 
 // Subscribe mocks base method.
@@ -171,19 +142,13 @@ func (m *MockactiveSource) Subscribe() (<-chan domain.ClientChange, func()) {
 	ret := m.ctrl.Call(m, "Subscribe")
 	ret0, _ := ret[0].(<-chan domain.ClientChange)
 	ret1, _ := ret[1].(func())
-
 	return ret0, ret1
 }
 
 // Subscribe indicates an expected call of Subscribe.
 func (mr *MockactiveSourceMockRecorder) Subscribe() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Subscribe",
-		reflect.TypeOf((*MockactiveSource)(nil).Subscribe),
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockactiveSource)(nil).Subscribe))
 }
 
 // SubscribeClient mocks base method.
@@ -192,20 +157,13 @@ func (m *MockactiveSource) SubscribeClient(connID string) (<-chan domain.ClientC
 	ret := m.ctrl.Call(m, "SubscribeClient", connID)
 	ret0, _ := ret[0].(<-chan domain.ClientChange)
 	ret1, _ := ret[1].(func())
-
 	return ret0, ret1
 }
 
 // SubscribeClient indicates an expected call of SubscribeClient.
 func (mr *MockactiveSourceMockRecorder) SubscribeClient(connID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"SubscribeClient",
-		reflect.TypeOf((*MockactiveSource)(nil).SubscribeClient),
-		connID,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SubscribeClient", reflect.TypeOf((*MockactiveSource)(nil).SubscribeClient), connID)
 }
 
 // MockhistorySource is a mock of historySource interface.
@@ -224,7 +182,6 @@ type MockhistorySourceMockRecorder struct {
 func NewMockhistorySource(ctrl *gomock.Controller) *MockhistorySource {
 	mock := &MockhistorySource{ctrl: ctrl}
 	mock.recorder = &MockhistorySourceMockRecorder{mock}
-
 	return mock
 }
 
@@ -239,48 +196,26 @@ func (m *MockhistorySource) List(ctx context.Context, limit int) ([]*domain.Clie
 	ret := m.ctrl.Call(m, "List", ctx, limit)
 	ret0, _ := ret[0].([]*domain.Client)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockhistorySourceMockRecorder) List(ctx, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"List",
-		reflect.TypeOf((*MockhistorySource)(nil).List),
-		ctx,
-		limit,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockhistorySource)(nil).List), ctx, limit)
 }
 
 // ListByClient mocks base method.
-func (m *MockhistorySource) ListByClient(
-	ctx context.Context,
-	clientName, k8sNamespace string,
-	limit int,
-) ([]*domain.Client, error) {
+func (m *MockhistorySource) ListByClient(ctx context.Context, clientName, k8sNamespace string, limit int) ([]*domain.Client, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListByClient", ctx, clientName, k8sNamespace, limit)
 	ret0, _ := ret[0].([]*domain.Client)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // ListByClient indicates an expected call of ListByClient.
 func (mr *MockhistorySourceMockRecorder) ListByClient(ctx, clientName, k8sNamespace, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"ListByClient",
-		reflect.TypeOf((*MockhistorySource)(nil).ListByClient),
-		ctx,
-		clientName,
-		k8sNamespace,
-		limit,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByClient", reflect.TypeOf((*MockhistorySource)(nil).ListByClient), ctx, clientName, k8sNamespace, limit)
 }

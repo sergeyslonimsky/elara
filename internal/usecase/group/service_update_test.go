@@ -39,7 +39,11 @@ func TestService_Update(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "old-name"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "old-name"},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateData{
@@ -64,7 +68,11 @@ func TestService_Update(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "old-name"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "old-name"},
+				)
 				require.NoError(t, err)
 
 				_, err = st.svc.UpdateMembers(t.Context(), adminAuth(), group.UpdateMembersData{
@@ -102,7 +110,11 @@ func TestService_Update(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "old-name"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "old-name"},
+				)
 				require.NoError(t, err)
 
 				perm := domain.Permission{
@@ -110,10 +122,14 @@ func TestService_Update(t *testing.T) {
 					Action: domain.ActionWrite,
 					Domain: "dev",
 				}
-				_, err = st.svc.UpdatePermissions(t.Context(), adminAuth(), group.UpdatePermissionsData{
-					GroupID: created.Group.ID,
-					Add:     []domain.Permission{perm},
-				})
+				_, err = st.svc.UpdatePermissions(
+					t.Context(),
+					adminAuth(),
+					group.UpdatePermissionsData{
+						GroupID: created.Group.ID,
+						Add:     []domain.Permission{perm},
+					},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateData{
@@ -418,22 +434,25 @@ func TestService_Update_Boundary(t *testing.T) {
 			st := newTestStack(t)
 			ctx := t.Context()
 
-			require.NoError(t, st.enforcer.WriteTx(ctx, st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-				_ = txe.AddPolicy(
-					"admin@example.com",
-					domain.DomainAll,
-					string(domain.ObjectAll),
-					string(domain.ActionAll),
-				)
-				_ = txe.AddPolicy(
-					"devops@example.com",
-					"dev",
-					string(domain.ObjectNamespace),
-					string(domain.ActionWrite),
-				)
+			require.NoError(
+				t,
+				st.enforcer.WriteTx(ctx, st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+					_ = txe.AddPolicy(
+						"admin@example.com",
+						domain.DomainAll,
+						string(domain.ObjectAll),
+						string(domain.ActionAll),
+					)
+					_ = txe.AddPolicy(
+						"devops@example.com",
+						"dev",
+						string(domain.ObjectNamespace),
+						string(domain.ActionWrite),
+					)
 
-				return nil
-			}))
+					return nil
+				}),
+			)
 
 			groupName := "group-" + tc.name
 			created, err := st.svc.Create(ctx, adminAuth(), group.CreateData{Name: groupName})
@@ -490,7 +509,12 @@ func TestService_Update_ImmutabilityAndVersion(t *testing.T) {
 			setup: func(t *testing.T, st testStack) group.UpdateData {
 				t.Helper()
 
-				created := &domain.Group{ID: "sys-group-id", Name: "sys-group", System: true, MetadataVersion: 1}
+				created := &domain.Group{
+					ID:              "sys-group-id",
+					Name:            "sys-group",
+					System:          true,
+					MetadataVersion: 1,
+				}
 				require.NoError(t, st.repo.Create(t.Context(), created))
 
 				return group.UpdateData{
@@ -506,7 +530,11 @@ func TestService_Update_ImmutabilityAndVersion(t *testing.T) {
 			setup: func(t *testing.T, st testStack) group.UpdateData {
 				t.Helper()
 
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "ver-group"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "ver-group"},
+				)
 				require.NoError(t, err)
 
 				return group.UpdateData{
@@ -569,8 +597,6 @@ func TestService_Update_NameUniqueness(t *testing.T) {
 
 // TestService_UpdateMembers covers the explicit add/remove delta for group
 // membership: no-op semantics, anti-escalation, version conflict, validation.
-//
-//nolint:gocognit // table-driven integration test
 func TestService_UpdateMembers(t *testing.T) {
 	t.Parallel()
 
@@ -589,7 +615,11 @@ func TestService_UpdateMembers(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "g1"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "g1"},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateMembersData{
@@ -604,7 +634,11 @@ func TestService_UpdateMembers(t *testing.T) {
 				assert.Equal(t, int64(1), got.Group.MembersVersion,
 					"empty -> 1 member: MembersVersion bumped once")
 				assert.ElementsMatch(t, []string{"alice@example.com"}, got.VisibleMembers)
-				assert.Contains(t, st.enforcer.GetMembersOfGroup(casbin.GroupSubject("g1")), "alice@example.com")
+				assert.Contains(
+					t,
+					st.enforcer.GetMembersOfGroup(casbin.GroupSubject("g1")),
+					"alice@example.com",
+				)
 			},
 		},
 		{
@@ -671,7 +705,11 @@ func TestService_UpdateMembers(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "g1"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "g1"},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateMembersData{
@@ -692,7 +730,11 @@ func TestService_UpdateMembers(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "g1"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "g1"},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateMembersData{
@@ -717,20 +759,28 @@ func TestService_UpdateMembers(t *testing.T) {
 				// would grant prod transitively, which devops can't authorize.
 				require.NoError(
 					t,
-					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy(
-							"devops@example.com",
-							"dev",
-							string(domain.ObjectNamespace),
-							string(domain.ActionWrite),
-						)
-					}),
+					st.enforcer.WriteTx(
+						t.Context(),
+						st.txm,
+						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+							return txe.AddPolicy(
+								"devops@example.com",
+								"dev",
+								string(domain.ObjectNamespace),
+								string(domain.ActionWrite),
+							)
+						},
+					),
 				)
 
 				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{
 					Name: "elevated",
 					InitialPermissions: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: "prod",
+						},
 					},
 				})
 				require.NoError(t, err)
@@ -754,21 +804,29 @@ func TestService_UpdateMembers(t *testing.T) {
 				// Removing alice narrows, so the escalation check is bypassed.
 				require.NoError(
 					t,
-					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy(
-							"devops@example.com",
-							"dev",
-							string(domain.ObjectNamespace),
-							string(domain.ActionWrite),
-						)
-					}),
+					st.enforcer.WriteTx(
+						t.Context(),
+						st.txm,
+						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+							return txe.AddPolicy(
+								"devops@example.com",
+								"dev",
+								string(domain.ObjectNamespace),
+								string(domain.ActionWrite),
+							)
+						},
+					),
 				)
 
 				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{
 					Name:           "elevated",
 					InitialMembers: []string{"alice@example.com"},
 					InitialPermissions: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: "prod",
+						},
 					},
 				})
 				require.NoError(t, err)
@@ -792,7 +850,11 @@ func TestService_UpdateMembers(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "g1"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "g1"},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateMembersData{
@@ -847,8 +909,6 @@ func TestService_UpdateMembers(t *testing.T) {
 // TestService_UpdatePermissions covers the explicit add/remove delta for the
 // group's permission set: boundary check, cascade check on member-bearing
 // groups, no-op semantics, version conflict, validation.
-//
-//nolint:gocognit // table-driven integration test
 func TestService_UpdatePermissions(t *testing.T) {
 	t.Parallel()
 
@@ -868,7 +928,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "g1"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "g1"},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdatePermissionsData{
@@ -926,23 +990,35 @@ func TestService_UpdatePermissions(t *testing.T) {
 				// devops holds only dev:Namespace:Write - granting prod escalates.
 				require.NoError(
 					t,
-					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy(
-							"devops@example.com",
-							"dev",
-							string(domain.ObjectNamespace),
-							string(domain.ActionWrite),
-						)
-					}),
+					st.enforcer.WriteTx(
+						t.Context(),
+						st.txm,
+						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+							return txe.AddPolicy(
+								"devops@example.com",
+								"dev",
+								string(domain.ObjectNamespace),
+								string(domain.ActionWrite),
+							)
+						},
+					),
 				)
 
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "g1"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "g1"},
+				)
 				require.NoError(t, err)
 
 				return domain.AuthInfo{Email: "devops@example.com"}, group.UpdatePermissionsData{
 					GroupID: created.Group.ID,
 					Add: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: "prod",
+						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
 				}
@@ -964,21 +1040,29 @@ func TestService_UpdatePermissions(t *testing.T) {
 				// pre-seeded by admin with a prod perm + a member.
 				require.NoError(
 					t,
-					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy(
-							"devops@example.com",
-							"dev",
-							string(domain.ObjectNamespace),
-							string(domain.ActionWrite),
-						)
-					}),
+					st.enforcer.WriteTx(
+						t.Context(),
+						st.txm,
+						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+							return txe.AddPolicy(
+								"devops@example.com",
+								"dev",
+								string(domain.ObjectNamespace),
+								string(domain.ActionWrite),
+							)
+						},
+					),
 				)
 
 				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{
 					Name:           "g1",
 					InitialMembers: []string{"alice@example.com"},
 					InitialPermissions: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: "prod",
+						},
 					},
 				})
 				require.NoError(t, err)
@@ -1006,20 +1090,28 @@ func TestService_UpdatePermissions(t *testing.T) {
 
 				require.NoError(
 					t,
-					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy(
-							"devops@example.com",
-							"dev",
-							string(domain.ObjectNamespace),
-							string(domain.ActionWrite),
-						)
-					}),
+					st.enforcer.WriteTx(
+						t.Context(),
+						st.txm,
+						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+							return txe.AddPolicy(
+								"devops@example.com",
+								"dev",
+								string(domain.ObjectNamespace),
+								string(domain.ActionWrite),
+							)
+						},
+					),
 				)
 
 				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{
 					Name: "g1",
 					InitialPermissions: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: "prod",
+						},
 					},
 				})
 				require.NoError(t, err)
@@ -1027,7 +1119,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 				return domain.AuthInfo{Email: "devops@example.com"}, group.UpdatePermissionsData{
 					GroupID: created.Group.ID,
 					Remove: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: "prod",
+						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
 				}
@@ -1046,7 +1142,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "g1"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "g1"},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdatePermissionsData{
@@ -1086,7 +1186,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
 					},
 					Remove: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "staging"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: "staging",
+						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
 				}
@@ -1104,7 +1208,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "g1"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "g1"},
+				)
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdatePermissionsData{

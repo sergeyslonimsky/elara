@@ -53,7 +53,9 @@ func TestService_BasicLogin(t *testing.T) {
 			password: password,
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
-				m.users.EXPECT().Get(gomock.Any(), "unknown@example.com").Return(nil, domain.ErrNotFound)
+				m.users.EXPECT().
+					Get(gomock.Any(), "unknown@example.com").
+					Return(nil, domain.ErrNotFound)
 
 				return svc
 			},

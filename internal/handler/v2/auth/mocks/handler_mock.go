@@ -13,9 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockusecase is a mock of usecase interface.
@@ -34,7 +33,6 @@ type MockusecaseMockRecorder struct {
 func NewMockusecase(ctrl *gomock.Controller) *Mockusecase {
 	mock := &Mockusecase{ctrl: ctrl}
 	mock.recorder = &MockusecaseMockRecorder{mock}
-
 	return mock
 }
 
@@ -50,22 +48,13 @@ func (m *Mockusecase) BasicLogin(ctx context.Context, email, password string) (s
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(*domain.User)
 	ret2, _ := ret[2].(error)
-
 	return ret0, ret1, ret2
 }
 
 // BasicLogin indicates an expected call of BasicLogin.
 func (mr *MockusecaseMockRecorder) BasicLogin(ctx, email, password any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"BasicLogin",
-		reflect.TypeOf((*Mockusecase)(nil).BasicLogin),
-		ctx,
-		email,
-		password,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BasicLogin", reflect.TypeOf((*Mockusecase)(nil).BasicLogin), ctx, email, password)
 }
 
 // Callback mocks base method.
@@ -75,22 +64,13 @@ func (m *Mockusecase) Callback(ctx context.Context, code, nonce string) (string,
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(*domain.User)
 	ret2, _ := ret[2].(error)
-
 	return ret0, ret1, ret2
 }
 
 // Callback indicates an expected call of Callback.
 func (mr *MockusecaseMockRecorder) Callback(ctx, code, nonce any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Callback",
-		reflect.TypeOf((*Mockusecase)(nil).Callback),
-		ctx,
-		code,
-		nonce,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Callback", reflect.TypeOf((*Mockusecase)(nil).Callback), ctx, code, nonce)
 }
 
 // Login mocks base method.
@@ -101,13 +81,11 @@ func (m *Mockusecase) Login(ctx context.Context) (string, string, string, error)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(string)
 	ret3, _ := ret[3].(error)
-
 	return ret0, ret1, ret2, ret3
 }
 
 // Login indicates an expected call of Login.
 func (mr *MockusecaseMockRecorder) Login(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*Mockusecase)(nil).Login), ctx)
 }

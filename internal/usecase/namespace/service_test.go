@@ -19,12 +19,12 @@ func setupService(t *testing.T) (*namespace.Service, mocks, *gomock.Controller) 
 	t.Helper()
 	ctrl := gomock.NewController(t)
 
-	m := mocks{
+	mock := mocks{
 		pdp:      namespacemock.NewMockpdp(ctrl),
 		store:    namespacemock.NewMockstore(ctrl),
 		notifier: namespacemock.NewMocknotifier(ctrl),
 	}
-	svc := namespace.New(m.pdp, m.store, m.notifier)
+	svc := namespace.New(mock.pdp, mock.store, mock.notifier)
 
-	return svc, m, ctrl
+	return svc, mock, ctrl
 }

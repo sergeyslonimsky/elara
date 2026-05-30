@@ -53,7 +53,10 @@ func TestProfileHandler_Me(t *testing.T) {
 
 			ctx := t.Context()
 			if tc.email != "" {
-				ctx = internalauth.WithClaims(ctx, &internalauth.Claims{Email: tc.email, Name: "Alice"})
+				ctx = internalauth.WithClaims(
+					ctx,
+					&internalauth.Claims{Email: tc.email, Name: "Alice"},
+				)
 			}
 
 			resp, err := h.Me(ctx, connect.NewRequest(&profilev1.MeRequest{}))
@@ -87,7 +90,10 @@ func TestProfileHandler_Me_permissions_mapping(t *testing.T) {
 
 	h := New(uc, config.AuthTypeOIDC, false)
 
-	ctx := internalauth.WithClaims(t.Context(), &internalauth.Claims{Email: "alice@example.com", Name: "Alice"})
+	ctx := internalauth.WithClaims(
+		t.Context(),
+		&internalauth.Claims{Email: "alice@example.com", Name: "Alice"},
+	)
 
 	resp, err := h.Me(ctx, connect.NewRequest(&profilev1.MeRequest{}))
 	require.NoError(t, err)

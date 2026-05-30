@@ -5,14 +5,12 @@
 package webhookv1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/webhook/v1"
 	http "net/http"
 	strings "strings"
-
-	connect "connectrpc.com/connect"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/webhook/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -57,30 +55,12 @@ const (
 
 // WebhookServiceClient is a client for the elara.webhook.v1.WebhookService service.
 type WebhookServiceClient interface {
-	CreateWebhook(
-		context.Context,
-		*connect.Request[v1.CreateWebhookRequest],
-	) (*connect.Response[v1.CreateWebhookResponse], error)
-	GetWebhook(
-		context.Context,
-		*connect.Request[v1.GetWebhookRequest],
-	) (*connect.Response[v1.GetWebhookResponse], error)
-	UpdateWebhook(
-		context.Context,
-		*connect.Request[v1.UpdateWebhookRequest],
-	) (*connect.Response[v1.UpdateWebhookResponse], error)
-	DeleteWebhook(
-		context.Context,
-		*connect.Request[v1.DeleteWebhookRequest],
-	) (*connect.Response[v1.DeleteWebhookResponse], error)
-	ListWebhooks(
-		context.Context,
-		*connect.Request[v1.ListWebhooksRequest],
-	) (*connect.Response[v1.ListWebhooksResponse], error)
-	GetDeliveryHistory(
-		context.Context,
-		*connect.Request[v1.GetDeliveryHistoryRequest],
-	) (*connect.Response[v1.GetDeliveryHistoryResponse], error)
+	CreateWebhook(context.Context, *connect.Request[v1.CreateWebhookRequest]) (*connect.Response[v1.CreateWebhookResponse], error)
+	GetWebhook(context.Context, *connect.Request[v1.GetWebhookRequest]) (*connect.Response[v1.GetWebhookResponse], error)
+	UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.UpdateWebhookResponse], error)
+	DeleteWebhook(context.Context, *connect.Request[v1.DeleteWebhookRequest]) (*connect.Response[v1.DeleteWebhookResponse], error)
+	ListWebhooks(context.Context, *connect.Request[v1.ListWebhooksRequest]) (*connect.Response[v1.ListWebhooksResponse], error)
+	GetDeliveryHistory(context.Context, *connect.Request[v1.GetDeliveryHistoryRequest]) (*connect.Response[v1.GetDeliveryHistoryResponse], error)
 }
 
 // NewWebhookServiceClient constructs a client for the elara.webhook.v1.WebhookService service. By
@@ -90,16 +70,9 @@ type WebhookServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewWebhookServiceClient(
-	httpClient connect.HTTPClient,
-	baseURL string,
-	opts ...connect.ClientOption,
-) WebhookServiceClient {
+func NewWebhookServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) WebhookServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
-	webhookServiceMethods := v1.File_elara_webhook_v1_webhook_service_proto.Services().
-		ByName("WebhookService").
-		Methods()
-
+	webhookServiceMethods := v1.File_elara_webhook_v1_webhook_service_proto.Services().ByName("WebhookService").Methods()
 	return &webhookServiceClient{
 		createWebhook: connect.NewClient[v1.CreateWebhookRequest, v1.CreateWebhookResponse](
 			httpClient,
@@ -151,79 +124,43 @@ type webhookServiceClient struct {
 }
 
 // CreateWebhook calls elara.webhook.v1.WebhookService.CreateWebhook.
-func (c *webhookServiceClient) CreateWebhook(
-	ctx context.Context,
-	req *connect.Request[v1.CreateWebhookRequest],
-) (*connect.Response[v1.CreateWebhookResponse], error) {
+func (c *webhookServiceClient) CreateWebhook(ctx context.Context, req *connect.Request[v1.CreateWebhookRequest]) (*connect.Response[v1.CreateWebhookResponse], error) {
 	return c.createWebhook.CallUnary(ctx, req)
 }
 
 // GetWebhook calls elara.webhook.v1.WebhookService.GetWebhook.
-func (c *webhookServiceClient) GetWebhook(
-	ctx context.Context,
-	req *connect.Request[v1.GetWebhookRequest],
-) (*connect.Response[v1.GetWebhookResponse], error) {
+func (c *webhookServiceClient) GetWebhook(ctx context.Context, req *connect.Request[v1.GetWebhookRequest]) (*connect.Response[v1.GetWebhookResponse], error) {
 	return c.getWebhook.CallUnary(ctx, req)
 }
 
 // UpdateWebhook calls elara.webhook.v1.WebhookService.UpdateWebhook.
-func (c *webhookServiceClient) UpdateWebhook(
-	ctx context.Context,
-	req *connect.Request[v1.UpdateWebhookRequest],
-) (*connect.Response[v1.UpdateWebhookResponse], error) {
+func (c *webhookServiceClient) UpdateWebhook(ctx context.Context, req *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.UpdateWebhookResponse], error) {
 	return c.updateWebhook.CallUnary(ctx, req)
 }
 
 // DeleteWebhook calls elara.webhook.v1.WebhookService.DeleteWebhook.
-func (c *webhookServiceClient) DeleteWebhook(
-	ctx context.Context,
-	req *connect.Request[v1.DeleteWebhookRequest],
-) (*connect.Response[v1.DeleteWebhookResponse], error) {
+func (c *webhookServiceClient) DeleteWebhook(ctx context.Context, req *connect.Request[v1.DeleteWebhookRequest]) (*connect.Response[v1.DeleteWebhookResponse], error) {
 	return c.deleteWebhook.CallUnary(ctx, req)
 }
 
 // ListWebhooks calls elara.webhook.v1.WebhookService.ListWebhooks.
-func (c *webhookServiceClient) ListWebhooks(
-	ctx context.Context,
-	req *connect.Request[v1.ListWebhooksRequest],
-) (*connect.Response[v1.ListWebhooksResponse], error) {
+func (c *webhookServiceClient) ListWebhooks(ctx context.Context, req *connect.Request[v1.ListWebhooksRequest]) (*connect.Response[v1.ListWebhooksResponse], error) {
 	return c.listWebhooks.CallUnary(ctx, req)
 }
 
 // GetDeliveryHistory calls elara.webhook.v1.WebhookService.GetDeliveryHistory.
-func (c *webhookServiceClient) GetDeliveryHistory(
-	ctx context.Context,
-	req *connect.Request[v1.GetDeliveryHistoryRequest],
-) (*connect.Response[v1.GetDeliveryHistoryResponse], error) {
+func (c *webhookServiceClient) GetDeliveryHistory(ctx context.Context, req *connect.Request[v1.GetDeliveryHistoryRequest]) (*connect.Response[v1.GetDeliveryHistoryResponse], error) {
 	return c.getDeliveryHistory.CallUnary(ctx, req)
 }
 
 // WebhookServiceHandler is an implementation of the elara.webhook.v1.WebhookService service.
 type WebhookServiceHandler interface {
-	CreateWebhook(
-		context.Context,
-		*connect.Request[v1.CreateWebhookRequest],
-	) (*connect.Response[v1.CreateWebhookResponse], error)
-	GetWebhook(
-		context.Context,
-		*connect.Request[v1.GetWebhookRequest],
-	) (*connect.Response[v1.GetWebhookResponse], error)
-	UpdateWebhook(
-		context.Context,
-		*connect.Request[v1.UpdateWebhookRequest],
-	) (*connect.Response[v1.UpdateWebhookResponse], error)
-	DeleteWebhook(
-		context.Context,
-		*connect.Request[v1.DeleteWebhookRequest],
-	) (*connect.Response[v1.DeleteWebhookResponse], error)
-	ListWebhooks(
-		context.Context,
-		*connect.Request[v1.ListWebhooksRequest],
-	) (*connect.Response[v1.ListWebhooksResponse], error)
-	GetDeliveryHistory(
-		context.Context,
-		*connect.Request[v1.GetDeliveryHistoryRequest],
-	) (*connect.Response[v1.GetDeliveryHistoryResponse], error)
+	CreateWebhook(context.Context, *connect.Request[v1.CreateWebhookRequest]) (*connect.Response[v1.CreateWebhookResponse], error)
+	GetWebhook(context.Context, *connect.Request[v1.GetWebhookRequest]) (*connect.Response[v1.GetWebhookResponse], error)
+	UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.UpdateWebhookResponse], error)
+	DeleteWebhook(context.Context, *connect.Request[v1.DeleteWebhookRequest]) (*connect.Response[v1.DeleteWebhookResponse], error)
+	ListWebhooks(context.Context, *connect.Request[v1.ListWebhooksRequest]) (*connect.Response[v1.ListWebhooksResponse], error)
+	GetDeliveryHistory(context.Context, *connect.Request[v1.GetDeliveryHistoryRequest]) (*connect.Response[v1.GetDeliveryHistoryResponse], error)
 }
 
 // NewWebhookServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -232,9 +169,7 @@ type WebhookServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewWebhookServiceHandler(svc WebhookServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	webhookServiceMethods := v1.File_elara_webhook_v1_webhook_service_proto.Services().
-		ByName("WebhookService").
-		Methods()
+	webhookServiceMethods := v1.File_elara_webhook_v1_webhook_service_proto.Services().ByName("WebhookService").Methods()
 	webhookServiceCreateWebhookHandler := connect.NewUnaryHandler(
 		WebhookServiceCreateWebhookProcedure,
 		svc.CreateWebhook,
@@ -271,7 +206,6 @@ func NewWebhookServiceHandler(svc WebhookServiceHandler, opts ...connect.Handler
 		connect.WithSchema(webhookServiceMethods.ByName("GetDeliveryHistory")),
 		connect.WithHandlerOptions(opts...),
 	)
-
 	return "/elara.webhook.v1.WebhookService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case WebhookServiceCreateWebhookProcedure:
@@ -295,62 +229,26 @@ func NewWebhookServiceHandler(svc WebhookServiceHandler, opts ...connect.Handler
 // UnimplementedWebhookServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedWebhookServiceHandler struct{}
 
-func (UnimplementedWebhookServiceHandler) CreateWebhook(
-	context.Context,
-	*connect.Request[v1.CreateWebhookRequest],
-) (*connect.Response[v1.CreateWebhookResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.webhook.v1.WebhookService.CreateWebhook is not implemented"),
-	)
+func (UnimplementedWebhookServiceHandler) CreateWebhook(context.Context, *connect.Request[v1.CreateWebhookRequest]) (*connect.Response[v1.CreateWebhookResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.webhook.v1.WebhookService.CreateWebhook is not implemented"))
 }
 
-func (UnimplementedWebhookServiceHandler) GetWebhook(
-	context.Context,
-	*connect.Request[v1.GetWebhookRequest],
-) (*connect.Response[v1.GetWebhookResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.webhook.v1.WebhookService.GetWebhook is not implemented"),
-	)
+func (UnimplementedWebhookServiceHandler) GetWebhook(context.Context, *connect.Request[v1.GetWebhookRequest]) (*connect.Response[v1.GetWebhookResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.webhook.v1.WebhookService.GetWebhook is not implemented"))
 }
 
-func (UnimplementedWebhookServiceHandler) UpdateWebhook(
-	context.Context,
-	*connect.Request[v1.UpdateWebhookRequest],
-) (*connect.Response[v1.UpdateWebhookResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.webhook.v1.WebhookService.UpdateWebhook is not implemented"),
-	)
+func (UnimplementedWebhookServiceHandler) UpdateWebhook(context.Context, *connect.Request[v1.UpdateWebhookRequest]) (*connect.Response[v1.UpdateWebhookResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.webhook.v1.WebhookService.UpdateWebhook is not implemented"))
 }
 
-func (UnimplementedWebhookServiceHandler) DeleteWebhook(
-	context.Context,
-	*connect.Request[v1.DeleteWebhookRequest],
-) (*connect.Response[v1.DeleteWebhookResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.webhook.v1.WebhookService.DeleteWebhook is not implemented"),
-	)
+func (UnimplementedWebhookServiceHandler) DeleteWebhook(context.Context, *connect.Request[v1.DeleteWebhookRequest]) (*connect.Response[v1.DeleteWebhookResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.webhook.v1.WebhookService.DeleteWebhook is not implemented"))
 }
 
-func (UnimplementedWebhookServiceHandler) ListWebhooks(
-	context.Context,
-	*connect.Request[v1.ListWebhooksRequest],
-) (*connect.Response[v1.ListWebhooksResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.webhook.v1.WebhookService.ListWebhooks is not implemented"),
-	)
+func (UnimplementedWebhookServiceHandler) ListWebhooks(context.Context, *connect.Request[v1.ListWebhooksRequest]) (*connect.Response[v1.ListWebhooksResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.webhook.v1.WebhookService.ListWebhooks is not implemented"))
 }
 
-func (UnimplementedWebhookServiceHandler) GetDeliveryHistory(
-	context.Context,
-	*connect.Request[v1.GetDeliveryHistoryRequest],
-) (*connect.Response[v1.GetDeliveryHistoryResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.webhook.v1.WebhookService.GetDeliveryHistory is not implemented"),
-	)
+func (UnimplementedWebhookServiceHandler) GetDeliveryHistory(context.Context, *connect.Request[v1.GetDeliveryHistoryRequest]) (*connect.Response[v1.GetDeliveryHistoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.webhook.v1.WebhookService.GetDeliveryHistory is not implemented"))
 }

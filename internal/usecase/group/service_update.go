@@ -74,11 +74,18 @@ func (s *Service) Update(
 // already owns newName. Names are not the primary key but every Casbin
 // subject and every PAP.UserGroupNames consumer keys off them — two groups
 // sharing a name break FindByName-based lookups silently.
-func (s *Service) ensureNameUnique(ctx context.Context, tx storage.Tx, selfID, newName string) error {
+func (s *Service) ensureNameUnique(
+	ctx context.Context,
+	tx storage.Tx,
+	selfID, newName string,
+) error {
 	other, err := s.store.WithTx(tx).FindByName(ctx, newName)
 	switch {
 	case err == nil && other != nil && other.ID != selfID:
-		return fmt.Errorf("check name uniqueness: %w", domain.NewAlreadyExistsError("group", newName))
+		return fmt.Errorf(
+			"check name uniqueness: %w",
+			domain.NewAlreadyExistsError("group", newName),
+		)
 	case err != nil && !errors.Is(err, domain.ErrNotFound):
 		return fmt.Errorf("check name uniqueness: %w", err)
 	}
@@ -114,7 +121,10 @@ func (s *Service) UpdateMembers(
 	data UpdateMembersData,
 ) (*UpdateMembersResult, error) {
 	if v, dup := sliceutil.FirstOverlap(data.AddEmails, data.RemoveEmails); dup {
-		return nil, domain.NewValidationError("email", fmt.Sprintf("%q appears in both add and remove", v))
+		return nil, domain.NewValidationError(
+			"email",
+			fmt.Sprintf("%q appears in both add and remove", v),
+		)
 	}
 
 	var result *UpdateMembersResult
@@ -153,7 +163,10 @@ func (s *Service) UpdateMembers(
 		}
 
 		post := sliceutil.ComposePost(current, added, removed)
-		result = &UpdateMembersResult{Group: existing, VisibleMembers: s.filterVisibleMembers(ctx, actor, post)}
+		result = &UpdateMembersResult{
+			Group:          existing,
+			VisibleMembers: s.filterVisibleMembers(ctx, actor, post),
+		}
 
 		return nil
 	})
@@ -313,7 +326,11 @@ func (s *Service) boundaryCheckPerms(actor domain.AuthInfo, added []domain.Permi
 // every permission the group will hold post-update — because the change
 // cascades to existing members through their membership g-rules. Called
 // only when an effective delta exists (no-op deltas skip this check).
-func (s *Service) cascadeCheckPerms(actor domain.AuthInfo, groupName string, post []domain.Permission) error {
+func (s *Service) cascadeCheckPerms(
+	actor domain.AuthInfo,
+	groupName string,
+	post []domain.Permission,
+) error {
 	if len(s.pap.GroupMembers(groupName)) == 0 {
 		return nil
 	}

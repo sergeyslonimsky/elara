@@ -21,35 +21,38 @@ func TestService_Create(t *testing.T) {
 
 	const newEmail = "new-user@example.com"
 
-	t.Run("basic-auth: stores user, password hash, and password_change_required=true", func(t *testing.T) {
-		t.Parallel()
+	t.Run(
+		"basic-auth: stores user, password hash, and password_change_required=true",
+		func(t *testing.T) {
+			t.Parallel()
 
-		st := setupServiceReal(t)
-		seedAdminAll(t, st)
+			st := setupServiceReal(t)
+			seedAdminAll(t, st)
 
-		res, err := st.svc.Create(t.Context(), adminActor(), user.CreateData{
-			Email:           newEmail,
-			Name:            "New User",
-			InitialPassword: "initial-password",
-		})
-		require.NoError(t, err)
-		require.NotNil(t, res)
+			res, err := st.svc.Create(t.Context(), adminActor(), user.CreateData{
+				Email:           newEmail,
+				Name:            "New User",
+				InitialPassword: "initial-password",
+			})
+			require.NoError(t, err)
+			require.NotNil(t, res)
 
-		// Persisted bbolt state matches the result and the input.
-		persisted, err := st.users.Get(t.Context(), newEmail)
-		require.NoError(t, err)
-		assert.Equal(t, newEmail, persisted.Email)
-		assert.Equal(t, "New User", persisted.Name)
-		assert.Equal(t, domain.ProviderBasicAuth, persisted.Provider)
-		assert.True(t, persisted.PasswordChangeRequired)
-		// Password is stored as a bcrypt hash, not the plaintext.
-		assert.NotEqual(t, "initial-password", persisted.PasswordHash)
-		require.NoError(t, auth.VerifyPassword(persisted.PasswordHash, "initial-password"))
-		// No initial groups → MembershipVersion initialised to 1 (proto3 omits 0).
-		assert.Equal(t, int64(1), persisted.MembershipVersion)
-		assert.Empty(t, res.GroupIDs)
-		assert.Equal(t, int64(1), res.MembershipVersion)
-	})
+			// Persisted bbolt state matches the result and the input.
+			persisted, err := st.users.Get(t.Context(), newEmail)
+			require.NoError(t, err)
+			assert.Equal(t, newEmail, persisted.Email)
+			assert.Equal(t, "New User", persisted.Name)
+			assert.Equal(t, domain.ProviderBasicAuth, persisted.Provider)
+			assert.True(t, persisted.PasswordChangeRequired)
+			// Password is stored as a bcrypt hash, not the plaintext.
+			assert.NotEqual(t, "initial-password", persisted.PasswordHash)
+			require.NoError(t, auth.VerifyPassword(persisted.PasswordHash, "initial-password"))
+			// No initial groups → MembershipVersion initialised to 1 (proto3 omits 0).
+			assert.Equal(t, int64(1), persisted.MembershipVersion)
+			assert.Empty(t, res.GroupIDs)
+			assert.Equal(t, int64(1), res.MembershipVersion)
+		},
+	)
 
 	t.Run("OIDC: empty password sets ProviderOIDC and no password hash", func(t *testing.T) {
 		t.Parallel()
@@ -92,7 +95,11 @@ func TestService_Create(t *testing.T) {
 		// Casbin g-rules reflect the membership additions.
 		roles, err := st.enforcer.GetRolesForUser(newEmail, domain.MembershipDomain)
 		require.NoError(t, err)
-		assert.ElementsMatch(t, []string{casbin.GroupSubject("devs"), casbin.GroupSubject("platform")}, roles)
+		assert.ElementsMatch(
+			t,
+			[]string{casbin.GroupSubject("devs"), casbin.GroupSubject("platform")},
+			roles,
+		)
 
 		// bbolt MembershipVersion mirrors the result.
 		persisted, err := st.users.Get(t.Context(), newEmail)
@@ -118,30 +125,33 @@ func TestService_Create(t *testing.T) {
 		require.ErrorIs(t, err, domain.ErrNotFound)
 	})
 
-	t.Run("forbidden: initial groups supplied but actor lacks Group:Write on one", func(t *testing.T) {
-		t.Parallel()
+	t.Run(
+		"forbidden: initial groups supplied but actor lacks Group:Write on one",
+		func(t *testing.T) {
+			t.Parallel()
 
-		st := setupServiceReal(t)
-		seedGroup(t, st, "g1", "devs")
-		seedGroup(t, st, "g2", "platform")
+			st := setupServiceReal(t)
+			seedGroup(t, st, "g1", "devs")
+			seedGroup(t, st, "g2", "platform")
 
-		// Actor only has Group:Write on g1.
-		addPolicies(t, st, []policyRow{
-			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
-		})
+			// Actor only has Group:Write on g1.
+			addPolicies(t, st, []policyRow{
+				{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
+			})
 
-		_, err := st.svc.Create(t.Context(), actor(), user.CreateData{
-			Email:           newEmail,
-			Name:            "New User",
-			InitialPassword: "p",
-			InitialGroupIDs: []string{"g1", "g2"},
-		})
-		require.ErrorIs(t, err, domain.ErrForbidden)
+			_, err := st.svc.Create(t.Context(), actor(), user.CreateData{
+				Email:           newEmail,
+				Name:            "New User",
+				InitialPassword: "p",
+				InitialGroupIDs: []string{"g1", "g2"},
+			})
+			require.ErrorIs(t, err, domain.ErrForbidden)
 
-		// No user persisted, no g-rules added.
-		_, err = st.users.Get(t.Context(), newEmail)
-		require.ErrorIs(t, err, domain.ErrNotFound)
-	})
+			// No user persisted, no g-rules added.
+			_, err = st.users.Get(t.Context(), newEmail)
+			require.ErrorIs(t, err, domain.ErrNotFound)
+		},
+	)
 
 	t.Run("anti-escalation: blocks add of group with permissions actor lacks", func(t *testing.T) {
 		t.Parallel()
@@ -295,30 +305,33 @@ func TestService_Delete(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("last-admin guard: refuses to delete sole member of superadmin group", func(t *testing.T) {
-		t.Parallel()
+	t.Run(
+		"last-admin guard: refuses to delete sole member of superadmin group",
+		func(t *testing.T) {
+			t.Parallel()
 
-		st := setupServiceReal(t)
-		// The caller reaches the guard via a direct wildcard User:Write policy
-		// (not group membership), so it is not itself a superadmin-group member.
-		seedUser(t, st, targetEmail)
-		addPolicies(t, st, []policyRow{
-			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
-		})
-		// Target is the sole member of the superadmin group, so deleting them
-		// would lock everyone out of administration.
-		addMemberships(t, st, []struct{ User, GroupName string }{
-			{targetEmail, domain.SystemGroupSuperAdmin},
-		})
+			st := setupServiceReal(t)
+			// The caller reaches the guard via a direct wildcard User:Write policy
+			// (not group membership), so it is not itself a superadmin-group member.
+			seedUser(t, st, targetEmail)
+			addPolicies(t, st, []policyRow{
+				{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+			})
+			// Target is the sole member of the superadmin group, so deleting them
+			// would lock everyone out of administration.
+			addMemberships(t, st, []struct{ User, GroupName string }{
+				{targetEmail, domain.SystemGroupSuperAdmin},
+			})
 
-		err := st.svc.Delete(t.Context(), adminActor(), targetEmail)
-		require.ErrorContains(t, err, "cannot delete the last admin")
-		require.True(t, domain.IsValidationError(err))
+			err := st.svc.Delete(t.Context(), adminActor(), targetEmail)
+			require.ErrorContains(t, err, "cannot delete the last admin")
+			require.True(t, domain.IsValidationError(err))
 
-		// Target still exists.
-		_, err = st.users.Get(t.Context(), targetEmail)
-		require.NoError(t, err)
-	})
+			// Target still exists.
+			_, err = st.users.Get(t.Context(), targetEmail)
+			require.NoError(t, err)
+		},
+	)
 }
 
 // ---- Get ---------------------------------------------------------------------
@@ -326,30 +339,36 @@ func TestService_Delete(t *testing.T) {
 func TestService_Get(t *testing.T) {
 	t.Parallel()
 
-	t.Run("happy path with User:Read *: returns user and no visible groups when target has none", func(t *testing.T) {
-		t.Parallel()
+	t.Run(
+		"happy path with User:Read *: returns user and no visible groups when target has none",
+		func(t *testing.T) {
+			t.Parallel()
 
-		st := setupServiceReal(t)
-		seedAdminAll(t, st)
-		seedUser(t, st, targetEmail)
+			st := setupServiceReal(t)
+			seedAdminAll(t, st)
+			seedUser(t, st, targetEmail)
 
-		got, err := st.svc.Get(t.Context(), adminActor(), targetEmail)
-		require.NoError(t, err)
-		require.NotNil(t, got)
-		assert.Equal(t, targetEmail, got.User.Email)
-		assert.Empty(t, got.VisibleGroupIDs)
-		assert.Equal(t, int64(0), got.MembershipVersion)
-	})
+			got, err := st.svc.Get(t.Context(), adminActor(), targetEmail)
+			require.NoError(t, err)
+			require.NotNil(t, got)
+			assert.Equal(t, targetEmail, got.User.Email)
+			assert.Empty(t, got.VisibleGroupIDs)
+			assert.Equal(t, int64(0), got.MembershipVersion)
+		},
+	)
 
-	t.Run("out-of-scope returns ErrNotFound (not Forbidden) for enumeration safety", func(t *testing.T) {
-		t.Parallel()
+	t.Run(
+		"out-of-scope returns ErrNotFound (not Forbidden) for enumeration safety",
+		func(t *testing.T) {
+			t.Parallel()
 
-		st := setupServiceReal(t)
-		seedUser(t, st, targetEmail)
+			st := setupServiceReal(t)
+			seedUser(t, st, targetEmail)
 
-		_, err := st.svc.Get(t.Context(), actor(), targetEmail)
-		require.ErrorIs(t, err, domain.ErrNotFound)
-	})
+			_, err := st.svc.Get(t.Context(), actor(), targetEmail)
+			require.ErrorIs(t, err, domain.ErrNotFound)
+		},
+	)
 
 	t.Run("missing user returns ErrNotFound", func(t *testing.T) {
 		t.Parallel()

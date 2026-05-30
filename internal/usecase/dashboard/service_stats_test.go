@@ -33,10 +33,24 @@ func TestService_GetStats(t *testing.T) {
 					Return([]*domain.Namespace{{Name: "n1"}, {Name: "n2"}}, nil)
 
 				m.pdp.EXPECT().
-					Has("admin@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "n1"}).
+					Has(
+						"admin@example.com",
+						domain.Permission{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: "n1",
+						},
+					).
 					Return(true)
 				m.pdp.EXPECT().
-					Has("admin@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "n2"}).
+					Has(
+						"admin@example.com",
+						domain.Permission{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: "n2",
+						},
+					).
 					Return(true)
 
 				m.configs.EXPECT().
@@ -72,10 +86,16 @@ func TestService_GetStats(t *testing.T) {
 					Return([]*domain.Namespace{{Name: "prod"}, {Name: "dev"}}, nil)
 
 				m.pdp.EXPECT().
-					Has("user@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "prod"}).
+					Has(
+						"user@example.com",
+						domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "prod"},
+					).
 					Return(true)
 				m.pdp.EXPECT().
-					Has("user@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"}).
+					Has(
+						"user@example.com",
+						domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
+					).
 					Return(false)
 
 				m.configs.EXPECT().
@@ -108,7 +128,10 @@ func TestService_GetStats(t *testing.T) {
 					Return([]*domain.Namespace{{Name: "prod"}}, nil)
 
 				m.pdp.EXPECT().
-					Has("no-access@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "prod"}).
+					Has(
+						"no-access@example.com",
+						domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "prod"},
+					).
 					Return(false)
 
 				m.configs.EXPECT().
@@ -145,7 +168,10 @@ func TestService_GetStats(t *testing.T) {
 					Return([]*domain.Namespace{{Name: "n1"}}, nil)
 
 				m.pdp.EXPECT().
-					Has("admin@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "n1"}).
+					Has(
+						"admin@example.com",
+						domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "n1"},
+					).
 					Return(true)
 
 				m.configs.EXPECT().

@@ -7,15 +7,13 @@
 package groupv1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 )
 
 const (
@@ -27,8 +25,8 @@ const (
 
 type CreateGroupRequest struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
-	Name        string                 `                   protobuf:"bytes,1,opt,name=name,proto3"        json:"name,omitempty"`
-	Description string                 `                   protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Name        string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// Emails of users to add as members on creation. Each email must exist.
 	InitialMembers []string `protobuf:"bytes,3,rep,name=initial_members,json=initialMembers,proto3" json:"initial_members,omitempty"`
 	// Permissions granted to the new group on creation.
@@ -62,10 +60,8 @@ func (x *CreateGroupRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -78,7 +74,6 @@ func (x *CreateGroupRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
-
 	return ""
 }
 
@@ -86,7 +81,6 @@ func (x *CreateGroupRequest) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
-
 	return ""
 }
 
@@ -94,7 +88,6 @@ func (x *CreateGroupRequest) GetInitialMembers() []string {
 	if x != nil {
 		return x.InitialMembers
 	}
-
 	return nil
 }
 
@@ -102,7 +95,6 @@ func (x *CreateGroupRequest) GetInitialPermissions() []*v1.PermissionAssignment 
 	if x != nil {
 		return x.InitialPermissions
 	}
-
 	return nil
 }
 
@@ -110,16 +102,15 @@ func (x *CreateGroupRequest) GetInitialManagerGroupIds() []string {
 	if x != nil {
 		return x.InitialManagerGroupIds
 	}
-
 	return nil
 }
 
 type CreateGroupResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Group *Group                 `                   protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	Group *Group                 `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
 	// Members visible to the caller — same filter as GetGroupResponse.
 	VisibleMembers []string                   `protobuf:"bytes,2,rep,name=visible_members,json=visibleMembers,proto3" json:"visible_members,omitempty"`
-	Permissions    []*v1.PermissionAssignment `protobuf:"bytes,3,rep,name=permissions,proto3"                         json:"permissions,omitempty"`
+	Permissions    []*v1.PermissionAssignment `protobuf:"bytes,3,rep,name=permissions,proto3" json:"permissions,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -144,10 +135,8 @@ func (x *CreateGroupResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -160,7 +149,6 @@ func (x *CreateGroupResponse) GetGroup() *Group {
 	if x != nil {
 		return x.Group
 	}
-
 	return nil
 }
 
@@ -168,7 +156,6 @@ func (x *CreateGroupResponse) GetVisibleMembers() []string {
 	if x != nil {
 		return x.VisibleMembers
 	}
-
 	return nil
 }
 
@@ -176,13 +163,12 @@ func (x *CreateGroupResponse) GetPermissions() []*v1.PermissionAssignment {
 	if x != nil {
 		return x.Permissions
 	}
-
 	return nil
 }
 
 type GetGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `                   protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -207,10 +193,8 @@ func (x *GetGroupRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -223,13 +207,12 @@ func (x *GetGroupRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
-
 	return ""
 }
 
 type GetGroupResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Group *Group                 `                   protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	Group *Group                 `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
 	// Members visible to the caller (per the derived User:Read rule —
 	// see user_service.proto). Invisible members are not exposed.
 	VisibleMembers []string `protobuf:"bytes,2,rep,name=visible_members,json=visibleMembers,proto3" json:"visible_members,omitempty"`
@@ -260,10 +243,8 @@ func (x *GetGroupResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -276,7 +257,6 @@ func (x *GetGroupResponse) GetGroup() *Group {
 	if x != nil {
 		return x.Group
 	}
-
 	return nil
 }
 
@@ -284,7 +264,6 @@ func (x *GetGroupResponse) GetVisibleMembers() []string {
 	if x != nil {
 		return x.VisibleMembers
 	}
-
 	return nil
 }
 
@@ -292,16 +271,15 @@ func (x *GetGroupResponse) GetPermissions() []*v1.PermissionAssignment {
 	if x != nil {
 		return x.Permissions
 	}
-
 	return nil
 }
 
 type UpdateGroupRequest struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Id                      string                 `                   protobuf:"bytes,1,opt,name=id,proto3"                                                            json:"id,omitempty"`
-	Name                    string                 `                   protobuf:"bytes,2,opt,name=name,proto3"                                                          json:"name,omitempty"`
-	Description             string                 `                   protobuf:"bytes,3,opt,name=description,proto3"                                                   json:"description,omitempty"`
-	ExpectedMetadataVersion *int64                 `                   protobuf:"varint,4,opt,name=expected_metadata_version,json=expectedMetadataVersion,proto3,oneof" json:"expected_metadata_version,omitempty"`
+	Id                      string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name                    string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description             string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	ExpectedMetadataVersion *int64                 `protobuf:"varint,4,opt,name=expected_metadata_version,json=expectedMetadataVersion,proto3,oneof" json:"expected_metadata_version,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -326,10 +304,8 @@ func (x *UpdateGroupRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -342,7 +318,6 @@ func (x *UpdateGroupRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
-
 	return ""
 }
 
@@ -350,7 +325,6 @@ func (x *UpdateGroupRequest) GetName() string {
 	if x != nil {
 		return x.Name
 	}
-
 	return ""
 }
 
@@ -358,7 +332,6 @@ func (x *UpdateGroupRequest) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
-
 	return ""
 }
 
@@ -366,13 +339,12 @@ func (x *UpdateGroupRequest) GetExpectedMetadataVersion() int64 {
 	if x != nil && x.ExpectedMetadataVersion != nil {
 		return *x.ExpectedMetadataVersion
 	}
-
 	return 0
 }
 
 type UpdateGroupResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Group         *Group                 `                   protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	Group         *Group                 `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -397,10 +369,8 @@ func (x *UpdateGroupResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -413,16 +383,15 @@ func (x *UpdateGroupResponse) GetGroup() *Group {
 	if x != nil {
 		return x.Group
 	}
-
 	return nil
 }
 
 type UpdateGroupMembersRequest struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	GroupId                string                 `                   protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3"                                       json:"group_id,omitempty"`
-	AddEmails              []string               `                   protobuf:"bytes,2,rep,name=add_emails,json=addEmails,proto3"                                   json:"add_emails,omitempty"`
-	RemoveEmails           []string               `                   protobuf:"bytes,3,rep,name=remove_emails,json=removeEmails,proto3"                             json:"remove_emails,omitempty"`
-	ExpectedMembersVersion *int64                 `                   protobuf:"varint,4,opt,name=expected_members_version,json=expectedMembersVersion,proto3,oneof" json:"expected_members_version,omitempty"`
+	GroupId                string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	AddEmails              []string               `protobuf:"bytes,2,rep,name=add_emails,json=addEmails,proto3" json:"add_emails,omitempty"`
+	RemoveEmails           []string               `protobuf:"bytes,3,rep,name=remove_emails,json=removeEmails,proto3" json:"remove_emails,omitempty"`
+	ExpectedMembersVersion *int64                 `protobuf:"varint,4,opt,name=expected_members_version,json=expectedMembersVersion,proto3,oneof" json:"expected_members_version,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -447,10 +416,8 @@ func (x *UpdateGroupMembersRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -463,7 +430,6 @@ func (x *UpdateGroupMembersRequest) GetGroupId() string {
 	if x != nil {
 		return x.GroupId
 	}
-
 	return ""
 }
 
@@ -471,7 +437,6 @@ func (x *UpdateGroupMembersRequest) GetAddEmails() []string {
 	if x != nil {
 		return x.AddEmails
 	}
-
 	return nil
 }
 
@@ -479,7 +444,6 @@ func (x *UpdateGroupMembersRequest) GetRemoveEmails() []string {
 	if x != nil {
 		return x.RemoveEmails
 	}
-
 	return nil
 }
 
@@ -487,14 +451,13 @@ func (x *UpdateGroupMembersRequest) GetExpectedMembersVersion() int64 {
 	if x != nil && x.ExpectedMembersVersion != nil {
 		return *x.ExpectedMembersVersion
 	}
-
 	return 0
 }
 
 type UpdateGroupMembersResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Group          *Group                 `                   protobuf:"bytes,1,opt,name=group,proto3"                               json:"group,omitempty"`
-	VisibleMembers []string               `                   protobuf:"bytes,2,rep,name=visible_members,json=visibleMembers,proto3" json:"visible_members,omitempty"`
+	Group          *Group                 `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	VisibleMembers []string               `protobuf:"bytes,2,rep,name=visible_members,json=visibleMembers,proto3" json:"visible_members,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -519,10 +482,8 @@ func (x *UpdateGroupMembersResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -535,7 +496,6 @@ func (x *UpdateGroupMembersResponse) GetGroup() *Group {
 	if x != nil {
 		return x.Group
 	}
-
 	return nil
 }
 
@@ -543,16 +503,15 @@ func (x *UpdateGroupMembersResponse) GetVisibleMembers() []string {
 	if x != nil {
 		return x.VisibleMembers
 	}
-
 	return nil
 }
 
 type UpdateGroupPermissionsRequest struct {
 	state                      protoimpl.MessageState     `protogen:"open.v1"`
-	GroupId                    string                     `                   protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3"                                               json:"group_id,omitempty"`
-	Add                        []*v1.PermissionAssignment `                   protobuf:"bytes,2,rep,name=add,proto3"                                                                 json:"add,omitempty"`
-	Remove                     []*v1.PermissionAssignment `                   protobuf:"bytes,3,rep,name=remove,proto3"                                                              json:"remove,omitempty"`
-	ExpectedPermissionsVersion *int64                     `                   protobuf:"varint,4,opt,name=expected_permissions_version,json=expectedPermissionsVersion,proto3,oneof" json:"expected_permissions_version,omitempty"`
+	GroupId                    string                     `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	Add                        []*v1.PermissionAssignment `protobuf:"bytes,2,rep,name=add,proto3" json:"add,omitempty"`
+	Remove                     []*v1.PermissionAssignment `protobuf:"bytes,3,rep,name=remove,proto3" json:"remove,omitempty"`
+	ExpectedPermissionsVersion *int64                     `protobuf:"varint,4,opt,name=expected_permissions_version,json=expectedPermissionsVersion,proto3,oneof" json:"expected_permissions_version,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -577,10 +536,8 @@ func (x *UpdateGroupPermissionsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -593,7 +550,6 @@ func (x *UpdateGroupPermissionsRequest) GetGroupId() string {
 	if x != nil {
 		return x.GroupId
 	}
-
 	return ""
 }
 
@@ -601,7 +557,6 @@ func (x *UpdateGroupPermissionsRequest) GetAdd() []*v1.PermissionAssignment {
 	if x != nil {
 		return x.Add
 	}
-
 	return nil
 }
 
@@ -609,7 +564,6 @@ func (x *UpdateGroupPermissionsRequest) GetRemove() []*v1.PermissionAssignment {
 	if x != nil {
 		return x.Remove
 	}
-
 	return nil
 }
 
@@ -617,14 +571,13 @@ func (x *UpdateGroupPermissionsRequest) GetExpectedPermissionsVersion() int64 {
 	if x != nil && x.ExpectedPermissionsVersion != nil {
 		return *x.ExpectedPermissionsVersion
 	}
-
 	return 0
 }
 
 type UpdateGroupPermissionsResponse struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Group         *Group                     `                   protobuf:"bytes,1,opt,name=group,proto3"       json:"group,omitempty"`
-	Permissions   []*v1.PermissionAssignment `                   protobuf:"bytes,2,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	Group         *Group                     `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	Permissions   []*v1.PermissionAssignment `protobuf:"bytes,2,rep,name=permissions,proto3" json:"permissions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -649,10 +602,8 @@ func (x *UpdateGroupPermissionsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -665,7 +616,6 @@ func (x *UpdateGroupPermissionsResponse) GetGroup() *Group {
 	if x != nil {
 		return x.Group
 	}
-
 	return nil
 }
 
@@ -673,13 +623,12 @@ func (x *UpdateGroupPermissionsResponse) GetPermissions() []*v1.PermissionAssign
 	if x != nil {
 		return x.Permissions
 	}
-
 	return nil
 }
 
 type DeleteGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `                   protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -704,10 +653,8 @@ func (x *DeleteGroupRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -720,7 +667,6 @@ func (x *DeleteGroupRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
-
 	return ""
 }
 
@@ -750,10 +696,8 @@ func (x *DeleteGroupResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -764,8 +708,8 @@ func (*DeleteGroupResponse) Descriptor() ([]byte, []int) {
 
 type ListGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Pagination    *v1.PaginationRequest  `                   protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	Search        string                 `                   protobuf:"bytes,2,opt,name=search,proto3"     json:"search,omitempty"`
+	Pagination    *v1.PaginationRequest  `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Search        string                 `protobuf:"bytes,2,opt,name=search,proto3" json:"search,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -790,10 +734,8 @@ func (x *ListGroupsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -806,7 +748,6 @@ func (x *ListGroupsRequest) GetPagination() *v1.PaginationRequest {
 	if x != nil {
 		return x.Pagination
 	}
-
 	return nil
 }
 
@@ -814,14 +755,13 @@ func (x *ListGroupsRequest) GetSearch() string {
 	if x != nil {
 		return x.Search
 	}
-
 	return ""
 }
 
 type ListGroupsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Groups        []*Group               `                   protobuf:"bytes,1,rep,name=groups,proto3"     json:"groups,omitempty"`
-	Pagination    *v1.PaginationResponse `                   protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Groups        []*Group               `protobuf:"bytes,1,rep,name=groups,proto3" json:"groups,omitempty"`
+	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -846,10 +786,8 @@ func (x *ListGroupsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -862,7 +800,6 @@ func (x *ListGroupsResponse) GetGroups() []*Group {
 	if x != nil {
 		return x.Groups
 	}
-
 	return nil
 }
 
@@ -870,7 +807,6 @@ func (x *ListGroupsResponse) GetPagination() *v1.PaginationResponse {
 	if x != nil {
 		return x.Pagination
 	}
-
 	return nil
 }
 
@@ -955,40 +891,32 @@ var (
 
 func file_elara_group_v1_group_service_proto_rawDescGZIP() []byte {
 	file_elara_group_v1_group_service_proto_rawDescOnce.Do(func() {
-		file_elara_group_v1_group_service_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_group_v1_group_service_proto_rawDesc),
-				len(file_elara_group_v1_group_service_proto_rawDesc),
-			),
-		)
+		file_elara_group_v1_group_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_group_v1_group_service_proto_rawDesc), len(file_elara_group_v1_group_service_proto_rawDesc)))
 	})
-
 	return file_elara_group_v1_group_service_proto_rawDescData
 }
 
-var (
-	file_elara_group_v1_group_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
-	file_elara_group_v1_group_service_proto_goTypes  = []any{
-		(*CreateGroupRequest)(nil),             // 0: elara.group.v1.CreateGroupRequest
-		(*CreateGroupResponse)(nil),            // 1: elara.group.v1.CreateGroupResponse
-		(*GetGroupRequest)(nil),                // 2: elara.group.v1.GetGroupRequest
-		(*GetGroupResponse)(nil),               // 3: elara.group.v1.GetGroupResponse
-		(*UpdateGroupRequest)(nil),             // 4: elara.group.v1.UpdateGroupRequest
-		(*UpdateGroupResponse)(nil),            // 5: elara.group.v1.UpdateGroupResponse
-		(*UpdateGroupMembersRequest)(nil),      // 6: elara.group.v1.UpdateGroupMembersRequest
-		(*UpdateGroupMembersResponse)(nil),     // 7: elara.group.v1.UpdateGroupMembersResponse
-		(*UpdateGroupPermissionsRequest)(nil),  // 8: elara.group.v1.UpdateGroupPermissionsRequest
-		(*UpdateGroupPermissionsResponse)(nil), // 9: elara.group.v1.UpdateGroupPermissionsResponse
-		(*DeleteGroupRequest)(nil),             // 10: elara.group.v1.DeleteGroupRequest
-		(*DeleteGroupResponse)(nil),            // 11: elara.group.v1.DeleteGroupResponse
-		(*ListGroupsRequest)(nil),              // 12: elara.group.v1.ListGroupsRequest
-		(*ListGroupsResponse)(nil),             // 13: elara.group.v1.ListGroupsResponse
-		(*v1.PermissionAssignment)(nil),        // 14: elara.common.v1.PermissionAssignment
-		(*Group)(nil),                          // 15: elara.group.v1.Group
-		(*v1.PaginationRequest)(nil),           // 16: elara.common.v1.PaginationRequest
-		(*v1.PaginationResponse)(nil),          // 17: elara.common.v1.PaginationResponse
-	}
-)
+var file_elara_group_v1_group_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_elara_group_v1_group_service_proto_goTypes = []any{
+	(*CreateGroupRequest)(nil),             // 0: elara.group.v1.CreateGroupRequest
+	(*CreateGroupResponse)(nil),            // 1: elara.group.v1.CreateGroupResponse
+	(*GetGroupRequest)(nil),                // 2: elara.group.v1.GetGroupRequest
+	(*GetGroupResponse)(nil),               // 3: elara.group.v1.GetGroupResponse
+	(*UpdateGroupRequest)(nil),             // 4: elara.group.v1.UpdateGroupRequest
+	(*UpdateGroupResponse)(nil),            // 5: elara.group.v1.UpdateGroupResponse
+	(*UpdateGroupMembersRequest)(nil),      // 6: elara.group.v1.UpdateGroupMembersRequest
+	(*UpdateGroupMembersResponse)(nil),     // 7: elara.group.v1.UpdateGroupMembersResponse
+	(*UpdateGroupPermissionsRequest)(nil),  // 8: elara.group.v1.UpdateGroupPermissionsRequest
+	(*UpdateGroupPermissionsResponse)(nil), // 9: elara.group.v1.UpdateGroupPermissionsResponse
+	(*DeleteGroupRequest)(nil),             // 10: elara.group.v1.DeleteGroupRequest
+	(*DeleteGroupResponse)(nil),            // 11: elara.group.v1.DeleteGroupResponse
+	(*ListGroupsRequest)(nil),              // 12: elara.group.v1.ListGroupsRequest
+	(*ListGroupsResponse)(nil),             // 13: elara.group.v1.ListGroupsResponse
+	(*v1.PermissionAssignment)(nil),        // 14: elara.common.v1.PermissionAssignment
+	(*Group)(nil),                          // 15: elara.group.v1.Group
+	(*v1.PaginationRequest)(nil),           // 16: elara.common.v1.PaginationRequest
+	(*v1.PaginationResponse)(nil),          // 17: elara.common.v1.PaginationResponse
+}
 var file_elara_group_v1_group_service_proto_depIdxs = []int32{
 	14, // 0: elara.group.v1.CreateGroupRequest.initial_permissions:type_name -> elara.common.v1.PermissionAssignment
 	15, // 1: elara.group.v1.CreateGroupResponse.group:type_name -> elara.group.v1.Group
@@ -1037,11 +965,8 @@ func file_elara_group_v1_group_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_group_v1_group_service_proto_rawDesc),
-				len(file_elara_group_v1_group_service_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_group_v1_group_service_proto_rawDesc), len(file_elara_group_v1_group_service_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   14,
 			NumExtensions: 0,

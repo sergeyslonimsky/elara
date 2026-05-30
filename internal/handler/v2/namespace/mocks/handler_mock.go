@@ -13,10 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	namespace "github.com/sergeyslonimsky/elara/internal/usecase/namespace"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockauthz is a mock of authz interface.
@@ -35,7 +34,6 @@ type MockauthzMockRecorder struct {
 func NewMockauthz(ctrl *gomock.Controller) *Mockauthz {
 	mock := &Mockauthz{ctrl: ctrl}
 	mock.recorder = &MockauthzMockRecorder{mock}
-
 	return mock
 }
 
@@ -49,23 +47,13 @@ func (m *Mockauthz) Require(ctx context.Context, object domain.Object, action do
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Require indicates an expected call of Require.
 func (mr *MockauthzMockRecorder) Require(ctx, object, action, domainStr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Require",
-		reflect.TypeOf((*Mockauthz)(nil).Require),
-		ctx,
-		object,
-		action,
-		domainStr,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*Mockauthz)(nil).Require), ctx, object, action, domainStr)
 }
 
 // Mockusecase is a mock of usecase interface.
@@ -84,7 +72,6 @@ type MockusecaseMockRecorder struct {
 func NewMockusecase(ctrl *gomock.Controller) *Mockusecase {
 	mock := &Mockusecase{ctrl: ctrl}
 	mock.recorder = &MockusecaseMockRecorder{mock}
-
 	return mock
 }
 
@@ -99,14 +86,12 @@ func (m *Mockusecase) Create(ctx context.Context, ns *domain.Namespace) (*domain
 	ret := m.ctrl.Call(m, "Create", ctx, ns)
 	ret0, _ := ret[0].(*domain.Namespace)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
 func (mr *MockusecaseMockRecorder) Create(ctx, ns any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockusecase)(nil).Create), ctx, ns)
 }
 
@@ -115,21 +100,13 @@ func (m *Mockusecase) Delete(ctx context.Context, name string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, name)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
 func (mr *MockusecaseMockRecorder) Delete(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Delete",
-		reflect.TypeOf((*Mockusecase)(nil).Delete),
-		ctx,
-		name,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockusecase)(nil).Delete), ctx, name)
 }
 
 // Get mocks base method.
@@ -138,14 +115,12 @@ func (m *Mockusecase) Get(ctx context.Context, name string) (*domain.Namespace, 
 	ret := m.ctrl.Call(m, "Get", ctx, name)
 	ret0, _ := ret[0].(*domain.Namespace)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockusecaseMockRecorder) Get(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockusecase)(nil).Get), ctx, name)
 }
 
@@ -155,14 +130,12 @@ func (m *Mockusecase) List(ctx context.Context, params namespace.ListParams) (*n
 	ret := m.ctrl.Call(m, "List", ctx, params)
 	ret0, _ := ret[0].(*namespace.ListResult)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockusecaseMockRecorder) List(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockusecase)(nil).List), ctx, params)
 }
 
@@ -171,14 +144,12 @@ func (m *Mockusecase) Lock(ctx context.Context, name string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Lock", ctx, name)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Lock indicates an expected call of Lock.
 func (mr *MockusecaseMockRecorder) Lock(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lock", reflect.TypeOf((*Mockusecase)(nil).Lock), ctx, name)
 }
 
@@ -187,21 +158,13 @@ func (m *Mockusecase) Unlock(ctx context.Context, name string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Unlock", ctx, name)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Unlock indicates an expected call of Unlock.
 func (mr *MockusecaseMockRecorder) Unlock(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Unlock",
-		reflect.TypeOf((*Mockusecase)(nil).Unlock),
-		ctx,
-		name,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unlock", reflect.TypeOf((*Mockusecase)(nil).Unlock), ctx, name)
 }
 
 // Update mocks base method.
@@ -210,20 +173,11 @@ func (m *Mockusecase) Update(ctx context.Context, name, description string) (*do
 	ret := m.ctrl.Call(m, "Update", ctx, name, description)
 	ret0, _ := ret[0].(*domain.Namespace)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
 func (mr *MockusecaseMockRecorder) Update(ctx, name, description any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Update",
-		reflect.TypeOf((*Mockusecase)(nil).Update),
-		ctx,
-		name,
-		description,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*Mockusecase)(nil).Update), ctx, name, description)
 }

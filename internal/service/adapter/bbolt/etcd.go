@@ -15,7 +15,11 @@ import (
 // GetKVAtRevision returns the value for (namespace, path) as it existed at the given
 // revision (looking up in the history bucket). Returns nil if no history entry exists
 // at or before that revision.
-func (r *ConfigRepo) GetKVAtRevision(_ context.Context, namespace, path string, revision int64) ([]byte, error) {
+func (r *ConfigRepo) GetKVAtRevision(
+	_ context.Context,
+	namespace, path string,
+	revision int64,
+) ([]byte, error) {
 	var out []byte
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
@@ -434,7 +438,12 @@ func (r *ConfigRepo) DeleteRangeKeys(
 	return deleted, newRev, nil
 }
 
-func deleteRangeKeysTx(tx *bolt.Tx, rp rangeParams, startNS string, returnPrev bool) ([]*domain.KVPair, int64, error) {
+func deleteRangeKeysTx(
+	tx *bolt.Tx,
+	rp rangeParams,
+	startNS string,
+	returnPrev bool,
+) ([]*domain.KVPair, int64, error) {
 	if err := validateNamespaceUnlocked(tx, startNS); err != nil {
 		return nil, 0, fmt.Errorf("validate namespace unlocked: %w", err)
 	}

@@ -63,7 +63,12 @@ func TestUserRepo_Upsert_Existing(t *testing.T) {
 	got, err := repo.Get(ctx, user.Email)
 	require.NoError(t, err)
 	assert.Equal(t, "Bob Updated", got.Name)
-	assert.Equal(t, originalCreatedAt.UnixNano(), got.CreatedAt.UnixNano(), "CreatedAt must not change on update")
+	assert.Equal(
+		t,
+		originalCreatedAt.UnixNano(),
+		got.CreatedAt.UnixNano(),
+		"CreatedAt must not change on update",
+	)
 }
 
 func TestUserRepo_Get_Existing(t *testing.T) {
@@ -73,7 +78,12 @@ func TestUserRepo_Get_Existing(t *testing.T) {
 	repo := bboltadapter.NewUserRepo(store)
 	ctx := t.Context()
 
-	user := &domain.User{Email: "carol@example.com", Name: "Carol", Provider: "oidc", LastLoginAt: time.Now()}
+	user := &domain.User{
+		Email:       "carol@example.com",
+		Name:        "Carol",
+		Provider:    "oidc",
+		LastLoginAt: time.Now(),
+	}
 	require.NoError(t, repo.Upsert(ctx, user))
 
 	got, err := repo.Get(ctx, "carol@example.com")
@@ -146,12 +156,17 @@ func TestUserRepo_List(t *testing.T) {
 		ordered    bool // when true, assert exact result order
 	}{
 		{
-			name:       "AnyUser returns all sorted by email asc by default",
-			filter:     domain.UserFilter{AnyUser: true},
-			params:     domain.UserListParams{},
-			wantEmails: []string{"alice@example.com", "bob@example.com", "carol@example.com", "dave@example.com"},
-			wantTotal:  4,
-			ordered:    true,
+			name:   "AnyUser returns all sorted by email asc by default",
+			filter: domain.UserFilter{AnyUser: true},
+			params: domain.UserListParams{},
+			wantEmails: []string{
+				"alice@example.com",
+				"bob@example.com",
+				"carol@example.com",
+				"dave@example.com",
+			},
+			wantTotal: 4,
+			ordered:   true,
 		},
 		{
 			name: "explicit usernames filter returns subset",
@@ -198,12 +213,17 @@ func TestUserRepo_List(t *testing.T) {
 			ordered:    true,
 		},
 		{
-			name:       "sort by name desc",
-			filter:     domain.UserFilter{AnyUser: true},
-			params:     domain.UserListParams{Sort: domain.SortParams{Field: "name", Desc: true}},
-			wantEmails: []string{"dave@example.com", "carol@example.com", "bob@example.com", "alice@example.com"},
-			wantTotal:  4,
-			ordered:    true,
+			name:   "sort by name desc",
+			filter: domain.UserFilter{AnyUser: true},
+			params: domain.UserListParams{Sort: domain.SortParams{Field: "name", Desc: true}},
+			wantEmails: []string{
+				"dave@example.com",
+				"carol@example.com",
+				"bob@example.com",
+				"alice@example.com",
+			},
+			wantTotal: 4,
+			ordered:   true,
 		},
 		{
 			name:       "empty filter (AnyUser:false, Usernames:nil) returns empty list",

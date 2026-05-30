@@ -13,9 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockstorage is a mock of storage interface.
@@ -34,7 +33,6 @@ type MockstorageMockRecorder struct {
 func NewMockstorage(ctrl *gomock.Controller) *Mockstorage {
 	mock := &Mockstorage{ctrl: ctrl}
 	mock.recorder = &MockstorageMockRecorder{mock}
-
 	return mock
 }
 
@@ -49,19 +47,11 @@ func (m *Mockstorage) List(ctx context.Context, namespace string) ([]*domain.Sch
 	ret := m.ctrl.Call(m, "List", ctx, namespace)
 	ret0, _ := ret[0].([]*domain.SchemaAttachment)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockstorageMockRecorder) List(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"List",
-		reflect.TypeOf((*Mockstorage)(nil).List),
-		ctx,
-		namespace,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstorage)(nil).List), ctx, namespace)
 }

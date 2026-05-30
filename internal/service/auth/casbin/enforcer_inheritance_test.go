@@ -70,10 +70,20 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				return e
 			},
 			requests: []request{
-				{domain: "prod", object: domain.ObjectNamespace, action: domain.ActionWrite, want: true},
+				{
+					domain: "prod",
+					object: domain.ObjectNamespace,
+					action: domain.ActionWrite,
+					want:   true,
+				},
 				// group has no role in staging -> no access there even though
 				// the membership rule is in domain "*".
-				{domain: "staging", object: domain.ObjectNamespace, action: domain.ActionWrite, want: false},
+				{
+					domain: "staging",
+					object: domain.ObjectNamespace,
+					action: domain.ActionWrite,
+					want:   false,
+				},
 			},
 		},
 		{
@@ -95,17 +105,32 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				// invariant rather than trusting the absence of a sync loop.
 				rules := e.GetRulesForSubject(alice)
 				require.Len(t, rules, 1)
-				assert.Equal(t, []string{alice, casbin.GroupSubject(devs), domain.MembershipDomain}, rules[0])
+				assert.Equal(
+					t,
+					[]string{alice, casbin.GroupSubject(devs), domain.MembershipDomain},
+					rules[0],
+				)
 
 				return e
 			},
 			requests: []request{
 				// alice loses access via the group revoke...
-				{domain: "prod", object: domain.ObjectNamespace, action: domain.ActionWrite, want: false},
+				{
+					domain: "prod",
+					object: domain.ObjectNamespace,
+					action: domain.ActionWrite,
+					want:   false,
+				},
 			},
 			extraSubjects: []extraCheck{
 				// ...and so does bob, through the same single mutation.
-				{subject: bob, domain: "prod", object: domain.ObjectNamespace, action: domain.ActionWrite, want: false},
+				{
+					subject: bob,
+					domain:  "prod",
+					object:  domain.ObjectNamespace,
+					action:  domain.ActionWrite,
+					want:    false,
+				},
 			},
 		},
 		{
@@ -121,7 +146,12 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				return e
 			},
 			requests: []request{
-				{domain: "prod", object: domain.ObjectNamespace, action: domain.ActionWrite, want: false},
+				{
+					domain: "prod",
+					object: domain.ObjectNamespace,
+					action: domain.ActionWrite,
+					want:   false,
+				},
 			},
 		},
 		{
@@ -138,11 +168,26 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 			},
 			requests: []request{
 				// Direct reader role grants read in any domain.
-				{domain: "staging", object: domain.ObjectNamespace, action: domain.ActionRead, want: true},
+				{
+					domain: "staging",
+					object: domain.ObjectNamespace,
+					action: domain.ActionRead,
+					want:   true,
+				},
 				// Group-derived admin role grants write in prod only.
-				{domain: "prod", object: domain.ObjectNamespace, action: domain.ActionWrite, want: true},
+				{
+					domain: "prod",
+					object: domain.ObjectNamespace,
+					action: domain.ActionWrite,
+					want:   true,
+				},
 				// Neither path grants write in staging.
-				{domain: "staging", object: domain.ObjectNamespace, action: domain.ActionWrite, want: false},
+				{
+					domain: "staging",
+					object: domain.ObjectNamespace,
+					action: domain.ActionWrite,
+					want:   false,
+				},
 			},
 		},
 	}
@@ -161,7 +206,12 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 			}
 
 			for _, chk := range tc.extraSubjects {
-				got, err := e.Enforce(chk.subject, chk.domain, string(chk.object), string(chk.action))
+				got, err := e.Enforce(
+					chk.subject,
+					chk.domain,
+					string(chk.object),
+					string(chk.action),
+				)
 				require.NoError(t, err)
 				assert.Equalf(t, chk.want, got,
 					"Enforce(%q, %q, %q, %q)", chk.subject, chk.domain, chk.object, chk.action)

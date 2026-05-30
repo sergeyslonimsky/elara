@@ -11,7 +11,10 @@ type WatchInput struct {
 	PathPrefix string
 }
 
-func (s *Service) Watch(ctx context.Context, in WatchInput) (<-chan domain.WatchEvent, func(), error) {
+func (s *Service) Watch(
+	ctx context.Context,
+	in WatchInput,
+) (<-chan domain.WatchEvent, func(), error) {
 	pathPrefix := in.PathPrefix
 	if pathPrefix == "" {
 		pathPrefix = "/"

@@ -7,15 +7,13 @@
 package dashboardv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -51,10 +49,8 @@ func (x *GetStatsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -65,10 +61,10 @@ func (*GetStatsRequest) Descriptor() ([]byte, []int) {
 
 type GetStatsResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	NamespaceCount    int32                  `                   protobuf:"varint,1,opt,name=namespace_count,json=namespaceCount,proto3"        json:"namespace_count,omitempty"`
-	ConfigCount       int32                  `                   protobuf:"varint,2,opt,name=config_count,json=configCount,proto3"              json:"config_count,omitempty"`
-	ActiveClientCount int32                  `                   protobuf:"varint,3,opt,name=active_client_count,json=activeClientCount,proto3" json:"active_client_count,omitempty"`
-	GlobalRevision    int64                  `                   protobuf:"varint,4,opt,name=global_revision,json=globalRevision,proto3"        json:"global_revision,omitempty"`
+	NamespaceCount    int32                  `protobuf:"varint,1,opt,name=namespace_count,json=namespaceCount,proto3" json:"namespace_count,omitempty"`
+	ConfigCount       int32                  `protobuf:"varint,2,opt,name=config_count,json=configCount,proto3" json:"config_count,omitempty"`
+	ActiveClientCount int32                  `protobuf:"varint,3,opt,name=active_client_count,json=activeClientCount,proto3" json:"active_client_count,omitempty"`
+	GlobalRevision    int64                  `protobuf:"varint,4,opt,name=global_revision,json=globalRevision,proto3" json:"global_revision,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -93,10 +89,8 @@ func (x *GetStatsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -109,7 +103,6 @@ func (x *GetStatsResponse) GetNamespaceCount() int32 {
 	if x != nil {
 		return x.NamespaceCount
 	}
-
 	return 0
 }
 
@@ -117,7 +110,6 @@ func (x *GetStatsResponse) GetConfigCount() int32 {
 	if x != nil {
 		return x.ConfigCount
 	}
-
 	return 0
 }
 
@@ -125,7 +117,6 @@ func (x *GetStatsResponse) GetActiveClientCount() int32 {
 	if x != nil {
 		return x.ActiveClientCount
 	}
-
 	return 0
 }
 
@@ -133,18 +124,17 @@ func (x *GetStatsResponse) GetGlobalRevision() int64 {
 	if x != nil {
 		return x.GlobalRevision
 	}
-
 	return 0
 }
 
 type ActivityEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Revision      int64                  `                   protobuf:"varint,1,opt,name=revision,proto3"                                                 json:"revision,omitempty"`
-	EventType     v1.EventType           `                   protobuf:"varint,2,opt,name=event_type,json=eventType,proto3,enum=elara.config.v1.EventType" json:"event_type,omitempty"`
-	Path          string                 `                   protobuf:"bytes,3,opt,name=path,proto3"                                                      json:"path,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,4,opt,name=namespace,proto3"                                                 json:"namespace,omitempty"`
-	Version       int64                  `                   protobuf:"varint,5,opt,name=version,proto3"                                                  json:"version,omitempty"`
-	Timestamp     *timestamppb.Timestamp `                   protobuf:"bytes,6,opt,name=timestamp,proto3"                                                 json:"timestamp,omitempty"`
+	Revision      int64                  `protobuf:"varint,1,opt,name=revision,proto3" json:"revision,omitempty"`
+	EventType     v1.EventType           `protobuf:"varint,2,opt,name=event_type,json=eventType,proto3,enum=elara.config.v1.EventType" json:"event_type,omitempty"`
+	Path          string                 `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Version       int64                  `protobuf:"varint,5,opt,name=version,proto3" json:"version,omitempty"`
+	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -169,10 +159,8 @@ func (x *ActivityEntry) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -185,7 +173,6 @@ func (x *ActivityEntry) GetRevision() int64 {
 	if x != nil {
 		return x.Revision
 	}
-
 	return 0
 }
 
@@ -193,7 +180,6 @@ func (x *ActivityEntry) GetEventType() v1.EventType {
 	if x != nil {
 		return x.EventType
 	}
-
 	return v1.EventType(0)
 }
 
@@ -201,7 +187,6 @@ func (x *ActivityEntry) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -209,7 +194,6 @@ func (x *ActivityEntry) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -217,7 +201,6 @@ func (x *ActivityEntry) GetVersion() int64 {
 	if x != nil {
 		return x.Version
 	}
-
 	return 0
 }
 
@@ -225,7 +208,6 @@ func (x *ActivityEntry) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
-
 	return nil
 }
 
@@ -257,10 +239,8 @@ func (x *ListActivityRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -273,13 +253,12 @@ func (x *ListActivityRequest) GetLimit() int32 {
 	if x != nil {
 		return x.Limit
 	}
-
 	return 0
 }
 
 type ListActivityResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Entries       []*ActivityEntry       `                   protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	Entries       []*ActivityEntry       `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -304,10 +283,8 @@ func (x *ListActivityResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -320,7 +297,6 @@ func (x *ListActivityResponse) GetEntries() []*ActivityEntry {
 	if x != nil {
 		return x.Entries
 	}
-
 	return nil
 }
 
@@ -359,29 +335,21 @@ var (
 
 func file_elara_dashboard_v1_dashboard_service_proto_rawDescGZIP() []byte {
 	file_elara_dashboard_v1_dashboard_service_proto_rawDescOnce.Do(func() {
-		file_elara_dashboard_v1_dashboard_service_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_dashboard_v1_dashboard_service_proto_rawDesc),
-				len(file_elara_dashboard_v1_dashboard_service_proto_rawDesc),
-			),
-		)
+		file_elara_dashboard_v1_dashboard_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_dashboard_v1_dashboard_service_proto_rawDesc), len(file_elara_dashboard_v1_dashboard_service_proto_rawDesc)))
 	})
-
 	return file_elara_dashboard_v1_dashboard_service_proto_rawDescData
 }
 
-var (
-	file_elara_dashboard_v1_dashboard_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-	file_elara_dashboard_v1_dashboard_service_proto_goTypes  = []any{
-		(*GetStatsRequest)(nil),       // 0: elara.dashboard.v1.GetStatsRequest
-		(*GetStatsResponse)(nil),      // 1: elara.dashboard.v1.GetStatsResponse
-		(*ActivityEntry)(nil),         // 2: elara.dashboard.v1.ActivityEntry
-		(*ListActivityRequest)(nil),   // 3: elara.dashboard.v1.ListActivityRequest
-		(*ListActivityResponse)(nil),  // 4: elara.dashboard.v1.ListActivityResponse
-		(v1.EventType)(0),             // 5: elara.config.v1.EventType
-		(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
-	}
-)
+var file_elara_dashboard_v1_dashboard_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_elara_dashboard_v1_dashboard_service_proto_goTypes = []any{
+	(*GetStatsRequest)(nil),       // 0: elara.dashboard.v1.GetStatsRequest
+	(*GetStatsResponse)(nil),      // 1: elara.dashboard.v1.GetStatsResponse
+	(*ActivityEntry)(nil),         // 2: elara.dashboard.v1.ActivityEntry
+	(*ListActivityRequest)(nil),   // 3: elara.dashboard.v1.ListActivityRequest
+	(*ListActivityResponse)(nil),  // 4: elara.dashboard.v1.ListActivityResponse
+	(v1.EventType)(0),             // 5: elara.config.v1.EventType
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+}
 var file_elara_dashboard_v1_dashboard_service_proto_depIdxs = []int32{
 	5, // 0: elara.dashboard.v1.ActivityEntry.event_type:type_name -> elara.config.v1.EventType
 	6, // 1: elara.dashboard.v1.ActivityEntry.timestamp:type_name -> google.protobuf.Timestamp
@@ -405,11 +373,8 @@ func file_elara_dashboard_v1_dashboard_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_dashboard_v1_dashboard_service_proto_rawDesc),
-				len(file_elara_dashboard_v1_dashboard_service_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_dashboard_v1_dashboard_service_proto_rawDesc), len(file_elara_dashboard_v1_dashboard_service_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   5,
 			NumExtensions: 0,

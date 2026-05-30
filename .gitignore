@@ -3,6 +3,7 @@
 .vscode/
 .claude/
 .gemini/
+.antigravitycli/
 .agora-code/
 *.swp
 *.swo

@@ -91,11 +91,14 @@ func TestHistoryStore_Record_NonBlocking(t *testing.T) {
 	repo := mockmonitor.NewMockClientHistoryRepo(ctrl)
 
 	block := make(chan struct{})
-	repo.EXPECT().Save(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, c *domain.Client) error {
-		<-block
+	repo.EXPECT().
+		Save(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, c *domain.Client) error {
+			<-block
 
-		return nil
-	}).AnyTimes()
+			return nil
+		}).
+		AnyTimes()
 	repo.EXPECT().DeleteOlderThan(gomock.Any(), gomock.Any()).Return(0, nil).AnyTimes()
 	repo.EXPECT().Count(gomock.Any()).Return(1, nil).AnyTimes()
 
@@ -241,7 +244,9 @@ func TestHistoryStore_ListByClient(t *testing.T) {
 			limit:     10,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*monitor.HistoryStore, context.Context) {
 				repo := mockmonitor.NewMockClientHistoryRepo(ctrl)
-				repo.EXPECT().ListByClient(ctx, "c1", "n1", 10).Return([]*domain.Client{{ID: "1"}}, nil)
+				repo.EXPECT().
+					ListByClient(ctx, "c1", "n1", 10).
+					Return([]*domain.Client{{ID: "1"}}, nil)
 
 				return monitor.NewHistoryStore(ctx, monitor.HistoryConfig{}, repo), ctx
 			},
@@ -254,7 +259,9 @@ func TestHistoryStore_ListByClient(t *testing.T) {
 			limit:     10,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*monitor.HistoryStore, context.Context) {
 				repo := mockmonitor.NewMockClientHistoryRepo(ctrl)
-				repo.EXPECT().ListByClient(ctx, "c1", "n1", 10).Return(nil, errors.New("db failure"))
+				repo.EXPECT().
+					ListByClient(ctx, "c1", "n1", 10).
+					Return(nil, errors.New("db failure"))
 
 				return monitor.NewHistoryStore(ctx, monitor.HistoryConfig{}, repo), ctx
 			},

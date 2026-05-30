@@ -244,5 +244,9 @@ func TestIntegration_UserLifecycle(t *testing.T) {
 	got, err = io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.NoError(t, resp.Body.Close())
-	itest.CompareJSONBytes(t, itest.ReadFile(t, "testdata/lifecycle/06_get_after_delete_resp.json"), got)
+	itest.CompareJSONBytes(
+		t,
+		itest.ReadFile(t, "testdata/lifecycle/06_get_after_delete_resp.json"),
+		got,
+	)
 }

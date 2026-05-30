@@ -10,6 +10,7 @@ import (
 	bboltadapter "github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 )
 
+//nolint:lll //casbin rule
 const testCasbinModel = `
 [request_definition]
 r = sub, dom, obj, act

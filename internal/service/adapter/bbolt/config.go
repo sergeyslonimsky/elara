@@ -71,7 +71,14 @@ func (r *ConfigRepo) Create(_ context.Context, cfg *domain.Config) error {
 			return err
 		}
 
-		return writeChangelog(tx, revision, domain.EventTypeCreated, cfg.Path, cfg.Namespace, cfg.Version)
+		return writeChangelog(
+			tx,
+			revision,
+			domain.EventTypeCreated,
+			cfg.Path,
+			cfg.Namespace,
+			cfg.Version,
+		)
 	})
 	if err != nil {
 		return fmt.Errorf("create config: %w", err)
@@ -166,7 +173,13 @@ func updateConfigTx(tx *bolt.Tx, cfg *domain.Config) error {
 }
 
 // writeConfigEntry writes content, meta, history and changelog for a config in one go.
-func writeConfigEntry(tx *bolt.Tx, key []byte, cfg *domain.Config, revision int64, eventType domain.EventType) error {
+func writeConfigEntry(
+	tx *bolt.Tx,
+	key []byte,
+	cfg *domain.Config,
+	revision int64,
+	eventType domain.EventType,
+) error {
 	if err := tx.Bucket([]byte(bucketContent)).Put(key, []byte(cfg.Content)); err != nil {
 		return fmt.Errorf("put content: %w", err)
 	}
@@ -246,7 +259,10 @@ func deleteConfigTx(tx *bolt.Tx, path, namespace string) (int64, error) {
 }
 
 // ListByPrefix returns all configs matching the given path prefix and namespace.
-func (r *ConfigRepo) ListByPrefix(_ context.Context, pathPrefix, namespace string) ([]*domain.Config, error) {
+func (r *ConfigRepo) ListByPrefix(
+	_ context.Context,
+	pathPrefix, namespace string,
+) ([]*domain.Config, error) {
 	var configs []*domain.Config
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
@@ -278,7 +294,10 @@ func (r *ConfigRepo) ListByPrefix(_ context.Context, pathPrefix, namespace strin
 }
 
 // ListAllByNamespace returns every config in the given namespace.
-func (r *ConfigRepo) ListAllByNamespace(ctx context.Context, namespace string) ([]*domain.Config, error) {
+func (r *ConfigRepo) ListAllByNamespace(
+	ctx context.Context,
+	namespace string,
+) ([]*domain.Config, error) {
 	return r.ListByPrefix(ctx, "", namespace)
 }
 
@@ -976,7 +995,10 @@ func validateUpdatePreconditions(existing *configMeta, cfg *domain.Config) error
 	}
 
 	if existing.Version != cfg.Version {
-		return fmt.Errorf("update precondition: %w", domain.NewConflictError(cfg.Version, existing.Version))
+		return fmt.Errorf(
+			"update precondition: %w",
+			domain.NewConflictError(cfg.Version, existing.Version),
+		)
 	}
 
 	return nil

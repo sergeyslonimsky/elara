@@ -24,7 +24,11 @@ func newMetricsTestServer(t *testing.T) (*KVServer, metric.Reader) {
 	return &KVServer{metrics: &kvMetrics{writesRejected: c}}, reader
 }
 
-func collectRejectedCounter(t *testing.T, ctx context.Context, reader metric.Reader) *metricdata.Sum[int64] {
+func collectRejectedCounter(
+	t *testing.T,
+	ctx context.Context,
+	reader metric.Reader,
+) *metricdata.Sum[int64] {
 	t.Helper()
 
 	var rm metricdata.ResourceMetrics

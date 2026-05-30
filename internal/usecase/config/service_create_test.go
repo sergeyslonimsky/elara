@@ -31,7 +31,9 @@ func TestService_Create(t *testing.T) {
 				Content:   `{"key": "value"}`,
 			},
 			mockFunc: func(ctx context.Context, m mocks) {
-				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
+				m.namespaceProvider.EXPECT().
+					Get(ctx, "prod").
+					Return(&domain.Namespace{Name: "prod"}, nil)
 
 				normalized := "{\n  \"key\": \"value\"\n}"
 				m.schemaValidator.EXPECT().
@@ -73,7 +75,9 @@ func TestService_Create(t *testing.T) {
 				Content:   `{invalid json}`,
 			},
 			mockFunc: func(ctx context.Context, m mocks) {
-				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
+				m.namespaceProvider.EXPECT().
+					Get(ctx, "prod").
+					Return(&domain.Namespace{Name: "prod"}, nil)
 			},
 			wantErr: "validate content",
 		},
@@ -85,7 +89,9 @@ func TestService_Create(t *testing.T) {
 				Content:   `{"key": "value"}`,
 			},
 			mockFunc: func(ctx context.Context, m mocks) {
-				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
+				m.namespaceProvider.EXPECT().
+					Get(ctx, "prod").
+					Return(&domain.Namespace{Name: "prod"}, nil)
 
 				normalized := "{\n  \"key\": \"value\"\n}"
 				m.schemaValidator.EXPECT().
@@ -102,7 +108,9 @@ func TestService_Create(t *testing.T) {
 				Content:   `{"key": "value"}`,
 			},
 			mockFunc: func(ctx context.Context, m mocks) {
-				m.namespaceProvider.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
+				m.namespaceProvider.EXPECT().
+					Get(ctx, "prod").
+					Return(&domain.Namespace{Name: "prod"}, nil)
 
 				normalized := "{\n  \"key\": \"value\"\n}"
 				m.schemaValidator.EXPECT().

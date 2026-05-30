@@ -19,7 +19,12 @@ func TestService_List(t *testing.T) {
 
 	summaries := []*domain.ConfigSummary{
 		{Path: "/services/api/config.json", Format: domain.FormatJSON, Version: 1, UpdatedAt: now},
-		{Path: "/services/api/secrets.yaml", Format: domain.FormatYAML, Version: 2, UpdatedAt: now.Add(-time.Hour)},
+		{
+			Path:      "/services/api/secrets.yaml",
+			Format:    domain.FormatYAML,
+			Version:   2,
+			UpdatedAt: now.Add(-time.Hour),
+		},
 		{
 			Path:      "/services/web/config.json",
 			Format:    domain.FormatJSON,

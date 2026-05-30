@@ -82,15 +82,18 @@ type policyRow struct {
 func addPolicies(t *testing.T, st realStack, rules []policyRow) {
 	t.Helper()
 
-	require.NoError(t, st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		for _, r := range rules {
-			if err := txe.AddPolicy(r.Sub, r.Dom, string(r.Obj), string(r.Act)); err != nil {
-				return err
+	require.NoError(
+		t,
+		st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			for _, r := range rules {
+				if err := txe.AddPolicy(r.Sub, r.Dom, string(r.Obj), string(r.Act)); err != nil {
+					return err
+				}
 			}
-		}
 
-		return nil
-	}))
+			return nil
+		}),
+	)
 }
 
 // addMemberships writes membership g-rules (`user, group:<name>, *`) inside a
@@ -98,16 +101,19 @@ func addPolicies(t *testing.T, st realStack, rules []policyRow) {
 func addMemberships(t *testing.T, st realStack, rows []struct{ User, GroupName string }) {
 	t.Helper()
 
-	require.NoError(t, st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		for _, m := range rows {
-			subject := casbin.GroupSubject(m.GroupName)
-			if err := txe.AddRoleForUser(m.User, subject, domain.MembershipDomain); err != nil {
-				return err
+	require.NoError(
+		t,
+		st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			for _, m := range rows {
+				subject := casbin.GroupSubject(m.GroupName)
+				if err := txe.AddRoleForUser(m.User, subject, domain.MembershipDomain); err != nil {
+					return err
+				}
 			}
-		}
 
-		return nil
-	}))
+			return nil
+		}),
+	)
 }
 
 // seedAdminAll grants admin@example.com the (*,*,*) policy. Most usecase
@@ -183,9 +189,17 @@ func setupServiceWithMockStore(t *testing.T) mockStack {
 func seedAdminAllOnMockStack(t *testing.T, m mockStack) {
 	t.Helper()
 
-	require.NoError(t, m.enforcer.WriteTx(t.Context(), m.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddPolicy(adminEmail, domain.DomainAll, string(domain.ObjectAll), string(domain.ActionAll))
-	}))
+	require.NoError(
+		t,
+		m.enforcer.WriteTx(t.Context(), m.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			return txe.AddPolicy(
+				adminEmail,
+				domain.DomainAll,
+				string(domain.ObjectAll),
+				string(domain.ActionAll),
+			)
+		}),
+	)
 }
 
 // ---- List ---------------------------------------------------------------------

@@ -16,7 +16,10 @@ func (s *Service) Delete(ctx context.Context, name string) error {
 	}
 
 	if count > 0 {
-		return domain.NewValidationError("name", fmt.Sprintf("namespace %q contains %d config(s)", name, count))
+		return domain.NewValidationError(
+			"name",
+			fmt.Sprintf("namespace %q contains %d config(s)", name, count),
+		)
 	}
 
 	if err := s.store.Delete(ctx, name); err != nil {

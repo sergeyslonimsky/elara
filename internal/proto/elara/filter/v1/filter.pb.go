@@ -7,14 +7,12 @@
 package filterv1
 
 import (
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 )
 
 const (
@@ -26,7 +24,7 @@ const (
 
 type Filters struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Query         string                 `                   protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -51,10 +49,8 @@ func (x *Filters) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -67,15 +63,14 @@ func (x *Filters) GetQuery() string {
 	if x != nil {
 		return x.Query
 	}
-
 	return ""
 }
 
 type Item struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `                   protobuf:"bytes,1,opt,name=key,proto3"                                                   json:"key,omitempty"`
-	Value         string                 `                   protobuf:"bytes,2,opt,name=value,proto3"                                                 json:"value,omitempty"`
-	Actions       []v1.PermissionAction  `                   protobuf:"varint,3,rep,packed,name=actions,proto3,enum=elara.common.v1.PermissionAction" json:"actions,omitempty"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Actions       []v1.PermissionAction  `protobuf:"varint,3,rep,packed,name=actions,proto3,enum=elara.common.v1.PermissionAction" json:"actions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -100,10 +95,8 @@ func (x *Item) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -116,7 +109,6 @@ func (x *Item) GetKey() string {
 	if x != nil {
 		return x.Key
 	}
-
 	return ""
 }
 
@@ -124,7 +116,6 @@ func (x *Item) GetValue() string {
 	if x != nil {
 		return x.Value
 	}
-
 	return ""
 }
 
@@ -132,7 +123,6 @@ func (x *Item) GetActions() []v1.PermissionAction {
 	if x != nil {
 		return x.Actions
 	}
-
 	return nil
 }
 
@@ -156,25 +146,17 @@ var (
 
 func file_elara_filter_v1_filter_proto_rawDescGZIP() []byte {
 	file_elara_filter_v1_filter_proto_rawDescOnce.Do(func() {
-		file_elara_filter_v1_filter_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_filter_v1_filter_proto_rawDesc),
-				len(file_elara_filter_v1_filter_proto_rawDesc),
-			),
-		)
+		file_elara_filter_v1_filter_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_filter_v1_filter_proto_rawDesc), len(file_elara_filter_v1_filter_proto_rawDesc)))
 	})
-
 	return file_elara_filter_v1_filter_proto_rawDescData
 }
 
-var (
-	file_elara_filter_v1_filter_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-	file_elara_filter_v1_filter_proto_goTypes  = []any{
-		(*Filters)(nil),          // 0: elara.filter.v1.Filters
-		(*Item)(nil),             // 1: elara.filter.v1.Item
-		(v1.PermissionAction)(0), // 2: elara.common.v1.PermissionAction
-	}
-)
+var file_elara_filter_v1_filter_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_elara_filter_v1_filter_proto_goTypes = []any{
+	(*Filters)(nil),          // 0: elara.filter.v1.Filters
+	(*Item)(nil),             // 1: elara.filter.v1.Item
+	(v1.PermissionAction)(0), // 2: elara.common.v1.PermissionAction
+}
 var file_elara_filter_v1_filter_proto_depIdxs = []int32{
 	2, // 0: elara.filter.v1.Item.actions:type_name -> elara.common.v1.PermissionAction
 	1, // [1:1] is the sub-list for method output_type
@@ -192,11 +174,8 @@ func file_elara_filter_v1_filter_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_filter_v1_filter_proto_rawDesc),
-				len(file_elara_filter_v1_filter_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_filter_v1_filter_proto_rawDesc), len(file_elara_filter_v1_filter_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,

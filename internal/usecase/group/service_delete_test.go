@@ -25,7 +25,11 @@ func TestService_Delete(t *testing.T) {
 				t.Helper()
 
 				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "devops"})
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "devops"},
+				)
 				require.NoError(t, err)
 
 				_, err = st.svc.UpdateMembers(t.Context(), adminAuth(), group.UpdateMembersData{

@@ -13,10 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	schema "github.com/sergeyslonimsky/elara/internal/usecase/schema"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockschemaAuthz is a mock of schemaAuthz interface.
@@ -35,7 +34,6 @@ type MockschemaAuthzMockRecorder struct {
 func NewMockschemaAuthz(ctrl *gomock.Controller) *MockschemaAuthz {
 	mock := &MockschemaAuthz{ctrl: ctrl}
 	mock.recorder = &MockschemaAuthzMockRecorder{mock}
-
 	return mock
 }
 
@@ -45,32 +43,17 @@ func (m *MockschemaAuthz) EXPECT() *MockschemaAuthzMockRecorder {
 }
 
 // Require mocks base method.
-func (m *MockschemaAuthz) Require(
-	ctx context.Context,
-	object domain.Object,
-	action domain.Action,
-	domainStr string,
-) error {
+func (m *MockschemaAuthz) Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Require indicates an expected call of Require.
 func (mr *MockschemaAuthzMockRecorder) Require(ctx, object, action, domainStr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Require",
-		reflect.TypeOf((*MockschemaAuthz)(nil).Require),
-		ctx,
-		object,
-		action,
-		domainStr,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*MockschemaAuthz)(nil).Require), ctx, object, action, domainStr)
 }
 
 // MockschemaUsecase is a mock of schemaUsecase interface.
@@ -89,7 +72,6 @@ type MockschemaUsecaseMockRecorder struct {
 func NewMockschemaUsecase(ctrl *gomock.Controller) *MockschemaUsecase {
 	mock := &MockschemaUsecase{ctrl: ctrl}
 	mock.recorder = &MockschemaUsecaseMockRecorder{mock}
-
 	return mock
 }
 
@@ -104,21 +86,13 @@ func (m *MockschemaUsecase) Attach(ctx context.Context, in schema.AttachInput) (
 	ret := m.ctrl.Call(m, "Attach", ctx, in)
 	ret0, _ := ret[0].(*domain.SchemaAttachment)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Attach indicates an expected call of Attach.
 func (mr *MockschemaUsecaseMockRecorder) Attach(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Attach",
-		reflect.TypeOf((*MockschemaUsecase)(nil).Attach),
-		ctx,
-		in,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Attach", reflect.TypeOf((*MockschemaUsecase)(nil).Attach), ctx, in)
 }
 
 // Detach mocks base method.
@@ -126,22 +100,13 @@ func (m *MockschemaUsecase) Detach(ctx context.Context, namespace, pathPattern s
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Detach", ctx, namespace, pathPattern)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Detach indicates an expected call of Detach.
 func (mr *MockschemaUsecaseMockRecorder) Detach(ctx, namespace, pathPattern any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Detach",
-		reflect.TypeOf((*MockschemaUsecase)(nil).Detach),
-		ctx,
-		namespace,
-		pathPattern,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Detach", reflect.TypeOf((*MockschemaUsecase)(nil).Detach), ctx, namespace, pathPattern)
 }
 
 // Get mocks base method.
@@ -150,49 +115,28 @@ func (m *MockschemaUsecase) Get(ctx context.Context, namespace, pathPattern stri
 	ret := m.ctrl.Call(m, "Get", ctx, namespace, pathPattern)
 	ret0, _ := ret[0].(*domain.SchemaAttachment)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockschemaUsecaseMockRecorder) Get(ctx, namespace, pathPattern any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Get",
-		reflect.TypeOf((*MockschemaUsecase)(nil).Get),
-		ctx,
-		namespace,
-		pathPattern,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockschemaUsecase)(nil).Get), ctx, namespace, pathPattern)
 }
 
 // GetEffective mocks base method.
-func (m *MockschemaUsecase) GetEffective(
-	ctx context.Context,
-	namespace, path string,
-) (*domain.SchemaAttachment, error) {
+func (m *MockschemaUsecase) GetEffective(ctx context.Context, namespace, path string) (*domain.SchemaAttachment, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEffective", ctx, namespace, path)
 	ret0, _ := ret[0].(*domain.SchemaAttachment)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // GetEffective indicates an expected call of GetEffective.
 func (mr *MockschemaUsecaseMockRecorder) GetEffective(ctx, namespace, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"GetEffective",
-		reflect.TypeOf((*MockschemaUsecase)(nil).GetEffective),
-		ctx,
-		namespace,
-		path,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEffective", reflect.TypeOf((*MockschemaUsecase)(nil).GetEffective), ctx, namespace, path)
 }
 
 // List mocks base method.
@@ -201,19 +145,11 @@ func (m *MockschemaUsecase) List(ctx context.Context, namespace string) ([]*doma
 	ret := m.ctrl.Call(m, "List", ctx, namespace)
 	ret0, _ := ret[0].([]*domain.SchemaAttachment)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockschemaUsecaseMockRecorder) List(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"List",
-		reflect.TypeOf((*MockschemaUsecase)(nil).List),
-		ctx,
-		namespace,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockschemaUsecase)(nil).List), ctx, namespace)
 }

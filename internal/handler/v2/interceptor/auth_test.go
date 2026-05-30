@@ -46,6 +46,7 @@ func newExpiredToken(t *testing.T) string {
 // testConfigServer implements a minimal configv1connect.ConfigServiceHandler for testing.
 type testConfigServer struct {
 	configv1connect.UnimplementedConfigServiceHandler
+
 	called     bool
 	wantClaims bool
 	t          *testing.T
@@ -157,11 +158,13 @@ func TestAuthInterceptor_WrapStreamingClient(t *testing.T) {
 	i := interceptor.NewAuthInterceptor(sm)
 
 	called := false
-	next := connect.StreamingClientFunc(func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
-		called = true
+	next := connect.StreamingClientFunc(
+		func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+			called = true
 
-		return nil
-	})
+			return nil
+		},
+	)
 
 	i.WrapStreamingClient(next)(t.Context(), connect.Spec{})
 	assert.True(t, called)
@@ -170,6 +173,7 @@ func TestAuthInterceptor_WrapStreamingClient(t *testing.T) {
 // stubStreamingHandlerConn is a minimal streaming handler conn for testing WrapStreamingHandler.
 type stubStreamingHandlerConn struct {
 	connect.StreamingHandlerConn
+
 	procedure string
 	header    http.Header
 	ctx       context.Context //nolint:containedctx // test helper; context stored to implement the interface

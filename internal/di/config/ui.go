@@ -62,9 +62,13 @@ type SessionConfig struct {
 }
 
 var (
-	ErrBasicAuthUsernameRequired = errors.New("basic-auth requires ui.auth.basicAuth.username to be set")
-	ErrBasicAuthPasswordRequired = errors.New("basic-auth requires ui.auth.basicAuth.password to be set")
-	ErrOIDCAdminEmailRequired    = errors.New("oidc requires ui.auth.oidc.adminEmail to be set")
+	ErrBasicAuthUsernameRequired = errors.New(
+		"basic-auth requires ui.auth.basicAuth.username to be set",
+	)
+	ErrBasicAuthPasswordRequired = errors.New(
+		"basic-auth requires ui.auth.basicAuth.password to be set",
+	)
+	ErrOIDCAdminEmailRequired = errors.New("oidc requires ui.auth.oidc.adminEmail to be set")
 )
 
 // Validate returns an error if the configuration is invalid.

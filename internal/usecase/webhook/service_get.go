@@ -17,7 +17,7 @@ func (s *Service) Get(ctx context.Context, id string) (*domain.Webhook, error) {
 		return nil, domain.ErrUnauthorized
 	}
 
-	w, err := s.repo.Get(ctx, id)
+	webhook, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("get webhook: %w", err)
 	}
@@ -25,12 +25,12 @@ func (s *Service) Get(ctx context.Context, id string) (*domain.Webhook, error) {
 	if !s.pdp.Has(claims.Email, domain.Permission{
 		Object: domain.ObjectWebhook,
 		Action: domain.ActionRead,
-		Domain: webhookDomain(w),
+		Domain: webhookDomain(webhook),
 	}) {
 		return nil, domain.ErrForbidden
 	}
 
-	return w, nil
+	return webhook, nil
 }
 
 // webhookDomain returns the Casbin domain for a webhook. An empty

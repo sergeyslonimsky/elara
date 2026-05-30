@@ -19,17 +19,25 @@ import (
 
 type (
 	authz interface {
-		Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error
+		Require(
+			ctx context.Context,
+			object domain.Object,
+			action domain.Action,
+			domainStr string,
+		) error
 	}
 
-	configUsecase interface {
+	configUsecase interface { //nolint:interfacebloat //all methods for config operations
 		Create(ctx context.Context, cfg *domain.Config) (*domain.Config, error)
 		Get(ctx context.Context, in configuc.GetInput) (*domain.Config, error)
 		Update(ctx context.Context, cfg *domain.Config) (*domain.Config, error)
 		Delete(ctx context.Context, in configuc.DeleteInput) error
 		List(ctx context.Context, params configuc.ListParams) (*configuc.ListResult, error)
 		History(ctx context.Context, in configuc.HistoryInput) ([]*domain.HistoryEntry, error)
-		GetAtRevision(ctx context.Context, in configuc.GetAtRevisionInput) (*domain.HistoryEntry, error)
+		GetAtRevision(
+			ctx context.Context,
+			in configuc.GetAtRevisionInput,
+		) (*domain.HistoryEntry, error)
 		Search(ctx context.Context, params configuc.SearchParams) (*configuc.SearchResult, error)
 		Copy(ctx context.Context, in configuc.CopyInput) (*domain.Config, error)
 		Validate(ctx context.Context, in configuc.ValidateInput) (*content.ValidationResult, error)

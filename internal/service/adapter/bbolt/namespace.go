@@ -198,7 +198,11 @@ func paginate(namespaces []*domain.Namespace, offset, limit int) []*domain.Names
 // stats, transfer export-all, profile bootstrap) and apply their own scoping
 // downstream. New code that filters by caller permissions MUST use List.
 func (r *NamespaceRepo) ListAll(ctx context.Context) ([]*domain.Namespace, error) {
-	namespaces, _, err := r.List(ctx, domain.NamespaceFilter{Wildcard: true}, domain.NamespaceListParams{})
+	namespaces, _, err := r.List(
+		ctx,
+		domain.NamespaceFilter{Wildcard: true},
+		domain.NamespaceListParams{},
+	)
 	if err != nil {
 		return nil, err
 	}

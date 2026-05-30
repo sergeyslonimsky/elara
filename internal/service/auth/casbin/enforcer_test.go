@@ -64,33 +64,55 @@ func newTestEnforcerWithTxM(t *testing.T, rules [][]string) (*casbin.Enforcer, s
 // and cache stay in sync — equivalent to the old Enforcer.AddRoleForUser bridge.
 func seedRole(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, user, role, dom string) {
 	t.Helper()
-	require.NoError(t, e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddRoleForUser(user, role, dom)
-	}))
+	require.NoError(
+		t,
+		e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			return txe.AddRoleForUser(user, role, dom)
+		}),
+	)
 }
 
 // removeRole removes a g-rule through a real WriteTx.
 func removeRole(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, user, role, dom string) {
 	t.Helper()
-	require.NoError(t, e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.RemoveRoleForUser(user, role, dom)
-	}))
+	require.NoError(
+		t,
+		e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			return txe.RemoveRoleForUser(user, role, dom)
+		}),
+	)
 }
 
 // seedPolicy adds a p-rule through a real WriteTx.
-func seedPolicy(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, sub, dom, obj, act string) {
+func seedPolicy(
+	t *testing.T,
+	e *casbin.Enforcer,
+	txm storage.TxManager,
+	sub, dom, obj, act string,
+) {
 	t.Helper()
-	require.NoError(t, e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.AddPolicy(sub, dom, obj, act)
-	}))
+	require.NoError(
+		t,
+		e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			return txe.AddPolicy(sub, dom, obj, act)
+		}),
+	)
 }
 
 // removePolicy removes a p-rule through a real WriteTx.
-func removePolicy(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, sub, dom, obj, act string) {
+func removePolicy(
+	t *testing.T,
+	e *casbin.Enforcer,
+	txm storage.TxManager,
+	sub, dom, obj, act string,
+) {
 	t.Helper()
-	require.NoError(t, e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		return txe.RemovePolicy(sub, dom, obj, act)
-	}))
+	require.NoError(
+		t,
+		e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			return txe.RemovePolicy(sub, dom, obj, act)
+		}),
+	)
 }
 
 // seedRoleTemplates attaches capability p-rules to the admin/reader/writer

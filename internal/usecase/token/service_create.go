@@ -17,9 +17,16 @@ type CreateInput struct {
 	ExpiresAt  *time.Time
 }
 
-func (s *Service) Create(ctx context.Context, user domain.AuthInfo, in CreateInput) (*domain.Token, string, error) {
+func (s *Service) Create(
+	ctx context.Context,
+	user domain.AuthInfo,
+	in CreateInput,
+) (*domain.Token, string, error) {
 	if len(in.Namespaces) == 0 {
-		return nil, "", domain.NewValidationError("namespaces", "at least one namespace is required")
+		return nil, "", domain.NewValidationError(
+			"namespaces",
+			"at least one namespace is required",
+		)
 	}
 
 	// Role-scope invariant: a token cannot grant more than its creator has on

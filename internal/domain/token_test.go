@@ -163,7 +163,11 @@ func TestToken_IsExpired(t *testing.T) {
 	}{
 		{name: "nil expiry never expires", want: false},
 		{name: "past expiry is expired", expiresAt: new(time.Now().Add(-time.Hour)), want: true},
-		{name: "future expiry is not expired", expiresAt: new(time.Now().Add(time.Hour)), want: false},
+		{
+			name:      "future expiry is not expired",
+			expiresAt: new(time.Now().Add(time.Hour)),
+			want:      false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -187,8 +191,18 @@ func TestToken_NamespaceAllowed(t *testing.T) {
 		namespace  string
 		want       bool
 	}{
-		{name: "empty namespaces denies access", namespaces: []string{}, namespace: "production", want: false},
-		{name: "nil namespaces denies access", namespaces: nil, namespace: "production", want: false},
+		{
+			name:       "empty namespaces denies access",
+			namespaces: []string{},
+			namespace:  "production",
+			want:       false,
+		},
+		{
+			name:       "nil namespaces denies access",
+			namespaces: nil,
+			namespace:  "production",
+			want:       false,
+		},
 		{
 			name:       "matching namespace grants access",
 			namespaces: []string{"staging", "production"},
@@ -227,7 +241,12 @@ func TestToken_ActionAllowed(t *testing.T) {
 		{name: "writer can read", role: domain.RoleWriter, action: domain.ActionRead, want: true},
 		{name: "writer can write", role: domain.RoleWriter, action: domain.ActionWrite, want: true},
 		{name: "reader can read", role: domain.RoleReader, action: domain.ActionRead, want: true},
-		{name: "reader cannot write", role: domain.RoleReader, action: domain.ActionWrite, want: false},
+		{
+			name:   "reader cannot write",
+			role:   domain.RoleReader,
+			action: domain.ActionWrite,
+			want:   false,
+		},
 		{name: "unknown role denied", role: "", action: domain.ActionRead, want: false},
 	}
 

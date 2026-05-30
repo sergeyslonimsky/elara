@@ -16,7 +16,10 @@ type ValidateInput struct {
 	Path      string
 }
 
-func (s *Service) Validate(ctx context.Context, in ValidateInput) (*content.ValidationResult, error) {
+func (s *Service) Validate(
+	ctx context.Context,
+	in ValidateInput,
+) (*content.ValidationResult, error) {
 	result, err := content.ValidateAndNormalize(in.Content, in.Format)
 	if err != nil {
 		return nil, fmt.Errorf("validate and normalize: %w", err)

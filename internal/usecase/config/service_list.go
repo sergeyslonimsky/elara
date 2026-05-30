@@ -144,7 +144,11 @@ func splitSummariesIntoFoldersAndFiles(
 	return folders, files
 }
 
-func buildFolderEntries(folders map[string]*folderInfo, prefix string, namespaceLocked bool) []*DirectoryEntry {
+func buildFolderEntries(
+	folders map[string]*folderInfo,
+	prefix string,
+	namespaceLocked bool,
+) []*DirectoryEntry {
 	folderEntries := make([]*DirectoryEntry, 0, len(folders))
 
 	for name, fi := range folders {

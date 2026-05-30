@@ -40,8 +40,10 @@ func TestService_Import(t *testing.T) {
 				return input{
 					data: func() []byte {
 						b, err := json.Marshal(domain.NamespaceBundle{
-							Namespace:  "my-ns",
-							Configs:    []domain.BundleConfig{{Path: "/c1", Content: "{}", Format: domain.FormatJSON}},
+							Namespace: "my-ns",
+							Configs: []domain.BundleConfig{
+								{Path: "/c1", Content: "{}", Format: domain.FormatJSON},
+							},
 							ExportedAt: time.Now(),
 						})
 						require.NoError(t, err)
@@ -100,8 +102,12 @@ func TestService_Import(t *testing.T) {
 					Action: domain.ActionWrite,
 					Domain: "*",
 				}).Return(true)
-				m.namespaces.EXPECT().Get(gomock.Any(), "ns1").Return(&domain.Namespace{Name: "ns1"}, nil)
-				m.namespaces.EXPECT().Get(gomock.Any(), "ns2").Return(&domain.Namespace{Name: "ns2"}, nil)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "ns1").
+					Return(&domain.Namespace{Name: "ns1"}, nil)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "ns2").
+					Return(&domain.Namespace{Name: "ns2"}, nil)
 				m.configs.EXPECT().Get(gomock.Any(), "/a", "ns1").Return(nil, domain.ErrNotFound)
 				m.configs.EXPECT().Get(gomock.Any(), "/b", "ns2").Return(nil, domain.ErrNotFound)
 				m.configs.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil).Times(2)
@@ -136,7 +142,9 @@ func TestService_Import(t *testing.T) {
 					Action: domain.ActionWrite,
 					Domain: "my-ns",
 				}).Return(true)
-				m.namespaces.EXPECT().Get(gomock.Any(), "my-ns").Return(&domain.Namespace{Name: "my-ns"}, nil)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "my-ns").
+					Return(&domain.Namespace{Name: "my-ns"}, nil)
 				m.configs.EXPECT().
 					Get(gomock.Any(), "/c1", "my-ns").
 					Return(&domain.Config{Path: "/c1", Namespace: "my-ns"}, nil)
@@ -170,7 +178,9 @@ func TestService_Import(t *testing.T) {
 					Action: domain.ActionWrite,
 					Domain: "my-ns",
 				}).Return(true)
-				m.namespaces.EXPECT().Get(gomock.Any(), "my-ns").Return(&domain.Namespace{Name: "my-ns"}, nil)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "my-ns").
+					Return(&domain.Namespace{Name: "my-ns"}, nil)
 				m.configs.EXPECT().
 					Get(gomock.Any(), "/c1", "my-ns").
 					Return(&domain.Config{Path: "/c1", Namespace: "my-ns", Version: 42}, nil)

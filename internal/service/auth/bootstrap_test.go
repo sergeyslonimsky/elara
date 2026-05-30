@@ -69,7 +69,9 @@ func TestAdminBootstrap_Idempotent(t *testing.T) {
 
 	// p-rule: superadmin has (*, *, *) wildcard. ListPermissionsForSubject returns
 	// rule rows of shape [dom, obj, act] (subject is implicit in the query).
-	perms, err := policies.ListPermissionsForSubject(casbin.GroupSubject(domain.SystemGroupSuperAdmin))
+	perms, err := policies.ListPermissionsForSubject(
+		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
+	)
 	require.NoError(t, err)
 
 	wildcardCount := 0
@@ -107,7 +109,9 @@ func TestAdminBootstrap_RecoversRemovedPolicy(t *testing.T) {
 	// Re-run bootstrap — break-glass should restore the missing rule.
 	require.NoError(t, bs.BootstrapBasic(ctx, "superadmin@example.com", "pw"))
 
-	perms, err := policies.ListPermissionsForSubject(casbin.GroupSubject(domain.SystemGroupSuperAdmin))
+	perms, err := policies.ListPermissionsForSubject(
+		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
+	)
 	require.NoError(t, err)
 
 	found := false

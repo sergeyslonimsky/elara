@@ -58,7 +58,12 @@ func TestIntegration_M9_CreatorOnly_CanCreateButNotUpdate(t *testing.T) {
 	s := itest.New(t)
 
 	creatorToken := s.AddPersona(t, "creator@example.com", "creators", []itest.GroupPerm{
-		{Group: "creators", Object: domain.ObjectGroup, Action: domain.ActionCreate, Domain: domain.DomainAll},
+		{
+			Group:  "creators",
+			Object: domain.ObjectGroup,
+			Action: domain.ActionCreate,
+			Domain: domain.DomainAll,
+		},
 	})
 
 	// 1. Create new group succeeds — creator has Group:Create on the global scope.
@@ -100,8 +105,18 @@ func TestIntegration_M9_NamespaceCreatorOnly_CannotDelete(t *testing.T) {
 	s := itest.New(t)
 
 	creatorToken := s.AddPersona(t, "ns-creator@example.com", "ns-creators", []itest.GroupPerm{
-		{Group: "ns-creators", Object: domain.ObjectNamespace, Action: domain.ActionCreate, Domain: domain.DomainAll},
-		{Group: "ns-creators", Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: domain.DomainAll},
+		{
+			Group:  "ns-creators",
+			Object: domain.ObjectNamespace,
+			Action: domain.ActionCreate,
+			Domain: domain.DomainAll,
+		},
+		{
+			Group:  "ns-creators",
+			Object: domain.ObjectNamespace,
+			Action: domain.ActionRead,
+			Domain: domain.DomainAll,
+		},
 	})
 
 	// CreateNamespace succeeds.

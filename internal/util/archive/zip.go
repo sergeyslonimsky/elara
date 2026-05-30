@@ -13,9 +13,9 @@ var ErrEmptyZip = errors.New("zip archive is empty")
 // WrapInZip wraps payload bytes into a ZIP archive with a single entry.
 func WrapInZip(filename string, data []byte) ([]byte, error) {
 	var buf bytes.Buffer
-	zw := zip.NewWriter(&buf)
+	writer := zip.NewWriter(&buf)
 
-	fw, err := zw.Create(filename)
+	fw, err := writer.Create(filename)
 	if err != nil {
 		return nil, fmt.Errorf("create zip entry: %w", err)
 	}
@@ -24,7 +24,7 @@ func WrapInZip(filename string, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("write zip entry: %w", err)
 	}
 
-	if err := zw.Close(); err != nil {
+	if err := writer.Close(); err != nil {
 		return nil, fmt.Errorf("close zip: %w", err)
 	}
 
@@ -42,24 +42,24 @@ func UnzipIfNeeded(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("open zip: %w", err)
 	}
 
-	for _, f := range zr.File {
-		if f.FileInfo().IsDir() {
+	for _, file := range zr.File {
+		if file.FileInfo().IsDir() {
 			continue
 		}
 
-		rc, err := f.Open()
+		rc, err := file.Open()
 		if err != nil {
-			return nil, fmt.Errorf("open zip file %s: %w", f.Name, err)
+			return nil, fmt.Errorf("open zip file %s: %w", file.Name, err)
 		}
 
 		content, readErr := io.ReadAll(rc)
 
 		if closeErr := rc.Close(); closeErr != nil && readErr == nil {
-			return nil, fmt.Errorf("close zip file %s: %w", f.Name, closeErr)
+			return nil, fmt.Errorf("close zip file %s: %w", file.Name, closeErr)
 		}
 
 		if readErr != nil {
-			return nil, fmt.Errorf("read zip file %s: %w", f.Name, readErr)
+			return nil, fmt.Errorf("read zip file %s: %w", file.Name, readErr)
 		}
 
 		return content, nil

@@ -13,9 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockpdp is a mock of pdp interface.
@@ -34,7 +33,6 @@ type MockpdpMockRecorder struct {
 func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
 	mock := &Mockpdp{ctrl: ctrl}
 	mock.recorder = &MockpdpMockRecorder{mock}
-
 	return mock
 }
 
@@ -49,20 +47,13 @@ func (m *Mockpdp) ListPermissions(principal string) ([]domain.Permission, error)
 	ret := m.ctrl.Call(m, "ListPermissions", principal)
 	ret0, _ := ret[0].([]domain.Permission)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // ListPermissions indicates an expected call of ListPermissions.
 func (mr *MockpdpMockRecorder) ListPermissions(principal any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"ListPermissions",
-		reflect.TypeOf((*Mockpdp)(nil).ListPermissions),
-		principal,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPermissions", reflect.TypeOf((*Mockpdp)(nil).ListPermissions), principal)
 }
 
 // MockuserGetter is a mock of userGetter interface.
@@ -81,7 +72,6 @@ type MockuserGetterMockRecorder struct {
 func NewMockuserGetter(ctrl *gomock.Controller) *MockuserGetter {
 	mock := &MockuserGetter{ctrl: ctrl}
 	mock.recorder = &MockuserGetterMockRecorder{mock}
-
 	return mock
 }
 
@@ -96,14 +86,12 @@ func (m *MockuserGetter) Get(ctx context.Context, email string) (*domain.User, e
 	ret := m.ctrl.Call(m, "Get", ctx, email)
 	ret0, _ := ret[0].(*domain.User)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockuserGetterMockRecorder) Get(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockuserGetter)(nil).Get), ctx, email)
 }
 
@@ -123,7 +111,6 @@ type MockpassWriterMockRecorder struct {
 func NewMockpassWriter(ctrl *gomock.Controller) *MockpassWriter {
 	mock := &MockpassWriter{ctrl: ctrl}
 	mock.recorder = &MockpassWriterMockRecorder{mock}
-
 	return mock
 }
 
@@ -137,23 +124,13 @@ func (m *MockpassWriter) SetPassword(ctx context.Context, email, hash string, ch
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetPassword", ctx, email, hash, changeRequired)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // SetPassword indicates an expected call of SetPassword.
 func (mr *MockpassWriterMockRecorder) SetPassword(ctx, email, hash, changeRequired any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"SetPassword",
-		reflect.TypeOf((*MockpassWriter)(nil).SetPassword),
-		ctx,
-		email,
-		hash,
-		changeRequired,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockpassWriter)(nil).SetPassword), ctx, email, hash, changeRequired)
 }
 
 // MocksessionCreator is a mock of sessionCreator interface.
@@ -172,7 +149,6 @@ type MocksessionCreatorMockRecorder struct {
 func NewMocksessionCreator(ctrl *gomock.Controller) *MocksessionCreator {
 	mock := &MocksessionCreator{ctrl: ctrl}
 	mock.recorder = &MocksessionCreatorMockRecorder{mock}
-
 	return mock
 }
 
@@ -187,18 +163,11 @@ func (m *MocksessionCreator) Create(user *domain.User) (string, error) {
 	ret := m.ctrl.Call(m, "Create", user)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
 func (mr *MocksessionCreatorMockRecorder) Create(user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Create",
-		reflect.TypeOf((*MocksessionCreator)(nil).Create),
-		user,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MocksessionCreator)(nil).Create), user)
 }

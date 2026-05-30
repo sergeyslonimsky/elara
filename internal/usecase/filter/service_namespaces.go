@@ -12,7 +12,11 @@ import (
 // that namespace. Namespace permission domains are the namespace names, so the
 // explicit scope maps 1:1 onto NamespaceFilter.Names; a wildcard grant lists
 // every namespace. An empty scope yields an empty list, never an error.
-func (s *Service) Namespaces(ctx context.Context, actor domain.AuthInfo, query Query) ([]Item, error) {
+func (s *Service) Namespaces(
+	ctx context.Context,
+	actor domain.AuthInfo,
+	query Query,
+) ([]Item, error) {
 	perms, err := s.perms.ListPermissions(actor.Email)
 	if err != nil {
 		return nil, fmt.Errorf("list permissions: %w", err)

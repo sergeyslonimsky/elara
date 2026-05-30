@@ -299,7 +299,13 @@ func TestValidator_Validate(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			sut := tt.mockFunc(t.Context(), ctrl)
 
-			err := sut.Validate(t.Context(), tt.input.namespace, tt.input.path, tt.input.content, tt.input.format)
+			err := sut.Validate(
+				t.Context(),
+				tt.input.namespace,
+				tt.input.path,
+				tt.input.content,
+				tt.input.format,
+			)
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
@@ -309,7 +315,14 @@ func TestValidator_Validate(t *testing.T) {
 
 			if tt.wantSchemaErr {
 				var sve *domain.SchemaValidationError
-				require.ErrorAs(t, err, &sve, "expected SchemaValidationError, got %T: %v", err, err)
+				require.ErrorAs(
+					t,
+					err,
+					&sve,
+					"expected SchemaValidationError, got %T: %v",
+					err,
+					err,
+				)
 				assert.NotEmpty(t, sve.Violations)
 
 				return

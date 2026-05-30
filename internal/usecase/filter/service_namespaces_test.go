@@ -68,7 +68,11 @@ func TestService_Namespaces(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: domain.DomainAll},
+					{
+						Object: domain.ObjectNamespace,
+						Action: domain.ActionRead,
+						Domain: domain.DomainAll,
+					},
 					{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
 				}, nil)
 
@@ -80,7 +84,11 @@ func TestService_Namespaces(t *testing.T) {
 				return filter.New(perms, ns, nil, nil)
 			},
 			want: []filter.Item{
-				{Key: "prod", Value: "prod", Actions: []domain.Action{domain.ActionRead, domain.ActionWrite}},
+				{
+					Key:     "prod",
+					Value:   "prod",
+					Actions: []domain.Action{domain.ActionRead, domain.ActionWrite},
+				},
 				{Key: "play", Value: "play", Actions: []domain.Action{domain.ActionRead}},
 			},
 		},

@@ -13,9 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockwebhookLister is a mock of webhookLister interface.
@@ -34,7 +33,6 @@ type MockwebhookListerMockRecorder struct {
 func NewMockwebhookLister(ctrl *gomock.Controller) *MockwebhookLister {
 	mock := &MockwebhookLister{ctrl: ctrl}
 	mock.recorder = &MockwebhookListerMockRecorder{mock}
-
 	return mock
 }
 
@@ -49,14 +47,12 @@ func (m *MockwebhookLister) List(ctx context.Context) ([]*domain.Webhook, error)
 	ret := m.ctrl.Call(m, "List", ctx)
 	ret0, _ := ret[0].([]*domain.Webhook)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockwebhookListerMockRecorder) List(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockwebhookLister)(nil).List), ctx)
 }
 
@@ -76,7 +72,6 @@ type MockeventPublisherMockRecorder struct {
 func NewMockeventPublisher(ctrl *gomock.Controller) *MockeventPublisher {
 	mock := &MockeventPublisher{ctrl: ctrl}
 	mock.recorder = &MockeventPublisherMockRecorder{mock}
-
 	return mock
 }
 
@@ -86,28 +81,16 @@ func (m *MockeventPublisher) EXPECT() *MockeventPublisherMockRecorder {
 }
 
 // Subscribe mocks base method.
-func (m *MockeventPublisher) Subscribe(
-	ctx context.Context,
-	pathPrefix, namespace string,
-) (<-chan domain.WatchEvent, func()) {
+func (m *MockeventPublisher) Subscribe(ctx context.Context, pathPrefix, namespace string) (<-chan domain.WatchEvent, func()) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subscribe", ctx, pathPrefix, namespace)
 	ret0, _ := ret[0].(<-chan domain.WatchEvent)
 	ret1, _ := ret[1].(func())
-
 	return ret0, ret1
 }
 
 // Subscribe indicates an expected call of Subscribe.
 func (mr *MockeventPublisherMockRecorder) Subscribe(ctx, pathPrefix, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Subscribe",
-		reflect.TypeOf((*MockeventPublisher)(nil).Subscribe),
-		ctx,
-		pathPrefix,
-		namespace,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockeventPublisher)(nil).Subscribe), ctx, pathPrefix, namespace)
 }

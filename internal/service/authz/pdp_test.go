@@ -93,7 +93,9 @@ func TestPDP_EffectiveDomains(t *testing.T) {
 			action:    "read",
 			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
 				m := authz_mock.NewMockenforcer(ctrl)
-				m.EXPECT().GetImplicitPermissionsForUser("user@example.com").Return(nil, errors.New("db error"))
+				m.EXPECT().
+					GetImplicitPermissionsForUser("user@example.com").
+					Return(nil, errors.New("db error"))
 
 				return authz.NewPDP(m)
 			},
@@ -232,7 +234,9 @@ func TestPDP_ListPermissions(t *testing.T) {
 			name: "enforcer error is wrapped",
 			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
 				m := authz_mock.NewMockenforcer(ctrl)
-				m.EXPECT().GetImplicitPermissionsForUser(principal).Return(nil, errors.New("db error"))
+				m.EXPECT().
+					GetImplicitPermissionsForUser(principal).
+					Return(nil, errors.New("db error"))
 
 				return authz.NewPDP(m)
 			},
@@ -301,7 +305,9 @@ func TestPDP_Has(t *testing.T) {
 			perm:      domain.Permission{Object: "config", Action: "read", Domain: "dom1"},
 			mockFunc: func(ctrl *gomock.Controller) *authz.PDP {
 				m := authz_mock.NewMockenforcer(ctrl)
-				m.EXPECT().Enforce("user@example.com", "dom1", "config", "read").Return(false, errors.New("error"))
+				m.EXPECT().
+					Enforce("user@example.com", "dom1", "config", "read").
+					Return(false, errors.New("error"))
 
 				return authz.NewPDP(m)
 			},

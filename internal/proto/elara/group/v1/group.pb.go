@@ -7,13 +7,12 @@
 package groupv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -34,17 +33,17 @@ const (
 // metadata, members, and permissions proceed without false conflicts.
 type Group struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
-	Id          string                 `                   protobuf:"bytes,1,opt,name=id,proto3"          json:"id,omitempty"`
-	Name        string                 `                   protobuf:"bytes,2,opt,name=name,proto3"        json:"name,omitempty"`
-	Description string                 `                   protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name        string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	// is_system flags built-in groups (e.g. system:superadmin) that the
 	// server protects from deletion and renaming. Clients should disable
 	// destructive UI actions when this is true.
-	IsSystem           bool                   `protobuf:"varint,4,opt,name=is_system,json=isSystem,proto3"                     json:"is_system,omitempty"`
-	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3"                    json:"created_at,omitempty"`
-	UpdatedAt          *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3"                    json:"updated_at,omitempty"`
-	MetadataVersion    int64                  `protobuf:"varint,7,opt,name=metadata_version,json=metadataVersion,proto3"       json:"metadata_version,omitempty"`
-	MembersVersion     int64                  `protobuf:"varint,8,opt,name=members_version,json=membersVersion,proto3"         json:"members_version,omitempty"`
+	IsSystem           bool                   `protobuf:"varint,4,opt,name=is_system,json=isSystem,proto3" json:"is_system,omitempty"`
+	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt          *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	MetadataVersion    int64                  `protobuf:"varint,7,opt,name=metadata_version,json=metadataVersion,proto3" json:"metadata_version,omitempty"`
+	MembersVersion     int64                  `protobuf:"varint,8,opt,name=members_version,json=membersVersion,proto3" json:"members_version,omitempty"`
 	PermissionsVersion int64                  `protobuf:"varint,9,opt,name=permissions_version,json=permissionsVersion,proto3" json:"permissions_version,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -70,10 +69,8 @@ func (x *Group) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -86,7 +83,6 @@ func (x *Group) GetId() string {
 	if x != nil {
 		return x.Id
 	}
-
 	return ""
 }
 
@@ -94,7 +90,6 @@ func (x *Group) GetName() string {
 	if x != nil {
 		return x.Name
 	}
-
 	return ""
 }
 
@@ -102,7 +97,6 @@ func (x *Group) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
-
 	return ""
 }
 
@@ -110,7 +104,6 @@ func (x *Group) GetIsSystem() bool {
 	if x != nil {
 		return x.IsSystem
 	}
-
 	return false
 }
 
@@ -118,7 +111,6 @@ func (x *Group) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
-
 	return nil
 }
 
@@ -126,7 +118,6 @@ func (x *Group) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedAt
 	}
-
 	return nil
 }
 
@@ -134,7 +125,6 @@ func (x *Group) GetMetadataVersion() int64 {
 	if x != nil {
 		return x.MetadataVersion
 	}
-
 	return 0
 }
 
@@ -142,7 +132,6 @@ func (x *Group) GetMembersVersion() int64 {
 	if x != nil {
 		return x.MembersVersion
 	}
-
 	return 0
 }
 
@@ -150,7 +139,6 @@ func (x *Group) GetPermissionsVersion() int64 {
 	if x != nil {
 		return x.PermissionsVersion
 	}
-
 	return 0
 }
 
@@ -181,24 +169,16 @@ var (
 
 func file_elara_group_v1_group_proto_rawDescGZIP() []byte {
 	file_elara_group_v1_group_proto_rawDescOnce.Do(func() {
-		file_elara_group_v1_group_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_group_v1_group_proto_rawDesc),
-				len(file_elara_group_v1_group_proto_rawDesc),
-			),
-		)
+		file_elara_group_v1_group_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_group_v1_group_proto_rawDesc), len(file_elara_group_v1_group_proto_rawDesc)))
 	})
-
 	return file_elara_group_v1_group_proto_rawDescData
 }
 
-var (
-	file_elara_group_v1_group_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-	file_elara_group_v1_group_proto_goTypes  = []any{
-		(*Group)(nil),                 // 0: elara.group.v1.Group
-		(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
-	}
-)
+var file_elara_group_v1_group_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_elara_group_v1_group_proto_goTypes = []any{
+	(*Group)(nil),                 // 0: elara.group.v1.Group
+	(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
+}
 var file_elara_group_v1_group_proto_depIdxs = []int32{
 	1, // 0: elara.group.v1.Group.created_at:type_name -> google.protobuf.Timestamp
 	1, // 1: elara.group.v1.Group.updated_at:type_name -> google.protobuf.Timestamp
@@ -217,11 +197,8 @@ func file_elara_group_v1_group_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_group_v1_group_proto_rawDesc),
-				len(file_elara_group_v1_group_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_group_v1_group_proto_rawDesc), len(file_elara_group_v1_group_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,

@@ -18,13 +18,26 @@ import (
 
 type (
 	authz interface {
-		RequireUser(user domain.AuthInfo, object domain.Object, action domain.Action, domainStr string) error
+		RequireUser(
+			user domain.AuthInfo,
+			object domain.Object,
+			action domain.Action,
+			domainStr string,
+		) error
 	}
 
 	groupUsecase interface {
-		Create(ctx context.Context, user domain.AuthInfo, data groupuc.CreateData) (*groupuc.CreateResult, error)
+		Create(
+			ctx context.Context,
+			user domain.AuthInfo,
+			data groupuc.CreateData,
+		) (*groupuc.CreateResult, error)
 		Get(ctx context.Context, user domain.AuthInfo, id string) (*groupuc.GetResult, error)
-		Update(ctx context.Context, user domain.AuthInfo, data groupuc.UpdateData) (*domain.Group, error)
+		Update(
+			ctx context.Context,
+			user domain.AuthInfo,
+			data groupuc.UpdateData,
+		) (*domain.Group, error)
 		UpdateMembers(
 			ctx context.Context,
 			user domain.AuthInfo,
@@ -36,7 +49,11 @@ type (
 			data groupuc.UpdatePermissionsData,
 		) (*groupuc.UpdatePermissionsResult, error)
 		Delete(ctx context.Context, user domain.AuthInfo, id string) error
-		List(ctx context.Context, user domain.AuthInfo, params groupuc.ListParams) (*groupuc.ListResult, error)
+		List(
+			ctx context.Context,
+			user domain.AuthInfo,
+			params groupuc.ListParams,
+		) (*groupuc.ListResult, error)
 	}
 )
 

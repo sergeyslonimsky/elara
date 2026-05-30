@@ -23,7 +23,11 @@ const (
 type ClientHistoryRepo interface {
 	Save(ctx context.Context, c *domain.Client) error
 	List(ctx context.Context, limit int) ([]*domain.Client, error)
-	ListByClient(ctx context.Context, clientName, k8sNamespace string, limit int) ([]*domain.Client, error)
+	ListByClient(
+		ctx context.Context,
+		clientName, k8sNamespace string,
+		limit int,
+	) ([]*domain.Client, error)
 	Count(ctx context.Context) (int, error)
 	DeleteOldest(ctx context.Context, n int) (int, error)
 	DeleteOlderThan(ctx context.Context, cutoff time.Time) (int, error)

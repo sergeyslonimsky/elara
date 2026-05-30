@@ -129,7 +129,10 @@ func TestClientsHandler_ListActiveClients(t *testing.T) {
 	}, nil)
 
 	h := clients.NewHandler(newPassThroughAuthz(ctrl), uc)
-	resp, err := h.ListActiveClients(t.Context(), connect.NewRequest(&clientsv1.ListActiveClientsRequest{}))
+	resp, err := h.ListActiveClients(
+		t.Context(),
+		connect.NewRequest(&clientsv1.ListActiveClientsRequest{}),
+	)
 	require.NoError(t, err)
 	require.Len(t, resp.Msg.GetClients(), 2)
 	assert.Equal(t, "conn-1", resp.Msg.GetClients()[0].GetId())
@@ -171,7 +174,12 @@ func TestClientsHandler_GetClient(t *testing.T) {
 			name: "fallback to history (disconnected)",
 			setupMock: func(uc *clientsmock.Mockusecase) {
 				uc.EXPECT().Get(gomock.Any(), "old").Return(
-					&domain.Client{ID: "old", PeerAddress: "p", ConnectedAt: disconn, DisconnectedAt: &now},
+					&domain.Client{
+						ID:             "old",
+						PeerAddress:    "p",
+						ConnectedAt:    disconn,
+						DisconnectedAt: &now,
+					},
 					nil,
 					nil,
 				)
@@ -204,7 +212,10 @@ func TestClientsHandler_GetClient(t *testing.T) {
 			tc.setupMock(uc)
 
 			h := clients.NewHandler(newPassThroughAuthz(ctrl), uc)
-			resp, err := h.GetClient(t.Context(), connect.NewRequest(&clientsv1.GetClientRequest{Id: tc.reqID}))
+			resp, err := h.GetClient(
+				t.Context(),
+				connect.NewRequest(&clientsv1.GetClientRequest{Id: tc.reqID}),
+			)
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -243,7 +254,9 @@ func TestClientsHandler_ListHistoricalConnections(t *testing.T) {
 		{
 			name: "propagates error",
 			setupMock: func(uc *clientsmock.Mockusecase) {
-				uc.EXPECT().ListHistorical(gomock.Any(), gomock.Any()).Return(nil, errors.New("db down"))
+				uc.EXPECT().
+					ListHistorical(gomock.Any(), gomock.Any()).
+					Return(nil, errors.New("db down"))
 			},
 			wantErr: true,
 		},
@@ -294,8 +307,18 @@ func TestClientsHandler_ListClientSessions(t *testing.T) {
 				uc.EXPECT().
 					ListSessions(gomock.Any(), "order-service", "production", "", 0).
 					Return([]*domain.Client{
-						{ID: "a", ClientName: "order-service", K8sNamespace: "production", DisconnectedAt: &d},
-						{ID: "b", ClientName: "order-service", K8sNamespace: "production", DisconnectedAt: &d},
+						{
+							ID:             "a",
+							ClientName:     "order-service",
+							K8sNamespace:   "production",
+							DisconnectedAt: &d,
+						},
+						{
+							ID:             "b",
+							ClientName:     "order-service",
+							K8sNamespace:   "production",
+							DisconnectedAt: &d,
+						},
 					}, nil)
 			},
 			wantIDs: []string{"a", "b"},
@@ -379,7 +402,10 @@ func TestClientsHandler_WatchClients_SendsInitialSnapshot(t *testing.T) {
 	}, nil).AnyTimes()
 	fx := setupSubscribeChanges(uc)
 
-	url := newTestServer(t, clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)))
+	url := newTestServer(
+		t,
+		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)),
+	)
 	stream, err := newClient(url).WatchClients(t.Context(),
 		connect.NewRequest(&clientsv1.WatchClientsRequest{}))
 	require.NoError(t, err)
@@ -403,7 +429,10 @@ func TestClientsHandler_WatchClients_PushesConnectedEvent(t *testing.T) {
 	uc.EXPECT().ListActive(gomock.Any()).Return(nil, nil).AnyTimes()
 	fx := setupSubscribeChanges(uc)
 
-	url := newTestServer(t, clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)))
+	url := newTestServer(
+		t,
+		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)),
+	)
 	stream, err := newClient(url).WatchClients(t.Context(),
 		connect.NewRequest(&clientsv1.WatchClientsRequest{}))
 	require.NoError(t, err)
@@ -430,7 +459,10 @@ func TestClientsHandler_WatchClients_PushesDisconnectedEvent(t *testing.T) {
 	uc.EXPECT().ListActive(gomock.Any()).Return(nil, nil).AnyTimes()
 	fx := setupSubscribeChanges(uc)
 
-	url := newTestServer(t, clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)))
+	url := newTestServer(
+		t,
+		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)),
+	)
 	stream, err := newClient(url).WatchClients(t.Context(),
 		connect.NewRequest(&clientsv1.WatchClientsRequest{}))
 	require.NoError(t, err)
@@ -458,7 +490,10 @@ func TestClientsHandler_WatchClients_ActivityEventsAreSwallowed(t *testing.T) {
 	uc.EXPECT().ListActive(gomock.Any()).Return(nil, nil)
 	fx := setupSubscribeChanges(uc)
 
-	url := newTestServer(t, clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)))
+	url := newTestServer(
+		t,
+		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)),
+	)
 	stream, err := newClient(url).WatchClients(t.Context(),
 		connect.NewRequest(&clientsv1.WatchClientsRequest{}))
 	require.NoError(t, err)
@@ -467,7 +502,10 @@ func TestClientsHandler_WatchClients_ActivityEventsAreSwallowed(t *testing.T) {
 	_ = receiveFrame(t, stream)
 
 	for range 5 {
-		fx.push(t, domain.ClientChange{Kind: domain.ClientActivity, Client: &domain.Client{ID: "x"}})
+		fx.push(
+			t,
+			domain.ClientChange{Kind: domain.ClientActivity, Client: &domain.Client{ID: "x"}},
+		)
 	}
 
 	// Give the handler 50ms to (mis)handle the activity events. If they were
@@ -492,7 +530,11 @@ func TestClientsHandler_WatchClients_PeriodicSnapshot(t *testing.T) {
 
 	url := newTestServer(
 		t,
-		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(40*time.Millisecond)),
+		clients.NewHandler(
+			newPassThroughAuthz(ctrl),
+			uc,
+			clients.WithSnapshotInterval(40*time.Millisecond),
+		),
 	)
 	stream, err := newClient(url).WatchClients(t.Context(),
 		connect.NewRequest(&clientsv1.WatchClientsRequest{}))
@@ -514,10 +556,15 @@ func TestClientsHandler_WatchClients_CtxCancelReleasesSubscription(t *testing.T)
 	uc.EXPECT().ListActive(gomock.Any()).Return(nil, nil).AnyTimes()
 	fx := setupSubscribeChanges(uc)
 
-	url := newTestServer(t, clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)))
+	url := newTestServer(
+		t,
+		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)),
+	)
 
 	ctx, cancel := context.WithCancel(t.Context())
-	stream, err := newClient(url).WatchClients(ctx, connect.NewRequest(&clientsv1.WatchClientsRequest{}))
+	stream, err := newClient(
+		url,
+	).WatchClients(ctx, connect.NewRequest(&clientsv1.WatchClientsRequest{}))
 	require.NoError(t, err)
 
 	_ = receiveFrame(t, stream)
@@ -534,7 +581,10 @@ func TestClientsHandler_WatchClients_RegistryShutdownExitsCleanly(t *testing.T) 
 	uc.EXPECT().ListActive(gomock.Any()).Return(nil, nil).AnyTimes()
 	fx := setupSubscribeChanges(uc)
 
-	url := newTestServer(t, clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)))
+	url := newTestServer(
+		t,
+		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)),
+	)
 	stream, err := newClient(url).WatchClients(t.Context(),
 		connect.NewRequest(&clientsv1.WatchClientsRequest{}))
 	require.NoError(t, err)
@@ -589,7 +639,10 @@ func TestClientsHandler_WatchClient_AlreadyDisconnected(t *testing.T) {
 		nil, nil,
 	)
 
-	url := newTestServer(t, clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)))
+	url := newTestServer(
+		t,
+		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)),
+	)
 	stream, err := newClient(url).WatchClient(t.Context(),
 		connect.NewRequest(&clientsv1.WatchClientRequest{Id: "x"}))
 	require.NoError(t, err)
@@ -614,7 +667,10 @@ func TestClientsHandler_WatchClient_InitialSnapshotThenRequestRecorded(t *testin
 	).AnyTimes()
 	fx := setupSubscribeClient(uc, "x")
 
-	url := newTestServer(t, clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)))
+	url := newTestServer(
+		t,
+		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)),
+	)
 	stream, err := newClient(url).WatchClient(t.Context(),
 		connect.NewRequest(&clientsv1.WatchClientRequest{Id: "x"}))
 	require.NoError(t, err)
@@ -647,7 +703,10 @@ func TestClientsHandler_WatchClient_DisconnectExitsCleanly(t *testing.T) {
 	).AnyTimes()
 	fx := setupSubscribeClient(uc, "x")
 
-	url := newTestServer(t, clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)))
+	url := newTestServer(
+		t,
+		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)),
+	)
 	stream, err := newClient(url).WatchClient(t.Context(),
 		connect.NewRequest(&clientsv1.WatchClientRequest{Id: "x"}))
 	require.NoError(t, err)
@@ -680,7 +739,10 @@ func TestClientsHandler_WatchClient_CtxCancelReleasesSubscription(t *testing.T) 
 	).AnyTimes()
 	fx := setupSubscribeClient(uc, "x")
 
-	url := newTestServer(t, clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)))
+	url := newTestServer(
+		t,
+		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(time.Hour)),
+	)
 
 	ctx, cancel := context.WithCancel(t.Context())
 	stream, err := newClient(url).WatchClient(ctx,
@@ -706,7 +768,11 @@ func TestClientsHandler_WatchClient_PeriodicSnapshot(t *testing.T) {
 
 	url := newTestServer(
 		t,
-		clients.NewHandler(newPassThroughAuthz(ctrl), uc, clients.WithSnapshotInterval(40*time.Millisecond)),
+		clients.NewHandler(
+			newPassThroughAuthz(ctrl),
+			uc,
+			clients.WithSnapshotInterval(40*time.Millisecond),
+		),
 	)
 	stream, err := newClient(url).WatchClient(t.Context(),
 		connect.NewRequest(&clientsv1.WatchClientRequest{Id: "x"}))

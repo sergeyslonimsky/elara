@@ -20,12 +20,25 @@ import (
 
 type (
 	authz interface {
-		Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error
+		Require(
+			ctx context.Context,
+			object domain.Object,
+			action domain.Action,
+			domainStr string,
+		) error
 	}
 
 	usecase interface {
-		Create(ctx context.Context, user domain.AuthInfo, in tokenuc.CreateInput) (*domain.Token, string, error)
-		List(ctx context.Context, user domain.AuthInfo, params tokenuc.ListParams) (*tokenuc.ListResult, error)
+		Create(
+			ctx context.Context,
+			user domain.AuthInfo,
+			in tokenuc.CreateInput,
+		) (*domain.Token, string, error)
+		List(
+			ctx context.Context,
+			user domain.AuthInfo,
+			params tokenuc.ListParams,
+		) (*tokenuc.ListResult, error)
 		Get(ctx context.Context, user domain.AuthInfo, id string) (*domain.Token, error)
 		Revoke(ctx context.Context, user domain.AuthInfo, id string) error
 	}

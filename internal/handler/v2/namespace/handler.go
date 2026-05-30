@@ -18,7 +18,12 @@ import (
 
 type (
 	authz interface {
-		Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error
+		Require(
+			ctx context.Context,
+			object domain.Object,
+			action domain.Action,
+			domainStr string,
+		) error
 	}
 
 	usecase interface {

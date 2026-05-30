@@ -32,7 +32,6 @@ type MockMaintenanceRepoMockRecorder struct {
 func NewMockMaintenanceRepo(ctrl *gomock.Controller) *MockMaintenanceRepo {
 	mock := &MockMaintenanceRepo{ctrl: ctrl}
 	mock.recorder = &MockMaintenanceRepoMockRecorder{mock}
-
 	return mock
 }
 
@@ -47,18 +46,11 @@ func (m *MockMaintenanceRepo) CurrentRevisionValue(ctx context.Context) (int64, 
 	ret := m.ctrl.Call(m, "CurrentRevisionValue", ctx)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // CurrentRevisionValue indicates an expected call of CurrentRevisionValue.
 func (mr *MockMaintenanceRepoMockRecorder) CurrentRevisionValue(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"CurrentRevisionValue",
-		reflect.TypeOf((*MockMaintenanceRepo)(nil).CurrentRevisionValue),
-		ctx,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentRevisionValue", reflect.TypeOf((*MockMaintenanceRepo)(nil).CurrentRevisionValue), ctx)
 }

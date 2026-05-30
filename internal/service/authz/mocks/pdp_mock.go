@@ -31,7 +31,6 @@ type MockenforcerMockRecorder struct {
 func NewMockenforcer(ctrl *gomock.Controller) *Mockenforcer {
 	mock := &Mockenforcer{ctrl: ctrl}
 	mock.recorder = &MockenforcerMockRecorder{mock}
-
 	return mock
 }
 
@@ -46,23 +45,13 @@ func (m *Mockenforcer) Enforce(subject, domainStr, object, action string) (bool,
 	ret := m.ctrl.Call(m, "Enforce", subject, domainStr, object, action)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Enforce indicates an expected call of Enforce.
 func (mr *MockenforcerMockRecorder) Enforce(subject, domainStr, object, action any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Enforce",
-		reflect.TypeOf((*Mockenforcer)(nil).Enforce),
-		subject,
-		domainStr,
-		object,
-		action,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enforce", reflect.TypeOf((*Mockenforcer)(nil).Enforce), subject, domainStr, object, action)
 }
 
 // GetImplicitPermissionsForUser mocks base method.
@@ -71,18 +60,11 @@ func (m *Mockenforcer) GetImplicitPermissionsForUser(user string) ([][]string, e
 	ret := m.ctrl.Call(m, "GetImplicitPermissionsForUser", user)
 	ret0, _ := ret[0].([][]string)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // GetImplicitPermissionsForUser indicates an expected call of GetImplicitPermissionsForUser.
 func (mr *MockenforcerMockRecorder) GetImplicitPermissionsForUser(user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"GetImplicitPermissionsForUser",
-		reflect.TypeOf((*Mockenforcer)(nil).GetImplicitPermissionsForUser),
-		user,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImplicitPermissionsForUser", reflect.TypeOf((*Mockenforcer)(nil).GetImplicitPermissionsForUser), user)
 }

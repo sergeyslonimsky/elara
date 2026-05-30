@@ -7,13 +7,12 @@
 package transferv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -25,9 +24,9 @@ const (
 
 type ExportNamespaceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `                   protobuf:"bytes,1,opt,name=namespace,proto3"                                       json:"namespace,omitempty"`
-	Zip           bool                   `                   protobuf:"varint,2,opt,name=zip,proto3"                                            json:"zip,omitempty"`
-	Encoding      BundleEncoding         `                   protobuf:"varint,3,opt,name=encoding,proto3,enum=elara.transfer.v1.BundleEncoding" json:"encoding,omitempty"`
+	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Zip           bool                   `protobuf:"varint,2,opt,name=zip,proto3" json:"zip,omitempty"`
+	Encoding      BundleEncoding         `protobuf:"varint,3,opt,name=encoding,proto3,enum=elara.transfer.v1.BundleEncoding" json:"encoding,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -52,10 +51,8 @@ func (x *ExportNamespaceRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -68,7 +65,6 @@ func (x *ExportNamespaceRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -76,7 +72,6 @@ func (x *ExportNamespaceRequest) GetZip() bool {
 	if x != nil {
 		return x.Zip
 	}
-
 	return false
 }
 
@@ -84,15 +79,14 @@ func (x *ExportNamespaceRequest) GetEncoding() BundleEncoding {
 	if x != nil {
 		return x.Encoding
 	}
-
 	return BundleEncoding_BUNDLE_ENCODING_UNSPECIFIED
 }
 
 type ExportNamespaceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          []byte                 `                   protobuf:"bytes,1,opt,name=data,proto3"                          json:"data,omitempty"`
-	ContentType   string                 `                   protobuf:"bytes,2,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
-	Filename      string                 `                   protobuf:"bytes,3,opt,name=filename,proto3"                      json:"filename,omitempty"`
+	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	ContentType   string                 `protobuf:"bytes,2,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	Filename      string                 `protobuf:"bytes,3,opt,name=filename,proto3" json:"filename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -117,10 +111,8 @@ func (x *ExportNamespaceResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -133,7 +125,6 @@ func (x *ExportNamespaceResponse) GetData() []byte {
 	if x != nil {
 		return x.Data
 	}
-
 	return nil
 }
 
@@ -141,7 +132,6 @@ func (x *ExportNamespaceResponse) GetContentType() string {
 	if x != nil {
 		return x.ContentType
 	}
-
 	return ""
 }
 
@@ -149,15 +139,14 @@ func (x *ExportNamespaceResponse) GetFilename() string {
 	if x != nil {
 		return x.Filename
 	}
-
 	return ""
 }
 
 type ExportAllRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Zip           bool                   `                   protobuf:"varint,1,opt,name=zip,proto3"                                                        json:"zip,omitempty"`
-	Encoding      BundleEncoding         `                   protobuf:"varint,2,opt,name=encoding,proto3,enum=elara.transfer.v1.BundleEncoding"             json:"encoding,omitempty"`
-	ZipLayout     ZipLayout              `                   protobuf:"varint,3,opt,name=zip_layout,json=zipLayout,proto3,enum=elara.transfer.v1.ZipLayout" json:"zip_layout,omitempty"`
+	Zip           bool                   `protobuf:"varint,1,opt,name=zip,proto3" json:"zip,omitempty"`
+	Encoding      BundleEncoding         `protobuf:"varint,2,opt,name=encoding,proto3,enum=elara.transfer.v1.BundleEncoding" json:"encoding,omitempty"`
+	ZipLayout     ZipLayout              `protobuf:"varint,3,opt,name=zip_layout,json=zipLayout,proto3,enum=elara.transfer.v1.ZipLayout" json:"zip_layout,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -182,10 +171,8 @@ func (x *ExportAllRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -198,7 +185,6 @@ func (x *ExportAllRequest) GetZip() bool {
 	if x != nil {
 		return x.Zip
 	}
-
 	return false
 }
 
@@ -206,7 +192,6 @@ func (x *ExportAllRequest) GetEncoding() BundleEncoding {
 	if x != nil {
 		return x.Encoding
 	}
-
 	return BundleEncoding_BUNDLE_ENCODING_UNSPECIFIED
 }
 
@@ -214,15 +199,14 @@ func (x *ExportAllRequest) GetZipLayout() ZipLayout {
 	if x != nil {
 		return x.ZipLayout
 	}
-
 	return ZipLayout_ZIP_LAYOUT_UNSPECIFIED
 }
 
 type ExportAllResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          []byte                 `                   protobuf:"bytes,1,opt,name=data,proto3"                          json:"data,omitempty"`
-	ContentType   string                 `                   protobuf:"bytes,2,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
-	Filename      string                 `                   protobuf:"bytes,3,opt,name=filename,proto3"                      json:"filename,omitempty"`
+	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	ContentType   string                 `protobuf:"bytes,2,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	Filename      string                 `protobuf:"bytes,3,opt,name=filename,proto3" json:"filename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -247,10 +231,8 @@ func (x *ExportAllResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -263,7 +245,6 @@ func (x *ExportAllResponse) GetData() []byte {
 	if x != nil {
 		return x.Data
 	}
-
 	return nil
 }
 
@@ -271,7 +252,6 @@ func (x *ExportAllResponse) GetContentType() string {
 	if x != nil {
 		return x.ContentType
 	}
-
 	return ""
 }
 
@@ -279,15 +259,14 @@ func (x *ExportAllResponse) GetFilename() string {
 	if x != nil {
 		return x.Filename
 	}
-
 	return ""
 }
 
 type ImportNamespaceRequest struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
-	Data       []byte                 `                   protobuf:"bytes,1,opt,name=data,proto3"                                                                   json:"data,omitempty"`
-	OnConflict ConflictResolution     `                   protobuf:"varint,2,opt,name=on_conflict,json=onConflict,proto3,enum=elara.transfer.v1.ConflictResolution" json:"on_conflict,omitempty"`
-	DryRun     bool                   `                   protobuf:"varint,3,opt,name=dry_run,json=dryRun,proto3"                                                   json:"dry_run,omitempty"`
+	Data       []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	OnConflict ConflictResolution     `protobuf:"varint,2,opt,name=on_conflict,json=onConflict,proto3,enum=elara.transfer.v1.ConflictResolution" json:"on_conflict,omitempty"`
+	DryRun     bool                   `protobuf:"varint,3,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
 	// When set, imports only into this namespace (overrides bundle namespace; rejects AllBundle).
 	Namespace     string `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -314,10 +293,8 @@ func (x *ImportNamespaceRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -330,7 +307,6 @@ func (x *ImportNamespaceRequest) GetData() []byte {
 	if x != nil {
 		return x.Data
 	}
-
 	return nil
 }
 
@@ -338,7 +314,6 @@ func (x *ImportNamespaceRequest) GetOnConflict() ConflictResolution {
 	if x != nil {
 		return x.OnConflict
 	}
-
 	return ConflictResolution_CONFLICT_RESOLUTION_UNSPECIFIED
 }
 
@@ -346,7 +321,6 @@ func (x *ImportNamespaceRequest) GetDryRun() bool {
 	if x != nil {
 		return x.DryRun
 	}
-
 	return false
 }
 
@@ -354,18 +328,17 @@ func (x *ImportNamespaceRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
 type ImportNamespaceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Created       int32                  `                   protobuf:"varint,1,opt,name=created,proto3"             json:"created,omitempty"`
-	Updated       int32                  `                   protobuf:"varint,6,opt,name=updated,proto3"             json:"updated,omitempty"`
-	Skipped       int32                  `                   protobuf:"varint,2,opt,name=skipped,proto3"             json:"skipped,omitempty"`
-	Failed        int32                  `                   protobuf:"varint,3,opt,name=failed,proto3"              json:"failed,omitempty"`
-	Errors        []*ImportError         `                   protobuf:"bytes,4,rep,name=errors,proto3"               json:"errors,omitempty"`
-	DryRun        bool                   `                   protobuf:"varint,5,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+	Created       int32                  `protobuf:"varint,1,opt,name=created,proto3" json:"created,omitempty"`
+	Updated       int32                  `protobuf:"varint,6,opt,name=updated,proto3" json:"updated,omitempty"`
+	Skipped       int32                  `protobuf:"varint,2,opt,name=skipped,proto3" json:"skipped,omitempty"`
+	Failed        int32                  `protobuf:"varint,3,opt,name=failed,proto3" json:"failed,omitempty"`
+	Errors        []*ImportError         `protobuf:"bytes,4,rep,name=errors,proto3" json:"errors,omitempty"`
+	DryRun        bool                   `protobuf:"varint,5,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -390,10 +363,8 @@ func (x *ImportNamespaceResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -406,7 +377,6 @@ func (x *ImportNamespaceResponse) GetCreated() int32 {
 	if x != nil {
 		return x.Created
 	}
-
 	return 0
 }
 
@@ -414,7 +384,6 @@ func (x *ImportNamespaceResponse) GetUpdated() int32 {
 	if x != nil {
 		return x.Updated
 	}
-
 	return 0
 }
 
@@ -422,7 +391,6 @@ func (x *ImportNamespaceResponse) GetSkipped() int32 {
 	if x != nil {
 		return x.Skipped
 	}
-
 	return 0
 }
 
@@ -430,7 +398,6 @@ func (x *ImportNamespaceResponse) GetFailed() int32 {
 	if x != nil {
 		return x.Failed
 	}
-
 	return 0
 }
 
@@ -438,7 +405,6 @@ func (x *ImportNamespaceResponse) GetErrors() []*ImportError {
 	if x != nil {
 		return x.Errors
 	}
-
 	return nil
 }
 
@@ -446,7 +412,6 @@ func (x *ImportNamespaceResponse) GetDryRun() bool {
 	if x != nil {
 		return x.DryRun
 	}
-
 	return false
 }
 
@@ -498,32 +463,24 @@ var (
 
 func file_elara_transfer_v1_transfer_service_proto_rawDescGZIP() []byte {
 	file_elara_transfer_v1_transfer_service_proto_rawDescOnce.Do(func() {
-		file_elara_transfer_v1_transfer_service_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_transfer_v1_transfer_service_proto_rawDesc),
-				len(file_elara_transfer_v1_transfer_service_proto_rawDesc),
-			),
-		)
+		file_elara_transfer_v1_transfer_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_transfer_v1_transfer_service_proto_rawDesc), len(file_elara_transfer_v1_transfer_service_proto_rawDesc)))
 	})
-
 	return file_elara_transfer_v1_transfer_service_proto_rawDescData
 }
 
-var (
-	file_elara_transfer_v1_transfer_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-	file_elara_transfer_v1_transfer_service_proto_goTypes  = []any{
-		(*ExportNamespaceRequest)(nil),  // 0: elara.transfer.v1.ExportNamespaceRequest
-		(*ExportNamespaceResponse)(nil), // 1: elara.transfer.v1.ExportNamespaceResponse
-		(*ExportAllRequest)(nil),        // 2: elara.transfer.v1.ExportAllRequest
-		(*ExportAllResponse)(nil),       // 3: elara.transfer.v1.ExportAllResponse
-		(*ImportNamespaceRequest)(nil),  // 4: elara.transfer.v1.ImportNamespaceRequest
-		(*ImportNamespaceResponse)(nil), // 5: elara.transfer.v1.ImportNamespaceResponse
-		(BundleEncoding)(0),             // 6: elara.transfer.v1.BundleEncoding
-		(ZipLayout)(0),                  // 7: elara.transfer.v1.ZipLayout
-		(ConflictResolution)(0),         // 8: elara.transfer.v1.ConflictResolution
-		(*ImportError)(nil),             // 9: elara.transfer.v1.ImportError
-	}
-)
+var file_elara_transfer_v1_transfer_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_elara_transfer_v1_transfer_service_proto_goTypes = []any{
+	(*ExportNamespaceRequest)(nil),  // 0: elara.transfer.v1.ExportNamespaceRequest
+	(*ExportNamespaceResponse)(nil), // 1: elara.transfer.v1.ExportNamespaceResponse
+	(*ExportAllRequest)(nil),        // 2: elara.transfer.v1.ExportAllRequest
+	(*ExportAllResponse)(nil),       // 3: elara.transfer.v1.ExportAllResponse
+	(*ImportNamespaceRequest)(nil),  // 4: elara.transfer.v1.ImportNamespaceRequest
+	(*ImportNamespaceResponse)(nil), // 5: elara.transfer.v1.ImportNamespaceResponse
+	(BundleEncoding)(0),             // 6: elara.transfer.v1.BundleEncoding
+	(ZipLayout)(0),                  // 7: elara.transfer.v1.ZipLayout
+	(ConflictResolution)(0),         // 8: elara.transfer.v1.ConflictResolution
+	(*ImportError)(nil),             // 9: elara.transfer.v1.ImportError
+}
 var file_elara_transfer_v1_transfer_service_proto_depIdxs = []int32{
 	6, // 0: elara.transfer.v1.ExportNamespaceRequest.encoding:type_name -> elara.transfer.v1.BundleEncoding
 	6, // 1: elara.transfer.v1.ExportAllRequest.encoding:type_name -> elara.transfer.v1.BundleEncoding
@@ -552,11 +509,8 @@ func file_elara_transfer_v1_transfer_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_transfer_v1_transfer_service_proto_rawDesc),
-				len(file_elara_transfer_v1_transfer_service_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_transfer_v1_transfer_service_proto_rawDesc), len(file_elara_transfer_v1_transfer_service_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   6,
 			NumExtensions: 0,

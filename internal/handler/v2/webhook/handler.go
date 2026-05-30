@@ -16,13 +16,22 @@ import (
 
 type (
 	authz interface {
-		Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error
+		Require(
+			ctx context.Context,
+			object domain.Object,
+			action domain.Action,
+			domainStr string,
+		) error
 	}
 
 	usecase interface {
 		Create(ctx context.Context, w *domain.Webhook) (*domain.Webhook, error)
 		Get(ctx context.Context, id string) (*domain.Webhook, error)
-		Update(ctx context.Context, id string, params webhookuc.UpdateParams) (*domain.Webhook, error)
+		Update(
+			ctx context.Context,
+			id string,
+			params webhookuc.UpdateParams,
+		) (*domain.Webhook, error)
 		Delete(ctx context.Context, id string) error
 		List(ctx context.Context) ([]*domain.Webhook, error)
 		GetHistory(ctx context.Context, webhookID string) ([]domain.DeliveryAttempt, error)

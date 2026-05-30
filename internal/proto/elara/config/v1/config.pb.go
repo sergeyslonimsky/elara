@@ -7,13 +7,12 @@
 package configv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -51,7 +50,6 @@ var (
 func (x Format) Enum() *Format {
 	p := new(Format)
 	*p = x
-
 	return p
 }
 
@@ -116,7 +114,6 @@ var (
 func (x EventType) Enum() *EventType {
 	p := new(EventType)
 	*p = x
-
 	return p
 }
 
@@ -143,18 +140,18 @@ func (EventType) EnumDescriptor() ([]byte, []int) {
 
 type Config struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Path            string                 `                   protobuf:"bytes,1,opt,name=path,proto3"                                    json:"path,omitempty"`
-	Content         string                 `                   protobuf:"bytes,2,opt,name=content,proto3"                                 json:"content,omitempty"`
-	ContentHash     string                 `                   protobuf:"bytes,3,opt,name=content_hash,json=contentHash,proto3"           json:"content_hash,omitempty"`
-	Format          Format                 `                   protobuf:"varint,4,opt,name=format,proto3,enum=elara.config.v1.Format"     json:"format,omitempty"`
-	Namespace       string                 `                   protobuf:"bytes,5,opt,name=namespace,proto3"                               json:"namespace,omitempty"`
-	Version         int64                  `                   protobuf:"varint,6,opt,name=version,proto3"                                json:"version,omitempty"`
-	Metadata        map[string]string      `                   protobuf:"bytes,7,rep,name=metadata,proto3"                                json:"metadata,omitempty"         protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	CreatedAt       *timestamppb.Timestamp `                   protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3"               json:"created_at,omitempty"`
-	UpdatedAt       *timestamppb.Timestamp `                   protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3"               json:"updated_at,omitempty"`
-	Revision        int64                  `                   protobuf:"varint,10,opt,name=revision,proto3"                              json:"revision,omitempty"`
-	Locked          bool                   `                   protobuf:"varint,11,opt,name=locked,proto3"                                json:"locked,omitempty"`
-	NamespaceLocked bool                   `                   protobuf:"varint,12,opt,name=namespace_locked,json=namespaceLocked,proto3" json:"namespace_locked,omitempty"`
+	Path            string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Content         string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	ContentHash     string                 `protobuf:"bytes,3,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
+	Format          Format                 `protobuf:"varint,4,opt,name=format,proto3,enum=elara.config.v1.Format" json:"format,omitempty"`
+	Namespace       string                 `protobuf:"bytes,5,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Version         int64                  `protobuf:"varint,6,opt,name=version,proto3" json:"version,omitempty"`
+	Metadata        map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Revision        int64                  `protobuf:"varint,10,opt,name=revision,proto3" json:"revision,omitempty"`
+	Locked          bool                   `protobuf:"varint,11,opt,name=locked,proto3" json:"locked,omitempty"`
+	NamespaceLocked bool                   `protobuf:"varint,12,opt,name=namespace_locked,json=namespaceLocked,proto3" json:"namespace_locked,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -179,10 +176,8 @@ func (x *Config) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -195,7 +190,6 @@ func (x *Config) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -203,7 +197,6 @@ func (x *Config) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
-
 	return ""
 }
 
@@ -211,7 +204,6 @@ func (x *Config) GetContentHash() string {
 	if x != nil {
 		return x.ContentHash
 	}
-
 	return ""
 }
 
@@ -219,7 +211,6 @@ func (x *Config) GetFormat() Format {
 	if x != nil {
 		return x.Format
 	}
-
 	return Format_FORMAT_UNSPECIFIED
 }
 
@@ -227,7 +218,6 @@ func (x *Config) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -235,7 +225,6 @@ func (x *Config) GetVersion() int64 {
 	if x != nil {
 		return x.Version
 	}
-
 	return 0
 }
 
@@ -243,7 +232,6 @@ func (x *Config) GetMetadata() map[string]string {
 	if x != nil {
 		return x.Metadata
 	}
-
 	return nil
 }
 
@@ -251,7 +239,6 @@ func (x *Config) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
-
 	return nil
 }
 
@@ -259,7 +246,6 @@ func (x *Config) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedAt
 	}
-
 	return nil
 }
 
@@ -267,7 +253,6 @@ func (x *Config) GetRevision() int64 {
 	if x != nil {
 		return x.Revision
 	}
-
 	return 0
 }
 
@@ -275,7 +260,6 @@ func (x *Config) GetLocked() bool {
 	if x != nil {
 		return x.Locked
 	}
-
 	return false
 }
 
@@ -283,23 +267,22 @@ func (x *Config) GetNamespaceLocked() bool {
 	if x != nil {
 		return x.NamespaceLocked
 	}
-
 	return false
 }
 
 type ConfigSummary struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Path            string                 `                   protobuf:"bytes,1,opt,name=path,proto3"                                    json:"path,omitempty"`
-	ContentHash     string                 `                   protobuf:"bytes,2,opt,name=content_hash,json=contentHash,proto3"           json:"content_hash,omitempty"`
-	Format          Format                 `                   protobuf:"varint,3,opt,name=format,proto3,enum=elara.config.v1.Format"     json:"format,omitempty"`
-	Namespace       string                 `                   protobuf:"bytes,4,opt,name=namespace,proto3"                               json:"namespace,omitempty"`
-	Version         int64                  `                   protobuf:"varint,5,opt,name=version,proto3"                                json:"version,omitempty"`
-	Revision        int64                  `                   protobuf:"varint,6,opt,name=revision,proto3"                               json:"revision,omitempty"`
-	Metadata        map[string]string      `                   protobuf:"bytes,7,rep,name=metadata,proto3"                                json:"metadata,omitempty"         protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	CreatedAt       *timestamppb.Timestamp `                   protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3"               json:"created_at,omitempty"`
-	UpdatedAt       *timestamppb.Timestamp `                   protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3"               json:"updated_at,omitempty"`
-	Locked          bool                   `                   protobuf:"varint,10,opt,name=locked,proto3"                                json:"locked,omitempty"`
-	NamespaceLocked bool                   `                   protobuf:"varint,11,opt,name=namespace_locked,json=namespaceLocked,proto3" json:"namespace_locked,omitempty"`
+	Path            string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	ContentHash     string                 `protobuf:"bytes,2,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
+	Format          Format                 `protobuf:"varint,3,opt,name=format,proto3,enum=elara.config.v1.Format" json:"format,omitempty"`
+	Namespace       string                 `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Version         int64                  `protobuf:"varint,5,opt,name=version,proto3" json:"version,omitempty"`
+	Revision        int64                  `protobuf:"varint,6,opt,name=revision,proto3" json:"revision,omitempty"`
+	Metadata        map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Locked          bool                   `protobuf:"varint,10,opt,name=locked,proto3" json:"locked,omitempty"`
+	NamespaceLocked bool                   `protobuf:"varint,11,opt,name=namespace_locked,json=namespaceLocked,proto3" json:"namespace_locked,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -324,10 +307,8 @@ func (x *ConfigSummary) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -340,7 +321,6 @@ func (x *ConfigSummary) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -348,7 +328,6 @@ func (x *ConfigSummary) GetContentHash() string {
 	if x != nil {
 		return x.ContentHash
 	}
-
 	return ""
 }
 
@@ -356,7 +335,6 @@ func (x *ConfigSummary) GetFormat() Format {
 	if x != nil {
 		return x.Format
 	}
-
 	return Format_FORMAT_UNSPECIFIED
 }
 
@@ -364,7 +342,6 @@ func (x *ConfigSummary) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -372,7 +349,6 @@ func (x *ConfigSummary) GetVersion() int64 {
 	if x != nil {
 		return x.Version
 	}
-
 	return 0
 }
 
@@ -380,7 +356,6 @@ func (x *ConfigSummary) GetRevision() int64 {
 	if x != nil {
 		return x.Revision
 	}
-
 	return 0
 }
 
@@ -388,7 +363,6 @@ func (x *ConfigSummary) GetMetadata() map[string]string {
 	if x != nil {
 		return x.Metadata
 	}
-
 	return nil
 }
 
@@ -396,7 +370,6 @@ func (x *ConfigSummary) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
-
 	return nil
 }
 
@@ -404,7 +377,6 @@ func (x *ConfigSummary) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedAt
 	}
-
 	return nil
 }
 
@@ -412,7 +384,6 @@ func (x *ConfigSummary) GetLocked() bool {
 	if x != nil {
 		return x.Locked
 	}
-
 	return false
 }
 
@@ -420,23 +391,22 @@ func (x *ConfigSummary) GetNamespaceLocked() bool {
 	if x != nil {
 		return x.NamespaceLocked
 	}
-
 	return false
 }
 
 type DirectoryEntry struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
-	Name     string                 `                   protobuf:"bytes,1,opt,name=name,proto3"                    json:"name,omitempty"`
-	FullPath string                 `                   protobuf:"bytes,2,opt,name=full_path,json=fullPath,proto3" json:"full_path,omitempty"`
-	IsFile   bool                   `                   protobuf:"varint,3,opt,name=is_file,json=isFile,proto3"    json:"is_file,omitempty"`
+	Name     string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	FullPath string                 `protobuf:"bytes,2,opt,name=full_path,json=fullPath,proto3" json:"full_path,omitempty"`
+	IsFile   bool                   `protobuf:"varint,3,opt,name=is_file,json=isFile,proto3" json:"is_file,omitempty"`
 	// File metadata (populated only for files):
 	Format    Format                 `protobuf:"varint,4,opt,name=format,proto3,enum=elara.config.v1.Format" json:"format,omitempty"`
-	Version   int64                  `protobuf:"varint,5,opt,name=version,proto3"                            json:"version,omitempty"`
-	Revision  int64                  `protobuf:"varint,6,opt,name=revision,proto3"                           json:"revision,omitempty"`
-	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3"           json:"updated_at,omitempty"`
+	Version   int64                  `protobuf:"varint,5,opt,name=version,proto3" json:"version,omitempty"`
+	Revision  int64                  `protobuf:"varint,6,opt,name=revision,proto3" json:"revision,omitempty"`
+	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	// Folder metadata (populated only for folders):
-	ChildCount      int32 `protobuf:"varint,8,opt,name=child_count,json=childCount,proto3"            json:"child_count,omitempty"`
-	Locked          bool  `protobuf:"varint,9,opt,name=locked,proto3"                                 json:"locked,omitempty"`
+	ChildCount      int32 `protobuf:"varint,8,opt,name=child_count,json=childCount,proto3" json:"child_count,omitempty"`
+	Locked          bool  `protobuf:"varint,9,opt,name=locked,proto3" json:"locked,omitempty"`
 	NamespaceLocked bool  `protobuf:"varint,10,opt,name=namespace_locked,json=namespaceLocked,proto3" json:"namespace_locked,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -462,10 +432,8 @@ func (x *DirectoryEntry) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -478,7 +446,6 @@ func (x *DirectoryEntry) GetName() string {
 	if x != nil {
 		return x.Name
 	}
-
 	return ""
 }
 
@@ -486,7 +453,6 @@ func (x *DirectoryEntry) GetFullPath() string {
 	if x != nil {
 		return x.FullPath
 	}
-
 	return ""
 }
 
@@ -494,7 +460,6 @@ func (x *DirectoryEntry) GetIsFile() bool {
 	if x != nil {
 		return x.IsFile
 	}
-
 	return false
 }
 
@@ -502,7 +467,6 @@ func (x *DirectoryEntry) GetFormat() Format {
 	if x != nil {
 		return x.Format
 	}
-
 	return Format_FORMAT_UNSPECIFIED
 }
 
@@ -510,7 +474,6 @@ func (x *DirectoryEntry) GetVersion() int64 {
 	if x != nil {
 		return x.Version
 	}
-
 	return 0
 }
 
@@ -518,7 +481,6 @@ func (x *DirectoryEntry) GetRevision() int64 {
 	if x != nil {
 		return x.Revision
 	}
-
 	return 0
 }
 
@@ -526,7 +488,6 @@ func (x *DirectoryEntry) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedAt
 	}
-
 	return nil
 }
 
@@ -534,7 +495,6 @@ func (x *DirectoryEntry) GetChildCount() int32 {
 	if x != nil {
 		return x.ChildCount
 	}
-
 	return 0
 }
 
@@ -542,7 +502,6 @@ func (x *DirectoryEntry) GetLocked() bool {
 	if x != nil {
 		return x.Locked
 	}
-
 	return false
 }
 
@@ -550,17 +509,16 @@ func (x *DirectoryEntry) GetNamespaceLocked() bool {
 	if x != nil {
 		return x.NamespaceLocked
 	}
-
 	return false
 }
 
 type HistoryEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Revision      int64                  `                   protobuf:"varint,1,opt,name=revision,proto3"                                                 json:"revision,omitempty"`
-	Content       string                 `                   protobuf:"bytes,2,opt,name=content,proto3"                                                   json:"content,omitempty"`
-	ContentHash   string                 `                   protobuf:"bytes,3,opt,name=content_hash,json=contentHash,proto3"                             json:"content_hash,omitempty"`
-	EventType     EventType              `                   protobuf:"varint,4,opt,name=event_type,json=eventType,proto3,enum=elara.config.v1.EventType" json:"event_type,omitempty"`
-	Timestamp     *timestamppb.Timestamp `                   protobuf:"bytes,5,opt,name=timestamp,proto3"                                                 json:"timestamp,omitempty"`
+	Revision      int64                  `protobuf:"varint,1,opt,name=revision,proto3" json:"revision,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	ContentHash   string                 `protobuf:"bytes,3,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
+	EventType     EventType              `protobuf:"varint,4,opt,name=event_type,json=eventType,proto3,enum=elara.config.v1.EventType" json:"event_type,omitempty"`
+	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -585,10 +543,8 @@ func (x *HistoryEntry) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -601,7 +557,6 @@ func (x *HistoryEntry) GetRevision() int64 {
 	if x != nil {
 		return x.Revision
 	}
-
 	return 0
 }
 
@@ -609,7 +564,6 @@ func (x *HistoryEntry) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
-
 	return ""
 }
 
@@ -617,7 +571,6 @@ func (x *HistoryEntry) GetContentHash() string {
 	if x != nil {
 		return x.ContentHash
 	}
-
 	return ""
 }
 
@@ -625,7 +578,6 @@ func (x *HistoryEntry) GetEventType() EventType {
 	if x != nil {
 		return x.EventType
 	}
-
 	return EventType_EVENT_TYPE_UNSPECIFIED
 }
 
@@ -633,17 +585,16 @@ func (x *HistoryEntry) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
-
 	return nil
 }
 
 type ValidationResult struct {
 	state             protoimpl.MessageState   `protogen:"open.v1"`
-	Valid             bool                     `                   protobuf:"varint,1,opt,name=valid,proto3"                                                           json:"valid,omitempty"`
-	Errors            []string                 `                   protobuf:"bytes,2,rep,name=errors,proto3"                                                           json:"errors,omitempty"`
-	DetectedFormat    Format                   `                   protobuf:"varint,3,opt,name=detected_format,json=detectedFormat,proto3,enum=elara.config.v1.Format" json:"detected_format,omitempty"`
-	NormalizedContent string                   `                   protobuf:"bytes,4,opt,name=normalized_content,json=normalizedContent,proto3"                        json:"normalized_content,omitempty"`
-	SchemaViolations  []*SchemaViolationDetail `                   protobuf:"bytes,5,rep,name=schema_violations,json=schemaViolations,proto3"                          json:"schema_violations,omitempty"`
+	Valid             bool                     `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
+	Errors            []string                 `protobuf:"bytes,2,rep,name=errors,proto3" json:"errors,omitempty"`
+	DetectedFormat    Format                   `protobuf:"varint,3,opt,name=detected_format,json=detectedFormat,proto3,enum=elara.config.v1.Format" json:"detected_format,omitempty"`
+	NormalizedContent string                   `protobuf:"bytes,4,opt,name=normalized_content,json=normalizedContent,proto3" json:"normalized_content,omitempty"`
+	SchemaViolations  []*SchemaViolationDetail `protobuf:"bytes,5,rep,name=schema_violations,json=schemaViolations,proto3" json:"schema_violations,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -668,10 +619,8 @@ func (x *ValidationResult) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -684,7 +633,6 @@ func (x *ValidationResult) GetValid() bool {
 	if x != nil {
 		return x.Valid
 	}
-
 	return false
 }
 
@@ -692,7 +640,6 @@ func (x *ValidationResult) GetErrors() []string {
 	if x != nil {
 		return x.Errors
 	}
-
 	return nil
 }
 
@@ -700,7 +647,6 @@ func (x *ValidationResult) GetDetectedFormat() Format {
 	if x != nil {
 		return x.DetectedFormat
 	}
-
 	return Format_FORMAT_UNSPECIFIED
 }
 
@@ -708,7 +654,6 @@ func (x *ValidationResult) GetNormalizedContent() string {
 	if x != nil {
 		return x.NormalizedContent
 	}
-
 	return ""
 }
 
@@ -716,15 +661,14 @@ func (x *ValidationResult) GetSchemaViolations() []*SchemaViolationDetail {
 	if x != nil {
 		return x.SchemaViolations
 	}
-
 	return nil
 }
 
 type SchemaViolationDetail struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"    json:"path,omitempty"`
-	Message       string                 `                   protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Keyword       string                 `                   protobuf:"bytes,3,opt,name=keyword,proto3" json:"keyword,omitempty"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Keyword       string                 `protobuf:"bytes,3,opt,name=keyword,proto3" json:"keyword,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -749,10 +693,8 @@ func (x *SchemaViolationDetail) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -765,7 +707,6 @@ func (x *SchemaViolationDetail) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -773,7 +714,6 @@ func (x *SchemaViolationDetail) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
-
 	return ""
 }
 
@@ -781,17 +721,16 @@ func (x *SchemaViolationDetail) GetKeyword() string {
 	if x != nil {
 		return x.Keyword
 	}
-
 	return ""
 }
 
 type WatchEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          EventType              `                   protobuf:"varint,1,opt,name=type,proto3,enum=elara.config.v1.EventType" json:"type,omitempty"`
-	Path          string                 `                   protobuf:"bytes,2,opt,name=path,proto3"                                 json:"path,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,3,opt,name=namespace,proto3"                            json:"namespace,omitempty"`
-	Config        *Config                `                   protobuf:"bytes,4,opt,name=config,proto3"                               json:"config,omitempty"`
-	Timestamp     *timestamppb.Timestamp `                   protobuf:"bytes,5,opt,name=timestamp,proto3"                            json:"timestamp,omitempty"`
+	Type          EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=elara.config.v1.EventType" json:"type,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Config        *Config                `protobuf:"bytes,4,opt,name=config,proto3" json:"config,omitempty"`
+	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -816,10 +755,8 @@ func (x *WatchEvent) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -832,7 +769,6 @@ func (x *WatchEvent) GetType() EventType {
 	if x != nil {
 		return x.Type
 	}
-
 	return EventType_EVENT_TYPE_UNSPECIFIED
 }
 
@@ -840,7 +776,6 @@ func (x *WatchEvent) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -848,7 +783,6 @@ func (x *WatchEvent) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -856,7 +790,6 @@ func (x *WatchEvent) GetConfig() *Config {
 	if x != nil {
 		return x.Config
 	}
-
 	return nil
 }
 
@@ -864,7 +797,6 @@ func (x *WatchEvent) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
-
 	return nil
 }
 
@@ -971,35 +903,27 @@ var (
 
 func file_elara_config_v1_config_proto_rawDescGZIP() []byte {
 	file_elara_config_v1_config_proto_rawDescOnce.Do(func() {
-		file_elara_config_v1_config_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_config_v1_config_proto_rawDesc),
-				len(file_elara_config_v1_config_proto_rawDesc),
-			),
-		)
+		file_elara_config_v1_config_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_config_v1_config_proto_rawDesc), len(file_elara_config_v1_config_proto_rawDesc)))
 	})
-
 	return file_elara_config_v1_config_proto_rawDescData
 }
 
-var (
-	file_elara_config_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-	file_elara_config_v1_config_proto_msgTypes  = make([]protoimpl.MessageInfo, 9)
-	file_elara_config_v1_config_proto_goTypes   = []any{
-		(Format)(0),                   // 0: elara.config.v1.Format
-		(EventType)(0),                // 1: elara.config.v1.EventType
-		(*Config)(nil),                // 2: elara.config.v1.Config
-		(*ConfigSummary)(nil),         // 3: elara.config.v1.ConfigSummary
-		(*DirectoryEntry)(nil),        // 4: elara.config.v1.DirectoryEntry
-		(*HistoryEntry)(nil),          // 5: elara.config.v1.HistoryEntry
-		(*ValidationResult)(nil),      // 6: elara.config.v1.ValidationResult
-		(*SchemaViolationDetail)(nil), // 7: elara.config.v1.SchemaViolationDetail
-		(*WatchEvent)(nil),            // 8: elara.config.v1.WatchEvent
-		nil,                           // 9: elara.config.v1.Config.MetadataEntry
-		nil,                           // 10: elara.config.v1.ConfigSummary.MetadataEntry
-		(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
-	}
-)
+var file_elara_config_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_elara_config_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_elara_config_v1_config_proto_goTypes = []any{
+	(Format)(0),                   // 0: elara.config.v1.Format
+	(EventType)(0),                // 1: elara.config.v1.EventType
+	(*Config)(nil),                // 2: elara.config.v1.Config
+	(*ConfigSummary)(nil),         // 3: elara.config.v1.ConfigSummary
+	(*DirectoryEntry)(nil),        // 4: elara.config.v1.DirectoryEntry
+	(*HistoryEntry)(nil),          // 5: elara.config.v1.HistoryEntry
+	(*ValidationResult)(nil),      // 6: elara.config.v1.ValidationResult
+	(*SchemaViolationDetail)(nil), // 7: elara.config.v1.SchemaViolationDetail
+	(*WatchEvent)(nil),            // 8: elara.config.v1.WatchEvent
+	nil,                           // 9: elara.config.v1.Config.MetadataEntry
+	nil,                           // 10: elara.config.v1.ConfigSummary.MetadataEntry
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
+}
 var file_elara_config_v1_config_proto_depIdxs = []int32{
 	0,  // 0: elara.config.v1.Config.format:type_name -> elara.config.v1.Format
 	9,  // 1: elara.config.v1.Config.metadata:type_name -> elara.config.v1.Config.MetadataEntry
@@ -1033,11 +957,8 @@ func file_elara_config_v1_config_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_config_v1_config_proto_rawDesc),
-				len(file_elara_config_v1_config_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_config_v1_config_proto_rawDesc), len(file_elara_config_v1_config_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   9,
 			NumExtensions: 0,

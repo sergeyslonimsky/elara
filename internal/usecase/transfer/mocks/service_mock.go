@@ -13,9 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockpdp is a mock of pdp interface.
@@ -34,7 +33,6 @@ type MockpdpMockRecorder struct {
 func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
 	mock := &Mockpdp{ctrl: ctrl}
 	mock.recorder = &MockpdpMockRecorder{mock}
-
 	return mock
 }
 
@@ -48,14 +46,12 @@ func (m *Mockpdp) Has(principal string, perm domain.Permission) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Has", principal, perm)
 	ret0, _ := ret[0].(bool)
-
 	return ret0
 }
 
 // Has indicates an expected call of Has.
 func (mr *MockpdpMockRecorder) Has(principal, perm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*Mockpdp)(nil).Has), principal, perm)
 }
 
@@ -75,7 +71,6 @@ type MockconfigsMockRecorder struct {
 func NewMockconfigs(ctrl *gomock.Controller) *Mockconfigs {
 	mock := &Mockconfigs{ctrl: ctrl}
 	mock.recorder = &MockconfigsMockRecorder{mock}
-
 	return mock
 }
 
@@ -89,21 +84,13 @@ func (m *Mockconfigs) Create(ctx context.Context, cfg *domain.Config) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, cfg)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Create indicates an expected call of Create.
 func (mr *MockconfigsMockRecorder) Create(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Create",
-		reflect.TypeOf((*Mockconfigs)(nil).Create),
-		ctx,
-		cfg,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockconfigs)(nil).Create), ctx, cfg)
 }
 
 // Get mocks base method.
@@ -112,22 +99,13 @@ func (m *Mockconfigs) Get(ctx context.Context, path, namespace string) (*domain.
 	ret := m.ctrl.Call(m, "Get", ctx, path, namespace)
 	ret0, _ := ret[0].(*domain.Config)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockconfigsMockRecorder) Get(ctx, path, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Get",
-		reflect.TypeOf((*Mockconfigs)(nil).Get),
-		ctx,
-		path,
-		namespace,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockconfigs)(nil).Get), ctx, path, namespace)
 }
 
 // ListAllByNamespace mocks base method.
@@ -136,21 +114,13 @@ func (m *Mockconfigs) ListAllByNamespace(ctx context.Context, namespace string) 
 	ret := m.ctrl.Call(m, "ListAllByNamespace", ctx, namespace)
 	ret0, _ := ret[0].([]*domain.Config)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // ListAllByNamespace indicates an expected call of ListAllByNamespace.
 func (mr *MockconfigsMockRecorder) ListAllByNamespace(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"ListAllByNamespace",
-		reflect.TypeOf((*Mockconfigs)(nil).ListAllByNamespace),
-		ctx,
-		namespace,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllByNamespace", reflect.TypeOf((*Mockconfigs)(nil).ListAllByNamespace), ctx, namespace)
 }
 
 // Update mocks base method.
@@ -158,21 +128,13 @@ func (m *Mockconfigs) Update(ctx context.Context, cfg *domain.Config) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, cfg)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Update indicates an expected call of Update.
 func (mr *MockconfigsMockRecorder) Update(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Update",
-		reflect.TypeOf((*Mockconfigs)(nil).Update),
-		ctx,
-		cfg,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*Mockconfigs)(nil).Update), ctx, cfg)
 }
 
 // Mocknamespaces is a mock of namespaces interface.
@@ -191,7 +153,6 @@ type MocknamespacesMockRecorder struct {
 func NewMocknamespaces(ctrl *gomock.Controller) *Mocknamespaces {
 	mock := &Mocknamespaces{ctrl: ctrl}
 	mock.recorder = &MocknamespacesMockRecorder{mock}
-
 	return mock
 }
 
@@ -205,21 +166,13 @@ func (m *Mocknamespaces) Create(ctx context.Context, ns *domain.Namespace) error
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, ns)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Create indicates an expected call of Create.
 func (mr *MocknamespacesMockRecorder) Create(ctx, ns any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Create",
-		reflect.TypeOf((*Mocknamespaces)(nil).Create),
-		ctx,
-		ns,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mocknamespaces)(nil).Create), ctx, ns)
 }
 
 // Get mocks base method.
@@ -228,14 +181,12 @@ func (m *Mocknamespaces) Get(ctx context.Context, name string) (*domain.Namespac
 	ret := m.ctrl.Call(m, "Get", ctx, name)
 	ret0, _ := ret[0].(*domain.Namespace)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MocknamespacesMockRecorder) Get(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mocknamespaces)(nil).Get), ctx, name)
 }
 
@@ -245,18 +196,11 @@ func (m *Mocknamespaces) ListAll(ctx context.Context) ([]*domain.Namespace, erro
 	ret := m.ctrl.Call(m, "ListAll", ctx)
 	ret0, _ := ret[0].([]*domain.Namespace)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // ListAll indicates an expected call of ListAll.
 func (mr *MocknamespacesMockRecorder) ListAll(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"ListAll",
-		reflect.TypeOf((*Mocknamespaces)(nil).ListAll),
-		ctx,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*Mocknamespaces)(nil).ListAll), ctx)
 }

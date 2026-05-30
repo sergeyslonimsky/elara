@@ -7,13 +7,12 @@
 package namespacev1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -25,12 +24,12 @@ const (
 
 type Namespace struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `                   protobuf:"bytes,1,opt,name=name,proto3"                           json:"name,omitempty"`
-	Description   string                 `                   protobuf:"bytes,2,opt,name=description,proto3"                    json:"description,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `                   protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3"      json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `                   protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3"      json:"updated_at,omitempty"`
-	ConfigCount   int32                  `                   protobuf:"varint,5,opt,name=config_count,json=configCount,proto3" json:"config_count,omitempty"`
-	Locked        bool                   `                   protobuf:"varint,6,opt,name=locked,proto3"                        json:"locked,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	ConfigCount   int32                  `protobuf:"varint,5,opt,name=config_count,json=configCount,proto3" json:"config_count,omitempty"`
+	Locked        bool                   `protobuf:"varint,6,opt,name=locked,proto3" json:"locked,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -55,10 +54,8 @@ func (x *Namespace) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -71,7 +68,6 @@ func (x *Namespace) GetName() string {
 	if x != nil {
 		return x.Name
 	}
-
 	return ""
 }
 
@@ -79,7 +75,6 @@ func (x *Namespace) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
-
 	return ""
 }
 
@@ -87,7 +82,6 @@ func (x *Namespace) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
-
 	return nil
 }
 
@@ -95,7 +89,6 @@ func (x *Namespace) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedAt
 	}
-
 	return nil
 }
 
@@ -103,7 +96,6 @@ func (x *Namespace) GetConfigCount() int32 {
 	if x != nil {
 		return x.ConfigCount
 	}
-
 	return 0
 }
 
@@ -111,7 +103,6 @@ func (x *Namespace) GetLocked() bool {
 	if x != nil {
 		return x.Locked
 	}
-
 	return false
 }
 
@@ -138,24 +129,16 @@ var (
 
 func file_elara_namespace_v1_namespace_proto_rawDescGZIP() []byte {
 	file_elara_namespace_v1_namespace_proto_rawDescOnce.Do(func() {
-		file_elara_namespace_v1_namespace_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_namespace_v1_namespace_proto_rawDesc),
-				len(file_elara_namespace_v1_namespace_proto_rawDesc),
-			),
-		)
+		file_elara_namespace_v1_namespace_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_namespace_v1_namespace_proto_rawDesc), len(file_elara_namespace_v1_namespace_proto_rawDesc)))
 	})
-
 	return file_elara_namespace_v1_namespace_proto_rawDescData
 }
 
-var (
-	file_elara_namespace_v1_namespace_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-	file_elara_namespace_v1_namespace_proto_goTypes  = []any{
-		(*Namespace)(nil),             // 0: elara.namespace.v1.Namespace
-		(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
-	}
-)
+var file_elara_namespace_v1_namespace_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_elara_namespace_v1_namespace_proto_goTypes = []any{
+	(*Namespace)(nil),             // 0: elara.namespace.v1.Namespace
+	(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
+}
 var file_elara_namespace_v1_namespace_proto_depIdxs = []int32{
 	1, // 0: elara.namespace.v1.Namespace.created_at:type_name -> google.protobuf.Timestamp
 	1, // 1: elara.namespace.v1.Namespace.updated_at:type_name -> google.protobuf.Timestamp
@@ -174,11 +157,8 @@ func file_elara_namespace_v1_namespace_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_namespace_v1_namespace_proto_rawDesc),
-				len(file_elara_namespace_v1_namespace_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_namespace_v1_namespace_proto_rawDesc), len(file_elara_namespace_v1_namespace_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,

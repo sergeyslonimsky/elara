@@ -10,7 +10,9 @@ import (
 // SubscribeChanges returns a channel of client-change events filtered to
 // clients the caller is allowed to see (see scopeChecker for rules).
 // Admins receive the unfiltered upstream channel directly.
-func (s *Service) SubscribeChanges(ctx context.Context) (<-chan domain.ClientChange, func(), error) {
+func (s *Service) SubscribeChanges(
+	ctx context.Context,
+) (<-chan domain.ClientChange, func(), error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, nil, domain.ErrUnauthorized
@@ -47,7 +49,10 @@ func (s *Service) SubscribeChanges(ctx context.Context) (<-chan domain.ClientCha
 // SubscribeClient returns a per-client change channel. If the caller cannot
 // see the client (no overlapping watch namespace), the response is
 // ErrNotFound — same wording as Get to avoid leaking existence.
-func (s *Service) SubscribeClient(ctx context.Context, connID string) (<-chan domain.ClientChange, func(), error) {
+func (s *Service) SubscribeClient(
+	ctx context.Context,
+	connID string,
+) (<-chan domain.ClientChange, func(), error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, nil, domain.ErrUnauthorized

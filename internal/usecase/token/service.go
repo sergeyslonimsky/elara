@@ -22,7 +22,11 @@ const (
 type (
 	pdp interface {
 		Has(principal string, perm domain.Permission) bool
-		EffectiveDomains(principal string, object domain.Object, action domain.Action) authz.DomainSet
+		EffectiveDomains(
+			principal string,
+			object domain.Object,
+			action domain.Action,
+		) authz.DomainSet
 	}
 
 	store interface {
@@ -50,13 +54,13 @@ func New(pdp pdp, store store) *Service {
 }
 
 func generateRawToken() (string, string, error) {
-	b := make([]byte, tokenRandBytes)
+	bytes := make([]byte, tokenRandBytes)
 
-	if _, err := rand.Read(b); err != nil {
+	if _, err := rand.Read(bytes); err != nil {
 		return "", "", fmt.Errorf("generate token bytes: %w", err)
 	}
 
-	raw := tokenPrefix + base64.RawURLEncoding.EncodeToString(b)
+	raw := tokenPrefix + base64.RawURLEncoding.EncodeToString(bytes)
 	sum := sha256.Sum256([]byte(raw))
 
 	return raw, hex.EncodeToString(sum[:]), nil

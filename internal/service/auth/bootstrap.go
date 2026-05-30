@@ -190,25 +190,8 @@ func (a *AdminBootstrap) ensureBasicAdminUser(
 			return fmt.Errorf("lookup superadmin user: %w", err)
 		}
 
-		hash, err := HashPassword(password)
-		if err != nil {
-			return fmt.Errorf("hash superadmin password: %w", err)
-		}
-
-		now := time.Now().UTC()
-		user = &domain.User{
-			Email:                  username,
-			Name:                   "Super Admin",
-			Provider:               domain.ProviderBasicAuth,
-			PasswordHash:           hash,
-			PasswordChangeRequired: true,
-			System:                 true,
-			Source:                 domain.SourceLocal,
-			CreatedAt:              now,
-		}
-
-		if err := users.Upsert(ctx, user); err != nil {
-			return fmt.Errorf("create superadmin user: %w", err)
+		if err := a.createUser(ctx, users, username, password); err != nil {
+			return fmt.Errorf("upsert superadmin user: %w", err)
 		}
 	} else if !user.System {
 		user.System = true
@@ -266,10 +249,39 @@ func (a *AdminBootstrap) ensureMembership(ctx context.Context, tx storage.Tx, em
 	}
 
 	policy := a.policies.WithTx(tx)
-	rule := []string{email, casbin.GroupSubject(domain.SystemGroupSuperAdmin), domain.MembershipDomain}
+	rule := []string{
+		email,
+		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
+		domain.MembershipDomain,
+	}
 
 	if err := policy.AddPolicy("g", "g", rule); err != nil {
 		return fmt.Errorf("add superadmin membership rule: %w", err)
+	}
+
+	return nil
+}
+
+func (a *AdminBootstrap) createUser(ctx context.Context, repo *bbolt.UserRepo, username, password string) error {
+	hash, err := HashPassword(password)
+	if err != nil {
+		return fmt.Errorf("hash superadmin password: %w", err)
+	}
+
+	now := time.Now().UTC()
+	user := &domain.User{
+		Email:                  username,
+		Name:                   "Super Admin",
+		Provider:               domain.ProviderBasicAuth,
+		PasswordHash:           hash,
+		PasswordChangeRequired: true,
+		System:                 true,
+		Source:                 domain.SourceLocal,
+		CreatedAt:              now,
+	}
+
+	if err := repo.Upsert(ctx, user); err != nil {
+		return fmt.Errorf("create superadmin user: %w", err)
 	}
 
 	return nil

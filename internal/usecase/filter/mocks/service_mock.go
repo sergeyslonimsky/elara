@@ -13,9 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockpermissions is a mock of permissions interface.
@@ -34,7 +33,6 @@ type MockpermissionsMockRecorder struct {
 func NewMockpermissions(ctrl *gomock.Controller) *Mockpermissions {
 	mock := &Mockpermissions{ctrl: ctrl}
 	mock.recorder = &MockpermissionsMockRecorder{mock}
-
 	return mock
 }
 
@@ -49,20 +47,13 @@ func (m *Mockpermissions) ListPermissions(principal string) ([]domain.Permission
 	ret := m.ctrl.Call(m, "ListPermissions", principal)
 	ret0, _ := ret[0].([]domain.Permission)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // ListPermissions indicates an expected call of ListPermissions.
 func (mr *MockpermissionsMockRecorder) ListPermissions(principal any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"ListPermissions",
-		reflect.TypeOf((*Mockpermissions)(nil).ListPermissions),
-		principal,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPermissions", reflect.TypeOf((*Mockpermissions)(nil).ListPermissions), principal)
 }
 
 // MocknamespaceLister is a mock of namespaceLister interface.
@@ -81,7 +72,6 @@ type MocknamespaceListerMockRecorder struct {
 func NewMocknamespaceLister(ctrl *gomock.Controller) *MocknamespaceLister {
 	mock := &MocknamespaceLister{ctrl: ctrl}
 	mock.recorder = &MocknamespaceListerMockRecorder{mock}
-
 	return mock
 }
 
@@ -91,32 +81,19 @@ func (m *MocknamespaceLister) EXPECT() *MocknamespaceListerMockRecorder {
 }
 
 // List mocks base method.
-func (m *MocknamespaceLister) List(
-	ctx context.Context,
-	filter domain.NamespaceFilter,
-	params domain.NamespaceListParams,
-) ([]*domain.Namespace, int, error) {
+func (m *MocknamespaceLister) List(ctx context.Context, filter domain.NamespaceFilter, params domain.NamespaceListParams) ([]*domain.Namespace, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, filter, params)
 	ret0, _ := ret[0].([]*domain.Namespace)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
-
 	return ret0, ret1, ret2
 }
 
 // List indicates an expected call of List.
 func (mr *MocknamespaceListerMockRecorder) List(ctx, filter, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"List",
-		reflect.TypeOf((*MocknamespaceLister)(nil).List),
-		ctx,
-		filter,
-		params,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MocknamespaceLister)(nil).List), ctx, filter, params)
 }
 
 // MockgroupLister is a mock of groupLister interface.
@@ -135,7 +112,6 @@ type MockgroupListerMockRecorder struct {
 func NewMockgroupLister(ctrl *gomock.Controller) *MockgroupLister {
 	mock := &MockgroupLister{ctrl: ctrl}
 	mock.recorder = &MockgroupListerMockRecorder{mock}
-
 	return mock
 }
 
@@ -145,32 +121,19 @@ func (m *MockgroupLister) EXPECT() *MockgroupListerMockRecorder {
 }
 
 // List mocks base method.
-func (m *MockgroupLister) List(
-	ctx context.Context,
-	filter domain.GroupFilter,
-	params domain.GroupListParams,
-) ([]*domain.Group, int, error) {
+func (m *MockgroupLister) List(ctx context.Context, filter domain.GroupFilter, params domain.GroupListParams) ([]*domain.Group, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, filter, params)
 	ret0, _ := ret[0].([]*domain.Group)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
-
 	return ret0, ret1, ret2
 }
 
 // List indicates an expected call of List.
 func (mr *MockgroupListerMockRecorder) List(ctx, filter, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"List",
-		reflect.TypeOf((*MockgroupLister)(nil).List),
-		ctx,
-		filter,
-		params,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockgroupLister)(nil).List), ctx, filter, params)
 }
 
 // MockuserLister is a mock of userLister interface.
@@ -189,7 +152,6 @@ type MockuserListerMockRecorder struct {
 func NewMockuserLister(ctrl *gomock.Controller) *MockuserLister {
 	mock := &MockuserLister{ctrl: ctrl}
 	mock.recorder = &MockuserListerMockRecorder{mock}
-
 	return mock
 }
 
@@ -199,30 +161,17 @@ func (m *MockuserLister) EXPECT() *MockuserListerMockRecorder {
 }
 
 // List mocks base method.
-func (m *MockuserLister) List(
-	ctx context.Context,
-	filter domain.UserFilter,
-	params domain.UserListParams,
-) ([]*domain.User, int, error) {
+func (m *MockuserLister) List(ctx context.Context, filter domain.UserFilter, params domain.UserListParams) ([]*domain.User, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, filter, params)
 	ret0, _ := ret[0].([]*domain.User)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
-
 	return ret0, ret1, ret2
 }
 
 // List indicates an expected call of List.
 func (mr *MockuserListerMockRecorder) List(ctx, filter, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"List",
-		reflect.TypeOf((*MockuserLister)(nil).List),
-		ctx,
-		filter,
-		params,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockuserLister)(nil).List), ctx, filter, params)
 }

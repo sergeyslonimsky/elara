@@ -38,10 +38,24 @@ func TestService_ListActivity(t *testing.T) {
 					Return(entries, nil)
 
 				m.pdp.EXPECT().
-					Has("admin@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "prod"}).
+					Has(
+						"admin@example.com",
+						domain.Permission{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: "prod",
+						},
+					).
 					Return(true)
 				m.pdp.EXPECT().
-					Has("admin@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"}).
+					Has(
+						"admin@example.com",
+						domain.Permission{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: "dev",
+						},
+					).
 					Return(true)
 
 				return ctx
@@ -68,10 +82,24 @@ func TestService_ListActivity(t *testing.T) {
 
 				// Cached per-namespace check: prod queried once, dev queried once.
 				m.pdp.EXPECT().
-					Has("user@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "prod"}).
+					Has(
+						"user@example.com",
+						domain.Permission{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: "prod",
+						},
+					).
 					Return(true)
 				m.pdp.EXPECT().
-					Has("user@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"}).
+					Has(
+						"user@example.com",
+						domain.Permission{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: "dev",
+						},
+					).
 					Return(false)
 
 				return ctx
@@ -93,7 +121,14 @@ func TestService_ListActivity(t *testing.T) {
 					Return(entries, nil)
 
 				m.pdp.EXPECT().
-					Has("no-access@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "prod"}).
+					Has(
+						"no-access@example.com",
+						domain.Permission{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: "prod",
+						},
+					).
 					Return(false)
 
 				return ctx

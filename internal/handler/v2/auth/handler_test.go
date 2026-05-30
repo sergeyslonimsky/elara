@@ -172,7 +172,10 @@ func TestAuthHandler_GetAuthInfo(t *testing.T) {
 			t.Parallel()
 
 			h, _ := setupHandler(t, gomock.NewController(t), tc.authType)
-			resp, err := h.GetAuthInfo(t.Context(), connect.NewRequest(&authv1.GetAuthInfoRequest{}))
+			resp, err := h.GetAuthInfo(
+				t.Context(),
+				connect.NewRequest(&authv1.GetAuthInfoRequest{}),
+			)
 
 			require.NoError(t, err)
 			assert.Equal(t, tc.expected, resp.Msg.GetAuthType())

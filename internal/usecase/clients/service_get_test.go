@@ -30,11 +30,20 @@ func TestService_Get(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
-					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Has(
+						"test@example.com",
+						domain.Permission{
+							Object: domain.ObjectClient,
+							Action: domain.ActionRead,
+							Domain: domain.DomainAll,
+						},
+					).
 					Return(true)
 
 				m.active.EXPECT().Get("active-id").Return(&domain.Client{ID: "active-id"})
-				m.active.EXPECT().RecentEvents("active-id").Return([]domain.ClientEvent{{Method: "Put"}})
+				m.active.EXPECT().
+					RecentEvents("active-id").
+					Return([]domain.ClientEvent{{Method: "Put"}})
 
 				return ctx
 			},
@@ -47,7 +56,13 @@ func TestService_Get(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
-					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Has(
+						"test@example.com",
+						domain.Permission{
+							Object: domain.ObjectClient,
+							Action: domain.ActionRead,
+							Domain: domain.DomainAll,
+						}).
 					Return(true)
 
 				m.active.EXPECT().Get("historical-id").Return(nil)
@@ -67,7 +82,13 @@ func TestService_Get(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
-					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Has(
+						"test@example.com",
+						domain.Permission{
+							Object: domain.ObjectClient,
+							Action: domain.ActionRead,
+							Domain: domain.DomainAll,
+						}).
 					Return(true)
 
 				m.active.EXPECT().Get("missing-id").Return(nil)
@@ -87,7 +108,13 @@ func TestService_Get(t *testing.T) {
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
-					Has("test@example.com", domain.Permission{Object: domain.ObjectClient, Action: domain.ActionRead, Domain: domain.DomainAll}).
+					Has(
+						"test@example.com",
+						domain.Permission{
+							Object: domain.ObjectClient,
+							Action: domain.ActionRead,
+							Domain: domain.DomainAll,
+						}).
 					Return(true)
 
 				m.active.EXPECT().Get("some-id").Return(nil)

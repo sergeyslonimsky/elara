@@ -9,7 +9,10 @@ import (
 )
 
 // GetHistory returns delivery attempts for a webhook if the caller can read it.
-func (s *Service) GetHistory(ctx context.Context, webhookID string) ([]domain.DeliveryAttempt, error) {
+func (s *Service) GetHistory(
+	ctx context.Context,
+	webhookID string,
+) ([]domain.DeliveryAttempt, error) {
 	claims, ok := auth.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized

@@ -7,14 +7,12 @@
 package filterv1
 
 import (
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 )
 
 const (
@@ -26,8 +24,8 @@ const (
 
 type GetNamespacesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Filters       *Filters               `                   protobuf:"bytes,1,opt,name=filters,proto3"                                               json:"filters,omitempty"`
-	Actions       []v1.PermissionAction  `                   protobuf:"varint,2,rep,packed,name=actions,proto3,enum=elara.common.v1.PermissionAction" json:"actions,omitempty"`
+	Filters       *Filters               `protobuf:"bytes,1,opt,name=filters,proto3" json:"filters,omitempty"`
+	Actions       []v1.PermissionAction  `protobuf:"varint,2,rep,packed,name=actions,proto3,enum=elara.common.v1.PermissionAction" json:"actions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -52,10 +50,8 @@ func (x *GetNamespacesRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -68,7 +64,6 @@ func (x *GetNamespacesRequest) GetFilters() *Filters {
 	if x != nil {
 		return x.Filters
 	}
-
 	return nil
 }
 
@@ -76,13 +71,12 @@ func (x *GetNamespacesRequest) GetActions() []v1.PermissionAction {
 	if x != nil {
 		return x.Actions
 	}
-
 	return nil
 }
 
 type GetNamespacesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Items         []*Item                `                   protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Items         []*Item                `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -107,10 +101,8 @@ func (x *GetNamespacesResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -123,14 +115,13 @@ func (x *GetNamespacesResponse) GetItems() []*Item {
 	if x != nil {
 		return x.Items
 	}
-
 	return nil
 }
 
 type GetGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Filters       *Filters               `                   protobuf:"bytes,1,opt,name=filters,proto3"                                               json:"filters,omitempty"`
-	Actions       []v1.PermissionAction  `                   protobuf:"varint,2,rep,packed,name=actions,proto3,enum=elara.common.v1.PermissionAction" json:"actions,omitempty"`
+	Filters       *Filters               `protobuf:"bytes,1,opt,name=filters,proto3" json:"filters,omitempty"`
+	Actions       []v1.PermissionAction  `protobuf:"varint,2,rep,packed,name=actions,proto3,enum=elara.common.v1.PermissionAction" json:"actions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -155,10 +146,8 @@ func (x *GetGroupsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -171,7 +160,6 @@ func (x *GetGroupsRequest) GetFilters() *Filters {
 	if x != nil {
 		return x.Filters
 	}
-
 	return nil
 }
 
@@ -179,13 +167,12 @@ func (x *GetGroupsRequest) GetActions() []v1.PermissionAction {
 	if x != nil {
 		return x.Actions
 	}
-
 	return nil
 }
 
 type GetGroupsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Items         []*Item                `                   protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Items         []*Item                `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -210,10 +197,8 @@ func (x *GetGroupsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -226,14 +211,13 @@ func (x *GetGroupsResponse) GetItems() []*Item {
 	if x != nil {
 		return x.Items
 	}
-
 	return nil
 }
 
 type GetUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Filters       *Filters               `                   protobuf:"bytes,1,opt,name=filters,proto3"                                               json:"filters,omitempty"`
-	Actions       []v1.PermissionAction  `                   protobuf:"varint,2,rep,packed,name=actions,proto3,enum=elara.common.v1.PermissionAction" json:"actions,omitempty"`
+	Filters       *Filters               `protobuf:"bytes,1,opt,name=filters,proto3" json:"filters,omitempty"`
+	Actions       []v1.PermissionAction  `protobuf:"varint,2,rep,packed,name=actions,proto3,enum=elara.common.v1.PermissionAction" json:"actions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -258,10 +242,8 @@ func (x *GetUsersRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -274,7 +256,6 @@ func (x *GetUsersRequest) GetFilters() *Filters {
 	if x != nil {
 		return x.Filters
 	}
-
 	return nil
 }
 
@@ -282,13 +263,12 @@ func (x *GetUsersRequest) GetActions() []v1.PermissionAction {
 	if x != nil {
 		return x.Actions
 	}
-
 	return nil
 }
 
 type GetUsersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Items         []*Item                `                   protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Items         []*Item                `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -313,10 +293,8 @@ func (x *GetUsersResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -329,7 +307,6 @@ func (x *GetUsersResponse) GetItems() []*Item {
 	if x != nil {
 		return x.Items
 	}
-
 	return nil
 }
 
@@ -337,7 +314,7 @@ var File_elara_filter_v1_filter_service_proto protoreflect.FileDescriptor
 
 const file_elara_filter_v1_filter_service_proto_rawDesc = "" +
 	"\n" +
-	"$elara/filter/v1/filter_service.proto\x12\x0felara.filter.v1\x1a\x1celara/filter/v1/filter.proto\x1a elara/common/v1/permission.proto\"\x87\x01\n" +
+	"$elara/filter/v1/filter_service.proto\x12\x0felara.filter.v1\x1a elara/common/v1/permission.proto\x1a\x1celara/filter/v1/filter.proto\"\x87\x01\n" +
 	"\x14GetNamespacesRequest\x122\n" +
 	"\afilters\x18\x01 \x01(\v2\x18.elara.filter.v1.FiltersR\afilters\x12;\n" +
 	"\aactions\x18\x02 \x03(\x0e2!.elara.common.v1.PermissionActionR\aactions\"D\n" +
@@ -366,31 +343,23 @@ var (
 
 func file_elara_filter_v1_filter_service_proto_rawDescGZIP() []byte {
 	file_elara_filter_v1_filter_service_proto_rawDescOnce.Do(func() {
-		file_elara_filter_v1_filter_service_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_filter_v1_filter_service_proto_rawDesc),
-				len(file_elara_filter_v1_filter_service_proto_rawDesc),
-			),
-		)
+		file_elara_filter_v1_filter_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_filter_v1_filter_service_proto_rawDesc), len(file_elara_filter_v1_filter_service_proto_rawDesc)))
 	})
-
 	return file_elara_filter_v1_filter_service_proto_rawDescData
 }
 
-var (
-	file_elara_filter_v1_filter_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-	file_elara_filter_v1_filter_service_proto_goTypes  = []any{
-		(*GetNamespacesRequest)(nil),  // 0: elara.filter.v1.GetNamespacesRequest
-		(*GetNamespacesResponse)(nil), // 1: elara.filter.v1.GetNamespacesResponse
-		(*GetGroupsRequest)(nil),      // 2: elara.filter.v1.GetGroupsRequest
-		(*GetGroupsResponse)(nil),     // 3: elara.filter.v1.GetGroupsResponse
-		(*GetUsersRequest)(nil),       // 4: elara.filter.v1.GetUsersRequest
-		(*GetUsersResponse)(nil),      // 5: elara.filter.v1.GetUsersResponse
-		(*Filters)(nil),               // 6: elara.filter.v1.Filters
-		(v1.PermissionAction)(0),      // 7: elara.common.v1.PermissionAction
-		(*Item)(nil),                  // 8: elara.filter.v1.Item
-	}
-)
+var file_elara_filter_v1_filter_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_elara_filter_v1_filter_service_proto_goTypes = []any{
+	(*GetNamespacesRequest)(nil),  // 0: elara.filter.v1.GetNamespacesRequest
+	(*GetNamespacesResponse)(nil), // 1: elara.filter.v1.GetNamespacesResponse
+	(*GetGroupsRequest)(nil),      // 2: elara.filter.v1.GetGroupsRequest
+	(*GetGroupsResponse)(nil),     // 3: elara.filter.v1.GetGroupsResponse
+	(*GetUsersRequest)(nil),       // 4: elara.filter.v1.GetUsersRequest
+	(*GetUsersResponse)(nil),      // 5: elara.filter.v1.GetUsersResponse
+	(*Filters)(nil),               // 6: elara.filter.v1.Filters
+	(v1.PermissionAction)(0),      // 7: elara.common.v1.PermissionAction
+	(*Item)(nil),                  // 8: elara.filter.v1.Item
+}
 var file_elara_filter_v1_filter_service_proto_depIdxs = []int32{
 	6,  // 0: elara.filter.v1.GetNamespacesRequest.filters:type_name -> elara.filter.v1.Filters
 	7,  // 1: elara.filter.v1.GetNamespacesRequest.actions:type_name -> elara.common.v1.PermissionAction
@@ -423,11 +392,8 @@ func file_elara_filter_v1_filter_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_filter_v1_filter_service_proto_rawDesc),
-				len(file_elara_filter_v1_filter_service_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_filter_v1_filter_service_proto_rawDesc), len(file_elara_filter_v1_filter_service_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   6,
 			NumExtensions: 0,

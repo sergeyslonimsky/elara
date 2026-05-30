@@ -40,7 +40,9 @@ func TestCheckAccess(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (context.Context, auth.AccessEnforcer) {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 				e := mockauth.NewMockAccessEnforcer(ctrl)
-				e.EXPECT().Enforce("user@example.com", dom, obj, act).Return(false, errors.New("db error"))
+				e.EXPECT().
+					Enforce("user@example.com", dom, obj, act).
+					Return(false, errors.New("db error"))
 
 				return ctx, e
 			},

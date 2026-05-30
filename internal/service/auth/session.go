@@ -14,12 +14,13 @@ var errUnexpectedSigningMethod = errors.New("unexpected signing method")
 
 // Claims holds the user identity extracted from a JWT session token.
 type Claims struct {
+	jwt.RegisteredClaims
+
 	Email                  string   `json:"email"`
 	Name                   string   `json:"name"`
 	Namespaces             []string `json:"namespaces,omitempty"`
 	Role                   string   `json:"role,omitempty"`
 	PasswordChangeRequired bool     `json:"password_change_required,omitempty"`
-	jwt.RegisteredClaims
 }
 
 // SessionManager creates and validates HS256 JWT session tokens.

@@ -41,7 +41,10 @@ func TestService_ChangePassword(t *testing.T) {
 			name:     "success with password verification",
 			currPass: currentPassword,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: email, PasswordChangeRequired: false})
+				ctx = auth.WithClaims(
+					ctx,
+					&auth.Claims{Email: email, PasswordChangeRequired: false},
+				)
 				svc, m := setupService(ctrl)
 
 				m.users.EXPECT().Get(ctx, email).Return(newUser(), nil)
@@ -79,7 +82,10 @@ func TestService_ChangePassword(t *testing.T) {
 			name:     "unauthorized - wrong current password",
 			currPass: "wrong-password",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: email, PasswordChangeRequired: false})
+				ctx = auth.WithClaims(
+					ctx,
+					&auth.Claims{Email: email, PasswordChangeRequired: false},
+				)
 				svc, m := setupService(ctrl)
 
 				m.users.EXPECT().Get(ctx, email).Return(newUser(), nil)
@@ -109,7 +115,9 @@ func TestService_ChangePassword(t *testing.T) {
 				svc, m := setupService(ctrl)
 
 				m.users.EXPECT().Get(ctx, email).Return(newUser(), nil)
-				m.pass.EXPECT().SetPassword(ctx, email, gomock.Any(), false).Return(errors.New("db error"))
+				m.pass.EXPECT().
+					SetPassword(ctx, email, gomock.Any(), false).
+					Return(errors.New("db error"))
 
 				return svc, ctx
 			},

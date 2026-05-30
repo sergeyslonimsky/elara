@@ -13,10 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	authz "github.com/sergeyslonimsky/elara/internal/service/authz"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockpdp is a mock of pdp interface.
@@ -35,7 +34,6 @@ type MockpdpMockRecorder struct {
 func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
 	mock := &Mockpdp{ctrl: ctrl}
 	mock.recorder = &MockpdpMockRecorder{mock}
-
 	return mock
 }
 
@@ -49,22 +47,13 @@ func (m *Mockpdp) EffectiveDomains(principal string, object domain.Object, actio
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EffectiveDomains", principal, object, action)
 	ret0, _ := ret[0].(authz.DomainSet)
-
 	return ret0
 }
 
 // EffectiveDomains indicates an expected call of EffectiveDomains.
 func (mr *MockpdpMockRecorder) EffectiveDomains(principal, object, action any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"EffectiveDomains",
-		reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains),
-		principal,
-		object,
-		action,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveDomains", reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains), principal, object, action)
 }
 
 // Has mocks base method.
@@ -72,14 +61,12 @@ func (m *Mockpdp) Has(principal string, perm domain.Permission) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Has", principal, perm)
 	ret0, _ := ret[0].(bool)
-
 	return ret0
 }
 
 // Has indicates an expected call of Has.
 func (mr *MockpdpMockRecorder) Has(principal, perm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*Mockpdp)(nil).Has), principal, perm)
 }
 
@@ -99,7 +86,6 @@ type MockstoreMockRecorder struct {
 func NewMockstore(ctrl *gomock.Controller) *Mockstore {
 	mock := &Mockstore{ctrl: ctrl}
 	mock.recorder = &MockstoreMockRecorder{mock}
-
 	return mock
 }
 
@@ -114,21 +100,13 @@ func (m *Mockstore) CountConfigs(ctx context.Context, name string) (int, error) 
 	ret := m.ctrl.Call(m, "CountConfigs", ctx, name)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // CountConfigs indicates an expected call of CountConfigs.
 func (mr *MockstoreMockRecorder) CountConfigs(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"CountConfigs",
-		reflect.TypeOf((*Mockstore)(nil).CountConfigs),
-		ctx,
-		name,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountConfigs", reflect.TypeOf((*Mockstore)(nil).CountConfigs), ctx, name)
 }
 
 // Create mocks base method.
@@ -136,14 +114,12 @@ func (m *Mockstore) Create(ctx context.Context, ns *domain.Namespace) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, ns)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Create indicates an expected call of Create.
 func (mr *MockstoreMockRecorder) Create(ctx, ns any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockstore)(nil).Create), ctx, ns)
 }
 
@@ -152,14 +128,12 @@ func (m *Mockstore) Delete(ctx context.Context, name string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, name)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
 func (mr *MockstoreMockRecorder) Delete(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockstore)(nil).Delete), ctx, name)
 }
 
@@ -169,44 +143,29 @@ func (m *Mockstore) Get(ctx context.Context, name string) (*domain.Namespace, er
 	ret := m.ctrl.Call(m, "Get", ctx, name)
 	ret0, _ := ret[0].(*domain.Namespace)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockstoreMockRecorder) Get(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockstore)(nil).Get), ctx, name)
 }
 
 // List mocks base method.
-func (m *Mockstore) List(
-	ctx context.Context,
-	filter domain.NamespaceFilter,
-	params domain.NamespaceListParams,
-) ([]*domain.Namespace, int, error) {
+func (m *Mockstore) List(ctx context.Context, filter domain.NamespaceFilter, params domain.NamespaceListParams) ([]*domain.Namespace, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, filter, params)
 	ret0, _ := ret[0].([]*domain.Namespace)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
-
 	return ret0, ret1, ret2
 }
 
 // List indicates an expected call of List.
 func (mr *MockstoreMockRecorder) List(ctx, filter, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"List",
-		reflect.TypeOf((*Mockstore)(nil).List),
-		ctx,
-		filter,
-		params,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockstore)(nil).List), ctx, filter, params)
 }
 
 // LockNamespace mocks base method.
@@ -214,21 +173,13 @@ func (m *Mockstore) LockNamespace(ctx context.Context, name string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LockNamespace", ctx, name)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // LockNamespace indicates an expected call of LockNamespace.
 func (mr *MockstoreMockRecorder) LockNamespace(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"LockNamespace",
-		reflect.TypeOf((*Mockstore)(nil).LockNamespace),
-		ctx,
-		name,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockNamespace", reflect.TypeOf((*Mockstore)(nil).LockNamespace), ctx, name)
 }
 
 // UnlockNamespace mocks base method.
@@ -236,21 +187,13 @@ func (m *Mockstore) UnlockNamespace(ctx context.Context, name string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnlockNamespace", ctx, name)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // UnlockNamespace indicates an expected call of UnlockNamespace.
 func (mr *MockstoreMockRecorder) UnlockNamespace(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"UnlockNamespace",
-		reflect.TypeOf((*Mockstore)(nil).UnlockNamespace),
-		ctx,
-		name,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlockNamespace", reflect.TypeOf((*Mockstore)(nil).UnlockNamespace), ctx, name)
 }
 
 // Update mocks base method.
@@ -258,14 +201,12 @@ func (m *Mockstore) Update(ctx context.Context, ns *domain.Namespace) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, ns)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Update indicates an expected call of Update.
 func (mr *MockstoreMockRecorder) Update(ctx, ns any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*Mockstore)(nil).Update), ctx, ns)
 }
 
@@ -285,7 +226,6 @@ type MocknotifierMockRecorder struct {
 func NewMocknotifier(ctrl *gomock.Controller) *Mocknotifier {
 	mock := &Mocknotifier{ctrl: ctrl}
 	mock.recorder = &MocknotifierMockRecorder{mock}
-
 	return mock
 }
 
@@ -303,14 +243,7 @@ func (m *Mocknotifier) NotifyNamespaceLocked(ctx context.Context, namespace stri
 // NotifyNamespaceLocked indicates an expected call of NotifyNamespaceLocked.
 func (mr *MocknotifierMockRecorder) NotifyNamespaceLocked(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"NotifyNamespaceLocked",
-		reflect.TypeOf((*Mocknotifier)(nil).NotifyNamespaceLocked),
-		ctx,
-		namespace,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyNamespaceLocked", reflect.TypeOf((*Mocknotifier)(nil).NotifyNamespaceLocked), ctx, namespace)
 }
 
 // NotifyNamespaceUnlocked mocks base method.
@@ -322,12 +255,5 @@ func (m *Mocknotifier) NotifyNamespaceUnlocked(ctx context.Context, namespace st
 // NotifyNamespaceUnlocked indicates an expected call of NotifyNamespaceUnlocked.
 func (mr *MocknotifierMockRecorder) NotifyNamespaceUnlocked(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"NotifyNamespaceUnlocked",
-		reflect.TypeOf((*Mocknotifier)(nil).NotifyNamespaceUnlocked),
-		ctx,
-		namespace,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyNamespaceUnlocked", reflect.TypeOf((*Mocknotifier)(nil).NotifyNamespaceUnlocked), ctx, namespace)
 }

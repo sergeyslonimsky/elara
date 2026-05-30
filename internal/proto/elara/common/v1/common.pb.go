@@ -7,12 +7,11 @@
 package commonv1
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -47,7 +46,6 @@ var (
 func (x SortDirection) Enum() *SortDirection {
 	p := new(SortDirection)
 	*p = x
-
 	return p
 }
 
@@ -74,8 +72,8 @@ func (SortDirection) EnumDescriptor() ([]byte, []int) {
 
 type PaginationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Limit         int32                  `                   protobuf:"varint,1,opt,name=limit,proto3"  json:"limit,omitempty"`
-	Offset        int32                  `                   protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset        int32                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -100,10 +98,8 @@ func (x *PaginationRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -116,7 +112,6 @@ func (x *PaginationRequest) GetLimit() int32 {
 	if x != nil {
 		return x.Limit
 	}
-
 	return 0
 }
 
@@ -124,15 +119,14 @@ func (x *PaginationRequest) GetOffset() int32 {
 	if x != nil {
 		return x.Offset
 	}
-
 	return 0
 }
 
 type PaginationResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Total         int32                  `                   protobuf:"varint,1,opt,name=total,proto3"  json:"total,omitempty"`
-	Limit         int32                  `                   protobuf:"varint,2,opt,name=limit,proto3"  json:"limit,omitempty"`
-	Offset        int32                  `                   protobuf:"varint,3,opt,name=offset,proto3" json:"offset,omitempty"`
+	Total         int32                  `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset        int32                  `protobuf:"varint,3,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -157,10 +151,8 @@ func (x *PaginationResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -173,7 +165,6 @@ func (x *PaginationResponse) GetTotal() int32 {
 	if x != nil {
 		return x.Total
 	}
-
 	return 0
 }
 
@@ -181,7 +172,6 @@ func (x *PaginationResponse) GetLimit() int32 {
 	if x != nil {
 		return x.Limit
 	}
-
 	return 0
 }
 
@@ -189,14 +179,13 @@ func (x *PaginationResponse) GetOffset() int32 {
 	if x != nil {
 		return x.Offset
 	}
-
 	return 0
 }
 
 type SortRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Field         string                 `                   protobuf:"bytes,1,opt,name=field,proto3"                                         json:"field,omitempty"`
-	Direction     SortDirection          `                   protobuf:"varint,2,opt,name=direction,proto3,enum=elara.common.v1.SortDirection" json:"direction,omitempty"`
+	Field         string                 `protobuf:"bytes,1,opt,name=field,proto3" json:"field,omitempty"`
+	Direction     SortDirection          `protobuf:"varint,2,opt,name=direction,proto3,enum=elara.common.v1.SortDirection" json:"direction,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -221,10 +210,8 @@ func (x *SortRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -237,7 +224,6 @@ func (x *SortRequest) GetField() string {
 	if x != nil {
 		return x.Field
 	}
-
 	return ""
 }
 
@@ -245,14 +231,13 @@ func (x *SortRequest) GetDirection() SortDirection {
 	if x != nil {
 		return x.Direction
 	}
-
 	return SortDirection_SORT_DIRECTION_UNSPECIFIED
 }
 
 type SortResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Field         string                 `                   protobuf:"bytes,1,opt,name=field,proto3"                                         json:"field,omitempty"`
-	Direction     SortDirection          `                   protobuf:"varint,2,opt,name=direction,proto3,enum=elara.common.v1.SortDirection" json:"direction,omitempty"`
+	Field         string                 `protobuf:"bytes,1,opt,name=field,proto3" json:"field,omitempty"`
+	Direction     SortDirection          `protobuf:"varint,2,opt,name=direction,proto3,enum=elara.common.v1.SortDirection" json:"direction,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -277,10 +262,8 @@ func (x *SortResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -293,7 +276,6 @@ func (x *SortResponse) GetField() string {
 	if x != nil {
 		return x.Field
 	}
-
 	return ""
 }
 
@@ -301,7 +283,6 @@ func (x *SortResponse) GetDirection() SortDirection {
 	if x != nil {
 		return x.Direction
 	}
-
 	return SortDirection_SORT_DIRECTION_UNSPECIFIED
 }
 
@@ -336,28 +317,20 @@ var (
 
 func file_elara_common_v1_common_proto_rawDescGZIP() []byte {
 	file_elara_common_v1_common_proto_rawDescOnce.Do(func() {
-		file_elara_common_v1_common_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_common_v1_common_proto_rawDesc),
-				len(file_elara_common_v1_common_proto_rawDesc),
-			),
-		)
+		file_elara_common_v1_common_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_common_v1_common_proto_rawDesc), len(file_elara_common_v1_common_proto_rawDesc)))
 	})
-
 	return file_elara_common_v1_common_proto_rawDescData
 }
 
-var (
-	file_elara_common_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-	file_elara_common_v1_common_proto_msgTypes  = make([]protoimpl.MessageInfo, 4)
-	file_elara_common_v1_common_proto_goTypes   = []any{
-		(SortDirection)(0),         // 0: elara.common.v1.SortDirection
-		(*PaginationRequest)(nil),  // 1: elara.common.v1.PaginationRequest
-		(*PaginationResponse)(nil), // 2: elara.common.v1.PaginationResponse
-		(*SortRequest)(nil),        // 3: elara.common.v1.SortRequest
-		(*SortResponse)(nil),       // 4: elara.common.v1.SortResponse
-	}
-)
+var file_elara_common_v1_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_elara_common_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_elara_common_v1_common_proto_goTypes = []any{
+	(SortDirection)(0),         // 0: elara.common.v1.SortDirection
+	(*PaginationRequest)(nil),  // 1: elara.common.v1.PaginationRequest
+	(*PaginationResponse)(nil), // 2: elara.common.v1.PaginationResponse
+	(*SortRequest)(nil),        // 3: elara.common.v1.SortRequest
+	(*SortResponse)(nil),       // 4: elara.common.v1.SortResponse
+}
 var file_elara_common_v1_common_proto_depIdxs = []int32{
 	0, // 0: elara.common.v1.SortRequest.direction:type_name -> elara.common.v1.SortDirection
 	0, // 1: elara.common.v1.SortResponse.direction:type_name -> elara.common.v1.SortDirection
@@ -376,11 +349,8 @@ func file_elara_common_v1_common_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_common_v1_common_proto_rawDesc),
-				len(file_elara_common_v1_common_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_common_v1_common_proto_rawDesc), len(file_elara_common_v1_common_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   4,
 			NumExtensions: 0,

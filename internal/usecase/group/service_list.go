@@ -30,7 +30,11 @@ type ListResult struct {
 // into a GroupFilter — no post-fetch pdp.Has loop. An empty effective set
 // returns an empty list, not an error (EL-4 §7 acceptance: empty
 // responses → empty list, not 403).
-func (s *Service) List(ctx context.Context, user domain.AuthInfo, params ListParams) (*ListResult, error) {
+func (s *Service) List(
+	ctx context.Context,
+	user domain.AuthInfo,
+	params ListParams,
+) (*ListResult, error) {
 	limit := params.Limit
 	if limit <= 0 {
 		limit = defaultListLimit

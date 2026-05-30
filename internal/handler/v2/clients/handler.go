@@ -25,7 +25,12 @@ var errClientNotFound = errors.New("client not found")
 
 type (
 	authz interface {
-		Require(ctx context.Context, object domain.Object, action domain.Action, domainStr string) error
+		Require(
+			ctx context.Context,
+			object domain.Object,
+			action domain.Action,
+			domainStr string,
+		) error
 	}
 
 	usecase interface {
@@ -38,7 +43,10 @@ type (
 		) ([]*domain.Client, error)
 		Get(ctx context.Context, id string) (*domain.Client, []domain.ClientEvent, error)
 		SubscribeChanges(ctx context.Context) (<-chan domain.ClientChange, func(), error)
-		SubscribeClient(ctx context.Context, connID string) (<-chan domain.ClientChange, func(), error)
+		SubscribeClient(
+			ctx context.Context,
+			connID string,
+		) (<-chan domain.ClientChange, func(), error)
 	}
 )
 

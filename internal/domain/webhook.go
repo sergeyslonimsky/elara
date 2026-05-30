@@ -107,7 +107,10 @@ func (w *Webhook) validateURL() error {
 
 	u, err := url.ParseRequestURI(w.URL)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return NewValidationError("url", fmt.Sprintf("url must be a valid http or https URL, got %q", w.URL))
+		return NewValidationError(
+			"url",
+			fmt.Sprintf("url must be a valid http or https URL, got %q", w.URL),
+		)
 	}
 
 	return nil

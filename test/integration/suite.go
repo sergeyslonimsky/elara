@@ -188,7 +188,7 @@ func testConfig(t *testing.T) config.Config {
 // seedData populates the store with the standard dataset used across all integration tests.
 //
 // Namespaces: prod, staging, dev
-// Configs: /api.json and /db.json in each namespace
+// Configs: /api.json and /db.json in each namespace.
 func seedData(t *testing.T, ctx context.Context, mgr *service.Manager) {
 	t.Helper()
 

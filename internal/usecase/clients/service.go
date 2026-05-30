@@ -17,7 +17,11 @@ const historyScanLimit = 1000
 type (
 	pdp interface {
 		Has(principal string, perm domain.Permission) bool
-		EffectiveDomains(principal string, object domain.Object, action domain.Action) authz.DomainSet
+		EffectiveDomains(
+			principal string,
+			object domain.Object,
+			action domain.Action,
+		) authz.DomainSet
 	}
 
 	activeSource interface {
@@ -30,7 +34,11 @@ type (
 
 	historySource interface {
 		List(ctx context.Context, limit int) ([]*domain.Client, error)
-		ListByClient(ctx context.Context, clientName, k8sNamespace string, limit int) ([]*domain.Client, error)
+		ListByClient(
+			ctx context.Context,
+			clientName, k8sNamespace string,
+			limit int,
+		) ([]*domain.Client, error)
 	}
 )
 

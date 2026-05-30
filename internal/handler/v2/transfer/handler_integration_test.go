@@ -174,7 +174,12 @@ func TestIntegration_ImportAll(t *testing.T) {
 			t.Parallel()
 
 			app := itest.New(t)
-			reqBody := itest.InjectFileAsBase64(t, itest.ReadFile(t, tc.reqPath), "data", tc.bundlePath)
+			reqBody := itest.InjectFileAsBase64(
+				t,
+				itest.ReadFile(t, tc.reqPath),
+				"data",
+				tc.bundlePath,
+			)
 
 			resp := itest.DoRequest(t, app, endpoint, reqBody, itest.WithPersona(app, tc.user))
 			defer func() { require.NoError(t, resp.Body.Close()) }()
@@ -239,7 +244,12 @@ func TestIntegration_ImportNamespace(t *testing.T) {
 			t.Parallel()
 
 			app := itest.New(t)
-			reqBody := itest.InjectFileAsBase64(t, itest.ReadFile(t, tc.reqPath), "data", tc.bundlePath)
+			reqBody := itest.InjectFileAsBase64(
+				t,
+				itest.ReadFile(t, tc.reqPath),
+				"data",
+				tc.bundlePath,
+			)
 
 			resp := itest.DoRequest(t, app, endpoint, reqBody, itest.WithPersona(app, tc.user))
 			defer func() { require.NoError(t, resp.Body.Close()) }()

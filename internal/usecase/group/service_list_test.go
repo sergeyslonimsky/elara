@@ -57,14 +57,18 @@ func TestService_List(t *testing.T) {
 
 				require.NoError(
 					t,
-					st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-						return txe.AddPolicy(
-							"delegated@example.com",
-							casbin.GroupSubject("dev"),
-							string(domain.ObjectGroup),
-							string(domain.ActionRead),
-						)
-					}),
+					st.enforcer.WriteTx(
+						t.Context(),
+						st.txm,
+						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+							return txe.AddPolicy(
+								"delegated@example.com",
+								casbin.GroupSubject("dev"),
+								string(domain.ObjectGroup),
+								string(domain.ActionRead),
+							)
+						},
+					),
 				)
 
 				return domain.AuthInfo{Email: "delegated@example.com"}, group.ListParams{}
@@ -133,7 +137,11 @@ func TestService_List(t *testing.T) {
 				assert.Equal(t, 2, got.Limit)
 				assert.Equal(t, 2, got.Offset)
 				require.Len(t, got.Groups, 2)
-				assert.Equal(t, []string{"c", "d"}, []string{got.Groups[0].Name, got.Groups[1].Name})
+				assert.Equal(
+					t,
+					[]string{"c", "d"},
+					[]string{got.Groups[0].Name, got.Groups[1].Name},
+				)
 			},
 		},
 	}

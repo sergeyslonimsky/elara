@@ -13,11 +13,10 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	content "github.com/sergeyslonimsky/elara/internal/service/content"
 	config "github.com/sergeyslonimsky/elara/internal/usecase/config"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockauthz is a mock of authz interface.
@@ -36,7 +35,6 @@ type MockauthzMockRecorder struct {
 func NewMockauthz(ctrl *gomock.Controller) *Mockauthz {
 	mock := &Mockauthz{ctrl: ctrl}
 	mock.recorder = &MockauthzMockRecorder{mock}
-
 	return mock
 }
 
@@ -50,23 +48,13 @@ func (m *Mockauthz) Require(ctx context.Context, object domain.Object, action do
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Require indicates an expected call of Require.
 func (mr *MockauthzMockRecorder) Require(ctx, object, action, domainStr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Require",
-		reflect.TypeOf((*Mockauthz)(nil).Require),
-		ctx,
-		object,
-		action,
-		domainStr,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*Mockauthz)(nil).Require), ctx, object, action, domainStr)
 }
 
 // MockconfigUsecase is a mock of configUsecase interface.
@@ -85,7 +73,6 @@ type MockconfigUsecaseMockRecorder struct {
 func NewMockconfigUsecase(ctrl *gomock.Controller) *MockconfigUsecase {
 	mock := &MockconfigUsecase{ctrl: ctrl}
 	mock.recorder = &MockconfigUsecaseMockRecorder{mock}
-
 	return mock
 }
 
@@ -100,21 +87,13 @@ func (m *MockconfigUsecase) Copy(ctx context.Context, in config.CopyInput) (*dom
 	ret := m.ctrl.Call(m, "Copy", ctx, in)
 	ret0, _ := ret[0].(*domain.Config)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Copy indicates an expected call of Copy.
 func (mr *MockconfigUsecaseMockRecorder) Copy(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Copy",
-		reflect.TypeOf((*MockconfigUsecase)(nil).Copy),
-		ctx,
-		in,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Copy", reflect.TypeOf((*MockconfigUsecase)(nil).Copy), ctx, in)
 }
 
 // Create mocks base method.
@@ -123,21 +102,13 @@ func (m *MockconfigUsecase) Create(ctx context.Context, cfg *domain.Config) (*do
 	ret := m.ctrl.Call(m, "Create", ctx, cfg)
 	ret0, _ := ret[0].(*domain.Config)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
 func (mr *MockconfigUsecaseMockRecorder) Create(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Create",
-		reflect.TypeOf((*MockconfigUsecase)(nil).Create),
-		ctx,
-		cfg,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockconfigUsecase)(nil).Create), ctx, cfg)
 }
 
 // Delete mocks base method.
@@ -145,21 +116,13 @@ func (m *MockconfigUsecase) Delete(ctx context.Context, in config.DeleteInput) e
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, in)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
 func (mr *MockconfigUsecaseMockRecorder) Delete(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Delete",
-		reflect.TypeOf((*MockconfigUsecase)(nil).Delete),
-		ctx,
-		in,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockconfigUsecase)(nil).Delete), ctx, in)
 }
 
 // Diff mocks base method.
@@ -168,21 +131,13 @@ func (m *MockconfigUsecase) Diff(ctx context.Context, in config.DiffInput) (*dom
 	ret := m.ctrl.Call(m, "Diff", ctx, in)
 	ret0, _ := ret[0].(*domain.ConfigDiff)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Diff indicates an expected call of Diff.
 func (mr *MockconfigUsecaseMockRecorder) Diff(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Diff",
-		reflect.TypeOf((*MockconfigUsecase)(nil).Diff),
-		ctx,
-		in,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Diff", reflect.TypeOf((*MockconfigUsecase)(nil).Diff), ctx, in)
 }
 
 // Get mocks base method.
@@ -191,41 +146,28 @@ func (m *MockconfigUsecase) Get(ctx context.Context, in config.GetInput) (*domai
 	ret := m.ctrl.Call(m, "Get", ctx, in)
 	ret0, _ := ret[0].(*domain.Config)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockconfigUsecaseMockRecorder) Get(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockconfigUsecase)(nil).Get), ctx, in)
 }
 
 // GetAtRevision mocks base method.
-func (m *MockconfigUsecase) GetAtRevision(
-	ctx context.Context,
-	in config.GetAtRevisionInput,
-) (*domain.HistoryEntry, error) {
+func (m *MockconfigUsecase) GetAtRevision(ctx context.Context, in config.GetAtRevisionInput) (*domain.HistoryEntry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAtRevision", ctx, in)
 	ret0, _ := ret[0].(*domain.HistoryEntry)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // GetAtRevision indicates an expected call of GetAtRevision.
 func (mr *MockconfigUsecaseMockRecorder) GetAtRevision(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"GetAtRevision",
-		reflect.TypeOf((*MockconfigUsecase)(nil).GetAtRevision),
-		ctx,
-		in,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAtRevision", reflect.TypeOf((*MockconfigUsecase)(nil).GetAtRevision), ctx, in)
 }
 
 // History mocks base method.
@@ -234,21 +176,13 @@ func (m *MockconfigUsecase) History(ctx context.Context, in config.HistoryInput)
 	ret := m.ctrl.Call(m, "History", ctx, in)
 	ret0, _ := ret[0].([]*domain.HistoryEntry)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // History indicates an expected call of History.
 func (mr *MockconfigUsecaseMockRecorder) History(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"History",
-		reflect.TypeOf((*MockconfigUsecase)(nil).History),
-		ctx,
-		in,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "History", reflect.TypeOf((*MockconfigUsecase)(nil).History), ctx, in)
 }
 
 // List mocks base method.
@@ -257,21 +191,13 @@ func (m *MockconfigUsecase) List(ctx context.Context, params config.ListParams) 
 	ret := m.ctrl.Call(m, "List", ctx, params)
 	ret0, _ := ret[0].(*config.ListResult)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockconfigUsecaseMockRecorder) List(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"List",
-		reflect.TypeOf((*MockconfigUsecase)(nil).List),
-		ctx,
-		params,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockconfigUsecase)(nil).List), ctx, params)
 }
 
 // Lock mocks base method.
@@ -279,21 +205,13 @@ func (m *MockconfigUsecase) Lock(ctx context.Context, in config.LockInput) error
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Lock", ctx, in)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Lock indicates an expected call of Lock.
 func (mr *MockconfigUsecaseMockRecorder) Lock(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Lock",
-		reflect.TypeOf((*MockconfigUsecase)(nil).Lock),
-		ctx,
-		in,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lock", reflect.TypeOf((*MockconfigUsecase)(nil).Lock), ctx, in)
 }
 
 // Search mocks base method.
@@ -302,21 +220,13 @@ func (m *MockconfigUsecase) Search(ctx context.Context, params config.SearchPara
 	ret := m.ctrl.Call(m, "Search", ctx, params)
 	ret0, _ := ret[0].(*config.SearchResult)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Search indicates an expected call of Search.
 func (mr *MockconfigUsecaseMockRecorder) Search(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Search",
-		reflect.TypeOf((*MockconfigUsecase)(nil).Search),
-		ctx,
-		params,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Search", reflect.TypeOf((*MockconfigUsecase)(nil).Search), ctx, params)
 }
 
 // Unlock mocks base method.
@@ -324,21 +234,13 @@ func (m *MockconfigUsecase) Unlock(ctx context.Context, in config.UnlockInput) e
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Unlock", ctx, in)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Unlock indicates an expected call of Unlock.
 func (mr *MockconfigUsecaseMockRecorder) Unlock(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Unlock",
-		reflect.TypeOf((*MockconfigUsecase)(nil).Unlock),
-		ctx,
-		in,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unlock", reflect.TypeOf((*MockconfigUsecase)(nil).Unlock), ctx, in)
 }
 
 // Update mocks base method.
@@ -347,21 +249,13 @@ func (m *MockconfigUsecase) Update(ctx context.Context, cfg *domain.Config) (*do
 	ret := m.ctrl.Call(m, "Update", ctx, cfg)
 	ret0, _ := ret[0].(*domain.Config)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
 func (mr *MockconfigUsecaseMockRecorder) Update(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Update",
-		reflect.TypeOf((*MockconfigUsecase)(nil).Update),
-		ctx,
-		cfg,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockconfigUsecase)(nil).Update), ctx, cfg)
 }
 
 // Validate mocks base method.
@@ -370,21 +264,13 @@ func (m *MockconfigUsecase) Validate(ctx context.Context, in config.ValidateInpu
 	ret := m.ctrl.Call(m, "Validate", ctx, in)
 	ret0, _ := ret[0].(*content.ValidationResult)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Validate indicates an expected call of Validate.
 func (mr *MockconfigUsecaseMockRecorder) Validate(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Validate",
-		reflect.TypeOf((*MockconfigUsecase)(nil).Validate),
-		ctx,
-		in,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockconfigUsecase)(nil).Validate), ctx, in)
 }
 
 // Watch mocks base method.
@@ -394,19 +280,11 @@ func (m *MockconfigUsecase) Watch(ctx context.Context, in config.WatchInput) (<-
 	ret0, _ := ret[0].(<-chan domain.WatchEvent)
 	ret1, _ := ret[1].(func())
 	ret2, _ := ret[2].(error)
-
 	return ret0, ret1, ret2
 }
 
 // Watch indicates an expected call of Watch.
 func (mr *MockconfigUsecaseMockRecorder) Watch(ctx, in any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Watch",
-		reflect.TypeOf((*MockconfigUsecase)(nil).Watch),
-		ctx,
-		in,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockconfigUsecase)(nil).Watch), ctx, in)
 }

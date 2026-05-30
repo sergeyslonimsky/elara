@@ -30,7 +30,11 @@ type ListResult struct {
 //
 // Token visibility is gated by Token:Read per namespace (NOT Namespace:Read);
 // see EL-4 T9.6.
-func (s *Service) List(ctx context.Context, user domain.AuthInfo, params ListParams) (*ListResult, error) {
+func (s *Service) List(
+	ctx context.Context,
+	user domain.AuthInfo,
+	params ListParams,
+) (*ListResult, error) {
 	limit := params.Limit
 	if limit <= 0 {
 		limit = defaultListLimit

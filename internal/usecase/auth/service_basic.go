@@ -12,7 +12,10 @@ import (
 // token. The basic-auth admin is seeded into the superadmin group at bootstrap
 // (see auth.AdminBootstrap.BootstrapBasic), so no per-login elevation is
 // needed here.
-func (s *Service) BasicLogin(ctx context.Context, email, password string) (string, *domain.User, error) {
+func (s *Service) BasicLogin(
+	ctx context.Context,
+	email, password string,
+) (string, *domain.User, error) {
 	user, err := s.users.Get(ctx, email)
 	if err != nil {
 		return "", nil, domain.ErrUnauthorized

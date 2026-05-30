@@ -39,7 +39,11 @@ func TestNamespaceRepo_CRUD(t *testing.T) {
 	ns2 := &domain.Namespace{Name: "staging", Description: "Staging"}
 	require.NoError(t, repo.Create(ctx, ns2))
 
-	list, total, err := repo.List(ctx, domain.NamespaceFilter{Wildcard: true}, domain.NamespaceListParams{})
+	list, total, err := repo.List(
+		ctx,
+		domain.NamespaceFilter{Wildcard: true},
+		domain.NamespaceListParams{},
+	)
 	require.NoError(t, err)
 	assert.Len(t, list, 2)
 	assert.Equal(t, 2, total)
@@ -48,7 +52,11 @@ func TestNamespaceRepo_CRUD(t *testing.T) {
 	err = repo.Delete(ctx, "staging")
 	require.NoError(t, err)
 
-	list, total, err = repo.List(ctx, domain.NamespaceFilter{Wildcard: true}, domain.NamespaceListParams{})
+	list, total, err = repo.List(
+		ctx,
+		domain.NamespaceFilter{Wildcard: true},
+		domain.NamespaceListParams{},
+	)
 	require.NoError(t, err)
 	assert.Len(t, list, 1)
 	assert.Equal(t, 1, total)
@@ -129,7 +137,12 @@ func TestNamespaceRepo_LockBlocksMutations(t *testing.T) {
 	// Update description blocked.
 	err := nsRepo.Update(ctx, &domain.Namespace{Name: "prod", Description: "new desc"})
 	require.ErrorIs(t, err, domain.ErrLocked)
-	require.ErrorIs(t, err, domain.ErrNamespaceLocked, "namespace-origin lock must satisfy both sentinels")
+	require.ErrorIs(
+		t,
+		err,
+		domain.ErrNamespaceLocked,
+		"namespace-origin lock must satisfy both sentinels",
+	)
 
 	// Delete blocked.
 	err = nsRepo.Delete(ctx, "prod")
@@ -258,7 +271,10 @@ func TestNamespaceRepo_UpdateTimestamp(t *testing.T) {
 
 	updated, err := repo.Get(ctx, "test")
 	require.NoError(t, err)
-	assert.True(t, updated.UpdatedAt.After(original.UpdatedAt) || updated.UpdatedAt.Equal(original.UpdatedAt))
+	assert.True(
+		t,
+		updated.UpdatedAt.After(original.UpdatedAt) || updated.UpdatedAt.Equal(original.UpdatedAt),
+	)
 }
 
 func TestNamespaceRepo_List(t *testing.T) {

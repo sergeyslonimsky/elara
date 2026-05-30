@@ -7,13 +7,12 @@
 package webhookv1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -51,7 +50,6 @@ var (
 func (x WebhookEvent) Enum() *WebhookEvent {
 	p := new(WebhookEvent)
 	*p = x
-
 	return p
 }
 
@@ -78,14 +76,14 @@ func (WebhookEvent) EnumDescriptor() ([]byte, []int) {
 
 type Webhook struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              string                 `                   protobuf:"bytes,1,opt,name=id,proto3"                                                json:"id,omitempty"`
-	Url             string                 `                   protobuf:"bytes,2,opt,name=url,proto3"                                               json:"url,omitempty"`
-	NamespaceFilter string                 `                   protobuf:"bytes,3,opt,name=namespace_filter,json=namespaceFilter,proto3"             json:"namespace_filter,omitempty"`
-	PathPrefix      string                 `                   protobuf:"bytes,4,opt,name=path_prefix,json=pathPrefix,proto3"                       json:"path_prefix,omitempty"`
-	Events          []WebhookEvent         `                   protobuf:"varint,5,rep,packed,name=events,proto3,enum=elara.webhook.v1.WebhookEvent" json:"events,omitempty"`
-	Enabled         bool                   `                   protobuf:"varint,6,opt,name=enabled,proto3"                                          json:"enabled,omitempty"`
-	CreatedAt       *timestamppb.Timestamp `                   protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3"                         json:"created_at,omitempty"`
-	UpdatedAt       *timestamppb.Timestamp `                   protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3"                         json:"updated_at,omitempty"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Url             string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	NamespaceFilter string                 `protobuf:"bytes,3,opt,name=namespace_filter,json=namespaceFilter,proto3" json:"namespace_filter,omitempty"`
+	PathPrefix      string                 `protobuf:"bytes,4,opt,name=path_prefix,json=pathPrefix,proto3" json:"path_prefix,omitempty"`
+	Events          []WebhookEvent         `protobuf:"varint,5,rep,packed,name=events,proto3,enum=elara.webhook.v1.WebhookEvent" json:"events,omitempty"`
+	Enabled         bool                   `protobuf:"varint,6,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -110,10 +108,8 @@ func (x *Webhook) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -126,7 +122,6 @@ func (x *Webhook) GetId() string {
 	if x != nil {
 		return x.Id
 	}
-
 	return ""
 }
 
@@ -134,7 +129,6 @@ func (x *Webhook) GetUrl() string {
 	if x != nil {
 		return x.Url
 	}
-
 	return ""
 }
 
@@ -142,7 +136,6 @@ func (x *Webhook) GetNamespaceFilter() string {
 	if x != nil {
 		return x.NamespaceFilter
 	}
-
 	return ""
 }
 
@@ -150,7 +143,6 @@ func (x *Webhook) GetPathPrefix() string {
 	if x != nil {
 		return x.PathPrefix
 	}
-
 	return ""
 }
 
@@ -158,7 +150,6 @@ func (x *Webhook) GetEvents() []WebhookEvent {
 	if x != nil {
 		return x.Events
 	}
-
 	return nil
 }
 
@@ -166,7 +157,6 @@ func (x *Webhook) GetEnabled() bool {
 	if x != nil {
 		return x.Enabled
 	}
-
 	return false
 }
 
@@ -174,7 +164,6 @@ func (x *Webhook) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
-
 	return nil
 }
 
@@ -182,18 +171,17 @@ func (x *Webhook) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedAt
 	}
-
 	return nil
 }
 
 type DeliveryAttempt struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AttemptNumber int32                  `                   protobuf:"varint,1,opt,name=attempt_number,json=attemptNumber,proto3" json:"attempt_number,omitempty"`
-	StatusCode    int32                  `                   protobuf:"varint,2,opt,name=status_code,json=statusCode,proto3"       json:"status_code,omitempty"`
-	LatencyMs     int64                  `                   protobuf:"varint,3,opt,name=latency_ms,json=latencyMs,proto3"         json:"latency_ms,omitempty"`
-	Error         string                 `                   protobuf:"bytes,4,opt,name=error,proto3"                              json:"error,omitempty"`
-	Success       bool                   `                   protobuf:"varint,5,opt,name=success,proto3"                           json:"success,omitempty"`
-	Timestamp     *timestamppb.Timestamp `                   protobuf:"bytes,6,opt,name=timestamp,proto3"                          json:"timestamp,omitempty"`
+	AttemptNumber int32                  `protobuf:"varint,1,opt,name=attempt_number,json=attemptNumber,proto3" json:"attempt_number,omitempty"`
+	StatusCode    int32                  `protobuf:"varint,2,opt,name=status_code,json=statusCode,proto3" json:"status_code,omitempty"`
+	LatencyMs     int64                  `protobuf:"varint,3,opt,name=latency_ms,json=latencyMs,proto3" json:"latency_ms,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	Success       bool                   `protobuf:"varint,5,opt,name=success,proto3" json:"success,omitempty"`
+	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -218,10 +206,8 @@ func (x *DeliveryAttempt) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -234,7 +220,6 @@ func (x *DeliveryAttempt) GetAttemptNumber() int32 {
 	if x != nil {
 		return x.AttemptNumber
 	}
-
 	return 0
 }
 
@@ -242,7 +227,6 @@ func (x *DeliveryAttempt) GetStatusCode() int32 {
 	if x != nil {
 		return x.StatusCode
 	}
-
 	return 0
 }
 
@@ -250,7 +234,6 @@ func (x *DeliveryAttempt) GetLatencyMs() int64 {
 	if x != nil {
 		return x.LatencyMs
 	}
-
 	return 0
 }
 
@@ -258,7 +241,6 @@ func (x *DeliveryAttempt) GetError() string {
 	if x != nil {
 		return x.Error
 	}
-
 	return ""
 }
 
@@ -266,7 +248,6 @@ func (x *DeliveryAttempt) GetSuccess() bool {
 	if x != nil {
 		return x.Success
 	}
-
 	return false
 }
 
@@ -274,7 +255,6 @@ func (x *DeliveryAttempt) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
-
 	return nil
 }
 
@@ -318,27 +298,19 @@ var (
 
 func file_elara_webhook_v1_webhook_proto_rawDescGZIP() []byte {
 	file_elara_webhook_v1_webhook_proto_rawDescOnce.Do(func() {
-		file_elara_webhook_v1_webhook_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_webhook_v1_webhook_proto_rawDesc),
-				len(file_elara_webhook_v1_webhook_proto_rawDesc),
-			),
-		)
+		file_elara_webhook_v1_webhook_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_webhook_v1_webhook_proto_rawDesc), len(file_elara_webhook_v1_webhook_proto_rawDesc)))
 	})
-
 	return file_elara_webhook_v1_webhook_proto_rawDescData
 }
 
-var (
-	file_elara_webhook_v1_webhook_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-	file_elara_webhook_v1_webhook_proto_msgTypes  = make([]protoimpl.MessageInfo, 2)
-	file_elara_webhook_v1_webhook_proto_goTypes   = []any{
-		(WebhookEvent)(0),             // 0: elara.webhook.v1.WebhookEvent
-		(*Webhook)(nil),               // 1: elara.webhook.v1.Webhook
-		(*DeliveryAttempt)(nil),       // 2: elara.webhook.v1.DeliveryAttempt
-		(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
-	}
-)
+var file_elara_webhook_v1_webhook_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_elara_webhook_v1_webhook_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_elara_webhook_v1_webhook_proto_goTypes = []any{
+	(WebhookEvent)(0),             // 0: elara.webhook.v1.WebhookEvent
+	(*Webhook)(nil),               // 1: elara.webhook.v1.Webhook
+	(*DeliveryAttempt)(nil),       // 2: elara.webhook.v1.DeliveryAttempt
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
+}
 var file_elara_webhook_v1_webhook_proto_depIdxs = []int32{
 	0, // 0: elara.webhook.v1.Webhook.events:type_name -> elara.webhook.v1.WebhookEvent
 	3, // 1: elara.webhook.v1.Webhook.created_at:type_name -> google.protobuf.Timestamp
@@ -359,11 +331,8 @@ func file_elara_webhook_v1_webhook_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_webhook_v1_webhook_proto_rawDesc),
-				len(file_elara_webhook_v1_webhook_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_webhook_v1_webhook_proto_rawDesc), len(file_elara_webhook_v1_webhook_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   2,
 			NumExtensions: 0,

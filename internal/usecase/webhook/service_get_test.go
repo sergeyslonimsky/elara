@@ -33,7 +33,9 @@ func TestService_Get(t *testing.T) {
 				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
-				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
+				repo.EXPECT().
+					Get(ctx, "wh-1").
+					Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
 					Has("test@example.com", domain.Permission{
 						Object: domain.ObjectWebhook,
@@ -75,7 +77,9 @@ func TestService_Get(t *testing.T) {
 				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
-				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
+				repo.EXPECT().
+					Get(ctx, "wh-1").
+					Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
 					Has("test@example.com", domain.Permission{
 						Object: domain.ObjectWebhook,

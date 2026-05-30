@@ -109,7 +109,14 @@ func (p *PAP) GroupPermissions(name string) []domain.Permission {
 		if len(r) < pRuleLen || r[0] != subject {
 			continue
 		}
-		out = append(out, domain.Permission{Domain: r[1], Object: domain.Object(r[2]), Action: domain.Action(r[3])})
+		out = append(
+			out,
+			domain.Permission{
+				Domain: r[1],
+				Object: domain.Object(r[2]),
+				Action: domain.Action(r[3]),
+			},
+		)
 	}
 
 	return out

@@ -5,14 +5,12 @@
 package filterv1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/filter/v1"
 	http "net/http"
 	strings "strings"
-
-	connect "connectrpc.com/connect"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/filter/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -46,10 +44,7 @@ const (
 
 // FilterServiceClient is a client for the elara.filter.v1.FilterService service.
 type FilterServiceClient interface {
-	GetNamespaces(
-		context.Context,
-		*connect.Request[v1.GetNamespacesRequest],
-	) (*connect.Response[v1.GetNamespacesResponse], error)
+	GetNamespaces(context.Context, *connect.Request[v1.GetNamespacesRequest]) (*connect.Response[v1.GetNamespacesResponse], error)
 	GetGroups(context.Context, *connect.Request[v1.GetGroupsRequest]) (*connect.Response[v1.GetGroupsResponse], error)
 	GetUsers(context.Context, *connect.Request[v1.GetUsersRequest]) (*connect.Response[v1.GetUsersResponse], error)
 }
@@ -61,14 +56,9 @@ type FilterServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewFilterServiceClient(
-	httpClient connect.HTTPClient,
-	baseURL string,
-	opts ...connect.ClientOption,
-) FilterServiceClient {
+func NewFilterServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) FilterServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	filterServiceMethods := v1.File_elara_filter_v1_filter_service_proto.Services().ByName("FilterService").Methods()
-
 	return &filterServiceClient{
 		getNamespaces: connect.NewClient[v1.GetNamespacesRequest, v1.GetNamespacesResponse](
 			httpClient,
@@ -99,35 +89,23 @@ type filterServiceClient struct {
 }
 
 // GetNamespaces calls elara.filter.v1.FilterService.GetNamespaces.
-func (c *filterServiceClient) GetNamespaces(
-	ctx context.Context,
-	req *connect.Request[v1.GetNamespacesRequest],
-) (*connect.Response[v1.GetNamespacesResponse], error) {
+func (c *filterServiceClient) GetNamespaces(ctx context.Context, req *connect.Request[v1.GetNamespacesRequest]) (*connect.Response[v1.GetNamespacesResponse], error) {
 	return c.getNamespaces.CallUnary(ctx, req)
 }
 
 // GetGroups calls elara.filter.v1.FilterService.GetGroups.
-func (c *filterServiceClient) GetGroups(
-	ctx context.Context,
-	req *connect.Request[v1.GetGroupsRequest],
-) (*connect.Response[v1.GetGroupsResponse], error) {
+func (c *filterServiceClient) GetGroups(ctx context.Context, req *connect.Request[v1.GetGroupsRequest]) (*connect.Response[v1.GetGroupsResponse], error) {
 	return c.getGroups.CallUnary(ctx, req)
 }
 
 // GetUsers calls elara.filter.v1.FilterService.GetUsers.
-func (c *filterServiceClient) GetUsers(
-	ctx context.Context,
-	req *connect.Request[v1.GetUsersRequest],
-) (*connect.Response[v1.GetUsersResponse], error) {
+func (c *filterServiceClient) GetUsers(ctx context.Context, req *connect.Request[v1.GetUsersRequest]) (*connect.Response[v1.GetUsersResponse], error) {
 	return c.getUsers.CallUnary(ctx, req)
 }
 
 // FilterServiceHandler is an implementation of the elara.filter.v1.FilterService service.
 type FilterServiceHandler interface {
-	GetNamespaces(
-		context.Context,
-		*connect.Request[v1.GetNamespacesRequest],
-	) (*connect.Response[v1.GetNamespacesResponse], error)
+	GetNamespaces(context.Context, *connect.Request[v1.GetNamespacesRequest]) (*connect.Response[v1.GetNamespacesResponse], error)
 	GetGroups(context.Context, *connect.Request[v1.GetGroupsRequest]) (*connect.Response[v1.GetGroupsResponse], error)
 	GetUsers(context.Context, *connect.Request[v1.GetUsersRequest]) (*connect.Response[v1.GetUsersResponse], error)
 }
@@ -157,7 +135,6 @@ func NewFilterServiceHandler(svc FilterServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(filterServiceMethods.ByName("GetUsers")),
 		connect.WithHandlerOptions(opts...),
 	)
-
 	return "/elara.filter.v1.FilterService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case FilterServiceGetNamespacesProcedure:
@@ -175,32 +152,14 @@ func NewFilterServiceHandler(svc FilterServiceHandler, opts ...connect.HandlerOp
 // UnimplementedFilterServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedFilterServiceHandler struct{}
 
-func (UnimplementedFilterServiceHandler) GetNamespaces(
-	context.Context,
-	*connect.Request[v1.GetNamespacesRequest],
-) (*connect.Response[v1.GetNamespacesResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.filter.v1.FilterService.GetNamespaces is not implemented"),
-	)
+func (UnimplementedFilterServiceHandler) GetNamespaces(context.Context, *connect.Request[v1.GetNamespacesRequest]) (*connect.Response[v1.GetNamespacesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.filter.v1.FilterService.GetNamespaces is not implemented"))
 }
 
-func (UnimplementedFilterServiceHandler) GetGroups(
-	context.Context,
-	*connect.Request[v1.GetGroupsRequest],
-) (*connect.Response[v1.GetGroupsResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.filter.v1.FilterService.GetGroups is not implemented"),
-	)
+func (UnimplementedFilterServiceHandler) GetGroups(context.Context, *connect.Request[v1.GetGroupsRequest]) (*connect.Response[v1.GetGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.filter.v1.FilterService.GetGroups is not implemented"))
 }
 
-func (UnimplementedFilterServiceHandler) GetUsers(
-	context.Context,
-	*connect.Request[v1.GetUsersRequest],
-) (*connect.Response[v1.GetUsersResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.filter.v1.FilterService.GetUsers is not implemented"),
-	)
+func (UnimplementedFilterServiceHandler) GetUsers(context.Context, *connect.Request[v1.GetUsersRequest]) (*connect.Response[v1.GetUsersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.filter.v1.FilterService.GetUsers is not implemented"))
 }

@@ -18,7 +18,10 @@ func TestToKVStatus_NamespaceLocked_NormalizedToConfigMessage(t *testing.T) {
 
 	// Simulate the wrap produced by validateNamespaceUnlocked when a config
 	// inside a locked namespace is mutated.
-	wrapped := fmt.Errorf("put: %w", fmt.Errorf("namespace %q: %w", "prod", domain.ErrNamespaceLocked))
+	wrapped := fmt.Errorf(
+		"put: %w",
+		fmt.Errorf("namespace %q: %w", "prod", domain.ErrNamespaceLocked),
+	)
 
 	got := toKVStatus(wrapped, "put", "/foo.json")
 

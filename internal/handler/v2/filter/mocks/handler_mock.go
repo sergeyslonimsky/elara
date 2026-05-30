@@ -13,10 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	filter "github.com/sergeyslonimsky/elara/internal/usecase/filter"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockfilterUsecase is a mock of filterUsecase interface.
@@ -35,7 +34,6 @@ type MockfilterUsecaseMockRecorder struct {
 func NewMockfilterUsecase(ctrl *gomock.Controller) *MockfilterUsecase {
 	mock := &MockfilterUsecase{ctrl: ctrl}
 	mock.recorder = &MockfilterUsecaseMockRecorder{mock}
-
 	return mock
 }
 
@@ -45,85 +43,46 @@ func (m *MockfilterUsecase) EXPECT() *MockfilterUsecaseMockRecorder {
 }
 
 // Groups mocks base method.
-func (m *MockfilterUsecase) Groups(
-	ctx context.Context,
-	actor domain.AuthInfo,
-	query filter.Query,
-) ([]filter.Item, error) {
+func (m *MockfilterUsecase) Groups(ctx context.Context, actor domain.AuthInfo, query filter.Query) ([]filter.Item, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Groups", ctx, actor, query)
 	ret0, _ := ret[0].([]filter.Item)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Groups indicates an expected call of Groups.
 func (mr *MockfilterUsecaseMockRecorder) Groups(ctx, actor, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Groups",
-		reflect.TypeOf((*MockfilterUsecase)(nil).Groups),
-		ctx,
-		actor,
-		query,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Groups", reflect.TypeOf((*MockfilterUsecase)(nil).Groups), ctx, actor, query)
 }
 
 // Namespaces mocks base method.
-func (m *MockfilterUsecase) Namespaces(
-	ctx context.Context,
-	actor domain.AuthInfo,
-	query filter.Query,
-) ([]filter.Item, error) {
+func (m *MockfilterUsecase) Namespaces(ctx context.Context, actor domain.AuthInfo, query filter.Query) ([]filter.Item, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Namespaces", ctx, actor, query)
 	ret0, _ := ret[0].([]filter.Item)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Namespaces indicates an expected call of Namespaces.
 func (mr *MockfilterUsecaseMockRecorder) Namespaces(ctx, actor, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Namespaces",
-		reflect.TypeOf((*MockfilterUsecase)(nil).Namespaces),
-		ctx,
-		actor,
-		query,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Namespaces", reflect.TypeOf((*MockfilterUsecase)(nil).Namespaces), ctx, actor, query)
 }
 
 // Users mocks base method.
-func (m *MockfilterUsecase) Users(
-	ctx context.Context,
-	actor domain.AuthInfo,
-	query filter.Query,
-) ([]filter.Item, error) {
+func (m *MockfilterUsecase) Users(ctx context.Context, actor domain.AuthInfo, query filter.Query) ([]filter.Item, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Users", ctx, actor, query)
 	ret0, _ := ret[0].([]filter.Item)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Users indicates an expected call of Users.
 func (mr *MockfilterUsecaseMockRecorder) Users(ctx, actor, query any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Users",
-		reflect.TypeOf((*MockfilterUsecase)(nil).Users),
-		ctx,
-		actor,
-		query,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Users", reflect.TypeOf((*MockfilterUsecase)(nil).Users), ctx, actor, query)
 }

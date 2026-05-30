@@ -50,7 +50,10 @@ func (s *Service) UpdateGroups(
 	data UpdateGroupsData,
 ) (*UpdateGroupsResult, error) {
 	if id, dup := sliceutil.FirstOverlap(data.AddGroupIDs, data.RemoveGroupIDs); dup {
-		return nil, domain.NewValidationError("group_id", fmt.Sprintf("%q appears in both add and remove", id))
+		return nil, domain.NewValidationError(
+			"group_id",
+			fmt.Sprintf("%q appears in both add and remove", id),
+		)
 	}
 
 	var result *UpdateGroupsResult
@@ -221,7 +224,11 @@ func filterVisibleGroupIDs(pdp *authz.PDP, actor string, ids []string) []string 
 
 // loadGroupsByIDs fetches each requested group inside the current tx and
 // returns them keyed by ID.
-func loadGroupsByIDs(ctx context.Context, repo GroupReader, ids []string) (map[string]*domain.Group, error) {
+func loadGroupsByIDs(
+	ctx context.Context,
+	repo GroupReader,
+	ids []string,
+) (map[string]*domain.Group, error) {
 	out := make(map[string]*domain.Group, len(ids))
 	for _, id := range ids {
 		g, err := repo.Get(ctx, id)

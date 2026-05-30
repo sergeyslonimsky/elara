@@ -22,7 +22,11 @@ import (
 // WatchRepo is the storage surface the Watch server needs.
 type WatchRepo interface {
 	CurrentRevisionValue(ctx context.Context) (int64, error)
-	ListChanges(ctx context.Context, sinceRevision int64, limit int) ([]*domain.ChangelogEntry, error)
+	ListChanges(
+		ctx context.Context,
+		sinceRevision int64,
+		limit int,
+	) ([]*domain.ChangelogEntry, error)
 	GetKVAtRevision(ctx context.Context, namespace, path string, revision int64) ([]byte, error)
 }
 
@@ -280,7 +284,11 @@ func (s *WatchServer) createWatcher(
 
 // trackWatcher registers an active-watch against the originating connection,
 // if a tracker and connection ID extractor are configured.
-func (s *WatchServer) trackWatcher(ctx context.Context, w *watcher, req *etcdserverpb.WatchCreateRequest) {
+func (s *WatchServer) trackWatcher(
+	ctx context.Context,
+	w *watcher,
+	req *etcdserverpb.WatchCreateRequest,
+) {
 	if s.tracker == nil || s.connID == nil {
 		return
 	}

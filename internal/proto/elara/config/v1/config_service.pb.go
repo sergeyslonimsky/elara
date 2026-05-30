@@ -7,15 +7,13 @@
 package configv1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 )
 
 const (
@@ -27,11 +25,11 @@ const (
 
 type CreateConfigRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"                                json:"path,omitempty"`
-	Content       string                 `                   protobuf:"bytes,2,opt,name=content,proto3"                             json:"content,omitempty"`
-	Format        Format                 `                   protobuf:"varint,3,opt,name=format,proto3,enum=elara.config.v1.Format" json:"format,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,4,opt,name=namespace,proto3"                           json:"namespace,omitempty"`
-	Metadata      map[string]string      `                   protobuf:"bytes,5,rep,name=metadata,proto3"                            json:"metadata,omitempty"  protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	Format        Format                 `protobuf:"varint,3,opt,name=format,proto3,enum=elara.config.v1.Format" json:"format,omitempty"`
+	Namespace     string                 `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,5,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -56,10 +54,8 @@ func (x *CreateConfigRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -72,7 +68,6 @@ func (x *CreateConfigRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -80,7 +75,6 @@ func (x *CreateConfigRequest) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
-
 	return ""
 }
 
@@ -88,7 +82,6 @@ func (x *CreateConfigRequest) GetFormat() Format {
 	if x != nil {
 		return x.Format
 	}
-
 	return Format_FORMAT_UNSPECIFIED
 }
 
@@ -96,7 +89,6 @@ func (x *CreateConfigRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -104,13 +96,12 @@ func (x *CreateConfigRequest) GetMetadata() map[string]string {
 	if x != nil {
 		return x.Metadata
 	}
-
 	return nil
 }
 
 type CreateConfigResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Config        *Config                `                   protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	Config        *Config                `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -135,10 +126,8 @@ func (x *CreateConfigResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -151,14 +140,13 @@ func (x *CreateConfigResponse) GetConfig() *Config {
 	if x != nil {
 		return x.Config
 	}
-
 	return nil
 }
 
 type GetConfigRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"      json:"path,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -183,10 +171,8 @@ func (x *GetConfigRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -199,7 +185,6 @@ func (x *GetConfigRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -207,13 +192,12 @@ func (x *GetConfigRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
 type GetConfigResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Config        *Config                `                   protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	Config        *Config                `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -238,10 +222,8 @@ func (x *GetConfigResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -254,18 +236,17 @@ func (x *GetConfigResponse) GetConfig() *Config {
 	if x != nil {
 		return x.Config
 	}
-
 	return nil
 }
 
 type UpdateConfigRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"                                json:"path,omitempty"`
-	Content       string                 `                   protobuf:"bytes,2,opt,name=content,proto3"                             json:"content,omitempty"`
-	Format        Format                 `                   protobuf:"varint,3,opt,name=format,proto3,enum=elara.config.v1.Format" json:"format,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,4,opt,name=namespace,proto3"                           json:"namespace,omitempty"`
-	Version       int64                  `                   protobuf:"varint,5,opt,name=version,proto3"                            json:"version,omitempty"`
-	Metadata      map[string]string      `                   protobuf:"bytes,6,rep,name=metadata,proto3"                            json:"metadata,omitempty"  protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	Format        Format                 `protobuf:"varint,3,opt,name=format,proto3,enum=elara.config.v1.Format" json:"format,omitempty"`
+	Namespace     string                 `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Version       int64                  `protobuf:"varint,5,opt,name=version,proto3" json:"version,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -290,10 +271,8 @@ func (x *UpdateConfigRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -306,7 +285,6 @@ func (x *UpdateConfigRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -314,7 +292,6 @@ func (x *UpdateConfigRequest) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
-
 	return ""
 }
 
@@ -322,7 +299,6 @@ func (x *UpdateConfigRequest) GetFormat() Format {
 	if x != nil {
 		return x.Format
 	}
-
 	return Format_FORMAT_UNSPECIFIED
 }
 
@@ -330,7 +306,6 @@ func (x *UpdateConfigRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -338,7 +313,6 @@ func (x *UpdateConfigRequest) GetVersion() int64 {
 	if x != nil {
 		return x.Version
 	}
-
 	return 0
 }
 
@@ -346,13 +320,12 @@ func (x *UpdateConfigRequest) GetMetadata() map[string]string {
 	if x != nil {
 		return x.Metadata
 	}
-
 	return nil
 }
 
 type UpdateConfigResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Config        *Config                `                   protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	Config        *Config                `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -377,10 +350,8 @@ func (x *UpdateConfigResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -393,14 +364,13 @@ func (x *UpdateConfigResponse) GetConfig() *Config {
 	if x != nil {
 		return x.Config
 	}
-
 	return nil
 }
 
 type DeleteConfigRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"      json:"path,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -425,10 +395,8 @@ func (x *DeleteConfigRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -441,7 +409,6 @@ func (x *DeleteConfigRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -449,7 +416,6 @@ func (x *DeleteConfigRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -479,10 +445,8 @@ func (x *DeleteConfigResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -493,11 +457,11 @@ func (*DeleteConfigResponse) Descriptor() ([]byte, []int) {
 
 type ListConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Namespace     string                 `                   protobuf:"bytes,1,opt,name=namespace,proto3"  json:"namespace,omitempty"`
-	Path          string                 `                   protobuf:"bytes,2,opt,name=path,proto3"       json:"path,omitempty"` // Folder path: "" or "/" = root, "/services" = children of /services
-	Pagination    *v1.PaginationRequest  `                   protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	Sort          *v1.SortRequest        `                   protobuf:"bytes,4,opt,name=sort,proto3"       json:"sort,omitempty"`
-	Query         string                 `                   protobuf:"bytes,5,opt,name=query,proto3"      json:"query,omitempty"` // optional: filter entries by name substring
+	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"` // Folder path: "" or "/" = root, "/services" = children of /services
+	Pagination    *v1.PaginationRequest  `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Sort          *v1.SortRequest        `protobuf:"bytes,4,opt,name=sort,proto3" json:"sort,omitempty"`
+	Query         string                 `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"` // optional: filter entries by name substring
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -522,10 +486,8 @@ func (x *ListConfigsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -538,7 +500,6 @@ func (x *ListConfigsRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -546,7 +507,6 @@ func (x *ListConfigsRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -554,7 +514,6 @@ func (x *ListConfigsRequest) GetPagination() *v1.PaginationRequest {
 	if x != nil {
 		return x.Pagination
 	}
-
 	return nil
 }
 
@@ -562,7 +521,6 @@ func (x *ListConfigsRequest) GetSort() *v1.SortRequest {
 	if x != nil {
 		return x.Sort
 	}
-
 	return nil
 }
 
@@ -570,14 +528,13 @@ func (x *ListConfigsRequest) GetQuery() string {
 	if x != nil {
 		return x.Query
 	}
-
 	return ""
 }
 
 type ListConfigsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Entries       []*DirectoryEntry      `                   protobuf:"bytes,1,rep,name=entries,proto3"    json:"entries,omitempty"`
-	Pagination    *v1.PaginationResponse `                   protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Entries       []*DirectoryEntry      `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -602,10 +559,8 @@ func (x *ListConfigsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -618,7 +573,6 @@ func (x *ListConfigsResponse) GetEntries() []*DirectoryEntry {
 	if x != nil {
 		return x.Entries
 	}
-
 	return nil
 }
 
@@ -626,15 +580,14 @@ func (x *ListConfigsResponse) GetPagination() *v1.PaginationResponse {
 	if x != nil {
 		return x.Pagination
 	}
-
 	return nil
 }
 
 type GetConfigHistoryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"      json:"path,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Limit         int32                  `                   protobuf:"varint,3,opt,name=limit,proto3"    json:"limit,omitempty"` // default 20, max entries to return (newest first)
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"` // default 20, max entries to return (newest first)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -659,10 +612,8 @@ func (x *GetConfigHistoryRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -675,7 +626,6 @@ func (x *GetConfigHistoryRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -683,7 +633,6 @@ func (x *GetConfigHistoryRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -691,13 +640,12 @@ func (x *GetConfigHistoryRequest) GetLimit() int32 {
 	if x != nil {
 		return x.Limit
 	}
-
 	return 0
 }
 
 type GetConfigHistoryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Entries       []*HistoryEntry        `                   protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	Entries       []*HistoryEntry        `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -722,10 +670,8 @@ func (x *GetConfigHistoryResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -738,15 +684,14 @@ func (x *GetConfigHistoryResponse) GetEntries() []*HistoryEntry {
 	if x != nil {
 		return x.Entries
 	}
-
 	return nil
 }
 
 type GetConfigAtRevisionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"      json:"path,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Revision      int64                  `                   protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Revision      int64                  `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -771,10 +716,8 @@ func (x *GetConfigAtRevisionRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -787,7 +730,6 @@ func (x *GetConfigAtRevisionRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -795,7 +737,6 @@ func (x *GetConfigAtRevisionRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -803,13 +744,12 @@ func (x *GetConfigAtRevisionRequest) GetRevision() int64 {
 	if x != nil {
 		return x.Revision
 	}
-
 	return 0
 }
 
 type GetConfigAtRevisionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Entry         *HistoryEntry          `                   protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+	Entry         *HistoryEntry          `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -834,10 +774,8 @@ func (x *GetConfigAtRevisionResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -850,16 +788,15 @@ func (x *GetConfigAtRevisionResponse) GetEntry() *HistoryEntry {
 	if x != nil {
 		return x.Entry
 	}
-
 	return nil
 }
 
 type SearchConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Query         string                 `                   protobuf:"bytes,1,opt,name=query,proto3"      json:"query,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3"  json:"namespace,omitempty"`
-	Pagination    *v1.PaginationRequest  `                   protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	Sort          *v1.SortRequest        `                   protobuf:"bytes,4,opt,name=sort,proto3"       json:"sort,omitempty"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Pagination    *v1.PaginationRequest  `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Sort          *v1.SortRequest        `protobuf:"bytes,4,opt,name=sort,proto3" json:"sort,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -884,10 +821,8 @@ func (x *SearchConfigsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -900,7 +835,6 @@ func (x *SearchConfigsRequest) GetQuery() string {
 	if x != nil {
 		return x.Query
 	}
-
 	return ""
 }
 
@@ -908,7 +842,6 @@ func (x *SearchConfigsRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -916,7 +849,6 @@ func (x *SearchConfigsRequest) GetPagination() *v1.PaginationRequest {
 	if x != nil {
 		return x.Pagination
 	}
-
 	return nil
 }
 
@@ -924,14 +856,13 @@ func (x *SearchConfigsRequest) GetSort() *v1.SortRequest {
 	if x != nil {
 		return x.Sort
 	}
-
 	return nil
 }
 
 type SearchConfigsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Results       []*ConfigSummary       `                   protobuf:"bytes,1,rep,name=results,proto3"    json:"results,omitempty"`
-	Pagination    *v1.PaginationResponse `                   protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Results       []*ConfigSummary       `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Pagination    *v1.PaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -956,10 +887,8 @@ func (x *SearchConfigsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -972,7 +901,6 @@ func (x *SearchConfigsResponse) GetResults() []*ConfigSummary {
 	if x != nil {
 		return x.Results
 	}
-
 	return nil
 }
 
@@ -980,16 +908,15 @@ func (x *SearchConfigsResponse) GetPagination() *v1.PaginationResponse {
 	if x != nil {
 		return x.Pagination
 	}
-
 	return nil
 }
 
 type CopyConfigRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	SourcePath           string                 `                   protobuf:"bytes,1,opt,name=source_path,json=sourcePath,proto3"                     json:"source_path,omitempty"`
-	SourceNamespace      string                 `                   protobuf:"bytes,2,opt,name=source_namespace,json=sourceNamespace,proto3"           json:"source_namespace,omitempty"`
-	DestinationPath      string                 `                   protobuf:"bytes,3,opt,name=destination_path,json=destinationPath,proto3"           json:"destination_path,omitempty"`
-	DestinationNamespace string                 `                   protobuf:"bytes,4,opt,name=destination_namespace,json=destinationNamespace,proto3" json:"destination_namespace,omitempty"`
+	SourcePath           string                 `protobuf:"bytes,1,opt,name=source_path,json=sourcePath,proto3" json:"source_path,omitempty"`
+	SourceNamespace      string                 `protobuf:"bytes,2,opt,name=source_namespace,json=sourceNamespace,proto3" json:"source_namespace,omitempty"`
+	DestinationPath      string                 `protobuf:"bytes,3,opt,name=destination_path,json=destinationPath,proto3" json:"destination_path,omitempty"`
+	DestinationNamespace string                 `protobuf:"bytes,4,opt,name=destination_namespace,json=destinationNamespace,proto3" json:"destination_namespace,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -1014,10 +941,8 @@ func (x *CopyConfigRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1030,7 +955,6 @@ func (x *CopyConfigRequest) GetSourcePath() string {
 	if x != nil {
 		return x.SourcePath
 	}
-
 	return ""
 }
 
@@ -1038,7 +962,6 @@ func (x *CopyConfigRequest) GetSourceNamespace() string {
 	if x != nil {
 		return x.SourceNamespace
 	}
-
 	return ""
 }
 
@@ -1046,7 +969,6 @@ func (x *CopyConfigRequest) GetDestinationPath() string {
 	if x != nil {
 		return x.DestinationPath
 	}
-
 	return ""
 }
 
@@ -1054,13 +976,12 @@ func (x *CopyConfigRequest) GetDestinationNamespace() string {
 	if x != nil {
 		return x.DestinationNamespace
 	}
-
 	return ""
 }
 
 type CopyConfigResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Config        *Config                `                   protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	Config        *Config                `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1085,10 +1006,8 @@ func (x *CopyConfigResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1101,16 +1020,15 @@ func (x *CopyConfigResponse) GetConfig() *Config {
 	if x != nil {
 		return x.Config
 	}
-
 	return nil
 }
 
 type ValidateConfigRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Content       string                 `                   protobuf:"bytes,1,opt,name=content,proto3"                             json:"content,omitempty"`
-	Format        Format                 `                   protobuf:"varint,2,opt,name=format,proto3,enum=elara.config.v1.Format" json:"format,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,3,opt,name=namespace,proto3"                           json:"namespace,omitempty"`
-	Path          string                 `                   protobuf:"bytes,4,opt,name=path,proto3"                                json:"path,omitempty"`
+	Content       string                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	Format        Format                 `protobuf:"varint,2,opt,name=format,proto3,enum=elara.config.v1.Format" json:"format,omitempty"`
+	Namespace     string                 `protobuf:"bytes,3,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Path          string                 `protobuf:"bytes,4,opt,name=path,proto3" json:"path,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1135,10 +1053,8 @@ func (x *ValidateConfigRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1151,7 +1067,6 @@ func (x *ValidateConfigRequest) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
-
 	return ""
 }
 
@@ -1159,7 +1074,6 @@ func (x *ValidateConfigRequest) GetFormat() Format {
 	if x != nil {
 		return x.Format
 	}
-
 	return Format_FORMAT_UNSPECIFIED
 }
 
@@ -1167,7 +1081,6 @@ func (x *ValidateConfigRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -1175,13 +1088,12 @@ func (x *ValidateConfigRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
 type ValidateConfigResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Result        *ValidationResult      `                   protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+	Result        *ValidationResult      `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1206,10 +1118,8 @@ func (x *ValidateConfigResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1222,14 +1132,13 @@ func (x *ValidateConfigResponse) GetResult() *ValidationResult {
 	if x != nil {
 		return x.Result
 	}
-
 	return nil
 }
 
 type WatchConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PathPrefix    string                 `                   protobuf:"bytes,1,opt,name=path_prefix,json=pathPrefix,proto3" json:"path_prefix,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3"                   json:"namespace,omitempty"`
+	PathPrefix    string                 `protobuf:"bytes,1,opt,name=path_prefix,json=pathPrefix,proto3" json:"path_prefix,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1254,10 +1163,8 @@ func (x *WatchConfigsRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1270,7 +1177,6 @@ func (x *WatchConfigsRequest) GetPathPrefix() string {
 	if x != nil {
 		return x.PathPrefix
 	}
-
 	return ""
 }
 
@@ -1278,13 +1184,12 @@ func (x *WatchConfigsRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
 type WatchConfigsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Event         *WatchEvent            `                   protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
+	Event         *WatchEvent            `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1309,10 +1214,8 @@ func (x *WatchConfigsResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1325,16 +1228,15 @@ func (x *WatchConfigsResponse) GetEvent() *WatchEvent {
 	if x != nil {
 		return x.Event
 	}
-
 	return nil
 }
 
 type GetConfigDiffRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"                             json:"path,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3"                        json:"namespace,omitempty"`
-	FromRevision  int64                  `                   protobuf:"varint,3,opt,name=from_revision,json=fromRevision,proto3" json:"from_revision,omitempty"`
-	ToRevision    int64                  `                   protobuf:"varint,4,opt,name=to_revision,json=toRevision,proto3"     json:"to_revision,omitempty"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	FromRevision  int64                  `protobuf:"varint,3,opt,name=from_revision,json=fromRevision,proto3" json:"from_revision,omitempty"`
+	ToRevision    int64                  `protobuf:"varint,4,opt,name=to_revision,json=toRevision,proto3" json:"to_revision,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1359,10 +1261,8 @@ func (x *GetConfigDiffRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1375,7 +1275,6 @@ func (x *GetConfigDiffRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -1383,7 +1282,6 @@ func (x *GetConfigDiffRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -1391,7 +1289,6 @@ func (x *GetConfigDiffRequest) GetFromRevision() int64 {
 	if x != nil {
 		return x.FromRevision
 	}
-
 	return 0
 }
 
@@ -1399,17 +1296,16 @@ func (x *GetConfigDiffRequest) GetToRevision() int64 {
 	if x != nil {
 		return x.ToRevision
 	}
-
 	return 0
 }
 
 type GetConfigDiffResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	FromRevision  int64                  `                   protobuf:"varint,1,opt,name=from_revision,json=fromRevision,proto3" json:"from_revision,omitempty"`
-	ToRevision    int64                  `                   protobuf:"varint,2,opt,name=to_revision,json=toRevision,proto3"     json:"to_revision,omitempty"`
-	FromContent   string                 `                   protobuf:"bytes,3,opt,name=from_content,json=fromContent,proto3"    json:"from_content,omitempty"`
-	ToContent     string                 `                   protobuf:"bytes,4,opt,name=to_content,json=toContent,proto3"        json:"to_content,omitempty"`
-	Diff          string                 `                   protobuf:"bytes,5,opt,name=diff,proto3"                             json:"diff,omitempty"`
+	FromRevision  int64                  `protobuf:"varint,1,opt,name=from_revision,json=fromRevision,proto3" json:"from_revision,omitempty"`
+	ToRevision    int64                  `protobuf:"varint,2,opt,name=to_revision,json=toRevision,proto3" json:"to_revision,omitempty"`
+	FromContent   string                 `protobuf:"bytes,3,opt,name=from_content,json=fromContent,proto3" json:"from_content,omitempty"`
+	ToContent     string                 `protobuf:"bytes,4,opt,name=to_content,json=toContent,proto3" json:"to_content,omitempty"`
+	Diff          string                 `protobuf:"bytes,5,opt,name=diff,proto3" json:"diff,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1434,10 +1330,8 @@ func (x *GetConfigDiffResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1450,7 +1344,6 @@ func (x *GetConfigDiffResponse) GetFromRevision() int64 {
 	if x != nil {
 		return x.FromRevision
 	}
-
 	return 0
 }
 
@@ -1458,7 +1351,6 @@ func (x *GetConfigDiffResponse) GetToRevision() int64 {
 	if x != nil {
 		return x.ToRevision
 	}
-
 	return 0
 }
 
@@ -1466,7 +1358,6 @@ func (x *GetConfigDiffResponse) GetFromContent() string {
 	if x != nil {
 		return x.FromContent
 	}
-
 	return ""
 }
 
@@ -1474,7 +1365,6 @@ func (x *GetConfigDiffResponse) GetToContent() string {
 	if x != nil {
 		return x.ToContent
 	}
-
 	return ""
 }
 
@@ -1482,14 +1372,13 @@ func (x *GetConfigDiffResponse) GetDiff() string {
 	if x != nil {
 		return x.Diff
 	}
-
 	return ""
 }
 
 type LockConfigRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"      json:"path,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1514,10 +1403,8 @@ func (x *LockConfigRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1530,7 +1417,6 @@ func (x *LockConfigRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -1538,7 +1424,6 @@ func (x *LockConfigRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -1568,10 +1453,8 @@ func (x *LockConfigResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1582,8 +1465,8 @@ func (*LockConfigResponse) Descriptor() ([]byte, []int) {
 
 type UnlockConfigRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `                   protobuf:"bytes,1,opt,name=path,proto3"      json:"path,omitempty"`
-	Namespace     string                 `                   protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1608,10 +1491,8 @@ func (x *UnlockConfigRequest) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1624,7 +1505,6 @@ func (x *UnlockConfigRequest) GetPath() string {
 	if x != nil {
 		return x.Path
 	}
-
 	return ""
 }
 
@@ -1632,7 +1512,6 @@ func (x *UnlockConfigRequest) GetNamespace() string {
 	if x != nil {
 		return x.Namespace
 	}
-
 	return ""
 }
 
@@ -1662,10 +1541,8 @@ func (x *UnlockConfigResponse) ProtoReflect() protoreflect.Message {
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
 		}
-
 		return ms
 	}
-
 	return mi.MessageOf(x)
 }
 
@@ -1818,62 +1695,54 @@ var (
 
 func file_elara_config_v1_config_service_proto_rawDescGZIP() []byte {
 	file_elara_config_v1_config_service_proto_rawDescOnce.Do(func() {
-		file_elara_config_v1_config_service_proto_rawDescData = protoimpl.X.CompressGZIP(
-			unsafe.Slice(
-				unsafe.StringData(file_elara_config_v1_config_service_proto_rawDesc),
-				len(file_elara_config_v1_config_service_proto_rawDesc),
-			),
-		)
+		file_elara_config_v1_config_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_elara_config_v1_config_service_proto_rawDesc), len(file_elara_config_v1_config_service_proto_rawDesc)))
 	})
-
 	return file_elara_config_v1_config_service_proto_rawDescData
 }
 
-var (
-	file_elara_config_v1_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
-	file_elara_config_v1_config_service_proto_goTypes  = []any{
-		(*CreateConfigRequest)(nil),         // 0: elara.config.v1.CreateConfigRequest
-		(*CreateConfigResponse)(nil),        // 1: elara.config.v1.CreateConfigResponse
-		(*GetConfigRequest)(nil),            // 2: elara.config.v1.GetConfigRequest
-		(*GetConfigResponse)(nil),           // 3: elara.config.v1.GetConfigResponse
-		(*UpdateConfigRequest)(nil),         // 4: elara.config.v1.UpdateConfigRequest
-		(*UpdateConfigResponse)(nil),        // 5: elara.config.v1.UpdateConfigResponse
-		(*DeleteConfigRequest)(nil),         // 6: elara.config.v1.DeleteConfigRequest
-		(*DeleteConfigResponse)(nil),        // 7: elara.config.v1.DeleteConfigResponse
-		(*ListConfigsRequest)(nil),          // 8: elara.config.v1.ListConfigsRequest
-		(*ListConfigsResponse)(nil),         // 9: elara.config.v1.ListConfigsResponse
-		(*GetConfigHistoryRequest)(nil),     // 10: elara.config.v1.GetConfigHistoryRequest
-		(*GetConfigHistoryResponse)(nil),    // 11: elara.config.v1.GetConfigHistoryResponse
-		(*GetConfigAtRevisionRequest)(nil),  // 12: elara.config.v1.GetConfigAtRevisionRequest
-		(*GetConfigAtRevisionResponse)(nil), // 13: elara.config.v1.GetConfigAtRevisionResponse
-		(*SearchConfigsRequest)(nil),        // 14: elara.config.v1.SearchConfigsRequest
-		(*SearchConfigsResponse)(nil),       // 15: elara.config.v1.SearchConfigsResponse
-		(*CopyConfigRequest)(nil),           // 16: elara.config.v1.CopyConfigRequest
-		(*CopyConfigResponse)(nil),          // 17: elara.config.v1.CopyConfigResponse
-		(*ValidateConfigRequest)(nil),       // 18: elara.config.v1.ValidateConfigRequest
-		(*ValidateConfigResponse)(nil),      // 19: elara.config.v1.ValidateConfigResponse
-		(*WatchConfigsRequest)(nil),         // 20: elara.config.v1.WatchConfigsRequest
-		(*WatchConfigsResponse)(nil),        // 21: elara.config.v1.WatchConfigsResponse
-		(*GetConfigDiffRequest)(nil),        // 22: elara.config.v1.GetConfigDiffRequest
-		(*GetConfigDiffResponse)(nil),       // 23: elara.config.v1.GetConfigDiffResponse
-		(*LockConfigRequest)(nil),           // 24: elara.config.v1.LockConfigRequest
-		(*LockConfigResponse)(nil),          // 25: elara.config.v1.LockConfigResponse
-		(*UnlockConfigRequest)(nil),         // 26: elara.config.v1.UnlockConfigRequest
-		(*UnlockConfigResponse)(nil),        // 27: elara.config.v1.UnlockConfigResponse
-		nil,                                 // 28: elara.config.v1.CreateConfigRequest.MetadataEntry
-		nil,                                 // 29: elara.config.v1.UpdateConfigRequest.MetadataEntry
-		(Format)(0),                         // 30: elara.config.v1.Format
-		(*Config)(nil),                      // 31: elara.config.v1.Config
-		(*v1.PaginationRequest)(nil),        // 32: elara.common.v1.PaginationRequest
-		(*v1.SortRequest)(nil),              // 33: elara.common.v1.SortRequest
-		(*DirectoryEntry)(nil),              // 34: elara.config.v1.DirectoryEntry
-		(*v1.PaginationResponse)(nil),       // 35: elara.common.v1.PaginationResponse
-		(*HistoryEntry)(nil),                // 36: elara.config.v1.HistoryEntry
-		(*ConfigSummary)(nil),               // 37: elara.config.v1.ConfigSummary
-		(*ValidationResult)(nil),            // 38: elara.config.v1.ValidationResult
-		(*WatchEvent)(nil),                  // 39: elara.config.v1.WatchEvent
-	}
-)
+var file_elara_config_v1_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
+var file_elara_config_v1_config_service_proto_goTypes = []any{
+	(*CreateConfigRequest)(nil),         // 0: elara.config.v1.CreateConfigRequest
+	(*CreateConfigResponse)(nil),        // 1: elara.config.v1.CreateConfigResponse
+	(*GetConfigRequest)(nil),            // 2: elara.config.v1.GetConfigRequest
+	(*GetConfigResponse)(nil),           // 3: elara.config.v1.GetConfigResponse
+	(*UpdateConfigRequest)(nil),         // 4: elara.config.v1.UpdateConfigRequest
+	(*UpdateConfigResponse)(nil),        // 5: elara.config.v1.UpdateConfigResponse
+	(*DeleteConfigRequest)(nil),         // 6: elara.config.v1.DeleteConfigRequest
+	(*DeleteConfigResponse)(nil),        // 7: elara.config.v1.DeleteConfigResponse
+	(*ListConfigsRequest)(nil),          // 8: elara.config.v1.ListConfigsRequest
+	(*ListConfigsResponse)(nil),         // 9: elara.config.v1.ListConfigsResponse
+	(*GetConfigHistoryRequest)(nil),     // 10: elara.config.v1.GetConfigHistoryRequest
+	(*GetConfigHistoryResponse)(nil),    // 11: elara.config.v1.GetConfigHistoryResponse
+	(*GetConfigAtRevisionRequest)(nil),  // 12: elara.config.v1.GetConfigAtRevisionRequest
+	(*GetConfigAtRevisionResponse)(nil), // 13: elara.config.v1.GetConfigAtRevisionResponse
+	(*SearchConfigsRequest)(nil),        // 14: elara.config.v1.SearchConfigsRequest
+	(*SearchConfigsResponse)(nil),       // 15: elara.config.v1.SearchConfigsResponse
+	(*CopyConfigRequest)(nil),           // 16: elara.config.v1.CopyConfigRequest
+	(*CopyConfigResponse)(nil),          // 17: elara.config.v1.CopyConfigResponse
+	(*ValidateConfigRequest)(nil),       // 18: elara.config.v1.ValidateConfigRequest
+	(*ValidateConfigResponse)(nil),      // 19: elara.config.v1.ValidateConfigResponse
+	(*WatchConfigsRequest)(nil),         // 20: elara.config.v1.WatchConfigsRequest
+	(*WatchConfigsResponse)(nil),        // 21: elara.config.v1.WatchConfigsResponse
+	(*GetConfigDiffRequest)(nil),        // 22: elara.config.v1.GetConfigDiffRequest
+	(*GetConfigDiffResponse)(nil),       // 23: elara.config.v1.GetConfigDiffResponse
+	(*LockConfigRequest)(nil),           // 24: elara.config.v1.LockConfigRequest
+	(*LockConfigResponse)(nil),          // 25: elara.config.v1.LockConfigResponse
+	(*UnlockConfigRequest)(nil),         // 26: elara.config.v1.UnlockConfigRequest
+	(*UnlockConfigResponse)(nil),        // 27: elara.config.v1.UnlockConfigResponse
+	nil,                                 // 28: elara.config.v1.CreateConfigRequest.MetadataEntry
+	nil,                                 // 29: elara.config.v1.UpdateConfigRequest.MetadataEntry
+	(Format)(0),                         // 30: elara.config.v1.Format
+	(*Config)(nil),                      // 31: elara.config.v1.Config
+	(*v1.PaginationRequest)(nil),        // 32: elara.common.v1.PaginationRequest
+	(*v1.SortRequest)(nil),              // 33: elara.common.v1.SortRequest
+	(*DirectoryEntry)(nil),              // 34: elara.config.v1.DirectoryEntry
+	(*v1.PaginationResponse)(nil),       // 35: elara.common.v1.PaginationResponse
+	(*HistoryEntry)(nil),                // 36: elara.config.v1.HistoryEntry
+	(*ConfigSummary)(nil),               // 37: elara.config.v1.ConfigSummary
+	(*ValidationResult)(nil),            // 38: elara.config.v1.ValidationResult
+	(*WatchEvent)(nil),                  // 39: elara.config.v1.WatchEvent
+}
 var file_elara_config_v1_config_service_proto_depIdxs = []int32{
 	30, // 0: elara.config.v1.CreateConfigRequest.format:type_name -> elara.config.v1.Format
 	28, // 1: elara.config.v1.CreateConfigRequest.metadata:type_name -> elara.config.v1.CreateConfigRequest.MetadataEntry
@@ -1940,11 +1809,8 @@ func file_elara_config_v1_config_service_proto_init() {
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
-			GoPackagePath: reflect.TypeFor[x]().PkgPath(),
-			RawDescriptor: unsafe.Slice(
-				unsafe.StringData(file_elara_config_v1_config_service_proto_rawDesc),
-				len(file_elara_config_v1_config_service_proto_rawDesc),
-			),
+			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_config_v1_config_service_proto_rawDesc), len(file_elara_config_v1_config_service_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   30,
 			NumExtensions: 0,

@@ -40,13 +40,15 @@ func TestService_Get(t *testing.T) {
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				store := schemamock.NewMockstore(ctrl)
-				store.EXPECT().Get(ctx, testNamespace, testPathPattern).Return(&domain.SchemaAttachment{
-					ID:          "schema-1",
-					Namespace:   testNamespace,
-					PathPattern: testPathPattern,
-					JSONSchema:  `{"type": "object"}`,
-					CreatedAt:   now,
-				}, nil)
+				store.EXPECT().
+					Get(ctx, testNamespace, testPathPattern).
+					Return(&domain.SchemaAttachment{
+						ID:          "schema-1",
+						Namespace:   testNamespace,
+						PathPattern: testPathPattern,
+						JSONSchema:  `{"type": "object"}`,
+						CreatedAt:   now,
+					}, nil)
 
 				return schema.New(nil, store, nil), ctx
 			},
@@ -64,7 +66,9 @@ func TestService_Get(t *testing.T) {
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				store := schemamock.NewMockstore(ctrl)
-				store.EXPECT().Get(ctx, testNamespace, testPathPattern).Return(nil, errors.New("bbolt error"))
+				store.EXPECT().
+					Get(ctx, testNamespace, testPathPattern).
+					Return(nil, errors.New("bbolt error"))
 
 				return schema.New(nil, store, nil), ctx
 			},
@@ -76,7 +80,9 @@ func TestService_Get(t *testing.T) {
 			pathPattern: testPathPattern,
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
 				store := schemamock.NewMockstore(ctrl)
-				store.EXPECT().Get(ctx, testNamespace, testPathPattern).Return(nil, domain.ErrNotFound)
+				store.EXPECT().
+					Get(ctx, testNamespace, testPathPattern).
+					Return(nil, domain.ErrNotFound)
 
 				return schema.New(nil, store, nil), ctx
 			},

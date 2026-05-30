@@ -40,7 +40,9 @@ func TestService_ExportAll(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has(gomock.Any(), gomock.Any()).Return(true)
-				m.namespaces.EXPECT().ListAll(gomock.Any()).Return([]*domain.Namespace{{Name: "ns1"}}, nil)
+				m.namespaces.EXPECT().
+					ListAll(gomock.Any()).
+					Return([]*domain.Namespace{{Name: "ns1"}}, nil)
 				m.configs.EXPECT().
 					ListAllByNamespace(gomock.Any(), "ns1").
 					Return([]*domain.Config{{Path: "/a.json", Namespace: "ns1"}}, nil)
@@ -65,7 +67,9 @@ func TestService_ExportAll(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has(gomock.Any(), gomock.Any()).Return(true)
-				m.namespaces.EXPECT().ListAll(gomock.Any()).Return([]*domain.Namespace{{Name: "ns1"}}, nil)
+				m.namespaces.EXPECT().
+					ListAll(gomock.Any()).
+					Return([]*domain.Namespace{{Name: "ns1"}}, nil)
 				m.configs.EXPECT().
 					ListAllByNamespace(gomock.Any(), "ns1").
 					Return([]*domain.Config{{Path: "/a.yaml", Namespace: "ns1"}}, nil)
@@ -91,7 +95,9 @@ func TestService_ExportAll(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has(gomock.Any(), gomock.Any()).Return(true)
-				m.namespaces.EXPECT().ListAll(gomock.Any()).Return([]*domain.Namespace{{Name: "ns1"}}, nil)
+				m.namespaces.EXPECT().
+					ListAll(gomock.Any()).
+					Return([]*domain.Namespace{{Name: "ns1"}}, nil)
 				m.configs.EXPECT().
 					ListAllByNamespace(gomock.Any(), "ns1").
 					Return([]*domain.Config{{Path: "/a.json", Namespace: "ns1"}}, nil)
@@ -174,8 +180,12 @@ func TestService_ExportAll(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().Has(gomock.Any(), gomock.Any()).Return(true)
-				m.namespaces.EXPECT().ListAll(gomock.Any()).Return([]*domain.Namespace{{Name: "ns1"}}, nil)
-				m.configs.EXPECT().ListAllByNamespace(gomock.Any(), "ns1").Return(nil, errors.New("timeout"))
+				m.namespaces.EXPECT().
+					ListAll(gomock.Any()).
+					Return([]*domain.Namespace{{Name: "ns1"}}, nil)
+				m.configs.EXPECT().
+					ListAllByNamespace(gomock.Any(), "ns1").
+					Return(nil, errors.New("timeout"))
 
 				return svc
 			},
@@ -192,10 +202,16 @@ func TestService_ExportAll(t *testing.T) {
 					ListAll(gomock.Any()).
 					Return([]*domain.Namespace{{Name: "ns1"}, {Name: "ns2"}}, nil)
 				m.pdp.EXPECT().
-					Has("test@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"}).
+					Has(
+						"test@example.com",
+						domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
+					).
 					Return(true)
 				m.pdp.EXPECT().
-					Has("test@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns2"}).
+					Has(
+						"test@example.com",
+						domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns2"},
+					).
 					Return(false)
 				m.configs.EXPECT().
 					ListAllByNamespace(gomock.Any(), "ns1").
@@ -219,9 +235,14 @@ func TestService_ExportAll(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.namespaces.EXPECT().ListAll(gomock.Any()).Return([]*domain.Namespace{{Name: "secret"}}, nil)
+				m.namespaces.EXPECT().
+					ListAll(gomock.Any()).
+					Return([]*domain.Namespace{{Name: "secret"}}, nil)
 				m.pdp.EXPECT().
-					Has("test@example.com", domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "secret"}).
+					Has(
+						"test@example.com",
+						domain.Permission{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "secret"},
+					).
 					Return(false)
 
 				return svc

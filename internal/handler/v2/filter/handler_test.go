@@ -40,7 +40,9 @@ func TestHandler_GetNamespaces(t *testing.T) {
 			name: "maps request actions/search to query and items to proto",
 			req: &filterv1.GetNamespacesRequest{
 				Filters: &filterv1.Filters{Query: "pr"},
-				Actions: []commonv1.PermissionAction{commonv1.PermissionAction_PERMISSION_ACTION_READ},
+				Actions: []commonv1.PermissionAction{
+					commonv1.PermissionAction_PERMISSION_ACTION_READ,
+				},
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*filter.Handler, context.Context) {
 				ctx = withActor(ctx)
@@ -51,7 +53,11 @@ func TestHandler_GetNamespaces(t *testing.T) {
 						Search:  "pr",
 					}).
 					Return([]filteruc.Item{
-						{Key: "prod", Value: "prod", Actions: []domain.Action{domain.ActionRead, domain.ActionWrite}},
+						{
+							Key:     "prod",
+							Value:   "prod",
+							Actions: []domain.Action{domain.ActionRead, domain.ActionWrite},
+						},
 					}, nil)
 
 				return filter.New(uc), ctx
@@ -130,7 +136,9 @@ func TestHandler_GetGroups(t *testing.T) {
 		{
 			name: "maps request to query and items to proto (key=id, value=name)",
 			req: &filterv1.GetGroupsRequest{
-				Actions: []commonv1.PermissionAction{commonv1.PermissionAction_PERMISSION_ACTION_WRITE},
+				Actions: []commonv1.PermissionAction{
+					commonv1.PermissionAction_PERMISSION_ACTION_WRITE,
+				},
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*filter.Handler, context.Context) {
 				ctx = withActor(ctx)
@@ -147,9 +155,11 @@ func TestHandler_GetGroups(t *testing.T) {
 			},
 			want: []*filterv1.Item{
 				{
-					Key:     "id-a",
-					Value:   "alpha",
-					Actions: []commonv1.PermissionAction{commonv1.PermissionAction_PERMISSION_ACTION_WRITE},
+					Key:   "id-a",
+					Value: "alpha",
+					Actions: []commonv1.PermissionAction{
+						commonv1.PermissionAction_PERMISSION_ACTION_WRITE,
+					},
 				},
 			},
 		},
@@ -216,7 +226,9 @@ func TestHandler_GetUsers(t *testing.T) {
 		{
 			name: "maps all action and items to proto (key=email, value=name)",
 			req: &filterv1.GetUsersRequest{
-				Actions: []commonv1.PermissionAction{commonv1.PermissionAction_PERMISSION_ACTION_ALL},
+				Actions: []commonv1.PermissionAction{
+					commonv1.PermissionAction_PERMISSION_ACTION_ALL,
+				},
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*filter.Handler, context.Context) {
 				ctx = withActor(ctx)
@@ -226,16 +238,22 @@ func TestHandler_GetUsers(t *testing.T) {
 						Actions: []domain.Action{domain.ActionAll},
 					}).
 					Return([]filteruc.Item{
-						{Key: "alice@example.com", Value: "Alice", Actions: []domain.Action{domain.ActionAll}},
+						{
+							Key:     "alice@example.com",
+							Value:   "Alice",
+							Actions: []domain.Action{domain.ActionAll},
+						},
 					}, nil)
 
 				return filter.New(uc), ctx
 			},
 			want: []*filterv1.Item{
 				{
-					Key:     "alice@example.com",
-					Value:   "Alice",
-					Actions: []commonv1.PermissionAction{commonv1.PermissionAction_PERMISSION_ACTION_ALL},
+					Key:   "alice@example.com",
+					Value: "Alice",
+					Actions: []commonv1.PermissionAction{
+						commonv1.PermissionAction_PERMISSION_ACTION_ALL,
+					},
 				},
 			},
 		},

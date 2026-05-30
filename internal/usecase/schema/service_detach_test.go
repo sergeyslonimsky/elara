@@ -82,7 +82,9 @@ func TestService_Detach(t *testing.T) {
 				namespaces.EXPECT().
 					Get(ctx, testNamespace).
 					Return(&domain.Namespace{Name: testNamespace, Locked: false}, nil)
-				store.EXPECT().Detach(ctx, testNamespace, testPathPattern).Return(errors.New("store fail"))
+				store.EXPECT().
+					Detach(ctx, testNamespace, testPathPattern).
+					Return(errors.New("store fail"))
 
 				return schema.New(nil, store, namespaces), ctx
 			},

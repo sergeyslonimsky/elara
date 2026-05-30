@@ -5,14 +5,12 @@
 package tokenv1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/token/v1"
 	http "net/http"
 	strings "strings"
-
-	connect "connectrpc.com/connect"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/token/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -49,19 +47,10 @@ const (
 
 // TokenServiceClient is a client for the elara.token.v1.TokenService service.
 type TokenServiceClient interface {
-	CreateToken(
-		context.Context,
-		*connect.Request[v1.CreateTokenRequest],
-	) (*connect.Response[v1.CreateTokenResponse], error)
-	ListTokens(
-		context.Context,
-		*connect.Request[v1.ListTokensRequest],
-	) (*connect.Response[v1.ListTokensResponse], error)
+	CreateToken(context.Context, *connect.Request[v1.CreateTokenRequest]) (*connect.Response[v1.CreateTokenResponse], error)
+	ListTokens(context.Context, *connect.Request[v1.ListTokensRequest]) (*connect.Response[v1.ListTokensResponse], error)
 	GetToken(context.Context, *connect.Request[v1.GetTokenRequest]) (*connect.Response[v1.GetTokenResponse], error)
-	RevokeToken(
-		context.Context,
-		*connect.Request[v1.RevokeTokenRequest],
-	) (*connect.Response[v1.RevokeTokenResponse], error)
+	RevokeToken(context.Context, *connect.Request[v1.RevokeTokenRequest]) (*connect.Response[v1.RevokeTokenResponse], error)
 }
 
 // NewTokenServiceClient constructs a client for the elara.token.v1.TokenService service. By
@@ -71,14 +60,9 @@ type TokenServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewTokenServiceClient(
-	httpClient connect.HTTPClient,
-	baseURL string,
-	opts ...connect.ClientOption,
-) TokenServiceClient {
+func NewTokenServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) TokenServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	tokenServiceMethods := v1.File_elara_token_v1_token_service_proto.Services().ByName("TokenService").Methods()
-
 	return &tokenServiceClient{
 		createToken: connect.NewClient[v1.CreateTokenRequest, v1.CreateTokenResponse](
 			httpClient,
@@ -116,52 +100,31 @@ type tokenServiceClient struct {
 }
 
 // CreateToken calls elara.token.v1.TokenService.CreateToken.
-func (c *tokenServiceClient) CreateToken(
-	ctx context.Context,
-	req *connect.Request[v1.CreateTokenRequest],
-) (*connect.Response[v1.CreateTokenResponse], error) {
+func (c *tokenServiceClient) CreateToken(ctx context.Context, req *connect.Request[v1.CreateTokenRequest]) (*connect.Response[v1.CreateTokenResponse], error) {
 	return c.createToken.CallUnary(ctx, req)
 }
 
 // ListTokens calls elara.token.v1.TokenService.ListTokens.
-func (c *tokenServiceClient) ListTokens(
-	ctx context.Context,
-	req *connect.Request[v1.ListTokensRequest],
-) (*connect.Response[v1.ListTokensResponse], error) {
+func (c *tokenServiceClient) ListTokens(ctx context.Context, req *connect.Request[v1.ListTokensRequest]) (*connect.Response[v1.ListTokensResponse], error) {
 	return c.listTokens.CallUnary(ctx, req)
 }
 
 // GetToken calls elara.token.v1.TokenService.GetToken.
-func (c *tokenServiceClient) GetToken(
-	ctx context.Context,
-	req *connect.Request[v1.GetTokenRequest],
-) (*connect.Response[v1.GetTokenResponse], error) {
+func (c *tokenServiceClient) GetToken(ctx context.Context, req *connect.Request[v1.GetTokenRequest]) (*connect.Response[v1.GetTokenResponse], error) {
 	return c.getToken.CallUnary(ctx, req)
 }
 
 // RevokeToken calls elara.token.v1.TokenService.RevokeToken.
-func (c *tokenServiceClient) RevokeToken(
-	ctx context.Context,
-	req *connect.Request[v1.RevokeTokenRequest],
-) (*connect.Response[v1.RevokeTokenResponse], error) {
+func (c *tokenServiceClient) RevokeToken(ctx context.Context, req *connect.Request[v1.RevokeTokenRequest]) (*connect.Response[v1.RevokeTokenResponse], error) {
 	return c.revokeToken.CallUnary(ctx, req)
 }
 
 // TokenServiceHandler is an implementation of the elara.token.v1.TokenService service.
 type TokenServiceHandler interface {
-	CreateToken(
-		context.Context,
-		*connect.Request[v1.CreateTokenRequest],
-	) (*connect.Response[v1.CreateTokenResponse], error)
-	ListTokens(
-		context.Context,
-		*connect.Request[v1.ListTokensRequest],
-	) (*connect.Response[v1.ListTokensResponse], error)
+	CreateToken(context.Context, *connect.Request[v1.CreateTokenRequest]) (*connect.Response[v1.CreateTokenResponse], error)
+	ListTokens(context.Context, *connect.Request[v1.ListTokensRequest]) (*connect.Response[v1.ListTokensResponse], error)
 	GetToken(context.Context, *connect.Request[v1.GetTokenRequest]) (*connect.Response[v1.GetTokenResponse], error)
-	RevokeToken(
-		context.Context,
-		*connect.Request[v1.RevokeTokenRequest],
-	) (*connect.Response[v1.RevokeTokenResponse], error)
+	RevokeToken(context.Context, *connect.Request[v1.RevokeTokenRequest]) (*connect.Response[v1.RevokeTokenResponse], error)
 }
 
 // NewTokenServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -195,7 +158,6 @@ func NewTokenServiceHandler(svc TokenServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(tokenServiceMethods.ByName("RevokeToken")),
 		connect.WithHandlerOptions(opts...),
 	)
-
 	return "/elara.token.v1.TokenService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TokenServiceCreateTokenProcedure:
@@ -215,42 +177,18 @@ func NewTokenServiceHandler(svc TokenServiceHandler, opts ...connect.HandlerOpti
 // UnimplementedTokenServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedTokenServiceHandler struct{}
 
-func (UnimplementedTokenServiceHandler) CreateToken(
-	context.Context,
-	*connect.Request[v1.CreateTokenRequest],
-) (*connect.Response[v1.CreateTokenResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.token.v1.TokenService.CreateToken is not implemented"),
-	)
+func (UnimplementedTokenServiceHandler) CreateToken(context.Context, *connect.Request[v1.CreateTokenRequest]) (*connect.Response[v1.CreateTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.token.v1.TokenService.CreateToken is not implemented"))
 }
 
-func (UnimplementedTokenServiceHandler) ListTokens(
-	context.Context,
-	*connect.Request[v1.ListTokensRequest],
-) (*connect.Response[v1.ListTokensResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.token.v1.TokenService.ListTokens is not implemented"),
-	)
+func (UnimplementedTokenServiceHandler) ListTokens(context.Context, *connect.Request[v1.ListTokensRequest]) (*connect.Response[v1.ListTokensResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.token.v1.TokenService.ListTokens is not implemented"))
 }
 
-func (UnimplementedTokenServiceHandler) GetToken(
-	context.Context,
-	*connect.Request[v1.GetTokenRequest],
-) (*connect.Response[v1.GetTokenResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.token.v1.TokenService.GetToken is not implemented"),
-	)
+func (UnimplementedTokenServiceHandler) GetToken(context.Context, *connect.Request[v1.GetTokenRequest]) (*connect.Response[v1.GetTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.token.v1.TokenService.GetToken is not implemented"))
 }
 
-func (UnimplementedTokenServiceHandler) RevokeToken(
-	context.Context,
-	*connect.Request[v1.RevokeTokenRequest],
-) (*connect.Response[v1.RevokeTokenResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.token.v1.TokenService.RevokeToken is not implemented"),
-	)
+func (UnimplementedTokenServiceHandler) RevokeToken(context.Context, *connect.Request[v1.RevokeTokenRequest]) (*connect.Response[v1.RevokeTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.token.v1.TokenService.RevokeToken is not implemented"))
 }

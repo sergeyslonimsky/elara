@@ -13,10 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	dashboard "github.com/sergeyslonimsky/elara/internal/usecase/dashboard"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockusecase is a mock of usecase interface.
@@ -35,7 +34,6 @@ type MockusecaseMockRecorder struct {
 func NewMockusecase(ctrl *gomock.Controller) *Mockusecase {
 	mock := &Mockusecase{ctrl: ctrl}
 	mock.recorder = &MockusecaseMockRecorder{mock}
-
 	return mock
 }
 
@@ -50,14 +48,12 @@ func (m *Mockusecase) GetStats(ctx context.Context) (*dashboard.StatsResult, err
 	ret := m.ctrl.Call(m, "GetStats", ctx)
 	ret0, _ := ret[0].(*dashboard.StatsResult)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // GetStats indicates an expected call of GetStats.
 func (mr *MockusecaseMockRecorder) GetStats(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStats", reflect.TypeOf((*Mockusecase)(nil).GetStats), ctx)
 }
 
@@ -67,19 +63,11 @@ func (m *Mockusecase) ListActivity(ctx context.Context, limit int) ([]*domain.Ch
 	ret := m.ctrl.Call(m, "ListActivity", ctx, limit)
 	ret0, _ := ret[0].([]*domain.ChangelogEntry)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // ListActivity indicates an expected call of ListActivity.
 func (mr *MockusecaseMockRecorder) ListActivity(ctx, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"ListActivity",
-		reflect.TypeOf((*Mockusecase)(nil).ListActivity),
-		ctx,
-		limit,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListActivity", reflect.TypeOf((*Mockusecase)(nil).ListActivity), ctx, limit)
 }

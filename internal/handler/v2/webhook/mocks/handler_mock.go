@@ -13,10 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	webhook "github.com/sergeyslonimsky/elara/internal/usecase/webhook"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockauthz is a mock of authz interface.
@@ -35,7 +34,6 @@ type MockauthzMockRecorder struct {
 func NewMockauthz(ctrl *gomock.Controller) *Mockauthz {
 	mock := &Mockauthz{ctrl: ctrl}
 	mock.recorder = &MockauthzMockRecorder{mock}
-
 	return mock
 }
 
@@ -49,23 +47,13 @@ func (m *Mockauthz) Require(ctx context.Context, object domain.Object, action do
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Require", ctx, object, action, domainStr)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Require indicates an expected call of Require.
 func (mr *MockauthzMockRecorder) Require(ctx, object, action, domainStr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Require",
-		reflect.TypeOf((*Mockauthz)(nil).Require),
-		ctx,
-		object,
-		action,
-		domainStr,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*Mockauthz)(nil).Require), ctx, object, action, domainStr)
 }
 
 // Mockusecase is a mock of usecase interface.
@@ -84,7 +72,6 @@ type MockusecaseMockRecorder struct {
 func NewMockusecase(ctrl *gomock.Controller) *Mockusecase {
 	mock := &Mockusecase{ctrl: ctrl}
 	mock.recorder = &MockusecaseMockRecorder{mock}
-
 	return mock
 }
 
@@ -99,14 +86,12 @@ func (m *Mockusecase) Create(ctx context.Context, w *domain.Webhook) (*domain.We
 	ret := m.ctrl.Call(m, "Create", ctx, w)
 	ret0, _ := ret[0].(*domain.Webhook)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
 func (mr *MockusecaseMockRecorder) Create(ctx, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockusecase)(nil).Create), ctx, w)
 }
 
@@ -115,14 +100,12 @@ func (m *Mockusecase) Delete(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, id)
 	ret0, _ := ret[0].(error)
-
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
 func (mr *MockusecaseMockRecorder) Delete(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockusecase)(nil).Delete), ctx, id)
 }
 
@@ -132,14 +115,12 @@ func (m *Mockusecase) Get(ctx context.Context, id string) (*domain.Webhook, erro
 	ret := m.ctrl.Call(m, "Get", ctx, id)
 	ret0, _ := ret[0].(*domain.Webhook)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
 func (mr *MockusecaseMockRecorder) Get(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockusecase)(nil).Get), ctx, id)
 }
 
@@ -149,21 +130,13 @@ func (m *Mockusecase) GetHistory(ctx context.Context, webhookID string) ([]domai
 	ret := m.ctrl.Call(m, "GetHistory", ctx, webhookID)
 	ret0, _ := ret[0].([]domain.DeliveryAttempt)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // GetHistory indicates an expected call of GetHistory.
 func (mr *MockusecaseMockRecorder) GetHistory(ctx, webhookID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"GetHistory",
-		reflect.TypeOf((*Mockusecase)(nil).GetHistory),
-		ctx,
-		webhookID,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistory", reflect.TypeOf((*Mockusecase)(nil).GetHistory), ctx, webhookID)
 }
 
 // List mocks base method.
@@ -172,14 +145,12 @@ func (m *Mockusecase) List(ctx context.Context) ([]*domain.Webhook, error) {
 	ret := m.ctrl.Call(m, "List", ctx)
 	ret0, _ := ret[0].([]*domain.Webhook)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
 func (mr *MockusecaseMockRecorder) List(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockusecase)(nil).List), ctx)
 }
 
@@ -189,20 +160,11 @@ func (m *Mockusecase) Update(ctx context.Context, id string, params webhook.Upda
 	ret := m.ctrl.Call(m, "Update", ctx, id, params)
 	ret0, _ := ret[0].(*domain.Webhook)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
 func (mr *MockusecaseMockRecorder) Update(ctx, id, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"Update",
-		reflect.TypeOf((*Mockusecase)(nil).Update),
-		ctx,
-		id,
-		params,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*Mockusecase)(nil).Update), ctx, id, params)
 }

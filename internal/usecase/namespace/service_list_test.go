@@ -26,7 +26,7 @@ func TestService_List(t *testing.T) {
 	tests := []struct {
 		name     string
 		params   namespace.ListParams
-		mockFunc func(ctx context.Context, m mocks) context.Context
+		mockFunc func(ctx context.Context, mock mocks) context.Context
 		errIs    error
 		wantErr  string
 		want     *namespace.ListResult
@@ -86,10 +86,10 @@ func TestService_List(t *testing.T) {
 		{
 			name:   "explicit scope forwards Names into filter",
 			params: namespace.ListParams{Limit: 5},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
+			mockFunc: func(ctx context.Context, mock mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
 
-				m.pdp.EXPECT().
+				mock.pdp.EXPECT().
 					EffectiveDomains("user@example.com", domain.ObjectNamespace, domain.ActionRead).
 					Return(authz.NewDomainSet("ns1", "ns3"))
 
@@ -100,19 +100,19 @@ func TestService_List(t *testing.T) {
 				}
 				expectedParams := domain.NamespaceListParams{Limit: 5, Offset: 0}
 
-				m.store.EXPECT().
+				mock.store.EXPECT().
 					List(ctx, expectedFilter, expectedParams).
 					Return([]*domain.Namespace{{Name: "ns1"}, {Name: "ns3"}}, 2, nil)
 
-				m.store.EXPECT().CountConfigs(ctx, "ns1").Return(1, nil)
-				m.store.EXPECT().CountConfigs(ctx, "ns3").Return(2, nil)
+				mock.store.EXPECT().CountConfigs(ctx, "ns1").Return(1, nil)
+				mock.store.EXPECT().CountConfigs(ctx, "ns3").Return(2, nil)
 
-				m.pdp.EXPECT().
+				mock.pdp.EXPECT().
 					Has("user@example.com", domain.Permission{
 						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "ns1",
 					}).
 					Return(true)
-				m.pdp.EXPECT().
+				mock.pdp.EXPECT().
 					Has("user@example.com", domain.Permission{
 						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "ns3",
 					}).
@@ -189,10 +189,10 @@ func TestService_List(t *testing.T) {
 		{
 			name:   "pagination params forwarded to repo",
 			params: namespace.ListParams{Limit: 5, Offset: 10},
-			mockFunc: func(ctx context.Context, m mocks) context.Context {
+			mockFunc: func(ctx context.Context, mock mocks) context.Context {
 				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "u@example.com"})
 
-				m.pdp.EXPECT().
+				mock.pdp.EXPECT().
 					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 
@@ -203,7 +203,7 @@ func TestService_List(t *testing.T) {
 				}
 				expectedParams := domain.NamespaceListParams{Limit: 5, Offset: 10}
 
-				m.store.EXPECT().
+				mock.store.EXPECT().
 					List(ctx, expectedFilter, expectedParams).
 					Return([]*domain.Namespace{}, 42, nil)
 

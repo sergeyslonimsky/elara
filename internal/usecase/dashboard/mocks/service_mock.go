@@ -13,9 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // Mockpdp is a mock of pdp interface.
@@ -34,7 +33,6 @@ type MockpdpMockRecorder struct {
 func NewMockpdp(ctrl *gomock.Controller) *Mockpdp {
 	mock := &Mockpdp{ctrl: ctrl}
 	mock.recorder = &MockpdpMockRecorder{mock}
-
 	return mock
 }
 
@@ -48,14 +46,12 @@ func (m *Mockpdp) Has(principal string, perm domain.Permission) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Has", principal, perm)
 	ret0, _ := ret[0].(bool)
-
 	return ret0
 }
 
 // Has indicates an expected call of Has.
 func (mr *MockpdpMockRecorder) Has(principal, perm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*Mockpdp)(nil).Has), principal, perm)
 }
 
@@ -75,7 +71,6 @@ type MocknsListerMockRecorder struct {
 func NewMocknsLister(ctrl *gomock.Controller) *MocknsLister {
 	mock := &MocknsLister{ctrl: ctrl}
 	mock.recorder = &MocknsListerMockRecorder{mock}
-
 	return mock
 }
 
@@ -90,14 +85,12 @@ func (m *MocknsLister) ListAll(ctx context.Context) ([]*domain.Namespace, error)
 	ret := m.ctrl.Call(m, "ListAll", ctx)
 	ret0, _ := ret[0].([]*domain.Namespace)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // ListAll indicates an expected call of ListAll.
 func (mr *MocknsListerMockRecorder) ListAll(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAll", reflect.TypeOf((*MocknsLister)(nil).ListAll), ctx)
 }
 
@@ -117,7 +110,6 @@ type MockconfigCounterMockRecorder struct {
 func NewMockconfigCounter(ctrl *gomock.Controller) *MockconfigCounter {
 	mock := &MockconfigCounter{ctrl: ctrl}
 	mock.recorder = &MockconfigCounterMockRecorder{mock}
-
 	return mock
 }
 
@@ -132,21 +124,13 @@ func (m *MockconfigCounter) CountByNamespace(ctx context.Context, namespace stri
 	ret := m.ctrl.Call(m, "CountByNamespace", ctx, namespace)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // CountByNamespace indicates an expected call of CountByNamespace.
 func (mr *MockconfigCounterMockRecorder) CountByNamespace(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"CountByNamespace",
-		reflect.TypeOf((*MockconfigCounter)(nil).CountByNamespace),
-		ctx,
-		namespace,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountByNamespace", reflect.TypeOf((*MockconfigCounter)(nil).CountByNamespace), ctx, namespace)
 }
 
 // CurrentRevision mocks base method.
@@ -155,20 +139,13 @@ func (m *MockconfigCounter) CurrentRevision(ctx context.Context) (int64, error) 
 	ret := m.ctrl.Call(m, "CurrentRevision", ctx)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // CurrentRevision indicates an expected call of CurrentRevision.
 func (mr *MockconfigCounterMockRecorder) CurrentRevision(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"CurrentRevision",
-		reflect.TypeOf((*MockconfigCounter)(nil).CurrentRevision),
-		ctx,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentRevision", reflect.TypeOf((*MockconfigCounter)(nil).CurrentRevision), ctx)
 }
 
 // MockactivitySource is a mock of activitySource interface.
@@ -187,7 +164,6 @@ type MockactivitySourceMockRecorder struct {
 func NewMockactivitySource(ctrl *gomock.Controller) *MockactivitySource {
 	mock := &MockactivitySource{ctrl: ctrl}
 	mock.recorder = &MockactivitySourceMockRecorder{mock}
-
 	return mock
 }
 
@@ -202,21 +178,13 @@ func (m *MockactivitySource) ListRecentChanges(ctx context.Context, limit int) (
 	ret := m.ctrl.Call(m, "ListRecentChanges", ctx, limit)
 	ret0, _ := ret[0].([]*domain.ChangelogEntry)
 	ret1, _ := ret[1].(error)
-
 	return ret0, ret1
 }
 
 // ListRecentChanges indicates an expected call of ListRecentChanges.
 func (mr *MockactivitySourceMockRecorder) ListRecentChanges(ctx, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"ListRecentChanges",
-		reflect.TypeOf((*MockactivitySource)(nil).ListRecentChanges),
-		ctx,
-		limit,
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRecentChanges", reflect.TypeOf((*MockactivitySource)(nil).ListRecentChanges), ctx, limit)
 }
 
 // MockactiveClientsSource is a mock of activeClientsSource interface.
@@ -235,7 +203,6 @@ type MockactiveClientsSourceMockRecorder struct {
 func NewMockactiveClientsSource(ctrl *gomock.Controller) *MockactiveClientsSource {
 	mock := &MockactiveClientsSource{ctrl: ctrl}
 	mock.recorder = &MockactiveClientsSourceMockRecorder{mock}
-
 	return mock
 }
 
@@ -249,17 +216,11 @@ func (m *MockactiveClientsSource) ListActive() []*domain.Client {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListActive")
 	ret0, _ := ret[0].([]*domain.Client)
-
 	return ret0
 }
 
 // ListActive indicates an expected call of ListActive.
 func (mr *MockactiveClientsSourceMockRecorder) ListActive() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-
-	return mr.mock.ctrl.RecordCallWithMethodType(
-		mr.mock,
-		"ListActive",
-		reflect.TypeOf((*MockactiveClientsSource)(nil).ListActive),
-	)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListActive", reflect.TypeOf((*MockactiveClientsSource)(nil).ListActive))
 }

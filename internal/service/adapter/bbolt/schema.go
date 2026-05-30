@@ -67,7 +67,10 @@ func (r *SchemaRepo) Detach(_ context.Context, namespace, pathPattern string) er
 	return nil
 }
 
-func (r *SchemaRepo) Get(_ context.Context, namespace, pathPattern string) (*domain.SchemaAttachment, error) {
+func (r *SchemaRepo) Get(
+	_ context.Context,
+	namespace, pathPattern string,
+) (*domain.SchemaAttachment, error) {
 	var attachment *domain.SchemaAttachment
 
 	err := r.store.db.View(func(tx *bolt.Tx) error {
@@ -111,7 +114,10 @@ func (r *SchemaRepo) List(_ context.Context, namespace string) ([]*domain.Schema
 				return fmt.Errorf("unmarshal schema %s: %w", k, err)
 			}
 
-			attachments = append(attachments, schemaMetaToDomain(&m, namespace, string(pathPattern)))
+			attachments = append(
+				attachments,
+				schemaMetaToDomain(&m, namespace, string(pathPattern)),
+			)
 		}
 
 		return nil

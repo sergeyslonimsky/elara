@@ -5,14 +5,12 @@
 package authv1connect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
+	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
 	http "net/http"
 	strings "strings"
-
-	connect "connectrpc.com/connect"
-
-	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -48,19 +46,10 @@ const (
 
 // AuthServiceClient is a client for the elara.auth.v1.AuthService service.
 type AuthServiceClient interface {
-	GetAuthInfo(
-		context.Context,
-		*connect.Request[v1.GetAuthInfoRequest],
-	) (*connect.Response[v1.GetAuthInfoResponse], error)
+	GetAuthInfo(context.Context, *connect.Request[v1.GetAuthInfoRequest]) (*connect.Response[v1.GetAuthInfoResponse], error)
 	OIDCLogin(context.Context, *connect.Request[v1.OIDCLoginRequest]) (*connect.Response[v1.OIDCLoginResponse], error)
-	OIDCCallback(
-		context.Context,
-		*connect.Request[v1.OIDCCallbackRequest],
-	) (*connect.Response[v1.OIDCCallbackResponse], error)
-	BasicLogin(
-		context.Context,
-		*connect.Request[v1.BasicLoginRequest],
-	) (*connect.Response[v1.BasicLoginResponse], error)
+	OIDCCallback(context.Context, *connect.Request[v1.OIDCCallbackRequest]) (*connect.Response[v1.OIDCCallbackResponse], error)
+	BasicLogin(context.Context, *connect.Request[v1.BasicLoginRequest]) (*connect.Response[v1.BasicLoginResponse], error)
 }
 
 // NewAuthServiceClient constructs a client for the elara.auth.v1.AuthService service. By default,
@@ -70,14 +59,9 @@ type AuthServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewAuthServiceClient(
-	httpClient connect.HTTPClient,
-	baseURL string,
-	opts ...connect.ClientOption,
-) AuthServiceClient {
+func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) AuthServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	authServiceMethods := v1.File_elara_auth_v1_auth_service_proto.Services().ByName("AuthService").Methods()
-
 	return &authServiceClient{
 		getAuthInfo: connect.NewClient[v1.GetAuthInfoRequest, v1.GetAuthInfoResponse](
 			httpClient,
@@ -115,52 +99,31 @@ type authServiceClient struct {
 }
 
 // GetAuthInfo calls elara.auth.v1.AuthService.GetAuthInfo.
-func (c *authServiceClient) GetAuthInfo(
-	ctx context.Context,
-	req *connect.Request[v1.GetAuthInfoRequest],
-) (*connect.Response[v1.GetAuthInfoResponse], error) {
+func (c *authServiceClient) GetAuthInfo(ctx context.Context, req *connect.Request[v1.GetAuthInfoRequest]) (*connect.Response[v1.GetAuthInfoResponse], error) {
 	return c.getAuthInfo.CallUnary(ctx, req)
 }
 
 // OIDCLogin calls elara.auth.v1.AuthService.OIDCLogin.
-func (c *authServiceClient) OIDCLogin(
-	ctx context.Context,
-	req *connect.Request[v1.OIDCLoginRequest],
-) (*connect.Response[v1.OIDCLoginResponse], error) {
+func (c *authServiceClient) OIDCLogin(ctx context.Context, req *connect.Request[v1.OIDCLoginRequest]) (*connect.Response[v1.OIDCLoginResponse], error) {
 	return c.oIDCLogin.CallUnary(ctx, req)
 }
 
 // OIDCCallback calls elara.auth.v1.AuthService.OIDCCallback.
-func (c *authServiceClient) OIDCCallback(
-	ctx context.Context,
-	req *connect.Request[v1.OIDCCallbackRequest],
-) (*connect.Response[v1.OIDCCallbackResponse], error) {
+func (c *authServiceClient) OIDCCallback(ctx context.Context, req *connect.Request[v1.OIDCCallbackRequest]) (*connect.Response[v1.OIDCCallbackResponse], error) {
 	return c.oIDCCallback.CallUnary(ctx, req)
 }
 
 // BasicLogin calls elara.auth.v1.AuthService.BasicLogin.
-func (c *authServiceClient) BasicLogin(
-	ctx context.Context,
-	req *connect.Request[v1.BasicLoginRequest],
-) (*connect.Response[v1.BasicLoginResponse], error) {
+func (c *authServiceClient) BasicLogin(ctx context.Context, req *connect.Request[v1.BasicLoginRequest]) (*connect.Response[v1.BasicLoginResponse], error) {
 	return c.basicLogin.CallUnary(ctx, req)
 }
 
 // AuthServiceHandler is an implementation of the elara.auth.v1.AuthService service.
 type AuthServiceHandler interface {
-	GetAuthInfo(
-		context.Context,
-		*connect.Request[v1.GetAuthInfoRequest],
-	) (*connect.Response[v1.GetAuthInfoResponse], error)
+	GetAuthInfo(context.Context, *connect.Request[v1.GetAuthInfoRequest]) (*connect.Response[v1.GetAuthInfoResponse], error)
 	OIDCLogin(context.Context, *connect.Request[v1.OIDCLoginRequest]) (*connect.Response[v1.OIDCLoginResponse], error)
-	OIDCCallback(
-		context.Context,
-		*connect.Request[v1.OIDCCallbackRequest],
-	) (*connect.Response[v1.OIDCCallbackResponse], error)
-	BasicLogin(
-		context.Context,
-		*connect.Request[v1.BasicLoginRequest],
-	) (*connect.Response[v1.BasicLoginResponse], error)
+	OIDCCallback(context.Context, *connect.Request[v1.OIDCCallbackRequest]) (*connect.Response[v1.OIDCCallbackResponse], error)
+	BasicLogin(context.Context, *connect.Request[v1.BasicLoginRequest]) (*connect.Response[v1.BasicLoginResponse], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -194,7 +157,6 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(authServiceMethods.ByName("BasicLogin")),
 		connect.WithHandlerOptions(opts...),
 	)
-
 	return "/elara.auth.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AuthServiceGetAuthInfoProcedure:
@@ -214,42 +176,18 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 // UnimplementedAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthServiceHandler struct{}
 
-func (UnimplementedAuthServiceHandler) GetAuthInfo(
-	context.Context,
-	*connect.Request[v1.GetAuthInfoRequest],
-) (*connect.Response[v1.GetAuthInfoResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.auth.v1.AuthService.GetAuthInfo is not implemented"),
-	)
+func (UnimplementedAuthServiceHandler) GetAuthInfo(context.Context, *connect.Request[v1.GetAuthInfoRequest]) (*connect.Response[v1.GetAuthInfoResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.GetAuthInfo is not implemented"))
 }
 
-func (UnimplementedAuthServiceHandler) OIDCLogin(
-	context.Context,
-	*connect.Request[v1.OIDCLoginRequest],
-) (*connect.Response[v1.OIDCLoginResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.auth.v1.AuthService.OIDCLogin is not implemented"),
-	)
+func (UnimplementedAuthServiceHandler) OIDCLogin(context.Context, *connect.Request[v1.OIDCLoginRequest]) (*connect.Response[v1.OIDCLoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.OIDCLogin is not implemented"))
 }
 
-func (UnimplementedAuthServiceHandler) OIDCCallback(
-	context.Context,
-	*connect.Request[v1.OIDCCallbackRequest],
-) (*connect.Response[v1.OIDCCallbackResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.auth.v1.AuthService.OIDCCallback is not implemented"),
-	)
+func (UnimplementedAuthServiceHandler) OIDCCallback(context.Context, *connect.Request[v1.OIDCCallbackRequest]) (*connect.Response[v1.OIDCCallbackResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.OIDCCallback is not implemented"))
 }
 
-func (UnimplementedAuthServiceHandler) BasicLogin(
-	context.Context,
-	*connect.Request[v1.BasicLoginRequest],
-) (*connect.Response[v1.BasicLoginResponse], error) {
-	return nil, connect.NewError(
-		connect.CodeUnimplemented,
-		errors.New("elara.auth.v1.AuthService.BasicLogin is not implemented"),
-	)
+func (UnimplementedAuthServiceHandler) BasicLogin(context.Context, *connect.Request[v1.BasicLoginRequest]) (*connect.Response[v1.BasicLoginResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.auth.v1.AuthService.BasicLogin is not implemented"))
 }

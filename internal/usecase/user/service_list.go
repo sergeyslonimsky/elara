@@ -35,7 +35,11 @@ type ListResult struct {
 //
 // An empty result (neither User:Read * nor any Group:Read scope) is not
 // an error; pagination returns an empty page.
-func (s *Service) List(ctx context.Context, actor domain.AuthInfo, params ListParams) (*ListResult, error) {
+func (s *Service) List(
+	ctx context.Context,
+	actor domain.AuthInfo,
+	params ListParams,
+) (*ListResult, error) {
 	limit := params.Limit
 	if limit <= 0 {
 		limit = defaultListLimit

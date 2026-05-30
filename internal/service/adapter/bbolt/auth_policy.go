@@ -35,7 +35,11 @@ func (r *PolicyRepo) WithTx(tx storage.Tx) *PolicyRepo {
 	}
 }
 
-func (r *PolicyRepo) RemoveFilteredPolicy(sec, ptype string, fieldIndex int, fieldValues ...string) error {
+func (r *PolicyRepo) RemoveFilteredPolicy(
+	sec, ptype string,
+	fieldIndex int,
+	fieldValues ...string,
+) error {
 	err := r.update(func(tx storage.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthPolicy))
 
@@ -44,7 +48,13 @@ func (r *PolicyRepo) RemoveFilteredPolicy(sec, ptype string, fieldIndex int, fie
 		err := b.ForEach(func(k, _ []byte) error {
 			var parts []string
 			if err := json.Unmarshal(k, &parts); err != nil {
-				slog.Warn("Casbin: malformed policy rule key during filtered removal", "error", err, "key", string(k))
+				slog.Warn(
+					"Casbin: malformed policy rule key during filtered removal",
+					"error",
+					err,
+					"key",
+					string(k),
+				)
 
 				return nil
 			}
@@ -253,7 +263,13 @@ func (r *PolicyRepo) ListPermissionsForSubject(subject string) ([][]string, erro
 		return b.ForEach(func(k, _ []byte) error {
 			var parts []string
 			if err := json.Unmarshal(k, &parts); err != nil {
-				slog.Warn("Casbin: malformed policy rule key during list", "error", err, "key", string(k))
+				slog.Warn(
+					"Casbin: malformed policy rule key during list",
+					"error",
+					err,
+					"key",
+					string(k),
+				)
 
 				return nil
 			}

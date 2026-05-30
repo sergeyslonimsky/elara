@@ -29,7 +29,11 @@ func TestService_Users(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectGroup, Action: domain.ActionRead, Domain: domain.GroupResource("id-a")},
+					{
+						Object: domain.ObjectGroup,
+						Action: domain.ActionRead,
+						Domain: domain.GroupResource("id-a"),
+					},
 				}, nil)
 
 				return filter.New(perms, nil, nil, nil)
@@ -42,8 +46,16 @@ func TestService_Users(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectUser, Action: domain.ActionRead, Domain: domain.DomainAll},
-					{Object: domain.ObjectUser, Action: domain.ActionWrite, Domain: domain.DomainAll},
+					{
+						Object: domain.ObjectUser,
+						Action: domain.ActionRead,
+						Domain: domain.DomainAll,
+					},
+					{
+						Object: domain.ObjectUser,
+						Action: domain.ActionWrite,
+						Domain: domain.DomainAll,
+					},
 				}, nil)
 
 				users := filtermock.NewMockuserLister(ctrl)
@@ -75,7 +87,11 @@ func TestService_Users(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectUser, Action: domain.ActionRead, Domain: domain.DomainAll},
+					{
+						Object: domain.ObjectUser,
+						Action: domain.ActionRead,
+						Domain: domain.DomainAll,
+					},
 				}, nil)
 
 				return filter.New(perms, nil, nil, nil)
@@ -99,7 +115,11 @@ func TestService_Users(t *testing.T) {
 				return filter.New(perms, nil, nil, users)
 			},
 			want: []filter.Item{
-				{Key: "alice@example.com", Value: "Alice", Actions: []domain.Action{domain.ActionAll}},
+				{
+					Key:     "alice@example.com",
+					Value:   "Alice",
+					Actions: []domain.Action{domain.ActionAll},
+				},
 			},
 		},
 		{
@@ -108,7 +128,11 @@ func TestService_Users(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectUser, Action: domain.ActionRead, Domain: domain.DomainAll},
+					{
+						Object: domain.ObjectUser,
+						Action: domain.ActionRead,
+						Domain: domain.DomainAll,
+					},
 				}, nil)
 
 				users := filtermock.NewMockuserLister(ctrl)

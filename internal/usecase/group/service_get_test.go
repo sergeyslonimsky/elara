@@ -43,7 +43,11 @@ func TestService_Get(t *testing.T) {
 				t.Helper()
 
 				assert.Equal(t, "g1", got.Group.Name)
-				assert.ElementsMatch(t, []string{"alice@example.com", "bob@example.com"}, got.VisibleMembers)
+				assert.ElementsMatch(
+					t,
+					[]string{"alice@example.com", "bob@example.com"},
+					got.VisibleMembers,
+				)
 				assert.ElementsMatch(t, []domain.Permission{
 					{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
 				}, got.Permissions)
@@ -78,8 +82,11 @@ func TestService_Get(t *testing.T) {
 				t.Helper()
 
 				assert.Equal(t, "hidden", got.Group.Name)
-				assert.Empty(t, got.VisibleMembers,
-					"caller without read scope sees no members through the derived User:Read filter")
+				assert.Empty(
+					t,
+					got.VisibleMembers,
+					"caller without read scope sees no members through the derived User:Read filter",
+				)
 			},
 		},
 		{

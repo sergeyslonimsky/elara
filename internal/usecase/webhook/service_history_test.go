@@ -53,7 +53,9 @@ func TestService_GetHistory(t *testing.T) {
 				repo := webhookmock.NewMockrepo(ctrl)
 				disp := webhookmock.NewMockdispatcher(ctrl)
 
-				repo.EXPECT().Get(ctx, "wh-known").Return(&domain.Webhook{ID: "wh-known", NamespaceFilter: "prod"}, nil)
+				repo.EXPECT().
+					Get(ctx, "wh-known").
+					Return(&domain.Webhook{ID: "wh-known", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
 					Has("test@example.com", domain.Permission{
 						Object: domain.ObjectWebhook,
@@ -76,7 +78,9 @@ func TestService_GetHistory(t *testing.T) {
 				repo := webhookmock.NewMockrepo(ctrl)
 				disp := webhookmock.NewMockdispatcher(ctrl)
 
-				repo.EXPECT().Get(ctx, "wh-empty").Return(&domain.Webhook{ID: "wh-empty", NamespaceFilter: "prod"}, nil)
+				repo.EXPECT().
+					Get(ctx, "wh-empty").
+					Return(&domain.Webhook{ID: "wh-empty", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
 					Has("test@example.com", domain.Permission{
 						Object: domain.ObjectWebhook,
@@ -111,7 +115,9 @@ func TestService_GetHistory(t *testing.T) {
 				pdp := webhookmock.NewMockpdp(ctrl)
 				repo := webhookmock.NewMockrepo(ctrl)
 
-				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
+				repo.EXPECT().
+					Get(ctx, "wh-1").
+					Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
 					Has("test@example.com", domain.Permission{
 						Object: domain.ObjectWebhook,

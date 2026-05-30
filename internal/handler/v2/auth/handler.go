@@ -77,7 +77,11 @@ func (h *Handler) OIDCLogin(
 	if h.authType != config.AuthTypeOIDC {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("OIDC login is not available: auth type is %s: %w", h.authType, domain.ErrFeatureNotAvailable),
+			fmt.Errorf(
+				"OIDC login is not available: auth type is %s: %w",
+				h.authType,
+				domain.ErrFeatureNotAvailable,
+			),
 		)
 	}
 
@@ -120,7 +124,11 @@ func (h *Handler) OIDCCallback(
 	if h.authType != config.AuthTypeOIDC {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("OIDC login is not available: auth type is %s: %w", h.authType, domain.ErrFeatureNotAvailable),
+			fmt.Errorf(
+				"OIDC login is not available: auth type is %s: %w",
+				h.authType,
+				domain.ErrFeatureNotAvailable,
+			),
 		)
 	}
 
@@ -161,7 +169,11 @@ func (h *Handler) BasicLogin(
 	if h.authType != config.AuthTypeBasicAuth {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
-			fmt.Errorf("basic login is not available: auth type is %s: %w", h.authType, domain.ErrFeatureNotAvailable),
+			fmt.Errorf(
+				"basic login is not available: auth type is %s: %w",
+				h.authType,
+				domain.ErrFeatureNotAvailable,
+			),
 		)
 	}
 

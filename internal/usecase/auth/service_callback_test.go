@@ -38,7 +38,9 @@ func TestService_Callback(t *testing.T) {
 			nonce: "test-nonce",
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
-				m.provider.EXPECT().Exchange(gomock.Any(), "auth-code", "test-nonce").Return(identity, nil)
+				m.provider.EXPECT().
+					Exchange(gomock.Any(), "auth-code", "test-nonce").
+					Return(identity, nil)
 				m.users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
 				m.session.EXPECT().Create(gomock.Any()).Return("token123", nil)
 
@@ -60,7 +62,9 @@ func TestService_Callback(t *testing.T) {
 				svc, m := setupService(t, ctrl)
 				// admin email is "admin@example.com" in setupService
 				adminIdentity := &auth.Identity{Email: "admin@example.com", Name: "Admin"}
-				m.provider.EXPECT().Exchange(gomock.Any(), "auth-code", "test-nonce").Return(adminIdentity, nil)
+				m.provider.EXPECT().
+					Exchange(gomock.Any(), "auth-code", "test-nonce").
+					Return(adminIdentity, nil)
 				m.users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
 				m.admin.EXPECT().EnsureMember(gomock.Any(), "admin@example.com").Return(nil)
 				m.session.EXPECT().Create(gomock.Any()).Return("admin-token", nil)
@@ -89,7 +93,9 @@ func TestService_Callback(t *testing.T) {
 			nonce: "test-nonce",
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
-				m.provider.EXPECT().Exchange(gomock.Any(), "auth-code", "test-nonce").Return(identity, nil)
+				m.provider.EXPECT().
+					Exchange(gomock.Any(), "auth-code", "test-nonce").
+					Return(identity, nil)
 				m.users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 
 				return svc
@@ -102,7 +108,9 @@ func TestService_Callback(t *testing.T) {
 			nonce: "test-nonce",
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
-				m.provider.EXPECT().Exchange(gomock.Any(), "auth-code", "test-nonce").Return(identity, nil)
+				m.provider.EXPECT().
+					Exchange(gomock.Any(), "auth-code", "test-nonce").
+					Return(identity, nil)
 				m.users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
 				m.session.EXPECT().Create(gomock.Any()).Return("", errors.New("session error"))
 
