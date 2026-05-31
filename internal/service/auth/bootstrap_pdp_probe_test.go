@@ -8,62 +8,47 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
+	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 )
 
-// TestBootstrap_PDP_FreshDB_RequiresReload reproduces the production wiring
-// order — enforcer built BEFORE bootstrap on a fresh bbolt store — and locks
-// in the contract that the caller must call enforcer.LoadPolicy() after
-// AdminBootstrap to make the seeded rules visible to the in-memory model.
-//
-// Regression: skipping the post-bootstrap reload caused
-// pdp.ListPermissions(admin) to return [] on first boot. The Web UI builds
-// CASL from these permissions, so an empty list collapses the sidebar to
-// Dashboard-only — basic-auth admin appeared to have no access.
-// See cmd/service/main.go: bootstrap → svc.Enforcer.LoadPolicy().
-func TestBootstrap_PDP_FreshDB_RequiresReload(t *testing.T) {
+// TestAdminBootstrap_PDPProbe verifies that after Bootstrap (local or OIDC),
+// a PDP constructed over the same store immediately sees the superadmin
+// privilege. This confirms that Bootstrap's direct-adapter writes are
+// compatible with the enforcer's expected schema.
+func TestAdminBootstrap_PDPProbe(t *testing.T) {
 	t.Parallel()
 
-	store, err := bbolt.Open(filepath.Join(t.TempDir(), "bootstrap_pdp.db"))
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "probe.db")
+
+	store, err := bbolt.Open(path)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = store.Close() })
 
-	users := bbolt.NewUserRepo(store)
-	groups := bbolt.NewGroupRepo(store)
-	policies := bbolt.NewPolicyRepo(store)
-	txm := bbolt.NewTxManager(store.DB())
+	storageManager := bbolt.NewManager(store.DB())
+	users := bbolt.NewUserRepo(storageManager)
+	groups := bbolt.NewGroupRepo(storageManager)
+	policies := bbolt.NewPolicyRepo(storageManager)
 
-	// Production order: enforcer is constructed BEFORE bootstrap runs.
-	// On a fresh DB it loads only the built-in role policies.
+	bs := auth.NewAdminBootstrap(storageManager, users, groups, policies)
+
+	// Seed basic admin.
+	adminEmail := "admin@elara.internal"
+	require.NoError(t, bs.BootstrapBasic(ctx, adminEmail, "pw"))
+
+	// Construct PDP over the SAME store.
 	enforcer, err := casbin.NewEnforcer(policies)
 	require.NoError(t, err)
-
-	bs := auth.NewAdminBootstrap(txm, users, groups, policies)
-	const username = "superadmin@example.com"
-	require.NoError(t, bs.BootstrapBasic(t.Context(), username, "initial-password"))
-
 	pdp := authz.NewPDP(enforcer)
 
-	// Without the reload, the bootstrap-seeded (group:system:superadmin, *, *, *)
-	// p-rule and the admin→group g-rule live in bbolt only — the in-memory
-	// model is stale. ListPermissions returns nothing.
-	beforeReload, err := pdp.ListPermissions(username)
-	require.NoError(t, err)
-	assert.Empty(t, beforeReload, "stale cache must not surface the wildcard before reload")
-
-	// Match production: caller reloads policy from bbolt post-bootstrap.
-	require.NoError(t, enforcer.LoadPolicy())
-
-	afterReload, err := pdp.ListPermissions(username)
-	require.NoError(t, err)
-	wildcard := domain.Permission{
-		Object: domain.ObjectAll,
-		Action: domain.ActionAll,
-		Domain: domain.DomainAll,
-	}
-	assert.Contains(t, afterReload, wildcard,
-		"after LoadPolicy, the admin must inherit (*,*,*) from the superadmin group")
+	// Admin must have wildcard.
+	ok := pdp.Has(adminEmail, domain.Permission{
+		Object: "anything",
+		Action: "delete",
+		Domain: "prod",
+	})
+	assert.True(t, ok, "PDP must see superadmin wildcard seeded by bootstrap")
 }

@@ -15,9 +15,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/etcdv3/interceptor"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 const (
@@ -194,7 +194,7 @@ func TestTokenInterceptor_Unary(t *testing.T) {
 
 			if tc.wantClaims {
 				require.NotNil(t, capturedCtx)
-				claims, ok := auth.ClaimsFromContext(*capturedCtx)
+				claims, ok := authctx.ClaimsFromContext(*capturedCtx)
 				require.True(t, ok)
 				assert.Equal(t, "user@example.com", claims.Email)
 			}
@@ -286,7 +286,7 @@ func TestTokenInterceptor_Stream(t *testing.T) {
 
 			if tc.wantClaims {
 				require.NotNil(t, capturedCtx)
-				claims, ok := auth.ClaimsFromContext(*capturedCtx)
+				claims, ok := authctx.ClaimsFromContext(*capturedCtx)
 				require.True(t, ok)
 				assert.Equal(t, "user@example.com", claims.Email)
 			}

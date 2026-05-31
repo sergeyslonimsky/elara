@@ -134,7 +134,7 @@ describe("CreateUserDialog", () => {
 
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 		can("create", "User");
-		can("write", "Group", { domain: "group:developers" });
+		can("write", "Group", { domain: "group:g1" });
 		const ability = build();
 		const authContext = authenticatedContext(ability, {
 			authType: AuthType.BASIC,

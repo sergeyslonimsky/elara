@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -24,29 +25,34 @@ func TestService_Callback(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		code     string
-		nonce    string
+		params   authuc.CallbackParams
 		mockFunc func(*gomock.Controller) *authuc.Service
 		errIs    error
 		wantErr  string
 		wantUser *domain.User
-		want     string
 	}{
 		{
-			name:  "success",
-			code:  "auth-code",
-			nonce: "test-nonce",
+			name: "success",
+			params: authuc.CallbackParams{
+				Code:  "auth-code",
+				Nonce: "test-nonce",
+			},
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
 				m.provider.EXPECT().
 					Exchange(gomock.Any(), "auth-code", "test-nonce").
 					Return(identity, nil)
+
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
 				m.users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
-				m.session.EXPECT().Create(gomock.Any()).Return("token123", nil)
+				m.sessions.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&domain.Session{ID: "new-s1"}, nil)
 
 				return svc
 			},
-			want: "token123",
 			wantUser: &domain.User{
 				Email:    identity.Email,
 				Name:     identity.Name,
@@ -55,9 +61,11 @@ func TestService_Callback(t *testing.T) {
 			},
 		},
 		{
-			name:  "success admin bootstrap",
-			code:  "auth-code",
-			nonce: "test-nonce",
+			name: "success admin bootstrap",
+			params: authuc.CallbackParams{
+				Code:  "auth-code",
+				Nonce: "test-nonce",
+			},
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
 				// admin email is "admin@example.com" in setupService
@@ -65,18 +73,25 @@ func TestService_Callback(t *testing.T) {
 				m.provider.EXPECT().
 					Exchange(gomock.Any(), "auth-code", "test-nonce").
 					Return(adminIdentity, nil)
+
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
 				m.users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
 				m.admin.EXPECT().EnsureMember(gomock.Any(), "admin@example.com").Return(nil)
-				m.session.EXPECT().Create(gomock.Any()).Return("admin-token", nil)
+				m.sessions.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&domain.Session{ID: "new-s1"}, nil)
 
 				return svc
 			},
-			want: "admin-token",
 		},
 		{
-			name:  "exchange error",
-			code:  "bad-code",
-			nonce: "test-nonce",
+			name: "exchange error",
+			params: authuc.CallbackParams{
+				Code:  "bad-code",
+				Nonce: "test-nonce",
+			},
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
 				m.provider.EXPECT().
@@ -88,35 +103,27 @@ func TestService_Callback(t *testing.T) {
 			wantErr: "exchange code",
 		},
 		{
-			name:  "upsert error",
-			code:  "auth-code",
-			nonce: "test-nonce",
+			name: "upsert error",
+			params: authuc.CallbackParams{
+				Code:  "auth-code",
+				Nonce: "test-nonce",
+			},
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
 				m.provider.EXPECT().
 					Exchange(gomock.Any(), "auth-code", "test-nonce").
 					Return(identity, nil)
+
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
 				m.users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 
 				return svc
 			},
 			wantErr: "upsert user",
-		},
-		{
-			name:  "session creation error",
-			code:  "auth-code",
-			nonce: "test-nonce",
-			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
-				svc, m := setupService(t, ctrl)
-				m.provider.EXPECT().
-					Exchange(gomock.Any(), "auth-code", "test-nonce").
-					Return(identity, nil)
-				m.users.EXPECT().Upsert(gomock.Any(), gomock.Any()).Return(nil)
-				m.session.EXPECT().Create(gomock.Any()).Return("", errors.New("session error"))
-
-				return svc
-			},
-			wantErr: "create session",
 		},
 	}
 
@@ -127,7 +134,7 @@ func TestService_Callback(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			sut := tt.mockFunc(ctrl)
 
-			got, user, err := sut.Callback(t.Context(), tt.code, tt.nonce)
+			user, sess, err := sut.Callback(t.Context(), tt.params)
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
@@ -140,7 +147,9 @@ func TestService_Callback(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			require.NotNil(t, sess)
+			assert.Equal(t, "new-s1", sess.ID)
+
 			if tt.wantUser != nil {
 				assert.Equal(t, tt.wantUser.Email, user.Email)
 				assert.Equal(t, tt.wantUser.Name, user.Name)

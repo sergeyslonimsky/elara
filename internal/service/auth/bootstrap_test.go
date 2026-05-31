@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 )
 
 // newBootstrapFixture wires a fresh bbolt store + repositories needed to
@@ -29,12 +29,12 @@ func newBootstrapFixture(t *testing.T) (
 
 	t.Cleanup(func() { _ = store.Close() })
 
-	users := bbolt.NewUserRepo(store)
-	groups := bbolt.NewGroupRepo(store)
-	policies := bbolt.NewPolicyRepo(store)
-	txm := bbolt.NewTxManager(store.DB())
+	storageManager := bbolt.NewManager(store.DB())
+	users := bbolt.NewUserRepo(storageManager)
+	groups := bbolt.NewGroupRepo(storageManager)
+	policies := bbolt.NewPolicyRepo(storageManager)
 
-	return auth.NewAdminBootstrap(txm, users, groups, policies), users, groups, policies
+	return auth.NewAdminBootstrap(storageManager, users, groups, policies), users, groups, policies
 }
 
 // TestAdminBootstrap_Idempotent verifies the architecture §11 invariant:
@@ -70,6 +70,7 @@ func TestAdminBootstrap_Idempotent(t *testing.T) {
 	// p-rule: superadmin has (*, *, *) wildcard. ListPermissionsForSubject returns
 	// rule rows of shape [dom, obj, act] (subject is implicit in the query).
 	perms, err := policies.ListPermissionsForSubject(
+		ctx,
 		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
 	)
 	require.NoError(t, err)
@@ -104,12 +105,13 @@ func TestAdminBootstrap_RecoversRemovedPolicy(t *testing.T) {
 		string(domain.ObjectAll),
 		string(domain.ActionAll),
 	}
-	require.NoError(t, policies.RemovePolicy("p", "p", wildcardRule))
+	require.NoError(t, policies.RemovePolicyCtx(ctx, "p", "p", wildcardRule))
 
 	// Re-run bootstrap — break-glass should restore the missing rule.
 	require.NoError(t, bs.BootstrapBasic(ctx, "superadmin@example.com", "pw"))
 
 	perms, err := policies.ListPermissionsForSubject(
+		ctx,
 		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
 	)
 	require.NoError(t, err)

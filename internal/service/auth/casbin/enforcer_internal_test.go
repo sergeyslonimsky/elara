@@ -1,19 +1,19 @@
 package casbin
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 )
 
-// freshEnforcerAndTxM creates a new bbolt-backed Enforcer + TxManager and
+// freshEnforcerAndManager creates a new bbolt-backed Enforcer + Manager and
 // returns the underlying PolicyRepo for out-of-band manipulations.
-func freshEnforcerAndTxM(t *testing.T) (*Enforcer, *bbolt.TxManager, *bbolt.PolicyRepo) {
+func freshEnforcerAndManager(t *testing.T) (*Enforcer, *bbolt.Manager, *bbolt.PolicyRepo) {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "casbin.db")
@@ -23,12 +23,13 @@ func freshEnforcerAndTxM(t *testing.T) (*Enforcer, *bbolt.TxManager, *bbolt.Poli
 
 	t.Cleanup(func() { _ = store.Close() })
 
-	policies := bbolt.NewPolicyRepo(store)
+	storageManager := bbolt.NewManager(store.DB())
+	policies := bbolt.NewPolicyRepo(storageManager)
 
 	e, err := NewEnforcer(policies)
 	require.NoError(t, err)
 
-	return e, bbolt.NewTxManager(store.DB()), policies
+	return e, storageManager, policies
 }
 
 func TestEnforcer_WriteTx(t *testing.T) {
@@ -39,7 +40,7 @@ func TestEnforcer_WriteTx(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		fn       func(tx storage.Tx, txe *TxEnforcer) error
+		fn       func(ctx context.Context, txe *TxEnforcer) error
 		wantErr  string
 		wantP    [][]string // p-rules expected after WriteTx (subset)
 		notWantP [][]string // p-rules expected NOT to be present
@@ -48,7 +49,7 @@ func TestEnforcer_WriteTx(t *testing.T) {
 	}{
 		{
 			name: "success syncs cache",
-			fn: func(_ storage.Tx, txe *TxEnforcer) error {
+			fn: func(_ context.Context, txe *TxEnforcer) error {
 				if err := txe.AddPolicy(pRule[0], pRule[1], pRule[2], pRule[3]); err != nil {
 					return err
 				}
@@ -60,7 +61,7 @@ func TestEnforcer_WriteTx(t *testing.T) {
 		},
 		{
 			name: "fn error rolls back and does not sync cache",
-			fn: func(_ storage.Tx, txe *TxEnforcer) error {
+			fn: func(_ context.Context, txe *TxEnforcer) error {
 				_ = txe.AddPolicy(pRule[0], pRule[1], pRule[2], pRule[3])
 
 				return errSentinelTx
@@ -70,7 +71,7 @@ func TestEnforcer_WriteTx(t *testing.T) {
 		},
 		{
 			name: "atomicity: error on second op rolls back both",
-			fn: func(_ storage.Tx, txe *TxEnforcer) error {
+			fn: func(_ context.Context, txe *TxEnforcer) error {
 				if err := txe.AddPolicy(pRule[0], pRule[1], pRule[2], pRule[3]); err != nil {
 					return err
 				}
@@ -88,7 +89,7 @@ func TestEnforcer_WriteTx(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			e, txm, policies := freshEnforcerAndTxM(t)
+			e, txm, policies := freshEnforcerAndManager(t)
 
 			err := e.WriteTx(t.Context(), txm, tt.fn)
 
@@ -147,9 +148,9 @@ func TestEnforcer_WriteTx(t *testing.T) {
 func TestEnforcer_WriteTx_EnforceSeesRulesAfterCommit(t *testing.T) {
 	t.Parallel()
 
-	e, txm, _ := freshEnforcerAndTxM(t)
+	e, txm, _ := freshEnforcerAndManager(t)
 
-	err := e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *TxEnforcer) error {
+	err := e.WriteTx(t.Context(), txm, func(ctx context.Context, txe *TxEnforcer) error {
 		// Attach a wildcard capability bundle to the admin subject, then link
 		// alice to it — both committed in the same tx for the end-to-end check.
 		if err := txe.AddPolicy("admin", "*", "*", "*"); err != nil {
@@ -184,12 +185,12 @@ func TestEnforcer_LoadPolicy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			e, _, policies := freshEnforcerAndTxM(t)
+			e, _, policies := freshEnforcerAndManager(t)
 
 			// Out-of-band: write the admin capability bundle and a g-rule
 			// directly via PolicyRepo (bypasses the enforcer cache).
-			require.NoError(t, policies.AddPolicy("p", "p", []string{"admin", "*", "*", "*"}))
-			require.NoError(t, policies.AddPolicy("g", "g", tt.gRule))
+			require.NoError(t, policies.AddPolicyCtx(t.Context(), "p", "p", []string{"admin", "*", "*", "*"}))
+			require.NoError(t, policies.AddPolicyCtx(t.Context(), "g", "g", tt.gRule))
 
 			// Before LoadPolicy: cache does not see the rule.
 			ok, err := e.Enforce(tt.gRule[0], "*", "config", "write")

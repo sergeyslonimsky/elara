@@ -6,11 +6,11 @@ import (
 
 	gocasbin "github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
+	"github.com/casbin/casbin/v2/persist"
 	"github.com/casbin/casbin/v2/util"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // The matcher relies on a domain matching function registered below
@@ -44,6 +44,19 @@ const gRuleNativeLen = 3
 // domainIdx is the index of the domain field in a native g rule [user, role, domain].
 const domainIdx = 2
 
+type (
+	// PolicyRepository is the persistence contract for Casbin rules.
+	// It must implement persist.Adapter for Casbin's initial load,
+	// and provide context-aware mutation methods for EL-51 transactions.
+	PolicyRepository interface {
+		persist.Adapter
+		AddPolicyCtx(ctx context.Context, sec, ptype string, rule []string) error
+		RemovePolicyCtx(ctx context.Context, sec, ptype string, rule []string) error
+		RemoveFilteredPolicyCtx(ctx context.Context, sec, ptype string, fieldIndex int, fieldValues ...string) error
+		ListPermissionsForSubject(ctx context.Context, subject string) ([][]string, error)
+	}
+)
+
 // Enforcer wraps the Casbin enforcer with domain-aware RBAC.
 //
 // AutoSave is permanently disabled: all runtime mutations must go through
@@ -53,14 +66,14 @@ const domainIdx = 2
 // domain entities and Casbin rules inside the same bbolt transaction.
 type Enforcer struct {
 	e        *gocasbin.Enforcer
-	policies *bbolt.PolicyRepo
+	policies PolicyRepository
 }
 
 // NewEnforcer creates a new Enforcer using the given PolicyRepo.
 // PolicyRepo implements persist.Adapter and is also used per-transaction via
 // WithTx. If the policy is empty after loading, built-in role policies are
 // seeded and saved.
-func NewEnforcer(policies *bbolt.PolicyRepo) (*Enforcer, error) {
+func NewEnforcer(policies PolicyRepository) (*Enforcer, error) {
 	m, err := model.NewModelFromString(casbinModel)
 	if err != nil {
 		return nil, fmt.Errorf("build casbin model: %w", err)
@@ -103,30 +116,30 @@ func NewEnforcer(policies *bbolt.PolicyRepo) (*Enforcer, error) {
 }
 
 // WithTx returns a per-transaction view of the enforcer. All mutations on the
-// returned TxEnforcer write through PolicyRepo bound to tx and record ops to
+// returned TxEnforcer write through PolicyRepo and record ops to
 // be applied to the in-memory cache after commit.
-func (e *Enforcer) WithTx(tx storage.Tx) *TxEnforcer {
+func (e *Enforcer) WithTx(ctx context.Context) *TxEnforcer {
 	return &TxEnforcer{
-		parent:   e,
-		policies: e.policies.WithTx(tx),
+		parent: e,
+		ctx:    ctx,
 	}
 }
 
 // WriteTx opens a write transaction via txm and invokes fn with the tx and a
 // per-tx enforcer view. On success, the recorded ops are applied to the
 // in-memory cache. On error, the cache is left untouched (the bbolt tx is
-// rolled back by TxManager, so persisted state matches the cache).
+// rolled back by Manager, so persisted state matches the cache).
 func (e *Enforcer) WriteTx(
 	ctx context.Context,
-	txm storage.TxManager,
-	fn func(storage.Tx, *TxEnforcer) error,
+	txm storage.Manager,
+	fn func(context.Context, *TxEnforcer) error,
 ) error {
 	var txe *TxEnforcer
 
-	err := txm.Write(ctx, func(tx storage.Tx) error {
-		txe = e.WithTx(tx)
+	err := txm.WithTx(ctx, func(ctx context.Context) error {
+		txe = e.WithTx(ctx)
 
-		return fn(tx, txe)
+		return fn(ctx, txe)
 	})
 	if err != nil {
 		return fmt.Errorf("write tx: %w", err)

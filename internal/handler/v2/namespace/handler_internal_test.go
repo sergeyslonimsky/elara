@@ -37,7 +37,7 @@ func TestHandler_GetNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionRead, "prod").
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -66,7 +66,7 @@ func TestHandler_GetNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionRead, "prod").
 					Return(domain.ErrUnauthorized)
 				uc := namespace_mock.NewMockusecase(ctrl)
 
@@ -81,7 +81,7 @@ func TestHandler_GetNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionRead, "prod").
 					Return(domain.ErrForbidden)
 				uc := namespace_mock.NewMockusecase(ctrl)
 
@@ -96,7 +96,7 @@ func TestHandler_GetNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionRead, "prod").
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -152,7 +152,7 @@ func TestHandler_CreateNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionCreate, domain.DomainAll).
+					RequireNamespace(gomock.Any(), domain.ActionCreate, domain.DomainAll).
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -181,7 +181,7 @@ func TestHandler_CreateNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionCreate, domain.DomainAll).
+					RequireNamespace(gomock.Any(), domain.ActionCreate, domain.DomainAll).
 					Return(domain.ErrUnauthorized)
 				uc := namespace_mock.NewMockusecase(ctrl)
 
@@ -196,7 +196,7 @@ func TestHandler_CreateNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionCreate, domain.DomainAll).
+					RequireNamespace(gomock.Any(), domain.ActionCreate, domain.DomainAll).
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -252,7 +252,7 @@ func TestHandler_UpdateNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "prod").
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -283,7 +283,7 @@ func TestHandler_UpdateNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "prod").
 					Return(domain.ErrUnauthorized)
 				uc := namespace_mock.NewMockusecase(ctrl)
 
@@ -298,7 +298,7 @@ func TestHandler_UpdateNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "prod").
 					Return(domain.ErrForbidden)
 				uc := namespace_mock.NewMockusecase(ctrl)
 
@@ -437,7 +437,7 @@ func TestHandler_DeleteNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionDelete, "empty-ns").
+					RequireNamespace(gomock.Any(), domain.ActionDelete, "empty-ns").
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -454,7 +454,7 @@ func TestHandler_DeleteNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionDelete, "full-ns").
+					RequireNamespace(gomock.Any(), domain.ActionDelete, "full-ns").
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -472,7 +472,7 @@ func TestHandler_DeleteNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionDelete, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionDelete, "prod").
 					Return(domain.ErrForbidden)
 				uc := namespace_mock.NewMockusecase(ctrl)
 
@@ -523,7 +523,7 @@ func TestHandler_LockNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "prod").
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -540,7 +540,7 @@ func TestHandler_LockNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "prod").
 					Return(domain.ErrForbidden)
 				uc := namespace_mock.NewMockusecase(ctrl)
 
@@ -591,7 +591,7 @@ func TestHandler_UnlockNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "prod").
 					Return(nil)
 				uc := namespace_mock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -608,7 +608,7 @@ func TestHandler_UnlockNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *Handler {
 				az := namespace_mock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "prod").
 					Return(domain.ErrForbidden)
 				uc := namespace_mock.NewMockusecase(ctrl)
 

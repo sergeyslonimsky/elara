@@ -18,3 +18,13 @@ export const getGroups = FilterService.method.getGroups;
  * @generated from rpc elara.filter.v1.FilterService.GetUsers
  */
 export const getUsers = FilterService.method.getUsers;
+
+/**
+ * GetPermissionCatalog returns the static catalog the UI needs to build a
+ * type-safe permission-assignment form: for every PermissionObject, which
+ * PermissionActions are meaningful and what kind of domain (if any) the
+ * assignment must carry.
+ *
+ * @generated from rpc elara.filter.v1.FilterService.GetPermissionCatalog
+ */
+export const getPermissionCatalog = FilterService.method.getPermissionCatalog;

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"net/http"
 	"slices"
 
@@ -8,6 +9,7 @@ import (
 	"connectrpc.com/validate"
 
 	"github.com/sergeyslonimsky/elara/internal/di/config"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	authhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/auth"
 	clientshandler "github.com/sergeyslonimsky/elara/internal/handler/v2/clients"
 	confighandler "github.com/sergeyslonimsky/elara/internal/handler/v2/config"
@@ -33,7 +35,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1/transferv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1/userv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/webhook/v1/webhookv1connect"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 )
 
 type V2Handlers struct {
@@ -52,7 +54,7 @@ type V2Handlers struct {
 	Tokens    *tokenhandler.Handler
 }
 
-func NewV2Handlers(s *Services, cfg config.Config) *V2Handlers {
+func NewV2Handlers(s *Services, _ *sessions.Service, cfg config.Config) *V2Handlers {
 	handlers := &V2Handlers{}
 
 	initCoreHandlers(handlers, s)
@@ -103,10 +105,17 @@ type server interface {
 	Mount(pattern string, handler http.Handler)
 }
 
+// userLookup is the consumer-side interface required by the auth interceptor.
+// The concrete *bbolt.UserRepo satisfies it.
+type userLookup interface {
+	Get(ctx context.Context, email string) (*domain.User, error)
+}
+
 func V2Routes(
 	server server,
 	handlers *V2Handlers,
-	sessionManager *auth.SessionManager,
+	sessionSvc *sessions.Service,
+	users userLookup,
 	cfg config.Config,
 ) {
 	sharedInterceptors := []connect.Interceptor{
@@ -118,10 +127,10 @@ func V2Routes(
 	publicInterceptors := slices.Clone(sharedInterceptors)
 	privateInterceptors := slices.Clone(sharedInterceptors)
 
-	if cfg.UI.Auth.Enabled && sessionManager != nil {
+	if cfg.UI.Auth.Enabled && sessionSvc != nil {
 		privateInterceptors = append(
 			privateInterceptors,
-			interceptor.NewAuthInterceptor(sessionManager),
+			interceptor.NewAuthInterceptor(sessionSvc, users),
 		)
 	}
 

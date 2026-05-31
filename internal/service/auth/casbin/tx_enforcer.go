@@ -1,9 +1,8 @@
 package casbin
 
 import (
+	"context"
 	"fmt"
-
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 )
 
 // opKind enumerates the casbin model mutations recorded inside a transaction
@@ -29,18 +28,18 @@ type op struct {
 }
 
 // TxEnforcer is a per-transaction view of Enforcer. All mutation methods
-// write rules directly through PolicyRepo.WithTx(tx) and record the operation
+// write rules directly through PolicyRepo and record the operation
 // for post-commit cache sync. Returned by Enforcer.WithTx.
 type TxEnforcer struct {
-	parent   *Enforcer
-	policies *bbolt.PolicyRepo
-	ops      []op
+	parent *Enforcer
+	ctx    context.Context //nolint:containedctx // bound tx-scoped ctx for repo calls; lifetime is the WithTx callback.
+	ops    []op
 }
 
 // AddPolicy persists a p-rule inside the bound transaction.
 func (t *TxEnforcer) AddPolicy(sub, dom, obj, act string) error {
 	rule := []string{sub, dom, obj, act}
-	if err := t.policies.AddPolicy("p", "p", rule); err != nil {
+	if err := t.parent.policies.AddPolicyCtx(t.ctx, "p", "p", rule); err != nil {
 		return fmt.Errorf("tx add policy: %w", err)
 	}
 
@@ -52,7 +51,7 @@ func (t *TxEnforcer) AddPolicy(sub, dom, obj, act string) error {
 // RemovePolicy removes a p-rule inside the bound transaction.
 func (t *TxEnforcer) RemovePolicy(sub, dom, obj, act string) error {
 	rule := []string{sub, dom, obj, act}
-	if err := t.policies.RemovePolicy("p", "p", rule); err != nil {
+	if err := t.parent.policies.RemovePolicyCtx(t.ctx, "p", "p", rule); err != nil {
 		return fmt.Errorf("tx remove policy: %w", err)
 	}
 
@@ -64,7 +63,7 @@ func (t *TxEnforcer) RemovePolicy(sub, dom, obj, act string) error {
 // AddRoleForUser persists a g-rule (role assignment) inside the bound transaction.
 func (t *TxEnforcer) AddRoleForUser(user, role, dom string) error {
 	rule := []string{user, role, dom}
-	if err := t.policies.AddPolicy("g", "g", rule); err != nil {
+	if err := t.parent.policies.AddPolicyCtx(t.ctx, "g", "g", rule); err != nil {
 		return fmt.Errorf("tx add role for user: %w", err)
 	}
 
@@ -76,7 +75,7 @@ func (t *TxEnforcer) AddRoleForUser(user, role, dom string) error {
 // RemoveRoleForUser removes a g-rule inside the bound transaction.
 func (t *TxEnforcer) RemoveRoleForUser(user, role, dom string) error {
 	rule := []string{user, role, dom}
-	if err := t.policies.RemovePolicy("g", "g", rule); err != nil {
+	if err := t.parent.policies.RemovePolicyCtx(t.ctx, "g", "g", rule); err != nil {
 		return fmt.Errorf("tx remove role for user: %w", err)
 	}
 
@@ -92,11 +91,11 @@ func (t *TxEnforcer) RemoveRoleForUser(user, role, dom string) error {
 // time, and a user identifier can occur in both positions across different
 // rule shapes.
 func (t *TxEnforcer) DeleteUser(email string) error {
-	if err := t.policies.RemoveFilteredPolicy("g", "g", 0, email); err != nil {
+	if err := t.parent.policies.RemoveFilteredPolicyCtx(t.ctx, "g", "g", 0, email); err != nil {
 		return fmt.Errorf("tx delete user (subject): %w", err)
 	}
 
-	if err := t.policies.RemoveFilteredPolicy("g", "g", 1, email); err != nil {
+	if err := t.parent.policies.RemoveFilteredPolicyCtx(t.ctx, "g", "g", 1, email); err != nil {
 		return fmt.Errorf("tx delete user (role): %w", err)
 	}
 
@@ -107,7 +106,7 @@ func (t *TxEnforcer) DeleteUser(email string) error {
 
 // GetPermissionsForSubject retrieves permissions for the given subject directly from the tx.
 func (t *TxEnforcer) GetPermissionsForSubject(subject string) ([][]string, error) {
-	rules, err := t.policies.ListPermissionsForSubject(subject)
+	rules, err := t.parent.policies.ListPermissionsForSubject(t.ctx, subject)
 	if err != nil {
 		return nil, fmt.Errorf("list permissions for subject: %w", err)
 	}

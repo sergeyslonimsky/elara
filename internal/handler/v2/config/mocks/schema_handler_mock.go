@@ -56,6 +56,34 @@ func (mr *MockschemaAuthzMockRecorder) Require(ctx, object, action, domainStr an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*MockschemaAuthz)(nil).Require), ctx, object, action, domainStr)
 }
 
+// RequireGroup mocks base method.
+func (m *MockschemaAuthz) RequireGroup(ctx context.Context, action domain.Action, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequireGroup", ctx, action, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RequireGroup indicates an expected call of RequireGroup.
+func (mr *MockschemaAuthzMockRecorder) RequireGroup(ctx, action, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequireGroup", reflect.TypeOf((*MockschemaAuthz)(nil).RequireGroup), ctx, action, id)
+}
+
+// RequireNamespace mocks base method.
+func (m *MockschemaAuthz) RequireNamespace(ctx context.Context, action domain.Action, name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequireNamespace", ctx, action, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RequireNamespace indicates an expected call of RequireNamespace.
+func (mr *MockschemaAuthzMockRecorder) RequireNamespace(ctx, action, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequireNamespace", reflect.TypeOf((*MockschemaAuthz)(nil).RequireNamespace), ctx, action, name)
+}
+
 // MockschemaUsecase is a mock of schemaUsecase interface.
 type MockschemaUsecase struct {
 	ctrl     *gomock.Controller

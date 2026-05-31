@@ -116,8 +116,26 @@ export function displayObject(obj: PermissionObject): string {
 	return OBJECT_META[obj].label;
 }
 
-export function groupSubject(group: Pick<Group, "name">) {
-	return subject("Group", { domain: `group:${group.name}` });
+// Canonical resource-domain prefixes — kept in sync with internal/domain/rbac.go
+// (domain.NamespaceResource / domain.GroupResource). UI code must never inline
+// these strings; constructing a subject through groupSubject / namespaceSubject
+// is the only sanctioned path.
+export const GROUP_DOMAIN_PREFIX = "group:";
+export const NAMESPACE_DOMAIN_PREFIX = "namespace:";
+export const WILDCARD_DOMAIN = "*";
+
+export function groupResource(id: string): string {
+	if (id === WILDCARD_DOMAIN) return WILDCARD_DOMAIN;
+	return `${GROUP_DOMAIN_PREFIX}${id}`;
+}
+
+export function namespaceResource(name: string): string {
+	if (name === WILDCARD_DOMAIN) return WILDCARD_DOMAIN;
+	return `${NAMESPACE_DOMAIN_PREFIX}${name}`;
+}
+
+export function groupSubject(group: Pick<Group, "id">) {
+	return subject("Group", { domain: groupResource(group.id) });
 }
 
 export function canManageGroup(ability: AppAbility, group: Group): boolean {

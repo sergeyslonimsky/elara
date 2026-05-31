@@ -24,6 +24,8 @@ type (
 			action domain.Action,
 			domainStr string,
 		) error
+		RequireNamespace(ctx context.Context, action domain.Action, name string) error
+		RequireGroup(ctx context.Context, action domain.Action, id string) error
 	}
 
 	usecase interface {
@@ -50,7 +52,7 @@ func (h *Handler) CreateNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.CreateNamespaceRequest],
 ) (*connect.Response[namespacev2.CreateNamespaceResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionCreate, domain.DomainAll); err != nil {
+	if err := h.authz.RequireNamespace(ctx, domain.ActionCreate, domain.DomainAll); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -73,7 +75,7 @@ func (h *Handler) GetNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.GetNamespaceRequest],
 ) (*connect.Response[namespacev2.GetNamespaceResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetName()); err != nil {
+	if err := h.authz.RequireNamespace(ctx, domain.ActionRead, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -91,7 +93,7 @@ func (h *Handler) UpdateNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.UpdateNamespaceRequest],
 ) (*connect.Response[namespacev2.UpdateNamespaceResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetName()); err != nil {
+	if err := h.authz.RequireNamespace(ctx, domain.ActionWrite, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -153,7 +155,7 @@ func (h *Handler) DeleteNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.DeleteNamespaceRequest],
 ) (*connect.Response[namespacev2.DeleteNamespaceResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionDelete, req.Msg.GetName()); err != nil {
+	if err := h.authz.RequireNamespace(ctx, domain.ActionDelete, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -168,7 +170,7 @@ func (h *Handler) LockNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.LockNamespaceRequest],
 ) (*connect.Response[namespacev2.LockNamespaceResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetName()); err != nil {
+	if err := h.authz.RequireNamespace(ctx, domain.ActionWrite, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -183,7 +185,7 @@ func (h *Handler) UnlockNamespace(
 	ctx context.Context,
 	req *connect.Request[namespacev2.UnlockNamespaceRequest],
 ) (*connect.Response[namespacev2.UnlockNamespaceResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetName()); err != nil {
+	if err := h.authz.RequireNamespace(ctx, domain.ActionWrite, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

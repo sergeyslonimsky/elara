@@ -15,6 +15,7 @@ import (
 
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	auth "github.com/sergeyslonimsky/elara/internal/service/auth"
+	sessions "github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -124,45 +125,6 @@ func (mr *MockuserStoreMockRecorder) Upsert(ctx, user any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockuserStore)(nil).Upsert), ctx, user)
 }
 
-// MocksessionCreator is a mock of sessionCreator interface.
-type MocksessionCreator struct {
-	ctrl     *gomock.Controller
-	recorder *MocksessionCreatorMockRecorder
-	isgomock struct{}
-}
-
-// MocksessionCreatorMockRecorder is the mock recorder for MocksessionCreator.
-type MocksessionCreatorMockRecorder struct {
-	mock *MocksessionCreator
-}
-
-// NewMocksessionCreator creates a new mock instance.
-func NewMocksessionCreator(ctrl *gomock.Controller) *MocksessionCreator {
-	mock := &MocksessionCreator{ctrl: ctrl}
-	mock.recorder = &MocksessionCreatorMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MocksessionCreator) EXPECT() *MocksessionCreatorMockRecorder {
-	return m.recorder
-}
-
-// Create mocks base method.
-func (m *MocksessionCreator) Create(user *domain.User) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", user)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Create indicates an expected call of Create.
-func (mr *MocksessionCreatorMockRecorder) Create(user any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MocksessionCreator)(nil).Create), user)
-}
-
 // MockadminBootstrap is a mock of adminBootstrap interface.
 type MockadminBootstrap struct {
 	ctrl     *gomock.Controller
@@ -199,4 +161,43 @@ func (m *MockadminBootstrap) EnsureMember(ctx context.Context, email string) err
 func (mr *MockadminBootstrapMockRecorder) EnsureMember(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureMember", reflect.TypeOf((*MockadminBootstrap)(nil).EnsureMember), ctx, email)
+}
+
+// MocksessionsService is a mock of sessionsService interface.
+type MocksessionsService struct {
+	ctrl     *gomock.Controller
+	recorder *MocksessionsServiceMockRecorder
+	isgomock struct{}
+}
+
+// MocksessionsServiceMockRecorder is the mock recorder for MocksessionsService.
+type MocksessionsServiceMockRecorder struct {
+	mock *MocksessionsService
+}
+
+// NewMocksessionsService creates a new mock instance.
+func NewMocksessionsService(ctrl *gomock.Controller) *MocksessionsService {
+	mock := &MocksessionsService{ctrl: ctrl}
+	mock.recorder = &MocksessionsServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MocksessionsService) EXPECT() *MocksessionsServiceMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MocksessionsService) Create(ctx context.Context, params sessions.CreateParams) (*domain.Session, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, params)
+	ret0, _ := ret[0].(*domain.Session)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MocksessionsServiceMockRecorder) Create(ctx, params any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MocksessionsService)(nil).Create), ctx, params)
 }

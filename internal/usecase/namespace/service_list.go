@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 const defaultListLimit = 20
@@ -32,7 +32,7 @@ type ListResult struct {
 // post-fetch pdp.Has loop. An empty effective set returns an empty list, not
 // an error (EL-4 §7 acceptance: empty responses → empty list, not 403).
 func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}
@@ -42,7 +42,7 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 		limit = defaultListLimit
 	}
 
-	scope := s.pdp.EffectiveDomains(claims.Email, domain.ObjectNamespace, domain.ActionRead)
+	scope := s.pdp.EffectiveNamespaces(claims.Email, domain.ActionRead)
 	if scope.IsEmpty() {
 		return &ListResult{
 			Namespaces: []*domain.Namespace{},
@@ -90,10 +90,6 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 func (s *Service) annotatePermissions(callerEmail string, namespaces []*domain.Namespace) {
 	for _, ns := range namespaces {
 		ns.CanRead = true
-		ns.CanWrite = s.pdp.Has(callerEmail, domain.Permission{
-			Object: domain.ObjectNamespace,
-			Action: domain.ActionWrite,
-			Domain: ns.Name,
-		})
+		ns.CanWrite = s.pdp.HasNamespace(callerEmail, ns.Name, domain.ActionWrite)
 	}
 }

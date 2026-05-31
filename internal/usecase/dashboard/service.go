@@ -12,6 +12,7 @@ type (
 	// pdp checks authorization for dashboard operations.
 	pdp interface {
 		Has(principal string, perm domain.Permission) bool
+		HasNamespace(actor, name string, action domain.Action) bool
 	}
 
 	// nsLister returns the flat list of namespaces (names only, no config count needed here).

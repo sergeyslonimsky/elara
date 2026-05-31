@@ -3,6 +3,7 @@ package filter
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
@@ -29,9 +30,12 @@ func (s *Service) Namespaces(
 
 	filter := domain.NamespaceFilter{Search: query.Search}
 	if wildcard.empty() {
+		// explicit map keys are full Casbin domains ("namespace:<name>"); strip
+		// the prefix so NamespaceFilter.Names sees bare names — matching the
+		// repository's lookup key.
 		filter.Names = make(map[string]struct{}, len(explicit))
-		for name := range explicit {
-			filter.Names[name] = struct{}{}
+		for d := range explicit {
+			filter.Names[strings.TrimPrefix(d, domain.NamespaceResourcePrefix)] = struct{}{}
 		}
 	} else {
 		filter.Wildcard = true
@@ -47,7 +51,7 @@ func (s *Service) Namespaces(
 		have := actionSet{}
 		have.union(wildcard)
 
-		if set, ok := explicit[ns.Name]; ok {
+		if set, ok := explicit[domain.NamespaceResource(ns.Name)]; ok {
 			have.union(set)
 		}
 

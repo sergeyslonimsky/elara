@@ -20,6 +20,8 @@ type (
 			action domain.Action,
 			domainStr string,
 		) error
+		RequireNamespace(ctx context.Context, action domain.Action, name string) error
+		RequireGroup(ctx context.Context, action domain.Action, id string) error
 	}
 
 	usecase interface {
@@ -58,7 +60,7 @@ func (h *Handler) ExportNamespace(
 	ctx context.Context,
 	req *connect.Request[transferv1.ExportNamespaceRequest],
 ) (*connect.Response[transferv1.ExportNamespaceResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.RequireNamespace(ctx, domain.ActionRead, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
@@ -108,7 +110,7 @@ func (h *Handler) ImportNamespace(
 	ctx context.Context,
 	req *connect.Request[transferv1.ImportNamespaceRequest],
 ) (*connect.Response[transferv1.ImportNamespaceResponse], error) {
-	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
+	if err := h.authz.RequireNamespace(ctx, domain.ActionWrite, req.Msg.GetNamespace()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

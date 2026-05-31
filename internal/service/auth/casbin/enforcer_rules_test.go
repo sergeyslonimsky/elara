@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 func TestNewEnforcer_WithExistingRules(t *testing.T) {
@@ -17,7 +17,7 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 		name  string
 		rules [][]string
 		// verify describes what to assert after loading
-		verify func(t *testing.T, e *casbin.Enforcer, txm storage.TxManager)
+		verify func(t *testing.T, e *casbin.Enforcer, txm storage.Manager)
 	}{
 		{
 			name: "pre-existing p rule is enforced after load",
@@ -25,7 +25,7 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 				{"p", "admin", "*", "*", "*"},
 				{"g", "alice", "admin", "*"},
 			},
-			verify: func(t *testing.T, e *casbin.Enforcer, _ storage.TxManager) {
+			verify: func(t *testing.T, e *casbin.Enforcer, _ storage.Manager) {
 				t.Helper()
 
 				ok, err := e.Enforce("alice", "*", "anything", "delete")
@@ -39,7 +39,7 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 				{"p", "reader", "*", "config", "read"},
 				{"g", "bob", "reader", "prod"},
 			},
-			verify: func(t *testing.T, e *casbin.Enforcer, _ storage.TxManager) {
+			verify: func(t *testing.T, e *casbin.Enforcer, _ storage.Manager) {
 				t.Helper()
 
 				roles, err := e.GetRolesForUser("bob", "prod")
@@ -66,7 +66,7 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 				{"p", "writer", "*", "config", "write", "extra"},
 				{"p", "writer", "*", "config", "write"},
 			},
-			verify: func(t *testing.T, e *casbin.Enforcer, txm storage.TxManager) {
+			verify: func(t *testing.T, e *casbin.Enforcer, txm storage.Manager) {
 				t.Helper()
 
 				seedRole(t, e, txm, "carol", "writer", "*")
@@ -84,7 +84,7 @@ func TestNewEnforcer_WithExistingRules(t *testing.T) {
 				{"g", "dave", "writer", "*"},
 				{"g", "eve", "reader", "*"},
 			},
-			verify: func(t *testing.T, e *casbin.Enforcer, _ storage.TxManager) {
+			verify: func(t *testing.T, e *casbin.Enforcer, _ storage.Manager) {
 				t.Helper()
 
 				ok, err := e.Enforce("dave", "*", "config", "write")

@@ -6,6 +6,8 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { AppAbility } from "@/auth/ability";
 import type { AuthContextType } from "@/components/auth-provider";
+import { ItemSchema } from "@/gen/elara/filter/v1/filter_pb";
+import { getUsers } from "@/gen/elara/filter/v1/filter_service-FilterService_connectquery";
 import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
 import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { CreateGroupDialog, DeleteGroupDialog } from "./group-dialogs";
@@ -31,10 +33,10 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
 	};
 });
 
-function setupAuth(canWriteGroups: string[] = []): AuthContextType {
+function setupAuth(canWriteGroupIds: string[] = []): AuthContextType {
 	const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-	for (const name of canWriteGroups) {
-		can("write", "Group", { domain: `group:${name}` });
+	for (const id of canWriteGroupIds) {
+		can("write", "Group", { domain: `group:${id}` });
 	}
 	return authenticatedContext(build());
 }
@@ -112,6 +114,26 @@ describe("CreateGroupDialog", () => {
 		const ue = userEvent.setup();
 		const mockMutate = vi.fn();
 
+		vi.mocked(useQuery).mockImplementation(((method: unknown) => {
+			if (method === getUsers) {
+				return {
+					data: {
+						items: [
+							create(ItemSchema, {
+								key: "alice@example.com",
+								value: "Alice",
+								actions: [],
+							}),
+						],
+					},
+					isLoading: false,
+				} as unknown as ReturnType<typeof useQuery>;
+			}
+			return {
+				data: { groups: [] },
+				isLoading: false,
+			} as unknown as ReturnType<typeof useQuery>;
+		}) as typeof useQuery);
 		vi.mocked(useMutation).mockReturnValue({
 			mutate: mockMutate,
 			mutateAsync: vi.fn(),
@@ -125,12 +147,8 @@ describe("CreateGroupDialog", () => {
 		);
 
 		await ue.type(screen.getByLabelText(/^name$/i), "my-group");
-		await ue.type(
-			screen.getByPlaceholderText("user@example.com"),
-			"alice@example.com",
-		);
-		await ue.click(screen.getByRole("button", { name: /^add$/i }));
-
+		await ue.click(screen.getByRole("combobox"));
+		await ue.click(screen.getByText("Alice"));
 		await ue.click(screen.getByRole("button", { name: /^create$/i }));
 
 		expect(mockMutate).toHaveBeenCalledWith(
@@ -145,7 +163,7 @@ describe("CreateGroupDialog", () => {
 		const ue = userEvent.setup();
 		const mockMutate = vi.fn();
 
-		authContext = setupAuth(["developers"]);
+		authContext = setupAuth(["mgr-1"]);
 		vi.mocked(useQuery).mockReturnValue({
 			data: {
 				groups: [

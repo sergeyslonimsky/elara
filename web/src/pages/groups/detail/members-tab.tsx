@@ -1,21 +1,23 @@
 import { Code, ConnectError } from "@connectrpc/connect";
 import { useMutation } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
 import { canManageGroup } from "@/auth/ability";
 import { useAbility } from "@/auth/ability-context";
-import { Badge } from "@/components/ui/badge";
+import { UserFilter } from "@/components/filters";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import type { Group } from "@/gen/elara/group/v1/group_pb";
 import { updateGroupMembers } from "@/gen/elara/group/v1/group_service-GroupService_connectquery";
 import { invalidateUserGroupGraph } from "@/lib/queries";
 import { toastError } from "@/lib/toast";
 
-const emailSchema = z.string().email();
+interface PendingChanges {
+	adds: string[];
+	removes: string[];
+}
+
+const EMPTY_PENDING: PendingChanges = { adds: [], removes: [] };
 
 interface MembersTabProps {
 	group: Group;
@@ -31,20 +33,19 @@ export function MembersTab({
 
 	const canEdit = canManageGroup(ability, group);
 
-	const [addEmails, setAddEmails] = useState<string[]>([]);
-	const [removeEmails, setRemoveEmails] = useState<Set<string>>(new Set());
-	const [draft, setDraft] = useState("");
-	const [draftError, setDraftError] = useState<string | null>(null);
+	const [pending, setPending] = useState<PendingChanges>(EMPTY_PENDING);
 
-	const hasChanges = addEmails.length > 0 || removeEmails.size > 0;
+	const currentMembers = useMemo(() => {
+		const removed = new Set(pending.removes);
+		return [...visibleMembers.filter((e) => !removed.has(e)), ...pending.adds];
+	}, [visibleMembers, pending]);
+
+	const hasChanges = pending.adds.length > 0 || pending.removes.length > 0;
 
 	const mutation = useMutation(updateGroupMembers, {
 		onSuccess: () => {
 			toast.success("Members updated");
-			setAddEmails([]);
-			setRemoveEmails(new Set());
-			setDraft("");
-			setDraftError(null);
+			setPending(EMPTY_PENDING);
 			invalidateUserGroupGraph(queryClient);
 		},
 		onError: (err) => {
@@ -59,47 +60,20 @@ export function MembersTab({
 		},
 	});
 
-	const stageDraftAdd = () => {
-		const val = draft.trim();
-		if (!val) {
-			setDraftError(null);
-			return;
-		}
-		const parsed = emailSchema.safeParse(val);
-		if (!parsed.success) {
-			setDraftError("Invalid email");
-			return;
-		}
-		if (addEmails.includes(val)) {
-			setDraftError("Already staged for add");
-			return;
-		}
-		if (visibleMembers.includes(val)) {
-			setDraftError("Already a member");
-			return;
-		}
-		setAddEmails([...addEmails, val]);
-		setDraft("");
-		setDraftError(null);
-	};
-
-	const stageRemove = (email: string) => {
-		setRemoveEmails((prev) => new Set([...prev, email]));
-	};
-
-	const unstageRemove = (email: string) => {
-		setRemoveEmails((prev) => {
-			const next = new Set(prev);
-			next.delete(email);
-			return next;
+	const handleMembersChange = (next: string[]) => {
+		const nextSet = new Set(next);
+		const visibleSet = new Set(visibleMembers);
+		setPending({
+			adds: next.filter((e) => !visibleSet.has(e)),
+			removes: visibleMembers.filter((e) => !nextSet.has(e)),
 		});
 	};
 
 	const handleSave = () => {
 		mutation.mutate({
 			groupId: group.id,
-			addEmails,
-			removeEmails: Array.from(removeEmails),
+			addEmails: pending.adds,
+			removeEmails: pending.removes,
 			expectedMembersVersion: group.membersVersion,
 		});
 	};
@@ -111,105 +85,15 @@ export function MembersTab({
 					{visibleMembers.length} member(s) visible to you.
 				</p>
 
-				<div className="flex flex-wrap gap-2 mb-3">
-					{visibleMembers.map((email) => {
-						const isStaged = removeEmails.has(email);
-						return (
-							<Badge
-								key={email}
-								variant={isStaged ? "destructive" : "secondary"}
-								className={isStaged ? "line-through opacity-60" : ""}
-							>
-								{email}
-								{canEdit &&
-									(isStaged ? (
-										<button
-											type="button"
-											aria-label={`Undo remove ${email}`}
-											className="ml-1 hover:text-primary"
-											onClick={() => unstageRemove(email)}
-										>
-											↩
-										</button>
-									) : (
-										<button
-											type="button"
-											aria-label={`Remove ${email}`}
-											className="ml-1 hover:text-destructive"
-											onClick={() => stageRemove(email)}
-										>
-											<X className="h-3 w-3" />
-										</button>
-									))}
-							</Badge>
-						);
-					})}
-					{visibleMembers.length === 0 && (
-						<span className="text-sm text-muted-foreground italic">
-							No visible members.
-						</span>
-					)}
-				</div>
-
-				{addEmails.length > 0 && (
-					<div className="mb-3">
-						<p className="text-xs text-muted-foreground mb-1">To be added:</p>
-						<div className="flex flex-wrap gap-2">
-							{addEmails.map((email) => (
-								<Badge
-									key={email}
-									variant="outline"
-									className="text-emerald-500"
-								>
-									+{email}
-									<button
-										type="button"
-										aria-label={`Un-stage ${email}`}
-										className="ml-1"
-										onClick={() =>
-											setAddEmails(addEmails.filter((e) => e !== email))
-										}
-									>
-										×
-									</button>
-								</Badge>
-							))}
-						</div>
-					</div>
-				)}
-
-				{canEdit && (
-					<div className="flex flex-col gap-1">
-						<div className="flex gap-2">
-							<Input
-								value={draft}
-								onChange={(e) => {
-									setDraft(e.target.value);
-									if (draftError) setDraftError(null);
-								}}
-								onKeyDown={(e) => {
-									if (e.key === "Enter" || e.key === ",") {
-										e.preventDefault();
-										stageDraftAdd();
-									}
-								}}
-								placeholder="Add member email..."
-								aria-label="Add member email"
-								className="h-8 text-sm"
-							/>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={stageDraftAdd}
-							>
-								Add
-							</Button>
-						</div>
-						{draftError && (
-							<p className="text-xs text-destructive">{draftError}</p>
-						)}
-					</div>
+				{canEdit ? (
+					<UserFilter
+						value={currentMembers}
+						onValueChange={handleMembersChange}
+					/>
+				) : (
+					<p className="text-sm text-muted-foreground italic">
+						You don't have permission to edit this group's members.
+					</p>
 				)}
 			</div>
 

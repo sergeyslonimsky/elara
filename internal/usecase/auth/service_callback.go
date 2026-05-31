@@ -6,15 +6,28 @@ import (
 	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 )
 
+// CallbackParams carries the parameters for OIDC Callback.
+type CallbackParams struct {
+	Code      string
+	Nonce     string
+	IP        string
+	UserAgent string
+}
+
 // Callback handles the OIDC callback: exchanges the code for an identity,
-// upserts the user, bootstraps the configured admin into the admins group
-// when applicable, and creates a session token.
-func (s *Service) Callback(ctx context.Context, code, nonce string) (string, *domain.User, error) {
-	identity, err := s.provider.Exchange(ctx, code, nonce)
+// upserts the user, bootstraps the configured admin, and creates a new session.
+//
+// All operations are performed atomically within a single transaction.
+func (s *Service) Callback(
+	ctx context.Context,
+	params CallbackParams,
+) (*domain.User, *domain.Session, error) {
+	identity, err := s.provider.Exchange(ctx, params.Code, params.Nonce)
 	if err != nil {
-		return "", nil, fmt.Errorf("exchange code: %w", err)
+		return nil, nil, fmt.Errorf("exchange code: %w", err)
 	}
 
 	user := &domain.User{
@@ -25,20 +38,35 @@ func (s *Service) Callback(ctx context.Context, code, nonce string) (string, *do
 		LastLoginAt: time.Now(),
 	}
 
-	if err = s.users.Upsert(ctx, user); err != nil {
-		return "", nil, fmt.Errorf("upsert user: %w", err)
-	}
+	var sess *domain.Session
 
-	if identity.Email == s.oidcAdminEmail {
-		if err = s.admin.EnsureMember(ctx, identity.Email); err != nil {
-			return "", nil, fmt.Errorf("bootstrap admin: %w", err)
+	err = s.txm.WithTx(ctx, func(ctx context.Context) error {
+		if err = s.users.Upsert(ctx, user); err != nil {
+			return fmt.Errorf("upsert user: %w", err)
 		}
-	}
 
-	token, err := s.session.Create(user)
+		if identity.Email == s.oidcAdminEmail {
+			if err = s.admin.EnsureMember(ctx, identity.Email); err != nil {
+				return fmt.Errorf("bootstrap admin: %w", err)
+			}
+		}
+
+		newSess, err := s.sessions.Create(ctx, sessions.CreateParams{
+			UserID:     user.Email,
+			ClientType: string(domain.ClientTypeWeb),
+			IP:         params.IP,
+			UserAgent:  params.UserAgent,
+		})
+		if err != nil {
+			return fmt.Errorf("create session: %w", err)
+		}
+		sess = newSess
+
+		return nil
+	})
 	if err != nil {
-		return "", nil, fmt.Errorf("create session: %w", err)
+		return nil, nil, fmt.Errorf("oidc callback tx: %w", err)
 	}
 
-	return token, user, nil
+	return user, sess, nil
 }

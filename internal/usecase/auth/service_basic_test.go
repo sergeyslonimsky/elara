@@ -1,7 +1,7 @@
 package auth_test
 
 import (
-	"errors"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,32 +25,39 @@ func TestService_BasicLogin(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		email    string
-		password string
+		params   authuc.LoginParams
 		mockFunc func(*gomock.Controller) *authuc.Service
 		errIs    error
 		wantErr  string
-		want     string
 		wantUser *domain.User
 	}{
 		{
-			name:     "success",
-			email:    user.Email,
-			password: password,
+			name: "success",
+			params: authuc.LoginParams{
+				Email:    user.Email,
+				Password: password,
+			},
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
 				m.users.EXPECT().Get(gomock.Any(), user.Email).Return(user, nil)
-				m.session.EXPECT().Create(user).Return("token123", nil)
+
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.sessions.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&domain.Session{ID: "new-s1"}, nil)
 
 				return svc
 			},
-			want:     "token123",
 			wantUser: user,
 		},
 		{
-			name:     "user not found",
-			email:    "unknown@example.com",
-			password: password,
+			name: "user not found",
+			params: authuc.LoginParams{
+				Email:    "unknown@example.com",
+				Password: password,
+			},
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
 				m.users.EXPECT().
@@ -62,9 +69,11 @@ func TestService_BasicLogin(t *testing.T) {
 			errIs: domain.ErrUnauthorized,
 		},
 		{
-			name:     "wrong password",
-			email:    user.Email,
-			password: "wrong-password",
+			name: "wrong password",
+			params: authuc.LoginParams{
+				Email:    user.Email,
+				Password: "wrong-password",
+			},
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
 				m.users.EXPECT().Get(gomock.Any(), user.Email).Return(user, nil)
@@ -72,19 +81,6 @@ func TestService_BasicLogin(t *testing.T) {
 				return svc
 			},
 			errIs: domain.ErrUnauthorized,
-		},
-		{
-			name:     "session creation fails",
-			email:    user.Email,
-			password: password,
-			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
-				svc, m := setupService(t, ctrl)
-				m.users.EXPECT().Get(gomock.Any(), user.Email).Return(user, nil)
-				m.session.EXPECT().Create(user).Return("", errors.New("session error"))
-
-				return svc
-			},
-			wantErr: "create session",
 		},
 	}
 
@@ -95,7 +91,7 @@ func TestService_BasicLogin(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			sut := tt.mockFunc(ctrl)
 
-			got, u, err := sut.BasicLogin(t.Context(), tt.email, tt.password)
+			u, sess, err := sut.BasicLogin(t.Context(), tt.params)
 
 			if tt.errIs != nil {
 				require.ErrorIs(t, err, tt.errIs)
@@ -108,8 +104,9 @@ func TestService_BasicLogin(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantUser, u)
+			require.NotNil(t, sess)
+			assert.Equal(t, "new-s1", sess.ID)
 		})
 	}
 }

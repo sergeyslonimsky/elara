@@ -34,7 +34,7 @@ func newScopeChecker(p pdp, email string) *scopeChecker {
 	}
 
 	return &scopeChecker{
-		nsScope: p.EffectiveDomains(email, domain.ObjectNamespace, domain.ActionRead),
+		nsScope: p.EffectiveNamespaces(email, domain.ActionRead),
 	}
 }
 

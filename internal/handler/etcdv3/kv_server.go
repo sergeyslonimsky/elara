@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // KVRepo is the storage surface the KV server needs.
@@ -565,7 +565,7 @@ func toKVStatus(err error, op, path string) error {
 }
 
 func (s *KVServer) checkAccess(ctx context.Context, namespace string, action domain.Action) error {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		// If auth is disabled, allow all.
 		return nil

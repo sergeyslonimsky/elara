@@ -62,10 +62,10 @@ const readOnlyGroup = create(GroupSchema, {
 	isSystem: false,
 });
 
-function setupAbility(canWriteGroups: string[]) {
+function setupAbility(canWriteGroupIds: string[]) {
 	const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-	for (const name of canWriteGroups) {
-		can("write", "Group", { domain: `group:${name}` });
+	for (const id of canWriteGroupIds) {
+		can("write", "Group", { domain: `group:${id}` });
 	}
 	return build();
 }
@@ -76,7 +76,7 @@ describe("GroupsTab", () => {
 	});
 
 	test("renders group rows with checkboxes", () => {
-		const ability = setupAbility(["developers"]);
+		const ability = setupAbility(["g1"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -102,7 +102,7 @@ describe("GroupsTab", () => {
 	});
 
 	test("save button is disabled when no changes staged", () => {
-		const ability = setupAbility(["developers"]);
+		const ability = setupAbility(["g1"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -129,7 +129,7 @@ describe("GroupsTab", () => {
 		const ue = userEvent.setup();
 		const mockMutate = vi.fn();
 
-		const ability = setupAbility(["developers"]);
+		const ability = setupAbility(["g1"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -179,7 +179,7 @@ describe("GroupsTab", () => {
 		const ue = userEvent.setup();
 		const mockMutate = vi.fn();
 
-		const ability = setupAbility(["developers"]);
+		const ability = setupAbility(["g1"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -242,7 +242,7 @@ describe("GroupsTab", () => {
 	test("staged add survives a refetch returning the same visibleGroupIds", async () => {
 		const ue = userEvent.setup();
 
-		const ability = setupAbility(["developers"]);
+		const ability = setupAbility(["g1"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -288,7 +288,7 @@ describe("GroupsTab", () => {
 		const ue = userEvent.setup();
 		const { toast } = await import("sonner");
 
-		const ability = setupAbility(["developers"]);
+		const ability = setupAbility(["g1"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({

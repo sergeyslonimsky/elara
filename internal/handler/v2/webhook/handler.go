@@ -22,6 +22,8 @@ type (
 			action domain.Action,
 			domainStr string,
 		) error
+		RequireNamespace(ctx context.Context, action domain.Action, name string) error
+		RequireGroup(ctx context.Context, action domain.Action, id string) error
 	}
 
 	usecase interface {
@@ -62,7 +64,7 @@ func (h *Handler) CreateWebhook(
 
 	// A webhook observes config changes in its target namespace, so its creator
 	// must be able to read that namespace (write⊇read covers writers too).
-	if err := h.authz.Require(ctx, domain.ObjectNamespace, domain.ActionRead, ns); err != nil {
+	if err := h.authz.RequireNamespace(ctx, domain.ActionRead, ns); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

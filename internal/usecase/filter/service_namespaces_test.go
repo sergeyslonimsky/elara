@@ -43,8 +43,16 @@ func TestService_Namespaces(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
-					{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+					{
+						Object: domain.ObjectNamespace,
+						Action: domain.ActionRead,
+						Domain: domain.NamespaceResource("dev"),
+					},
+					{
+						Object: domain.ObjectNamespace,
+						Action: domain.ActionWrite,
+						Domain: domain.NamespaceResource("prod"),
+					},
 				}, nil)
 
 				ns := filtermock.NewMocknamespaceLister(ctrl)
@@ -73,7 +81,11 @@ func TestService_Namespaces(t *testing.T) {
 						Action: domain.ActionRead,
 						Domain: domain.DomainAll,
 					},
-					{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+					{
+						Object: domain.ObjectNamespace,
+						Action: domain.ActionWrite,
+						Domain: domain.NamespaceResource("prod"),
+					},
 				}, nil)
 
 				ns := filtermock.NewMocknamespaceLister(ctrl)
@@ -98,8 +110,16 @@ func TestService_Namespaces(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
-					{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+					{
+						Object: domain.ObjectNamespace,
+						Action: domain.ActionRead,
+						Domain: domain.NamespaceResource("dev"),
+					},
+					{
+						Object: domain.ObjectNamespace,
+						Action: domain.ActionWrite,
+						Domain: domain.NamespaceResource("prod"),
+					},
 				}, nil)
 
 				ns := filtermock.NewMocknamespaceLister(ctrl)
@@ -138,7 +158,11 @@ func TestService_Namespaces(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *filter.Service {
 				perms := filtermock.NewMockpermissions(ctrl)
 				perms.EXPECT().ListPermissions(actorEmail).Return([]domain.Permission{
-					{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
+					{
+						Object: domain.ObjectNamespace,
+						Action: domain.ActionRead,
+						Domain: domain.NamespaceResource("dev"),
+					},
 				}, nil)
 
 				ns := filtermock.NewMocknamespaceLister(ctrl)

@@ -22,6 +22,7 @@ type (
 			object domain.Object,
 			action domain.Action,
 		) authz.DomainSet
+		EffectiveNamespaces(actor string, action domain.Action) authz.DomainSet
 	}
 
 	activeSource interface {

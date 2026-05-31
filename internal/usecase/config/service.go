@@ -5,6 +5,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 //go:generate mockgen -destination=mocks/service_mock.go -package=config_mock -source=service.go
@@ -16,9 +17,10 @@ type (
 			object domain.Object,
 			action domain.Action,
 		) authz.DomainSet
+		EffectiveNamespaces(actor string, action domain.Action) authz.DomainSet
 	}
 
-	storage interface {
+	storageRepo interface {
 		Create(ctx context.Context, cfg *domain.Config) error
 		Get(ctx context.Context, path, namespace string) (*domain.Config, error)
 		Update(ctx context.Context, cfg *domain.Config) error
@@ -69,23 +71,26 @@ type (
 )
 
 type Service struct {
+	txm               storage.Manager
 	pdp               pdp
-	storage           storage
+	storage           storageRepo
 	watcher           watcher
 	namespaceProvider namespaceProvider
 	schemaValidator   schemaValidator
 }
 
 func New(
+	txm storage.Manager,
 	pdp pdp,
-	storage storage,
+	storageRepo storageRepo,
 	watcher watcher,
 	namespaceProvider namespaceProvider,
 	schemaValidator schemaValidator,
 ) *Service {
 	return &Service{
+		txm:               txm,
 		pdp:               pdp,
-		storage:           storage,
+		storage:           storageRepo,
 		watcher:           watcher,
 		namespaceProvider: namespaceProvider,
 		schemaValidator:   schemaValidator,

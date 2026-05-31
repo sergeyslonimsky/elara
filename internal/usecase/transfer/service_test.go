@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/usecase/transfer"
 	transfermock "github.com/sergeyslonimsky/elara/internal/usecase/transfer/mocks"
 )
@@ -36,7 +36,7 @@ func setupService(t *testing.T, ctrl *gomock.Controller) (*transfer.Service, moc
 }
 
 func transferTestCtx(ctx context.Context) context.Context {
-	return auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+	return auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 }
 
 // readZipEntries reads a ZIP archive and returns a map of filename -> content.

@@ -15,17 +15,23 @@ func (s *Service) Update(ctx context.Context, name, description string) (*domain
 		Description: description,
 	}
 
-	if err := s.store.Update(ctx, ns); err != nil {
-		return nil, fmt.Errorf("update namespace: %w", err)
-	}
+	var updated *domain.Namespace
 
-	updated, err := s.store.Get(ctx, name)
+	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
+		if err := s.store.Update(ctx, ns); err != nil {
+			return fmt.Errorf("update namespace: %w", err)
+		}
+
+		u, err := s.store.Get(ctx, name)
+		if err != nil {
+			return fmt.Errorf("get updated namespace: %w", err)
+		}
+		updated = u
+
+		return s.populateConfigCount(ctx, updated)
+	})
 	if err != nil {
-		return nil, fmt.Errorf("get updated namespace: %w", err)
-	}
-
-	if err := s.populateConfigCount(ctx, updated); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("update namespace tx: %w", err)
 	}
 
 	return updated, nil

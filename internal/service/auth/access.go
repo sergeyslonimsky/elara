@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
@@ -17,7 +18,7 @@ type AccessEnforcer interface {
 // CheckAccess extracts claims from ctx, calls e.Enforce, and returns a typed error.
 // Returns ErrUnauthorized if no claims in context, ErrForbidden if not allowed.
 func CheckAccess(ctx context.Context, e AccessEnforcer, dom, obj, act string) error {
-	claims, ok := ClaimsFromContext(ctx)
+	claims, ok := auth2.ClaimsFromContext(ctx)
 	if !ok {
 		return domain.ErrUnauthorized
 	}
@@ -39,7 +40,7 @@ func CheckAccess(ctx context.Context, e AccessEnforcer, dom, obj, act string) er
 // decide what each user actually sees (e.g. List endpoints with per-item
 // permission filtering).
 func RequireAuthenticated(ctx context.Context) error {
-	if _, ok := ClaimsFromContext(ctx); !ok {
+	if _, ok := auth2.ClaimsFromContext(ctx); !ok {
 		return domain.ErrUnauthorized
 	}
 

@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // ListActive returns currently-connected clients sorted by ConnectedAt
 // ascending. Non-admin callers only see clients whose active watches touch
 // at least one namespace they can read.
 func (s *Service) ListActive(ctx context.Context) ([]*domain.Client, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}
@@ -32,7 +32,7 @@ func (s *Service) ListActive(ctx context.Context) ([]*domain.Client, error) {
 // (0 → server-default cap). Non-admins receive an empty list because
 // historical entries do not retain per-watch namespace info to scope on.
 func (s *Service) ListHistorical(ctx context.Context, limit int) ([]*domain.Client, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}
@@ -63,7 +63,7 @@ func (s *Service) ListSessions(
 	clientName, k8sNamespace, currentID string,
 	limit int,
 ) ([]*domain.Client, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}

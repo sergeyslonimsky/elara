@@ -10,14 +10,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 )
 
 // OpenStack opens a fresh bbolt database under t.TempDir, wires a Casbin
 // enforcer over its PolicyRepo, and constructs a TxManager bound to the
 // same DB. The store is closed in t.Cleanup.
-func OpenStack(t *testing.T) (*bbolt.Store, *casbin.Enforcer, *bbolt.TxManager) {
+func OpenStack(t *testing.T) (*bbolt.Store, *casbin.Enforcer, *bbolt.Manager) {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "elara.db")
@@ -26,12 +26,11 @@ func OpenStack(t *testing.T) (*bbolt.Store, *casbin.Enforcer, *bbolt.TxManager) 
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = store.Close() })
 
-	policies := bbolt.NewPolicyRepo(store)
+	storageManager := bbolt.NewManager(store.DB())
+	policies := bbolt.NewPolicyRepo(storageManager)
 
 	enforcer, err := casbin.NewEnforcer(policies)
 	require.NoError(t, err)
 
-	txm := bbolt.NewTxManager(store.DB())
-
-	return store, enforcer, txm
+	return store, enforcer, storageManager
 }

@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // Get returns the webhook if the caller holds (Webhook, Read) on the webhook's
 // namespace filter (or "*" for global webhooks). Load-then-check: we must fetch
 // the webhook before we know which namespace to gate on.
 func (s *Service) Get(ctx context.Context, id string) (*domain.Webhook, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}

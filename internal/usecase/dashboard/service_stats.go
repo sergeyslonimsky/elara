@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // GetStats collects KPI numbers scoped to namespaces the caller can read.
 // Authenticated users always get a response; per-namespace counts are filtered
 // by config:read so users see their own scope rather than a forbidden error.
 func (s *Service) GetStats(ctx context.Context) (*StatsResult, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}
@@ -28,11 +28,7 @@ func (s *Service) GetStats(ctx context.Context) (*StatsResult, error) {
 	)
 
 	for _, ns := range namespaces {
-		if !s.pdp.Has(claims.Email, domain.Permission{
-			Object: domain.ObjectNamespace,
-			Action: domain.ActionRead,
-			Domain: ns.Name,
-		}) {
+		if !s.pdp.HasNamespace(claims.Email, ns.Name, domain.ActionRead) {
 			continue
 		}
 

@@ -8,3 +8,169 @@
 
 // Package auth_mock is a generated GoMock package.
 package auth_mock
+
+import (
+	context "context"
+	reflect "reflect"
+
+	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	gomock "go.uber.org/mock/gomock"
+)
+
+// MockuserStore is a mock of userStore interface.
+type MockuserStore struct {
+	ctrl     *gomock.Controller
+	recorder *MockuserStoreMockRecorder
+	isgomock struct{}
+}
+
+// MockuserStoreMockRecorder is the mock recorder for MockuserStore.
+type MockuserStoreMockRecorder struct {
+	mock *MockuserStore
+}
+
+// NewMockuserStore creates a new mock instance.
+func NewMockuserStore(ctrl *gomock.Controller) *MockuserStore {
+	mock := &MockuserStore{ctrl: ctrl}
+	mock.recorder = &MockuserStoreMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockuserStore) EXPECT() *MockuserStoreMockRecorder {
+	return m.recorder
+}
+
+// Get mocks base method.
+func (m *MockuserStore) Get(ctx context.Context, email string) (*domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, email)
+	ret0, _ := ret[0].(*domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockuserStoreMockRecorder) Get(ctx, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockuserStore)(nil).Get), ctx, email)
+}
+
+// Upsert mocks base method.
+func (m *MockuserStore) Upsert(ctx context.Context, user *domain.User) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Upsert", ctx, user)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Upsert indicates an expected call of Upsert.
+func (mr *MockuserStoreMockRecorder) Upsert(ctx, user any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockuserStore)(nil).Upsert), ctx, user)
+}
+
+// MockgroupStore is a mock of groupStore interface.
+type MockgroupStore struct {
+	ctrl     *gomock.Controller
+	recorder *MockgroupStoreMockRecorder
+	isgomock struct{}
+}
+
+// MockgroupStoreMockRecorder is the mock recorder for MockgroupStore.
+type MockgroupStoreMockRecorder struct {
+	mock *MockgroupStore
+}
+
+// NewMockgroupStore creates a new mock instance.
+func NewMockgroupStore(ctrl *gomock.Controller) *MockgroupStore {
+	mock := &MockgroupStore{ctrl: ctrl}
+	mock.recorder = &MockgroupStoreMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockgroupStore) EXPECT() *MockgroupStoreMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockgroupStore) Create(ctx context.Context, group *domain.Group) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, group)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockgroupStoreMockRecorder) Create(ctx, group any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockgroupStore)(nil).Create), ctx, group)
+}
+
+// FindByName mocks base method.
+func (m *MockgroupStore) FindByName(ctx context.Context, name string) (*domain.Group, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByName", ctx, name)
+	ret0, _ := ret[0].(*domain.Group)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByName indicates an expected call of FindByName.
+func (mr *MockgroupStoreMockRecorder) FindByName(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByName", reflect.TypeOf((*MockgroupStore)(nil).FindByName), ctx, name)
+}
+
+// Update mocks base method.
+func (m *MockgroupStore) Update(ctx context.Context, group *domain.Group) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, group)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockgroupStoreMockRecorder) Update(ctx, group any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockgroupStore)(nil).Update), ctx, group)
+}
+
+// MockpolicyStore is a mock of policyStore interface.
+type MockpolicyStore struct {
+	ctrl     *gomock.Controller
+	recorder *MockpolicyStoreMockRecorder
+	isgomock struct{}
+}
+
+// MockpolicyStoreMockRecorder is the mock recorder for MockpolicyStore.
+type MockpolicyStoreMockRecorder struct {
+	mock *MockpolicyStore
+}
+
+// NewMockpolicyStore creates a new mock instance.
+func NewMockpolicyStore(ctrl *gomock.Controller) *MockpolicyStore {
+	mock := &MockpolicyStore{ctrl: ctrl}
+	mock.recorder = &MockpolicyStoreMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockpolicyStore) EXPECT() *MockpolicyStoreMockRecorder {
+	return m.recorder
+}
+
+// AddPolicyCtx mocks base method.
+func (m *MockpolicyStore) AddPolicyCtx(ctx context.Context, sec, ptype string, rule []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPolicyCtx", ctx, sec, ptype, rule)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddPolicyCtx indicates an expected call of AddPolicyCtx.
+func (mr *MockpolicyStoreMockRecorder) AddPolicyCtx(ctx, sec, ptype, rule any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPolicyCtx", reflect.TypeOf((*MockpolicyStore)(nil).AddPolicyCtx), ctx, sec, ptype, rule)
+}

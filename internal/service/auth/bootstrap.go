@@ -11,9 +11,8 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // PassthroughEmail is the synthetic user used when UI auth is disabled. It is
@@ -22,22 +21,39 @@ import (
 // no direct user->role g-rule is needed.
 const PassthroughEmail = "local-admin@elara.internal"
 
+type (
+	userStore interface {
+		Get(ctx context.Context, email string) (*domain.User, error)
+		Upsert(ctx context.Context, user *domain.User) error
+	}
+
+	groupStore interface {
+		FindByName(ctx context.Context, name string) (*domain.Group, error)
+		Create(ctx context.Context, group *domain.Group) error
+		Update(ctx context.Context, group *domain.Group) error
+	}
+
+	policyStore interface {
+		AddPolicyCtx(ctx context.Context, sec, ptype string, rule []string) error
+	}
+)
+
 // AdminBootstrap manages the system superadmin identity. It is the single place
 // that writes root permissions; it ensures the group, the (optional) user, and
 // the break-glass wildcard policy rule exist and are correctly linked.
 type AdminBootstrap struct {
-	txm      storage.TxManager
-	users    *bbolt.UserRepo
-	groups   *bbolt.GroupRepo
-	policies *bbolt.PolicyRepo
+	txm      storage.Manager
+	users    userStore
+	groups   groupStore
+	policies policyStore
 }
 
 // NewAdminBootstrap returns a bootstrap helper backed by the given repositories.
 func NewAdminBootstrap(
-	txm storage.TxManager,
-	users *bbolt.UserRepo,
-	groups *bbolt.GroupRepo,
-	policies *bbolt.PolicyRepo,
+	txm storage.Manager,
+	users userStore,
+	groups groupStore,
+	policies policyStore,
 ) *AdminBootstrap {
 	return &AdminBootstrap{
 		txm:      txm,
@@ -50,16 +66,16 @@ func NewAdminBootstrap(
 // BootstrapBasic seeds the system for basic-auth: group + policy + a local
 // admin user with the given credentials, added to the superadmin group.
 func (a *AdminBootstrap) BootstrapBasic(ctx context.Context, username, password string) error {
-	if err := a.txm.Write(ctx, func(tx storage.Tx) error {
-		if err := a.ensureSuperAdminGroup(ctx, tx); err != nil {
+	if err := a.txm.WithTx(ctx, func(ctx context.Context) error {
+		if err := a.ensureSuperAdminGroup(ctx); err != nil {
 			return err
 		}
 
-		if err := a.ensureSuperAdminPolicy(tx); err != nil {
+		if err := a.ensureSuperAdminPolicy(ctx); err != nil {
 			return err
 		}
 
-		return a.ensureBasicAdminUser(ctx, tx, username, password)
+		return a.ensureBasicAdminUser(ctx, username, password)
 	}); err != nil {
 		return fmt.Errorf("bootstrap basic: %w", err)
 	}
@@ -71,12 +87,12 @@ func (a *AdminBootstrap) BootstrapBasic(ctx context.Context, username, password 
 // wildcard policy are created. The first OIDC login matching the configured
 // admin email is elevated into the group via EnsureMember (see auth usecase).
 func (a *AdminBootstrap) BootstrapOIDC(ctx context.Context) error {
-	if err := a.txm.Write(ctx, func(tx storage.Tx) error {
-		if err := a.ensureSuperAdminGroup(ctx, tx); err != nil {
+	if err := a.txm.WithTx(ctx, func(ctx context.Context) error {
+		if err := a.ensureSuperAdminGroup(ctx); err != nil {
 			return err
 		}
 
-		return a.ensureSuperAdminPolicy(tx)
+		return a.ensureSuperAdminPolicy(ctx)
 	}); err != nil {
 		return fmt.Errorf("bootstrap oidc: %w", err)
 	}
@@ -89,16 +105,16 @@ func (a *AdminBootstrap) BootstrapOIDC(ctx context.Context) error {
 // group. The passthrough auth interceptor injects this email into every
 // request, so enforcement uniformly resolves to superadmin.
 func (a *AdminBootstrap) BootstrapPassthrough(ctx context.Context) error {
-	if err := a.txm.Write(ctx, func(tx storage.Tx) error {
-		if err := a.ensureSuperAdminGroup(ctx, tx); err != nil {
+	if err := a.txm.WithTx(ctx, func(ctx context.Context) error {
+		if err := a.ensureSuperAdminGroup(ctx); err != nil {
 			return err
 		}
 
-		if err := a.ensureSuperAdminPolicy(tx); err != nil {
+		if err := a.ensureSuperAdminPolicy(ctx); err != nil {
 			return err
 		}
 
-		return a.ensurePassthroughUser(ctx, tx)
+		return a.ensurePassthroughUser(ctx)
 	}); err != nil {
 		return fmt.Errorf("bootstrap passthrough: %w", err)
 	}
@@ -110,8 +126,8 @@ func (a *AdminBootstrap) BootstrapPassthrough(ctx context.Context) error {
 // It is used to elevate the configured OIDC admin email after a successful
 // OIDC login.
 func (a *AdminBootstrap) EnsureMember(ctx context.Context, email string) error {
-	if err := a.txm.Write(ctx, func(tx storage.Tx) error {
-		return a.ensureMembership(ctx, tx, email)
+	if err := a.txm.WithTx(ctx, func(ctx context.Context) error {
+		return a.ensureMembership(ctx, email)
 	}); err != nil {
 		return fmt.Errorf("ensure superadmin member: %w", err)
 	}
@@ -122,14 +138,12 @@ func (a *AdminBootstrap) EnsureMember(ctx context.Context, email string) error {
 // ensureSuperAdminGroup creates the superadmin group with System=true if it
 // does not yet exist, or upgrades the System flag if a legacy non-system group
 // with the canonical name is found.
-func (a *AdminBootstrap) ensureSuperAdminGroup(ctx context.Context, tx storage.Tx) error {
-	groups := a.groups.WithTx(tx)
-
-	group, err := groups.FindByName(ctx, domain.SystemGroupSuperAdmin)
+func (a *AdminBootstrap) ensureSuperAdminGroup(ctx context.Context) error {
+	group, err := a.groups.FindByName(ctx, domain.SystemGroupSuperAdmin)
 	if err == nil {
 		if !group.System {
 			group.System = true
-			if err := groups.Update(ctx, group); err != nil {
+			if err := a.groups.Update(ctx, group); err != nil {
 				return fmt.Errorf("update superadmin group system flag: %w", err)
 			}
 		}
@@ -150,7 +164,7 @@ func (a *AdminBootstrap) ensureSuperAdminGroup(ctx context.Context, tx storage.T
 		UpdatedAt: now,
 	}
 
-	if err := groups.Create(ctx, group); err != nil {
+	if err := a.groups.Create(ctx, group); err != nil {
 		return fmt.Errorf("create superadmin group: %w", err)
 	}
 
@@ -159,8 +173,7 @@ func (a *AdminBootstrap) ensureSuperAdminGroup(ctx context.Context, tx storage.T
 
 // ensureSuperAdminPolicy writes the break-glass wildcard policy rule for the
 // superadmin group if it is missing.
-func (a *AdminBootstrap) ensureSuperAdminPolicy(tx storage.Tx) error {
-	policy := a.policies.WithTx(tx)
+func (a *AdminBootstrap) ensureSuperAdminPolicy(ctx context.Context) error {
 	rule := []string{
 		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
 		domain.DomainAll,
@@ -168,7 +181,7 @@ func (a *AdminBootstrap) ensureSuperAdminPolicy(tx storage.Tx) error {
 		string(domain.ActionAll),
 	}
 
-	if err := policy.AddPolicy("p", "p", rule); err != nil {
+	if err := a.policies.AddPolicyCtx(ctx, "p", "p", rule); err != nil {
 		return fmt.Errorf("add superadmin policy rule: %w", err)
 	}
 
@@ -179,36 +192,31 @@ func (a *AdminBootstrap) ensureSuperAdminPolicy(tx storage.Tx) error {
 // its System flag) and ensures it is a member of the superadmin group.
 func (a *AdminBootstrap) ensureBasicAdminUser(
 	ctx context.Context,
-	tx storage.Tx,
 	username, password string,
 ) error {
-	users := a.users.WithTx(tx)
-
-	user, err := users.Get(ctx, username)
+	user, err := a.users.Get(ctx, username)
 	if err != nil {
 		if !errors.Is(err, domain.ErrNotFound) {
 			return fmt.Errorf("lookup superadmin user: %w", err)
 		}
 
-		if err := a.createUser(ctx, users, username, password); err != nil {
+		if err := a.createUser(ctx, a.users, username, password); err != nil {
 			return fmt.Errorf("upsert superadmin user: %w", err)
 		}
 	} else if !user.System {
 		user.System = true
-		if err := users.Upsert(ctx, user); err != nil {
+		if err := a.users.Upsert(ctx, user); err != nil {
 			return fmt.Errorf("update superadmin user system flag: %w", err)
 		}
 	}
 
-	return a.ensureMembership(ctx, tx, username)
+	return a.ensureMembership(ctx, username)
 }
 
 // ensurePassthroughUser creates the synthetic passthrough user (or upgrades
 // its System flag) and ensures it is a member of the superadmin group.
-func (a *AdminBootstrap) ensurePassthroughUser(ctx context.Context, tx storage.Tx) error {
-	users := a.users.WithTx(tx)
-
-	user, err := users.Get(ctx, PassthroughEmail)
+func (a *AdminBootstrap) ensurePassthroughUser(ctx context.Context) error {
+	user, err := a.users.Get(ctx, PassthroughEmail)
 	if err != nil {
 		if !errors.Is(err, domain.ErrNotFound) {
 			return fmt.Errorf("lookup passthrough user: %w", err)
@@ -224,45 +232,42 @@ func (a *AdminBootstrap) ensurePassthroughUser(ctx context.Context, tx storage.T
 			CreatedAt: now,
 		}
 
-		if err := users.Upsert(ctx, user); err != nil {
+		if err := a.users.Upsert(ctx, user); err != nil {
 			return fmt.Errorf("create passthrough user: %w", err)
 		}
 	} else if !user.System {
 		user.System = true
-		if err := users.Upsert(ctx, user); err != nil {
+		if err := a.users.Upsert(ctx, user); err != nil {
 			return fmt.Errorf("update passthrough user system flag: %w", err)
 		}
 	}
 
-	return a.ensureMembership(ctx, tx, PassthroughEmail)
+	return a.ensureMembership(ctx, PassthroughEmail)
 }
 
 // ensureMembership writes the user→superadmin g-rule into Casbin. Casbin is
 // the source of truth for membership — bbolt's group record only carries
 // metadata. Idempotent: casbin.AddPolicy returns (false, nil) when the rule
 // already exists.
-func (a *AdminBootstrap) ensureMembership(ctx context.Context, tx storage.Tx, email string) error {
-	groups := a.groups.WithTx(tx)
-
-	if _, err := groups.FindByName(ctx, domain.SystemGroupSuperAdmin); err != nil {
+func (a *AdminBootstrap) ensureMembership(ctx context.Context, email string) error {
+	if _, err := a.groups.FindByName(ctx, domain.SystemGroupSuperAdmin); err != nil {
 		return fmt.Errorf("lookup superadmin group for membership: %w", err)
 	}
 
-	policy := a.policies.WithTx(tx)
 	rule := []string{
 		email,
 		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
 		domain.MembershipDomain,
 	}
 
-	if err := policy.AddPolicy("g", "g", rule); err != nil {
+	if err := a.policies.AddPolicyCtx(ctx, "g", "g", rule); err != nil {
 		return fmt.Errorf("add superadmin membership rule: %w", err)
 	}
 
 	return nil
 }
 
-func (a *AdminBootstrap) createUser(ctx context.Context, repo *bbolt.UserRepo, username, password string) error {
+func (a *AdminBootstrap) createUser(ctx context.Context, repo userStore, username, password string) error {
 	hash, err := HashPassword(password)
 	if err != nil {
 		return fmt.Errorf("hash superadmin password: %w", err)

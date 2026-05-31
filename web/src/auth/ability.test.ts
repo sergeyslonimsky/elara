@@ -119,9 +119,9 @@ describe("canManageGroup", () => {
 		expect(canManageGroup(ability, group)).toBe(false);
 	});
 
-	it("returns true when ability has write Group { domain: 'group:foo' } and group is not system", () => {
+	it("returns true when ability has write Group { domain: 'group:<id>' } and group is not system", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-		can("write", "Group", { domain: "group:foo" });
+		can("write", "Group", { domain: "group:g1" });
 		const ability = build();
 		const group = create(GroupSchema, {
 			id: "g1",

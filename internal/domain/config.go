@@ -137,3 +137,14 @@ func (c *Config) Key() ConfigKey {
 		Namespace: c.Namespace,
 	}
 }
+
+// ValidationResult is the structured outcome of ValidateAndNormalize: the
+// detected format, normalized content, and either a list of human-readable
+// errors or the JSON-schema violations recorded by upstream callers.
+type ValidationResult struct {
+	Valid             bool
+	Errors            []string
+	DetectedFormat    Format
+	NormalizedContent string
+	SchemaViolations  []SchemaViolation
+}

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 func TestService_ListActivity(t *testing.T) {
@@ -27,7 +27,7 @@ func TestService_ListActivity(t *testing.T) {
 			name:  "all entries visible to admin",
 			limit: 10,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "admin@example.com"})
 
 				entries := []*domain.ChangelogEntry{
 					{Path: "/a.json", Namespace: "prod"},
@@ -38,24 +38,10 @@ func TestService_ListActivity(t *testing.T) {
 					Return(entries, nil)
 
 				m.pdp.EXPECT().
-					Has(
-						"admin@example.com",
-						domain.Permission{
-							Object: domain.ObjectNamespace,
-							Action: domain.ActionRead,
-							Domain: "prod",
-						},
-					).
+					HasNamespace("admin@example.com", "prod", domain.ActionRead).
 					Return(true)
 				m.pdp.EXPECT().
-					Has(
-						"admin@example.com",
-						domain.Permission{
-							Object: domain.ObjectNamespace,
-							Action: domain.ActionRead,
-							Domain: "dev",
-						},
-					).
+					HasNamespace("admin@example.com", "dev", domain.ActionRead).
 					Return(true)
 
 				return ctx
@@ -69,7 +55,7 @@ func TestService_ListActivity(t *testing.T) {
 			name:  "scoped user only sees allowed-namespace entries",
 			limit: 10,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 
 				entries := []*domain.ChangelogEntry{
 					{Path: "/a.json", Namespace: "prod"},
@@ -82,24 +68,10 @@ func TestService_ListActivity(t *testing.T) {
 
 				// Cached per-namespace check: prod queried once, dev queried once.
 				m.pdp.EXPECT().
-					Has(
-						"user@example.com",
-						domain.Permission{
-							Object: domain.ObjectNamespace,
-							Action: domain.ActionRead,
-							Domain: "prod",
-						},
-					).
+					HasNamespace("user@example.com", "prod", domain.ActionRead).
 					Return(true)
 				m.pdp.EXPECT().
-					Has(
-						"user@example.com",
-						domain.Permission{
-							Object: domain.ObjectNamespace,
-							Action: domain.ActionRead,
-							Domain: "dev",
-						},
-					).
+					HasNamespace("user@example.com", "dev", domain.ActionRead).
 					Return(false)
 
 				return ctx
@@ -113,7 +85,7 @@ func TestService_ListActivity(t *testing.T) {
 			name:  "no-access user sees empty list",
 			limit: 10,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "no-access@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "no-access@example.com"})
 
 				entries := []*domain.ChangelogEntry{{Path: "/a.json", Namespace: "prod"}}
 				m.activity.EXPECT().
@@ -121,14 +93,7 @@ func TestService_ListActivity(t *testing.T) {
 					Return(entries, nil)
 
 				m.pdp.EXPECT().
-					Has(
-						"no-access@example.com",
-						domain.Permission{
-							Object: domain.ObjectNamespace,
-							Action: domain.ActionRead,
-							Domain: "prod",
-						},
-					).
+					HasNamespace("no-access@example.com", "prod", domain.ActionRead).
 					Return(false)
 
 				return ctx
@@ -147,7 +112,7 @@ func TestService_ListActivity(t *testing.T) {
 			name:  "list changes error",
 			limit: 10,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "admin@example.com"})
 
 				m.activity.EXPECT().
 					ListRecentChanges(ctx, 50).

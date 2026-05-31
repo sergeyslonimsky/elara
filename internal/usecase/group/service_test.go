@@ -1,15 +1,15 @@
 package group_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/usecase/group"
 	"github.com/sergeyslonimsky/elara/test/bbolttest"
 )
@@ -25,20 +25,20 @@ type testStack struct {
 	store    *bbolt.Store
 	enforcer *casbin.Enforcer
 	repo     *bbolt.GroupRepo
-	txm      *bbolt.TxManager
+	txm      *bbolt.Manager
 }
 
 func newTestStack(t *testing.T) testStack {
 	t.Helper()
 
 	store, enforcer, txm := bbolttest.OpenStack(t)
-	repo := bbolt.NewGroupRepo(store)
+	repo := bbolt.NewGroupRepo(txm)
 	pdp := authz.NewPDP(enforcer)
 	pap := authz.NewPAP(enforcer, txm)
 	scope := authz.NewScope(pdp, pap, repo)
 
 	return testStack{
-		svc:      group.New(repo, pdp, pap, scope),
+		svc:      group.New(txm, repo, pdp, pap, scope),
 		store:    store,
 		enforcer: enforcer,
 		repo:     repo,
@@ -57,7 +57,7 @@ func seedAdminWildcard(t *testing.T, st testStack) {
 
 	require.NoError(
 		t,
-		st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		st.enforcer.WriteTx(t.Context(), st.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			return txe.AddPolicy(
 				"admin@example.com",
 				domain.DomainAll,

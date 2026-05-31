@@ -14,13 +14,23 @@ func (s *Service) Create(ctx context.Context, ns *domain.Namespace) (*domain.Nam
 		return nil, fmt.Errorf("validate namespace: %w", err)
 	}
 
-	if err := s.store.Create(ctx, ns); err != nil {
-		return nil, fmt.Errorf("create namespace: %w", err)
-	}
+	var created *domain.Namespace
 
-	created, err := s.store.Get(ctx, ns.Name)
+	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
+		if err := s.store.Create(ctx, ns); err != nil {
+			return fmt.Errorf("create namespace: %w", err)
+		}
+
+		u, err := s.store.Get(ctx, ns.Name)
+		if err != nil {
+			return fmt.Errorf("get created namespace: %w", err)
+		}
+		created = u
+
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("get created namespace: %w", err)
+		return nil, fmt.Errorf("create namespace tx: %w", err)
 	}
 
 	return created, nil

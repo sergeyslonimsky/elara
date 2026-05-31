@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/auth"
 	auth_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/auth/mocks"
@@ -21,7 +20,7 @@ import (
 func setupHandler(
 	t *testing.T,
 	ctrl *gomock.Controller,
-	authType config.AuthType,
+	authType domain.AuthType,
 ) (*auth.Handler, *auth_mock.Mockusecase) {
 	t.Helper()
 
@@ -38,22 +37,22 @@ func TestAuthHandler_BasicLogin(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		authType   config.AuthType
+		authType   domain.AuthType
 		setupMocks func(uc *auth_mock.Mockusecase)
 		wantErr    bool
 	}{
 		{
 			name:     "success sets session cookie",
-			authType: config.AuthTypeBasicAuth,
+			authType: domain.AuthTypeBasicAuth,
 			setupMocks: func(uc *auth_mock.Mockusecase) {
 				uc.EXPECT().
-					BasicLogin(gomock.Any(), email, password).
-					Return("signed-token", &domain.User{Email: email}, nil)
+					BasicLogin(gomock.Any(), gomock.Any()).
+					Return(&domain.User{Email: email}, &domain.Session{ID: "session-id-1"}, nil)
 			},
 		},
 		{
 			name:     "returns error when auth type is not basic",
-			authType: config.AuthTypeOIDC,
+			authType: domain.AuthTypeOIDC,
 			wantErr:  true,
 		},
 	}
@@ -86,7 +85,7 @@ func TestAuthHandler_BasicLogin(t *testing.T) {
 			cookies := resp.Header().Values("Set-Cookie")
 			found := false
 			for _, c := range cookies {
-				if strings.Contains(c, "elara_session=signed-token") {
+				if strings.Contains(c, "elara_session=session-id-1") {
 					found = true
 
 					break
@@ -116,7 +115,7 @@ func TestAuthHandler_Login(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			h, uc := setupHandler(t, ctrl, config.AuthTypeOIDC)
+			h, uc := setupHandler(t, ctrl, domain.AuthTypeOIDC)
 
 			uc.EXPECT().Login(gomock.Any()).Return(tc.authURL, "state-val", "nonce-val", nil)
 
@@ -142,22 +141,22 @@ func TestAuthHandler_GetAuthInfo(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		authType config.AuthType
+		authType domain.AuthType
 		expected authv1.AuthType
 	}{
 		{
 			name:     "reports OIDC",
-			authType: config.AuthTypeOIDC,
+			authType: domain.AuthTypeOIDC,
 			expected: authv1.AuthType_AUTH_TYPE_OIDC,
 		},
 		{
 			name:     "reports basic-auth",
-			authType: config.AuthTypeBasicAuth,
+			authType: domain.AuthTypeBasicAuth,
 			expected: authv1.AuthType_AUTH_TYPE_BASIC,
 		},
 		{
 			name:     "reports none",
-			authType: config.AuthTypeNone,
+			authType: domain.AuthTypeNone,
 			expected: authv1.AuthType_AUTH_TYPE_NONE,
 		},
 		{
@@ -204,8 +203,8 @@ func TestAuthHandler_Callback(t *testing.T) {
 			verifyCookies: true,
 			setupMocks: func(uc *auth_mock.Mockusecase) {
 				uc.EXPECT().
-					Callback(gomock.Any(), "auth-code", "test-nonce").
-					Return("session-token", &domain.User{Email: "user@example.com"}, nil)
+					Callback(gomock.Any(), gomock.Any()).
+					Return(&domain.User{Email: "user@example.com"}, &domain.Session{ID: "session-cb"}, nil)
 			},
 		},
 		{
@@ -240,8 +239,8 @@ func TestAuthHandler_Callback(t *testing.T) {
 			wantErr:      true,
 			setupMocks: func(uc *auth_mock.Mockusecase) {
 				uc.EXPECT().
-					Callback(gomock.Any(), "auth-code", "test-nonce").
-					Return("", nil, errors.New("provider error"))
+					Callback(gomock.Any(), gomock.Any()).
+					Return(nil, nil, errors.New("provider error"))
 			},
 		},
 	}
@@ -251,7 +250,7 @@ func TestAuthHandler_Callback(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			h, uc := setupHandler(t, ctrl, config.AuthTypeOIDC)
+			h, uc := setupHandler(t, ctrl, domain.AuthTypeOIDC)
 
 			if tt.setupMocks != nil {
 				tt.setupMocks(uc)

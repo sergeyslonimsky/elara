@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/util/sliceutil"
 )
 
 const defaultSearchLimit = 20
 
 func (s *Service) Search(ctx context.Context, params SearchParams) (*SearchResult, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}
@@ -23,7 +23,7 @@ func (s *Service) Search(ctx context.Context, params SearchParams) (*SearchResul
 		limit = defaultSearchLimit
 	}
 
-	scope := s.pdp.EffectiveDomains(claims.Email, domain.ObjectNamespace, domain.ActionRead)
+	scope := s.pdp.EffectiveNamespaces(claims.Email, domain.ActionRead)
 	if scope.IsEmpty() {
 		return &SearchResult{
 			Results: nil,

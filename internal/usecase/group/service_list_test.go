@@ -1,6 +1,7 @@
 package group_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
 	"github.com/sergeyslonimsky/elara/internal/usecase/group"
 )
 
@@ -60,7 +60,7 @@ func TestService_List(t *testing.T) {
 					st.enforcer.WriteTx(
 						t.Context(),
 						st.txm,
-						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+						func(ctx context.Context, txe *casbin.TxEnforcer) error {
 							return txe.AddPolicy(
 								"delegated@example.com",
 								casbin.GroupSubject("dev"),

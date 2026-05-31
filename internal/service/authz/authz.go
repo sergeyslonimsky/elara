@@ -7,8 +7,8 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 type pdp interface {
@@ -29,13 +29,13 @@ func (a *Authz) Require(
 	action domain.Action,
 	domainStr string,
 ) error {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
 	}
 
 	if !a.pdp.Has(
-		claims.Email,
+		info.Email,
 		domain.Permission{Object: object, Action: action, Domain: domainStr},
 	) {
 		return connect.NewError(connect.CodePermissionDenied, domain.ErrForbidden)
@@ -60,9 +60,30 @@ func (a *Authz) RequireUser(
 	return nil
 }
 
+// RequireNamespace gates the caller on Namespace:<action> for the given
+// namespace name (or DomainAll for a global grant). Hides the
+// domain.NamespaceResource prefix convention from handlers.
+func (a *Authz) RequireNamespace(
+	ctx context.Context,
+	action domain.Action,
+	name string,
+) error {
+	return a.Require(ctx, domain.ObjectNamespace, action, domain.NamespaceResource(name))
+}
+
+// RequireGroup gates the caller on Group:<action> for the given group id
+// (or DomainAll for a global grant). Hides the domain.GroupResource prefix
+// convention from handlers.
+func (a *Authz) RequireGroup(
+	ctx context.Context,
+	action domain.Action,
+	id string,
+) error {
+	return a.Require(ctx, domain.ObjectGroup, action, domain.GroupResource(id))
+}
+
 func (a *Authz) RequireAuthenticated(ctx context.Context) error {
-	_, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
+	if _, err := authctx.AuthInfoFromContext(ctx); err != nil {
 		return connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
 	}
 

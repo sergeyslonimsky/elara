@@ -3,8 +3,8 @@ package clients
 import (
 	"context"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // SubscribeChanges returns a channel of client-change events filtered to
@@ -13,7 +13,7 @@ import (
 func (s *Service) SubscribeChanges(
 	ctx context.Context,
 ) (<-chan domain.ClientChange, func(), error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, nil, domain.ErrUnauthorized
 	}
@@ -53,7 +53,7 @@ func (s *Service) SubscribeClient(
 	ctx context.Context,
 	connID string,
 ) (<-chan domain.ClientChange, func(), error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, nil, domain.ErrUnauthorized
 	}

@@ -31,11 +31,16 @@ func TestService_Update(t *testing.T) {
 			name:        "success",
 			description: "Production",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.store.EXPECT().Update(ctx, gomock.Any()).Return(nil)
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.store.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
 				m.store.EXPECT().
-					Get(ctx, name).
+					Get(gomock.Any(), name).
 					Return(&domain.Namespace{Name: name, Description: "Production"}, nil)
-				m.store.EXPECT().CountConfigs(ctx, name).Return(10, nil)
+				m.store.EXPECT().CountConfigs(gomock.Any(), name).Return(10, nil)
 
 				return ctx
 			},
@@ -44,7 +49,12 @@ func TestService_Update(t *testing.T) {
 		{
 			name: "update error",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.store.EXPECT().Update(ctx, gomock.Any()).Return(errors.New("db error"))
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.store.EXPECT().Update(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 
 				return ctx
 			},

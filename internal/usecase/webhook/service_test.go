@@ -3,9 +3,9 @@ package webhook_test
 import (
 	"context"
 
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 )
 
 func webhookTestCtx(ctx context.Context) context.Context {
-	return auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+	return auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 }

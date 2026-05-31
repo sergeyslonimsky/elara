@@ -8,12 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/sergeyslonimsky/elara/internal/di/config"
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	profile_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/profile/mocks"
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	profilev1 "github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1"
-	internalauth "github.com/sergeyslonimsky/elara/internal/service/auth"
 	profileuc "github.com/sergeyslonimsky/elara/internal/usecase/profile"
 )
 
@@ -49,13 +48,13 @@ func TestProfileHandler_Me(t *testing.T) {
 			uc := profile_mock.NewMockusecase(ctrl)
 			uc.EXPECT().Me(gomock.Any()).Return(tc.ucResult, tc.ucErr)
 
-			h := New(uc, config.AuthTypeOIDC, false)
+			h := New(uc, domain.AuthTypeOIDC, false)
 
 			ctx := t.Context()
 			if tc.email != "" {
-				ctx = internalauth.WithClaims(
+				ctx = authctx.WithClaims(
 					ctx,
-					&internalauth.Claims{Email: tc.email, Name: "Alice"},
+					&authctx.Claims{Email: tc.email, Name: "Alice"},
 				)
 			}
 
@@ -83,16 +82,16 @@ func TestProfileHandler_Me_permissions_mapping(t *testing.T) {
 		Email: "alice@example.com",
 		Name:  "Alice",
 		Permissions: []domain.Permission{
-			{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
+			{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: domain.NamespaceResource("ns1")},
 			{Object: domain.ObjectAll, Action: domain.ActionAll, Domain: domain.DomainAll},
 		},
 	}, nil)
 
-	h := New(uc, config.AuthTypeOIDC, false)
+	h := New(uc, domain.AuthTypeOIDC, false)
 
-	ctx := internalauth.WithClaims(
+	ctx := authctx.WithClaims(
 		t.Context(),
-		&internalauth.Claims{Email: "alice@example.com", Name: "Alice"},
+		&authctx.Claims{Email: "alice@example.com", Name: "Alice"},
 	)
 
 	resp, err := h.Me(ctx, connect.NewRequest(&profilev1.MeRequest{}))
@@ -103,7 +102,7 @@ func TestProfileHandler_Me_permissions_mapping(t *testing.T) {
 
 	assert.Equal(t, commonv1.PermissionObject_PERMISSION_OBJECT_NAMESPACE, perms[0].GetObject())
 	assert.Equal(t, commonv1.PermissionAction_PERMISSION_ACTION_READ, perms[0].GetAction())
-	assert.Equal(t, "ns1", perms[0].GetDomain())
+	assert.Equal(t, domain.NamespaceResource("ns1"), perms[0].GetDomain())
 
 	assert.Equal(t, commonv1.PermissionObject_PERMISSION_OBJECT_ALL, perms[1].GetObject())
 	assert.Equal(t, commonv1.PermissionAction_PERMISSION_ACTION_ALL, perms[1].GetAction())
@@ -115,22 +114,22 @@ func TestProfileHandler_ChangePassword(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		authType   config.AuthType
+		authType   domain.AuthType
 		setupMocks func(uc *profile_mock.Mockusecase)
 		wantErr    bool
 	}{
 		{
 			name:     "success",
-			authType: config.AuthTypeBasicAuth,
+			authType: domain.AuthTypeBasicAuth,
 			setupMocks: func(uc *profile_mock.Mockusecase) {
 				uc.EXPECT().
-					ChangePassword(gomock.Any(), "", "new-password").
-					Return("mock-token", nil)
+					ChangePassword(gomock.Any(), gomock.Any()).
+					Return(&domain.Session{ID: "new-session"}, nil)
 			},
 		},
 		{
 			name:     "returns error when auth type is not basic",
-			authType: config.AuthTypeOIDC,
+			authType: domain.AuthTypeOIDC,
 			wantErr:  true,
 		},
 	}
@@ -147,10 +146,11 @@ func TestProfileHandler_ChangePassword(t *testing.T) {
 
 			h := New(uc, tt.authType, false)
 
-			ctx := internalauth.WithClaims(t.Context(), &internalauth.Claims{
-				Email:                  "user@example.com",
-				PasswordChangeRequired: true,
-			})
+			ctx := authctx.WithSession(
+				t.Context(),
+				&domain.Session{ID: "old-session", UserID: "user@example.com"},
+				&domain.User{Email: "user@example.com", PasswordChangeRequired: true},
+			)
 
 			req := connect.NewRequest(&profilev1.ChangePasswordRequest{
 				NewPassword: "new-password",
@@ -174,16 +174,22 @@ func TestProfileHandler_Logout(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	uc := profile_mock.NewMockusecase(ctrl)
-	uc.EXPECT().Logout(gomock.Any()).Return(nil)
+	// Expect Logout call with session ID and email
+	uc.EXPECT().Logout(gomock.Any(), "old-session", "user@example.com").Return(nil)
 
-	h := New(uc, config.AuthTypeOIDC, false)
+	h := New(uc, domain.AuthTypeOIDC, false)
 
-	resp, err := h.Logout(t.Context(), connect.NewRequest(&profilev1.LogoutRequest{}))
+	ctx := authctx.WithSession(
+		t.Context(),
+		&domain.Session{ID: "old-session", UserID: "user@example.com"},
+		&domain.User{Email: "user@example.com"},
+	)
+
+	resp, err := h.Logout(ctx, connect.NewRequest(&profilev1.LogoutRequest{}))
 	require.NoError(t, err)
 
-	cookies := resp.Header().Values(cookieHeader)
+	cookies := resp.Header().Values("Set-Cookie")
 	require.Len(t, cookies, 1, "expected session-clearing cookie")
-	assert.Contains(t, cookies[0], sessionCookieName)
-	// MaxAge=-1 is serialized as "Max-Age=0" by net/http.
+	assert.Contains(t, cookies[0], "elara_session")
 	assert.Contains(t, cookies[0], "Max-Age=0")
 }

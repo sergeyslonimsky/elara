@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 type MeResult struct {
@@ -15,19 +15,19 @@ type MeResult struct {
 }
 
 func (s *Service) Me(ctx context.Context) (*MeResult, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	user, ok := authctx.UserFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}
 
-	permissions, err := s.pdp.ListPermissions(claims.Email)
+	permissions, err := s.pdp.ListPermissions(user.Email)
 	if err != nil {
 		return nil, fmt.Errorf("me: %w", err)
 	}
 
 	return &MeResult{
-		Email:       claims.Email,
-		Name:        claims.Name,
+		Email:       user.Email,
+		Name:        user.Name,
 		Permissions: permissions,
 	}, nil
 }

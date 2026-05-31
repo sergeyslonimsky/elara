@@ -40,9 +40,15 @@ func TestService_Create(t *testing.T) {
 					Validate(ctx, "prod", "/app/config.json", normalized, domain.FormatJSON).
 					Return(nil)
 
-				m.storage.EXPECT().Create(ctx, gomock.Any()).Return(nil)
-				m.namespaceProvider.EXPECT().UpdateTimestamp(ctx, "prod").Return(nil)
-				m.watcher.EXPECT().NotifyCreated(ctx, gomock.Any())
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+
+				m.storage.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+				m.namespaceProvider.EXPECT().UpdateTimestamp(gomock.Any(), "prod").Return(nil)
+				m.watcher.EXPECT().NotifyCreated(gomock.Any(), gomock.Any())
 			},
 			want: &domain.Config{
 				Path:      "/app/config.json",
@@ -117,7 +123,13 @@ func TestService_Create(t *testing.T) {
 					Validate(ctx, "prod", "/app/config.json", normalized, domain.FormatJSON).
 					Return(nil)
 
-				m.storage.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("db error"))
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+
+				m.storage.EXPECT().Create(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 			},
 			wantErr: "create config: db error",
 		},

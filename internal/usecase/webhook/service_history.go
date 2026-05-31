@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // GetHistory returns delivery attempts for a webhook if the caller can read it.
@@ -13,7 +13,7 @@ func (s *Service) GetHistory(
 	ctx context.Context,
 	webhookID string,
 ) ([]domain.DeliveryAttempt, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}

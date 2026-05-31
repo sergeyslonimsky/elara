@@ -2,8 +2,11 @@ package profile
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 //go:generate mockgen -destination=mocks/service_mock.go -package=profile_mock -source=service.go
@@ -21,33 +24,50 @@ type (
 		SetPassword(ctx context.Context, email, hash string, changeRequired bool) error
 	}
 
-	sessionCreator interface {
-		Create(user *domain.User) (string, error)
+	sessionsService interface {
+		Revoke(ctx context.Context, id, revokedBy, reason string, eventType domain.SessionEventType) error
+		Create(ctx context.Context, params sessions.CreateParams) (*domain.Session, error)
 	}
 )
 
 type Service struct {
-	pdp     pdp
-	users   userGetter
-	pass    passWriter
-	session sessionCreator
+	txm      storage.Manager
+	pdp      pdp
+	users    userGetter
+	pass     passWriter
+	sessions sessionsService
 }
 
 func New(
+	txm storage.Manager,
 	pdp pdp,
 	users userGetter,
 	pass passWriter,
-	session sessionCreator,
+	sessionsSvc sessionsService,
 ) *Service {
 	return &Service{
-		pdp:     pdp,
-		users:   users,
-		pass:    pass,
-		session: session,
+		txm:      txm,
+		pdp:      pdp,
+		users:    users,
+		pass:     pass,
+		sessions: sessionsSvc,
 	}
 }
 
-// Logout is a no-op; cookie clearing is performed by the handler.
-func (s *Service) Logout(_ context.Context) error {
+// Logout revokes the provided session ID atomically.
+// Cookie clearing is performed by the handler.
+func (s *Service) Logout(ctx context.Context, sessionID, revokedBy string) error {
+	if err := s.txm.WithTx(ctx, func(ctx context.Context) error {
+		return s.sessions.Revoke(
+			ctx,
+			sessionID,
+			revokedBy,
+			"user logout",
+			domain.SessionEventRevokedByUser,
+		)
+	}); err != nil {
+		return fmt.Errorf("logout tx: %w", err)
+	}
+
 	return nil
 }

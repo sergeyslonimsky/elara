@@ -40,6 +40,9 @@ const (
 	FilterServiceGetGroupsProcedure = "/elara.filter.v1.FilterService/GetGroups"
 	// FilterServiceGetUsersProcedure is the fully-qualified name of the FilterService's GetUsers RPC.
 	FilterServiceGetUsersProcedure = "/elara.filter.v1.FilterService/GetUsers"
+	// FilterServiceGetPermissionCatalogProcedure is the fully-qualified name of the FilterService's
+	// GetPermissionCatalog RPC.
+	FilterServiceGetPermissionCatalogProcedure = "/elara.filter.v1.FilterService/GetPermissionCatalog"
 )
 
 // FilterServiceClient is a client for the elara.filter.v1.FilterService service.
@@ -47,6 +50,11 @@ type FilterServiceClient interface {
 	GetNamespaces(context.Context, *connect.Request[v1.GetNamespacesRequest]) (*connect.Response[v1.GetNamespacesResponse], error)
 	GetGroups(context.Context, *connect.Request[v1.GetGroupsRequest]) (*connect.Response[v1.GetGroupsResponse], error)
 	GetUsers(context.Context, *connect.Request[v1.GetUsersRequest]) (*connect.Response[v1.GetUsersResponse], error)
+	// GetPermissionCatalog returns the static catalog the UI needs to build a
+	// type-safe permission-assignment form: for every PermissionObject, which
+	// PermissionActions are meaningful and what kind of domain (if any) the
+	// assignment must carry.
+	GetPermissionCatalog(context.Context, *connect.Request[v1.GetPermissionCatalogRequest]) (*connect.Response[v1.GetPermissionCatalogResponse], error)
 }
 
 // NewFilterServiceClient constructs a client for the elara.filter.v1.FilterService service. By
@@ -78,14 +86,21 @@ func NewFilterServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(filterServiceMethods.ByName("GetUsers")),
 			connect.WithClientOptions(opts...),
 		),
+		getPermissionCatalog: connect.NewClient[v1.GetPermissionCatalogRequest, v1.GetPermissionCatalogResponse](
+			httpClient,
+			baseURL+FilterServiceGetPermissionCatalogProcedure,
+			connect.WithSchema(filterServiceMethods.ByName("GetPermissionCatalog")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // filterServiceClient implements FilterServiceClient.
 type filterServiceClient struct {
-	getNamespaces *connect.Client[v1.GetNamespacesRequest, v1.GetNamespacesResponse]
-	getGroups     *connect.Client[v1.GetGroupsRequest, v1.GetGroupsResponse]
-	getUsers      *connect.Client[v1.GetUsersRequest, v1.GetUsersResponse]
+	getNamespaces        *connect.Client[v1.GetNamespacesRequest, v1.GetNamespacesResponse]
+	getGroups            *connect.Client[v1.GetGroupsRequest, v1.GetGroupsResponse]
+	getUsers             *connect.Client[v1.GetUsersRequest, v1.GetUsersResponse]
+	getPermissionCatalog *connect.Client[v1.GetPermissionCatalogRequest, v1.GetPermissionCatalogResponse]
 }
 
 // GetNamespaces calls elara.filter.v1.FilterService.GetNamespaces.
@@ -103,11 +118,21 @@ func (c *filterServiceClient) GetUsers(ctx context.Context, req *connect.Request
 	return c.getUsers.CallUnary(ctx, req)
 }
 
+// GetPermissionCatalog calls elara.filter.v1.FilterService.GetPermissionCatalog.
+func (c *filterServiceClient) GetPermissionCatalog(ctx context.Context, req *connect.Request[v1.GetPermissionCatalogRequest]) (*connect.Response[v1.GetPermissionCatalogResponse], error) {
+	return c.getPermissionCatalog.CallUnary(ctx, req)
+}
+
 // FilterServiceHandler is an implementation of the elara.filter.v1.FilterService service.
 type FilterServiceHandler interface {
 	GetNamespaces(context.Context, *connect.Request[v1.GetNamespacesRequest]) (*connect.Response[v1.GetNamespacesResponse], error)
 	GetGroups(context.Context, *connect.Request[v1.GetGroupsRequest]) (*connect.Response[v1.GetGroupsResponse], error)
 	GetUsers(context.Context, *connect.Request[v1.GetUsersRequest]) (*connect.Response[v1.GetUsersResponse], error)
+	// GetPermissionCatalog returns the static catalog the UI needs to build a
+	// type-safe permission-assignment form: for every PermissionObject, which
+	// PermissionActions are meaningful and what kind of domain (if any) the
+	// assignment must carry.
+	GetPermissionCatalog(context.Context, *connect.Request[v1.GetPermissionCatalogRequest]) (*connect.Response[v1.GetPermissionCatalogResponse], error)
 }
 
 // NewFilterServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -135,6 +160,12 @@ func NewFilterServiceHandler(svc FilterServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(filterServiceMethods.ByName("GetUsers")),
 		connect.WithHandlerOptions(opts...),
 	)
+	filterServiceGetPermissionCatalogHandler := connect.NewUnaryHandler(
+		FilterServiceGetPermissionCatalogProcedure,
+		svc.GetPermissionCatalog,
+		connect.WithSchema(filterServiceMethods.ByName("GetPermissionCatalog")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/elara.filter.v1.FilterService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case FilterServiceGetNamespacesProcedure:
@@ -143,6 +174,8 @@ func NewFilterServiceHandler(svc FilterServiceHandler, opts ...connect.HandlerOp
 			filterServiceGetGroupsHandler.ServeHTTP(w, r)
 		case FilterServiceGetUsersProcedure:
 			filterServiceGetUsersHandler.ServeHTTP(w, r)
+		case FilterServiceGetPermissionCatalogProcedure:
+			filterServiceGetPermissionCatalogHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -162,4 +195,8 @@ func (UnimplementedFilterServiceHandler) GetGroups(context.Context, *connect.Req
 
 func (UnimplementedFilterServiceHandler) GetUsers(context.Context, *connect.Request[v1.GetUsersRequest]) (*connect.Response[v1.GetUsersResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.filter.v1.FilterService.GetUsers is not implemented"))
+}
+
+func (UnimplementedFilterServiceHandler) GetPermissionCatalog(context.Context, *connect.Request[v1.GetPermissionCatalogRequest]) (*connect.Response[v1.GetPermissionCatalogResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.filter.v1.FilterService.GetPermissionCatalog is not implemented"))
 }

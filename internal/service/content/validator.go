@@ -14,17 +14,6 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-// ValidationResult is the structured outcome of ValidateAndNormalize: the
-// detected format, normalized content, and either a list of human-readable
-// errors or the JSON-schema violations recorded by upstream callers.
-type ValidationResult struct {
-	Valid             bool
-	Errors            []string
-	DetectedFormat    domain.Format
-	NormalizedContent string
-	SchemaViolations  []domain.SchemaViolation
-}
-
 // Validate parses content according to the given format and returns nil on
 // success or an error describing the parse failure.
 func Validate(content string, format domain.Format) error {
@@ -78,8 +67,8 @@ func Normalize(content string, format domain.Format) (string, error) {
 // not specified), validates, normalizes, and returns a ValidationResult.
 // On parse errors it returns the result with Valid=false rather than an
 // error — invalid content is an expected outcome for this API.
-func ValidateAndNormalize(content string, format domain.Format) (*ValidationResult, error) {
-	result := &ValidationResult{}
+func ValidateAndNormalize(content string, format domain.Format) (*domain.ValidationResult, error) {
+	result := &domain.ValidationResult{}
 
 	actualFormat := format
 	if actualFormat == "" {

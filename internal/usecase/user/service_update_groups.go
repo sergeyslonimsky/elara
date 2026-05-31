@@ -6,7 +6,6 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
 	"github.com/sergeyslonimsky/elara/internal/util/sliceutil"
 )
 
@@ -58,8 +57,8 @@ func (s *Service) UpdateGroups(
 
 	var result *UpdateGroupsResult
 
-	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
-		user, err := s.store.WithTx(tx).Get(ctx, data.Email)
+	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
+		user, err := s.store.Get(ctx, data.Email)
 		if err != nil {
 			return fmt.Errorf("get user: %w", err)
 		}
@@ -67,7 +66,7 @@ func (s *Service) UpdateGroups(
 			return fmt.Errorf("check version: %w", err)
 		}
 
-		delta, err := s.computeGroupDelta(ctx, tx, actor, user.Email, data)
+		delta, err := s.computeGroupDelta(ctx, actor, user.Email, data)
 		if err != nil {
 			return err
 		}
@@ -88,7 +87,7 @@ func (s *Service) UpdateGroups(
 			return nil
 		}
 
-		if err := s.applyMembershipDelta(ctx, tx, w, user, delta.addedNames, delta.removedNames); err != nil {
+		if err := s.applyMembershipDelta(ctx, w, user, delta.addedNames, delta.removedNames); err != nil {
 			return err
 		}
 
@@ -123,14 +122,11 @@ type groupDelta struct {
 // stays under the cyclop threshold.
 func (s *Service) computeGroupDelta(
 	ctx context.Context,
-	tx storage.Tx,
 	actor domain.AuthInfo,
 	email string,
 	data UpdateGroupsData,
 ) (groupDelta, error) {
-	groups := s.groups.WithTx(tx)
-
-	currentIDs, currentNamesByID, err := currentUserGroupIDs(ctx, s.pap, groups, email)
+	currentIDs, currentNamesByID, err := currentUserGroupIDs(ctx, s.pap, s.groups, email)
 	if err != nil {
 		return groupDelta{}, err
 	}
@@ -148,7 +144,7 @@ func (s *Service) computeGroupDelta(
 
 	// Resolve added group ids to (id -> group) for anti-escalation and for
 	// the casbin-name needed by ApplyUserMembershipDeltas.
-	addedGroups, err := loadGroupsByIDs(ctx, groups, effectiveAdd)
+	addedGroups, err := loadGroupsByIDs(ctx, s.groups, effectiveAdd)
 	if err != nil {
 		return groupDelta{}, err
 	}
@@ -179,7 +175,6 @@ func (s *Service) computeGroupDelta(
 // this sequence inside the surrounding PAP write transaction.
 func (s *Service) applyMembershipDelta(
 	ctx context.Context,
-	tx storage.Tx,
 	w *authz.PAPTx,
 	user *domain.User,
 	addedNames, removedNames []string,
@@ -188,7 +183,7 @@ func (s *Service) applyMembershipDelta(
 		return fmt.Errorf("pap apply user memberships: %w", err)
 	}
 	user.MembershipVersion++
-	if err := s.store.WithTx(tx).SetMembershipVersion(ctx, user.Email, user.MembershipVersion); err != nil {
+	if err := s.store.SetMembershipVersion(ctx, user.Email, user.MembershipVersion); err != nil {
 		return fmt.Errorf("persist membership version: %w", err)
 	}
 
@@ -222,7 +217,7 @@ func filterVisibleGroupIDs(pdp *authz.PDP, actor string, ids []string) []string 
 	return out
 }
 
-// loadGroupsByIDs fetches each requested group inside the current tx and
+// loadGroupsByIDs fetches each requested group inside the current context and
 // returns them keyed by ID.
 func loadGroupsByIDs(
 	ctx context.Context,
@@ -242,7 +237,7 @@ func loadGroupsByIDs(
 }
 
 // currentUserGroupIDs reads current memberships through PAP and resolves
-// each group name to its ID via the per-tx GroupReader.
+// each group name to its ID via the GroupReader.
 func currentUserGroupIDs(
 	ctx context.Context,
 	pap *authz.PAP,

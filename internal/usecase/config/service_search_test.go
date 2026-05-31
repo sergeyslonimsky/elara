@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
@@ -46,9 +46,9 @@ func TestService_Search(t *testing.T) {
 				Limit: 10,
 			},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 				m.pdp.EXPECT().
-					EffectiveDomains("user@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("user@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet())
 
 				return ctx
@@ -63,9 +63,9 @@ func TestService_Search(t *testing.T) {
 				Limit:     10,
 			},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 				m.pdp.EXPECT().
-					EffectiveDomains("user@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("user@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 				m.storage.EXPECT().SearchByPath(ctx, "app", "").Return(results, nil)
 
@@ -81,9 +81,9 @@ func TestService_Search(t *testing.T) {
 				Limit:     10,
 			},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 				m.pdp.EXPECT().
-					EffectiveDomains("user@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("user@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet("prod"))
 				m.storage.EXPECT().SearchByPath(ctx, "app", "").Return(results, nil)
 

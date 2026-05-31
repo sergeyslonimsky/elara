@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // Delete removes a webhook if the caller holds (Webhook, Write) on its
 // namespace.
 func (s *Service) Delete(ctx context.Context, id string) error {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return domain.ErrUnauthorized
 	}

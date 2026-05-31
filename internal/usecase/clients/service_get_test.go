@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 func TestService_Get(t *testing.T) {
@@ -28,7 +28,7 @@ func TestService_Get(t *testing.T) {
 			name: "active client success",
 			id:   "active-id",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -54,7 +54,7 @@ func TestService_Get(t *testing.T) {
 			name: "fallback to history success",
 			id:   "historical-id",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -80,7 +80,7 @@ func TestService_Get(t *testing.T) {
 			name: "not found anywhere",
 			id:   "missing-id",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -106,7 +106,7 @@ func TestService_Get(t *testing.T) {
 			name: "history error",
 			id:   "some-id",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",

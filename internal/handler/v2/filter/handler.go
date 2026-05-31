@@ -5,12 +5,12 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/permission"
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	filterv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/filter/v1"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	filteruc "github.com/sergeyslonimsky/elara/internal/usecase/filter"
 )
 
@@ -28,6 +28,7 @@ type filterUsecase interface {
 		query filteruc.Query,
 	) ([]filteruc.Item, error)
 	Users(ctx context.Context, actor domain.AuthInfo, query filteruc.Query) ([]filteruc.Item, error)
+	Catalog() []filteruc.CatalogEntry
 }
 
 type Handler struct {
@@ -42,7 +43,7 @@ func (h *Handler) GetNamespaces(
 	ctx context.Context,
 	req *connect.Request[filterv1.GetNamespacesRequest],
 ) (*connect.Response[filterv1.GetNamespacesResponse], error) {
-	actor, err := auth.AuthInfoFromContext(ctx)
+	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -59,7 +60,7 @@ func (h *Handler) GetGroups(
 	ctx context.Context,
 	req *connect.Request[filterv1.GetGroupsRequest],
 ) (*connect.Response[filterv1.GetGroupsResponse], error) {
-	actor, err := auth.AuthInfoFromContext(ctx)
+	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -76,7 +77,7 @@ func (h *Handler) GetUsers(
 	ctx context.Context,
 	req *connect.Request[filterv1.GetUsersRequest],
 ) (*connect.Response[filterv1.GetUsersResponse], error) {
-	actor, err := auth.AuthInfoFromContext(ctx)
+	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -87,6 +88,36 @@ func (h *Handler) GetUsers(
 	}
 
 	return connect.NewResponse(&filterv1.GetUsersResponse{Items: itemsToProto(items)}), nil
+}
+
+func (h *Handler) GetPermissionCatalog(
+	_ context.Context,
+	_ *connect.Request[filterv1.GetPermissionCatalogRequest],
+) (*connect.Response[filterv1.GetPermissionCatalogResponse], error) {
+	entries := h.uc.Catalog()
+	out := make([]*filterv1.ObjectCatalogEntry, 0, len(entries))
+	for _, e := range entries {
+		out = append(out, &filterv1.ObjectCatalogEntry{
+			Object:  permission.ObjectToProto(e.Object),
+			Scope:   scopeToProto(e.Scope),
+			Actions: actionsToProto(e.Actions),
+		})
+	}
+
+	return connect.NewResponse(&filterv1.GetPermissionCatalogResponse{Entries: out}), nil
+}
+
+func scopeToProto(s filteruc.ObjectScope) filterv1.ObjectScope {
+	switch s {
+	case filteruc.ScopeGlobal:
+		return filterv1.ObjectScope_OBJECT_SCOPE_GLOBAL
+	case filteruc.ScopeNamespace:
+		return filterv1.ObjectScope_OBJECT_SCOPE_NAMESPACE
+	case filteruc.ScopeGroup:
+		return filterv1.ObjectScope_OBJECT_SCOPE_GROUP
+	default:
+		return filterv1.ObjectScope_OBJECT_SCOPE_UNSPECIFIED
+	}
 }
 
 func toQuery(filters *filterv1.Filters, actions []commonv1.PermissionAction) filteruc.Query {

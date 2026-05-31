@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	mockauth "github.com/sergeyslonimsky/elara/internal/service/auth/mocks"
@@ -38,7 +39,7 @@ func TestCheckAccess(t *testing.T) {
 		{
 			name: "enforcer error",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (context.Context, auth.AccessEnforcer) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 				e := mockauth.NewMockAccessEnforcer(ctrl)
 				e.EXPECT().
 					Enforce("user@example.com", dom, obj, act).
@@ -51,7 +52,7 @@ func TestCheckAccess(t *testing.T) {
 		{
 			name: "forbidden",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (context.Context, auth.AccessEnforcer) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 				e := mockauth.NewMockAccessEnforcer(ctrl)
 				e.EXPECT().Enforce("user@example.com", dom, obj, act).Return(false, nil)
 
@@ -62,7 +63,7 @@ func TestCheckAccess(t *testing.T) {
 		{
 			name: "allowed",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (context.Context, auth.AccessEnforcer) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 				e := mockauth.NewMockAccessEnforcer(ctrl)
 				e.EXPECT().Enforce("user@example.com", dom, obj, act).Return(true, nil)
 

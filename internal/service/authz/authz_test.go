@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	authz_mock "github.com/sergeyslonimsky/elara/internal/service/authz/mocks"
 )
@@ -31,14 +31,14 @@ func TestAuthz_Require(t *testing.T) {
 			name:   "authorized",
 			object: domain.ObjectNamespace,
 			action: domain.ActionRead,
-			domain: "dom1",
+			domain: domain.NamespaceResource("dom1"),
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authz.Authz, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 				pdp := authz_mock.NewMockpdp(ctrl)
 				pdp.EXPECT().Has("user@example.com", domain.Permission{
 					Object: domain.ObjectNamespace,
 					Action: domain.ActionRead,
-					Domain: "dom1",
+					Domain: domain.NamespaceResource("dom1"),
 				}).Return(true)
 
 				return authz.NewAuthz(pdp), ctx
@@ -48,7 +48,7 @@ func TestAuthz_Require(t *testing.T) {
 			name:   "unauthenticated",
 			object: domain.ObjectNamespace,
 			action: domain.ActionRead,
-			domain: "dom1",
+			domain: domain.NamespaceResource("dom1"),
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authz.Authz, context.Context) {
 				return authz.NewAuthz(nil), ctx
 			},
@@ -59,14 +59,14 @@ func TestAuthz_Require(t *testing.T) {
 			name:   "unauthorized",
 			object: domain.ObjectNamespace,
 			action: domain.ActionRead,
-			domain: "dom1",
+			domain: domain.NamespaceResource("dom1"),
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authz.Authz, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 				pdp := authz_mock.NewMockpdp(ctrl)
 				pdp.EXPECT().Has("user@example.com", domain.Permission{
 					Object: domain.ObjectNamespace,
 					Action: domain.ActionRead,
-					Domain: "dom1",
+					Domain: domain.NamespaceResource("dom1"),
 				}).Return(false)
 
 				return authz.NewAuthz(pdp), ctx
@@ -110,7 +110,7 @@ func TestAuthz_RequireAuthenticated(t *testing.T) {
 		{
 			name: "authenticated",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*authz.Authz, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 
 				return authz.NewAuthz(nil), ctx
 			},

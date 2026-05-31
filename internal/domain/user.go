@@ -10,6 +10,14 @@ const (
 	ProviderBasicAuth = "basic-auth"
 )
 
+type AuthType string
+
+const (
+	AuthTypeOIDC      AuthType = "oidc"
+	AuthTypeBasicAuth AuthType = "basic-auth"
+	AuthTypeNone      AuthType = "none"
+)
+
 // UserFilter narrows a user list to those the caller is permitted to see.
 //
 // When AnyUser is true, Usernames MUST be ignored — every user matches. This

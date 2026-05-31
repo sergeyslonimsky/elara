@@ -5,12 +5,12 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/permission"
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	v1 "github.com/sergeyslonimsky/elara/internal/proto/elara/group/v1"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	groupuc "github.com/sergeyslonimsky/elara/internal/usecase/group"
 )
 
@@ -73,7 +73,7 @@ func (h *Handler) CreateGroup(
 	ctx context.Context,
 	req *connect.Request[v1.CreateGroupRequest],
 ) (*connect.Response[v1.CreateGroupResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -104,7 +104,7 @@ func (h *Handler) GetGroup(
 	ctx context.Context,
 	req *connect.Request[v1.GetGroupRequest],
 ) (*connect.Response[v1.GetGroupResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -134,7 +134,7 @@ func (h *Handler) UpdateGroup(
 	ctx context.Context,
 	req *connect.Request[v1.UpdateGroupRequest],
 ) (*connect.Response[v1.UpdateGroupResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -165,7 +165,7 @@ func (h *Handler) UpdateGroupMembers(
 	ctx context.Context,
 	req *connect.Request[v1.UpdateGroupMembersRequest],
 ) (*connect.Response[v1.UpdateGroupMembersResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -199,7 +199,7 @@ func (h *Handler) UpdateGroupPermissions(
 	ctx context.Context,
 	req *connect.Request[v1.UpdateGroupPermissionsRequest],
 ) (*connect.Response[v1.UpdateGroupPermissionsResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -233,7 +233,7 @@ func (h *Handler) DeleteGroup(
 	ctx context.Context,
 	req *connect.Request[v1.DeleteGroupRequest],
 ) (*connect.Response[v1.DeleteGroupResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -258,7 +258,7 @@ func (h *Handler) ListGroups(
 	ctx context.Context,
 	req *connect.Request[v1.ListGroupsRequest],
 ) (*connect.Response[v1.ListGroupsResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}

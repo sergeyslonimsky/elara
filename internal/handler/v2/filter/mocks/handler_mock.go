@@ -42,6 +42,20 @@ func (m *MockfilterUsecase) EXPECT() *MockfilterUsecaseMockRecorder {
 	return m.recorder
 }
 
+// Catalog mocks base method.
+func (m *MockfilterUsecase) Catalog() []filter.CatalogEntry {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Catalog")
+	ret0, _ := ret[0].([]filter.CatalogEntry)
+	return ret0
+}
+
+// Catalog indicates an expected call of Catalog.
+func (mr *MockfilterUsecaseMockRecorder) Catalog() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Catalog", reflect.TypeOf((*MockfilterUsecase)(nil).Catalog))
+}
+
 // Groups mocks base method.
 func (m *MockfilterUsecase) Groups(ctx context.Context, actor domain.AuthInfo, query filter.Query) ([]filter.Item, error) {
 	m.ctrl.T.Helper()

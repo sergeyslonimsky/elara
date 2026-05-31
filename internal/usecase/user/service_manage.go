@@ -7,7 +7,6 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
 // CreateData carries the parameters accepted by Create.
@@ -57,13 +56,12 @@ func (s *Service) Create(
 
 	var result *CreateResult
 
-	err = s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
-		if err := s.persistUser(ctx, tx, user, data.InitialPassword); err != nil {
+	err = s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
+		if err := s.persistUser(ctx, user, data.InitialPassword); err != nil {
 			return err
 		}
 		groupIDs, version, err := s.applyInitialGroups(
 			ctx,
-			tx,
 			w,
 			actor,
 			user,
@@ -139,11 +137,10 @@ func (s *Service) authorizeInitialGroups(actor domain.AuthInfo, ids []string) er
 // password hash, marking password_change_required on first login.
 func (s *Service) persistUser(
 	ctx context.Context,
-	tx storage.Tx,
 	user *domain.User,
 	initialPassword string,
 ) error {
-	if err := s.store.WithTx(tx).Upsert(ctx, user); err != nil {
+	if err := s.store.Upsert(ctx, user); err != nil {
 		return fmt.Errorf("upsert user: %w", err)
 	}
 	if initialPassword == "" {
@@ -153,7 +150,7 @@ func (s *Service) persistUser(
 	if err != nil {
 		return fmt.Errorf("hash password: %w", err)
 	}
-	if err := s.store.WithTx(tx).SetPassword(ctx, user.Email, hash, true); err != nil {
+	if err := s.store.SetPassword(ctx, user.Email, hash, true); err != nil {
 		return fmt.Errorf("set password: %w", err)
 	}
 
@@ -167,14 +164,13 @@ func (s *Service) persistUser(
 // first UpdateUserGroups call for users created without initial groups.
 func (s *Service) applyInitialGroups(
 	ctx context.Context,
-	tx storage.Tx,
 	papTx *authz.PAPTx,
 	actor domain.AuthInfo,
 	user *domain.User,
 	ids []string,
 ) ([]string, int64, error) {
 	const initialVersion = int64(1)
-	if err := s.store.WithTx(tx).SetMembershipVersion(ctx, user.Email, initialVersion); err != nil {
+	if err := s.store.SetMembershipVersion(ctx, user.Email, initialVersion); err != nil {
 		return nil, 0, fmt.Errorf("persist initial membership version: %w", err)
 	}
 
@@ -189,8 +185,7 @@ func (s *Service) applyInitialGroups(
 		return nil, 0, err
 	}
 
-	groups := s.groups.WithTx(tx)
-	desired, err := loadGroupsByIDs(ctx, groups, ids)
+	desired, err := loadGroupsByIDs(ctx, s.groups, ids)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -228,8 +223,8 @@ func (s *Service) Delete(ctx context.Context, actor domain.AuthInfo, targetEmail
 		return domain.NewValidationError("email", "cannot delete your own account")
 	}
 
-	err := s.pap.Write(ctx, func(tx storage.Tx, papTx *authz.PAPTx) error {
-		if _, err := s.store.WithTx(tx).Get(ctx, targetEmail); err != nil {
+	err := s.pap.Write(ctx, func(ctx context.Context, papTx *authz.PAPTx) error {
+		if _, err := s.store.Get(ctx, targetEmail); err != nil {
 			return fmt.Errorf("get user: %w", err)
 		}
 		if err := s.authorizeUserWrite(ctx, actor, targetEmail); err != nil {
@@ -238,11 +233,15 @@ func (s *Service) Delete(ctx context.Context, actor domain.AuthInfo, targetEmail
 		if err := s.validateLastAdmin(targetEmail); err != nil {
 			return err
 		}
-		if err := s.store.WithTx(tx).Delete(ctx, targetEmail); err != nil {
+		if err := s.store.Delete(ctx, targetEmail); err != nil {
 			return fmt.Errorf("delete user: %w", err)
 		}
 		if err := papTx.DeleteUser(targetEmail); err != nil {
 			return fmt.Errorf("pap delete user: %w", err)
+		}
+
+		if err := s.sessions.RevokeAllForUser(ctx, targetEmail, actor.Email, "user deleted"); err != nil {
+			return fmt.Errorf("revoke sessions: %w", err)
 		}
 
 		return nil

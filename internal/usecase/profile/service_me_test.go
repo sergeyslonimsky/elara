@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/profile"
 )
 
@@ -30,16 +30,16 @@ func TestService_Me(t *testing.T) {
 		want     *profile.MeResult
 	}{
 		{
-			name: "unauthorized - no claims in context",
+			name: "unauthorized - no user in context",
 			mockFunc: func(ctx context.Context, _ *gomock.Controller) (*profile.Service, context.Context) {
-				return profile.New(nil, nil, nil, nil), ctx
+				return profile.New(nil, nil, nil, nil, nil), ctx
 			},
 			errIs: domain.ErrUnauthorized,
 		},
 		{
 			name: "pdp error is wrapped",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: email, Name: name})
+				ctx = authctx.WithSession(ctx, &domain.Session{}, &domain.User{Email: email, Name: name})
 				svc, m := setupService(ctrl)
 				m.pdp.EXPECT().
 					ListPermissions(email).
@@ -52,7 +52,7 @@ func TestService_Me(t *testing.T) {
 		{
 			name: "happy path - permissions passthrough",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: email, Name: name})
+				ctx = authctx.WithSession(ctx, &domain.Session{}, &domain.User{Email: email, Name: name})
 				svc, m := setupService(ctrl)
 				m.pdp.EXPECT().
 					ListPermissions(email).

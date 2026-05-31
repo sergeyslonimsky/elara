@@ -56,32 +56,46 @@ func (mr *MockpdpMockRecorder) EffectiveDomains(principal, object, action any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveDomains", reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains), principal, object, action)
 }
 
-// Mockstorage is a mock of storage interface.
-type Mockstorage struct {
+// EffectiveNamespaces mocks base method.
+func (m *Mockpdp) EffectiveNamespaces(actor string, action domain.Action) authz.DomainSet {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EffectiveNamespaces", actor, action)
+	ret0, _ := ret[0].(authz.DomainSet)
+	return ret0
+}
+
+// EffectiveNamespaces indicates an expected call of EffectiveNamespaces.
+func (mr *MockpdpMockRecorder) EffectiveNamespaces(actor, action any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveNamespaces", reflect.TypeOf((*Mockpdp)(nil).EffectiveNamespaces), actor, action)
+}
+
+// MockstorageRepo is a mock of storageRepo interface.
+type MockstorageRepo struct {
 	ctrl     *gomock.Controller
-	recorder *MockstorageMockRecorder
+	recorder *MockstorageRepoMockRecorder
 	isgomock struct{}
 }
 
-// MockstorageMockRecorder is the mock recorder for Mockstorage.
-type MockstorageMockRecorder struct {
-	mock *Mockstorage
+// MockstorageRepoMockRecorder is the mock recorder for MockstorageRepo.
+type MockstorageRepoMockRecorder struct {
+	mock *MockstorageRepo
 }
 
-// NewMockstorage creates a new mock instance.
-func NewMockstorage(ctrl *gomock.Controller) *Mockstorage {
-	mock := &Mockstorage{ctrl: ctrl}
-	mock.recorder = &MockstorageMockRecorder{mock}
+// NewMockstorageRepo creates a new mock instance.
+func NewMockstorageRepo(ctrl *gomock.Controller) *MockstorageRepo {
+	mock := &MockstorageRepo{ctrl: ctrl}
+	mock.recorder = &MockstorageRepoMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockstorage) EXPECT() *MockstorageMockRecorder {
+func (m *MockstorageRepo) EXPECT() *MockstorageRepoMockRecorder {
 	return m.recorder
 }
 
 // Create mocks base method.
-func (m *Mockstorage) Create(ctx context.Context, cfg *domain.Config) error {
+func (m *MockstorageRepo) Create(ctx context.Context, cfg *domain.Config) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, cfg)
 	ret0, _ := ret[0].(error)
@@ -89,13 +103,13 @@ func (m *Mockstorage) Create(ctx context.Context, cfg *domain.Config) error {
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockstorageMockRecorder) Create(ctx, cfg any) *gomock.Call {
+func (mr *MockstorageRepoMockRecorder) Create(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockstorage)(nil).Create), ctx, cfg)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockstorageRepo)(nil).Create), ctx, cfg)
 }
 
 // Delete mocks base method.
-func (m *Mockstorage) Delete(ctx context.Context, path, namespace string) (int64, error) {
+func (m *MockstorageRepo) Delete(ctx context.Context, path, namespace string) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, path, namespace)
 	ret0, _ := ret[0].(int64)
@@ -104,13 +118,13 @@ func (m *Mockstorage) Delete(ctx context.Context, path, namespace string) (int64
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockstorageMockRecorder) Delete(ctx, path, namespace any) *gomock.Call {
+func (mr *MockstorageRepoMockRecorder) Delete(ctx, path, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockstorage)(nil).Delete), ctx, path, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockstorageRepo)(nil).Delete), ctx, path, namespace)
 }
 
 // Get mocks base method.
-func (m *Mockstorage) Get(ctx context.Context, path, namespace string) (*domain.Config, error) {
+func (m *MockstorageRepo) Get(ctx context.Context, path, namespace string) (*domain.Config, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, path, namespace)
 	ret0, _ := ret[0].(*domain.Config)
@@ -119,13 +133,13 @@ func (m *Mockstorage) Get(ctx context.Context, path, namespace string) (*domain.
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockstorageMockRecorder) Get(ctx, path, namespace any) *gomock.Call {
+func (mr *MockstorageRepoMockRecorder) Get(ctx, path, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockstorage)(nil).Get), ctx, path, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockstorageRepo)(nil).Get), ctx, path, namespace)
 }
 
 // GetAtRevision mocks base method.
-func (m *Mockstorage) GetAtRevision(ctx context.Context, path, namespace string, revision int64) (*domain.HistoryEntry, error) {
+func (m *MockstorageRepo) GetAtRevision(ctx context.Context, path, namespace string, revision int64) (*domain.HistoryEntry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAtRevision", ctx, path, namespace, revision)
 	ret0, _ := ret[0].(*domain.HistoryEntry)
@@ -134,13 +148,13 @@ func (m *Mockstorage) GetAtRevision(ctx context.Context, path, namespace string,
 }
 
 // GetAtRevision indicates an expected call of GetAtRevision.
-func (mr *MockstorageMockRecorder) GetAtRevision(ctx, path, namespace, revision any) *gomock.Call {
+func (mr *MockstorageRepoMockRecorder) GetAtRevision(ctx, path, namespace, revision any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAtRevision", reflect.TypeOf((*Mockstorage)(nil).GetAtRevision), ctx, path, namespace, revision)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAtRevision", reflect.TypeOf((*MockstorageRepo)(nil).GetAtRevision), ctx, path, namespace, revision)
 }
 
 // GetConfigHistory mocks base method.
-func (m *Mockstorage) GetConfigHistory(ctx context.Context, path, namespace string, limit int) ([]*domain.HistoryEntry, error) {
+func (m *MockstorageRepo) GetConfigHistory(ctx context.Context, path, namespace string, limit int) ([]*domain.HistoryEntry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfigHistory", ctx, path, namespace, limit)
 	ret0, _ := ret[0].([]*domain.HistoryEntry)
@@ -149,13 +163,13 @@ func (m *Mockstorage) GetConfigHistory(ctx context.Context, path, namespace stri
 }
 
 // GetConfigHistory indicates an expected call of GetConfigHistory.
-func (mr *MockstorageMockRecorder) GetConfigHistory(ctx, path, namespace, limit any) *gomock.Call {
+func (mr *MockstorageRepoMockRecorder) GetConfigHistory(ctx, path, namespace, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigHistory", reflect.TypeOf((*Mockstorage)(nil).GetConfigHistory), ctx, path, namespace, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigHistory", reflect.TypeOf((*MockstorageRepo)(nil).GetConfigHistory), ctx, path, namespace, limit)
 }
 
 // ListSummariesByPrefix mocks base method.
-func (m *Mockstorage) ListSummariesByPrefix(ctx context.Context, pathPrefix, namespace string) ([]*domain.ConfigSummary, error) {
+func (m *MockstorageRepo) ListSummariesByPrefix(ctx context.Context, pathPrefix, namespace string) ([]*domain.ConfigSummary, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListSummariesByPrefix", ctx, pathPrefix, namespace)
 	ret0, _ := ret[0].([]*domain.ConfigSummary)
@@ -164,13 +178,13 @@ func (m *Mockstorage) ListSummariesByPrefix(ctx context.Context, pathPrefix, nam
 }
 
 // ListSummariesByPrefix indicates an expected call of ListSummariesByPrefix.
-func (mr *MockstorageMockRecorder) ListSummariesByPrefix(ctx, pathPrefix, namespace any) *gomock.Call {
+func (mr *MockstorageRepoMockRecorder) ListSummariesByPrefix(ctx, pathPrefix, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSummariesByPrefix", reflect.TypeOf((*Mockstorage)(nil).ListSummariesByPrefix), ctx, pathPrefix, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSummariesByPrefix", reflect.TypeOf((*MockstorageRepo)(nil).ListSummariesByPrefix), ctx, pathPrefix, namespace)
 }
 
 // LockConfig mocks base method.
-func (m *Mockstorage) LockConfig(ctx context.Context, namespace, path string) error {
+func (m *MockstorageRepo) LockConfig(ctx context.Context, namespace, path string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LockConfig", ctx, namespace, path)
 	ret0, _ := ret[0].(error)
@@ -178,13 +192,13 @@ func (m *Mockstorage) LockConfig(ctx context.Context, namespace, path string) er
 }
 
 // LockConfig indicates an expected call of LockConfig.
-func (mr *MockstorageMockRecorder) LockConfig(ctx, namespace, path any) *gomock.Call {
+func (mr *MockstorageRepoMockRecorder) LockConfig(ctx, namespace, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockConfig", reflect.TypeOf((*Mockstorage)(nil).LockConfig), ctx, namespace, path)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockConfig", reflect.TypeOf((*MockstorageRepo)(nil).LockConfig), ctx, namespace, path)
 }
 
 // SearchByPath mocks base method.
-func (m *Mockstorage) SearchByPath(ctx context.Context, query, namespace string) ([]*domain.ConfigSummary, error) {
+func (m *MockstorageRepo) SearchByPath(ctx context.Context, query, namespace string) ([]*domain.ConfigSummary, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchByPath", ctx, query, namespace)
 	ret0, _ := ret[0].([]*domain.ConfigSummary)
@@ -193,13 +207,13 @@ func (m *Mockstorage) SearchByPath(ctx context.Context, query, namespace string)
 }
 
 // SearchByPath indicates an expected call of SearchByPath.
-func (mr *MockstorageMockRecorder) SearchByPath(ctx, query, namespace any) *gomock.Call {
+func (mr *MockstorageRepoMockRecorder) SearchByPath(ctx, query, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchByPath", reflect.TypeOf((*Mockstorage)(nil).SearchByPath), ctx, query, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchByPath", reflect.TypeOf((*MockstorageRepo)(nil).SearchByPath), ctx, query, namespace)
 }
 
 // UnlockConfig mocks base method.
-func (m *Mockstorage) UnlockConfig(ctx context.Context, namespace, path string) error {
+func (m *MockstorageRepo) UnlockConfig(ctx context.Context, namespace, path string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnlockConfig", ctx, namespace, path)
 	ret0, _ := ret[0].(error)
@@ -207,13 +221,13 @@ func (m *Mockstorage) UnlockConfig(ctx context.Context, namespace, path string) 
 }
 
 // UnlockConfig indicates an expected call of UnlockConfig.
-func (mr *MockstorageMockRecorder) UnlockConfig(ctx, namespace, path any) *gomock.Call {
+func (mr *MockstorageRepoMockRecorder) UnlockConfig(ctx, namespace, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlockConfig", reflect.TypeOf((*Mockstorage)(nil).UnlockConfig), ctx, namespace, path)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlockConfig", reflect.TypeOf((*MockstorageRepo)(nil).UnlockConfig), ctx, namespace, path)
 }
 
 // Update mocks base method.
-func (m *Mockstorage) Update(ctx context.Context, cfg *domain.Config) error {
+func (m *MockstorageRepo) Update(ctx context.Context, cfg *domain.Config) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, cfg)
 	ret0, _ := ret[0].(error)
@@ -221,9 +235,9 @@ func (m *Mockstorage) Update(ctx context.Context, cfg *domain.Config) error {
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockstorageMockRecorder) Update(ctx, cfg any) *gomock.Call {
+func (mr *MockstorageRepoMockRecorder) Update(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*Mockstorage)(nil).Update), ctx, cfg)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockstorageRepo)(nil).Update), ctx, cfg)
 }
 
 // Mockwatcher is a mock of watcher interface.

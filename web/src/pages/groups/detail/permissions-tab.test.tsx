@@ -10,6 +10,7 @@ import {
 	PermissionAssignmentSchema,
 	PermissionObject,
 } from "@/gen/elara/common/v1/permission_pb";
+import { ObjectScope } from "@/gen/elara/filter/v1/filter_service_pb";
 import { GroupSchema } from "@/gen/elara/group/v1/group_pb";
 import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { PermissionsTab } from "./permissions-tab";
@@ -18,6 +19,18 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 	const actual = await importOriginal<Record<string, unknown>>();
 	return {
 		...actual,
+		useQuery: vi.fn(() => ({
+			data: {
+				entries: [
+					{
+						object: PermissionObject.NAMESPACE,
+						scope: ObjectScope.NAMESPACE,
+						actions: [PermissionAction.READ, PermissionAction.WRITE],
+					},
+				],
+			},
+			isLoading: false,
+		})),
 		useMutation: vi.fn(() => ({
 			mutate: vi.fn(),
 			mutateAsync: vi.fn(),
@@ -61,7 +74,7 @@ const existingPerm = create(PermissionAssignmentSchema, {
 function makeAbility(canWrite = true): AppAbility {
 	const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 	if (canWrite) {
-		can("write", "Group", { domain: "group:developers" });
+		can("write", "Group", { domain: "group:g1" });
 	}
 	return build();
 }
@@ -161,13 +174,10 @@ describe("PermissionsTab", () => {
 			</TestProviders>,
 		);
 
-		// Fill in the domain input and click Add
-		const domainInput = screen.getByPlaceholderText(/domain/i);
-		await ue.type(domainInput, "staging");
+		// Default form state: object = NAMESPACE (only catalog entry), action =
+		// READ (first listed), domain "All" checkbox enabled → wildcard "*".
+		// Click Add to stage the assignment.
 		await ue.click(screen.getByRole("button", { name: /^add$/i }));
-
-		// Staged entry should appear (appears in both the list row and the badge summary)
-		expect(screen.getAllByText(/staging/).length).toBeGreaterThan(0);
 
 		// Save
 		await ue.click(screen.getByRole("button", { name: /save changes/i }));
@@ -176,7 +186,11 @@ describe("PermissionsTab", () => {
 			expect.objectContaining({
 				groupId: "g1",
 				add: expect.arrayContaining([
-					expect.objectContaining({ domain: "staging" }),
+					expect.objectContaining({
+						object: PermissionObject.NAMESPACE,
+						action: PermissionAction.READ,
+						domain: "*",
+					}),
 				]),
 				remove: [],
 				expectedPermissionsVersion: 3n,

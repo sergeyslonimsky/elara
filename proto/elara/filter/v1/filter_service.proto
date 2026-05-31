@@ -9,6 +9,33 @@ service FilterService {
   rpc GetNamespaces(GetNamespacesRequest) returns (GetNamespacesResponse);
   rpc GetGroups(GetGroupsRequest) returns (GetGroupsResponse);
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+  // GetPermissionCatalog returns the static catalog the UI needs to build a
+  // type-safe permission-assignment form: for every PermissionObject, which
+  // PermissionActions are meaningful and what kind of domain (if any) the
+  // assignment must carry.
+  rpc GetPermissionCatalog(GetPermissionCatalogRequest) returns (GetPermissionCatalogResponse);
+}
+
+// ObjectScope describes how the `domain` field of a PermissionAssignment is
+// interpreted for a given PermissionObject. UI picks the right domain control
+// from this; server uses the same catalog to reject inconsistent assignments.
+enum ObjectScope {
+  OBJECT_SCOPE_UNSPECIFIED = 0;
+  // GLOBAL: assignment.domain MUST be "*". E.g. User, Token, Webhook, Client.
+  OBJECT_SCOPE_GLOBAL = 1;
+  // NAMESPACE: assignment.domain is a namespace name, or "*" for all
+  // namespaces. UI should drive selection via FilterService.GetNamespaces.
+  OBJECT_SCOPE_NAMESPACE = 2;
+  // GROUP: assignment.domain is "group:<id>" (canonical, see
+  // domain.GroupResource), or "*" for all groups. UI should drive selection
+  // via FilterService.GetGroups.
+  OBJECT_SCOPE_GROUP = 3;
+}
+
+message ObjectCatalogEntry {
+  elara.common.v1.PermissionObject object = 1;
+  ObjectScope scope = 2;
+  repeated elara.common.v1.PermissionAction actions = 3;
 }
 
 message GetNamespacesRequest {
@@ -36,4 +63,10 @@ message GetUsersRequest {
 
 message GetUsersResponse {
   repeated Item items = 1;
+}
+
+message GetPermissionCatalogRequest {}
+
+message GetPermissionCatalogResponse {
+  repeated ObjectCatalogEntry entries = 1;
 }

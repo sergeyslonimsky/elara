@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // requireTransferWrite returns ErrForbidden when the caller lacks
@@ -15,16 +15,12 @@ import (
 // the request-supplied namespace; this gate covers the per-bundle namespaces
 // resolved inside Import.
 func (s *Service) requireTransferWrite(ctx context.Context, namespace string) error {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return domain.ErrUnauthorized
 	}
 
-	if !s.pdp.Has(claims.Email, domain.Permission{
-		Object: domain.ObjectNamespace,
-		Action: domain.ActionWrite,
-		Domain: namespace,
-	}) {
+	if !s.pdp.HasNamespace(claims.Email, namespace, domain.ActionWrite) {
 		return domain.ErrForbidden
 	}
 

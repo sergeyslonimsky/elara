@@ -4,24 +4,20 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // List returns schemas for the given namespace. Callers without
 // (Schema, Read) on the namespace get a silent empty slice — list is a
 // filter, not a guarded read.
 func (s *Service) List(ctx context.Context, namespace string) ([]*domain.SchemaAttachment, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
-	if !s.pdp.Has(claims.Email, domain.Permission{
-		Object: domain.ObjectNamespace,
-		Action: domain.ActionRead,
-		Domain: namespace,
-	}) {
+	if !s.pdp.HasNamespace(info.Email, namespace, domain.ActionRead) {
 		return nil, nil
 	}
 

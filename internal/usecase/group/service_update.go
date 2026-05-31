@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/usecase/filter"
 	"github.com/sergeyslonimsky/elara/internal/util/sliceutil"
 )
 
@@ -32,8 +34,8 @@ func (s *Service) Update(
 ) (*domain.Group, error) {
 	var updated *domain.Group
 
-	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
-		existing, err := s.loadMutableGroup(ctx, tx, data.ID)
+	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
+		existing, err := s.loadMutableGroup(ctx, data.ID)
 		if err != nil {
 			return err
 		}
@@ -43,7 +45,7 @@ func (s *Service) Update(
 
 		oldName := existing.Name
 		if data.Name != oldName {
-			if err := s.ensureNameUnique(ctx, tx, existing.ID, data.Name); err != nil {
+			if err := s.ensureNameUnique(ctx, existing.ID, data.Name); err != nil {
 				return err
 			}
 		}
@@ -52,7 +54,7 @@ func (s *Service) Update(
 		existing.MetadataVersion++
 		existing.UpdatedAt = time.Now().UTC()
 
-		if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
+		if err := s.store.Update(ctx, existing); err != nil {
 			return fmt.Errorf(errUpdateGroup, err)
 		}
 		updated = existing
@@ -76,10 +78,9 @@ func (s *Service) Update(
 // sharing a name break FindByName-based lookups silently.
 func (s *Service) ensureNameUnique(
 	ctx context.Context,
-	tx storage.Tx,
 	selfID, newName string,
 ) error {
-	other, err := s.store.WithTx(tx).FindByName(ctx, newName)
+	other, err := s.store.FindByName(ctx, newName)
 	switch {
 	case err == nil && other != nil && other.ID != selfID:
 		return fmt.Errorf(
@@ -129,8 +130,8 @@ func (s *Service) UpdateMembers(
 
 	var result *UpdateMembersResult
 
-	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
-		existing, err := s.loadMutableGroup(ctx, tx, data.GroupID)
+	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
+		existing, err := s.loadMutableGroup(ctx, data.GroupID)
 		if err != nil {
 			return err
 		}
@@ -158,7 +159,7 @@ func (s *Service) UpdateMembers(
 			return nil
 		}
 
-		if err := s.commitMemberDelta(ctx, tx, w, existing, added, removed); err != nil {
+		if err := s.commitMemberDelta(ctx, w, existing, added, removed); err != nil {
 			return err
 		}
 
@@ -208,17 +209,14 @@ func (s *Service) UpdatePermissions(
 	actor domain.AuthInfo,
 	data UpdatePermissionsData,
 ) (*UpdatePermissionsResult, error) {
-	if p, dup := sliceutil.FirstOverlap(data.Add, data.Remove); dup {
-		return nil, domain.NewValidationError(
-			"permissions",
-			fmt.Sprintf("%s:%s on %s appears in both add and remove", p.Object, p.Action, p.Domain),
-		)
+	if err := validatePermissionDeltas(data.Add, data.Remove); err != nil {
+		return nil, err
 	}
 
 	var result *UpdatePermissionsResult
 
-	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
-		existing, err := s.loadMutableGroup(ctx, tx, data.GroupID)
+	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
+		existing, err := s.loadMutableGroup(ctx, data.GroupID)
 		if err != nil {
 			return err
 		}
@@ -249,7 +247,7 @@ func (s *Service) UpdatePermissions(
 			return err
 		}
 
-		if err := s.commitPermissionDelta(ctx, tx, w, existing, added, removed); err != nil {
+		if err := s.commitPermissionDelta(ctx, w, existing, added, removed); err != nil {
 			return err
 		}
 
@@ -271,7 +269,6 @@ func (s *Service) UpdatePermissions(
 // for subsequent calls.
 func (s *Service) commitMemberDelta(
 	ctx context.Context,
-	tx storage.Tx,
 	w *authz.PAPTx,
 	existing *domain.Group,
 	added, removed []string,
@@ -281,7 +278,7 @@ func (s *Service) commitMemberDelta(
 	}
 	existing.MembersVersion++
 	existing.UpdatedAt = time.Now().UTC()
-	if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
+	if err := s.store.Update(ctx, existing); err != nil {
 		return fmt.Errorf(errUpdateGroup, err)
 	}
 
@@ -293,7 +290,6 @@ func (s *Service) commitMemberDelta(
 // here so UpdatePermissions stays under the cyclop threshold.
 func (s *Service) commitPermissionDelta(
 	ctx context.Context,
-	tx storage.Tx,
 	w *authz.PAPTx,
 	existing *domain.Group,
 	added, removed []domain.Permission,
@@ -303,7 +299,7 @@ func (s *Service) commitPermissionDelta(
 	}
 	existing.PermissionsVersion++
 	existing.UpdatedAt = time.Now().UTC()
-	if err := s.store.WithTx(tx).Update(ctx, existing); err != nil {
+	if err := s.store.Update(ctx, existing); err != nil {
 		return fmt.Errorf(errUpdateGroup, err)
 	}
 
@@ -320,6 +316,124 @@ func (s *Service) boundaryCheckPerms(actor domain.AuthInfo, added []domain.Permi
 	}
 
 	return nil
+}
+
+// validatePermissionDeltas runs all pre-tx input checks on an UpdatePermissions
+// delta: the add/remove sets must not intersect, and every added assignment
+// must be catalog-valid. Extracted from UpdatePermissions to keep that method
+// under the cyclop threshold.
+func validatePermissionDeltas(adds, removes []domain.Permission) error {
+	if p, dup := sliceutil.FirstOverlap(adds, removes); dup {
+		return domain.NewValidationError(
+			"permissions",
+			fmt.Sprintf("%s:%s on %s appears in both add and remove", p.Object, p.Action, p.Domain),
+		)
+	}
+	for _, p := range adds {
+		if err := validatePermissionAssignment(p); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validatePermissionAssignment rejects assignments that are syntactically
+// well-formed but semantically meaningless against the catalog
+// (filter.LookupCatalogEntry). Guards the API from clients bypassing the UI.
+//
+// Checks are ordered semantically — existence → action allowed → domain shape
+// — so the error surfaced to the operator names the deepest legitimate problem
+// without leaking redundant follow-ups. domain.NewValidationError maps to
+// InvalidArgument at the handler boundary.
+func validatePermissionAssignment(p domain.Permission) error {
+	entry, ok := filter.LookupCatalogEntry(p.Object)
+	if !ok {
+		return domain.NewValidationError(
+			"permissions",
+			fmt.Sprintf("object %q is not assignable", p.Object),
+		)
+	}
+	if err := validateAssignmentAction(entry, p.Action); err != nil {
+		return err
+	}
+
+	return validateAssignmentDomain(entry.Scope, p.Object, p.Domain)
+}
+
+// validateAssignmentAction enforces that the action is one of the actions
+// the catalog lists as meaningful for entry.Object.
+func validateAssignmentAction(entry filter.CatalogEntry, action domain.Action) error {
+	if slices.Contains(entry.Actions, action) {
+		return nil
+	}
+
+	return domain.NewValidationError(
+		"permissions",
+		fmt.Sprintf("action %q is not allowed for object %q", action, entry.Object),
+	)
+}
+
+// validateAssignmentDomain enforces that the assignment's domain matches the
+// shape required by the object's scope. The exhaustive switch is deliberate:
+// when a new ObjectScope is introduced, the compiler will flag this site as
+// the single place that must learn the new shape rule.
+func validateAssignmentDomain(scope filter.ObjectScope, obj domain.Object, dom string) error {
+	switch scope {
+	case filter.ScopeGlobal:
+		return validateGlobalDomain(obj, dom)
+	case filter.ScopeNamespace:
+		return validatePrefixedDomain(obj, dom, domain.NamespaceResourcePrefix, "<name>")
+	case filter.ScopeGroup:
+		return validatePrefixedDomain(obj, dom, domain.GroupResourcePrefix, "<id>")
+	case filter.ScopeUnspecified:
+		return domain.NewValidationError(
+			"permissions",
+			fmt.Sprintf("object %q has an unspecified scope", obj),
+		)
+	}
+
+	return nil
+}
+
+func validateGlobalDomain(obj domain.Object, dom string) error {
+	if dom == domain.DomainAll {
+		return nil
+	}
+
+	return domain.NewValidationError(
+		"permissions",
+		fmt.Sprintf(
+			"object %q is global; domain must be %q, got %q",
+			obj, domain.DomainAll, dom,
+		),
+	)
+}
+
+// validatePrefixedDomain enforces the "<prefix><id>" or DomainAll shape for
+// resource-scoped objects (Namespace, Group). idPlaceholder is the human-form
+// label of the suffix used in error messages, e.g. "<name>" or "<id>".
+func validatePrefixedDomain(obj domain.Object, dom, prefix, idPlaceholder string) error {
+	if dom == "" {
+		return domain.NewValidationError(
+			"permissions",
+			fmt.Sprintf(
+				"object %q requires a %s domain (use %q for wildcard)",
+				obj, strings.TrimSuffix(prefix, ":"), domain.DomainAll,
+			),
+		)
+	}
+	if dom == domain.DomainAll || strings.HasPrefix(dom, prefix) {
+		return nil
+	}
+
+	return domain.NewValidationError(
+		"permissions",
+		fmt.Sprintf(
+			"object %q domain must be %q or %q, got %q",
+			obj, domain.DomainAll, prefix+idPlaceholder, dom,
+		),
+	)
 }
 
 // cascadeCheckPerms asserts that if the group has members, the actor holds

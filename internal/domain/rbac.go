@@ -90,10 +90,34 @@ func ActionGrants(granted, required Action) bool {
 	}
 }
 
+// Resource-domain prefixes. Every Casbin domain for a scoped object carries a
+// type tag so a raw p-rule is self-describing in a debugger ("namespace:prod"
+// vs a bare "prod"). DomainAll ("*") is wildcard-as-domain and is NEVER
+// prefixed; helpers below short-circuit on it.
+const (
+	NamespaceResourcePrefix = "namespace:"
+	GroupResourcePrefix     = "group:"
+)
+
 // GroupResource returns the canonical Casbin domain string for a permission
-// scoped to a single group: "group:<id>". Use this everywhere a permission
-// like `Group:Write group:<id>` is constructed — never concatenate the
-// "group:" prefix inline.
+// scoped to a single group: "group:<id>". Passing DomainAll returns DomainAll
+// unchanged so callers can build either a concrete or wildcard grant through
+// the same helper without inline branching.
 func GroupResource(id string) string {
-	return "group:" + id
+	if id == DomainAll {
+		return DomainAll
+	}
+
+	return GroupResourcePrefix + id
+}
+
+// NamespaceResource returns the canonical Casbin domain string for a
+// permission scoped to a single namespace: "namespace:<name>". Mirrors
+// GroupResource: DomainAll passes through unchanged.
+func NamespaceResource(name string) string {
+	if name == DomainAll {
+		return DomainAll
+	}
+
+	return NamespaceResourcePrefix + name
 }

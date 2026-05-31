@@ -5,9 +5,10 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/di/config"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/service/schemavalidator"
 	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
@@ -60,26 +61,26 @@ func NewServices(
 	a *Adapters,
 	cfg config.Config,
 	enforcer *casbin.Enforcer,
-	sessionManager *auth.SessionManager,
+	sessionSvc *sessions.Service,
 ) (*Services, error) {
 	schemaValidator := schemavalidator.New(a.SchemaRepo)
 
-	txm := bbolt.NewTxManager(a.Store.DB())
 	pdp := authz.NewPDP(enforcer)
-	pap := authz.NewPAP(enforcer, txm)
+	pap := authz.NewPAP(enforcer, a.StorageManager)
 	scope := authz.NewScope(pdp, pap, a.AuthGroups)
 	authzSvc := authz.NewAuthz(pdp)
-	adminBootstrap := auth.NewAdminBootstrap(txm, a.AuthUsers, a.AuthGroups, a.AuthPolicy)
+	adminBootstrap := auth.NewAdminBootstrap(a.StorageManager, a.AuthUsers, a.AuthGroups, a.AuthPolicy)
 
 	services := &Services{
 		Config: configuc.New(
+			a.StorageManager,
 			pdp,
 			a.ConfigRepo,
 			a.Watch,
 			a.NamespaceRepo,
 			schemaValidator,
 		),
-		Namespace: nsuc.New(pdp, a.NamespaceRepo, a.Watch),
+		Namespace: nsuc.New(a.StorageManager, pdp, a.NamespaceRepo, a.Watch),
 		Schema:    schemauc.New(pdp, a.SchemaRepo, a.NamespaceRepo),
 		Clients:   clientsuc.New(pdp, a.ClientRegistry, a.ClientHistory),
 		Dashboard: dashboarduc.New(
@@ -91,15 +92,17 @@ func NewServices(
 		),
 		Transfer: transferuc.New(pdp, a.ConfigRepo, a.NamespaceRepo),
 		Webhook:  webhookuc.New(pdp, a.WebhookRepo, a.WebhookDispatcher),
-		Profile:  profileuc.New(pdp, a.AuthUsers, a.AuthUsers, sessionManager),
+		Profile:  profileuc.New(a.StorageManager, pdp, a.AuthUsers, a.AuthUsers, sessionSvc),
 		User: useruc.New(
-			useruc.NewBoltUserReader(a.AuthUsers),
-			useruc.NewBoltGroupReader(a.AuthGroups),
+			a.StorageManager,
+			a.AuthUsers,
+			a.AuthGroups,
+			sessionSvc,
 			pdp,
 			pap,
 			scope,
 		),
-		Group:  groupuc.New(a.AuthGroups, pdp, pap, scope),
+		Group:  groupuc.New(a.StorageManager, a.AuthGroups, pdp, pap, scope),
 		Token:  tokenuc.New(pdp, a.AuthTokens),
 		Filter: filteruc.New(pdp, a.NamespaceRepo, a.AuthGroups, a.AuthUsers),
 
@@ -107,7 +110,7 @@ func NewServices(
 		AdminBootstrap: adminBootstrap,
 	}
 
-	if err := configureAuthService(ctx, services, a, cfg, sessionManager, adminBootstrap); err != nil {
+	if err := configureAuthService(ctx, services, a, cfg, adminBootstrap, sessionSvc); err != nil {
 		return nil, err
 	}
 
@@ -122,16 +125,16 @@ func configureAuthService(
 	services *Services,
 	a *Adapters,
 	cfg config.Config,
-	sessionManager *auth.SessionManager,
 	adminBootstrap *auth.AdminBootstrap,
+	sessionSvc *sessions.Service,
 ) error {
-	if !cfg.UI.Auth.Enabled || cfg.UI.Auth.Type == config.AuthTypeNone {
+	if !cfg.UI.Auth.Enabled || cfg.UI.Auth.Type == domain.AuthTypeNone {
 		return nil
 	}
 
 	var oidcProvider *auth.OIDCProvider
 
-	if cfg.UI.Auth.Type == config.AuthTypeOIDC {
+	if cfg.UI.Auth.Type == domain.AuthTypeOIDC {
 		provider, err := auth.NewOIDCProvider(ctx, auth.OIDCConfig{
 			IssuerURL:    cfg.UI.Auth.OIDC.IssuerURL,
 			ClientID:     cfg.UI.Auth.OIDC.ClientID,
@@ -147,10 +150,11 @@ func configureAuthService(
 	}
 
 	services.Auth = authuc.New(
+		a.StorageManager,
 		oidcProvider,
 		a.AuthUsers,
-		sessionManager,
 		adminBootstrap,
+		sessionSvc,
 		cfg.UI.Auth.OIDC.AdminEmail,
 	)
 

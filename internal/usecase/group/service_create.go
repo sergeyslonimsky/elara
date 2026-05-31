@@ -10,7 +10,6 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
 // CreateData carries the parameters CreateGroup accepts.
@@ -56,13 +55,13 @@ func (s *Service) Create(
 ) (*CreateResult, error) {
 	var result *CreateResult
 
-	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
-		managerGroups, err := s.authorizeCreate(ctx, tx, actor, data)
+	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
+		managerGroups, err := s.authorizeCreate(ctx, actor, data)
 		if err != nil {
 			return err
 		}
 
-		group, err := s.persistEntity(ctx, tx, data)
+		group, err := s.persistEntity(ctx, data)
 		if err != nil {
 			return err
 		}
@@ -79,7 +78,7 @@ func (s *Service) Create(
 
 		// Persist any bumped version counters from the steps above.
 		if group.PermissionsVersion > 0 || group.MembersVersion > 0 {
-			if err := s.store.WithTx(tx).Update(ctx, group); err != nil {
+			if err := s.store.Update(ctx, group); err != nil {
 				return fmt.Errorf("persist initial versions: %w", err)
 			}
 		}
@@ -104,7 +103,6 @@ func (s *Service) Create(
 // later wireInitialManagers step does not re-fetch.
 func (s *Service) authorizeCreate(
 	ctx context.Context,
-	tx storage.Tx,
 	actor domain.AuthInfo,
 	data CreateData,
 ) ([]*domain.Group, error) {
@@ -119,7 +117,7 @@ func (s *Service) authorizeCreate(
 		if !s.pdp.HasGroup(actor.Email, id, domain.ActionWrite) {
 			return nil, domain.ErrForbidden
 		}
-		mg, err := s.store.WithTx(tx).Get(ctx, id)
+		mg, err := s.store.Get(ctx, id)
 		if err != nil {
 			return nil, fmt.Errorf("get manager group %s: %w", id, err)
 		}
@@ -148,13 +146,12 @@ func (s *Service) authorizeCreate(
 // and writes it to bbolt. MetadataVersion=1 reflects the create event.
 func (s *Service) persistEntity(
 	ctx context.Context,
-	tx storage.Tx,
 	data CreateData,
 ) (*domain.Group, error) {
 	// Group names must be unique — every Casbin subject and every
 	// FindByName-based lookup keys off them. bbolt is keyed by ID, so the
 	// repo's own collision check doesn't catch duplicate names.
-	switch existing, err := s.store.WithTx(tx).FindByName(ctx, data.Name); {
+	switch existing, err := s.store.FindByName(ctx, data.Name); {
 	case err == nil && existing != nil:
 		return nil, fmt.Errorf(
 			"check name uniqueness: %w",
@@ -177,7 +174,7 @@ func (s *Service) persistEntity(
 	if err := group.Validate(); err != nil {
 		return nil, fmt.Errorf("validate group: %w", err)
 	}
-	if err := s.store.WithTx(tx).Create(ctx, group); err != nil {
+	if err := s.store.Create(ctx, group); err != nil {
 		return nil, fmt.Errorf("create group: %w", err)
 	}
 

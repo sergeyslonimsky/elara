@@ -5,34 +5,43 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
+// GroupReader is the narrow read-only port the usecase needs over the group
+// repo.
+type GroupReader interface {
+	Get(ctx context.Context, id string) (*domain.Group, error)
+	FindByName(ctx context.Context, name string) (*domain.Group, error)
+	Create(ctx context.Context, group *domain.Group) error
+	Update(ctx context.Context, group *domain.Group) error
+	Delete(ctx context.Context, id string) error
+	List(
+		ctx context.Context,
+		filter domain.GroupFilter,
+		params domain.GroupListParams,
+	) ([]*domain.Group, int, error)
+}
+
 // Service orchestrates group lifecycle and Casbin role/membership rules.
-//
-// All mutating methods route through PAP.Write so the bbolt write of the
-// Group entity and the Casbin g/p-rule updates commit (or roll back)
-// atomically.
-//
-// store is a concrete *bbolt.GroupRepo because the per-tx view
-// (GroupRepo.WithTx) returns a concrete type. Tests use the real
-// bbolt + Casbin integration helper instead of mocks (see service_test.go).
 type Service struct {
-	store *bbolt.GroupRepo
+	txm   storage.Manager
+	store GroupReader
 	pdp   *authz.PDP
 	pap   *authz.PAP
 	scope *authz.Scope
 }
 
 func New(
-	store *bbolt.GroupRepo,
+	txm storage.Manager,
+	store GroupReader,
 	pdp *authz.PDP,
 	pap *authz.PAP,
 	scope *authz.Scope,
 ) *Service {
 	return &Service{
+		txm:   txm,
 		store: store,
 		pdp:   pdp,
 		pap:   pap,
@@ -47,17 +56,14 @@ const (
 
 const defaultListLimit = 20
 
-// loadMutableGroup fetches a group within the given tx and rejects system
-// groups via EnsureMutable. Shared by Update*, Delete, and Get-then-mutate
-// flows. The three Update* methods perform their own version check on the
-// relevant counter (metadata / members / permissions); this helper is
-// version-agnostic.
+// loadMutableGroup fetches a group within the given context (potentially carrying
+// a transaction) and rejects system groups via EnsureMutable.
+// Shared by Update*, Delete, and Get-then-mutate flows.
 func (s *Service) loadMutableGroup(
 	ctx context.Context,
-	tx storage.Tx,
 	id string,
 ) (*domain.Group, error) {
-	existing, err := s.store.WithTx(tx).Get(ctx, id)
+	existing, err := s.store.Get(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf(errGetGroup, err)
 	}

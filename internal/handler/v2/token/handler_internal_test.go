@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	token_mock "github.com/sergeyslonimsky/elara/internal/handler/v2/token/mocks"
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	tokenv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/token/v1"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	tokenuc "github.com/sergeyslonimsky/elara/internal/usecase/token"
 )
 
@@ -73,7 +73,7 @@ func TestTokenHandler_CreateToken(t *testing.T) {
 
 			h := New(az, uc)
 
-			ctx := auth.WithClaims(t.Context(), &auth.Claims{Email: "user@example.com"})
+			ctx := auth2.WithClaims(t.Context(), &auth2.Claims{Email: "user@example.com"})
 			resp, err := h.CreateToken(ctx, connect.NewRequest(&tokenv1.CreateTokenRequest{
 				Name:       "my-token",
 				Namespaces: []string{"ns1"},
@@ -150,7 +150,7 @@ func TestTokenHandler_ListTokens(t *testing.T) {
 
 			h := New(az, uc)
 
-			ctx := auth.WithClaims(t.Context(), &auth.Claims{Email: "caller@example.com"})
+			ctx := auth2.WithClaims(t.Context(), &auth2.Claims{Email: "caller@example.com"})
 			resp, err := h.ListTokens(ctx, connect.NewRequest(tc.req))
 
 			if tc.wantErr {
@@ -206,7 +206,7 @@ func TestTokenHandler_GetToken(t *testing.T) {
 
 			h := New(az, uc)
 
-			ctx := auth.WithClaims(t.Context(), &auth.Claims{Email: "caller@example.com"})
+			ctx := auth2.WithClaims(t.Context(), &auth2.Claims{Email: "caller@example.com"})
 			resp, err := h.GetToken(
 				ctx,
 				connect.NewRequest(&tokenv1.GetTokenRequest{Id: tc.id}),
@@ -254,7 +254,7 @@ func TestTokenHandler_RevokeToken(t *testing.T) {
 
 			h := New(az, uc)
 
-			ctx := auth.WithClaims(t.Context(), &auth.Claims{Email: "caller@example.com"})
+			ctx := auth2.WithClaims(t.Context(), &auth2.Claims{Email: "caller@example.com"})
 			_, err := h.RevokeToken(
 				ctx,
 				connect.NewRequest(&tokenv1.RevokeTokenRequest{Id: tc.id}),

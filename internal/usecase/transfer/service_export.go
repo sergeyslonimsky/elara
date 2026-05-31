@@ -9,9 +9,9 @@ import (
 	"sort"
 	"time"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/util/archive"
 )
 
@@ -118,7 +118,7 @@ func (s *Service) ExportNamespace(
 }
 
 func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return domain.AllBundle{}, domain.ErrUnauthorized
 	}
@@ -135,11 +135,7 @@ func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) 
 	}
 
 	for _, ns := range ns {
-		if !s.pdp.Has(claims.Email, domain.Permission{
-			Object: domain.ObjectNamespace,
-			Action: domain.ActionRead,
-			Domain: ns.Name,
-		}) {
+		if !s.pdp.HasNamespace(claims.Email, ns.Name, domain.ActionRead) {
 			continue
 		}
 

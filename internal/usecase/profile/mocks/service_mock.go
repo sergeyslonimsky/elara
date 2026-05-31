@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
+	sessions "github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -133,41 +134,55 @@ func (mr *MockpassWriterMockRecorder) SetPassword(ctx, email, hash, changeRequir
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockpassWriter)(nil).SetPassword), ctx, email, hash, changeRequired)
 }
 
-// MocksessionCreator is a mock of sessionCreator interface.
-type MocksessionCreator struct {
+// MocksessionsService is a mock of sessionsService interface.
+type MocksessionsService struct {
 	ctrl     *gomock.Controller
-	recorder *MocksessionCreatorMockRecorder
+	recorder *MocksessionsServiceMockRecorder
 	isgomock struct{}
 }
 
-// MocksessionCreatorMockRecorder is the mock recorder for MocksessionCreator.
-type MocksessionCreatorMockRecorder struct {
-	mock *MocksessionCreator
+// MocksessionsServiceMockRecorder is the mock recorder for MocksessionsService.
+type MocksessionsServiceMockRecorder struct {
+	mock *MocksessionsService
 }
 
-// NewMocksessionCreator creates a new mock instance.
-func NewMocksessionCreator(ctrl *gomock.Controller) *MocksessionCreator {
-	mock := &MocksessionCreator{ctrl: ctrl}
-	mock.recorder = &MocksessionCreatorMockRecorder{mock}
+// NewMocksessionsService creates a new mock instance.
+func NewMocksessionsService(ctrl *gomock.Controller) *MocksessionsService {
+	mock := &MocksessionsService{ctrl: ctrl}
+	mock.recorder = &MocksessionsServiceMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MocksessionCreator) EXPECT() *MocksessionCreatorMockRecorder {
+func (m *MocksessionsService) EXPECT() *MocksessionsServiceMockRecorder {
 	return m.recorder
 }
 
 // Create mocks base method.
-func (m *MocksessionCreator) Create(user *domain.User) (string, error) {
+func (m *MocksessionsService) Create(ctx context.Context, params sessions.CreateParams) (*domain.Session, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", user)
-	ret0, _ := ret[0].(string)
+	ret := m.ctrl.Call(m, "Create", ctx, params)
+	ret0, _ := ret[0].(*domain.Session)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MocksessionCreatorMockRecorder) Create(user any) *gomock.Call {
+func (mr *MocksessionsServiceMockRecorder) Create(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MocksessionCreator)(nil).Create), user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MocksessionsService)(nil).Create), ctx, params)
+}
+
+// Revoke mocks base method.
+func (m *MocksessionsService) Revoke(ctx context.Context, id, revokedBy, reason string, eventType domain.SessionEventType) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Revoke", ctx, id, revokedBy, reason, eventType)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Revoke indicates an expected call of Revoke.
+func (mr *MocksessionsServiceMockRecorder) Revoke(ctx, id, revokedBy, reason, eventType any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MocksessionsService)(nil).Revoke), ctx, id, revokedBy, reason, eventType)
 }

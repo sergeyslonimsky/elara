@@ -22,6 +22,9 @@ var (
 	ErrInvalidToken           = errors.New("invalid token")
 	ErrPasswordChangeRequired = errors.New("password change required")
 	ErrFeatureNotAvailable    = errors.New("feature not available")
+	ErrSessionNotFound        = errors.New("session not found")
+	ErrSessionExpired         = errors.New("session expired")
+	ErrSessionRevoked         = errors.New("session revoked")
 )
 
 type ValidationError struct {

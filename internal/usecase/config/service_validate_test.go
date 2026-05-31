@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/content"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
@@ -23,7 +22,7 @@ func TestService_Validate(t *testing.T) {
 		mockFunc func(ctx context.Context, m mocks)
 		errIs    error
 		wantErr  string
-		want     *content.ValidationResult
+		want     *domain.ValidationResult
 	}{
 		{
 			name: "success with schema",
@@ -38,7 +37,7 @@ func TestService_Validate(t *testing.T) {
 					Validate(ctx, "prod", "/a.json", normalizedJSON, domain.FormatJSON).
 					Return(nil)
 			},
-			want: &content.ValidationResult{Valid: true},
+			want: &domain.ValidationResult{Valid: true},
 		},
 	}
 

@@ -18,6 +18,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/di"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/di/service"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	etcdinterceptor "github.com/sergeyslonimsky/elara/internal/handler/etcdv3/interceptor"
 	"github.com/sergeyslonimsky/elara/internal/handler/ui"
 	grpctransport "github.com/sergeyslonimsky/elara/internal/transport/grpc"
@@ -109,7 +110,7 @@ func run() error {
 	a.AddResource(svc.Adapters)
 
 	frontendServer := corehttp.NewServer(cfg.UI.Server, frontendServerOptions(a, cfg, promMetrics)...)
-	service.V2Routes(frontendServer, svc.V2Handlers, svc.SessionManager, cfg)
+	service.V2Routes(frontendServer, svc.V2Handlers, svc.Sessions, svc.Adapters.AuthUsers, cfg)
 
 	// Mount UI static file handler (serves frontend, fallback to index.html).
 	if distFS := web.DistFS(); distFS != nil {
@@ -144,7 +145,7 @@ func run() error {
 //   - oidc: creates only the group and policy; the first OIDC login matching
 //     cfg.UI.Auth.OIDC.AdminEmail is elevated into the group on callback.
 //   - none: creates the synthetic passthrough user used by the interceptor.
-func bootstrap(ctx context.Context, svc *service.Manager, cfg config.Config) error {
+func bootstrap(ctx context.Context, svc *service.Managers, cfg config.Config) error {
 	if svc.Services.AdminBootstrap == nil {
 		return nil
 	}
@@ -152,15 +153,15 @@ func bootstrap(ctx context.Context, svc *service.Manager, cfg config.Config) err
 	var err error
 
 	switch cfg.UI.Auth.Type {
-	case config.AuthTypeBasicAuth:
+	case domain.AuthTypeBasicAuth:
 		err = svc.Services.AdminBootstrap.BootstrapBasic(
 			ctx,
 			cfg.UI.Auth.BasicAuth.Username,
 			cfg.UI.Auth.BasicAuth.Password,
 		)
-	case config.AuthTypeOIDC:
+	case domain.AuthTypeOIDC:
 		err = svc.Services.AdminBootstrap.BootstrapOIDC(ctx)
-	case config.AuthTypeNone:
+	case domain.AuthTypeNone:
 		err = svc.Services.AdminBootstrap.BootstrapPassthrough(ctx)
 	}
 

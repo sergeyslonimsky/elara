@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 // Authorization is enforced at the handler boundary; these tests cover only
@@ -24,8 +25,13 @@ func TestService_Lock(t *testing.T) {
 		{
 			name: "success notifies after store update",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.store.EXPECT().LockNamespace(ctx, name).Return(nil)
-				m.notifier.EXPECT().NotifyNamespaceLocked(ctx, name)
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.store.EXPECT().LockNamespace(gomock.Any(), name).Return(nil)
+				m.notifier.EXPECT().NotifyNamespaceLocked(gomock.Any(), name)
 
 				return ctx
 			},
@@ -33,7 +39,12 @@ func TestService_Lock(t *testing.T) {
 		{
 			name: "store error skips notify",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.store.EXPECT().LockNamespace(ctx, name).Return(errors.New("db error"))
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.store.EXPECT().LockNamespace(gomock.Any(), name).Return(errors.New("db error"))
 
 				return ctx
 			},
@@ -73,8 +84,13 @@ func TestService_Unlock(t *testing.T) {
 		{
 			name: "success notifies after store update",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.store.EXPECT().UnlockNamespace(ctx, name).Return(nil)
-				m.notifier.EXPECT().NotifyNamespaceUnlocked(ctx, name)
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.store.EXPECT().UnlockNamespace(gomock.Any(), name).Return(nil)
+				m.notifier.EXPECT().NotifyNamespaceUnlocked(gomock.Any(), name)
 
 				return ctx
 			},
@@ -82,7 +98,12 @@ func TestService_Unlock(t *testing.T) {
 		{
 			name: "store error skips notify",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.store.EXPECT().UnlockNamespace(ctx, name).Return(errors.New("db error"))
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.store.EXPECT().UnlockNamespace(gomock.Any(), name).Return(errors.New("db error"))
 
 				return ctx
 			},

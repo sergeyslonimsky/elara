@@ -9,10 +9,10 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/di/service"
 )
 
-type Container = di.Container[config.Config, *service.Manager]
+type Container = di.Container[config.Config, *service.Managers]
 
 func LoadContainer(ctx context.Context) (*Container, error) {
-	return di.NewContainer[config.Config, *service.Manager](
+	return di.NewContainer[config.Config, *service.Managers](
 		ctx,
 		config.NewConfig,
 		service.NewServiceManager,

@@ -1,15 +1,16 @@
 package casbin_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 )
 
 // newTestEnforcer creates an Enforcer backed by a real bbolt PolicyRepo in a
@@ -24,10 +25,10 @@ func newTestEnforcer(t *testing.T, rules [][]string) *casbin.Enforcer {
 	return e
 }
 
-// newTestEnforcerWithTxM constructs an Enforcer + TxManager backed by a real
+// newTestEnforcerWithTxM constructs an Enforcer + Manager backed by a real
 // bbolt store. Pre-seeds raw rules through PolicyRepo (bypassing the enforcer)
 // before NewEnforcer runs, so seed-on-empty is skipped when rules is non-empty.
-func newTestEnforcerWithTxM(t *testing.T, rules [][]string) (*casbin.Enforcer, storage.TxManager) {
+func newTestEnforcerWithTxM(t *testing.T, rules [][]string) (*casbin.Enforcer, storage.Manager) {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "casbin.db")
@@ -37,7 +38,8 @@ func newTestEnforcerWithTxM(t *testing.T, rules [][]string) (*casbin.Enforcer, s
 
 	t.Cleanup(func() { _ = store.Close() })
 
-	policies := bbolt.NewPolicyRepo(store)
+	storageManager := bbolt.NewManager(store.DB())
+	policies := bbolt.NewPolicyRepo(storageManager)
 
 	for _, rule := range rules {
 		if len(rule) < 2 {
@@ -51,33 +53,33 @@ func newTestEnforcerWithTxM(t *testing.T, rules [][]string) (*casbin.Enforcer, s
 			sec = "g"
 		}
 
-		require.NoError(t, policies.AddPolicy(sec, ptype, rule[1:]))
+		require.NoError(t, policies.AddPolicyCtx(t.Context(), sec, ptype, rule[1:]))
 	}
 
 	e, err := casbin.NewEnforcer(policies)
 	require.NoError(t, err)
 
-	return e, bbolt.NewTxManager(store.DB())
+	return e, storageManager
 }
 
 // seedRole adds a g-rule (role assignment) through a real WriteTx so persistence
 // and cache stay in sync — equivalent to the old Enforcer.AddRoleForUser bridge.
-func seedRole(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, user, role, dom string) {
+func seedRole(t *testing.T, e *casbin.Enforcer, txm storage.Manager, user, role, dom string) {
 	t.Helper()
 	require.NoError(
 		t,
-		e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		e.WriteTx(t.Context(), txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			return txe.AddRoleForUser(user, role, dom)
 		}),
 	)
 }
 
 // removeRole removes a g-rule through a real WriteTx.
-func removeRole(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, user, role, dom string) {
+func removeRole(t *testing.T, e *casbin.Enforcer, txm storage.Manager, user, role, dom string) {
 	t.Helper()
 	require.NoError(
 		t,
-		e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		e.WriteTx(t.Context(), txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			return txe.RemoveRoleForUser(user, role, dom)
 		}),
 	)
@@ -87,13 +89,13 @@ func removeRole(t *testing.T, e *casbin.Enforcer, txm storage.TxManager, user, r
 func seedPolicy(
 	t *testing.T,
 	e *casbin.Enforcer,
-	txm storage.TxManager,
+	txm storage.Manager,
 	sub, dom, obj, act string,
 ) {
 	t.Helper()
 	require.NoError(
 		t,
-		e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		e.WriteTx(t.Context(), txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			return txe.AddPolicy(sub, dom, obj, act)
 		}),
 	)
@@ -103,13 +105,13 @@ func seedPolicy(
 func removePolicy(
 	t *testing.T,
 	e *casbin.Enforcer,
-	txm storage.TxManager,
+	txm storage.Manager,
 	sub, dom, obj, act string,
 ) {
 	t.Helper()
 	require.NoError(
 		t,
-		e.WriteTx(t.Context(), txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		e.WriteTx(t.Context(), txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			return txe.RemovePolicy(sub, dom, obj, act)
 		}),
 	)
@@ -120,7 +122,7 @@ func removePolicy(
 // are just arbitrary p-rule holders that users/groups are linked to via g-rules.
 // write⊇read is enforced by the matcher (domain.ActionGrants), so the writer
 // bundle only needs a write rule to also grant read.
-func seedRoleTemplates(t *testing.T, e *casbin.Enforcer, txm storage.TxManager) {
+func seedRoleTemplates(t *testing.T, e *casbin.Enforcer, txm storage.Manager) {
 	t.Helper()
 	seedPolicy(t, e, txm, "admin", "*", "*", "*")
 	seedPolicy(t, e, txm, "reader", "*", "config", "read")

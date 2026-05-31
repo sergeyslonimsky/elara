@@ -6,7 +6,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // PAP (Policy Administration Point) is the write-side complement of PDP.
@@ -19,16 +19,15 @@ import (
 // any companion entity.
 type PAP struct {
 	enforcer *casbin.Enforcer
-	txm      storage.TxManager
+	txm      storage.Manager
 }
 
-func NewPAP(enforcer *casbin.Enforcer, txm storage.TxManager) *PAP {
+func NewPAP(enforcer *casbin.Enforcer, txm storage.Manager) *PAP {
 	return &PAP{enforcer: enforcer, txm: txm}
 }
 
 // Write opens a Casbin write transaction and hands the per-tx administration
-// surface to fn. The storage.Tx is exposed so callers can combine PAP
-// mutations with bbolt repo writes in the same atomic step.
+// surface to fn.
 //
 // Read consistency inside fn:
 //   - Mutations made through `w *PAPTx` go to the per-tx PolicyRepo and
@@ -44,10 +43,10 @@ func NewPAP(enforcer *casbin.Enforcer, txm storage.TxManager) *PAP {
 //     parent-snapshot helpers are safe.
 func (p *PAP) Write(
 	ctx context.Context,
-	fn func(tx storage.Tx, w *PAPTx) error,
+	fn func(ctx context.Context, w *PAPTx) error,
 ) error {
-	err := p.enforcer.WriteTx(ctx, p.txm, func(tx storage.Tx, txe *casbin.TxEnforcer) error {
-		return fn(tx, &PAPTx{enforcer: p.enforcer, txe: txe})
+	err := p.enforcer.WriteTx(ctx, p.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
+		return fn(ctx, &PAPTx{enforcer: p.enforcer, txe: txe})
 	})
 	if err != nil {
 		return fmt.Errorf("pap write: %w", err)

@@ -14,8 +14,6 @@ import (
 	reflect "reflect"
 
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
-	storage "github.com/sergeyslonimsky/elara/internal/service/storage"
-	user "github.com/sergeyslonimsky/elara/internal/usecase/user"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -117,31 +115,17 @@ func (mr *MockUserReaderMockRecorder) SetPassword(ctx, email, hash, changeRequir
 }
 
 // Upsert mocks base method.
-func (m *MockUserReader) Upsert(ctx context.Context, arg1 *domain.User) error {
+func (m *MockUserReader) Upsert(ctx context.Context, user *domain.User) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Upsert", ctx, arg1)
+	ret := m.ctrl.Call(m, "Upsert", ctx, user)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Upsert indicates an expected call of Upsert.
-func (mr *MockUserReaderMockRecorder) Upsert(ctx, arg1 any) *gomock.Call {
+func (mr *MockUserReaderMockRecorder) Upsert(ctx, user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockUserReader)(nil).Upsert), ctx, arg1)
-}
-
-// WithTx mocks base method.
-func (m *MockUserReader) WithTx(tx storage.Tx) user.UserReader {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithTx", tx)
-	ret0, _ := ret[0].(user.UserReader)
-	return ret0
-}
-
-// WithTx indicates an expected call of WithTx.
-func (mr *MockUserReaderMockRecorder) WithTx(tx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockUserReader)(nil).WithTx), tx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockUserReader)(nil).Upsert), ctx, user)
 }
 
 // MockGroupReader is a mock of GroupReader interface.
@@ -198,16 +182,40 @@ func (mr *MockGroupReaderMockRecorder) Get(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockGroupReader)(nil).Get), ctx, id)
 }
 
-// WithTx mocks base method.
-func (m *MockGroupReader) WithTx(tx storage.Tx) user.GroupReader {
+// MocksessionsService is a mock of sessionsService interface.
+type MocksessionsService struct {
+	ctrl     *gomock.Controller
+	recorder *MocksessionsServiceMockRecorder
+	isgomock struct{}
+}
+
+// MocksessionsServiceMockRecorder is the mock recorder for MocksessionsService.
+type MocksessionsServiceMockRecorder struct {
+	mock *MocksessionsService
+}
+
+// NewMocksessionsService creates a new mock instance.
+func NewMocksessionsService(ctrl *gomock.Controller) *MocksessionsService {
+	mock := &MocksessionsService{ctrl: ctrl}
+	mock.recorder = &MocksessionsServiceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MocksessionsService) EXPECT() *MocksessionsServiceMockRecorder {
+	return m.recorder
+}
+
+// RevokeAllForUser mocks base method.
+func (m *MocksessionsService) RevokeAllForUser(ctx context.Context, userID, revokedBy, reason string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithTx", tx)
-	ret0, _ := ret[0].(user.GroupReader)
+	ret := m.ctrl.Call(m, "RevokeAllForUser", ctx, userID, revokedBy, reason)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// WithTx indicates an expected call of WithTx.
-func (mr *MockGroupReaderMockRecorder) WithTx(tx any) *gomock.Call {
+// RevokeAllForUser indicates an expected call of RevokeAllForUser.
+func (mr *MocksessionsServiceMockRecorder) RevokeAllForUser(ctx, userID, revokedBy, reason any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockGroupReader)(nil).WithTx), tx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAllForUser", reflect.TypeOf((*MocksessionsService)(nil).RevokeAllForUser), ctx, userID, revokedBy, reason)
 }

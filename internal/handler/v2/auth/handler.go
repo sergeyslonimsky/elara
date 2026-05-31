@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"connectrpc.com/connect"
 
-	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
+	sessions_handler "github.com/sergeyslonimsky/elara/internal/handler/v2/sessions"
 	authv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1"
+	authuc "github.com/sergeyslonimsky/elara/internal/usecase/auth"
 )
 
 //go:generate mockgen -destination=mocks/handler_mock.go -package=auth_mock -source=handler.go
@@ -20,26 +22,27 @@ const (
 
 	oauthStateCookieName = "elara_oauth_state"
 	oauthNonceCookieName = "elara_oauth_nonce"
-	sessionCookieName    = "elara_session"
 )
 
-type usecase interface {
-	Login(ctx context.Context) (url string, state string, nonce string, err error)
-	Callback(ctx context.Context, code, nonce string) (string, *domain.User, error)
-	BasicLogin(ctx context.Context, email, password string) (string, *domain.User, error)
-}
+type (
+	usecase interface {
+		Login(ctx context.Context) (url string, state string, nonce string, err error)
+		Callback(ctx context.Context, params authuc.CallbackParams) (*domain.User, *domain.Session, error)
+		BasicLogin(ctx context.Context, params authuc.LoginParams) (*domain.User, *domain.Session, error)
+	}
+)
 
 // Handler implements authv1connect.AuthServiceHandler.
 type Handler struct {
 	uc           usecase
-	authType     config.AuthType
+	authType     domain.AuthType
 	secureCookie bool
 }
 
 // NewHandler returns a new Handler wired with the login use cases.
 func NewHandler(
 	uc usecase,
-	authType config.AuthType,
+	authType domain.AuthType,
 	secureCookie bool,
 ) *Handler {
 	return &Handler{
@@ -55,11 +58,11 @@ func (h *Handler) GetAuthInfo(
 ) (*connect.Response[authv1.GetAuthInfoResponse], error) {
 	var authType authv1.AuthType
 	switch h.authType {
-	case config.AuthTypeOIDC:
+	case domain.AuthTypeOIDC:
 		authType = authv1.AuthType_AUTH_TYPE_OIDC
-	case config.AuthTypeBasicAuth:
+	case domain.AuthTypeBasicAuth:
 		authType = authv1.AuthType_AUTH_TYPE_BASIC
-	case config.AuthTypeNone:
+	case domain.AuthTypeNone:
 		authType = authv1.AuthType_AUTH_TYPE_NONE
 	default:
 		authType = authv1.AuthType_AUTH_TYPE_UNSPECIFIED
@@ -74,7 +77,7 @@ func (h *Handler) OIDCLogin(
 	ctx context.Context,
 	_ *connect.Request[authv1.OIDCLoginRequest],
 ) (*connect.Response[authv1.OIDCLoginResponse], error) {
-	if h.authType != config.AuthTypeOIDC {
+	if h.authType != domain.AuthTypeOIDC {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
 			fmt.Errorf(
@@ -121,7 +124,7 @@ func (h *Handler) OIDCCallback(
 	ctx context.Context,
 	req *connect.Request[authv1.OIDCCallbackRequest],
 ) (*connect.Response[authv1.OIDCCallbackResponse], error) {
-	if h.authType != config.AuthTypeOIDC {
+	if h.authType != domain.AuthTypeOIDC {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
 			fmt.Errorf(
@@ -142,22 +145,22 @@ func (h *Handler) OIDCCallback(
 		return nil, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
 	}
 
-	sessionToken, _, err := h.uc.Callback(ctx, req.Msg.GetCode(), nonce)
+	ip, ua := clientInfo(req.Header())
+
+	user, sess, err := h.uc.Callback(ctx, authuc.CallbackParams{
+		Code:      req.Msg.GetCode(),
+		Nonce:     nonce,
+		IP:        ip,
+		UserAgent: ua,
+	})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	resp := connect.NewResponse(&authv1.OIDCCallbackResponse{})
+	_ = user // OIDC identity accepted
 
-	cookie := &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    sessionToken,
-		HttpOnly: true,
-		Secure:   h.secureCookie,
-		SameSite: http.SameSiteStrictMode,
-		Path:     "/",
-	}
-	resp.Header().Add(cookieHeader, cookie.String())
+	resp := connect.NewResponse(&authv1.OIDCCallbackResponse{})
+	sessions_handler.SetSessionCookie(resp.Header(), sess.ID, sess.ExpiresAt, h.secureCookie)
 
 	return resp, nil
 }
@@ -166,7 +169,7 @@ func (h *Handler) BasicLogin(
 	ctx context.Context,
 	req *connect.Request[authv1.BasicLoginRequest],
 ) (*connect.Response[authv1.BasicLoginResponse], error) {
-	if h.authType != config.AuthTypeBasicAuth {
+	if h.authType != domain.AuthTypeBasicAuth {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
 			fmt.Errorf(
@@ -177,7 +180,14 @@ func (h *Handler) BasicLogin(
 		)
 	}
 
-	sessionToken, user, err := h.uc.BasicLogin(ctx, req.Msg.GetEmail(), req.Msg.GetPassword())
+	ip, ua := clientInfo(req.Header())
+
+	user, sess, err := h.uc.BasicLogin(ctx, authuc.LoginParams{
+		Email:     req.Msg.GetEmail(),
+		Password:  req.Msg.GetPassword(),
+		IP:        ip,
+		UserAgent: ua,
+	})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -185,16 +195,7 @@ func (h *Handler) BasicLogin(
 	resp := connect.NewResponse(&authv1.BasicLoginResponse{
 		PasswordChangeRequired: user.PasswordChangeRequired,
 	})
-
-	cookie := &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    sessionToken,
-		HttpOnly: true,
-		Secure:   h.secureCookie,
-		SameSite: http.SameSiteStrictMode,
-		Path:     "/",
-	}
-	resp.Header().Add(cookieHeader, cookie.String())
+	sessions_handler.SetSessionCookie(resp.Header(), sess.ID, sess.ExpiresAt, h.secureCookie)
 
 	return resp, nil
 }
@@ -208,4 +209,17 @@ func extractCookieFromRequest(header http.Header, name string) (string, error) {
 	}
 
 	return cookie.Value, nil
+}
+
+// clientInfo extracts IP and User-Agent from HTTP headers.
+// IP is the first value from X-Forwarded-For; User-Agent is taken verbatim.
+func clientInfo(header http.Header) (string, string) {
+	var ip string
+
+	if xff := header.Get("X-Forwarded-For"); xff != "" {
+		first, _, _ := strings.Cut(xff, ",")
+		ip = strings.TrimSpace(first)
+	}
+
+	return ip, header.Get("User-Agent")
 }

@@ -1,6 +1,7 @@
 package user_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,10 +9,10 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/usecase/user"
 	usermock "github.com/sergeyslonimsky/elara/internal/usecase/user/mocks"
 	"github.com/sergeyslonimsky/elara/test/bbolttest"
@@ -40,7 +41,7 @@ type realStack struct {
 	enforcer *casbin.Enforcer
 	users    *bbolt.UserRepo
 	groups   *bbolt.GroupRepo
-	txm      *bbolt.TxManager
+	txm      *bbolt.Manager
 }
 
 // setupServiceReal boots the full integration stack — real bbolt + real
@@ -50,15 +51,18 @@ func setupServiceReal(t *testing.T) realStack {
 	t.Helper()
 
 	store, enforcer, txm := bbolttest.OpenStack(t)
-	users := bbolt.NewUserRepo(store)
-	groupRepo := bbolt.NewGroupRepo(store)
-	groups := user.NewBoltGroupReader(groupRepo)
+	users := bbolt.NewUserRepo(txm)
+	groupRepo := bbolt.NewGroupRepo(txm)
+	sessionRepo := bbolt.NewSessionRepo(txm)
+	sessionEventRepo := bbolt.NewSessionEventRepo(txm)
+	sessionSvc := sessions.New(sessionRepo, sessionEventRepo, sessions.RealClock{})
+
 	pdp := authz.NewPDP(enforcer)
 	pap := authz.NewPAP(enforcer, txm)
 	scope := authz.NewScope(pdp, pap, groupRepo)
 
 	return realStack{
-		svc:      user.New(user.NewBoltUserReader(users), groups, pdp, pap, scope),
+		svc:      user.New(txm, users, groupRepo, sessionSvc, pdp, pap, scope),
 		store:    store,
 		enforcer: enforcer,
 		users:    users,
@@ -84,7 +88,7 @@ func addPolicies(t *testing.T, st realStack, rules []policyRow) {
 
 	require.NoError(
 		t,
-		st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		st.enforcer.WriteTx(t.Context(), st.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			for _, r := range rules {
 				if err := txe.AddPolicy(r.Sub, r.Dom, string(r.Obj), string(r.Act)); err != nil {
 					return err
@@ -103,7 +107,7 @@ func addMemberships(t *testing.T, st realStack, rows []struct{ User, GroupName s
 
 	require.NoError(
 		t,
-		st.enforcer.WriteTx(t.Context(), st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		st.enforcer.WriteTx(t.Context(), st.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			for _, m := range rows {
 				subject := casbin.GroupSubject(m.GroupName)
 				if err := txe.AddRoleForUser(m.User, subject, domain.MembershipDomain); err != nil {
@@ -156,7 +160,7 @@ type mockStack struct {
 	store    *usermock.MockUserReader
 	bolt     *bbolt.Store
 	enforcer *casbin.Enforcer
-	txm      *bbolt.TxManager
+	txm      *bbolt.Manager
 }
 
 func setupServiceWithMockStore(t *testing.T) mockStack {
@@ -164,19 +168,17 @@ func setupServiceWithMockStore(t *testing.T) mockStack {
 	ctrl := gomock.NewController(t)
 
 	store, enforcer, txm := bbolttest.OpenStack(t)
-	groupRepo := bbolt.NewGroupRepo(store)
-	groups := user.NewBoltGroupReader(groupRepo)
+	groupRepo := bbolt.NewGroupRepo(txm)
+	sessionSvc := usermock.NewMocksessionsService(ctrl)
+
 	pdp := authz.NewPDP(enforcer)
 	pap := authz.NewPAP(enforcer, txm)
 	scope := authz.NewScope(pdp, pap, groupRepo)
 
 	mockStore := usermock.NewMockUserReader(ctrl)
-	// WithTx returns the same mock so expectations recorded on the parent
-	// cover both pre-tx and in-tx call paths.
-	mockStore.EXPECT().WithTx(gomock.Any()).AnyTimes().Return(mockStore)
 
 	return mockStack{
-		svc:      user.New(mockStore, groups, pdp, pap, scope),
+		svc:      user.New(txm, mockStore, groupRepo, sessionSvc, pdp, pap, scope),
 		store:    mockStore,
 		bolt:     store,
 		enforcer: enforcer,
@@ -191,7 +193,7 @@ func seedAdminAllOnMockStack(t *testing.T, m mockStack) {
 
 	require.NoError(
 		t,
-		m.enforcer.WriteTx(t.Context(), m.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+		m.enforcer.WriteTx(t.Context(), m.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			return txe.AddPolicy(
 				adminEmail,
 				domain.DomainAll,

@@ -56,6 +56,20 @@ func (mr *MockpdpMockRecorder) EffectiveDomains(principal, object, action any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveDomains", reflect.TypeOf((*Mockpdp)(nil).EffectiveDomains), principal, object, action)
 }
 
+// EffectiveNamespaces mocks base method.
+func (m *Mockpdp) EffectiveNamespaces(actor string, action domain.Action) authz.DomainSet {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EffectiveNamespaces", actor, action)
+	ret0, _ := ret[0].(authz.DomainSet)
+	return ret0
+}
+
+// EffectiveNamespaces indicates an expected call of EffectiveNamespaces.
+func (mr *MockpdpMockRecorder) EffectiveNamespaces(actor, action any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveNamespaces", reflect.TypeOf((*Mockpdp)(nil).EffectiveNamespaces), actor, action)
+}
+
 // Has mocks base method.
 func (m *Mockpdp) Has(principal string, perm domain.Permission) bool {
 	m.ctrl.T.Helper()

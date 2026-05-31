@@ -10,19 +10,19 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/filter"
 	filtermock "github.com/sergeyslonimsky/elara/internal/handler/v2/filter/mocks"
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	filterv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/filter/v1"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	filteruc "github.com/sergeyslonimsky/elara/internal/usecase/filter"
 )
 
 const actorEmail = "u@example.com"
 
 func withActor(ctx context.Context) context.Context {
-	return auth.WithClaims(ctx, &auth.Claims{Email: actorEmail})
+	return auth2.WithClaims(ctx, &auth2.Claims{Email: actorEmail})
 }
 
 func TestHandler_GetNamespaces(t *testing.T) {

@@ -9,10 +9,11 @@ import (
 	"github.com/sergeyslonimsky/core/lifecycle"
 
 	"github.com/sergeyslonimsky/elara/internal/di/config"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
-	watchadapter "github.com/sergeyslonimsky/elara/internal/service/adapter/watch"
-	webhookadapter "github.com/sergeyslonimsky/elara/internal/service/adapter/webhook"
 	monitor2 "github.com/sergeyslonimsky/elara/internal/service/monitor"
+	"github.com/sergeyslonimsky/elara/internal/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
+	watchadapter "github.com/sergeyslonimsky/elara/internal/transport/watch"
+	webhookadapter "github.com/sergeyslonimsky/elara/internal/transport/webhook"
 )
 
 type Adapters struct {
@@ -26,8 +27,11 @@ type Adapters struct {
 	AuthGroups        *bbolt.GroupRepo
 	AuthTokens        *bbolt.TokenRepo
 	AuthPolicy        *bbolt.PolicyRepo
+	SessionRepo       *bbolt.SessionRepo
+	SessionEventRepo  *bbolt.SessionEventRepo
 	Watch             *watchadapter.Publisher
 	WebhookDispatcher *webhookadapter.Dispatcher
+	StorageManager    storage.Manager
 
 	// Connected-clients monitor: history is wired into the registry as a
 	// HistorySink so disconnects are persisted automatically.
@@ -49,7 +53,9 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 		return nil, fmt.Errorf("open bbolt store: %w", err)
 	}
 
-	clientHistoryRepo := bbolt.NewClientHistoryRepo(store)
+	storageManager := bbolt.NewManager(store.DB())
+
+	clientHistoryRepo := bbolt.NewClientHistoryRepo(storageManager)
 	clientHistory := monitor2.NewHistoryStore(ctx, monitor2.HistoryConfig{
 		MaxRecords: cfg.Client.History.MaxRecords,
 		MaxAge:     cfg.Client.History.MaxAge,
@@ -60,23 +66,26 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 	}, clientHistory)
 
 	watchPublisher := watchadapter.NewPublisher()
-	webhookRepo := bbolt.NewWebhookRepo(store)
+	webhookRepo := bbolt.NewWebhookRepo(storageManager)
 	webhookDispatcher := webhookadapter.NewDispatcher(webhookRepo, watchPublisher)
 
 	//nolint:exhaustruct // shutdownOnce/shutdownErr have valid zero values
 	return &Adapters{
 		Store:             store,
-		ConfigRepo:        bbolt.NewConfigRepo(store),
-		NamespaceRepo:     bbolt.NewNamespaceRepo(store),
+		ConfigRepo:        bbolt.NewConfigRepo(storageManager),
+		NamespaceRepo:     bbolt.NewNamespaceRepo(storageManager),
 		ClientHistoryRepo: clientHistoryRepo,
-		SchemaRepo:        bbolt.NewSchemaRepo(store),
+		SchemaRepo:        bbolt.NewSchemaRepo(storageManager),
 		WebhookRepo:       webhookRepo,
-		AuthUsers:         bbolt.NewUserRepo(store),
-		AuthGroups:        bbolt.NewGroupRepo(store),
-		AuthTokens:        bbolt.NewTokenRepo(store),
-		AuthPolicy:        bbolt.NewPolicyRepo(store),
+		AuthUsers:         bbolt.NewUserRepo(storageManager),
+		AuthGroups:        bbolt.NewGroupRepo(storageManager),
+		AuthTokens:        bbolt.NewTokenRepo(storageManager),
+		AuthPolicy:        bbolt.NewPolicyRepo(storageManager),
+		SessionRepo:       bbolt.NewSessionRepo(storageManager),
+		SessionEventRepo:  bbolt.NewSessionEventRepo(storageManager),
 		Watch:             watchPublisher,
 		WebhookDispatcher: webhookDispatcher,
+		StorageManager:    storageManager,
 		ClientHistory:     clientHistory,
 		ClientRegistry:    clientRegistry,
 	}, nil

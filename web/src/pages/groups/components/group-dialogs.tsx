@@ -1,13 +1,13 @@
 import { useMutation, useQuery } from "@connectrpc/connect-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { canManageGroup } from "@/auth/ability";
 import { useAbility } from "@/auth/ability-context";
-import { Badge } from "@/components/ui/badge";
+import { UserFilter } from "@/components/filters";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -30,8 +30,6 @@ import {
 import { invalidate } from "@/lib/queries";
 import { toastError } from "@/lib/toast";
 
-const emailSchema = z.string().email();
-
 const createSchema = z.object({
 	name: z.string().min(1, "Name is required").max(128, "Max 128 characters"),
 	description: z.string().max(1024, "Max 1024 characters"),
@@ -53,9 +51,6 @@ export function CreateGroupDialog({
 	const queryClient = useQueryClient();
 	const ability = useAbility();
 
-	const [memberInput, setMemberInput] = useState("");
-	const [memberError, setMemberError] = useState<string | null>(null);
-
 	const form = useForm<CreateFormValues>({
 		resolver: zodResolver(createSchema),
 		defaultValues: {
@@ -75,8 +70,6 @@ export function CreateGroupDialog({
 				initialMembers: [],
 				initialManagerGroupIds: [],
 			});
-			setMemberInput("");
-			setMemberError(null);
 		}
 	}, [open, form]);
 
@@ -101,35 +94,11 @@ export function CreateGroupDialog({
 	const initialMembers = form.watch("initialMembers");
 	const initialManagerGroupIds = form.watch("initialManagerGroupIds");
 
-	const addMember = () => {
-		const val = memberInput.trim();
-		if (!val) {
-			setMemberError(null);
-			return;
-		}
-		const parsed = emailSchema.safeParse(val);
-		if (!parsed.success) {
-			setMemberError("Invalid email");
-			return;
-		}
-		if (initialMembers.includes(val)) {
-			setMemberError("Already added");
-			return;
-		}
-		form.setValue("initialMembers", [...initialMembers, val], {
+	const setMembers = (next: string[]) => {
+		form.setValue("initialMembers", next, {
 			shouldDirty: true,
 			shouldValidate: true,
 		});
-		setMemberInput("");
-		setMemberError(null);
-	};
-
-	const removeMember = (email: string) => {
-		form.setValue(
-			"initialMembers",
-			initialMembers.filter((m) => m !== email),
-			{ shouldDirty: true, shouldValidate: true },
-		);
 	};
 
 	const toggleManagerGroup = (id: string) => {
@@ -194,52 +163,7 @@ export function CreateGroupDialog({
 						</Field>
 						<Field>
 							<FieldLabel>Initial members (optional)</FieldLabel>
-							<div className="flex gap-2">
-								<Input
-									value={memberInput}
-									onChange={(e) => {
-										setMemberInput(e.target.value);
-										if (memberError) setMemberError(null);
-									}}
-									onKeyDown={(e) => {
-										if (e.key === "Enter" || e.key === ",") {
-											e.preventDefault();
-											addMember();
-										}
-									}}
-									placeholder="user@example.com"
-									aria-label="Add initial member"
-									className="h-8 text-sm"
-								/>
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									onClick={addMember}
-								>
-									Add
-								</Button>
-							</div>
-							{memberError && (
-								<p className="text-xs text-destructive">{memberError}</p>
-							)}
-							{initialMembers.length > 0 && (
-								<div className="flex flex-wrap gap-1 mt-1">
-									{initialMembers.map((email) => (
-										<Badge key={email} variant="secondary">
-											{email}
-											<button
-												type="button"
-												aria-label={`Remove ${email}`}
-												onClick={() => removeMember(email)}
-												className="ml-1 hover:text-destructive"
-											>
-												×
-											</button>
-										</Badge>
-									))}
-								</div>
-							)}
+							<UserFilter value={initialMembers} onValueChange={setMembers} />
 						</Field>
 						{manageableGroups.length > 0 && (
 							<Field>

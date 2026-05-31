@@ -33,7 +33,7 @@ func TestHandler_ExportNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
 				az := transfermock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionRead, "prod").
 					Return(nil)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -53,7 +53,7 @@ func TestHandler_ExportNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
 				az := transfermock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionRead, "prod").
 					Return(domain.ErrUnauthorized)
 				uc := transfermock.NewMockusecase(ctrl)
 
@@ -67,7 +67,7 @@ func TestHandler_ExportNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
 				az := transfermock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionRead, "prod").
 					Return(domain.ErrForbidden)
 				uc := transfermock.NewMockusecase(ctrl)
 
@@ -81,7 +81,7 @@ func TestHandler_ExportNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
 				az := transfermock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionRead, "missing").
+					RequireNamespace(gomock.Any(), domain.ActionRead, "missing").
 					Return(nil)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -208,7 +208,7 @@ func TestHandler_ImportNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
 				az := transfermock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "prod").
 					Return(nil)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -228,7 +228,7 @@ func TestHandler_ImportNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
 				az := transfermock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "prod").
 					Return(nil)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().
@@ -247,7 +247,7 @@ func TestHandler_ImportNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
 				az := transfermock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "").
 					Return(domain.ErrForbidden)
 				uc := transfermock.NewMockusecase(ctrl)
 
@@ -263,7 +263,7 @@ func TestHandler_ImportNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
 				az := transfermock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "").
 					Return(domain.ErrUnauthorized)
 				uc := transfermock.NewMockusecase(ctrl)
 
@@ -280,7 +280,7 @@ func TestHandler_ImportNamespace(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Handler {
 				az := transfermock.NewMockauthz(ctrl)
 				az.EXPECT().
-					Require(gomock.Any(), domain.ObjectNamespace, domain.ActionWrite, "prod").
+					RequireNamespace(gomock.Any(), domain.ActionWrite, "prod").
 					Return(nil)
 				uc := transfermock.NewMockusecase(ctrl)
 				uc.EXPECT().

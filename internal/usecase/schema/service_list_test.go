@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/usecase/schema"
 	schemamock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
 )
@@ -32,14 +32,10 @@ func TestService_List(t *testing.T) {
 			name:      "success",
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: testEmail})
 
 				pdp := schemamock.NewMockpdp(ctrl)
-				pdp.EXPECT().Has(testEmail, domain.Permission{
-					Object: domain.ObjectNamespace,
-					Action: domain.ActionRead,
-					Domain: "prod",
-				}).Return(true)
+				pdp.EXPECT().HasNamespace(testEmail, "prod", domain.ActionRead).Return(true)
 
 				store := schemamock.NewMockstore(ctrl)
 				list := []*domain.SchemaAttachment{{ID: "s1"}}
@@ -53,14 +49,10 @@ func TestService_List(t *testing.T) {
 			name:      "forbidden returns nil",
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: testEmail})
 
 				pdp := schemamock.NewMockpdp(ctrl)
-				pdp.EXPECT().Has(testEmail, domain.Permission{
-					Object: domain.ObjectNamespace,
-					Action: domain.ActionRead,
-					Domain: "prod",
-				}).Return(false)
+				pdp.EXPECT().HasNamespace(testEmail, "prod", domain.ActionRead).Return(false)
 
 				return schema.New(pdp, nil, nil), ctx
 			},
@@ -78,14 +70,10 @@ func TestService_List(t *testing.T) {
 			name:      "list error",
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: testEmail})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: testEmail})
 
 				pdp := schemamock.NewMockpdp(ctrl)
-				pdp.EXPECT().Has(testEmail, domain.Permission{
-					Object: domain.ObjectNamespace,
-					Action: domain.ActionRead,
-					Domain: "prod",
-				}).Return(true)
+				pdp.EXPECT().HasNamespace(testEmail, "prod", domain.ActionRead).Return(true)
 
 				store := schemamock.NewMockstore(ctrl)
 				store.EXPECT().List(ctx, "prod").Return(nil, errors.New("db error"))

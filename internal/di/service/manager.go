@@ -5,53 +5,88 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/di/config"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 )
 
-type Manager struct {
-	Adapters       *Adapters
-	Services       *Services
-	V2Handlers     *V2Handlers
-	EtcdHandlers   *EtcdHandlers
-	SessionManager *auth.SessionManager
-	Enforcer       *casbin.Enforcer
+type Managers struct {
+	Adapters     *Adapters
+	Services     *Services
+	V2Handlers   *V2Handlers
+	EtcdHandlers *EtcdHandlers
+
+	// Plural aliases for plural naming consistency
+	Enforcer *casbin.Enforcer
+	Sessions *sessions.Service
 }
 
-// NewServiceManager wires the full service tree. On partial failure the
-// returned cleanup closure tears down whatever was already opened — runtime
-// teardown on success is driven separately by app.App.
 func NewServiceManager(
 	ctx context.Context,
 	cfg config.Config,
-) (*Manager, func(context.Context) error, error) {
+) (*Managers, func(context.Context) error, error) {
 	adapters, err := NewAdapters(ctx, cfg)
 	if err != nil {
-		return nil, nil, fmt.Errorf("init adapters: %w", err)
+		return nil, nil, fmt.Errorf("create adapters: %w", err)
+	}
+
+	enforcer, err := casbin.NewEnforcer(adapters.AuthPolicy)
+	if err != nil {
+		_ = adapters.Shutdown(ctx)
+
+		return nil, nil, fmt.Errorf("create enforcer: %w", err)
+	}
+
+	sessionSvc := newSessionService(adapters)
+
+	services, err := NewServices(ctx, adapters, cfg, enforcer, sessionSvc)
+	if err != nil {
+		_ = adapters.Shutdown(ctx)
+
+		return nil, nil, fmt.Errorf("create services: %w", err)
+	}
+
+	handlers := NewV2Handlers(services, sessionSvc, cfg)
+	etcdHandlers := NewEtcdHandlers(adapters)
+
+	mgrs := &Managers{
+		Adapters:     adapters,
+		Services:     services,
+		V2Handlers:   handlers,
+		EtcdHandlers: etcdHandlers,
+		Enforcer:     enforcer,
+		Sessions:     sessionSvc,
 	}
 
 	cleanup := func(ctx context.Context) error {
 		return adapters.Shutdown(ctx)
 	}
 
-	enforcer, err := casbin.NewEnforcer(adapters.AuthPolicy)
+	return mgrs, cleanup, nil
+}
+
+// NewManagers is a legacy-compatibility helper for NewServiceManager.
+func NewManagers(
+	ctx context.Context,
+	cfg config.Config,
+	a *Adapters,
+) (*Managers, error) {
+	enforcer, err := casbin.NewEnforcer(a.AuthPolicy)
 	if err != nil {
-		return nil, cleanup, fmt.Errorf("create casbin enforcer: %w", err)
+		return nil, fmt.Errorf("create enforcer: %w", err)
 	}
 
-	sessionManager := auth.NewSessionManager(cfg.UI.Auth.Session.Secret, cfg.UI.Auth.Session.TTL)
+	return &Managers{
+		Enforcer: enforcer,
+		Sessions: newSessionService(a),
+	}, nil
+}
 
-	services, err := NewServices(ctx, adapters, cfg, enforcer, sessionManager)
-	if err != nil {
-		return nil, cleanup, fmt.Errorf("init services: %w", err)
-	}
-
-	return &Manager{
-		Adapters:       adapters,
-		Services:       services,
-		V2Handlers:     NewV2Handlers(services, cfg),
-		EtcdHandlers:   NewEtcdHandlers(adapters),
-		SessionManager: sessionManager,
-		Enforcer:       enforcer,
-	}, cleanup, nil
+// newSessionService wires the bbolt session/event repos and the txm-backed
+// sessions.Service.
+func newSessionService(a *Adapters) *sessions.Service {
+	return sessions.New(
+		a.SessionRepo,
+		a.SessionEventRepo,
+		sessions.RealClock{},
+	)
 }

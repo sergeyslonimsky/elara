@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/usecase/namespace"
 )
@@ -43,10 +43,10 @@ func TestService_List(t *testing.T) {
 			name:   "wildcard scope returns all namespaces from repo",
 			params: namespace.ListParams{Limit: 10, Offset: 0},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "admin@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "admin@example.com"})
 
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("admin@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 
 				expectedFilter := domain.NamespaceFilter{
@@ -64,14 +64,10 @@ func TestService_List(t *testing.T) {
 				m.store.EXPECT().CountConfigs(ctx, "prod").Return(7, nil)
 
 				m.pdp.EXPECT().
-					Has("admin@example.com", domain.Permission{
-						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "dev",
-					}).
+					HasNamespace("admin@example.com", "dev", domain.ActionWrite).
 					Return(true)
 				m.pdp.EXPECT().
-					Has("admin@example.com", domain.Permission{
-						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod",
-					}).
+					HasNamespace("admin@example.com", "prod", domain.ActionWrite).
 					Return(false)
 
 				return ctx
@@ -87,10 +83,10 @@ func TestService_List(t *testing.T) {
 			name:   "explicit scope forwards Names into filter",
 			params: namespace.ListParams{Limit: 5},
 			mockFunc: func(ctx context.Context, mock mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "user@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
 
 				mock.pdp.EXPECT().
-					EffectiveDomains("user@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("user@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet("ns1", "ns3"))
 
 				expectedFilter := domain.NamespaceFilter{
@@ -108,14 +104,10 @@ func TestService_List(t *testing.T) {
 				mock.store.EXPECT().CountConfigs(ctx, "ns3").Return(2, nil)
 
 				mock.pdp.EXPECT().
-					Has("user@example.com", domain.Permission{
-						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "ns1",
-					}).
+					HasNamespace("user@example.com", "ns1", domain.ActionWrite).
 					Return(true)
 				mock.pdp.EXPECT().
-					Has("user@example.com", domain.Permission{
-						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "ns3",
-					}).
+					HasNamespace("user@example.com", "ns3", domain.ActionWrite).
 					Return(false)
 
 				return ctx
@@ -131,10 +123,10 @@ func TestService_List(t *testing.T) {
 			name:   "empty scope returns empty list without calling store",
 			params: namespace.ListParams{Limit: 10, Offset: 0},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "noaccess@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "noaccess@example.com"})
 
 				m.pdp.EXPECT().
-					EffectiveDomains("noaccess@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("noaccess@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet())
 
 				// store.List and annotations MUST NOT be called.
@@ -153,10 +145,10 @@ func TestService_List(t *testing.T) {
 			name:   "search query is forwarded to filter",
 			params: namespace.ListParams{Limit: 10, Query: "prod"},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "u@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "u@example.com"})
 
 				m.pdp.EXPECT().
-					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("u@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 
 				expectedFilter := domain.NamespaceFilter{
@@ -172,9 +164,7 @@ func TestService_List(t *testing.T) {
 
 				m.store.EXPECT().CountConfigs(ctx, "prod").Return(0, nil)
 				m.pdp.EXPECT().
-					Has("u@example.com", domain.Permission{
-						Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod",
-					}).
+					HasNamespace("u@example.com", "prod", domain.ActionWrite).
 					Return(true)
 
 				return ctx
@@ -190,10 +180,10 @@ func TestService_List(t *testing.T) {
 			name:   "pagination params forwarded to repo",
 			params: namespace.ListParams{Limit: 5, Offset: 10},
 			mockFunc: func(ctx context.Context, mock mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "u@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "u@example.com"})
 
 				mock.pdp.EXPECT().
-					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("u@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 
 				expectedFilter := domain.NamespaceFilter{
@@ -221,10 +211,10 @@ func TestService_List(t *testing.T) {
 			name:   "default limit applied when params.Limit <= 0",
 			params: namespace.ListParams{Limit: 0, Offset: 0},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "u@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "u@example.com"})
 
 				m.pdp.EXPECT().
-					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("u@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 
 				expectedFilter := domain.NamespaceFilter{
@@ -253,10 +243,10 @@ func TestService_List(t *testing.T) {
 			name:   "store error wrapped",
 			params: namespace.ListParams{Limit: 10},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "u@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "u@example.com"})
 
 				m.pdp.EXPECT().
-					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("u@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 
 				m.store.EXPECT().
@@ -271,10 +261,10 @@ func TestService_List(t *testing.T) {
 			name:   "populateConfigCounts error propagated",
 			params: namespace.ListParams{Limit: 10},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "u@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "u@example.com"})
 
 				m.pdp.EXPECT().
-					EffectiveDomains("u@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("u@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 
 				m.store.EXPECT().

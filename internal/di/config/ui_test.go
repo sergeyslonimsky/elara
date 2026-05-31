@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/di/config"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 func TestUIAuthConfig_Validate(t *testing.T) {
@@ -28,7 +29,7 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 			name: "none type requires nothing",
 			auth: config.UIAuthConfig{
 				Enabled: true,
-				Type:    config.AuthTypeNone,
+				Type:    domain.AuthTypeNone,
 			},
 			wantErr: false,
 		},
@@ -36,7 +37,7 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 			name: "basic-auth with username and password",
 			auth: config.UIAuthConfig{
 				Enabled: true,
-				Type:    config.AuthTypeBasicAuth,
+				Type:    domain.AuthTypeBasicAuth,
 				BasicAuth: config.BasicAuthConfig{
 					Username: "admin",
 					Password: "password",
@@ -48,7 +49,7 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 			name: "basic-auth missing username",
 			auth: config.UIAuthConfig{
 				Enabled: true,
-				Type:    config.AuthTypeBasicAuth,
+				Type:    domain.AuthTypeBasicAuth,
 				BasicAuth: config.BasicAuthConfig{
 					Password: "password",
 				},
@@ -60,7 +61,7 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 			name: "basic-auth missing password",
 			auth: config.UIAuthConfig{
 				Enabled: true,
-				Type:    config.AuthTypeBasicAuth,
+				Type:    domain.AuthTypeBasicAuth,
 				BasicAuth: config.BasicAuthConfig{
 					Username: "admin",
 				},
@@ -72,7 +73,7 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 			name: "oidc with admin email",
 			auth: config.UIAuthConfig{
 				Enabled: true,
-				Type:    config.AuthTypeOIDC,
+				Type:    domain.AuthTypeOIDC,
 				OIDC: config.OIDCConfig{
 					AdminEmail: "admin@example.com",
 				},
@@ -83,7 +84,7 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 			name: "oidc missing admin email",
 			auth: config.UIAuthConfig{
 				Enabled: true,
-				Type:    config.AuthTypeOIDC,
+				Type:    domain.AuthTypeOIDC,
 			},
 			wantErr: true,
 			errMsg:  "oidc requires ui.auth.oidc.adminEmail to be set",

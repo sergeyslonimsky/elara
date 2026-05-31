@@ -11,7 +11,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 	"github.com/sergeyslonimsky/elara/internal/usecase/group"
 )
 
@@ -120,7 +120,7 @@ func TestService_Update(t *testing.T) {
 				perm := domain.Permission{
 					Object: domain.ObjectNamespace,
 					Action: domain.ActionWrite,
-					Domain: "dev",
+					Domain: domain.NamespaceResource("dev"),
 				}
 				_, err = st.svc.UpdatePermissions(
 					t.Context(),
@@ -273,7 +273,7 @@ func TestService_Update_Boundary(t *testing.T) {
 		principal string
 		// setupGroup customises the initial group state (members, existing
 		// Casbin policies) before Update is invoked.
-		setupGroup  func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.TxManager)
+		setupGroup  func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager)
 		permissions []domain.Permission // Add list passed to UpdatePermissions
 		removePerms []domain.Permission // Remove list passed to UpdatePermissions
 		members     []string
@@ -284,14 +284,22 @@ func TestService_Update_Boundary(t *testing.T) {
 			name:      "grant within boundary",
 			principal: "devops@example.com",
 			permissions: []domain.Permission{
-				{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "dev"},
+				{
+					Object: domain.ObjectNamespace,
+					Action: domain.ActionWrite,
+					Domain: domain.NamespaceResource("dev"),
+				},
 			},
 		},
 		{
 			name:      "grant outside boundary",
 			principal: "devops@example.com",
 			permissions: []domain.Permission{
-				{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+				{
+					Object: domain.ObjectNamespace,
+					Action: domain.ActionWrite,
+					Domain: domain.NamespaceResource("prod"),
+				},
 			},
 			errIs: domain.ErrPermissionEscalation,
 		},
@@ -303,42 +311,54 @@ func TestService_Update_Boundary(t *testing.T) {
 			// it succeeds (group has no members, so no cascade either).
 			name:      "revoke outside boundary succeeds without escalation check",
 			principal: "devops@example.com",
-			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.TxManager) {
-				_ = enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager) {
+				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddPolicy(
 						casbin.GroupSubject(g.Name),
-						"prod",
+						domain.NamespaceResource("prod"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
 					)
 				})
 			},
 			removePerms: []domain.Permission{
-				{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+				{
+					Object: domain.ObjectNamespace,
+					Action: domain.ActionWrite,
+					Domain: domain.NamespaceResource("prod"),
+				},
 			},
 		},
 		{
 			name:      "revoke within boundary",
 			principal: "devops@example.com",
-			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.TxManager) {
-				_ = enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager) {
+				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddPolicy(
 						casbin.GroupSubject(g.Name),
-						"dev",
+						domain.NamespaceResource("dev"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
 					)
 				})
 			},
 			removePerms: []domain.Permission{
-				{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "dev"},
+				{
+					Object: domain.ObjectNamespace,
+					Action: domain.ActionWrite,
+					Domain: domain.NamespaceResource("dev"),
+				},
 			},
 		},
 		{
 			name:      "superadmin wildcard",
 			principal: "admin@example.com",
 			permissions: []domain.Permission{
-				{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+				{
+					Object: domain.ObjectNamespace,
+					Action: domain.ActionWrite,
+					Domain: domain.NamespaceResource("prod"),
+				},
 			},
 		},
 
@@ -346,18 +366,22 @@ func TestService_Update_Boundary(t *testing.T) {
 		{
 			name:      "member-add to group with outside-boundary perm",
 			principal: "devops@example.com",
-			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.TxManager) {
-				_ = enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager) {
+				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddPolicy(
 						casbin.GroupSubject(g.Name),
-						"prod",
+						domain.NamespaceResource("prod"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
 					)
 				})
 			},
 			permissions: []domain.Permission{
-				{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+				{
+					Object: domain.ObjectNamespace,
+					Action: domain.ActionWrite,
+					Domain: domain.NamespaceResource("prod"),
+				},
 			},
 			members: []string{"newuser@example.com"},
 			errIs:   domain.ErrPermissionEscalation,
@@ -369,58 +393,70 @@ func TestService_Update_Boundary(t *testing.T) {
 		{
 			name:      "member change with all perms in boundary",
 			principal: "devops@example.com",
-			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.TxManager) {
+			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager) {
 				// NOTE: pre-seeding members via bbolt no longer applies — see
 				// the SSoT refactor. UpdateMembers reads from Casbin directly,
 				// so cases that depend on a pre-existing member need to seed
 				// the g-rule via casbin.WriteTx. TODO: revisit these cases.
-				_ = enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddPolicy(
 						casbin.GroupSubject(g.Name),
-						"dev",
+						domain.NamespaceResource("dev"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
 					)
 				})
 			},
 			permissions: []domain.Permission{
-				{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "dev"},
+				{
+					Object: domain.ObjectNamespace,
+					Action: domain.ActionWrite,
+					Domain: domain.NamespaceResource("dev"),
+				},
 			},
 			members: []string{"newuser@example.com"},
 		},
 		{
 			name:      "passthrough: simultaneous perm change + member change, all in boundary",
 			principal: "devops@example.com",
-			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.TxManager) {
+			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager) {
 				// Seed an existing member via Casbin (SSoT) so the cascade
 				// check on UpdatePermissions later sees a non-empty member
 				// set and exercises the actor's boundary against the post-state.
-				_ = enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddRoleForUser(
 						"olduser@example.com", casbin.GroupSubject(g.Name), domain.MembershipDomain,
 					)
 				})
 			},
 			permissions: []domain.Permission{
-				{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "dev"},
+				{
+					Object: domain.ObjectNamespace,
+					Action: domain.ActionWrite,
+					Domain: domain.NamespaceResource("dev"),
+				},
 			},
 			members: []string{"newuser@example.com"},
 		},
 		{
 			name:      "passthrough loophole: member-add with unchanged outside-boundary perm",
 			principal: "devops@example.com",
-			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.TxManager) {
-				_ = enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager) {
+				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddPolicy(
 						casbin.GroupSubject(g.Name),
-						"prod",
+						domain.NamespaceResource("prod"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
 					)
 				})
 			},
 			permissions: []domain.Permission{
-				{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "prod"},
+				{
+					Object: domain.ObjectNamespace,
+					Action: domain.ActionWrite,
+					Domain: domain.NamespaceResource("prod"),
+				},
 			},
 			members: []string{"hacker@example.com"},
 			errIs:   domain.ErrPermissionEscalation,
@@ -436,7 +472,7 @@ func TestService_Update_Boundary(t *testing.T) {
 
 			require.NoError(
 				t,
-				st.enforcer.WriteTx(ctx, st.txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+				st.enforcer.WriteTx(ctx, st.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					_ = txe.AddPolicy(
 						"admin@example.com",
 						domain.DomainAll,
@@ -445,7 +481,7 @@ func TestService_Update_Boundary(t *testing.T) {
 					)
 					_ = txe.AddPolicy(
 						"devops@example.com",
-						"dev",
+						domain.NamespaceResource("dev"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
 					)
@@ -762,7 +798,7 @@ func TestService_UpdateMembers(t *testing.T) {
 					st.enforcer.WriteTx(
 						t.Context(),
 						st.txm,
-						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+						func(ctx context.Context, txe *casbin.TxEnforcer) error {
 							return txe.AddPolicy(
 								"devops@example.com",
 								"dev",
@@ -779,7 +815,7 @@ func TestService_UpdateMembers(t *testing.T) {
 						{
 							Object: domain.ObjectNamespace,
 							Action: domain.ActionWrite,
-							Domain: "prod",
+							Domain: domain.NamespaceResource("prod"),
 						},
 					},
 				})
@@ -807,7 +843,7 @@ func TestService_UpdateMembers(t *testing.T) {
 					st.enforcer.WriteTx(
 						t.Context(),
 						st.txm,
-						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+						func(ctx context.Context, txe *casbin.TxEnforcer) error {
 							return txe.AddPolicy(
 								"devops@example.com",
 								"dev",
@@ -825,7 +861,7 @@ func TestService_UpdateMembers(t *testing.T) {
 						{
 							Object: domain.ObjectNamespace,
 							Action: domain.ActionWrite,
-							Domain: "prod",
+							Domain: domain.NamespaceResource("prod"),
 						},
 					},
 				})
@@ -938,7 +974,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 				return adminAuth(), group.UpdatePermissionsData{
 					GroupID: created.Group.ID,
 					Add: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "dev"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: domain.NamespaceResource("dev"),
+						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
 				}
@@ -968,7 +1008,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 				return adminAuth(), group.UpdatePermissionsData{
 					GroupID: created.Group.ID,
 					Add: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "dev"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: domain.NamespaceResource("dev"),
+						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
 				}
@@ -993,7 +1037,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 					st.enforcer.WriteTx(
 						t.Context(),
 						st.txm,
-						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+						func(ctx context.Context, txe *casbin.TxEnforcer) error {
 							return txe.AddPolicy(
 								"devops@example.com",
 								"dev",
@@ -1017,7 +1061,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 						{
 							Object: domain.ObjectNamespace,
 							Action: domain.ActionWrite,
-							Domain: "prod",
+							Domain: domain.NamespaceResource("prod"),
 						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
@@ -1043,7 +1087,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 					st.enforcer.WriteTx(
 						t.Context(),
 						st.txm,
-						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+						func(ctx context.Context, txe *casbin.TxEnforcer) error {
 							return txe.AddPolicy(
 								"devops@example.com",
 								"dev",
@@ -1061,7 +1105,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 						{
 							Object: domain.ObjectNamespace,
 							Action: domain.ActionWrite,
-							Domain: "prod",
+							Domain: domain.NamespaceResource("prod"),
 						},
 					},
 				})
@@ -1071,7 +1115,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 					GroupID: created.Group.ID,
 					Add: []domain.Permission{
 						// devops holds dev, so the Add boundary passes.
-						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "dev"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: domain.NamespaceResource("dev"),
+						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
 				}
@@ -1093,7 +1141,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 					st.enforcer.WriteTx(
 						t.Context(),
 						st.txm,
-						func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+						func(ctx context.Context, txe *casbin.TxEnforcer) error {
 							return txe.AddPolicy(
 								"devops@example.com",
 								"dev",
@@ -1110,7 +1158,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 						{
 							Object: domain.ObjectNamespace,
 							Action: domain.ActionWrite,
-							Domain: "prod",
+							Domain: domain.NamespaceResource("prod"),
 						},
 					},
 				})
@@ -1122,7 +1170,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 						{
 							Object: domain.ObjectNamespace,
 							Action: domain.ActionWrite,
-							Domain: "prod",
+							Domain: domain.NamespaceResource("prod"),
 						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
@@ -1152,16 +1200,24 @@ func TestService_UpdatePermissions(t *testing.T) {
 				return adminAuth(), group.UpdatePermissionsData{
 					GroupID: created.Group.ID,
 					Add: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: domain.NamespaceResource("dev"),
+						},
 					},
 					Remove: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: domain.NamespaceResource("dev"),
+						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
 				}
 			},
 			// Wrapped message includes Object:Action on Domain.
-			wantErr: "namespace:read on dev appears in both add and remove",
+			wantErr: "namespace:read on namespace:dev appears in both add and remove",
 		},
 		{
 			// Both Add of an already-present perm AND Remove of an absent
@@ -1174,7 +1230,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{
 					Name: "g1",
 					InitialPermissions: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: domain.NamespaceResource("dev"),
+						},
 					},
 				})
 				require.NoError(t, err)
@@ -1183,13 +1243,17 @@ func TestService_UpdatePermissions(t *testing.T) {
 					GroupID: created.Group.ID,
 					// Add: already present -> noop. Remove: absent -> noop.
 					Add: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: domain.NamespaceResource("dev"),
+						},
 					},
 					Remove: []domain.Permission{
 						{
 							Object: domain.ObjectNamespace,
 							Action: domain.ActionRead,
-							Domain: "staging",
+							Domain: domain.NamespaceResource("staging"),
 						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
@@ -1218,7 +1282,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 				return adminAuth(), group.UpdatePermissionsData{
 					GroupID: created.Group.ID,
 					Add: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: domain.NamespaceResource("dev"),
+						},
 					},
 					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion + 99),
 				}
@@ -1231,7 +1299,11 @@ func TestService_UpdatePermissions(t *testing.T) {
 				return adminAuth(), group.UpdatePermissionsData{
 					GroupID: "missing-id",
 					Add: []domain.Permission{
-						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "dev"},
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionRead,
+							Domain: domain.NamespaceResource("dev"),
+						},
 					},
 					ExpectedPermissionsVersion: new(int64(0)),
 				}

@@ -65,13 +65,20 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				e, txm := newTestEnforcerWithTxM(t, nil)
 				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
-				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
+				seedRole(
+					t,
+					e,
+					txm,
+					casbin.GroupSubject(devs),
+					string(domain.RoleAdmin),
+					domain.NamespaceResource("prod"),
+				)
 
 				return e
 			},
 			requests: []request{
 				{
-					domain: "prod",
+					domain: domain.NamespaceResource("prod"),
 					object: domain.ObjectNamespace,
 					action: domain.ActionWrite,
 					want:   true,
@@ -79,7 +86,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				// group has no role in staging -> no access there even though
 				// the membership rule is in domain "*".
 				{
-					domain: "staging",
+					domain: domain.NamespaceResource("staging"),
 					object: domain.ObjectNamespace,
 					action: domain.ActionWrite,
 					want:   false,
@@ -98,8 +105,22 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 
 				// Group gets admin in prod, then loses it. Exactly one
 				// AddRoleForUser + one RemoveRoleForUser — no per-member loop.
-				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
-				removeRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
+				seedRole(
+					t,
+					e,
+					txm,
+					casbin.GroupSubject(devs),
+					string(domain.RoleAdmin),
+					domain.NamespaceResource("prod"),
+				)
+				removeRole(
+					t,
+					e,
+					txm,
+					casbin.GroupSubject(devs),
+					string(domain.RoleAdmin),
+					domain.NamespaceResource("prod"),
+				)
 
 				// Membership rules in domain "*" remain in place — verify the
 				// invariant rather than trusting the absence of a sync loop.
@@ -116,7 +137,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 			requests: []request{
 				// alice loses access via the group revoke...
 				{
-					domain: "prod",
+					domain: domain.NamespaceResource("prod"),
 					object: domain.ObjectNamespace,
 					action: domain.ActionWrite,
 					want:   false,
@@ -126,7 +147,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				// ...and so does bob, through the same single mutation.
 				{
 					subject: bob,
-					domain:  "prod",
+					domain:  domain.NamespaceResource("prod"),
 					object:  domain.ObjectNamespace,
 					action:  domain.ActionWrite,
 					want:    false,
@@ -140,14 +161,21 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				e, txm := newTestEnforcerWithTxM(t, nil)
 				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
-				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
+				seedRole(
+					t,
+					e,
+					txm,
+					casbin.GroupSubject(devs),
+					string(domain.RoleAdmin),
+					domain.NamespaceResource("prod"),
+				)
 				removeRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
 
 				return e
 			},
 			requests: []request{
 				{
-					domain: "prod",
+					domain: domain.NamespaceResource("prod"),
 					object: domain.ObjectNamespace,
 					action: domain.ActionWrite,
 					want:   false,
@@ -162,28 +190,35 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, alice, string(domain.RoleReader), domain.DomainAll)
 				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
-				seedRole(t, e, txm, casbin.GroupSubject(devs), string(domain.RoleAdmin), "prod")
+				seedRole(
+					t,
+					e,
+					txm,
+					casbin.GroupSubject(devs),
+					string(domain.RoleAdmin),
+					domain.NamespaceResource("prod"),
+				)
 
 				return e
 			},
 			requests: []request{
 				// Direct reader role grants read in any domain.
 				{
-					domain: "staging",
+					domain: domain.NamespaceResource("staging"),
 					object: domain.ObjectNamespace,
 					action: domain.ActionRead,
 					want:   true,
 				},
 				// Group-derived admin role grants write in prod only.
 				{
-					domain: "prod",
+					domain: domain.NamespaceResource("prod"),
 					object: domain.ObjectNamespace,
 					action: domain.ActionWrite,
 					want:   true,
 				},
 				// Neither path grants write in staging.
 				{
-					domain: "staging",
+					domain: domain.NamespaceResource("staging"),
 					object: domain.ObjectNamespace,
 					action: domain.ActionWrite,
 					want:   false,

@@ -4,42 +4,40 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"connectrpc.com/connect"
 
-	"github.com/sergeyslonimsky/elara/internal/di/config"
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/permission"
+	sessions_handler "github.com/sergeyslonimsky/elara/internal/handler/v2/sessions"
 	profilev1 "github.com/sergeyslonimsky/elara/internal/proto/elara/profile/v1"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	profileuc "github.com/sergeyslonimsky/elara/internal/usecase/profile"
 )
 
 //go:generate mockgen -destination=mocks/handler_mock.go -package=profile_mock -source=handler.go
 
-const (
-	cookieHeader      = "Set-Cookie"
-	sessionCookieName = "elara_session"
+type (
+	usecase interface {
+		Me(ctx context.Context) (*profileuc.MeResult, error)
+		ChangePassword(ctx context.Context, params profileuc.ChangePasswordParams) (*domain.Session, error)
+		Logout(ctx context.Context, sessionID, revokedBy string) error
+	}
 )
-
-type usecase interface {
-	Me(ctx context.Context) (*profileuc.MeResult, error)
-	ChangePassword(ctx context.Context, currentPassword, newPassword string) (string, error)
-	Logout(_ context.Context) error
-}
 
 // Handler implements profilev1connect.ProfileServiceHandler.
 type Handler struct {
 	uc           usecase
-	authType     config.AuthType
+	authType     domain.AuthType
 	secureCookie bool
 }
 
 // New returns a new Handler wired with profile use cases.
 func New(
 	uc usecase,
-	authType config.AuthType,
+	authType domain.AuthType,
 	secureCookie bool,
 ) *Handler {
 	return &Handler{
@@ -58,12 +56,17 @@ func (h *Handler) Me(
 		return nil, v2.ToConnectError(err)
 	}
 
-	claims, _ := auth.ClaimsFromContext(ctx)
+	user, _ := authctx.UserFromContext(ctx)
+
+	var passwordChangeRequired bool
+	if user != nil {
+		passwordChangeRequired = user.PasswordChangeRequired
+	}
 
 	return connect.NewResponse(&profilev1.MeResponse{
 		Email:                  result.Email,
 		Name:                   result.Name,
-		PasswordChangeRequired: claims.PasswordChangeRequired,
+		PasswordChangeRequired: passwordChangeRequired,
 		Permissions:            permission.AssignmentsToProto(result.Permissions),
 	}), nil
 }
@@ -72,7 +75,7 @@ func (h *Handler) ChangePassword(
 	ctx context.Context,
 	req *connect.Request[profilev1.ChangePasswordRequest],
 ) (*connect.Response[profilev1.ChangePasswordResponse], error) {
-	if h.authType != config.AuthTypeBasicAuth {
+	if h.authType != domain.AuthTypeBasicAuth {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
 			fmt.Errorf(
@@ -83,42 +86,55 @@ func (h *Handler) ChangePassword(
 		)
 	}
 
-	token, err := h.uc.ChangePassword(ctx, req.Msg.GetCurrentPassword(), req.Msg.GetNewPassword())
+	ip, ua := extractClientInfo(req.Header())
+
+	sess, err := h.uc.ChangePassword(ctx, profileuc.ChangePasswordParams{
+		CurrentPassword: req.Msg.GetCurrentPassword(),
+		NewPassword:     req.Msg.GetNewPassword(),
+		IP:              ip,
+		UserAgent:       ua,
+	})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
 	resp := connect.NewResponse(&profilev1.ChangePasswordResponse{})
-	cookie := &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    token,
-		HttpOnly: true,
-		Secure:   h.secureCookie,
-		SameSite: http.SameSiteStrictMode,
-		Path:     "/",
-	}
-	resp.Header().Add(cookieHeader, cookie.String())
+	sessions_handler.SetSessionCookie(resp.Header(), sess.ID, sess.ExpiresAt, h.secureCookie)
 
 	return resp, nil
 }
 
 func (h *Handler) Logout(
 	ctx context.Context,
-	_ *connect.Request[profilev1.LogoutRequest],
+	req *connect.Request[profilev1.LogoutRequest],
 ) (*connect.Response[profilev1.LogoutResponse], error) {
-	_ = h.uc.Logout(ctx)
-	resp := connect.NewResponse(&profilev1.LogoutResponse{})
+	sess, ok := authctx.SessionFromContext(ctx)
+	if ok {
+		user, _ := authctx.UserFromContext(ctx)
 
-	cookie := &http.Cookie{
-		Name:     sessionCookieName,
-		Value:    "",
-		HttpOnly: true,
-		Secure:   h.secureCookie,
-		SameSite: http.SameSiteStrictMode,
-		Path:     "/",
-		MaxAge:   -1,
+		revokedBy := ""
+		if user != nil {
+			revokedBy = user.Email
+		}
+
+		_ = h.uc.Logout(ctx, sess.ID, revokedBy)
 	}
-	resp.Header().Add(cookieHeader, cookie.String())
+
+	resp := connect.NewResponse(&profilev1.LogoutResponse{})
+	sessions_handler.ClearSessionCookie(resp.Header(), h.secureCookie)
 
 	return resp, nil
+}
+
+// extractClientInfo extracts IP and User-Agent from HTTP headers.
+// IP is the first value from X-Forwarded-For; User-Agent is taken as-is.
+func extractClientInfo(header http.Header) (string, string) {
+	var ip string
+
+	if xff := header.Get("X-Forwarded-For"); xff != "" {
+		first, _, _ := strings.Cut(xff, ",")
+		ip = strings.TrimSpace(first)
+	}
+
+	return ip, header.Get("User-Agent")
 }

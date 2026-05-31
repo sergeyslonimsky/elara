@@ -42,9 +42,15 @@ func TestService_Update(t *testing.T) {
 					Validate(ctx, "prod", "/app/config.json", normalizedJSON, domain.FormatJSON).
 					Return(nil)
 
-				m.storage.EXPECT().Update(ctx, gomock.Any()).Return(nil)
-				m.namespaceProvider.EXPECT().UpdateTimestamp(ctx, "prod").Return(nil)
-				m.watcher.EXPECT().NotifyUpdated(ctx, gomock.Any())
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+
+				m.storage.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+				m.namespaceProvider.EXPECT().UpdateTimestamp(gomock.Any(), "prod").Return(nil)
+				m.watcher.EXPECT().NotifyUpdated(gomock.Any(), gomock.Any())
 			},
 			want: &domain.Config{
 				Path:      "/app/config.json",
@@ -94,11 +100,16 @@ func TestService_Lock(t *testing.T) {
 		svc, m, _ := setupService(t)
 
 		ctx := t.Context()
-		m.storage.EXPECT().LockConfig(ctx, "prod", "/a.json").Return(nil)
+		m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			},
+		)
+		m.storage.EXPECT().LockConfig(gomock.Any(), "prod", "/a.json").Return(nil)
 
 		cfg := &domain.Config{Path: "/a.json", Namespace: "prod"}
-		m.storage.EXPECT().Get(ctx, "/a.json", "prod").Return(cfg, nil)
-		m.watcher.EXPECT().NotifyConfigLocked(ctx, cfg)
+		m.storage.EXPECT().Get(gomock.Any(), "/a.json", "prod").Return(cfg, nil)
+		m.watcher.EXPECT().NotifyConfigLocked(gomock.Any(), cfg)
 
 		err := svc.Lock(ctx, config.LockInput{Namespace: "prod", Path: "/a.json"})
 		require.NoError(t, err)
@@ -114,11 +125,16 @@ func TestService_Unlock(t *testing.T) {
 		svc, m, _ := setupService(t)
 
 		ctx := t.Context()
-		m.storage.EXPECT().UnlockConfig(ctx, "prod", "/a.json").Return(nil)
+		m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+			func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			},
+		)
+		m.storage.EXPECT().UnlockConfig(gomock.Any(), "prod", "/a.json").Return(nil)
 
 		cfg := &domain.Config{Path: "/a.json", Namespace: "prod"}
-		m.storage.EXPECT().Get(ctx, "/a.json", "prod").Return(cfg, nil)
-		m.watcher.EXPECT().NotifyConfigUnlocked(ctx, cfg)
+		m.storage.EXPECT().Get(gomock.Any(), "/a.json", "prod").Return(cfg, nil)
+		m.watcher.EXPECT().NotifyConfigUnlocked(gomock.Any(), cfg)
 
 		err := svc.Unlock(ctx, config.UnlockInput{Namespace: "prod", Path: "/a.json"})
 		require.NoError(t, err)

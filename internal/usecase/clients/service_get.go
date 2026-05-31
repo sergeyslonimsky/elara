@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // Get returns one client (active or historical) plus its recent events.
@@ -23,7 +23,7 @@ func (s *Service) Get(
 	ctx context.Context,
 	id string,
 ) (*domain.Client, []domain.ClientEvent, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, nil, domain.ErrUnauthorized
 	}

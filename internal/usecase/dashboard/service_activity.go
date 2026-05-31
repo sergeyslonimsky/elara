@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // activityOverfetchMultiplier — backend-side overfetch so we can still hit `limit`
@@ -16,8 +16,8 @@ const activityOverfetchMultiplier = 5
 // the caller can read. Result may be shorter than `limit` if recent activity
 // happened mostly in namespaces the caller has no access to.
 func (s *Service) ListActivity(ctx context.Context, limit int) ([]*domain.ChangelogEntry, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
@@ -36,11 +36,7 @@ func (s *Service) ListActivity(ctx context.Context, limit int) ([]*domain.Change
 	for _, e := range entries {
 		allowed, ok := allowedNamespace[e.Namespace]
 		if !ok {
-			allowed = s.pdp.Has(claims.Email, domain.Permission{
-				Object: domain.ObjectNamespace,
-				Action: domain.ActionRead,
-				Domain: e.Namespace,
-			})
+			allowed = s.pdp.HasNamespace(info.Email, e.Namespace, domain.ActionRead)
 			allowedNamespace[e.Namespace] = allowed
 		}
 

@@ -14,7 +14,6 @@ import (
 	reflect "reflect"
 
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
-	content "github.com/sergeyslonimsky/elara/internal/service/content"
 	config "github.com/sergeyslonimsky/elara/internal/usecase/config"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -55,6 +54,34 @@ func (m *Mockauthz) Require(ctx context.Context, object domain.Object, action do
 func (mr *MockauthzMockRecorder) Require(ctx, object, action, domainStr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Require", reflect.TypeOf((*Mockauthz)(nil).Require), ctx, object, action, domainStr)
+}
+
+// RequireGroup mocks base method.
+func (m *Mockauthz) RequireGroup(ctx context.Context, action domain.Action, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequireGroup", ctx, action, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RequireGroup indicates an expected call of RequireGroup.
+func (mr *MockauthzMockRecorder) RequireGroup(ctx, action, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequireGroup", reflect.TypeOf((*Mockauthz)(nil).RequireGroup), ctx, action, id)
+}
+
+// RequireNamespace mocks base method.
+func (m *Mockauthz) RequireNamespace(ctx context.Context, action domain.Action, name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequireNamespace", ctx, action, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RequireNamespace indicates an expected call of RequireNamespace.
+func (mr *MockauthzMockRecorder) RequireNamespace(ctx, action, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequireNamespace", reflect.TypeOf((*Mockauthz)(nil).RequireNamespace), ctx, action, name)
 }
 
 // MockconfigUsecase is a mock of configUsecase interface.
@@ -259,10 +286,10 @@ func (mr *MockconfigUsecaseMockRecorder) Update(ctx, cfg any) *gomock.Call {
 }
 
 // Validate mocks base method.
-func (m *MockconfigUsecase) Validate(ctx context.Context, in config.ValidateInput) (*content.ValidationResult, error) {
+func (m *MockconfigUsecase) Validate(ctx context.Context, in config.ValidateInput) (*domain.ValidationResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Validate", ctx, in)
-	ret0, _ := ret[0].(*content.ValidationResult)
+	ret0, _ := ret[0].(*domain.ValidationResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

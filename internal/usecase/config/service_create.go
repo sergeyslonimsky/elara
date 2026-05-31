@@ -50,12 +50,20 @@ func (s *Service) Create(ctx context.Context, cfg *domain.Config) (*domain.Confi
 		return nil, fmt.Errorf("schema validation: %w", err)
 	}
 
-	if err := s.storage.Create(ctx, cfg); err != nil {
-		return nil, fmt.Errorf("create config: %w", err)
+	err = s.txm.WithTx(ctx, func(ctx context.Context) error {
+		if err := s.storage.Create(ctx, cfg); err != nil {
+			return fmt.Errorf("create config: %w", err)
+		}
+
+		// namespace timestamp is cosmetic; failure must not abort the config write.
+		_ = s.namespaceProvider.UpdateTimestamp(ctx, cfg.Namespace)
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create config tx: %w", err)
 	}
 
-	// best-effort: namespace timestamp is cosmetic; failure must not abort the config write.
-	_ = s.namespaceProvider.UpdateTimestamp(ctx, cfg.Namespace)
 	s.watcher.NotifyCreated(ctx, cfg)
 
 	return cfg, nil

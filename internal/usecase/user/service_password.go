@@ -7,7 +7,6 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
 // ResetPassword sets a new password for another user.
@@ -29,14 +28,14 @@ func (s *Service) ResetPassword(
 		return fmt.Errorf("hash password: %w", err)
 	}
 
-	err = s.pap.Write(ctx, func(tx storage.Tx, _ *authz.PAPTx) error {
-		if _, err := s.store.WithTx(tx).Get(ctx, targetEmail); err != nil {
+	err = s.pap.Write(ctx, func(ctx context.Context, _ *authz.PAPTx) error {
+		if _, err := s.store.Get(ctx, targetEmail); err != nil {
 			return fmt.Errorf("get user: %w", err)
 		}
 		if err := s.authorizeUserWrite(ctx, actor, targetEmail); err != nil {
 			return err
 		}
-		if err := s.store.WithTx(tx).SetPassword(ctx, targetEmail, newHash, true); err != nil {
+		if err := s.store.SetPassword(ctx, targetEmail, newHash, true); err != nil {
 			return fmt.Errorf("set password: %w", err)
 		}
 

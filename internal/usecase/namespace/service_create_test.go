@@ -29,8 +29,13 @@ func TestService_Create(t *testing.T) {
 			name:  "success",
 			input: &domain.Namespace{Name: "prod"},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.store.EXPECT().Create(ctx, gomock.Any()).Return(nil)
-				m.store.EXPECT().Get(ctx, "prod").Return(&domain.Namespace{Name: "prod"}, nil)
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.store.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+				m.store.EXPECT().Get(gomock.Any(), "prod").Return(&domain.Namespace{Name: "prod"}, nil)
 
 				return ctx
 			},
@@ -48,7 +53,12 @@ func TestService_Create(t *testing.T) {
 			name:  "create error",
 			input: &domain.Namespace{Name: "prod"},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.store.EXPECT().Create(ctx, gomock.Any()).Return(errors.New("db error"))
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.store.EXPECT().Create(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 
 				return ctx
 			},

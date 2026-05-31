@@ -8,6 +8,8 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 //go:generate mockgen -destination=mocks/service_mock.go -package=auth_mock -source=service.go
@@ -25,10 +27,6 @@ type (
 		Upsert(ctx context.Context, user *domain.User) error
 	}
 
-	sessionCreator interface {
-		Create(user *domain.User) (string, error)
-	}
-
 	// adminBootstrap is implemented by *auth.AdminBootstrap. It owns the
 	// system admins group and writes membership g-rules; the auth usecase
 	// asks it to ensure the configured bootstrap admin is a member after a
@@ -36,33 +34,36 @@ type (
 	adminBootstrap interface {
 		EnsureMember(ctx context.Context, email string) error
 	}
+
+	sessionsService interface {
+		Create(ctx context.Context, params sessions.CreateParams) (*domain.Session, error)
+	}
 )
 
 type Service struct {
+	txm            storage.Manager
 	provider       oidcProvider
 	users          userStore
-	session        sessionCreator
 	admin          adminBootstrap
+	sessions       sessionsService
 	oidcAdminEmail string
 }
 
 // New constructs the auth Service.
-//
-// oidcAdminEmail is the email that, when seen on a successful OIDC callback,
-// is elevated into the superadmin group. Pass "" for non-OIDC modes; the
-// callback path is not reachable there.
 func New(
+	txm storage.Manager,
 	provider oidcProvider,
 	users userStore,
-	session sessionCreator,
 	admin adminBootstrap,
+	sessionsSvc sessionsService,
 	oidcAdminEmail string,
 ) *Service {
 	return &Service{
+		txm:            txm,
 		provider:       provider,
 		users:          users,
-		session:        session,
 		admin:          admin,
+		sessions:       sessionsSvc,
 		oidcAdminEmail: oidcAdminEmail,
 	}
 }

@@ -22,6 +22,7 @@ const (
 type (
 	pdp interface {
 		Has(principal string, perm domain.Permission) bool
+		HasNamespace(actor, name string, action domain.Action) bool
 		EffectiveDomains(
 			principal string,
 			object domain.Object,

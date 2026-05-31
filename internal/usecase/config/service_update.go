@@ -37,12 +37,20 @@ func (s *Service) Update(ctx context.Context, cfg *domain.Config) (*domain.Confi
 		return nil, fmt.Errorf("schema validation: %w", err)
 	}
 
-	if err := s.storage.Update(ctx, cfg); err != nil {
-		return nil, fmt.Errorf("update config: %w", err)
+	err = s.txm.WithTx(ctx, func(ctx context.Context) error {
+		if err := s.storage.Update(ctx, cfg); err != nil {
+			return fmt.Errorf("update config: %w", err)
+		}
+
+		// namespace timestamp is cosmetic; failure must not abort the config write.
+		_ = s.namespaceProvider.UpdateTimestamp(ctx, cfg.Namespace)
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("update config tx: %w", err)
 	}
 
-	// best-effort: namespace timestamp is cosmetic; failure must not abort the config write.
-	_ = s.namespaceProvider.UpdateTimestamp(ctx, cfg.Namespace)
 	s.watcher.NotifyUpdated(ctx, cfg)
 
 	return cfg, nil
@@ -54,13 +62,23 @@ type LockInput struct {
 }
 
 func (s *Service) Lock(ctx context.Context, in LockInput) error {
-	if err := s.storage.LockConfig(ctx, in.Namespace, in.Path); err != nil {
-		return fmt.Errorf("lock: %w", err)
-	}
+	var cfg *domain.Config
 
-	cfg, err := s.storage.Get(ctx, in.Path, in.Namespace)
+	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
+		if err := s.storage.LockConfig(ctx, in.Namespace, in.Path); err != nil {
+			return fmt.Errorf("lock: %w", err)
+		}
+
+		c, err := s.storage.Get(ctx, in.Path, in.Namespace)
+		if err != nil {
+			return fmt.Errorf("get config after lock: %w", err)
+		}
+		cfg = c
+
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("get config after lock: %w", err)
+		return fmt.Errorf("lock config tx: %w", err)
 	}
 
 	s.watcher.NotifyConfigLocked(ctx, cfg)
@@ -74,13 +92,23 @@ type UnlockInput struct {
 }
 
 func (s *Service) Unlock(ctx context.Context, in UnlockInput) error {
-	if err := s.storage.UnlockConfig(ctx, in.Namespace, in.Path); err != nil {
-		return fmt.Errorf("unlock: %w", err)
-	}
+	var cfg *domain.Config
 
-	cfg, err := s.storage.Get(ctx, in.Path, in.Namespace)
+	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
+		if err := s.storage.UnlockConfig(ctx, in.Namespace, in.Path); err != nil {
+			return fmt.Errorf("unlock: %w", err)
+		}
+
+		c, err := s.storage.Get(ctx, in.Path, in.Namespace)
+		if err != nil {
+			return fmt.Errorf("get config after unlock: %w", err)
+		}
+		cfg = c
+
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("get config after unlock: %w", err)
+		return fmt.Errorf("unlock config tx: %w", err)
 	}
 
 	s.watcher.NotifyConfigUnlocked(ctx, cfg)

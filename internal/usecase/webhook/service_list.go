@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 // List returns webhooks the caller can read, scoped by (Webhook, Read).
@@ -14,7 +14,7 @@ import (
 // from the result rather than returning an error. Global webhooks (empty
 // NamespaceFilter) require a (Webhook, Read, *) right to be visible.
 func (s *Service) List(ctx context.Context) ([]*domain.Webhook, error) {
-	claims, ok := auth.ClaimsFromContext(ctx)
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		return nil, domain.ErrUnauthorized
 	}

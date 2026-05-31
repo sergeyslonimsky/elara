@@ -2,9 +2,9 @@
 // @generated from file elara/filter/v1/filter_service.proto (package elara.filter.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { PermissionAction } from "../../common/v1/permission_pb";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { PermissionAction, PermissionObject } from "../../common/v1/permission_pb";
 import { file_elara_common_v1_permission } from "../../common/v1/permission_pb";
 import type { Filters, Item } from "./filter_pb";
 import { file_elara_filter_v1_filter } from "./filter_pb";
@@ -14,7 +14,34 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/filter/v1/filter_service.proto.
  */
 export const file_elara_filter_v1_filter_service: GenFile = /*@__PURE__*/
-  fileDesc("CiRlbGFyYS9maWx0ZXIvdjEvZmlsdGVyX3NlcnZpY2UucHJvdG8SD2VsYXJhLmZpbHRlci52MSJ1ChRHZXROYW1lc3BhY2VzUmVxdWVzdBIpCgdmaWx0ZXJzGAEgASgLMhguZWxhcmEuZmlsdGVyLnYxLkZpbHRlcnMSMgoHYWN0aW9ucxgCIAMoDjIhLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQWN0aW9uIj0KFUdldE5hbWVzcGFjZXNSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLmVsYXJhLmZpbHRlci52MS5JdGVtInEKEEdldEdyb3Vwc1JlcXVlc3QSKQoHZmlsdGVycxgBIAEoCzIYLmVsYXJhLmZpbHRlci52MS5GaWx0ZXJzEjIKB2FjdGlvbnMYAiADKA4yIS5lbGFyYS5jb21tb24udjEuUGVybWlzc2lvbkFjdGlvbiI5ChFHZXRHcm91cHNSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLmVsYXJhLmZpbHRlci52MS5JdGVtInAKD0dldFVzZXJzUmVxdWVzdBIpCgdmaWx0ZXJzGAEgASgLMhguZWxhcmEuZmlsdGVyLnYxLkZpbHRlcnMSMgoHYWN0aW9ucxgCIAMoDjIhLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQWN0aW9uIjgKEEdldFVzZXJzUmVzcG9uc2USJAoFaXRlbXMYASADKAsyFS5lbGFyYS5maWx0ZXIudjEuSXRlbTKUAgoNRmlsdGVyU2VydmljZRJeCg1HZXROYW1lc3BhY2VzEiUuZWxhcmEuZmlsdGVyLnYxLkdldE5hbWVzcGFjZXNSZXF1ZXN0GiYuZWxhcmEuZmlsdGVyLnYxLkdldE5hbWVzcGFjZXNSZXNwb25zZRJSCglHZXRHcm91cHMSIS5lbGFyYS5maWx0ZXIudjEuR2V0R3JvdXBzUmVxdWVzdBoiLmVsYXJhLmZpbHRlci52MS5HZXRHcm91cHNSZXNwb25zZRJPCghHZXRVc2VycxIgLmVsYXJhLmZpbHRlci52MS5HZXRVc2Vyc1JlcXVlc3QaIS5lbGFyYS5maWx0ZXIudjEuR2V0VXNlcnNSZXNwb25zZULRAQoTY29tLmVsYXJhLmZpbHRlci52MUISRmlsdGVyU2VydmljZVByb3RvUAFaSGdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL2ZpbHRlci92MTtmaWx0ZXJ2MaICA0VGWKoCD0VsYXJhLkZpbHRlci5WMcoCD0VsYXJhXEZpbHRlclxWMeICG0VsYXJhXEZpbHRlclxWMVxHUEJNZXRhZGF0YeoCEUVsYXJhOjpGaWx0ZXI6OlYxYgZwcm90bzM", [file_elara_common_v1_permission, file_elara_filter_v1_filter]);
+  fileDesc("CiRlbGFyYS9maWx0ZXIvdjEvZmlsdGVyX3NlcnZpY2UucHJvdG8SD2VsYXJhLmZpbHRlci52MSKoAQoST2JqZWN0Q2F0YWxvZ0VudHJ5EjEKBm9iamVjdBgBIAEoDjIhLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uT2JqZWN0EisKBXNjb3BlGAIgASgOMhwuZWxhcmEuZmlsdGVyLnYxLk9iamVjdFNjb3BlEjIKB2FjdGlvbnMYAyADKA4yIS5lbGFyYS5jb21tb24udjEuUGVybWlzc2lvbkFjdGlvbiJ1ChRHZXROYW1lc3BhY2VzUmVxdWVzdBIpCgdmaWx0ZXJzGAEgASgLMhguZWxhcmEuZmlsdGVyLnYxLkZpbHRlcnMSMgoHYWN0aW9ucxgCIAMoDjIhLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQWN0aW9uIj0KFUdldE5hbWVzcGFjZXNSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLmVsYXJhLmZpbHRlci52MS5JdGVtInEKEEdldEdyb3Vwc1JlcXVlc3QSKQoHZmlsdGVycxgBIAEoCzIYLmVsYXJhLmZpbHRlci52MS5GaWx0ZXJzEjIKB2FjdGlvbnMYAiADKA4yIS5lbGFyYS5jb21tb24udjEuUGVybWlzc2lvbkFjdGlvbiI5ChFHZXRHcm91cHNSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLmVsYXJhLmZpbHRlci52MS5JdGVtInAKD0dldFVzZXJzUmVxdWVzdBIpCgdmaWx0ZXJzGAEgASgLMhguZWxhcmEuZmlsdGVyLnYxLkZpbHRlcnMSMgoHYWN0aW9ucxgCIAMoDjIhLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQWN0aW9uIjgKEEdldFVzZXJzUmVzcG9uc2USJAoFaXRlbXMYASADKAsyFS5lbGFyYS5maWx0ZXIudjEuSXRlbSIdChtHZXRQZXJtaXNzaW9uQ2F0YWxvZ1JlcXVlc3QiVAocR2V0UGVybWlzc2lvbkNhdGFsb2dSZXNwb25zZRI0CgdlbnRyaWVzGAEgAygLMiMuZWxhcmEuZmlsdGVyLnYxLk9iamVjdENhdGFsb2dFbnRyeSp4CgtPYmplY3RTY29wZRIcChhPQkpFQ1RfU0NPUEVfVU5TUEVDSUZJRUQQABIXChNPQkpFQ1RfU0NPUEVfR0xPQkFMEAESGgoWT0JKRUNUX1NDT1BFX05BTUVTUEFDRRACEhYKEk9CSkVDVF9TQ09QRV9HUk9VUBADMokDCg1GaWx0ZXJTZXJ2aWNlEl4KDUdldE5hbWVzcGFjZXMSJS5lbGFyYS5maWx0ZXIudjEuR2V0TmFtZXNwYWNlc1JlcXVlc3QaJi5lbGFyYS5maWx0ZXIudjEuR2V0TmFtZXNwYWNlc1Jlc3BvbnNlElIKCUdldEdyb3VwcxIhLmVsYXJhLmZpbHRlci52MS5HZXRHcm91cHNSZXF1ZXN0GiIuZWxhcmEuZmlsdGVyLnYxLkdldEdyb3Vwc1Jlc3BvbnNlEk8KCEdldFVzZXJzEiAuZWxhcmEuZmlsdGVyLnYxLkdldFVzZXJzUmVxdWVzdBohLmVsYXJhLmZpbHRlci52MS5HZXRVc2Vyc1Jlc3BvbnNlEnMKFEdldFBlcm1pc3Npb25DYXRhbG9nEiwuZWxhcmEuZmlsdGVyLnYxLkdldFBlcm1pc3Npb25DYXRhbG9nUmVxdWVzdBotLmVsYXJhLmZpbHRlci52MS5HZXRQZXJtaXNzaW9uQ2F0YWxvZ1Jlc3BvbnNlQtEBChNjb20uZWxhcmEuZmlsdGVyLnYxQhJGaWx0ZXJTZXJ2aWNlUHJvdG9QAVpIZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvZmlsdGVyL3YxO2ZpbHRlcnYxogIDRUZYqgIPRWxhcmEuRmlsdGVyLlYxygIPRWxhcmFcRmlsdGVyXFYx4gIbRWxhcmFcRmlsdGVyXFYxXEdQQk1ldGFkYXRh6gIRRWxhcmE6OkZpbHRlcjo6VjFiBnByb3RvMw", [file_elara_common_v1_permission, file_elara_filter_v1_filter]);
+
+/**
+ * @generated from message elara.filter.v1.ObjectCatalogEntry
+ */
+export type ObjectCatalogEntry = Message<"elara.filter.v1.ObjectCatalogEntry"> & {
+  /**
+   * @generated from field: elara.common.v1.PermissionObject object = 1;
+   */
+  object: PermissionObject;
+
+  /**
+   * @generated from field: elara.filter.v1.ObjectScope scope = 2;
+   */
+  scope: ObjectScope;
+
+  /**
+   * @generated from field: repeated elara.common.v1.PermissionAction actions = 3;
+   */
+  actions: PermissionAction[];
+};
+
+/**
+ * Describes the message elara.filter.v1.ObjectCatalogEntry.
+ * Use `create(ObjectCatalogEntrySchema)` to create a new message.
+ */
+export const ObjectCatalogEntrySchema: GenMessage<ObjectCatalogEntry> = /*@__PURE__*/
+  messageDesc(file_elara_filter_v1_filter_service, 0);
 
 /**
  * @generated from message elara.filter.v1.GetNamespacesRequest
@@ -36,7 +63,7 @@ export type GetNamespacesRequest = Message<"elara.filter.v1.GetNamespacesRequest
  * Use `create(GetNamespacesRequestSchema)` to create a new message.
  */
 export const GetNamespacesRequestSchema: GenMessage<GetNamespacesRequest> = /*@__PURE__*/
-  messageDesc(file_elara_filter_v1_filter_service, 0);
+  messageDesc(file_elara_filter_v1_filter_service, 1);
 
 /**
  * @generated from message elara.filter.v1.GetNamespacesResponse
@@ -53,7 +80,7 @@ export type GetNamespacesResponse = Message<"elara.filter.v1.GetNamespacesRespon
  * Use `create(GetNamespacesResponseSchema)` to create a new message.
  */
 export const GetNamespacesResponseSchema: GenMessage<GetNamespacesResponse> = /*@__PURE__*/
-  messageDesc(file_elara_filter_v1_filter_service, 1);
+  messageDesc(file_elara_filter_v1_filter_service, 2);
 
 /**
  * @generated from message elara.filter.v1.GetGroupsRequest
@@ -75,7 +102,7 @@ export type GetGroupsRequest = Message<"elara.filter.v1.GetGroupsRequest"> & {
  * Use `create(GetGroupsRequestSchema)` to create a new message.
  */
 export const GetGroupsRequestSchema: GenMessage<GetGroupsRequest> = /*@__PURE__*/
-  messageDesc(file_elara_filter_v1_filter_service, 2);
+  messageDesc(file_elara_filter_v1_filter_service, 3);
 
 /**
  * @generated from message elara.filter.v1.GetGroupsResponse
@@ -92,7 +119,7 @@ export type GetGroupsResponse = Message<"elara.filter.v1.GetGroupsResponse"> & {
  * Use `create(GetGroupsResponseSchema)` to create a new message.
  */
 export const GetGroupsResponseSchema: GenMessage<GetGroupsResponse> = /*@__PURE__*/
-  messageDesc(file_elara_filter_v1_filter_service, 3);
+  messageDesc(file_elara_filter_v1_filter_service, 4);
 
 /**
  * @generated from message elara.filter.v1.GetUsersRequest
@@ -114,7 +141,7 @@ export type GetUsersRequest = Message<"elara.filter.v1.GetUsersRequest"> & {
  * Use `create(GetUsersRequestSchema)` to create a new message.
  */
 export const GetUsersRequestSchema: GenMessage<GetUsersRequest> = /*@__PURE__*/
-  messageDesc(file_elara_filter_v1_filter_service, 4);
+  messageDesc(file_elara_filter_v1_filter_service, 5);
 
 /**
  * @generated from message elara.filter.v1.GetUsersResponse
@@ -131,7 +158,81 @@ export type GetUsersResponse = Message<"elara.filter.v1.GetUsersResponse"> & {
  * Use `create(GetUsersResponseSchema)` to create a new message.
  */
 export const GetUsersResponseSchema: GenMessage<GetUsersResponse> = /*@__PURE__*/
-  messageDesc(file_elara_filter_v1_filter_service, 5);
+  messageDesc(file_elara_filter_v1_filter_service, 6);
+
+/**
+ * @generated from message elara.filter.v1.GetPermissionCatalogRequest
+ */
+export type GetPermissionCatalogRequest = Message<"elara.filter.v1.GetPermissionCatalogRequest"> & {
+};
+
+/**
+ * Describes the message elara.filter.v1.GetPermissionCatalogRequest.
+ * Use `create(GetPermissionCatalogRequestSchema)` to create a new message.
+ */
+export const GetPermissionCatalogRequestSchema: GenMessage<GetPermissionCatalogRequest> = /*@__PURE__*/
+  messageDesc(file_elara_filter_v1_filter_service, 7);
+
+/**
+ * @generated from message elara.filter.v1.GetPermissionCatalogResponse
+ */
+export type GetPermissionCatalogResponse = Message<"elara.filter.v1.GetPermissionCatalogResponse"> & {
+  /**
+   * @generated from field: repeated elara.filter.v1.ObjectCatalogEntry entries = 1;
+   */
+  entries: ObjectCatalogEntry[];
+};
+
+/**
+ * Describes the message elara.filter.v1.GetPermissionCatalogResponse.
+ * Use `create(GetPermissionCatalogResponseSchema)` to create a new message.
+ */
+export const GetPermissionCatalogResponseSchema: GenMessage<GetPermissionCatalogResponse> = /*@__PURE__*/
+  messageDesc(file_elara_filter_v1_filter_service, 8);
+
+/**
+ * ObjectScope describes how the `domain` field of a PermissionAssignment is
+ * interpreted for a given PermissionObject. UI picks the right domain control
+ * from this; server uses the same catalog to reject inconsistent assignments.
+ *
+ * @generated from enum elara.filter.v1.ObjectScope
+ */
+export enum ObjectScope {
+  /**
+   * @generated from enum value: OBJECT_SCOPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * GLOBAL: assignment.domain MUST be "*". E.g. User, Token, Webhook, Client.
+   *
+   * @generated from enum value: OBJECT_SCOPE_GLOBAL = 1;
+   */
+  GLOBAL = 1,
+
+  /**
+   * NAMESPACE: assignment.domain is a namespace name, or "*" for all
+   * namespaces. UI should drive selection via FilterService.GetNamespaces.
+   *
+   * @generated from enum value: OBJECT_SCOPE_NAMESPACE = 2;
+   */
+  NAMESPACE = 2,
+
+  /**
+   * GROUP: assignment.domain is "group:<id>" (canonical, see
+   * domain.GroupResource), or "*" for all groups. UI should drive selection
+   * via FilterService.GetGroups.
+   *
+   * @generated from enum value: OBJECT_SCOPE_GROUP = 3;
+   */
+  GROUP = 3,
+}
+
+/**
+ * Describes the enum elara.filter.v1.ObjectScope.
+ */
+export const ObjectScopeSchema: GenEnum<ObjectScope> = /*@__PURE__*/
+  enumDesc(file_elara_filter_v1_filter_service, 0);
 
 /**
  * @generated from service elara.filter.v1.FilterService
@@ -160,6 +261,19 @@ export const FilterService: GenService<{
     methodKind: "unary";
     input: typeof GetUsersRequestSchema;
     output: typeof GetUsersResponseSchema;
+  },
+  /**
+   * GetPermissionCatalog returns the static catalog the UI needs to build a
+   * type-safe permission-assignment form: for every PermissionObject, which
+   * PermissionActions are meaningful and what kind of domain (if any) the
+   * assignment must carry.
+   *
+   * @generated from rpc elara.filter.v1.FilterService.GetPermissionCatalog
+   */
+  getPermissionCatalog: {
+    methodKind: "unary";
+    input: typeof GetPermissionCatalogRequestSchema;
+    output: typeof GetPermissionCatalogResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_elara_filter_v1_filter_service, 0);

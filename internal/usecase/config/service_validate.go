@@ -19,7 +19,7 @@ type ValidateInput struct {
 func (s *Service) Validate(
 	ctx context.Context,
 	in ValidateInput,
-) (*content.ValidationResult, error) {
+) (*domain.ValidationResult, error) {
 	result, err := content.ValidateAndNormalize(in.Content, in.Format)
 	if err != nil {
 		return nil, fmt.Errorf("validate and normalize: %w", err)

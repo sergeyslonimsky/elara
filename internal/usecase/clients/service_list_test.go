@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 )
 
@@ -29,7 +29,7 @@ func TestService_ListActive(t *testing.T) {
 		{
 			name: "success sorted by connected_at",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -57,7 +57,7 @@ func TestService_ListActive(t *testing.T) {
 		{
 			name: "non-admin sees only clients watching readable namespaces",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -68,7 +68,7 @@ func TestService_ListActive(t *testing.T) {
 						}).
 					Return(false)
 				m.pdp.EXPECT().
-					EffectiveDomains("test@example.com", domain.ObjectNamespace, domain.ActionRead).
+					EffectiveNamespaces("test@example.com", domain.ActionRead).
 					Return(authz.NewDomainSet("prod"))
 
 				m.active.EXPECT().ListActive().Return([]*domain.Client{
@@ -146,7 +146,7 @@ func TestService_ListHistorical(t *testing.T) {
 			name:  "success default limit",
 			limit: 0,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -171,7 +171,7 @@ func TestService_ListHistorical(t *testing.T) {
 			name:  "respects limit",
 			limit: 5,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -196,7 +196,7 @@ func TestService_ListHistorical(t *testing.T) {
 			name:  "history error",
 			limit: 10,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -261,7 +261,7 @@ func TestService_ListSessions(t *testing.T) {
 			clientName:   "order-service",
 			k8sNamespace: "prod",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -302,7 +302,7 @@ func TestService_ListSessions(t *testing.T) {
 			k8sNamespace: "prod",
 			currentID:    "a",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -340,7 +340,7 @@ func TestService_ListSessions(t *testing.T) {
 			name:       "empty clientName returns nothing",
 			clientName: "",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -362,7 +362,7 @@ func TestService_ListSessions(t *testing.T) {
 			currentID:    "a",
 			limit:        2,
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",
@@ -408,7 +408,7 @@ func TestService_ListSessions(t *testing.T) {
 			clientName:   "order-service",
 			k8sNamespace: "prod",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth.WithClaims(ctx, &auth.Claims{Email: "test@example.com"})
+				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
 				m.pdp.EXPECT().
 					Has(
 						"test@example.com",

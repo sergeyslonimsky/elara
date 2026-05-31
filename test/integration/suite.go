@@ -12,9 +12,9 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/di/service"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // Persona is an RBAC identity used in integration test cases. Membership is
@@ -92,12 +92,11 @@ var DefaultPersonas = map[string]Persona{
 
 // Suite is a running httptest.Server with persona session tokens pre-issued.
 type Suite struct {
-	Server  *httptest.Server
-	Tokens  map[string]string // persona name → raw session JWT
-	Manager *service.Manager
+	Server   *httptest.Server
+	Tokens   map[string]string // persona name → raw session JWT
+	Managers *service.Managers
+	Adapters *service.Adapters
 }
-
-const testSessionSecret = "test-integration-secret"
 
 // muxAdapter implements the server interface required by service.V2Routes.
 type muxAdapter struct{ mux *http.ServeMux }
@@ -116,31 +115,39 @@ func New(t *testing.T) *Suite {
 
 	cfg := testConfig(t)
 
-	mgr, _, err := service.NewServiceManager(ctx, cfg)
+	adapters, err := service.NewAdapters(ctx, cfg)
 	require.NoError(t, err)
+
+	managers, err := service.NewManagers(ctx, cfg, adapters)
+	require.NoError(t, err)
+
+	services, err := service.NewServices(ctx, adapters, cfg, managers.Enforcer, managers.Sessions)
+	require.NoError(t, err)
+
+	handlers := service.NewV2Handlers(services, managers.Sessions, cfg)
+
 	t.Cleanup(func() {
 		cancel()
-		_ = mgr.Adapters.Store.Close()
+		_ = adapters.Store.Close()
 	})
 
 	// Superadmin is created by the standard bootstrap path — same as production.
-	require.NoError(t, mgr.Services.AdminBootstrap.BootstrapBasic(
+	require.NoError(t, services.AdminBootstrap.BootstrapBasic(
 		ctx,
 		DefaultPersonas["admin"].Email,
 		"unused-password",
 	))
 
-	seedData(t, ctx, mgr)
+	seedData(t, ctx, adapters)
 
-	txm := bbolt.NewTxManager(mgr.Adapters.Store.DB())
-	seedRBAC(t, ctx, mgr.Enforcer, txm)
+	seedRBAC(t, ctx, managers.Enforcer, adapters.StorageManager)
 
 	// Bootstrap and seedRBAC write directly through the policy repo; reload
 	// the enforcer cache so subsequent Enforce checks see the new rules.
-	require.NoError(t, mgr.Enforcer.LoadPolicy())
+	require.NoError(t, managers.Enforcer.LoadPolicy())
 
 	mux := http.NewServeMux()
-	service.V2Routes(&muxAdapter{mux}, mgr.V2Handlers, mgr.SessionManager, cfg)
+	service.V2Routes(&muxAdapter{mux}, handlers, managers.Sessions, adapters.AuthUsers, cfg)
 
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
@@ -152,12 +159,15 @@ func New(t *testing.T) *Suite {
 			continue
 		}
 
-		token, err := mgr.SessionManager.Create(&domain.User{Email: p.Email})
+		sess, err := managers.Sessions.Create(ctx, sessions.CreateParams{
+			UserID:     p.Email,
+			ClientType: string(domain.ClientTypeWeb),
+		})
 		require.NoError(t, err)
-		tokens[name] = token
+		tokens[name] = sess.ID
 	}
 
-	return &Suite{Server: srv, Tokens: tokens, Manager: mgr}
+	return &Suite{Server: srv, Tokens: tokens, Managers: managers, Adapters: adapters}
 }
 
 func testConfig(t *testing.T) config.Config {
@@ -168,11 +178,7 @@ func testConfig(t *testing.T) config.Config {
 		UI: config.UI{
 			Auth: config.UIAuthConfig{
 				Enabled: true,
-				Type:    config.AuthTypeBasicAuth,
-				Session: config.SessionConfig{
-					Secret: testSessionSecret,
-					TTL:    time.Hour,
-				},
+				Type:    domain.AuthTypeBasicAuth,
 			},
 		},
 		Client: config.Client{
@@ -189,11 +195,11 @@ func testConfig(t *testing.T) config.Config {
 //
 // Namespaces: prod, staging, dev
 // Configs: /api.json and /db.json in each namespace.
-func seedData(t *testing.T, ctx context.Context, mgr *service.Manager) {
+func seedData(t *testing.T, ctx context.Context, adapters *service.Adapters) {
 	t.Helper()
 
 	for _, ns := range []string{"prod", "staging", "dev"} {
-		require.NoError(t, mgr.Adapters.NamespaceRepo.Create(ctx, &domain.Namespace{Name: ns}))
+		require.NoError(t, adapters.NamespaceRepo.Create(ctx, &domain.Namespace{Name: ns}))
 	}
 
 	configs := []domain.Config{
@@ -216,7 +222,7 @@ func seedData(t *testing.T, ctx context.Context, mgr *service.Manager) {
 	}
 
 	for i := range configs {
-		require.NoError(t, mgr.Adapters.ConfigRepo.Create(ctx, &configs[i]))
+		require.NoError(t, adapters.ConfigRepo.Create(ctx, &configs[i]))
 	}
 }
 
@@ -230,37 +236,46 @@ func (s *Suite) AddPersona(t *testing.T, email, group string, perms []GroupPerm)
 	t.Helper()
 
 	ctx := t.Context()
-	txm := bbolt.NewTxManager(s.Manager.Adapters.Store.DB())
 
-	require.NoError(t, s.Manager.Enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
-		for _, p := range perms {
-			if err := txe.AddPolicy(
-				casbin.GroupSubject(group),
-				p.Domain,
-				string(p.Object),
-				string(p.Action),
-			); err != nil {
-				return err
-			}
-		}
+	require.NoError(
+		t,
+		s.Managers.Enforcer.WriteTx(
+			ctx,
+			s.Adapters.StorageManager,
+			func(ctx context.Context, txe *casbin.TxEnforcer) error {
+				for _, p := range perms {
+					if err := txe.AddPolicy(
+						casbin.GroupSubject(group),
+						p.Domain,
+						string(p.Object),
+						string(p.Action),
+					); err != nil {
+						return err
+					}
+				}
 
-		return txe.AddRoleForUser(email, casbin.GroupSubject(group), domain.MembershipDomain)
-	}))
-	require.NoError(t, s.Manager.Enforcer.LoadPolicy())
+				return txe.AddRoleForUser(email, casbin.GroupSubject(group), domain.MembershipDomain)
+			},
+		),
+	)
+	require.NoError(t, s.Managers.Enforcer.LoadPolicy())
 
-	token, err := s.Manager.SessionManager.Create(&domain.User{Email: email})
+	sess, err := s.Managers.Sessions.Create(ctx, sessions.CreateParams{
+		UserID:     email,
+		ClientType: string(domain.ClientTypeWeb),
+	})
 	require.NoError(t, err)
 
-	return token
+	return sess.ID
 }
 
 // seedRBAC writes DefaultGroupPermissions as Casbin p-rules and binds personas
-// to their groups via g-rules. All mutations run inside a single TxManager.Write
+// to their groups via g-rules. All mutations run inside a single Manager.WithTx
 // so the test enforcer state matches production atomicity (architecture.md §4 L2).
-func seedRBAC(t *testing.T, ctx context.Context, enforcer *casbin.Enforcer, txm storage.TxManager) {
+func seedRBAC(t *testing.T, ctx context.Context, enforcer *casbin.Enforcer, txm storage.Manager) {
 	t.Helper()
 
-	require.NoError(t, enforcer.WriteTx(ctx, txm, func(_ storage.Tx, txe *casbin.TxEnforcer) error {
+	require.NoError(t, enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 		for _, p := range DefaultGroupPermissions {
 			if err := txe.AddPolicy(
 				casbin.GroupSubject(p.Group),

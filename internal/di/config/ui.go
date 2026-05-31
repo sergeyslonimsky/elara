@@ -2,18 +2,11 @@ package config
 
 import (
 	"errors"
-	"time"
 
 	"github.com/sergeyslonimsky/core/di"
 	"github.com/sergeyslonimsky/core/http2"
-)
 
-type AuthType string
-
-const (
-	AuthTypeOIDC      AuthType = "oidc"
-	AuthTypeBasicAuth AuthType = "basic-auth"
-	AuthTypeNone      AuthType = "none"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 type UI struct {
@@ -24,7 +17,7 @@ type UI struct {
 // UIAuthConfig controls authentication and session management.
 type UIAuthConfig struct {
 	Enabled   bool
-	Type      AuthType
+	Type      domain.AuthType
 	BasicAuth BasicAuthConfig
 	OIDC      OIDCConfig
 	Session   SessionConfig
@@ -51,10 +44,8 @@ type OIDCConfig struct {
 	AdminEmail   string
 }
 
-// SessionConfig controls JWT session token signing and lifetime.
+// SessionConfig controls session cookie behavior.
 type SessionConfig struct {
-	Secret string
-	TTL    time.Duration
 	// SecureCookie marks the session cookie with the Secure flag.
 	// Set to true only when the service is served over HTTPS.
 	// On plain HTTP (e.g. local dev) the browser drops Secure cookies per RFC 6265.
@@ -78,18 +69,18 @@ func (c UIAuthConfig) Validate() error {
 	}
 
 	switch c.Type {
-	case AuthTypeBasicAuth:
+	case domain.AuthTypeBasicAuth:
 		if c.BasicAuth.Username == "" {
 			return ErrBasicAuthUsernameRequired
 		}
 		if c.BasicAuth.Password == "" {
 			return ErrBasicAuthPasswordRequired
 		}
-	case AuthTypeOIDC:
+	case domain.AuthTypeOIDC:
 		if c.OIDC.AdminEmail == "" {
 			return ErrOIDCAdminEmailRequired
 		}
-	case AuthTypeNone:
+	case domain.AuthTypeNone:
 		// no admin identity required — passthrough user is seeded at bootstrap
 	}
 
@@ -126,11 +117,6 @@ func newUIConfig(cfg *di.Config) (UI, error) {
 				AdminEmail: cfg.GetString("ui.auth.oidc.adminEmail"),
 			},
 			Session: SessionConfig{
-				Secret: cfg.GetString("ui.auth.session.secret"),
-				TTL: durOrDefault(
-					cfg.GetDuration("ui.auth.session.ttl"),
-					defaultSessionTTL,
-				),
 				SecureCookie: cfg.GetBool("ui.auth.session.secureCookie"),
 			},
 		},
@@ -143,21 +129,21 @@ func newUIConfig(cfg *di.Config) (UI, error) {
 	return ui, nil
 }
 
-func getAuthType(cfg *di.Config) AuthType {
+func getAuthType(cfg *di.Config) domain.AuthType {
 	if !cfg.GetBool("ui.auth.enabled") {
-		return AuthTypeNone
+		return domain.AuthTypeNone
 	}
 
 	authType := cfg.GetString("ui.auth.type")
 
 	switch authType {
 	case "oidc":
-		return AuthTypeOIDC
+		return domain.AuthTypeOIDC
 	case "basic-auth":
-		return AuthTypeBasicAuth
+		return domain.AuthTypeBasicAuth
 	case "none":
-		return AuthTypeNone
+		return domain.AuthTypeNone
 	default:
-		return AuthTypeNone
+		return domain.AuthTypeNone
 	}
 }

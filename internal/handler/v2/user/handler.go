@@ -8,12 +8,11 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/sergeyslonimsky/elara/internal/di/config"
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	userv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	useruc "github.com/sergeyslonimsky/elara/internal/usecase/user"
 )
 
@@ -52,17 +51,12 @@ type (
 )
 
 // Handler implements userv1connect.UserServiceHandler.
-//
-// All RPCs derive their per-target authorization inside the usecase layer
-// (see user_service.proto comments). The handler is responsible only for
-// authentication, request-shape translation, and the basic-auth-only
-// feature gate on the two password/destroy operations.
 type Handler struct {
 	uc       usecase
-	authType config.AuthType
+	authType domain.AuthType
 }
 
-func New(uc usecase, authType config.AuthType) *Handler {
+func New(uc usecase, authType domain.AuthType) *Handler {
 	return &Handler{uc: uc, authType: authType}
 }
 
@@ -70,7 +64,7 @@ func (h *Handler) ListUsers(
 	ctx context.Context,
 	req *connect.Request[userv1.ListUsersRequest],
 ) (*connect.Response[userv1.ListUsersResponse], error) {
-	actor, err := auth.AuthInfoFromContext(ctx)
+	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -103,7 +97,7 @@ func (h *Handler) GetUser(
 	ctx context.Context,
 	req *connect.Request[userv1.GetUserRequest],
 ) (*connect.Response[userv1.GetUserResponse], error) {
-	actor, err := auth.AuthInfoFromContext(ctx)
+	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -124,12 +118,12 @@ func (h *Handler) CreateUser(
 	ctx context.Context,
 	req *connect.Request[userv1.CreateUserRequest],
 ) (*connect.Response[userv1.CreateUserResponse], error) {
-	actor, err := auth.AuthInfoFromContext(ctx)
+	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	if h.authType == config.AuthTypeNone {
+	if h.authType == domain.AuthTypeNone {
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
 			fmt.Errorf(
@@ -139,10 +133,10 @@ func (h *Handler) CreateUser(
 		)
 	}
 
-	if h.authType == config.AuthTypeOIDC && req.Msg.GetInitialPassword() != "" {
+	if h.authType == domain.AuthTypeOIDC && req.Msg.GetInitialPassword() != "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errOIDCWithPassword)
 	}
-	if h.authType == config.AuthTypeBasicAuth && req.Msg.GetInitialPassword() == "" {
+	if h.authType == domain.AuthTypeBasicAuth && req.Msg.GetInitialPassword() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errBasicAuthWithNoPassword)
 	}
 
@@ -167,7 +161,7 @@ func (h *Handler) ResetUserPassword(
 	ctx context.Context,
 	req *connect.Request[userv1.ResetUserPasswordRequest],
 ) (*connect.Response[userv1.ResetUserPasswordResponse], error) {
-	actor, err := auth.AuthInfoFromContext(ctx)
+	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -187,7 +181,7 @@ func (h *Handler) DeleteUser(
 	ctx context.Context,
 	req *connect.Request[userv1.DeleteUserRequest],
 ) (*connect.Response[userv1.DeleteUserResponse], error) {
-	actor, err := auth.AuthInfoFromContext(ctx)
+	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -204,13 +198,12 @@ func (h *Handler) DeleteUser(
 }
 
 // UpdateUserGroups applies an explicit add/remove delta to the target
-// user's group memberships. All per-id authorization and anti-escalation
-// checks happen inside the usecase, under the PAP write transaction.
+// user's group memberships.
 func (h *Handler) UpdateUserGroups(
 	ctx context.Context,
 	req *connect.Request[userv1.UpdateUserGroupsRequest],
 ) (*connect.Response[userv1.UpdateUserGroupsResponse], error) {
-	actor, err := auth.AuthInfoFromContext(ctx)
+	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -232,11 +225,8 @@ func (h *Handler) UpdateUserGroups(
 	}), nil
 }
 
-// requireBasicAuth wraps the auth-type feature gate used by ResetUserPassword
-// and DeleteUser. The two operations are basic-auth-only — under OIDC the
-// IdP owns lifecycle.
 func (h *Handler) requireBasicAuth(operation string) error {
-	if h.authType == config.AuthTypeBasicAuth {
+	if h.authType == domain.AuthTypeBasicAuth {
 		return nil
 	}
 

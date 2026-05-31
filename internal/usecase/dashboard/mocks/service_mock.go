@@ -55,6 +55,20 @@ func (mr *MockpdpMockRecorder) Has(principal, perm any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*Mockpdp)(nil).Has), principal, perm)
 }
 
+// HasNamespace mocks base method.
+func (m *Mockpdp) HasNamespace(actor, name string, action domain.Action) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasNamespace", actor, name, action)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// HasNamespace indicates an expected call of HasNamespace.
+func (mr *MockpdpMockRecorder) HasNamespace(actor, name, action any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasNamespace", reflect.TypeOf((*Mockpdp)(nil).HasNamespace), actor, name, action)
+}
+
 // MocknsLister is a mock of nsLister interface.
 type MocknsLister struct {
 	ctrl     *gomock.Controller

@@ -13,8 +13,8 @@ import (
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 )
 
 const (
@@ -88,14 +88,14 @@ func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, e
 	}()
 
 	// Inject claims so usecases/handlers can check namespace/role scope.
-	claims := &auth.Claims{
+	claims := &auth2.Claims{
 		Email:      token.IssuedBy,
 		Name:       token.Name,
 		Namespaces: token.Namespaces,
 		Role:       string(token.Role),
 	}
 
-	return auth.WithClaims(ctx, claims), nil
+	return auth2.WithClaims(ctx, claims), nil
 }
 
 //nolint:wrapcheck // gRPC status errors are terminal; wrapping corrupts the status code

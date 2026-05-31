@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strings"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
@@ -78,6 +79,35 @@ func (p *PDP) HasGroup(actor, groupID string, action domain.Action) bool {
 		Action: action,
 		Domain: domain.GroupResource(groupID),
 	})
+}
+
+// HasNamespace reports whether actor holds the given action on
+// namespace:<name>. Hides the namespace:<name> domain convention from callers.
+// Pass domain.DomainAll for a wildcard check.
+func (p *PDP) HasNamespace(actor, name string, action domain.Action) bool {
+	return p.Has(actor, domain.Permission{
+		Object: domain.ObjectNamespace,
+		Action: action,
+		Domain: domain.NamespaceResource(name),
+	})
+}
+
+// EffectiveNamespaces returns the namespaces the actor can act on with the
+// given action, stripped of the "namespace:" prefix so consumers can compare
+// bare names directly. Wildcard p-rules (domain "*") set DomainSet.Wildcard,
+// matching EffectiveDomains semantics.
+func (p *PDP) EffectiveNamespaces(actor string, action domain.Action) DomainSet {
+	raw := p.EffectiveDomains(actor, domain.ObjectNamespace, action)
+	if raw.Wildcard {
+		return DomainSet{Wildcard: true, Explicit: map[string]struct{}{}}
+	}
+
+	out := make(map[string]struct{}, len(raw.Explicit))
+	for d := range raw.Explicit {
+		out[strings.TrimPrefix(d, domain.NamespaceResourcePrefix)] = struct{}{}
+	}
+
+	return DomainSet{Explicit: out}
 }
 
 // HasGlobal reports whether actor holds the given (object, action) on the

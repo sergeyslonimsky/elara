@@ -1,6 +1,7 @@
 package casbin
 
 import (
+	"context"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -8,14 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sergeyslonimsky/elara/internal/service/adapter/bbolt"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
+	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 )
 
-// newInternalTestEnforcer creates an Enforcer and TxManager backed by a real
+// newInternalTestEnforcer creates an Enforcer and Manager backed by a real
 // bbolt store in t.TempDir. Returned together so tests can drive WriteTx /
 // WithTx via the real tx infrastructure.
-func newInternalTestEnforcer(t *testing.T) (*Enforcer, *bbolt.TxManager, *bbolt.PolicyRepo) {
+func newInternalTestEnforcer(t *testing.T) (*Enforcer, *bbolt.Manager, *bbolt.PolicyRepo) {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "casbin.db")
@@ -25,14 +25,13 @@ func newInternalTestEnforcer(t *testing.T) (*Enforcer, *bbolt.TxManager, *bbolt.
 
 	t.Cleanup(func() { _ = store.Close() })
 
-	policies := bbolt.NewPolicyRepo(store)
+	storageManager := bbolt.NewManager(store.DB())
+	policies := bbolt.NewPolicyRepo(storageManager)
 
 	e, err := NewEnforcer(policies)
 	require.NoError(t, err)
 
-	txm := bbolt.NewTxManager(store.DB())
-
-	return e, txm, policies
+	return e, storageManager, policies
 }
 
 // cachePolicyContains reports whether the in-memory enforcer cache contains a
@@ -85,8 +84,8 @@ func TestTxEnforcer_AddPolicy(t *testing.T) {
 
 			var captured *TxEnforcer
 
-			err := txm.Write(t.Context(), func(tx storage.Tx) error {
-				txe := e.WithTx(tx)
+			err := txm.WithTx(t.Context(), func(ctx context.Context) error {
+				txe := e.WithTx(ctx)
 				captured = txe
 
 				return txe.AddPolicy(tt.rule[0], tt.rule[1], tt.rule[2], tt.rule[3])
@@ -139,8 +138,8 @@ func TestTxEnforcer_RemovePolicy(t *testing.T) {
 
 			var captured *TxEnforcer
 
-			err := txm.Write(t.Context(), func(tx storage.Tx) error {
-				txe := e.WithTx(tx)
+			err := txm.WithTx(t.Context(), func(ctx context.Context) error {
+				txe := e.WithTx(ctx)
 				captured = txe
 
 				return txe.RemovePolicy(rule[0], rule[1], rule[2], rule[3])
@@ -180,8 +179,8 @@ func TestTxEnforcer_AddRoleForUser(t *testing.T) {
 
 			var captured *TxEnforcer
 
-			err := txm.Write(t.Context(), func(tx storage.Tx) error {
-				txe := e.WithTx(tx)
+			err := txm.WithTx(t.Context(), func(ctx context.Context) error {
+				txe := e.WithTx(ctx)
 				captured = txe
 
 				return txe.AddRoleForUser(tt.user, tt.role, tt.dom)
@@ -226,8 +225,8 @@ func TestTxEnforcer_RemoveRoleForUser(t *testing.T) {
 
 			var captured *TxEnforcer
 
-			err := txm.Write(t.Context(), func(tx storage.Tx) error {
-				txe := e.WithTx(tx)
+			err := txm.WithTx(t.Context(), func(ctx context.Context) error {
+				txe := e.WithTx(ctx)
 				captured = txe
 
 				return txe.RemoveRoleForUser(gRule[0], gRule[1], gRule[2])
@@ -284,8 +283,8 @@ func TestTxEnforcer_DeleteUser(t *testing.T) {
 
 			var captured *TxEnforcer
 
-			err := txm.Write(t.Context(), func(tx storage.Tx) error {
-				txe := e.WithTx(tx)
+			err := txm.WithTx(t.Context(), func(ctx context.Context) error {
+				txe := e.WithTx(ctx)
 				captured = txe
 
 				return txe.DeleteUser(tt.email)
@@ -321,8 +320,8 @@ func TestTxEnforcer_MultipleOpsRecordedInOrder(t *testing.T) {
 
 	var captured *TxEnforcer
 
-	err := txm.Write(t.Context(), func(tx storage.Tx) error {
-		txe := e.WithTx(tx)
+	err := txm.WithTx(t.Context(), func(ctx context.Context) error {
+		txe := e.WithTx(ctx)
 		captured = txe
 
 		if err := txe.AddPolicy("role:x", "*", "config", "read"); err != nil {

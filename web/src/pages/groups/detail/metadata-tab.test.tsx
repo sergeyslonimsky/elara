@@ -54,7 +54,7 @@ describe("MetadataTab", () => {
 
 	test("renders form with group name and description", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-		can("write", "Group", { domain: "group:developers" });
+		can("write", "Group", { domain: "group:g1" });
 		const ability = build();
 		const authContext = authenticatedContext(ability);
 
@@ -70,7 +70,7 @@ describe("MetadataTab", () => {
 
 	test("save button disabled when no changes", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-		can("write", "Group", { domain: "group:developers" });
+		can("write", "Group", { domain: "group:g1" });
 		const ability = build();
 		const authContext = authenticatedContext(ability);
 
@@ -92,7 +92,7 @@ describe("MetadataTab", () => {
 		});
 
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-		can("write", "Group", { domain: "group:developers" });
+		can("write", "Group", { domain: "group:g1" });
 		const ability = build();
 		const authContext = authenticatedContext(ability);
 
@@ -113,7 +113,7 @@ describe("MetadataTab", () => {
 	test("staged edit survives refetch with same metadataVersion", async () => {
 		const ue = userEvent.setup();
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-		can("write", "Group", { domain: "group:developers" });
+		can("write", "Group", { domain: "group:g1" });
 		const ability = build();
 		const authContext = authenticatedContext(ability);
 
@@ -144,7 +144,7 @@ describe("MetadataTab", () => {
 
 	test("server bump of metadataVersion resets the form", async () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-		can("write", "Group", { domain: "group:developers" });
+		can("write", "Group", { domain: "group:g1" });
 		const ability = build();
 		const authContext = authenticatedContext(ability);
 
@@ -184,7 +184,7 @@ describe("MetadataTab", () => {
 		} as unknown as ReturnType<typeof useMutation>);
 
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-		can("write", "Group", { domain: "group:developers" });
+		can("write", "Group", { domain: "group:g1" });
 		const ability = build();
 		const authContext = authenticatedContext(ability);
 

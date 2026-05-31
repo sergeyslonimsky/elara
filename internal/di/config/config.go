@@ -29,8 +29,6 @@ const (
 	// defaultServiceName is embedded in Prometheus/OTLP resource labels
 	// when operators don't override it.
 	defaultServiceName = "elara"
-
-	defaultSessionTTL = 24 * time.Hour
 )
 
 type Config struct {

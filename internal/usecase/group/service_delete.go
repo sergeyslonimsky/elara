@@ -6,12 +6,11 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
-	"github.com/sergeyslonimsky/elara/internal/service/storage"
 )
 
 func (s *Service) Delete(ctx context.Context, _ domain.AuthInfo, id string) error {
-	err := s.pap.Write(ctx, func(tx storage.Tx, w *authz.PAPTx) error {
-		group, err := s.loadMutableGroup(ctx, tx, id)
+	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
+		group, err := s.loadMutableGroup(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -20,7 +19,7 @@ func (s *Service) Delete(ctx context.Context, _ domain.AuthInfo, id string) erro
 			return fmt.Errorf("pap delete group: %w", err)
 		}
 
-		if err := s.store.WithTx(tx).Delete(ctx, id); err != nil {
+		if err := s.store.Delete(ctx, id); err != nil {
 			return fmt.Errorf("delete group: %w", err)
 		}
 

@@ -8,11 +8,11 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	tokenv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/token/v1"
-	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	tokenuc "github.com/sergeyslonimsky/elara/internal/usecase/token"
 )
 
@@ -59,7 +59,7 @@ func (h *Handler) CreateToken(
 	ctx context.Context,
 	req *connect.Request[tokenv1.CreateTokenRequest],
 ) (*connect.Response[tokenv1.CreateTokenResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -100,7 +100,7 @@ func (h *Handler) ListTokens(
 	ctx context.Context,
 	req *connect.Request[tokenv1.ListTokensRequest],
 ) (*connect.Response[tokenv1.ListTokensResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -155,7 +155,7 @@ func (h *Handler) GetToken(
 	ctx context.Context,
 	req *connect.Request[tokenv1.GetTokenRequest],
 ) (*connect.Response[tokenv1.GetTokenResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -172,7 +172,7 @@ func (h *Handler) RevokeToken(
 	ctx context.Context,
 	req *connect.Request[tokenv1.RevokeTokenRequest],
 ) (*connect.Response[tokenv1.RevokeTokenResponse], error) {
-	user, err := auth.AuthInfoFromContext(ctx)
+	user, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
