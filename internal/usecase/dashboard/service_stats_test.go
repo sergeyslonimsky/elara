@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -26,17 +27,21 @@ func TestService_GetStats(t *testing.T) {
 		{
 			name: "admin sees all namespaces",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "admin@example.com"})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: "admin@example.com"},
+				)
 
 				m.namespaces.EXPECT().
 					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "n1"}, {Name: "n2"}}, nil)
 
 				m.pdp.EXPECT().
-					HasNamespace("admin@example.com", "n1", domain.ActionRead).
+					HasNamespace(testUserID, "n1", domain.ActionRead).
 					Return(true)
 				m.pdp.EXPECT().
-					HasNamespace("admin@example.com", "n2", domain.ActionRead).
+					HasNamespace(testUserID, "n2", domain.ActionRead).
 					Return(true)
 
 				m.configs.EXPECT().
@@ -65,17 +70,21 @@ func TestService_GetStats(t *testing.T) {
 		{
 			name: "scoped user sees only allowed namespaces",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: "user@example.com"},
+				)
 
 				m.namespaces.EXPECT().
 					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "prod"}, {Name: "dev"}}, nil)
 
 				m.pdp.EXPECT().
-					HasNamespace("user@example.com", "prod", domain.ActionRead).
+					HasNamespace(testUserID, "prod", domain.ActionRead).
 					Return(true)
 				m.pdp.EXPECT().
-					HasNamespace("user@example.com", "dev", domain.ActionRead).
+					HasNamespace(testUserID, "dev", domain.ActionRead).
 					Return(false)
 
 				m.configs.EXPECT().
@@ -101,14 +110,18 @@ func TestService_GetStats(t *testing.T) {
 		{
 			name: "no-access user sees zeros",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "no-access@example.com"})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: "no-access@example.com"},
+				)
 
 				m.namespaces.EXPECT().
 					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "prod"}}, nil)
 
 				m.pdp.EXPECT().
-					HasNamespace("no-access@example.com", "prod", domain.ActionRead).
+					HasNamespace(testUserID, "prod", domain.ActionRead).
 					Return(false)
 
 				m.configs.EXPECT().
@@ -138,14 +151,18 @@ func TestService_GetStats(t *testing.T) {
 		{
 			name: "count error",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "admin@example.com"})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: "admin@example.com"},
+				)
 
 				m.namespaces.EXPECT().
 					ListAll(ctx).
 					Return([]*domain.Namespace{{Name: "n1"}}, nil)
 
 				m.pdp.EXPECT().
-					HasNamespace("admin@example.com", "n1", domain.ActionRead).
+					HasNamespace(testUserID, "n1", domain.ActionRead).
 					Return(true)
 
 				m.configs.EXPECT().
@@ -159,7 +176,11 @@ func TestService_GetStats(t *testing.T) {
 		{
 			name: "list namespaces error",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "admin@example.com"})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: "admin@example.com"},
+				)
 
 				m.namespaces.EXPECT().
 					ListAll(ctx).
@@ -172,7 +193,11 @@ func TestService_GetStats(t *testing.T) {
 		{
 			name: "current revision error",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "admin@example.com"})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: "admin@example.com"},
+				)
 
 				m.namespaces.EXPECT().
 					ListAll(ctx).

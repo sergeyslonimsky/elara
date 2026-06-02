@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
@@ -21,7 +23,8 @@ import (
 func (s *Service) ResetPassword(
 	ctx context.Context,
 	actor domain.AuthInfo,
-	targetEmail, newPassword string,
+	userID uuid.UUID,
+	newPassword string,
 ) error {
 	newHash, err := auth.HashPassword(newPassword)
 	if err != nil {
@@ -29,13 +32,14 @@ func (s *Service) ResetPassword(
 	}
 
 	err = s.pap.Write(ctx, func(ctx context.Context, _ *authz.PAPTx) error {
-		if _, err := s.store.Get(ctx, targetEmail); err != nil {
+		user, err := s.store.GetByID(ctx, userID)
+		if err != nil {
 			return fmt.Errorf("get user: %w", err)
 		}
-		if err := s.authorizeUserWrite(ctx, actor, targetEmail); err != nil {
+		if err := s.authorizeUserWrite(ctx, actor, user.ID.String()); err != nil {
 			return err
 		}
-		if err := s.store.SetPassword(ctx, targetEmail, newHash, true); err != nil {
+		if err := s.store.SetPassword(ctx, user.ID, newHash, true); err != nil {
 			return fmt.Errorf("set password: %w", err)
 		}
 

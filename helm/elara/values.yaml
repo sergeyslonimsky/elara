@@ -114,7 +114,8 @@ config:
       basicAuth:
         # -- Username (email) of the bootstrap admin user. Required when
         # type=basic-auth. The user is created on first boot and added to
-        # the superadmin group.
+        # the superadmin group. Changing this value on an existing install
+        # updates the bootstrap user's login identity in-place (UUID preserved).
         username: ""
         # -- Initial password for the bootstrap admin. The admin is forced
         # to change it on first login. Stored in a Kubernetes Secret.
@@ -137,11 +138,11 @@ config:
         # superadmin group.
         adminEmail: ""
       session:
-        # -- HS256 JWT signing secret. Must be stable across pod restarts.
+        # -- Session signing secret. Must be stable across pod restarts.
         # If empty the service will fail to start when auth is enabled.
         # Use existingSecret in production.
         secret: ""
-        # -- JWT session lifetime (Go duration).
+        # -- Server-side session lifetime (Go duration).
         ttl: "24h"
         # -- Add the Secure flag to the session cookie.
         # Must be true in production (HTTPS). Set to false for local HTTP development.

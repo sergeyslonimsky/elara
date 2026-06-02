@@ -37,7 +37,7 @@ func TestService_Get(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return adminAuth(), created.Group.ID
+				return adminAuth(), created.Group.Name
 			},
 			assert: func(t *testing.T, got *group.GetResult) {
 				t.Helper()
@@ -76,7 +76,7 @@ func TestService_Get(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{Email: "nobody@example.com"}, created.Group.ID
+				return domain.AuthInfo{UserID: "nobody@example.com", Email: "nobody@example.com"}, created.Group.Name
 			},
 			assert: func(t *testing.T, got *group.GetResult) {
 				t.Helper()
@@ -105,7 +105,7 @@ func TestService_Get(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return adminAuth(), created.Group.ID
+				return adminAuth(), created.Group.Name
 			},
 			assert: func(t *testing.T, got *group.GetResult) {
 				t.Helper()

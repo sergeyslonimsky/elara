@@ -15,12 +15,12 @@ import (
 // the request-supplied namespace; this gate covers the per-bundle namespaces
 // resolved inside Import.
 func (s *Service) requireTransferWrite(ctx context.Context, namespace string) error {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return domain.ErrUnauthorized
 	}
 
-	if !s.pdp.HasNamespace(claims.Email, namespace, domain.ActionWrite) {
+	if !s.pdp.HasNamespace(info.UserID, namespace, domain.ActionWrite) {
 		return domain.ErrForbidden
 	}
 

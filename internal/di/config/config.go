@@ -47,6 +47,8 @@ type Config struct {
 	Metrics MetricsConfig
 	Tracing TracingConfig
 	Log     LogConfig
+
+	DangerouslySkipPermissions bool
 }
 
 // LogConfig controls structured-log verbosity, output format, and source location.
@@ -105,6 +107,7 @@ func NewConfig(ctx context.Context) (Config, error) {
 			Format:   cfg.GetStringOrDefault("log.format", defaultLogFormat),
 			NoSource: cfg.GetBool("log.noSource"),
 		},
+		DangerouslySkipPermissions: cfg.GetBool("dangerously.skip.permissions"),
 	}, nil
 }
 

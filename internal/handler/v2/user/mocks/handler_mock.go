@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	uuid "github.com/google/uuid"
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	user "github.com/sergeyslonimsky/elara/internal/usecase/user"
 	gomock "go.uber.org/mock/gomock"
@@ -57,33 +58,48 @@ func (mr *MockusecaseMockRecorder) Create(ctx, actor, data any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*Mockusecase)(nil).Create), ctx, actor, data)
 }
 
-// Delete mocks base method.
-func (m *Mockusecase) Delete(ctx context.Context, actor domain.AuthInfo, targetEmail string) error {
+// Deactivate mocks base method.
+func (m *Mockusecase) Deactivate(ctx context.Context, actor domain.AuthInfo, userID uuid.UUID) (*user.DeactivateResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, actor, targetEmail)
+	ret := m.ctrl.Call(m, "Deactivate", ctx, actor, userID)
+	ret0, _ := ret[0].(*user.DeactivateResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Deactivate indicates an expected call of Deactivate.
+func (mr *MockusecaseMockRecorder) Deactivate(ctx, actor, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deactivate", reflect.TypeOf((*Mockusecase)(nil).Deactivate), ctx, actor, userID)
+}
+
+// Delete mocks base method.
+func (m *Mockusecase) Delete(ctx context.Context, actor domain.AuthInfo, userID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, actor, userID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockusecaseMockRecorder) Delete(ctx, actor, targetEmail any) *gomock.Call {
+func (mr *MockusecaseMockRecorder) Delete(ctx, actor, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockusecase)(nil).Delete), ctx, actor, targetEmail)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*Mockusecase)(nil).Delete), ctx, actor, userID)
 }
 
 // Get mocks base method.
-func (m *Mockusecase) Get(ctx context.Context, actor domain.AuthInfo, email string) (*user.GetResult, error) {
+func (m *Mockusecase) Get(ctx context.Context, actor domain.AuthInfo, userID uuid.UUID) (*user.GetResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, actor, email)
+	ret := m.ctrl.Call(m, "Get", ctx, actor, userID)
 	ret0, _ := ret[0].(*user.GetResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockusecaseMockRecorder) Get(ctx, actor, email any) *gomock.Call {
+func (mr *MockusecaseMockRecorder) Get(ctx, actor, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockusecase)(nil).Get), ctx, actor, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*Mockusecase)(nil).Get), ctx, actor, userID)
 }
 
 // List mocks base method.
@@ -101,18 +117,33 @@ func (mr *MockusecaseMockRecorder) List(ctx, actor, params any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*Mockusecase)(nil).List), ctx, actor, params)
 }
 
-// ResetPassword mocks base method.
-func (m *Mockusecase) ResetPassword(ctx context.Context, actor domain.AuthInfo, targetEmail, newPassword string) error {
+// Reactivate mocks base method.
+func (m *Mockusecase) Reactivate(ctx context.Context, actor domain.AuthInfo, userID uuid.UUID) (*user.ReactivateResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResetPassword", ctx, actor, targetEmail, newPassword)
+	ret := m.ctrl.Call(m, "Reactivate", ctx, actor, userID)
+	ret0, _ := ret[0].(*user.ReactivateResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Reactivate indicates an expected call of Reactivate.
+func (mr *MockusecaseMockRecorder) Reactivate(ctx, actor, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reactivate", reflect.TypeOf((*Mockusecase)(nil).Reactivate), ctx, actor, userID)
+}
+
+// ResetPassword mocks base method.
+func (m *Mockusecase) ResetPassword(ctx context.Context, actor domain.AuthInfo, userID uuid.UUID, newPassword string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetPassword", ctx, actor, userID, newPassword)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ResetPassword indicates an expected call of ResetPassword.
-func (mr *MockusecaseMockRecorder) ResetPassword(ctx, actor, targetEmail, newPassword any) *gomock.Call {
+func (mr *MockusecaseMockRecorder) ResetPassword(ctx, actor, userID, newPassword any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*Mockusecase)(nil).ResetPassword), ctx, actor, targetEmail, newPassword)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*Mockusecase)(nil).ResetPassword), ctx, actor, userID, newPassword)
 }
 
 // UpdateGroups mocks base method.

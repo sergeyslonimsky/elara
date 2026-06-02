@@ -6,13 +6,14 @@ import (
 	"fmt"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	v2 "github.com/sergeyslonimsky/elara/internal/handler/v2"
-	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
-	userv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1"
+	handler "github.com/sergeyslonimsky/elara/internal/handler/v2"
+	commonproto "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
+	userproto "github.com/sergeyslonimsky/elara/internal/proto/elara/user/v1"
 	useruc "github.com/sergeyslonimsky/elara/internal/usecase/user"
 )
 
@@ -30,7 +31,7 @@ type (
 			actor domain.AuthInfo,
 			params useruc.ListParams,
 		) (*useruc.ListResult, error)
-		Get(ctx context.Context, actor domain.AuthInfo, email string) (*useruc.GetResult, error)
+		Get(ctx context.Context, actor domain.AuthInfo, userID uuid.UUID) (*useruc.GetResult, error)
 		Create(
 			ctx context.Context,
 			actor domain.AuthInfo,
@@ -39,14 +40,25 @@ type (
 		ResetPassword(
 			ctx context.Context,
 			actor domain.AuthInfo,
-			targetEmail, newPassword string,
+			userID uuid.UUID,
+			newPassword string,
 		) error
-		Delete(ctx context.Context, actor domain.AuthInfo, targetEmail string) error
+		Delete(ctx context.Context, actor domain.AuthInfo, userID uuid.UUID) error
 		UpdateGroups(
 			ctx context.Context,
 			actor domain.AuthInfo,
 			data useruc.UpdateGroupsData,
 		) (*useruc.UpdateGroupsResult, error)
+		Deactivate(
+			ctx context.Context,
+			actor domain.AuthInfo,
+			userID uuid.UUID,
+		) (*useruc.DeactivateResult, error)
+		Reactivate(
+			ctx context.Context,
+			actor domain.AuthInfo,
+			userID uuid.UUID,
+		) (*useruc.ReactivateResult, error)
 	}
 )
 
@@ -62,11 +74,11 @@ func New(uc usecase, authType domain.AuthType) *Handler {
 
 func (h *Handler) ListUsers(
 	ctx context.Context,
-	req *connect.Request[userv1.ListUsersRequest],
-) (*connect.Response[userv1.ListUsersResponse], error) {
+	req *connect.Request[userproto.ListUsersRequest],
+) (*connect.Response[userproto.ListUsersResponse], error) {
 	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, handler.ToConnectError(err)
 	}
 
 	result, err := h.uc.List(ctx, actor, useruc.ListParams{
@@ -75,17 +87,17 @@ func (h *Handler) ListUsers(
 		Query:  req.Msg.GetSearch(),
 	})
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, handler.ToConnectError(err)
 	}
 
-	protos := make([]*userv1.User, 0, len(result.Users))
+	protos := make([]*userproto.User, 0, len(result.Users))
 	for _, u := range result.Users {
 		protos = append(protos, domainUserToProto(u))
 	}
 
-	return connect.NewResponse(&userv1.ListUsersResponse{
+	return connect.NewResponse(&userproto.ListUsersResponse{
 		Users: protos,
-		Pagination: &commonv1.PaginationResponse{
+		Pagination: &commonproto.PaginationResponse{
 			Total:  int32(result.Total),
 			Limit:  int32(result.Limit),
 			Offset: int32(result.Offset),
@@ -95,19 +107,24 @@ func (h *Handler) ListUsers(
 
 func (h *Handler) GetUser(
 	ctx context.Context,
-	req *connect.Request[userv1.GetUserRequest],
-) (*connect.Response[userv1.GetUserResponse], error) {
+	req *connect.Request[userproto.GetUserRequest],
+) (*connect.Response[userproto.GetUserResponse], error) {
 	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, handler.ToConnectError(err)
 	}
 
-	result, err := h.uc.Get(ctx, actor, req.Msg.GetEmail())
+	userID, err := parseUserID(req.Msg.GetUserId())
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, err
 	}
 
-	return connect.NewResponse(&userv1.GetUserResponse{
+	result, err := h.uc.Get(ctx, actor, userID)
+	if err != nil {
+		return nil, handler.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&userproto.GetUserResponse{
 		User:              domainUserToProto(result.User),
 		VisibleGroupIds:   result.VisibleGroupIDs,
 		MembershipVersion: result.MembershipVersion,
@@ -116,11 +133,11 @@ func (h *Handler) GetUser(
 
 func (h *Handler) CreateUser(
 	ctx context.Context,
-	req *connect.Request[userv1.CreateUserRequest],
-) (*connect.Response[userv1.CreateUserResponse], error) {
+	req *connect.Request[userproto.CreateUserRequest],
+) (*connect.Response[userproto.CreateUserResponse], error) {
 	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, handler.ToConnectError(err)
 	}
 
 	if h.authType == domain.AuthTypeNone {
@@ -142,15 +159,15 @@ func (h *Handler) CreateUser(
 
 	result, err := h.uc.Create(ctx, actor, useruc.CreateData{
 		Email:           req.Msg.GetEmail(),
-		Name:            req.Msg.GetName(),
+		DisplayName:     req.Msg.GetName(),
 		InitialPassword: req.Msg.GetInitialPassword(),
 		InitialGroupIDs: req.Msg.GetInitialGroupIds(),
 	})
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, handler.ToConnectError(err)
 	}
 
-	return connect.NewResponse(&userv1.CreateUserResponse{
+	return connect.NewResponse(&userproto.CreateUserResponse{
 		User:              domainUserToProto(result.User),
 		GroupIds:          result.GroupIDs,
 		MembershipVersion: result.MembershipVersion,
@@ -159,70 +176,183 @@ func (h *Handler) CreateUser(
 
 func (h *Handler) ResetUserPassword(
 	ctx context.Context,
-	req *connect.Request[userv1.ResetUserPasswordRequest],
-) (*connect.Response[userv1.ResetUserPasswordResponse], error) {
+	req *connect.Request[userproto.ResetUserPasswordRequest],
+) (*connect.Response[userproto.ResetUserPasswordResponse], error) {
 	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, handler.ToConnectError(err)
 	}
 
 	if err := h.requireBasicAuth("password reset"); err != nil {
 		return nil, err
 	}
 
-	if err := h.uc.ResetPassword(ctx, actor, req.Msg.GetEmail(), req.Msg.GetNewPassword()); err != nil {
-		return nil, v2.ToConnectError(err)
+	userID, err := parseUserID(req.Msg.GetUserId())
+	if err != nil {
+		return nil, err
 	}
 
-	return connect.NewResponse(&userv1.ResetUserPasswordResponse{}), nil
+	if err := h.uc.ResetPassword(ctx, actor, userID, req.Msg.GetNewPassword()); err != nil {
+		return nil, handler.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&userproto.ResetUserPasswordResponse{}), nil
 }
 
 func (h *Handler) DeleteUser(
 	ctx context.Context,
-	req *connect.Request[userv1.DeleteUserRequest],
-) (*connect.Response[userv1.DeleteUserResponse], error) {
+	req *connect.Request[userproto.DeleteUserRequest],
+) (*connect.Response[userproto.DeleteUserResponse], error) {
 	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, handler.ToConnectError(err)
 	}
 
 	if err := h.requireBasicAuth("user deletion"); err != nil {
 		return nil, err
 	}
 
-	if err := h.uc.Delete(ctx, actor, req.Msg.GetEmail()); err != nil {
-		return nil, v2.ToConnectError(err)
+	userID, err := parseUserID(req.Msg.GetUserId())
+	if err != nil {
+		return nil, err
 	}
 
-	return connect.NewResponse(&userv1.DeleteUserResponse{}), nil
+	if err := h.uc.Delete(ctx, actor, userID); err != nil {
+		return nil, handler.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&userproto.DeleteUserResponse{}), nil
 }
 
 // UpdateUserGroups applies an explicit add/remove delta to the target
 // user's group memberships.
 func (h *Handler) UpdateUserGroups(
 	ctx context.Context,
-	req *connect.Request[userv1.UpdateUserGroupsRequest],
-) (*connect.Response[userv1.UpdateUserGroupsResponse], error) {
+	req *connect.Request[userproto.UpdateUserGroupsRequest],
+) (*connect.Response[userproto.UpdateUserGroupsResponse], error) {
 	actor, err := authctx.AuthInfoFromContext(ctx)
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, handler.ToConnectError(err)
+	}
+
+	userID, err := parseUserID(req.Msg.GetUserId())
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := h.uc.UpdateGroups(ctx, actor, useruc.UpdateGroupsData{
-		Email:                     req.Msg.GetEmail(),
+		UserID:                    userID,
 		AddGroupIDs:               req.Msg.GetAddGroupIds(),
 		RemoveGroupIDs:            req.Msg.GetRemoveGroupIds(),
 		ExpectedMembershipVersion: req.Msg.ExpectedVersion,
 	})
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, handler.ToConnectError(err)
 	}
 
-	return connect.NewResponse(&userv1.UpdateUserGroupsResponse{
+	return connect.NewResponse(&userproto.UpdateUserGroupsResponse{
 		User:              domainUserToProto(result.User),
 		VisibleGroupIds:   result.VisibleGroupIDs,
 		MembershipVersion: result.MembershipVersion,
 	}), nil
+}
+
+func domainUserToProto(u *domain.User) *userproto.User {
+	if u == nil {
+		return nil
+	}
+
+	identities := make([]*userproto.Identity, 0, len(u.Identities))
+	for _, id := range u.Identities {
+		identities = append(identities, &userproto.Identity{
+			Provider: string(id.Provider),
+			Subject:  id.Subject,
+		})
+	}
+
+	return &userproto.User{
+		Id:          u.ID.String(),
+		Email:       u.Email,
+		DisplayName: u.DisplayName,
+		Picture:     u.Picture,
+		Status:      domainStatusToProto(u.Status),
+		Identities:  identities,
+		CreatedAt:   timestamppb.New(u.CreatedAt),
+		LastLoginAt: timestamppb.New(u.LastLoginAt),
+		IsSystem:    u.System,
+	}
+}
+
+func domainStatusToProto(s domain.UserStatus) userproto.UserStatus {
+	switch s {
+	case domain.UserStatusActive:
+		return userproto.UserStatus_USER_STATUS_ACTIVE
+	case domain.UserStatusDeactivated:
+		return userproto.UserStatus_USER_STATUS_DEACTIVATED
+	default:
+		return userproto.UserStatus_USER_STATUS_UNSPECIFIED
+	}
+}
+
+func (h *Handler) DeactivateUser(
+	ctx context.Context,
+	req *connect.Request[userproto.DeactivateUserRequest],
+) (*connect.Response[userproto.DeactivateUserResponse], error) {
+	actor, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
+		return nil, handler.ToConnectError(err)
+	}
+
+	userID, err := parseUserID(req.Msg.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := h.uc.Deactivate(ctx, actor, userID)
+	if err != nil {
+		return nil, handler.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&userproto.DeactivateUserResponse{
+		User: domainUserToProto(result.User),
+	}), nil
+}
+
+func (h *Handler) ReactivateUser(
+	ctx context.Context,
+	req *connect.Request[userproto.ReactivateUserRequest],
+) (*connect.Response[userproto.ReactivateUserResponse], error) {
+	actor, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
+		return nil, handler.ToConnectError(err)
+	}
+
+	userID, err := parseUserID(req.Msg.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := h.uc.Reactivate(ctx, actor, userID)
+	if err != nil {
+		return nil, handler.ToConnectError(err)
+	}
+
+	return connect.NewResponse(&userproto.ReactivateUserResponse{
+		User: domainUserToProto(result.User),
+	}), nil
+}
+
+// parseUserID converts the wire-level user_id (UUID string) into a uuid.UUID,
+// emitting an InvalidArgument connect error on parse failure. buf.validate
+// already gates the wire shape, but defense-in-depth — Go-side parse keeps
+// the handler robust if validation is ever bypassed.
+func parseUserID(raw string) (uuid.UUID, error) {
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return uuid.Nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid user_id: %w", err))
+	}
+
+	return id, nil
 }
 
 func (h *Handler) requireBasicAuth(operation string) error {
@@ -239,20 +369,4 @@ func (h *Handler) requireBasicAuth(operation string) error {
 			domain.ErrFeatureNotAvailable,
 		),
 	)
-}
-
-func domainUserToProto(u *domain.User) *userv1.User {
-	if u == nil {
-		return nil
-	}
-
-	return &userv1.User{
-		Email:       u.Email,
-		Name:        u.Name,
-		Picture:     u.Picture,
-		Provider:    u.Provider,
-		CreatedAt:   timestamppb.New(u.CreatedAt),
-		LastLoginAt: timestamppb.New(u.LastLoginAt),
-		IsSystem:    u.System,
-	}
 }

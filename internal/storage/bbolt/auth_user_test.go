@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -11,7 +12,7 @@ import (
 	bboltadapter "github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 )
 
-func TestUserRepo_Upsert_New(t *testing.T) {
+func TestUserRepo_Create(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
@@ -19,26 +20,27 @@ func TestUserRepo_Upsert_New(t *testing.T) {
 	ctx := t.Context()
 
 	user := &domain.User{
+		ID:          uuid.New(),
 		Email:       "alice@example.com",
-		Name:        "Alice",
+		DisplayName: "Alice",
 		Picture:     "https://example.com/alice.png",
-		Provider:    "oidc",
+		Identities:  []domain.Identity{{Provider: "oidc", Subject: "alice@example.com"}},
 		LastLoginAt: time.Now(),
 	}
 
-	err := repo.Upsert(ctx, user)
+	err := repo.Create(ctx, user)
 	require.NoError(t, err)
-	assert.False(t, user.CreatedAt.IsZero(), "CreatedAt should be set after first upsert")
+	assert.False(t, user.CreatedAt.IsZero(), "CreatedAt should be set after Create")
 
-	got, err := repo.Get(ctx, user.Email)
+	got, err := repo.GetByID(ctx, user.ID)
 	require.NoError(t, err)
 	assert.Equal(t, user.Email, got.Email)
-	assert.Equal(t, user.Name, got.Name)
-	assert.Equal(t, user.Provider, got.Provider)
+	assert.Equal(t, user.DisplayName, got.DisplayName)
+	assert.Equal(t, user.Identities, got.Identities)
 	assert.False(t, got.CreatedAt.IsZero())
 }
 
-func TestUserRepo_Upsert_Existing(t *testing.T) {
+func TestUserRepo_Update_Existing(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
@@ -46,32 +48,36 @@ func TestUserRepo_Upsert_Existing(t *testing.T) {
 	ctx := t.Context()
 
 	user := &domain.User{
+		ID:          uuid.New(),
 		Email:       "bob@example.com",
-		Name:        "Bob",
-		Provider:    "oidc",
+		DisplayName: "Bob",
+		Identities:  []domain.Identity{{Provider: "oidc", Subject: "bob@example.com"}},
 		LastLoginAt: time.Now(),
 	}
-	require.NoError(t, repo.Upsert(ctx, user))
+	require.NoError(t, repo.Create(ctx, user))
 
-	originalCreatedAt := user.CreatedAt
-
-	// Update name and last login.
-	user.Name = "Bob Updated"
-	user.LastLoginAt = time.Now().Add(time.Hour)
-	require.NoError(t, repo.Upsert(ctx, user))
-
-	got, err := repo.Get(ctx, user.Email)
+	// Read-modify-write: load existing then mutate. Update is a full
+	// overwrite — the caller is responsible for carrying CreatedAt through.
+	loaded, err := repo.GetByID(ctx, user.ID)
 	require.NoError(t, err)
-	assert.Equal(t, "Bob Updated", got.Name)
+	originalCreatedAt := loaded.CreatedAt
+
+	loaded.DisplayName = "Bob Updated"
+	loaded.LastLoginAt = time.Now().Add(time.Hour)
+	require.NoError(t, repo.Update(ctx, loaded))
+
+	got, err := repo.GetByID(ctx, user.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "Bob Updated", got.DisplayName)
 	assert.Equal(
 		t,
 		originalCreatedAt.UnixNano(),
 		got.CreatedAt.UnixNano(),
-		"CreatedAt must not change on update",
+		"CreatedAt must survive read-modify-write",
 	)
 }
 
-func TestUserRepo_Get_Existing(t *testing.T) {
+func TestUserRepo_GetByIdentity(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
@@ -79,27 +85,28 @@ func TestUserRepo_Get_Existing(t *testing.T) {
 	ctx := t.Context()
 
 	user := &domain.User{
+		ID:          uuid.New(),
 		Email:       "carol@example.com",
-		Name:        "Carol",
-		Provider:    "oidc",
+		DisplayName: "Carol",
+		Identities:  []domain.Identity{{Provider: "oidc", Subject: "carol-subject"}},
 		LastLoginAt: time.Now(),
 	}
-	require.NoError(t, repo.Upsert(ctx, user))
+	require.NoError(t, repo.Create(ctx, user))
 
-	got, err := repo.Get(ctx, "carol@example.com")
+	got, err := repo.GetByIdentity(ctx, "oidc", "carol-subject")
 	require.NoError(t, err)
-	assert.Equal(t, "carol@example.com", got.Email)
-	assert.Equal(t, "Carol", got.Name)
+	assert.Equal(t, user.ID, got.ID)
+	assert.Equal(t, "Carol", got.DisplayName)
 }
 
-func TestUserRepo_Get_Missing(t *testing.T) {
+func TestUserRepo_GetByIdentity_Missing(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
 	repo := bboltadapter.NewUserRepo(bboltadapter.NewManager(store.DB()))
 	ctx := t.Context()
 
-	_, err := repo.Get(ctx, "nobody@example.com")
+	_, err := repo.GetByIdentity(ctx, "oidc", "nobody")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, domain.ErrNotFound)
 }
@@ -125,8 +132,14 @@ func TestUserRepo_ListAll_Multiple(t *testing.T) {
 
 	emails := []string{"dave@example.com", "eve@example.com", "frank@example.com"}
 	for _, email := range emails {
-		u := &domain.User{Email: email, Name: email, Provider: "oidc", LastLoginAt: time.Now()}
-		require.NoError(t, repo.Upsert(ctx, u))
+		u := &domain.User{
+			ID:          uuid.New(),
+			Email:       email,
+			DisplayName: email,
+			Identities:  []domain.Identity{{Provider: domain.ProviderOIDC, Subject: email}},
+			LastLoginAt: time.Now(),
+		}
+		require.NoError(t, repo.Create(ctx, u))
 	}
 
 	users, err := repo.ListAll(ctx)
@@ -137,99 +150,161 @@ func TestUserRepo_ListAll_Multiple(t *testing.T) {
 func TestUserRepo_List(t *testing.T) {
 	t.Parallel()
 
-	// Seeds used across cases. Stable email/name pairs let us assert sort
-	// ordering exactly. LastLoginAt is staggered so "last_login" sort is
-	// deterministic if added in future.
-	seed := []*domain.User{
-		{Email: "alice@example.com", Name: "Alice", Provider: "basic-auth"},
-		{Email: "bob@example.com", Name: "Bob", Provider: "basic-auth"},
-		{Email: "carol@example.com", Name: "Carol", Provider: "basic-auth"},
-		{Email: "dave@example.com", Name: "Dave", Provider: "basic-auth"},
+	// seedUsers upserts the canonical four users and returns them with their
+	// auto-assigned IDs populated. Each sub-test creates its own store.
+	seedUsers := func(t *testing.T, repo *bboltadapter.UserRepo) []*domain.User {
+		t.Helper()
+
+		users := []*domain.User{
+			{
+				ID:          uuid.New(),
+				Email:       "alice@example.com",
+				DisplayName: "Alice",
+				Identities:  []domain.Identity{{Provider: domain.ProviderBasic, Subject: "alice@example.com"}},
+			},
+			{
+				ID:          uuid.New(),
+				Email:       "bob@example.com",
+				DisplayName: "Bob",
+				Identities:  []domain.Identity{{Provider: domain.ProviderBasic, Subject: "bob@example.com"}},
+			},
+			{
+				ID:          uuid.New(),
+				Email:       "carol@example.com",
+				DisplayName: "Carol",
+				Identities:  []domain.Identity{{Provider: domain.ProviderBasic, Subject: "carol@example.com"}},
+			},
+			{
+				ID:          uuid.New(),
+				Email:       "dave@example.com",
+				DisplayName: "Dave",
+				Identities:  []domain.Identity{{Provider: domain.ProviderBasic, Subject: "dave@example.com"}},
+			},
+		}
+		for _, u := range users {
+			u.LastLoginAt = time.Now()
+			require.NoError(t, repo.Create(t.Context(), u))
+		}
+
+		return users
 	}
 
+	type buildFilterFunc func(
+		t *testing.T,
+		repo *bboltadapter.UserRepo,
+	) (domain.UserFilter, domain.UserListParams, []string, int, bool)
+
 	tests := []struct {
-		name       string
-		filter     domain.UserFilter
-		params     domain.UserListParams
-		wantEmails []string // expected emails in result order; ElementsMatch when order is not asserted
-		wantTotal  int
-		ordered    bool // when true, assert exact result order
+		name      string
+		buildFunc buildFilterFunc
 	}{
 		{
-			name:   "AnyUser returns all sorted by email asc by default",
-			filter: domain.UserFilter{AnyUser: true},
-			params: domain.UserListParams{},
-			wantEmails: []string{
-				"alice@example.com",
-				"bob@example.com",
-				"carol@example.com",
-				"dave@example.com",
+			name: "AnyUser returns all sorted by email asc by default",
+			buildFunc: func(
+				t *testing.T,
+				repo *bboltadapter.UserRepo,
+			) (domain.UserFilter, domain.UserListParams, []string, int, bool) {
+				t.Helper()
+				seedUsers(t, repo)
+
+				return domain.UserFilter{AnyUser: true}, domain.UserListParams{},
+					[]string{"alice@example.com", "bob@example.com", "carol@example.com", "dave@example.com"}, 4, true
 			},
-			wantTotal: 4,
-			ordered:   true,
 		},
 		{
-			name: "explicit usernames filter returns subset",
-			filter: domain.UserFilter{Usernames: map[string]struct{}{
-				"alice@example.com": {},
-				"carol@example.com": {},
-			}},
-			wantEmails: []string{"alice@example.com", "carol@example.com"},
-			wantTotal:  2,
-		},
-		{
-			name: "explicit with missing username silently skips",
-			filter: domain.UserFilter{Usernames: map[string]struct{}{
-				"alice@example.com":   {},
-				"missing@example.com": {},
-			}},
-			wantEmails: []string{"alice@example.com"},
-			wantTotal:  1,
-		},
-		{
-			name:       "search filters case-insensitive substring on email/name",
-			filter:     domain.UserFilter{AnyUser: true, Search: "ALI"},
-			wantEmails: []string{"alice@example.com"},
-			wantTotal:  1,
-		},
-		{
-			name: "search combined with explicit filter intersects",
-			filter: domain.UserFilter{
-				Usernames: map[string]struct{}{
-					"alice@example.com": {},
-					"bob@example.com":   {},
-				},
-				Search: "bob",
+			name: "explicit UserIDs filter returns subset",
+			buildFunc: func(
+				t *testing.T,
+				repo *bboltadapter.UserRepo,
+			) (domain.UserFilter, domain.UserListParams, []string, int, bool) {
+				t.Helper()
+				seeded := seedUsers(t, repo)
+				// alice and carol by ID.
+				ids := map[string]struct{}{seeded[0].ID.String(): {}, seeded[2].ID.String(): {}}
+
+				return domain.UserFilter{UserIDs: ids}, domain.UserListParams{},
+					[]string{"alice@example.com", "carol@example.com"}, 2, false
 			},
-			wantEmails: []string{"bob@example.com"},
-			wantTotal:  1,
 		},
 		{
-			name:       "pagination offset+limit slices, total preserved",
-			filter:     domain.UserFilter{AnyUser: true},
-			params:     domain.UserListParams{Offset: 1, Limit: 2},
-			wantEmails: []string{"bob@example.com", "carol@example.com"},
-			wantTotal:  4,
-			ordered:    true,
-		},
-		{
-			name:   "sort by name desc",
-			filter: domain.UserFilter{AnyUser: true},
-			params: domain.UserListParams{Sort: domain.SortParams{Field: "name", Desc: true}},
-			wantEmails: []string{
-				"dave@example.com",
-				"carol@example.com",
-				"bob@example.com",
-				"alice@example.com",
+			name: "explicit with missing UserID silently skips",
+			buildFunc: func(
+				t *testing.T,
+				repo *bboltadapter.UserRepo,
+			) (domain.UserFilter, domain.UserListParams, []string, int, bool) {
+				t.Helper()
+				seeded := seedUsers(t, repo)
+				ids := map[string]struct{}{seeded[0].ID.String(): {}, "missing-uuid": {}}
+
+				return domain.UserFilter{UserIDs: ids}, domain.UserListParams{},
+					[]string{"alice@example.com"}, 1, false
 			},
-			wantTotal: 4,
-			ordered:   true,
 		},
 		{
-			name:       "empty filter (AnyUser:false, Usernames:nil) returns empty list",
-			filter:     domain.UserFilter{},
-			wantEmails: nil,
-			wantTotal:  0,
+			name: "search filters case-insensitive substring on email/name",
+			buildFunc: func(
+				t *testing.T,
+				repo *bboltadapter.UserRepo,
+			) (domain.UserFilter, domain.UserListParams, []string, int, bool) {
+				t.Helper()
+				seedUsers(t, repo)
+
+				return domain.UserFilter{AnyUser: true, Search: "ALI"}, domain.UserListParams{},
+					[]string{"alice@example.com"}, 1, false
+			},
+		},
+		{
+			name: "search combined with explicit UserIDs filter intersects",
+			buildFunc: func(
+				t *testing.T,
+				repo *bboltadapter.UserRepo,
+			) (domain.UserFilter, domain.UserListParams, []string, int, bool) {
+				t.Helper()
+				seeded := seedUsers(t, repo)
+				ids := map[string]struct{}{seeded[0].ID.String(): {}, seeded[1].ID.String(): {}} // alice + bob
+
+				return domain.UserFilter{UserIDs: ids, Search: "bob"}, domain.UserListParams{},
+					[]string{"bob@example.com"}, 1, false
+			},
+		},
+		{
+			name: "pagination offset+limit slices, total preserved",
+			buildFunc: func(
+				t *testing.T,
+				repo *bboltadapter.UserRepo,
+			) (domain.UserFilter, domain.UserListParams, []string, int, bool) {
+				t.Helper()
+				seedUsers(t, repo)
+
+				return domain.UserFilter{AnyUser: true}, domain.UserListParams{Offset: 1, Limit: 2},
+					[]string{"bob@example.com", "carol@example.com"}, 4, true
+			},
+		},
+		{
+			name: "sort by name desc",
+			buildFunc: func(
+				t *testing.T,
+				repo *bboltadapter.UserRepo,
+			) (domain.UserFilter, domain.UserListParams, []string, int, bool) {
+				t.Helper()
+				seedUsers(t, repo)
+
+				return domain.UserFilter{AnyUser: true},
+					domain.UserListParams{Sort: domain.SortParams{Field: "name", Desc: true}},
+					[]string{"dave@example.com", "carol@example.com", "bob@example.com", "alice@example.com"}, 4, true
+			},
+		},
+		{
+			name: "empty filter (AnyUser:false, UserIDs:nil) returns empty list",
+			buildFunc: func(
+				t *testing.T,
+				repo *bboltadapter.UserRepo,
+			) (domain.UserFilter, domain.UserListParams, []string, int, bool) {
+				t.Helper()
+				seedUsers(t, repo)
+
+				return domain.UserFilter{}, domain.UserListParams{}, nil, 0, false
+			},
 		},
 	}
 
@@ -239,27 +314,22 @@ func TestUserRepo_List(t *testing.T) {
 
 			store := newTestStore(t)
 			repo := bboltadapter.NewUserRepo(bboltadapter.NewManager(store.DB()))
-			ctx := t.Context()
 
-			for _, u := range seed {
-				cp := *u
-				cp.LastLoginAt = time.Now()
-				require.NoError(t, repo.Upsert(ctx, &cp))
-			}
+			filter, params, wantEmails, wantTotal, ordered := tt.buildFunc(t, repo)
 
-			got, total, err := repo.List(ctx, tt.filter, tt.params)
+			got, total, err := repo.List(t.Context(), filter, params)
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantTotal, total)
+			assert.Equal(t, wantTotal, total)
 
 			emails := make([]string, 0, len(got))
 			for _, u := range got {
 				emails = append(emails, u.Email)
 			}
 
-			if tt.ordered {
-				assert.Equal(t, tt.wantEmails, emails)
+			if ordered {
+				assert.Equal(t, wantEmails, emails)
 			} else {
-				assert.ElementsMatch(t, tt.wantEmails, emails)
+				assert.ElementsMatch(t, wantEmails, emails)
 			}
 		})
 	}
@@ -273,29 +343,39 @@ func TestUserRepo_SetPassword(t *testing.T) {
 	ctx := t.Context()
 
 	email := "user@example.com"
-	user := &domain.User{Email: email, Name: "User", Provider: "basic"}
-	require.NoError(t, repo.Upsert(ctx, user))
+	user := &domain.User{
+		ID:          uuid.New(),
+		Email:       email,
+		DisplayName: "User",
+		Identities:  []domain.Identity{{Provider: "basic", Subject: email}},
+	}
+	require.NoError(t, repo.Create(ctx, user))
 
 	hash := "some-hash"
-	err := repo.SetPassword(ctx, email, hash, true)
+	err := repo.SetPassword(ctx, user.ID, hash, true)
 	require.NoError(t, err)
 
-	got, err := repo.Get(ctx, email)
+	got, err := repo.GetByID(ctx, user.ID)
 	require.NoError(t, err)
 	assert.Equal(t, hash, got.PasswordHash)
 	assert.True(t, got.PasswordChangeRequired)
 
 	// Update without change required.
-	err = repo.SetPassword(ctx, email, "new-hash", false)
+	err = repo.SetPassword(ctx, user.ID, "new-hash", false)
 	require.NoError(t, err)
 
-	got, err = repo.Get(ctx, email)
+	got, err = repo.GetByID(ctx, user.ID)
 	require.NoError(t, err)
 	assert.Equal(t, "new-hash", got.PasswordHash)
 	assert.False(t, got.PasswordChangeRequired)
 }
 
-func TestUserRepo_SystemAndSource(t *testing.T) {
+// TestUserRepo_SystemFlagRoundTrip verifies that System and Source are
+// persisted and surfaced verbatim by the repo. The repo no longer merges or
+// "preserves" these fields across Update — that policy moved to UserService
+// (which rejects identity removal for non-system users). Callers must
+// read-modify-write to keep fields they don't intend to change.
+func TestUserRepo_SystemFlagRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	store := newTestStore(t)
@@ -303,37 +383,26 @@ func TestUserRepo_SystemAndSource(t *testing.T) {
 	ctx := t.Context()
 
 	user := &domain.User{
-		Email:    "sys@example.com",
-		Name:     "System User",
-		Provider: domain.ProviderBasicAuth,
-		System:   true,
-		Source:   "seed",
+		ID:          uuid.New(),
+		Email:       "sys@example.com",
+		DisplayName: "System User",
+		Identities:  []domain.Identity{{Provider: "system", Subject: "sys@example.com"}},
+		System:      true,
 	}
 
-	// Upsert (New)
-	require.NoError(t, repo.Upsert(ctx, user))
+	require.NoError(t, repo.Create(ctx, user))
 
-	// Get and verify
-	got, err := repo.Get(ctx, user.Email)
+	got, err := repo.GetByID(ctx, user.ID)
 	require.NoError(t, err)
 	assert.True(t, got.System)
-	assert.Equal(t, "seed", got.Source)
 
-	// Upsert (Existing) - should preserve System flag
-	user.Name = "Updated Name"
-	user.System = false
-	user.Source = "manual"
-	require.NoError(t, repo.Upsert(ctx, user))
+	// Read-modify-write: name only; System survives because we
+	// loaded it off disk and pass it through.
+	got.DisplayName = "Updated Name"
+	require.NoError(t, repo.Update(ctx, got))
 
-	final, err := repo.Get(ctx, user.Email)
+	final, err := repo.GetByID(ctx, user.ID)
 	require.NoError(t, err)
-	assert.True(t, final.System, "System flag must be preserved from existing record")
-	assert.Equal(t, "manual", final.Source, "Source should be updated if provided")
-
-	// Upsert (Existing) - preserve Source
-	user.Source = ""
-	require.NoError(t, repo.Upsert(ctx, user))
-	final2, err := repo.Get(ctx, user.Email)
-	require.NoError(t, err)
-	assert.Equal(t, "manual", final2.Source, "Source should be preserved if not provided")
+	assert.True(t, final.System)
+	assert.Equal(t, "Updated Name", final.DisplayName)
 }

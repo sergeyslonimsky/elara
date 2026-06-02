@@ -8,14 +8,14 @@ import { UserTable } from "./user-table";
 
 const mockUser1 = create(UserSchema, {
 	email: "alice@example.com",
-	name: "Alice",
-	provider: "internal",
+	displayName: "Alice",
+	identities: [],
 });
 
 const mockUser2 = create(UserSchema, {
 	email: "bob@example.com",
-	name: "Bob",
-	provider: "oidc",
+	displayName: "Bob",
+	identities: [{ provider: "oidc", subject: "bob-sub" }],
 });
 
 describe("UserTable", () => {

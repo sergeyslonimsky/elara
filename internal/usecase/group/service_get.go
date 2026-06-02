@@ -17,8 +17,8 @@ type GetResult struct {
 	Permissions    []domain.Permission
 }
 
-func (s *Service) Get(ctx context.Context, actor domain.AuthInfo, id string) (*GetResult, error) {
-	group, err := s.store.Get(ctx, id)
+func (s *Service) Get(ctx context.Context, actor domain.AuthInfo, name string) (*GetResult, error) {
+	group, err := s.store.Get(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf(errGetGroup, err)
 	}

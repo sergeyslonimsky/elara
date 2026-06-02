@@ -26,8 +26,8 @@ func (s *Service) Update(
 	id string,
 	params UpdateParams,
 ) (*domain.Webhook, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
@@ -36,7 +36,7 @@ func (s *Service) Update(
 		return nil, fmt.Errorf("get webhook: %w", err)
 	}
 
-	if !s.pdp.Has(claims.Email, domain.Permission{
+	if !s.pdp.Has(info.UserID, domain.Permission{
 		Object: domain.ObjectWebhook,
 		Action: domain.ActionWrite,
 		Domain: webhookDomain(existing),

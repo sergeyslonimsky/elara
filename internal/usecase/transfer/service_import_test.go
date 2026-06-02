@@ -54,7 +54,7 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace("test@example.com", "my-ns", domain.ActionWrite).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
 				m.namespaces.EXPECT().Get(gomock.Any(), "my-ns").Return(nil, domain.ErrNotFound)
 				m.namespaces.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 				m.configs.EXPECT().Get(gomock.Any(), "/c1", "my-ns").Return(nil, domain.ErrNotFound)
@@ -93,7 +93,7 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace("test@example.com", domain.DomainAll, domain.ActionWrite).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, domain.DomainAll, domain.ActionWrite).Return(true)
 				m.namespaces.EXPECT().
 					Get(gomock.Any(), "ns1").
 					Return(&domain.Namespace{Name: "ns1"}, nil)
@@ -129,7 +129,7 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace("test@example.com", "my-ns", domain.ActionWrite).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
 				m.namespaces.EXPECT().
 					Get(gomock.Any(), "my-ns").
 					Return(&domain.Namespace{Name: "my-ns"}, nil)
@@ -161,7 +161,7 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace("test@example.com", "my-ns", domain.ActionWrite).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
 				m.namespaces.EXPECT().
 					Get(gomock.Any(), "my-ns").
 					Return(&domain.Namespace{Name: "my-ns"}, nil)
@@ -198,7 +198,7 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace("test@example.com", "my-ns", domain.ActionWrite).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
 				// Dry run only checks existence
 				m.configs.EXPECT().Get(gomock.Any(), "/c1", "my-ns").Return(nil, domain.ErrNotFound)
 
@@ -276,7 +276,7 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace("test@example.com", domain.DomainAll, domain.ActionWrite).Return(false)
+				m.pdp.EXPECT().HasNamespace(testUserID, domain.DomainAll, domain.ActionWrite).Return(false)
 
 				return svc
 			},
@@ -301,7 +301,7 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace("test@example.com", "my-ns", domain.ActionWrite).Return(false)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(false)
 
 				return svc
 			},

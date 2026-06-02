@@ -9,7 +9,6 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 )
 
@@ -34,7 +33,9 @@ func newBootstrapFixture(t *testing.T) (
 	groups := bbolt.NewGroupRepo(storageManager)
 	policies := bbolt.NewPolicyRepo(storageManager)
 
-	return auth.NewAdminBootstrap(storageManager, users, groups, policies), users, groups, policies
+	userSvc := auth.NewUserService(users)
+
+	return auth.NewAdminBootstrap(storageManager, userSvc, groups, policies), users, groups, policies
 }
 
 // TestAdminBootstrap_Idempotent verifies the architecture §11 invariant:
@@ -58,12 +59,12 @@ func TestAdminBootstrap_Idempotent(t *testing.T) {
 	// stored as a Casbin g-rule (not in bbolt) and is verified through the
 	// AddPolicy idempotence contract — bbolt only carries entity metadata
 	// since the SSoT refactor.
-	grp, err := groups.FindByName(ctx, domain.SystemGroupSuperAdmin)
+	grp, err := groups.Get(ctx, domain.SystemGroupSuperAdmin)
 	require.NoError(t, err)
 	assert.True(t, grp.System, "superadmin group must have System=true")
 
 	// User: exactly one superadmin, System=true.
-	user, err := users.Get(ctx, username)
+	user, err := users.GetByIdentity(ctx, string(domain.ProviderBasic), username)
 	require.NoError(t, err)
 	assert.True(t, user.System, "superadmin user must have System=true")
 
@@ -71,7 +72,7 @@ func TestAdminBootstrap_Idempotent(t *testing.T) {
 	// rule rows of shape [dom, obj, act] (subject is implicit in the query).
 	perms, err := policies.ListPermissionsForSubject(
 		ctx,
-		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
+		domain.GroupResource(domain.SystemGroupSuperAdmin),
 	)
 	require.NoError(t, err)
 
@@ -100,7 +101,7 @@ func TestAdminBootstrap_RecoversRemovedPolicy(t *testing.T) {
 
 	// Tamper: remove the wildcard p-rule.
 	wildcardRule := []string{
-		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
+		domain.GroupResource(domain.SystemGroupSuperAdmin),
 		domain.DomainAll,
 		string(domain.ObjectAll),
 		string(domain.ActionAll),
@@ -112,7 +113,7 @@ func TestAdminBootstrap_RecoversRemovedPolicy(t *testing.T) {
 
 	perms, err := policies.ListPermissionsForSubject(
 		ctx,
-		casbin.GroupSubject(domain.SystemGroupSuperAdmin),
+		domain.GroupResource(domain.SystemGroupSuperAdmin),
 	)
 	require.NoError(t, err)
 

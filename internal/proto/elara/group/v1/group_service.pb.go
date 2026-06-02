@@ -31,13 +31,13 @@ type CreateGroupRequest struct {
 	InitialMembers []string `protobuf:"bytes,3,rep,name=initial_members,json=initialMembers,proto3" json:"initial_members,omitempty"`
 	// Permissions granted to the new group on creation.
 	InitialPermissions []*v1.PermissionAssignment `protobuf:"bytes,4,rep,name=initial_permissions,json=initialPermissions,proto3" json:"initial_permissions,omitempty"`
-	// Group IDs that will receive `Group:Write group:<new-id>` permission on
+	// Group names that will receive `Group:Write group:<new-name>` permission on
 	// the new group. Without this the new group is only manageable by holders
 	// of Group:Write * (e.g. superadmin).
 	// Typically the caller's own administrative group(s).
-	InitialManagerGroupIds []string `protobuf:"bytes,5,rep,name=initial_manager_group_ids,json=initialManagerGroupIds,proto3" json:"initial_manager_group_ids,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	InitialManagerGroupNames []string `protobuf:"bytes,5,rep,name=initial_manager_group_names,json=initialManagerGroupNames,proto3" json:"initial_manager_group_names,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *CreateGroupRequest) Reset() {
@@ -98,9 +98,9 @@ func (x *CreateGroupRequest) GetInitialPermissions() []*v1.PermissionAssignment 
 	return nil
 }
 
-func (x *CreateGroupRequest) GetInitialManagerGroupIds() []string {
+func (x *CreateGroupRequest) GetInitialManagerGroupNames() []string {
 	if x != nil {
-		return x.InitialManagerGroupIds
+		return x.InitialManagerGroupNames
 	}
 	return nil
 }
@@ -168,7 +168,7 @@ func (x *CreateGroupResponse) GetPermissions() []*v1.PermissionAssignment {
 
 type GetGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -203,9 +203,9 @@ func (*GetGroupRequest) Descriptor() ([]byte, []int) {
 	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetGroupRequest) GetId() string {
+func (x *GetGroupRequest) GetName() string {
 	if x != nil {
-		return x.Id
+		return x.Name
 	}
 	return ""
 }
@@ -276,8 +276,8 @@ func (x *GetGroupResponse) GetPermissions() []*v1.PermissionAssignment {
 
 type UpdateGroupRequest struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Id                      string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name                    string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Name                    string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	DisplayName             string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	Description             string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	ExpectedMetadataVersion *int64                 `protobuf:"varint,4,opt,name=expected_metadata_version,json=expectedMetadataVersion,proto3,oneof" json:"expected_metadata_version,omitempty"`
 	unknownFields           protoimpl.UnknownFields
@@ -314,16 +314,16 @@ func (*UpdateGroupRequest) Descriptor() ([]byte, []int) {
 	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *UpdateGroupRequest) GetId() string {
+func (x *UpdateGroupRequest) GetName() string {
 	if x != nil {
-		return x.Id
+		return x.Name
 	}
 	return ""
 }
 
-func (x *UpdateGroupRequest) GetName() string {
+func (x *UpdateGroupRequest) GetDisplayName() string {
 	if x != nil {
-		return x.Name
+		return x.DisplayName
 	}
 	return ""
 }
@@ -388,7 +388,7 @@ func (x *UpdateGroupResponse) GetGroup() *Group {
 
 type UpdateGroupMembersRequest struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	GroupId                string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	GroupName              string                 `protobuf:"bytes,1,opt,name=group_name,json=groupName,proto3" json:"group_name,omitempty"`
 	AddEmails              []string               `protobuf:"bytes,2,rep,name=add_emails,json=addEmails,proto3" json:"add_emails,omitempty"`
 	RemoveEmails           []string               `protobuf:"bytes,3,rep,name=remove_emails,json=removeEmails,proto3" json:"remove_emails,omitempty"`
 	ExpectedMembersVersion *int64                 `protobuf:"varint,4,opt,name=expected_members_version,json=expectedMembersVersion,proto3,oneof" json:"expected_members_version,omitempty"`
@@ -426,9 +426,9 @@ func (*UpdateGroupMembersRequest) Descriptor() ([]byte, []int) {
 	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *UpdateGroupMembersRequest) GetGroupId() string {
+func (x *UpdateGroupMembersRequest) GetGroupName() string {
 	if x != nil {
-		return x.GroupId
+		return x.GroupName
 	}
 	return ""
 }
@@ -508,7 +508,7 @@ func (x *UpdateGroupMembersResponse) GetVisibleMembers() []string {
 
 type UpdateGroupPermissionsRequest struct {
 	state                      protoimpl.MessageState     `protogen:"open.v1"`
-	GroupId                    string                     `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	GroupName                  string                     `protobuf:"bytes,1,opt,name=group_name,json=groupName,proto3" json:"group_name,omitempty"`
 	Add                        []*v1.PermissionAssignment `protobuf:"bytes,2,rep,name=add,proto3" json:"add,omitempty"`
 	Remove                     []*v1.PermissionAssignment `protobuf:"bytes,3,rep,name=remove,proto3" json:"remove,omitempty"`
 	ExpectedPermissionsVersion *int64                     `protobuf:"varint,4,opt,name=expected_permissions_version,json=expectedPermissionsVersion,proto3,oneof" json:"expected_permissions_version,omitempty"`
@@ -546,9 +546,9 @@ func (*UpdateGroupPermissionsRequest) Descriptor() ([]byte, []int) {
 	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *UpdateGroupPermissionsRequest) GetGroupId() string {
+func (x *UpdateGroupPermissionsRequest) GetGroupName() string {
 	if x != nil {
-		return x.GroupId
+		return x.GroupName
 	}
 	return ""
 }
@@ -628,7 +628,7 @@ func (x *UpdateGroupPermissionsResponse) GetPermissions() []*v1.PermissionAssign
 
 type DeleteGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -663,9 +663,9 @@ func (*DeleteGroupRequest) Descriptor() ([]byte, []int) {
 	return file_elara_group_v1_group_service_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *DeleteGroupRequest) GetId() string {
+func (x *DeleteGroupRequest) GetName() string {
 	if x != nil {
-		return x.Id
+		return x.Name
 	}
 	return ""
 }
@@ -814,35 +814,36 @@ var File_elara_group_v1_group_service_proto protoreflect.FileDescriptor
 
 const file_elara_group_v1_group_service_proto_rawDesc = "" +
 	"\n" +
-	"\"elara/group/v1/group_service.proto\x12\x0eelara.group.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1celara/common/v1/common.proto\x1a elara/common/v1/permission.proto\x1a\x1aelara/group/v1/group.proto\"\xb8\x02\n" +
+	"\"elara/group/v1/group_service.proto\x12\x0eelara.group.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1celara/common/v1/common.proto\x1a elara/common/v1/permission.proto\x1a\x1aelara/group/v1/group.proto\"\xbc\x02\n" +
 	"\x12CreateGroupRequest\x12\x1e\n" +
 	"\x04name\x18\x01 \x01(\tB\n" +
 	"\xbaH\ar\x05\x10\x01\x18\x80\x01R\x04name\x12*\n" +
 	"\vdescription\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\x80\bR\vdescription\x125\n" +
 	"\x0finitial_members\x18\x03 \x03(\tB\f\xbaH\t\x92\x01\x06\"\x04r\x02`\x01R\x0einitialMembers\x12V\n" +
-	"\x13initial_permissions\x18\x04 \x03(\v2%.elara.common.v1.PermissionAssignmentR\x12initialPermissions\x12G\n" +
-	"\x19initial_manager_group_ids\x18\x05 \x03(\tB\f\xbaH\t\x92\x01\x06\"\x04r\x02\x10\x01R\x16initialManagerGroupIds\"\xb4\x01\n" +
+	"\x13initial_permissions\x18\x04 \x03(\v2%.elara.common.v1.PermissionAssignmentR\x12initialPermissions\x12K\n" +
+	"\x1binitial_manager_group_names\x18\x05 \x03(\tB\f\xbaH\t\x92\x01\x06\"\x04r\x02\x10\x01R\x18initialManagerGroupNames\"\xb4\x01\n" +
 	"\x13CreateGroupResponse\x12+\n" +
 	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\x12'\n" +
 	"\x0fvisible_members\x18\x02 \x03(\tR\x0evisibleMembers\x12G\n" +
-	"\vpermissions\x18\x03 \x03(\v2%.elara.common.v1.PermissionAssignmentR\vpermissions\")\n" +
-	"\x0fGetGroupRequest\x12\x16\n" +
-	"\x02id\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x02id\"\xb1\x01\n" +
+	"\vpermissions\x18\x03 \x03(\v2%.elara.common.v1.PermissionAssignmentR\vpermissions\"-\n" +
+	"\x0fGetGroupRequest\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\"\xb1\x01\n" +
 	"\x10GetGroupResponse\x12+\n" +
 	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\x12'\n" +
 	"\x0fvisible_members\x18\x02 \x03(\tR\x0evisibleMembers\x12G\n" +
-	"\vpermissions\x18\x03 \x03(\v2%.elara.common.v1.PermissionAssignmentR\vpermissions\"\xe0\x01\n" +
-	"\x12UpdateGroupRequest\x12\x16\n" +
-	"\x02id\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x02id\x12\x1e\n" +
-	"\x04name\x18\x02 \x01(\tB\n" +
-	"\xbaH\ar\x05\x10\x01\x18\x80\x01R\x04name\x12*\n" +
+	"\vpermissions\x18\x03 \x03(\v2%.elara.common.v1.PermissionAssignmentR\vpermissions\"\xf3\x01\n" +
+	"\x12UpdateGroupRequest\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\x12-\n" +
+	"\fdisplay_name\x18\x02 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\x80\x01R\vdisplayName\x12*\n" +
 	"\vdescription\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\bR\vdescription\x12H\n" +
 	"\x19expected_metadata_version\x18\x04 \x01(\x03B\a\xbaH\x04\"\x02(\x00H\x00R\x17expectedMetadataVersion\x88\x01\x01B\x1c\n" +
 	"\x1a_expected_metadata_version\"B\n" +
 	"\x13UpdateGroupResponse\x12+\n" +
-	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\"\x83\x02\n" +
-	"\x19UpdateGroupMembersRequest\x12!\n" +
-	"\bgroup_id\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\agroupId\x12+\n" +
+	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\"\x87\x02\n" +
+	"\x19UpdateGroupMembersRequest\x12%\n" +
+	"\n" +
+	"group_name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tgroupName\x12+\n" +
 	"\n" +
 	"add_emails\x18\x02 \x03(\tB\f\xbaH\t\x92\x01\x06\"\x04r\x02`\x01R\taddEmails\x121\n" +
 	"\rremove_emails\x18\x03 \x03(\tB\f\xbaH\t\x92\x01\x06\"\x04r\x02`\x01R\fremoveEmails\x12F\n" +
@@ -850,18 +851,19 @@ const file_elara_group_v1_group_service_proto_rawDesc = "" +
 	"\x19_expected_members_version\"r\n" +
 	"\x1aUpdateGroupMembersResponse\x12+\n" +
 	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\x12'\n" +
-	"\x0fvisible_members\x18\x02 \x03(\tR\x0evisibleMembers\"\xab\x02\n" +
-	"\x1dUpdateGroupPermissionsRequest\x12!\n" +
-	"\bgroup_id\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\agroupId\x127\n" +
+	"\x0fvisible_members\x18\x02 \x03(\tR\x0evisibleMembers\"\xaf\x02\n" +
+	"\x1dUpdateGroupPermissionsRequest\x12%\n" +
+	"\n" +
+	"group_name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tgroupName\x127\n" +
 	"\x03add\x18\x02 \x03(\v2%.elara.common.v1.PermissionAssignmentR\x03add\x12=\n" +
 	"\x06remove\x18\x03 \x03(\v2%.elara.common.v1.PermissionAssignmentR\x06remove\x12N\n" +
 	"\x1cexpected_permissions_version\x18\x04 \x01(\x03B\a\xbaH\x04\"\x02(\x00H\x00R\x1aexpectedPermissionsVersion\x88\x01\x01B\x1f\n" +
 	"\x1d_expected_permissions_version\"\x96\x01\n" +
 	"\x1eUpdateGroupPermissionsResponse\x12+\n" +
 	"\x05group\x18\x01 \x01(\v2\x15.elara.group.v1.GroupR\x05group\x12G\n" +
-	"\vpermissions\x18\x02 \x03(\v2%.elara.common.v1.PermissionAssignmentR\vpermissions\",\n" +
-	"\x12DeleteGroupRequest\x12\x16\n" +
-	"\x02id\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x02id\"\x15\n" +
+	"\vpermissions\x18\x02 \x03(\v2%.elara.common.v1.PermissionAssignmentR\vpermissions\"0\n" +
+	"\x12DeleteGroupRequest\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x04name\"\x15\n" +
 	"\x13DeleteGroupResponse\"y\n" +
 	"\x11ListGroupsRequest\x12B\n" +
 	"\n" +

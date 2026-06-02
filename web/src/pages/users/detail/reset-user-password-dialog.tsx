@@ -62,7 +62,7 @@ export function ResetUserPasswordDialog({
 	});
 
 	const onSubmit = (values: FormValues) => {
-		mutation.mutate({ email: user.email, newPassword: values.newPassword });
+		mutation.mutate({ userId: user.id, newPassword: values.newPassword });
 	};
 
 	const newPasswordError = form.formState.errors.newPassword?.message;

@@ -15,10 +15,12 @@ func TestAuthUserMetaRoundTrip(t *testing.T) {
 
 	now := time.Now().UTC().Truncate(time.Second)
 	u := &domain.User{
-		Email:                  "user@example.com",
-		Name:                   "User",
-		Picture:                "pic",
-		Provider:               "oidc",
+		Email:       "user@example.com",
+		DisplayName: "User",
+		Picture:     "pic",
+		Identities: []domain.Identity{
+			{Provider: domain.ProviderOIDC, Subject: "user@example.com"},
+		},
 		CreatedAt:              now,
 		LastLoginAt:            now,
 		PasswordHash:           "hash",
@@ -36,7 +38,6 @@ func TestAuthGroupMetaRoundTrip(t *testing.T) {
 
 	now := time.Now().UTC().Truncate(time.Second)
 	g := &domain.Group{
-		ID:        "group-1",
 		Name:      "Group 1",
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -117,15 +118,15 @@ func TestAuthGroupMetaFromBytes(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name    string
-		data    []byte
-		wantID  string
-		wantErr string
+		name     string
+		data     []byte
+		wantName string
+		wantErr  string
 	}{
 		{
-			name:   "valid JSON",
-			data:   []byte(`{"id": "g1", "name": "group"}`),
-			wantID: "g1",
+			name:     "valid JSON",
+			data:     []byte(`{"name": "g1"}`),
+			wantName: "g1",
 		},
 		{
 			name:    "invalid JSON",
@@ -147,7 +148,7 @@ func TestAuthGroupMetaFromBytes(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantID, meta.ID)
+			assert.Equal(t, tt.wantName, meta.Name)
 		})
 	}
 }

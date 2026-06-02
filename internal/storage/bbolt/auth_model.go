@@ -5,21 +5,24 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 type authUserMeta struct {
-	Email                  string    `json:"email"`
-	Name                   string    `json:"name"`
-	Picture                string    `json:"picture"`
-	Provider               string    `json:"provider"`
-	System                 bool      `json:"system,omitempty"`
-	Source                 string    `json:"source,omitempty"`
-	CreatedAt              time.Time `json:"created_at"`
-	LastLoginAt            time.Time `json:"last_login_at"`
-	PasswordHash           string    `json:"password_hash,omitempty"`
-	PasswordChangeRequired bool      `json:"password_change_required,omitempty"`
-	MembershipVersion      int64     `json:"membership_version,omitempty"`
+	ID                     string            `json:"id"`
+	Email                  string            `json:"email"`
+	DisplayName            string            `json:"display_name,omitempty"`
+	Picture                string            `json:"picture,omitempty"`
+	Status                 domain.UserStatus `json:"status"`
+	Identities             []domain.Identity `json:"identities,omitempty"`
+	System                 bool              `json:"system,omitempty"`
+	CreatedAt              time.Time         `json:"created_at"`
+	LastLoginAt            time.Time         `json:"last_login_at"`
+	PasswordHash           string            `json:"password_hash,omitempty"`
+	PasswordChangeRequired bool              `json:"password_change_required,omitempty"`
+	MembershipVersion      int64             `json:"membership_version,omitempty"`
 }
 
 // authGroupMeta is the bbolt JSON shape for a group entity.
@@ -29,8 +32,8 @@ type authUserMeta struct {
 // bbolt is authoritative for. The three version counters track
 // optimistic-lock state independently per editable slot.
 type authGroupMeta struct {
-	ID                 string    `json:"id"`
 	Name               string    `json:"name"`
+	DisplayName        string    `json:"display_name,omitempty"`
 	Description        string    `json:"description,omitempty"`
 	System             bool      `json:"system,omitempty"`
 	MetadataVersion    int64     `json:"metadata_version,omitempty"`
@@ -55,12 +58,13 @@ type authTokenMeta struct {
 
 func domainToAuthUserMeta(u *domain.User) *authUserMeta {
 	return &authUserMeta{
+		ID:                     u.ID.String(),
 		Email:                  u.Email,
-		Name:                   u.Name,
+		DisplayName:            u.DisplayName,
 		Picture:                u.Picture,
-		Provider:               u.Provider,
+		Status:                 u.Status,
+		Identities:             u.Identities,
 		System:                 u.System,
-		Source:                 u.Source,
 		CreatedAt:              u.CreatedAt,
 		LastLoginAt:            u.LastLoginAt,
 		PasswordHash:           u.PasswordHash,
@@ -70,13 +74,16 @@ func domainToAuthUserMeta(u *domain.User) *authUserMeta {
 }
 
 func authUserMetaToDomain(m *authUserMeta) *domain.User {
+	id, _ := uuid.Parse(m.ID)
+
 	return &domain.User{
+		ID:                     id,
 		Email:                  m.Email,
-		Name:                   m.Name,
+		DisplayName:            m.DisplayName,
 		Picture:                m.Picture,
-		Provider:               m.Provider,
+		Status:                 m.Status,
+		Identities:             m.Identities,
 		System:                 m.System,
-		Source:                 m.Source,
 		CreatedAt:              m.CreatedAt,
 		LastLoginAt:            m.LastLoginAt,
 		PasswordHash:           m.PasswordHash,
@@ -87,8 +94,8 @@ func authUserMetaToDomain(m *authUserMeta) *domain.User {
 
 func domainToAuthGroupMeta(g *domain.Group) *authGroupMeta {
 	return &authGroupMeta{
-		ID:                 g.ID,
 		Name:               g.Name,
+		DisplayName:        g.DisplayName,
 		Description:        g.Description,
 		System:             g.System,
 		MetadataVersion:    g.MetadataVersion,
@@ -101,8 +108,8 @@ func domainToAuthGroupMeta(g *domain.Group) *authGroupMeta {
 
 func authGroupMetaToDomain(m *authGroupMeta) *domain.Group {
 	return &domain.Group{
-		ID:                 m.ID,
 		Name:               m.Name,
+		DisplayName:        m.DisplayName,
 		Description:        m.Description,
 		System:             m.System,
 		MetadataVersion:    m.MetadataVersion,

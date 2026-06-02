@@ -18,7 +18,7 @@ func (s *Service) Namespaces(
 	actor domain.AuthInfo,
 	query Query,
 ) ([]Item, error) {
-	perms, err := s.perms.ListPermissions(actor.Email)
+	perms, err := s.perms.ListPermissions(actor.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("list permissions: %w", err)
 	}

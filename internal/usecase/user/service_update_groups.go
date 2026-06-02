@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/util/sliceutil"
@@ -14,7 +16,7 @@ import (
 // aren't in is a no-op. Same id in both add and remove returns
 // InvalidArgument.
 type UpdateGroupsData struct {
-	Email                     string
+	UserID                    uuid.UUID
 	AddGroupIDs               []string
 	RemoveGroupIDs            []string
 	ExpectedMembershipVersion *int64
@@ -58,7 +60,7 @@ func (s *Service) UpdateGroups(
 	var result *UpdateGroupsResult
 
 	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
-		user, err := s.store.Get(ctx, data.Email)
+		user, err := s.store.GetByID(ctx, data.UserID)
 		if err != nil {
 			return fmt.Errorf("get user: %w", err)
 		}
@@ -66,14 +68,14 @@ func (s *Service) UpdateGroups(
 			return fmt.Errorf("check version: %w", err)
 		}
 
-		delta, err := s.computeGroupDelta(ctx, actor, user.Email, data)
+		delta, err := s.computeGroupDelta(ctx, actor, user.ID.String(), data)
 		if err != nil {
 			return err
 		}
 
 		// `visible_group_ids` is scope-filtered so the response cannot
 		// enumerate memberships outside the caller's read scope.
-		visible := filterVisibleGroupIDs(s.pdp, actor.Email, delta.postIDs)
+		visible := filterVisibleGroupIDs(s.pdp, actor.UserID, delta.postIDs)
 
 		if len(delta.addedNames)+len(delta.removedNames) == 0 {
 			// No-op apply but optimistic-lock check already passed; return
@@ -123,10 +125,10 @@ type groupDelta struct {
 func (s *Service) computeGroupDelta(
 	ctx context.Context,
 	actor domain.AuthInfo,
-	email string,
+	userID string,
 	data UpdateGroupsData,
 ) (groupDelta, error) {
-	currentIDs, currentNamesByID, err := currentUserGroupIDs(ctx, s.pap, s.groups, email)
+	currentNames, err := currentUserGroupNames(ctx, s.pap, s.groups, userID)
 	if err != nil {
 		return groupDelta{}, err
 	}
@@ -138,34 +140,31 @@ func (s *Service) computeGroupDelta(
 		return groupDelta{}, err
 	}
 
-	currentSet := sliceutil.ToSet(currentIDs)
+	currentSet := sliceutil.ToSet(currentNames)
 	effectiveAdd := sliceutil.NotIn(data.AddGroupIDs, currentSet)
 	effectiveRemove := sliceutil.In(data.RemoveGroupIDs, currentSet)
 
-	// Resolve added group ids to (id -> group) for anti-escalation and for
-	// the casbin-name needed by ApplyUserMembershipDeltas.
-	addedGroups, err := loadGroupsByIDs(ctx, s.groups, effectiveAdd)
+	// Resolve added group names to (name -> group) for anti-escalation.
+	addedGroups, err := loadGroupsByNames(ctx, s.groups, effectiveAdd)
 	if err != nil {
 		return groupDelta{}, err
 	}
 
 	addedNames := make([]string, 0, len(effectiveAdd))
-	for _, id := range effectiveAdd {
-		if err := s.scope.RequireMembershipGrant(actor.Email, addedGroups[id].Name); err != nil {
-			return groupDelta{}, fmt.Errorf("grant group %s: %w", id, err)
+	for _, name := range effectiveAdd {
+		if err := s.scope.RequireMembershipGrant(actor.UserID, addedGroups[name].Name); err != nil {
+			return groupDelta{}, fmt.Errorf("grant group %s: %w", name, err)
 		}
-		addedNames = append(addedNames, addedGroups[id].Name)
+		addedNames = append(addedNames, addedGroups[name].Name)
 	}
 
 	removedNames := make([]string, 0, len(effectiveRemove))
-	for _, id := range effectiveRemove {
-		removedNames = append(removedNames, currentNamesByID[id])
-	}
+	removedNames = append(removedNames, effectiveRemove...)
 
 	return groupDelta{
 		addedNames:   addedNames,
 		removedNames: removedNames,
-		postIDs:      sliceutil.ComposePost(currentIDs, effectiveAdd, effectiveRemove),
+		postIDs:      sliceutil.ComposePost(currentNames, effectiveAdd, effectiveRemove),
 	}, nil
 }
 
@@ -179,11 +178,11 @@ func (s *Service) applyMembershipDelta(
 	user *domain.User,
 	addedNames, removedNames []string,
 ) error {
-	if err := w.ApplyUserMembershipDeltas(user.Email, addedNames, removedNames); err != nil {
+	if err := w.ApplyUserMembershipDeltas(user.ID.String(), addedNames, removedNames); err != nil {
 		return fmt.Errorf("pap apply user memberships: %w", err)
 	}
 	user.MembershipVersion++
-	if err := s.store.SetMembershipVersion(ctx, user.Email, user.MembershipVersion); err != nil {
+	if err := s.store.SetMembershipVersion(ctx, user.ID, user.MembershipVersion); err != nil {
 		return fmt.Errorf("persist membership version: %w", err)
 	}
 
@@ -193,7 +192,7 @@ func (s *Service) applyMembershipDelta(
 func (s *Service) authorizeGroupDeltas(actor domain.AuthInfo, added, removed []string) error {
 	for _, ids := range [...][]string{added, removed} {
 		for _, id := range ids {
-			if !s.pdp.HasGroup(actor.Email, id, domain.ActionWrite) {
+			if !s.pdp.HasGroup(actor.UserID, id, domain.ActionWrite) {
 				return domain.ErrForbidden
 			}
 		}
@@ -217,49 +216,43 @@ func filterVisibleGroupIDs(pdp *authz.PDP, actor string, ids []string) []string 
 	return out
 }
 
-// loadGroupsByIDs fetches each requested group inside the current context and
-// returns them keyed by ID.
-func loadGroupsByIDs(
+// loadGroupsByNames fetches each requested group inside the current context and
+// returns them keyed by Name.
+func loadGroupsByNames(
 	ctx context.Context,
-	repo GroupReader,
-	ids []string,
+	repo domain.GroupReader,
+	names []string,
 ) (map[string]*domain.Group, error) {
-	out := make(map[string]*domain.Group, len(ids))
-	for _, id := range ids {
-		g, err := repo.Get(ctx, id)
+	out := make(map[string]*domain.Group, len(names))
+	for _, name := range names {
+		g, err := repo.Get(ctx, name)
 		if err != nil {
-			return nil, fmt.Errorf("get group %s: %w", id, err)
+			return nil, fmt.Errorf("get group %s: %w", name, err)
 		}
-		out[id] = g
+		out[name] = g
 	}
 
 	return out, nil
 }
 
-// currentUserGroupIDs reads current memberships through PAP and resolves
-// each group name to its ID via the GroupReader.
-func currentUserGroupIDs(
+// currentUserGroupNames reads current memberships through PAP and resolves
+// each group name via the GroupReader.
+func currentUserGroupNames(
 	ctx context.Context,
 	pap *authz.PAP,
-	repo GroupReader,
-	email string,
-) ([]string, map[string]string, error) {
-	names, err := pap.UserGroupNames(email)
+	repo domain.GroupReader,
+	userID string,
+) ([]string, error) {
+	names, err := pap.UserGroupNames(userID)
 	if err != nil {
-		return nil, nil, fmt.Errorf("pap user group names: %w", err)
+		return nil, fmt.Errorf("pap user group names: %w", err)
 	}
-
-	ids := make([]string, 0, len(names))
-	namesByID := make(map[string]string, len(names))
 
 	for _, name := range names {
-		g, err := repo.FindByName(ctx, name)
-		if err != nil {
-			return nil, nil, fmt.Errorf("find group by name %s: %w", name, err)
+		if _, err := repo.Get(ctx, name); err != nil {
+			return nil, fmt.Errorf("get group %s: %w", name, err)
 		}
-		ids = append(ids, g.ID)
-		namesByID[g.ID] = g.Name
 	}
 
-	return ids, namesByID, nil
+	return names, nil
 }

@@ -8,8 +8,10 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 
 	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
@@ -31,22 +33,36 @@ type (
 	}
 
 	userLookup interface {
-		Get(ctx context.Context, email string) (*domain.User, error)
+		GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	}
 )
 
 // AuthInterceptor validates the elara_session cookie (or Authorization Bearer token)
 // and injects *domain.Session and *domain.User into the request context.
 type AuthInterceptor struct {
-	sessions sessionValidator
-	users    userLookup
+	sessions        sessionValidator
+	users           userLookup
+	skipPermissions bool
+}
+
+type AuthInterceptorOption func(*AuthInterceptor)
+
+func WithAuthSkipPermissions(skip bool) AuthInterceptorOption {
+	return func(i *AuthInterceptor) {
+		i.skipPermissions = skip
+	}
 }
 
 var _ connect.Interceptor = (*AuthInterceptor)(nil)
 
 // NewAuthInterceptor returns an AuthInterceptor that authenticates all requests.
-func NewAuthInterceptor(sessionSvc sessionValidator, users userLookup) *AuthInterceptor {
-	return &AuthInterceptor{sessions: sessionSvc, users: users}
+func NewAuthInterceptor(sessionSvc sessionValidator, users userLookup, opts ...AuthInterceptorOption) *AuthInterceptor {
+	i := &AuthInterceptor{sessions: sessionSvc, users: users}
+	for _, opt := range opts {
+		opt(i)
+	}
+
+	return i
 }
 
 func (i *AuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
@@ -87,23 +103,70 @@ func (i *AuthInterceptor) WrapStreamingHandler(
 	}
 }
 
+func (i *AuthInterceptor) injectBypassUser(ctx context.Context) context.Context {
+	sess := &domain.Session{
+		ID:         "bypass-session",
+		UserID:     uuid.Nil.String(),
+		ClientType: domain.ClientTypeWeb,
+		CreatedAt:  time.Now(),
+		ExpiresAt:  time.Now().Add(time.Hour),
+	}
+	user := &domain.User{
+		ID:          uuid.Nil,
+		Email:       "local-admin@elara.internal",
+		DisplayName: "Local Admin",
+		Status:      domain.UserStatusActive,
+	}
+
+	return authctx.WithSession(ctx, sess, user)
+}
+
 func (i *AuthInterceptor) authenticate(
 	ctx context.Context,
 	header http.Header,
 ) (context.Context, error) {
 	sessionID := extractSessionID(header)
 	if sessionID == "" {
+		if i.skipPermissions {
+			return i.injectBypassUser(ctx), nil
+		}
+
 		return ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
 	}
 
 	sess, err := i.sessions.Validate(ctx, sessionID)
 	if err != nil {
+		if i.skipPermissions {
+			return i.injectBypassUser(ctx), nil
+		}
+
 		return ctx, unauthenticatedError(err)
 	}
 
-	user, err := i.users.Get(ctx, sess.UserID)
+	uid, err := uuid.Parse(sess.UserID)
 	if err != nil {
+		if i.skipPermissions {
+			return i.injectBypassUser(ctx), nil
+		}
+
 		return ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
+	}
+
+	user, err := i.users.GetByID(ctx, uid)
+	if err != nil {
+		if i.skipPermissions {
+			return i.injectBypassUser(ctx), nil
+		}
+
+		return ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
+	}
+
+	if user.Status != domain.UserStatusActive {
+		if i.skipPermissions {
+			return i.injectBypassUser(ctx), nil
+		}
+
+		return ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUserDeactivated)
 	}
 
 	// Best-effort refresh: extend LastSeenAt / sliding TTL. Failures are logged

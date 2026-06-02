@@ -33,7 +33,6 @@ const (
 // metadata, members, and permissions proceed without false conflicts.
 type Group struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
-	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name        string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Description string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	// is_system flags built-in groups (e.g. system:superadmin) that the
@@ -45,6 +44,7 @@ type Group struct {
 	MetadataVersion    int64                  `protobuf:"varint,7,opt,name=metadata_version,json=metadataVersion,proto3" json:"metadata_version,omitempty"`
 	MembersVersion     int64                  `protobuf:"varint,8,opt,name=members_version,json=membersVersion,proto3" json:"members_version,omitempty"`
 	PermissionsVersion int64                  `protobuf:"varint,9,opt,name=permissions_version,json=permissionsVersion,proto3" json:"permissions_version,omitempty"`
+	DisplayName        string                 `protobuf:"bytes,10,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -77,13 +77,6 @@ func (x *Group) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Group.ProtoReflect.Descriptor instead.
 func (*Group) Descriptor() ([]byte, []int) {
 	return file_elara_group_v1_group_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *Group) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
 }
 
 func (x *Group) GetName() string {
@@ -142,13 +135,19 @@ func (x *Group) GetPermissionsVersion() int64 {
 	return 0
 }
 
+func (x *Group) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
 var File_elara_group_v1_group_proto protoreflect.FileDescriptor
 
 const file_elara_group_v1_group_proto_rawDesc = "" +
 	"\n" +
-	"\x1aelara/group/v1/group.proto\x12\x0eelara.group.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe5\x02\n" +
-	"\x05Group\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x1aelara/group/v1/group.proto\x12\x0eelara.group.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf8\x02\n" +
+	"\x05Group\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1b\n" +
 	"\tis_system\x18\x04 \x01(\bR\bisSystem\x129\n" +
@@ -158,7 +157,9 @@ const file_elara_group_v1_group_proto_rawDesc = "" +
 	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12)\n" +
 	"\x10metadata_version\x18\a \x01(\x03R\x0fmetadataVersion\x12'\n" +
 	"\x0fmembers_version\x18\b \x01(\x03R\x0emembersVersion\x12/\n" +
-	"\x13permissions_version\x18\t \x01(\x03R\x12permissionsVersionB\xc2\x01\n" +
+	"\x13permissions_version\x18\t \x01(\x03R\x12permissionsVersion\x12!\n" +
+	"\fdisplay_name\x18\n" +
+	" \x01(\tR\vdisplayNameB\xc2\x01\n" +
 	"\x12com.elara.group.v1B\n" +
 	"GroupProtoP\x01ZFgithub.com/sergeyslonimsky/elara/internal/proto/elara/group/v1;groupv1\xa2\x02\x03EGX\xaa\x02\x0eElara.Group.V1\xca\x02\x0eElara\\Group\\V1\xe2\x02\x1aElara\\Group\\V1\\GPBMetadata\xea\x02\x10Elara::Group::V1b\x06proto3"
 

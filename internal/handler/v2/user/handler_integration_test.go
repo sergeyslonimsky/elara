@@ -3,8 +3,13 @@
 package user_test
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"io"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"github.com/stretchr/testify/require"
 
@@ -28,7 +33,20 @@ func runUserCase(t *testing.T, endpoint string, tc userCase) {
 	t.Helper()
 
 	app := itest.New(t)
+
+	// Admin is bootstrapped with PasswordChangeRequired=true; clear it so
+	// we can exercise the UserService without being forced to ProfileService first.
+	if adminID, ok := app.PersonaIDs["admin"]; ok {
+		uid := uuid.MustParse(adminID)
+		require.NoError(t, app.Adapters.AuthUsers.SetPassword(context.Background(), uid, "unused", false))
+	}
+
 	reqBody := itest.ReadFile(t, tc.reqPath)
+
+	// Interpolate persona IDs (e.g. <<ID:admin>>)
+	for name, id := range app.PersonaIDs {
+		reqBody = bytes.ReplaceAll(reqBody, []byte("<<ID:"+name+">>"), []byte(id))
+	}
 
 	resp := itest.DoRequest(t, app, endpoint, reqBody, itest.WithPersona(app, tc.user))
 	defer func() { require.NoError(t, resp.Body.Close()) }()
@@ -178,6 +196,13 @@ func TestIntegration_UserLifecycle(t *testing.T) {
 	t.Parallel()
 
 	app := itest.New(t)
+
+	// Clear admin password-change-required
+	if adminID, ok := app.PersonaIDs["admin"]; ok {
+		uid := uuid.MustParse(adminID)
+		require.NoError(t, app.Adapters.AuthUsers.SetPassword(context.Background(), uid, "unused", false))
+	}
+
 	admin := itest.WithPersona(app, "admin")
 
 	// 1. Create user
@@ -191,6 +216,16 @@ func TestIntegration_UserLifecycle(t *testing.T) {
 	require.NoError(t, resp.Body.Close())
 	itest.CompareJSONBytes(t, itest.ReadFile(t, "testdata/lifecycle/01_create_resp.json"), got)
 
+	// Extract created user ID for subsequent steps
+	var createResp struct {
+		User struct {
+			ID string `json:"id"`
+		} `json:"user"`
+	}
+	require.NoError(t, json.Unmarshal(got, &createResp))
+	userID := []byte(createResp.User.ID)
+	require.NotEmpty(t, userID)
+
 	// 2. List shows the new user
 	resp = itest.DoRequest(t, app,
 		userv1connect.UserServiceListUsersProcedure,
@@ -203,9 +238,11 @@ func TestIntegration_UserLifecycle(t *testing.T) {
 	itest.CompareJSONBytes(t, itest.ReadFile(t, "testdata/lifecycle/02_list_resp.json"), got)
 
 	// 3. Get fetches the new user
+	reqBody := itest.ReadFile(t, "testdata/lifecycle/03_get_req.json")
+	reqBody = bytes.ReplaceAll(reqBody, []byte("<<USER_ID>>"), userID)
 	resp = itest.DoRequest(t, app,
 		userv1connect.UserServiceGetUserProcedure,
-		itest.ReadFile(t, "testdata/lifecycle/03_get_req.json"),
+		reqBody,
 		admin,
 	)
 	got, err = io.ReadAll(resp.Body)
@@ -214,9 +251,11 @@ func TestIntegration_UserLifecycle(t *testing.T) {
 	itest.CompareJSONBytes(t, itest.ReadFile(t, "testdata/lifecycle/03_get_resp.json"), got)
 
 	// 4. Reset password succeeds
+	reqBody = itest.ReadFile(t, "testdata/lifecycle/04_reset_req.json")
+	reqBody = bytes.ReplaceAll(reqBody, []byte("<<USER_ID>>"), userID)
 	resp = itest.DoRequest(t, app,
 		userv1connect.UserServiceResetUserPasswordProcedure,
-		itest.ReadFile(t, "testdata/lifecycle/04_reset_req.json"),
+		reqBody,
 		admin,
 	)
 	got, err = io.ReadAll(resp.Body)
@@ -225,9 +264,11 @@ func TestIntegration_UserLifecycle(t *testing.T) {
 	itest.CompareJSONBytes(t, itest.ReadFile(t, "testdata/lifecycle/04_reset_resp.json"), got)
 
 	// 5. Delete user
+	reqBody = itest.ReadFile(t, "testdata/lifecycle/05_delete_req.json")
+	reqBody = bytes.ReplaceAll(reqBody, []byte("<<USER_ID>>"), userID)
 	resp = itest.DoRequest(t, app,
 		userv1connect.UserServiceDeleteUserProcedure,
-		itest.ReadFile(t, "testdata/lifecycle/05_delete_req.json"),
+		reqBody,
 		admin,
 	)
 	got, err = io.ReadAll(resp.Body)
@@ -236,9 +277,11 @@ func TestIntegration_UserLifecycle(t *testing.T) {
 	itest.CompareJSONBytes(t, itest.ReadFile(t, "testdata/lifecycle/05_delete_resp.json"), got)
 
 	// 6. Get the deleted user — not found
+	reqBody = itest.ReadFile(t, "testdata/lifecycle/06_get_after_delete_req.json")
+	reqBody = bytes.ReplaceAll(reqBody, []byte("<<USER_ID>>"), userID)
 	resp = itest.DoRequest(t, app,
 		userv1connect.UserServiceGetUserProcedure,
-		itest.ReadFile(t, "testdata/lifecycle/06_get_after_delete_req.json"),
+		reqBody,
 		admin,
 	)
 	got, err = io.ReadAll(resp.Body)

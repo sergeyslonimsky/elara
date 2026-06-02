@@ -33,7 +33,7 @@ func TestService_Create(t *testing.T) {
 				Role:       domain.RoleWriter,
 			},
 			mockFunc: func(m mocks) {
-				m.pdp.EXPECT().HasNamespace(callerEmail, "ns1", domain.ActionWrite).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, "ns1", domain.ActionWrite).Return(true)
 				m.store.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 			},
 		},
@@ -45,7 +45,7 @@ func TestService_Create(t *testing.T) {
 				Role:       domain.RoleWriter,
 			},
 			mockFunc: func(m mocks) {
-				m.pdp.EXPECT().HasNamespace(callerEmail, "ns1", domain.ActionWrite).Return(false)
+				m.pdp.EXPECT().HasNamespace(testUserID, "ns1", domain.ActionWrite).Return(false)
 			},
 			errIs: domain.ErrPermissionEscalation,
 		},
@@ -57,7 +57,7 @@ func TestService_Create(t *testing.T) {
 				Role:       domain.RoleReader,
 			},
 			mockFunc: func(m mocks) {
-				m.pdp.EXPECT().HasNamespace(callerEmail, "ns1", domain.ActionRead).Return(false)
+				m.pdp.EXPECT().HasNamespace(testUserID, "ns1", domain.ActionRead).Return(false)
 			},
 			errIs: domain.ErrPermissionEscalation,
 		},
@@ -88,7 +88,7 @@ func TestService_Create(t *testing.T) {
 				Role:       domain.RoleReader,
 			},
 			mockFunc: func(m mocks) {
-				m.pdp.EXPECT().HasNamespace(callerEmail, "ns1", domain.ActionRead).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, "ns1", domain.ActionRead).Return(true)
 				m.store.EXPECT().Create(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 			},
 			wantErr: "db error",

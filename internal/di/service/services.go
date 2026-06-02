@@ -65,11 +65,12 @@ func NewServices(
 ) (*Services, error) {
 	schemaValidator := schemavalidator.New(a.SchemaRepo)
 
-	pdp := authz.NewPDP(enforcer)
+	pdp := authz.NewPDP(enforcer, authz.WithSkipPermissions(cfg.DangerouslySkipPermissions))
 	pap := authz.NewPAP(enforcer, a.StorageManager)
 	scope := authz.NewScope(pdp, pap, a.AuthGroups)
 	authzSvc := authz.NewAuthz(pdp)
-	adminBootstrap := auth.NewAdminBootstrap(a.StorageManager, a.AuthUsers, a.AuthGroups, a.AuthPolicy)
+	userSvc := auth.NewUserService(a.AuthUsers)
+	adminBootstrap := auth.NewAdminBootstrap(a.StorageManager, userSvc, a.AuthGroups, a.AuthPolicy)
 
 	services := &Services{
 		Config: configuc.New(
@@ -96,6 +97,7 @@ func NewServices(
 		User: useruc.New(
 			a.StorageManager,
 			a.AuthUsers,
+			userSvc,
 			a.AuthGroups,
 			sessionSvc,
 			pdp,
@@ -110,7 +112,7 @@ func NewServices(
 		AdminBootstrap: adminBootstrap,
 	}
 
-	if err := configureAuthService(ctx, services, a, cfg, adminBootstrap, sessionSvc); err != nil {
+	if err := configureAuthService(ctx, services, a, cfg, userSvc, adminBootstrap, sessionSvc); err != nil {
 		return nil, err
 	}
 
@@ -125,6 +127,7 @@ func configureAuthService(
 	services *Services,
 	a *Adapters,
 	cfg config.Config,
+	userSvc *auth.UserService,
 	adminBootstrap *auth.AdminBootstrap,
 	sessionSvc *sessions.Service,
 ) error {
@@ -152,7 +155,7 @@ func configureAuthService(
 	services.Auth = authuc.New(
 		a.StorageManager,
 		oidcProvider,
-		a.AuthUsers,
+		userSvc,
 		adminBootstrap,
 		sessionSvc,
 		cfg.UI.Auth.OIDC.AdminEmail,

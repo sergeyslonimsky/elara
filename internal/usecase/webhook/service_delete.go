@@ -11,8 +11,8 @@ import (
 // Delete removes a webhook if the caller holds (Webhook, Write) on its
 // namespace.
 func (s *Service) Delete(ctx context.Context, id string) error {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return domain.ErrUnauthorized
 	}
 
@@ -21,7 +21,7 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("get webhook: %w", err)
 	}
 
-	if !s.pdp.Has(claims.Email, domain.Permission{
+	if !s.pdp.Has(info.UserID, domain.Permission{
 		Object: domain.ObjectWebhook,
 		Action: domain.ActionWrite,
 		Domain: webhookDomain(webhook),

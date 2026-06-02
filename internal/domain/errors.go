@@ -25,6 +25,14 @@ var (
 	ErrSessionNotFound        = errors.New("session not found")
 	ErrSessionExpired         = errors.New("session expired")
 	ErrSessionRevoked         = errors.New("session revoked")
+	ErrUserDeactivated        = errors.New("user is deactivated")
+	ErrIdentityTaken          = errors.New("identity already taken")
+	ErrEmailTaken             = errors.New("email already taken")
+	ErrCanonicalNameImmutable = errors.New("canonical name is immutable")
+	// ErrIdentityNotProvisioned is returned when an identity (provider+subject)
+	// has no corresponding user record. JIT-provisioning is not supported;
+	// admins must pre-provision users.
+	ErrIdentityNotProvisioned = errors.New("identity not provisioned")
 )
 
 type ValidationError struct {

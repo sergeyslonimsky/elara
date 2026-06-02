@@ -50,7 +50,6 @@ vi.mock("sonner", async (importOriginal) => {
 });
 
 const mockGroup = create(GroupSchema, {
-	id: "group-1",
 	name: "test-group",
 	description: "Test group",
 	isSystem: false,
@@ -159,16 +158,15 @@ describe("CreateGroupDialog", () => {
 		);
 	});
 
-	test("ticking a manager group includes it in initialManagerGroupIds", async () => {
+	test("ticking a manager group includes it in initialManagerGroupNames", async () => {
 		const ue = userEvent.setup();
 		const mockMutate = vi.fn();
 
-		authContext = setupAuth(["mgr-1"]);
+		authContext = setupAuth(["developers"]);
 		vi.mocked(useQuery).mockReturnValue({
 			data: {
 				groups: [
 					create(GroupSchema, {
-						id: "mgr-1",
 						name: "developers",
 						isSystem: false,
 						metadataVersion: 1n,
@@ -198,7 +196,7 @@ describe("CreateGroupDialog", () => {
 		expect(mockMutate).toHaveBeenCalledWith(
 			expect.objectContaining({
 				name: "my-group",
-				initialManagerGroupIds: ["mgr-1"],
+				initialManagerGroupNames: ["developers"],
 			}),
 		);
 	});

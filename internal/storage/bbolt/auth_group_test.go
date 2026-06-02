@@ -18,8 +18,8 @@ func TestGroupRepo_Create(t *testing.T) {
 	ctx := t.Context()
 
 	group := &domain.Group{
-		ID:   "admins",
-		Name: "Administrators",
+		Name:        "admins",
+		DisplayName: "Administrators",
 	}
 
 	err := repo.Create(ctx, group)
@@ -35,10 +35,10 @@ func TestGroupRepo_Create_Duplicate(t *testing.T) {
 	repo := bboltadapter.NewGroupRepo(bboltadapter.NewManager(store.DB()))
 	ctx := t.Context()
 
-	group := &domain.Group{ID: "ops", Name: "Operations"}
+	group := &domain.Group{Name: "ops", DisplayName: "Operations"}
 	require.NoError(t, repo.Create(ctx, group))
 
-	err := repo.Create(ctx, &domain.Group{ID: "ops", Name: "Ops Duplicate"})
+	err := repo.Create(ctx, &domain.Group{Name: "ops", DisplayName: "Ops Duplicate"})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, domain.ErrAlreadyExists)
 }
@@ -51,15 +51,15 @@ func TestGroupRepo_Get(t *testing.T) {
 	ctx := t.Context()
 
 	group := &domain.Group{
-		ID:   "devs",
-		Name: "Developers",
+		Name:        "devs",
+		DisplayName: "Developers",
 	}
 	require.NoError(t, repo.Create(ctx, group))
 
 	got, err := repo.Get(ctx, "devs")
 	require.NoError(t, err)
-	assert.Equal(t, "devs", got.ID)
-	assert.Equal(t, "Developers", got.Name)
+	assert.Equal(t, "devs", got.Name)
+	assert.Equal(t, "Developers", got.DisplayName)
 }
 
 func TestGroupRepo_Get_Missing(t *testing.T) {
@@ -81,15 +81,15 @@ func TestGroupRepo_Update(t *testing.T) {
 	repo := bboltadapter.NewGroupRepo(bboltadapter.NewManager(store.DB()))
 	ctx := t.Context()
 
-	group := &domain.Group{ID: "testers", Name: "Testers"}
+	group := &domain.Group{Name: "testers", DisplayName: "Testers"}
 	require.NoError(t, repo.Create(ctx, group))
 
-	group.Name = "QA Testers"
+	group.DisplayName = "QA Testers"
 	require.NoError(t, repo.Update(ctx, group))
 
 	got, err := repo.Get(ctx, "testers")
 	require.NoError(t, err)
-	assert.Equal(t, "QA Testers", got.Name)
+	assert.Equal(t, "QA Testers", got.DisplayName)
 	assert.False(t, got.CreatedAt.IsZero())
 }
 
@@ -100,7 +100,7 @@ func TestGroupRepo_Update_Missing(t *testing.T) {
 	repo := bboltadapter.NewGroupRepo(bboltadapter.NewManager(store.DB()))
 	ctx := t.Context()
 
-	err := repo.Update(ctx, &domain.Group{ID: "ghost", Name: "Ghost"})
+	err := repo.Update(ctx, &domain.Group{Name: "ghost", DisplayName: "Ghost"})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, domain.ErrNotFound)
 }
@@ -112,7 +112,7 @@ func TestGroupRepo_Delete(t *testing.T) {
 	repo := bboltadapter.NewGroupRepo(bboltadapter.NewManager(store.DB()))
 	ctx := t.Context()
 
-	group := &domain.Group{ID: "to-delete", Name: "To Delete"}
+	group := &domain.Group{Name: "to-delete", DisplayName: "To Delete"}
 	require.NoError(t, repo.Create(ctx, group))
 
 	require.NoError(t, repo.Delete(ctx, "to-delete"))
@@ -133,50 +133,6 @@ func TestGroupRepo_Delete_Missing(t *testing.T) {
 	assert.ErrorIs(t, err, domain.ErrNotFound)
 }
 
-func TestGroupRepo_FindByName(t *testing.T) {
-	t.Parallel()
-
-	store := newTestStore(t)
-	repo := bboltadapter.NewGroupRepo(bboltadapter.NewManager(store.DB()))
-	ctx := t.Context()
-
-	group := &domain.Group{ID: "find-me", Name: "FindMe"}
-	require.NoError(t, repo.Create(ctx, group))
-
-	got, err := repo.FindByName(ctx, "FindMe")
-	require.NoError(t, err)
-	assert.Equal(t, "find-me", got.ID)
-	assert.Equal(t, "FindMe", got.Name)
-}
-
-func TestGroupRepo_FindByName_Missing(t *testing.T) {
-	t.Parallel()
-
-	store := newTestStore(t)
-	repo := bboltadapter.NewGroupRepo(bboltadapter.NewManager(store.DB()))
-	ctx := t.Context()
-
-	_, err := repo.FindByName(ctx, "nonexistent-name")
-	require.Error(t, err)
-	assert.ErrorIs(t, err, domain.ErrNotFound)
-}
-
-func TestGroupRepo_FindByName_Multiple(t *testing.T) {
-	t.Parallel()
-
-	store := newTestStore(t)
-	repo := bboltadapter.NewGroupRepo(bboltadapter.NewManager(store.DB()))
-	ctx := t.Context()
-
-	require.NoError(t, repo.Create(ctx, &domain.Group{ID: "first", Name: "First Group"}))
-	require.NoError(t, repo.Create(ctx, &domain.Group{ID: "second", Name: "Second Group"}))
-
-	got, err := repo.FindByName(ctx, "Second Group")
-	require.NoError(t, err)
-	assert.Equal(t, "second", got.ID)
-	assert.Equal(t, "Second Group", got.Name)
-}
-
 func TestGroupRepo_ListAll(t *testing.T) {
 	t.Parallel()
 
@@ -190,15 +146,15 @@ func TestGroupRepo_ListAll(t *testing.T) {
 	assert.Empty(t, groups)
 
 	// Populate.
-	ids := []string{"alpha", "beta", "gamma"}
-	for _, id := range ids {
-		g := &domain.Group{ID: id, Name: id}
+	names := []string{"alpha", "beta", "gamma"}
+	for _, name := range names {
+		g := &domain.Group{Name: name}
 		require.NoError(t, repo.Create(ctx, g))
 	}
 
 	groups, err = repo.ListAll(ctx)
 	require.NoError(t, err)
-	assert.Len(t, groups, len(ids))
+	assert.Len(t, groups, len(names))
 }
 
 // nameSet constructs a domain.GroupFilter.Names map from variadic names.
@@ -224,7 +180,6 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 	t.Parallel()
 
 	type seedGroup struct {
-		id   string
 		name string
 	}
 
@@ -239,9 +194,9 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 		{
 			name: "wildcard returns all sorted by name asc",
 			seed: []seedGroup{
-				{id: "id-bbb", name: "bbb"},
-				{id: "id-aaa", name: "aaa"},
-				{id: "id-ccc", name: "ccc"},
+				{name: "bbb"},
+				{name: "aaa"},
+				{name: "ccc"},
 			},
 			filter:    domain.GroupFilter{Wildcard: true},
 			wantNames: []string{"aaa", "bbb", "ccc"},
@@ -250,10 +205,10 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 		{
 			name: "explicit filter returns subset",
 			seed: []seedGroup{
-				{id: "id-a", name: "a"},
-				{id: "id-b", name: "b"},
-				{id: "id-c", name: "c"},
-				{id: "id-d", name: "d"},
+				{name: "a"},
+				{name: "b"},
+				{name: "c"},
+				{name: "d"},
 			},
 			filter:    domain.GroupFilter{Names: nameSet("a", "c")},
 			wantNames: []string{"a", "c"},
@@ -262,7 +217,7 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 		{
 			name: "explicit filter with missing name silently skips",
 			seed: []seedGroup{
-				{id: "id-exists", name: "exists"},
+				{name: "exists"},
 			},
 			filter:    domain.GroupFilter{Names: nameSet("exists", "missing")},
 			wantNames: []string{"exists"},
@@ -271,10 +226,10 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 		{
 			name: "search filters case-insensitive substring",
 			seed: []seedGroup{
-				{id: "id-dev", name: "dev"},
-				{id: "id-pdev", name: "production-dev"},
-				{id: "id-qa", name: "qa"},
-				{id: "id-staging", name: "staging"},
+				{name: "dev"},
+				{name: "production-dev"},
+				{name: "qa"},
+				{name: "staging"},
 			},
 			filter:    domain.GroupFilter{Wildcard: true, Search: "DE"},
 			wantNames: []string{"dev", "production-dev"},
@@ -283,9 +238,9 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 		{
 			name: "search combined with explicit filter intersects",
 			seed: []seedGroup{
-				{id: "id-dev", name: "dev"},
-				{id: "id-dev2", name: "dev-prod"},
-				{id: "id-qa", name: "qa"},
+				{name: "dev"},
+				{name: "dev-prod"},
+				{name: "qa"},
 			},
 			filter:    domain.GroupFilter{Names: nameSet("dev", "qa"), Search: "dev"},
 			wantNames: []string{"dev"},
@@ -294,11 +249,11 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 		{
 			name: "pagination offset+limit slices, total preserved",
 			seed: []seedGroup{
-				{id: "id-a", name: "a"},
-				{id: "id-b", name: "b"},
-				{id: "id-c", name: "c"},
-				{id: "id-d", name: "d"},
-				{id: "id-e", name: "e"},
+				{name: "a"},
+				{name: "b"},
+				{name: "c"},
+				{name: "d"},
+				{name: "e"},
 			},
 			filter:    domain.GroupFilter{Wildcard: true},
 			params:    domain.GroupListParams{Offset: 2, Limit: 2},
@@ -308,8 +263,8 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 		{
 			name: "empty filter returns empty list",
 			seed: []seedGroup{
-				{id: "id-a", name: "a"},
-				{id: "id-b", name: "b"},
+				{name: "a"},
+				{name: "b"},
 			},
 			filter:    domain.GroupFilter{Wildcard: false, Names: nil},
 			wantNames: []string{},
@@ -326,7 +281,7 @@ func TestGroupRepo_List_FilterSearchPaginateSort(t *testing.T) {
 			ctx := t.Context()
 
 			for _, sg := range tt.seed {
-				g := &domain.Group{ID: sg.id, Name: sg.name}
+				g := &domain.Group{Name: sg.name}
 				require.NoError(t, repo.Create(ctx, g))
 			}
 
@@ -346,8 +301,8 @@ func TestGroupRepo_SystemAndVersions(t *testing.T) {
 	ctx := t.Context()
 
 	group := &domain.Group{
-		ID:                 "sys-admins",
-		Name:               "System Admins",
+		Name:               "sys-admins",
+		DisplayName:        "System Admins",
 		System:             true,
 		MetadataVersion:    42,
 		MembersVersion:     7,
@@ -359,7 +314,7 @@ func TestGroupRepo_SystemAndVersions(t *testing.T) {
 	assert.Equal(t, int64(42), group.MetadataVersion)
 
 	// Get and verify
-	got, err := repo.Get(ctx, group.ID)
+	got, err := repo.Get(ctx, group.Name)
 	require.NoError(t, err)
 	assert.True(t, got.System)
 	assert.Equal(t, int64(42), got.MetadataVersion)
@@ -367,7 +322,7 @@ func TestGroupRepo_SystemAndVersions(t *testing.T) {
 	assert.Equal(t, int64(13), got.PermissionsVersion)
 
 	// Update (should preserve System flag even if we try to change it)
-	got.Name = "Updated Name"
+	got.DisplayName = "Updated Name"
 	got.System = false
 	got.MetadataVersion = 43
 	got.MembersVersion = 8
@@ -375,10 +330,10 @@ func TestGroupRepo_SystemAndVersions(t *testing.T) {
 	require.NoError(t, repo.Update(ctx, got))
 
 	// Get again
-	final, err := repo.Get(ctx, group.ID)
+	final, err := repo.Get(ctx, group.Name)
 	require.NoError(t, err)
 	assert.True(t, final.System, "System flag must be preserved from existing record")
-	assert.Equal(t, "Updated Name", final.Name)
+	assert.Equal(t, "Updated Name", final.DisplayName)
 	assert.Equal(t, int64(43), final.MetadataVersion)
 	assert.Equal(t, int64(8), final.MembersVersion)
 	assert.Equal(t, int64(14), final.PermissionsVersion)

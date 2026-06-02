@@ -37,7 +37,7 @@ func TestService_Get(t *testing.T) {
 					Get(ctx, "wh-1").
 					Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionRead,
 						Domain: "prod",
@@ -58,7 +58,7 @@ func TestService_Get(t *testing.T) {
 
 				repo.EXPECT().Get(ctx, "wh-global").Return(&domain.Webhook{ID: "wh-global"}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionRead,
 						Domain: domain.DomainAll,
@@ -81,7 +81,7 @@ func TestService_Get(t *testing.T) {
 					Get(ctx, "wh-1").
 					Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionRead,
 						Domain: "prod",

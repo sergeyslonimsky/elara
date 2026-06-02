@@ -8,7 +8,7 @@ export const UsersRoutes = (
 	<>
 		<Route path="users">
 			<Route index element={<UsersPage />} />
-			<Route path=":email" element={<UserDetailPage />} />
+			<Route path=":userId" element={<UserDetailPage />} />
 		</Route>
 		<Route path="groups">
 			<Route index element={<GroupsPage />} />

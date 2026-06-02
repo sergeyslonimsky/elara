@@ -55,8 +55,9 @@ func UserFromContext(ctx context.Context) (*domain.User, bool) {
 func AuthInfoFromContext(ctx context.Context) (domain.AuthInfo, error) {
 	if user, ok := UserFromContext(ctx); ok {
 		return domain.AuthInfo{
-			Email: user.Email,
-			Name:  user.Name,
+			UserID: user.ID.String(),
+			Email:  user.Email,
+			Name:   user.DisplayName,
 		}, nil
 	}
 

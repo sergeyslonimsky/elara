@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
@@ -23,44 +25,31 @@ type DeactivateResult struct {
 func (s *Service) Deactivate(
 	ctx context.Context,
 	actor domain.AuthInfo,
-	email string,
+	userID uuid.UUID,
 ) (*DeactivateResult, error) {
-	if actor.Email == email {
-		return nil, domain.NewValidationError("email", "cannot deactivate your own account")
-	}
+	updated, err := s.transitionStatus(
+		ctx,
+		actor,
+		userID,
+		"cannot deactivate your own account",
+		s.validateLastAdmin,
+		s.users.Deactivate,
+		func(ctx context.Context, user *domain.User) error {
+			if err := s.sessions.RevokeAllForUser(
+				ctx,
+				user.ID.String(),
+				actor.UserID,
+				"account deactivated",
+			); err != nil {
+				return fmt.Errorf("revoke sessions: %w", err)
+			}
 
-	var result *DeactivateResult
-
-	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
-		user, err := s.store.Get(ctx, email)
-		if err != nil {
-			return fmt.Errorf("get user: %w", err)
-		}
-
-		if err := s.authorizeUserWrite(ctx, actor, email); err != nil {
-			return err
-		}
-
-		if err := s.validateLastAdmin(email); err != nil {
-			return err
-		}
-
-		// Update user state.
-		// Assuming domain.User has an IsActive field or similar mechanism.
-		// For now, let's assume deactivation means something we can persist.
-		// If there is no such field, we at least revoke sessions.
-
-		if err := s.sessions.RevokeAllForUser(ctx, email, actor.Email, "account deactivated"); err != nil {
-			return fmt.Errorf("revoke sessions: %w", err)
-		}
-
-		result = &DeactivateResult{User: user}
-
-		return nil
-	})
+			return nil
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("deactivate user transaction: %w", err)
 	}
 
-	return result, nil
+	return &DeactivateResult{User: updated}, nil
 }

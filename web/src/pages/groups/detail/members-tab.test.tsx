@@ -58,8 +58,8 @@ vi.mock("sonner", async (importOriginal) => {
 });
 
 const mockGroup = create(GroupSchema, {
-	id: "g1",
 	name: "developers",
+	displayName: "Developers Group",
 	description: "Dev team",
 	isSystem: false,
 	metadataVersion: 1n,
@@ -70,7 +70,7 @@ const mockGroup = create(GroupSchema, {
 function makeAbility(canWrite = true): AppAbility {
 	const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 	if (canWrite) {
-		can("write", "Group", { domain: "group:g1" });
+		can("write", "Group", { domain: "group:developers" });
 	}
 	return build();
 }
@@ -156,7 +156,7 @@ describe("MembersTab", () => {
 
 		expect(mockMutate).toHaveBeenCalledWith(
 			expect.objectContaining({
-				groupId: "g1",
+				groupName: "developers",
 				removeEmails: ["alice@example.com"],
 				addEmails: [],
 				expectedMembersVersion: 2n,
@@ -195,7 +195,7 @@ describe("MembersTab", () => {
 
 		expect(mockMutate).toHaveBeenCalledWith(
 			expect.objectContaining({
-				groupId: "g1",
+				groupName: "developers",
 				addEmails: ["charlie@example.com"],
 				removeEmails: [],
 				expectedMembersVersion: 2n,

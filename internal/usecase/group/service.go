@@ -12,11 +12,10 @@ import (
 // GroupReader is the narrow read-only port the usecase needs over the group
 // repo.
 type GroupReader interface {
-	Get(ctx context.Context, id string) (*domain.Group, error)
-	FindByName(ctx context.Context, name string) (*domain.Group, error)
+	Get(ctx context.Context, name string) (*domain.Group, error)
 	Create(ctx context.Context, group *domain.Group) error
 	Update(ctx context.Context, group *domain.Group) error
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, name string) error
 	List(
 		ctx context.Context,
 		filter domain.GroupFilter,
@@ -61,9 +60,9 @@ const defaultListLimit = 20
 // Shared by Update*, Delete, and Get-then-mutate flows.
 func (s *Service) loadMutableGroup(
 	ctx context.Context,
-	id string,
+	name string,
 ) (*domain.Group, error) {
-	existing, err := s.store.Get(ctx, id)
+	existing, err := s.store.Get(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf(errGetGroup, err)
 	}
@@ -84,5 +83,5 @@ func (s *Service) filterVisibleMembers(
 	actor domain.AuthInfo,
 	members []string,
 ) []string {
-	return s.scope.FilterVisibleUsers(ctx, actor.Email, members)
+	return s.scope.FilterVisibleUsers(ctx, actor.UserID, members)
 }

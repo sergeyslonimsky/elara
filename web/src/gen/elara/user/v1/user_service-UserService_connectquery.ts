@@ -20,7 +20,7 @@ import { UserService } from "./user_service_pb";
 export const listUsers = UserService.method.listUsers;
 
 /**
- * Fetches a single user by email.
+ * Fetches a single user by their UUID.
  *
  * Authorization:
  *   - User:Read * (global), OR
@@ -86,3 +86,17 @@ export const deleteUser = UserService.method.deleteUser;
  * @generated from rpc elara.user.v1.UserService.UpdateUserGroups
  */
 export const updateUserGroups = UserService.method.updateUserGroups;
+
+/**
+ * Deactivates a user, revoking all their sessions.
+ *
+ * @generated from rpc elara.user.v1.UserService.DeactivateUser
+ */
+export const deactivateUser = UserService.method.deactivateUser;
+
+/**
+ * Reactivates a deactivated user.
+ *
+ * @generated from rpc elara.user.v1.UserService.ReactivateUser
+ */
+export const reactivateUser = UserService.method.reactivateUser;

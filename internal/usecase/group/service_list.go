@@ -40,7 +40,7 @@ func (s *Service) List(
 		limit = defaultListLimit
 	}
 
-	scope := s.pdp.EffectiveDomains(user.Email, domain.ObjectGroup, domain.ActionRead)
+	scope := s.pdp.EffectiveDomains(user.UserID, domain.ObjectGroup, domain.ActionRead)
 	if scope.IsEmpty() {
 		return &ListResult{
 			Groups: []*domain.Group{},

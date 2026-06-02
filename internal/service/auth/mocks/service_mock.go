@@ -17,57 +17,86 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockuserStore is a mock of userStore interface.
-type MockuserStore struct {
+// MockbootstrapUserService is a mock of bootstrapUserService interface.
+type MockbootstrapUserService struct {
 	ctrl     *gomock.Controller
-	recorder *MockuserStoreMockRecorder
+	recorder *MockbootstrapUserServiceMockRecorder
 	isgomock struct{}
 }
 
-// MockuserStoreMockRecorder is the mock recorder for MockuserStore.
-type MockuserStoreMockRecorder struct {
-	mock *MockuserStore
+// MockbootstrapUserServiceMockRecorder is the mock recorder for MockbootstrapUserService.
+type MockbootstrapUserServiceMockRecorder struct {
+	mock *MockbootstrapUserService
 }
 
-// NewMockuserStore creates a new mock instance.
-func NewMockuserStore(ctrl *gomock.Controller) *MockuserStore {
-	mock := &MockuserStore{ctrl: ctrl}
-	mock.recorder = &MockuserStoreMockRecorder{mock}
+// NewMockbootstrapUserService creates a new mock instance.
+func NewMockbootstrapUserService(ctrl *gomock.Controller) *MockbootstrapUserService {
+	mock := &MockbootstrapUserService{ctrl: ctrl}
+	mock.recorder = &MockbootstrapUserServiceMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockuserStore) EXPECT() *MockuserStoreMockRecorder {
+func (m *MockbootstrapUserService) EXPECT() *MockbootstrapUserServiceMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method.
-func (m *MockuserStore) Get(ctx context.Context, email string) (*domain.User, error) {
+// BootstrapSync mocks base method.
+func (m *MockbootstrapUserService) BootstrapSync(ctx context.Context, user *domain.User) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, email)
+	ret := m.ctrl.Call(m, "BootstrapSync", ctx, user)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BootstrapSync indicates an expected call of BootstrapSync.
+func (mr *MockbootstrapUserServiceMockRecorder) BootstrapSync(ctx, user any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BootstrapSync", reflect.TypeOf((*MockbootstrapUserService)(nil).BootstrapSync), ctx, user)
+}
+
+// Create mocks base method.
+func (m *MockbootstrapUserService) Create(ctx context.Context, user *domain.User) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, user)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockbootstrapUserServiceMockRecorder) Create(ctx, user any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockbootstrapUserService)(nil).Create), ctx, user)
+}
+
+// GetByIdentity mocks base method.
+func (m *MockbootstrapUserService) GetByIdentity(ctx context.Context, provider, subject string) (*domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByIdentity", ctx, provider, subject)
 	ret0, _ := ret[0].(*domain.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockuserStoreMockRecorder) Get(ctx, email any) *gomock.Call {
+// GetByIdentity indicates an expected call of GetByIdentity.
+func (mr *MockbootstrapUserServiceMockRecorder) GetByIdentity(ctx, provider, subject any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockuserStore)(nil).Get), ctx, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByIdentity", reflect.TypeOf((*MockbootstrapUserService)(nil).GetByIdentity), ctx, provider, subject)
 }
 
-// Upsert mocks base method.
-func (m *MockuserStore) Upsert(ctx context.Context, user *domain.User) error {
+// GetSystemUser mocks base method.
+func (m *MockbootstrapUserService) GetSystemUser(ctx context.Context) (*domain.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Upsert", ctx, user)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "GetSystemUser", ctx)
+	ret0, _ := ret[0].(*domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// Upsert indicates an expected call of Upsert.
-func (mr *MockuserStoreMockRecorder) Upsert(ctx, user any) *gomock.Call {
+// GetSystemUser indicates an expected call of GetSystemUser.
+func (mr *MockbootstrapUserServiceMockRecorder) GetSystemUser(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockuserStore)(nil).Upsert), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSystemUser", reflect.TypeOf((*MockbootstrapUserService)(nil).GetSystemUser), ctx)
 }
 
 // MockgroupStore is a mock of groupStore interface.
@@ -108,19 +137,19 @@ func (mr *MockgroupStoreMockRecorder) Create(ctx, group any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockgroupStore)(nil).Create), ctx, group)
 }
 
-// FindByName mocks base method.
-func (m *MockgroupStore) FindByName(ctx context.Context, name string) (*domain.Group, error) {
+// Get mocks base method.
+func (m *MockgroupStore) Get(ctx context.Context, name string) (*domain.Group, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindByName", ctx, name)
+	ret := m.ctrl.Call(m, "Get", ctx, name)
 	ret0, _ := ret[0].(*domain.Group)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// FindByName indicates an expected call of FindByName.
-func (mr *MockgroupStoreMockRecorder) FindByName(ctx, name any) *gomock.Call {
+// Get indicates an expected call of Get.
+func (mr *MockgroupStoreMockRecorder) Get(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByName", reflect.TypeOf((*MockgroupStore)(nil).FindByName), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockgroupStore)(nil).Get), ctx, name)
 }
 
 // Update mocks base method.

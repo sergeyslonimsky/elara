@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -46,9 +47,9 @@ func TestService_Search(t *testing.T) {
 				Limit: 10,
 			},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
+				ctx = auth2.WithSession(ctx, &domain.Session{}, &domain.User{ID: uuid.MustParse(testUserID)})
 				m.pdp.EXPECT().
-					EffectiveNamespaces("user@example.com", domain.ActionRead).
+					EffectiveNamespaces(testUserID, domain.ActionRead).
 					Return(authz.NewDomainSet())
 
 				return ctx
@@ -63,9 +64,9 @@ func TestService_Search(t *testing.T) {
 				Limit:     10,
 			},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
+				ctx = auth2.WithSession(ctx, &domain.Session{}, &domain.User{ID: uuid.MustParse(testUserID)})
 				m.pdp.EXPECT().
-					EffectiveNamespaces("user@example.com", domain.ActionRead).
+					EffectiveNamespaces(testUserID, domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 				m.storage.EXPECT().SearchByPath(ctx, "app", "").Return(results, nil)
 
@@ -81,9 +82,9 @@ func TestService_Search(t *testing.T) {
 				Limit:     10,
 			},
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "user@example.com"})
+				ctx = auth2.WithSession(ctx, &domain.Session{}, &domain.User{ID: uuid.MustParse(testUserID)})
 				m.pdp.EXPECT().
-					EffectiveNamespaces("user@example.com", domain.ActionRead).
+					EffectiveNamespaces(testUserID, domain.ActionRead).
 					Return(authz.NewDomainSet("prod"))
 				m.storage.EXPECT().SearchByPath(ctx, "app", "").Return(results, nil)
 

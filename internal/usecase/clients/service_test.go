@@ -9,6 +9,11 @@ import (
 	clientsmock "github.com/sergeyslonimsky/elara/internal/usecase/clients/mocks"
 )
 
+const (
+	testUserID    = "11111111-2222-3333-4444-555555555555"
+	testUserEmail = "test@example.com"
+)
+
 type mocks struct {
 	pdp     *clientsmock.Mockpdp
 	active  *clientsmock.MockactiveSource

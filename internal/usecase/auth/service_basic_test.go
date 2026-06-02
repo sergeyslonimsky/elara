@@ -21,6 +21,7 @@ func TestService_BasicLogin(t *testing.T) {
 	user := &domain.User{
 		Email:        "user@example.com",
 		PasswordHash: hash,
+		Status:       domain.UserStatusActive,
 	}
 
 	tests := []struct {
@@ -39,7 +40,7 @@ func TestService_BasicLogin(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
-				m.users.EXPECT().Get(gomock.Any(), user.Email).Return(user, nil)
+				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), user.Email).Return(user, nil)
 
 				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, fn func(context.Context) error) error {
@@ -61,7 +62,7 @@ func TestService_BasicLogin(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
 				m.users.EXPECT().
-					Get(gomock.Any(), "unknown@example.com").
+					GetByIdentity(gomock.Any(), string(domain.ProviderBasic), "unknown@example.com").
 					Return(nil, domain.ErrNotFound)
 
 				return svc
@@ -76,11 +77,32 @@ func TestService_BasicLogin(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
-				m.users.EXPECT().Get(gomock.Any(), user.Email).Return(user, nil)
+				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), user.Email).Return(user, nil)
 
 				return svc
 			},
 			errIs: domain.ErrUnauthorized,
+		},
+		{
+			name: "deactivated user",
+			params: authuc.LoginParams{
+				Email:    user.Email,
+				Password: password,
+			},
+			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
+				svc, m := setupService(t, ctrl)
+				deactUser := &domain.User{
+					Email:        user.Email,
+					PasswordHash: user.PasswordHash,
+					Status:       domain.UserStatusDeactivated,
+				}
+				m.users.EXPECT().
+					GetByIdentity(gomock.Any(), string(domain.ProviderBasic), user.Email).
+					Return(deactUser, nil)
+
+				return svc
+			},
+			errIs: domain.ErrUserDeactivated,
 		},
 	}
 

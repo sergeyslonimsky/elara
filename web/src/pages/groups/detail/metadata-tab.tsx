@@ -36,7 +36,10 @@ export function MetadataTab({ group }: Readonly<MetadataTabProps>) {
 
 	const form = useForm<FormValues>({
 		resolver: zodResolver(schema),
-		defaultValues: { name: group.name, description: group.description },
+		defaultValues: {
+			name: group.displayName || group.name,
+			description: group.description,
+		},
 		mode: "onChange",
 	});
 
@@ -46,7 +49,10 @@ export function MetadataTab({ group }: Readonly<MetadataTabProps>) {
 	// away in-progress edits.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: only re-sync on version change
 	useEffect(() => {
-		form.reset({ name: group.name, description: group.description });
+		form.reset({
+			name: group.displayName || group.name,
+			description: group.description,
+		});
 	}, [group.metadataVersion, form]);
 
 	const mutation = useMutation(updateGroup, {
@@ -70,8 +76,8 @@ export function MetadataTab({ group }: Readonly<MetadataTabProps>) {
 	const onSubmit = (values: FormValues) => {
 		if (!canEdit) return;
 		mutation.mutate({
-			id: group.id,
-			name: values.name.trim(),
+			name: group.name,
+			displayName: values.name.trim(),
 			description: values.description.trim(),
 			expectedMetadataVersion: group.metadataVersion,
 		});

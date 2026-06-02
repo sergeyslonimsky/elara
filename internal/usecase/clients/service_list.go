@@ -13,12 +13,12 @@ import (
 // ascending. Non-admin callers only see clients whose active watches touch
 // at least one namespace they can read.
 func (s *Service) ListActive(ctx context.Context) ([]*domain.Client, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.pdp, claims.Email)
+	scope := newScopeChecker(s.pdp, info.Email)
 
 	clients := s.active.ListActive()
 	sort.Slice(clients, func(i, j int) bool {
@@ -32,12 +32,12 @@ func (s *Service) ListActive(ctx context.Context) ([]*domain.Client, error) {
 // (0 → server-default cap). Non-admins receive an empty list because
 // historical entries do not retain per-watch namespace info to scope on.
 func (s *Service) ListHistorical(ctx context.Context, limit int) ([]*domain.Client, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.pdp, claims.Email)
+	scope := newScopeChecker(s.pdp, info.Email)
 
 	const defaultLimit = 100
 	if limit <= 0 {
@@ -63,12 +63,12 @@ func (s *Service) ListSessions(
 	clientName, k8sNamespace, currentID string,
 	limit int,
 ) ([]*domain.Client, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.pdp, claims.Email)
+	scope := newScopeChecker(s.pdp, info.Email)
 
 	const defaultLimit = 50
 

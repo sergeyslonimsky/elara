@@ -23,6 +23,10 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 	};
 });
 
+vi.mock("@/lib/queries", () => ({
+	invalidateUserGroupGraph: vi.fn(),
+}));
+
 vi.mock("@tanstack/react-query", async (importOriginal) => {
 	const actual = await importOriginal<Record<string, unknown>>();
 	return {
@@ -40,32 +44,33 @@ vi.mock("sonner", async (importOriginal) => {
 });
 
 const mockUser = create(UserSchema, {
+	id: "00000000-0000-0000-0000-00000000000a",
 	email: "alice@example.com",
-	name: "Alice",
+	displayName: "Alice",
 });
 
 const editableGroup = create(GroupSchema, {
-	id: "g1",
 	name: "developers",
+	displayName: "Developers Group",
 	isSystem: false,
 });
 
 const systemGroup = create(GroupSchema, {
-	id: "g2",
 	name: "superadmin",
+	displayName: "System Administrators",
 	isSystem: true,
 });
 
 const readOnlyGroup = create(GroupSchema, {
-	id: "g3",
 	name: "readonly-group",
+	displayName: "Read-only Viewers",
 	isSystem: false,
 });
 
-function setupAbility(canWriteGroupIds: string[]) {
+function setupAbility(canWriteGroupNames: string[]) {
 	const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-	for (const id of canWriteGroupIds) {
-		can("write", "Group", { domain: `group:${id}` });
+	for (const name of canWriteGroupNames) {
+		can("write", "Group", { domain: `group:${name}` });
 	}
 	return build();
 }
@@ -76,7 +81,7 @@ describe("GroupsTab", () => {
 	});
 
 	test("renders group rows with checkboxes", () => {
-		const ability = setupAbility(["g1"]);
+		const ability = setupAbility(["developers"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -88,21 +93,21 @@ describe("GroupsTab", () => {
 			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
-					visibleGroupIds={["g1"]}
+					visibleGroupIds={["developers"]}
 					membershipVersion={1n}
 				/>
 			</TestProviders>,
 		);
 
-		expect(screen.getByText("developers")).toBeInTheDocument();
-		expect(screen.getByText("superadmin")).toBeInTheDocument();
-		expect(screen.getByText("readonly-group")).toBeInTheDocument();
+		expect(screen.getByText("Developers Group")).toBeInTheDocument();
+		expect(screen.getByText("System Administrators")).toBeInTheDocument();
+		expect(screen.getByText("Read-only Viewers")).toBeInTheDocument();
 		// READ ONLY badges for system group and non-editable group
 		expect(screen.getAllByText("READ ONLY").length).toBeGreaterThanOrEqual(2);
 	});
 
 	test("save button is disabled when no changes staged", () => {
-		const ability = setupAbility(["g1"]);
+		const ability = setupAbility(["developers"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -114,7 +119,7 @@ describe("GroupsTab", () => {
 			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
-					visibleGroupIds={["g1"]}
+					visibleGroupIds={["developers"]}
 					membershipVersion={1n}
 				/>
 			</TestProviders>,
@@ -129,7 +134,7 @@ describe("GroupsTab", () => {
 		const ue = userEvent.setup();
 		const mockMutate = vi.fn();
 
-		const ability = setupAbility(["g1"]);
+		const ability = setupAbility(["developers"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -147,14 +152,14 @@ describe("GroupsTab", () => {
 			<TestProviders authContext={authContext}>
 				<GroupsTab
 					user={mockUser}
-					visibleGroupIds={["g1"]}
+					visibleGroupIds={["developers"]}
 					membershipVersion={5n}
 				/>
 			</TestProviders>,
 		);
 
 		// Uncheck the group
-		const checkbox = screen.getByRole("checkbox", { name: "developers" });
+		const checkbox = screen.getByRole("checkbox", { name: "Developers Group" });
 		await ue.click(checkbox);
 
 		await waitFor(() => {
@@ -167,8 +172,8 @@ describe("GroupsTab", () => {
 
 		expect(mockMutate).toHaveBeenCalledWith(
 			expect.objectContaining({
-				email: "alice@example.com",
-				removeGroupIds: ["g1"],
+				userId: "00000000-0000-0000-0000-00000000000a",
+				removeGroupIds: ["developers"],
 				addGroupIds: [],
 				expectedVersion: 5n,
 			}),
@@ -179,7 +184,7 @@ describe("GroupsTab", () => {
 		const ue = userEvent.setup();
 		const mockMutate = vi.fn();
 
-		const ability = setupAbility(["g1"]);
+		const ability = setupAbility(["developers"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -203,13 +208,13 @@ describe("GroupsTab", () => {
 			</TestProviders>,
 		);
 
-		const checkbox = screen.getByRole("checkbox", { name: "developers" });
+		const checkbox = screen.getByRole("checkbox", { name: "Developers Group" });
 		await ue.click(checkbox);
 		await ue.click(screen.getByRole("button", { name: /save changes/i }));
 
 		expect(mockMutate).toHaveBeenCalledWith(
 			expect.objectContaining({
-				addGroupIds: ["g1"],
+				addGroupIds: ["developers"],
 				removeGroupIds: [],
 			}),
 		);
@@ -235,14 +240,14 @@ describe("GroupsTab", () => {
 		);
 
 		expect(
-			screen.getByRole("checkbox", { name: "superadmin" }),
+			screen.getByRole("checkbox", { name: "System Administrators" }),
 		).toHaveAttribute("aria-disabled", "true");
 	});
 
 	test("staged add survives a refetch returning the same visibleGroupIds", async () => {
 		const ue = userEvent.setup();
 
-		const ability = setupAbility(["g1"]);
+		const ability = setupAbility(["developers"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -261,7 +266,7 @@ describe("GroupsTab", () => {
 		);
 
 		// Stage an add by ticking the editable group's checkbox
-		await ue.click(screen.getByRole("checkbox", { name: "developers" }));
+		await ue.click(screen.getByRole("checkbox", { name: "Developers Group" }));
 		expect(
 			screen.getByRole("button", { name: /save changes/i }),
 		).not.toBeDisabled();
@@ -281,14 +286,16 @@ describe("GroupsTab", () => {
 		expect(
 			screen.getByRole("button", { name: /save changes/i }),
 		).not.toBeDisabled();
-		expect(screen.getByRole("checkbox", { name: "developers" })).toBeChecked();
+		expect(
+			screen.getByRole("checkbox", { name: "Developers Group" }),
+		).toBeChecked();
 	});
 
 	test("success mutation triggers toast", async () => {
 		const ue = userEvent.setup();
 		const { toast } = await import("sonner");
 
-		const ability = setupAbility(["g1"]);
+		const ability = setupAbility(["developers"]);
 		const authContext = authenticatedContext(ability);
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -316,7 +323,7 @@ describe("GroupsTab", () => {
 			</TestProviders>,
 		);
 
-		const checkbox = screen.getByRole("checkbox", { name: "developers" });
+		const checkbox = screen.getByRole("checkbox", { name: "Developers Group" });
 		await ue.click(checkbox);
 		await ue.click(screen.getByRole("button", { name: /save changes/i }));
 

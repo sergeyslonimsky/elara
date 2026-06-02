@@ -145,7 +145,7 @@ func TestNewOIDCProvider_ValidIssuer(t *testing.T) {
 
 	p, err := auth.NewOIDCProvider(t.Context(), cfg)
 	require.NoError(t, err)
-	assert.Equal(t, domain.ProviderOIDC, p.Name())
+	assert.Equal(t, string(domain.ProviderOIDC), p.Name())
 }
 
 func TestNewOIDCProvider_InvalidIssuer(t *testing.T) {

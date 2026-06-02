@@ -38,7 +38,7 @@ func (s *Service) Create(
 		return nil, "", err
 	}
 	for _, ns := range in.Namespaces {
-		if !s.pdp.HasNamespace(user.Email, ns, action) {
+		if !s.pdp.HasNamespace(user.UserID, ns, action) {
 			return nil, "", domain.ErrPermissionEscalation
 		}
 	}

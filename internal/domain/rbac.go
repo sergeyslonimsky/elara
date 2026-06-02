@@ -1,8 +1,14 @@
 package domain
 
+import "strings"
+
 // SystemGroupSuperAdmin is the canonical name of the bootstrap admins group
 // seeded at startup. Membership in this group grants the admin role globally.
-const SystemGroupSuperAdmin = "system:superadmin"
+//
+// Naming convention (EL-50 §3.2): the name is plain regex-safe ("superadmin"),
+// and "systemness" is carried by Group.System == true, NOT by a name prefix.
+// Casbin sees `group:superadmin` — no double prefix, no regex carve-out.
+const SystemGroupSuperAdmin = "superadmin"
 
 // Role constants for RBAC policy assignments.
 type Role string
@@ -100,15 +106,15 @@ const (
 )
 
 // GroupResource returns the canonical Casbin domain string for a permission
-// scoped to a single group: "group:<id>". Passing DomainAll returns DomainAll
+// scoped to a single group: "group:<name>". Passing DomainAll returns DomainAll
 // unchanged so callers can build either a concrete or wildcard grant through
-// the same helper without inline branching.
-func GroupResource(id string) string {
-	if id == DomainAll {
+// the same helper without inline branching. name — canonical Group.Name, не UUID.
+func GroupResource(name string) string {
+	if name == DomainAll {
 		return DomainAll
 	}
 
-	return GroupResourcePrefix + id
+	return GroupResourcePrefix + name
 }
 
 // NamespaceResource returns the canonical Casbin domain string for a
@@ -120,4 +126,23 @@ func NamespaceResource(name string) string {
 	}
 
 	return NamespaceResourcePrefix + name
+}
+
+// IsGroupSubject reports whether the given Casbin subject string refers to a
+// group (i.e. starts with the "group:" prefix). Users appear as bare UUIDs
+// so the absence of the prefix is enough to distinguish them.
+func IsGroupSubject(subject string) bool {
+	return strings.HasPrefix(subject, GroupResourcePrefix)
+}
+
+// GroupNameFromSubject strips the "group:" prefix and returns the raw group
+// name. If the subject is not a group subject, it is returned unchanged.
+func GroupNameFromSubject(subject string) string {
+	return strings.TrimPrefix(subject, GroupResourcePrefix)
+}
+
+// IsUserSubject reports whether the given Casbin subject refers to a user
+// (i.e. is not a group subject). Per EL-50 §5 users are bare UUIDs in Casbin.
+func IsUserSubject(subject string) bool {
+	return !strings.HasPrefix(subject, GroupResourcePrefix)
 }

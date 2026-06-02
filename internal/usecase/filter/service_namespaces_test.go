@@ -193,7 +193,7 @@ func TestService_Namespaces(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			svc := tt.mockFunc(ctrl)
 
-			got, err := svc.Namespaces(t.Context(), domain.AuthInfo{Email: actorEmail}, tt.query)
+			got, err := svc.Namespaces(t.Context(), domain.AuthInfo{UserID: actorEmail}, tt.query)
 
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)

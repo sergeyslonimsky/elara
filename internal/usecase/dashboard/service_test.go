@@ -9,6 +9,8 @@ import (
 	dashboardmock "github.com/sergeyslonimsky/elara/internal/usecase/dashboard/mocks"
 )
 
+const testUserID = "11111111-2222-3333-4444-555555555555"
+
 type mocks struct {
 	pdp           *dashboardmock.Mockpdp
 	namespaces    *dashboardmock.MocknsLister

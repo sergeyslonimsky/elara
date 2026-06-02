@@ -23,12 +23,14 @@ export function ProfileTab({ user }: Readonly<ProfileTabProps>) {
 		? format(timestampDate(user.lastLoginAt), "PPP p")
 		: "Never";
 
+	const provider = user.identities?.[0]?.provider || "internal";
+
 	return (
 		<div className="rounded-xl border bg-card p-4 mt-2">
 			<dl className="grid grid-cols-[12rem_1fr] gap-y-3">
 				<Field label="Email" value={user.email} />
-				<Field label="Name" value={user.name || "-"} />
-				<Field label="Provider" value={user.provider || "internal"} />
+				<Field label="Name" value={user.displayName || "-"} />
+				<Field label="Provider" value={provider} />
 				<Field label="Created at" value={createdAt} />
 				<Field label="Last login" value={lastLoginAt} />
 			</dl>

@@ -3,9 +3,11 @@
 package dashboard_test
 
 import (
+	"context"
 	"io"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/dashboard/v1/dashboardv1connect"
@@ -23,6 +25,15 @@ func runDashboardCase(t *testing.T, endpoint string, tc dashboardCase) {
 	t.Helper()
 
 	app := itest.New(t)
+
+	// Admin created via BootstrapBasic has PasswordChangeRequired=true by default.
+	// Clear it so we can test the dashboard without forcing a password change.
+	if tc.user == "admin" {
+		uid := uuid.MustParse(app.PersonaIDs["admin"])
+		err := app.Adapters.AuthUsers.SetPassword(context.Background(), uid, "unused-password", false)
+		require.NoError(t, err)
+	}
+
 	reqBody := itest.ReadFile(t, tc.reqPath)
 
 	resp := itest.DoRequest(t, app, endpoint, reqBody, itest.WithPersona(app, tc.user))
@@ -70,7 +81,6 @@ func TestIntegration_GetStats(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			runDashboardCase(t, dashboardv1connect.DashboardServiceGetStatsProcedure, tc)
 		})
 	}
@@ -106,7 +116,6 @@ func TestIntegration_ListActivity(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			runDashboardCase(t, dashboardv1connect.DashboardServiceListActivityProcedure, tc)
 		})
 	}

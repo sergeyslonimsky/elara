@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 )
@@ -19,11 +17,11 @@ import (
 // (Group:Create *) is enforced in the handler; anti-escalation is enforced
 // here, inside the same PAP write transaction as the underlying writes.
 type CreateData struct {
-	Name                   string
-	Description            string
-	InitialMembers         []string
-	InitialPermissions     []domain.Permission
-	InitialManagerGroupIDs []string
+	Name                     string
+	Description              string
+	InitialMembers           []string
+	InitialPermissions       []domain.Permission
+	InitialManagerGroupNames []string
 }
 
 // CreateResult bundles the created group with its initial members
@@ -107,19 +105,19 @@ func (s *Service) authorizeCreate(
 	data CreateData,
 ) ([]*domain.Group, error) {
 	for _, p := range data.InitialPermissions {
-		if !s.pdp.Has(actor.Email, p) {
+		if !s.pdp.Has(actor.UserID, p) {
 			return nil, domain.ErrPermissionEscalation
 		}
 	}
 
-	managerGroups := make([]*domain.Group, 0, len(data.InitialManagerGroupIDs))
-	for _, id := range data.InitialManagerGroupIDs {
-		if !s.pdp.HasGroup(actor.Email, id, domain.ActionWrite) {
+	managerGroups := make([]*domain.Group, 0, len(data.InitialManagerGroupNames))
+	for _, name := range data.InitialManagerGroupNames {
+		if !s.pdp.HasGroup(actor.UserID, name, domain.ActionWrite) {
 			return nil, domain.ErrForbidden
 		}
-		mg, err := s.store.Get(ctx, id)
+		mg, err := s.store.Get(ctx, name)
 		if err != nil {
-			return nil, fmt.Errorf("get manager group %s: %w", id, err)
+			return nil, fmt.Errorf("get manager group %s: %w", name, err)
 		}
 		// Cascade: the manager group itself must dominate every initial
 		// permission. Without this, members of the manager group would
@@ -149,9 +147,9 @@ func (s *Service) persistEntity(
 	data CreateData,
 ) (*domain.Group, error) {
 	// Group names must be unique — every Casbin subject and every
-	// FindByName-based lookup keys off them. bbolt is keyed by ID, so the
+	// Get-based lookup keys off them. bbolt is keyed by ID, so the
 	// repo's own collision check doesn't catch duplicate names.
-	switch existing, err := s.store.FindByName(ctx, data.Name); {
+	switch existing, err := s.store.Get(ctx, data.Name); {
 	case err == nil && existing != nil:
 		return nil, fmt.Errorf(
 			"check name uniqueness: %w",
@@ -163,7 +161,6 @@ func (s *Service) persistEntity(
 
 	now := time.Now().UTC()
 	group := &domain.Group{
-		ID:              uuid.New().String(),
 		Name:            data.Name,
 		Description:     data.Description,
 		MetadataVersion: 1,
@@ -222,7 +219,7 @@ func (s *Service) wireInitialManagers(
 	grant := []domain.Permission{{
 		Object: domain.ObjectGroup,
 		Action: domain.ActionWrite,
-		Domain: domain.GroupResource(group.ID),
+		Domain: domain.GroupResource(group.Name),
 	}}
 	for _, mg := range managers {
 		if err := w.ApplyPermissionDeltas(mg.Name, grant, nil); err != nil {

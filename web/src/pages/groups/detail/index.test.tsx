@@ -85,7 +85,6 @@ describe("GroupDetailPage", () => {
 
 	test("renders group detail when data loaded", () => {
 		const group = create(GroupSchema, {
-			id: "group-1",
 			name: "developers",
 			description: "Dev team",
 			isSystem: false,

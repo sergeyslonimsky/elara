@@ -42,7 +42,7 @@ func TestService_Create(t *testing.T) {
 				t.Helper()
 
 				require.NotNil(t, got.Group)
-				assert.NotEmpty(t, got.Group.ID)
+				assert.NotEmpty(t, got.Group.Name)
 				assert.Equal(t, in.Name, got.Group.Name)
 				assert.Equal(t, int64(1), got.Group.MetadataVersion)
 				assert.Zero(
@@ -58,7 +58,7 @@ func TestService_Create(t *testing.T) {
 				assert.Empty(t, got.VisibleMembers)
 				assert.Empty(t, got.Permissions)
 
-				assert.Empty(t, st.enforcer.GetMembersOfGroup(casbin.GroupSubject(in.Name)),
+				assert.Empty(t, st.enforcer.GetMembersOfGroup(domain.GroupResource(in.Name)),
 					"no initial members → no g-rules")
 			},
 		},
@@ -82,7 +82,7 @@ func TestService_Create(t *testing.T) {
 					"initial members non-empty → MembersVersion bumped to 1")
 				assert.Zero(t, got.Group.PermissionsVersion)
 
-				members := st.enforcer.GetMembersOfGroup(casbin.GroupSubject(in.Name))
+				members := st.enforcer.GetMembersOfGroup(domain.GroupResource(in.Name))
 				assert.ElementsMatch(t, []string{"user1@example.com", "user2@example.com"}, members)
 				// Wildcard admin → all members visible to admin.
 				assert.ElementsMatch(t, in.InitialMembers, got.VisibleMembers)
@@ -112,7 +112,7 @@ func TestService_Create(t *testing.T) {
 				assert.ElementsMatch(t, in.InitialPermissions, got.Permissions)
 
 				// p-rule must be attached to the new subject.
-				subject := casbin.GroupSubject(in.Name)
+				subject := domain.GroupResource(in.Name)
 				var hits int
 				for _, r := range st.enforcer.GetPolicy() {
 					if r[0] == subject {
@@ -138,16 +138,16 @@ func TestService_Create(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.CreateData{
-					Name:                   "child",
-					InitialManagerGroupIDs: []string{mg.Group.ID},
+					Name:                     "child",
+					InitialManagerGroupNames: []string{mg.Group.Name},
 				}
 			},
 			assert: func(t *testing.T, st testStack, in group.CreateData, got *group.CreateResult) {
 				t.Helper()
 
 				// Manager group "managers" must hold Group:Write group:<new-id>.
-				managerSubject := casbin.GroupSubject("managers")
-				wantDomain := domain.GroupResource(got.Group.ID)
+				managerSubject := domain.GroupResource("managers")
+				wantDomain := domain.GroupResource(got.Group.Name)
 
 				var found bool
 				for _, r := range st.enforcer.GetPolicy() {
@@ -189,7 +189,7 @@ func TestService_Create(t *testing.T) {
 					InitialPermissions: []domain.Permission{
 						{Object: domain.ObjectNamespace, Action: domain.ActionWrite, Domain: "dev"},
 					},
-					InitialManagerGroupIDs: []string{mg.Group.ID},
+					InitialManagerGroupNames: []string{mg.Group.Name},
 				}
 			},
 			assert: func(t *testing.T, st testStack, in group.CreateData, got *group.CreateResult) {
@@ -200,18 +200,18 @@ func TestService_Create(t *testing.T) {
 				assert.Equal(t, int64(1), got.Group.PermissionsVersion)
 
 				assert.ElementsMatch(t, []string{"alice@example.com"},
-					st.enforcer.GetMembersOfGroup(casbin.GroupSubject(in.Name)))
+					st.enforcer.GetMembersOfGroup(domain.GroupResource(in.Name)))
 
 				// Manager Group:Write grant must exist.
-				managerSubject := casbin.GroupSubject("mgr")
-				wantDomain := domain.GroupResource(got.Group.ID)
+				managerSubject := domain.GroupResource("mgr")
+				wantDomain := domain.GroupResource(got.Group.Name)
 				var managerGranted, ownPerm bool
 				for _, r := range st.enforcer.GetPolicy() {
 					if r[0] == managerSubject && r[1] == wantDomain &&
 						r[2] == string(domain.ObjectGroup) && r[3] == string(domain.ActionWrite) {
 						managerGranted = true
 					}
-					if r[0] == casbin.GroupSubject(in.Name) && r[1] == "dev" &&
+					if r[0] == domain.GroupResource(in.Name) && r[1] == "dev" &&
 						r[2] == string(
 							domain.ObjectNamespace,
 						) && r[3] == string(domain.ActionWrite) {
@@ -226,7 +226,7 @@ func TestService_Create(t *testing.T) {
 				assert.True(t, ownPerm, "new group must hold its initial permission")
 
 				// And the entity must be retrievable via Get (bbolt commit happened).
-				gres, err := st.svc.Get(t.Context(), adminAuth(), got.Group.ID)
+				gres, err := st.svc.Get(t.Context(), adminAuth(), got.Group.Name)
 				require.NoError(t, err)
 				assert.Equal(t, in.Name, gres.Group.Name)
 			},
@@ -283,7 +283,7 @@ func TestService_Create_AntiEscalation(t *testing.T) {
 					),
 				)
 
-				return domain.AuthInfo{Email: "devops@example.com"}, group.CreateData{
+				return domain.AuthInfo{UserID: "devops@example.com", Email: "devops@example.com"}, group.CreateData{
 					Name: "escalated",
 					InitialPermissions: []domain.Permission{
 						{
@@ -321,7 +321,7 @@ func TestService_Create_AntiEscalation(t *testing.T) {
 							Domain: "prod",
 						},
 					},
-					InitialManagerGroupIDs: []string{mg.Group.ID},
+					InitialManagerGroupNames: []string{mg.Group.Name},
 				}
 			},
 			// Wrapped message includes manager group name + missing perm fields.
@@ -337,9 +337,9 @@ func TestService_Create_AntiEscalation(t *testing.T) {
 				mg, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{Name: "mgr"})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{Email: "stranger@example.com"}, group.CreateData{
-					Name:                   "outsider-child",
-					InitialManagerGroupIDs: []string{mg.Group.ID},
+				return domain.AuthInfo{UserID: "stranger@example.com", Email: "stranger@example.com"}, group.CreateData{
+					Name:                     "outsider-child",
+					InitialManagerGroupNames: []string{mg.Group.Name},
 				}
 			},
 			errIs: domain.ErrForbidden,
@@ -367,10 +367,10 @@ func TestService_Create_AntiEscalation(t *testing.T) {
 			assert.Nil(t, result, "no result returned on failure")
 
 			// Transaction rollback: bbolt must not have a group with this name.
-			_, findErr := st.repo.FindByName(t.Context(), data.Name)
+			_, findErr := st.repo.Get(t.Context(), data.Name)
 			require.Error(t, findErr, "entity must not be persisted when authorization fails")
 			require.ErrorIs(t, findErr, domain.ErrNotFound,
-				"FindByName must report ErrNotFound after rollback, got: %v", findErr)
+				"Get must report ErrNotFound after rollback, got: %v", findErr)
 		})
 	}
 }

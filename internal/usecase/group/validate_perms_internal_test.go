@@ -125,7 +125,7 @@ func TestValidatePermissionAssignment(t *testing.T) {
 				Domain: "abc-123",
 			},
 			wantErr: true,
-			wantMsg: `must be "*" or "group:<id>"`,
+			wantMsg: `must be "*" or "group:<name>"`,
 		},
 	}
 

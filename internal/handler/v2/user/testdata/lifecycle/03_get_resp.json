@@ -1,1 +1,1 @@
-{"user":{"email":"alice@new.example.com","name":"Alice","provider":"basic-auth","createdAt":"<<PRESENCE>>","lastLoginAt":"<<PRESENCE>>"}}
+{"user":{"id":"<<PRESENCE>>","email":"alice@new.example.com","displayName":"Alice","status":"USER_STATUS_ACTIVE","identities":[{"provider":"basic","subject":"alice@new.example.com"}],"createdAt":"<<PRESENCE>>","lastLoginAt":"<<PRESENCE>>"},"membershipVersion":"1"}

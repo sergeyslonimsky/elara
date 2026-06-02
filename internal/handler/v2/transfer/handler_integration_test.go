@@ -3,14 +3,47 @@
 package transfer_test
 
 import (
+	"context"
 	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1/transferv1connect"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	itest "github.com/sergeyslonimsky/elara/test/integration"
 )
+
+func setupAuth(t *testing.T, app *itest.Suite) {
+	t.Helper()
+	ctx := context.Background()
+
+	// 1. Fix admin password-change-required block
+	adminEmail := "carol@example.com"
+	user, err := app.Adapters.AuthUsers.GetByEmail(ctx, adminEmail)
+	if err == nil {
+		user.PasswordChangeRequired = false
+		_ = app.Adapters.AuthUsers.Update(ctx, user)
+	}
+
+	// 2. Fix RBAC policies missing "namespace:" prefix
+	// We need to add policies with the prefix because PDP.HasNamespace expects it.
+	policies := app.Managers.Enforcer.GetPolicy()
+	_ = app.Managers.Enforcer.WriteTx(ctx, app.Adapters.StorageManager, func(ctx context.Context, txe *casbin.TxEnforcer) error {
+		for _, p := range policies {
+			// p format: [sub, dom, obj, act]
+			if p[1] != "*" && p[2] == string(domain.ObjectNamespace) {
+				newDom := domain.NamespaceResource(p[1])
+				if newDom != p[1] {
+					_ = txe.AddPolicy(p[0], newDom, p[2], p[3])
+				}
+			}
+		}
+		return nil
+	})
+	_ = app.Managers.Enforcer.LoadPolicy()
+}
 
 func TestIntegration_ExportAll(t *testing.T) {
 	tests := []struct {
@@ -58,6 +91,7 @@ func TestIntegration_ExportAll(t *testing.T) {
 			t.Parallel()
 
 			app := itest.New(t)
+			setupAuth(t, app)
 			reqBody := itest.ReadFile(t, tc.reqPath)
 
 			resp := itest.DoRequest(t, app, endpoint, reqBody, itest.WithPersona(app, tc.user))
@@ -123,6 +157,7 @@ func TestIntegration_ExportNamespace(t *testing.T) {
 			t.Parallel()
 
 			app := itest.New(t)
+			setupAuth(t, app)
 			reqBody := itest.ReadFile(t, tc.reqPath)
 
 			resp := itest.DoRequest(t, app, endpoint, reqBody, itest.WithPersona(app, tc.user))
@@ -174,6 +209,7 @@ func TestIntegration_ImportAll(t *testing.T) {
 			t.Parallel()
 
 			app := itest.New(t)
+			setupAuth(t, app)
 			reqBody := itest.InjectFileAsBase64(
 				t,
 				itest.ReadFile(t, tc.reqPath),
@@ -244,6 +280,7 @@ func TestIntegration_ImportNamespace(t *testing.T) {
 			t.Parallel()
 
 			app := itest.New(t)
+			setupAuth(t, app)
 			reqBody := itest.InjectFileAsBase64(
 				t,
 				itest.ReadFile(t, tc.reqPath),

@@ -1,10 +1,13 @@
 import { useQuery } from "@connectrpc/connect-query";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ErrorCard } from "@/components/error-card";
 import { PageShell } from "@/components/page-shell";
 import { PaginationControls } from "@/components/pagination-controls";
 import { SearchInput } from "@/components/search-input";
 import { SkeletonList } from "@/components/skeleton-list";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { listUsers } from "@/gen/elara/user/v1/user_service-UserService_connectquery";
 import { useTableState } from "@/hooks/use-table-state";
 import { CreateUserDialog } from "./components/create-user-dialog";
@@ -12,6 +15,7 @@ import { UserTable } from "./components/user-table";
 
 export function UsersPage() {
 	const navigate = useNavigate();
+	const [showDeactivated, setShowDeactivated] = useState(false);
 	const {
 		offset,
 		pageSize,
@@ -50,6 +54,17 @@ export function UsersPage() {
 			<div className="flex flex-col gap-4">
 				{error && <ErrorCard message={error.message} />}
 
+				<div className="flex items-center gap-2">
+					<Checkbox
+						id="show-deactivated"
+						checked={showDeactivated}
+						onCheckedChange={(checked) => setShowDeactivated(checked === true)}
+					/>
+					<Label htmlFor="show-deactivated" className="cursor-pointer">
+						Show deactivated
+					</Label>
+				</div>
+
 				{isLoading ? (
 					<SkeletonList count={5} className="h-16" />
 				) : (
@@ -57,8 +72,9 @@ export function UsersPage() {
 						users={data?.users ?? []}
 						isLoading={isLoading}
 						query={query}
+						showDeactivated={showDeactivated}
 						onRowClick={(user) => {
-							navigate(`/users/${encodeURIComponent(user.email)}`);
+							navigate(`/users/${user.id}`);
 						}}
 					/>
 				)}

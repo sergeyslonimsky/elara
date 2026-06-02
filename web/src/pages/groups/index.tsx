@@ -76,7 +76,7 @@ export function GroupsPage() {
 						groups={data?.groups ?? []}
 						isLoading={isLoading}
 						query={query}
-						onRowClick={(group) => navigate(`/groups/${group.id}`)}
+						onRowClick={(group) => navigate(`/groups/${group.name}`)}
 						onDelete={setDeletingGroup}
 					/>
 				)}
@@ -93,7 +93,7 @@ export function GroupsPage() {
 			<CreateGroupDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
 
 			<DeleteGroupDialog
-				key={deletingGroup?.id ?? "none"}
+				key={deletingGroup?.name ?? "none"}
 				group={deletingGroup}
 				open={!!deletingGroup}
 				onOpenChange={(open) => !open && setDeletingGroup(null)}

@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	uuid "github.com/google/uuid"
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	sessions "github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 	gomock "go.uber.org/mock/gomock"
@@ -81,19 +82,19 @@ func (m *MockuserGetter) EXPECT() *MockuserGetterMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method.
-func (m *MockuserGetter) Get(ctx context.Context, email string) (*domain.User, error) {
+// GetByIdentity mocks base method.
+func (m *MockuserGetter) GetByIdentity(ctx context.Context, provider, subject string) (*domain.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, email)
+	ret := m.ctrl.Call(m, "GetByIdentity", ctx, provider, subject)
 	ret0, _ := ret[0].(*domain.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockuserGetterMockRecorder) Get(ctx, email any) *gomock.Call {
+// GetByIdentity indicates an expected call of GetByIdentity.
+func (mr *MockuserGetterMockRecorder) GetByIdentity(ctx, provider, subject any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockuserGetter)(nil).Get), ctx, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByIdentity", reflect.TypeOf((*MockuserGetter)(nil).GetByIdentity), ctx, provider, subject)
 }
 
 // MockpassWriter is a mock of passWriter interface.
@@ -121,17 +122,17 @@ func (m *MockpassWriter) EXPECT() *MockpassWriterMockRecorder {
 }
 
 // SetPassword mocks base method.
-func (m *MockpassWriter) SetPassword(ctx context.Context, email, hash string, changeRequired bool) error {
+func (m *MockpassWriter) SetPassword(ctx context.Context, userID uuid.UUID, hash string, changeRequired bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetPassword", ctx, email, hash, changeRequired)
+	ret := m.ctrl.Call(m, "SetPassword", ctx, userID, hash, changeRequired)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetPassword indicates an expected call of SetPassword.
-func (mr *MockpassWriterMockRecorder) SetPassword(ctx, email, hash, changeRequired any) *gomock.Call {
+func (mr *MockpassWriterMockRecorder) SetPassword(ctx, userID, hash, changeRequired any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockpassWriter)(nil).SetPassword), ctx, email, hash, changeRequired)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockpassWriter)(nil).SetPassword), ctx, userID, hash, changeRequired)
 }
 
 // MocksessionsService is a mock of sessionsService interface.

@@ -17,7 +17,7 @@ import (
 // by ID in memory; only groups the caller can act on are returned, so the full
 // enumeration never leaks inaccessible groups.
 func (s *Service) Groups(ctx context.Context, actor domain.AuthInfo, query Query) ([]Item, error) {
-	perms, err := s.perms.ListPermissions(actor.Email)
+	perms, err := s.perms.ListPermissions(actor.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("list permissions: %w", err)
 	}
@@ -41,7 +41,7 @@ func (s *Service) Groups(ctx context.Context, actor domain.AuthInfo, query Query
 		have := actionSet{}
 		have.union(wildcard)
 
-		if set, ok := explicit[domain.GroupResource(g.ID)]; ok {
+		if set, ok := explicit[domain.GroupResource(g.Name)]; ok {
 			have.union(set)
 		}
 
@@ -49,7 +49,7 @@ func (s *Service) Groups(ctx context.Context, actor domain.AuthInfo, query Query
 			continue
 		}
 
-		items = append(items, Item{Key: g.ID, Value: g.Name, Actions: resolve(have)})
+		items = append(items, Item{Key: g.Name, Value: g.DisplayName, Actions: resolve(have)})
 	}
 
 	return items, nil

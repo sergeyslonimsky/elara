@@ -36,7 +36,7 @@ func TestService_Delete(t *testing.T) {
 					Get(ctx, "wh-1").
 					Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionWrite,
 						Domain: "prod",
@@ -60,7 +60,7 @@ func TestService_Delete(t *testing.T) {
 					Get(ctx, "wh-1").
 					Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionWrite,
 						Domain: "prod",
@@ -81,7 +81,7 @@ func TestService_Delete(t *testing.T) {
 
 				repo.EXPECT().Get(ctx, "wh-1").Return(&domain.Webhook{ID: "wh-1"}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionWrite,
 						Domain: domain.DomainAll,

@@ -34,7 +34,7 @@ const createSchema = z.object({
 	name: z.string().min(1, "Name is required").max(128, "Max 128 characters"),
 	description: z.string().max(1024, "Max 1024 characters"),
 	initialMembers: z.array(z.string().email()),
-	initialManagerGroupIds: z.array(z.string()),
+	initialManagerGroupNames: z.array(z.string()),
 });
 
 type CreateFormValues = z.infer<typeof createSchema>;
@@ -57,7 +57,7 @@ export function CreateGroupDialog({
 			name: "",
 			description: "",
 			initialMembers: [],
-			initialManagerGroupIds: [],
+			initialManagerGroupNames: [],
 		},
 		mode: "onChange",
 	});
@@ -68,7 +68,7 @@ export function CreateGroupDialog({
 				name: "",
 				description: "",
 				initialMembers: [],
-				initialManagerGroupIds: [],
+				initialManagerGroupNames: [],
 			});
 		}
 	}, [open, form]);
@@ -92,7 +92,7 @@ export function CreateGroupDialog({
 	});
 
 	const initialMembers = form.watch("initialMembers");
-	const initialManagerGroupIds = form.watch("initialManagerGroupIds");
+	const initialManagerGroupNames = form.watch("initialManagerGroupNames");
 
 	const setMembers = (next: string[]) => {
 		form.setValue("initialMembers", next, {
@@ -101,11 +101,11 @@ export function CreateGroupDialog({
 		});
 	};
 
-	const toggleManagerGroup = (id: string) => {
-		const next = new Set(initialManagerGroupIds);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
-		form.setValue("initialManagerGroupIds", Array.from(next), {
+	const toggleManagerGroup = (name: string) => {
+		const next = new Set(initialManagerGroupNames);
+		if (next.has(name)) next.delete(name);
+		else next.add(name);
+		form.setValue("initialManagerGroupNames", Array.from(next), {
 			shouldDirty: true,
 			shouldValidate: true,
 		});
@@ -116,7 +116,7 @@ export function CreateGroupDialog({
 			name: values.name.trim(),
 			description: values.description.trim(),
 			initialMembers: values.initialMembers,
-			initialManagerGroupIds: values.initialManagerGroupIds,
+			initialManagerGroupNames: values.initialManagerGroupNames,
 		});
 	};
 
@@ -173,17 +173,17 @@ export function CreateGroupDialog({
 								</p>
 								<div className="max-h-48 overflow-y-auto rounded-md border divide-y">
 									{manageableGroups.map((g) => {
-										const cbId = `cg-mgr-${g.id}`;
-										const checked = initialManagerGroupIds.includes(g.id);
+										const cbId = `cg-mgr-${g.name}`;
+										const checked = initialManagerGroupNames.includes(g.name);
 										return (
 											<div
-												key={g.id}
+												key={g.name}
 												className="flex items-center gap-2 p-2 text-sm"
 											>
 												<Checkbox
 													id={cbId}
 													checked={checked}
-													onCheckedChange={() => toggleManagerGroup(g.id)}
+													onCheckedChange={() => toggleManagerGroup(g.name)}
 													aria-label={g.name}
 												/>
 												<label htmlFor={cbId} className="cursor-pointer">
@@ -257,7 +257,7 @@ export function DeleteGroupDialog({
 	if (!group) return null;
 
 	const onSubmit = () => {
-		mutation.mutate({ id: group.id });
+		mutation.mutate({ name: group.name });
 	};
 
 	return (

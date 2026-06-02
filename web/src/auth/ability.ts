@@ -124,9 +124,9 @@ export const GROUP_DOMAIN_PREFIX = "group:";
 export const NAMESPACE_DOMAIN_PREFIX = "namespace:";
 export const WILDCARD_DOMAIN = "*";
 
-export function groupResource(id: string): string {
-	if (id === WILDCARD_DOMAIN) return WILDCARD_DOMAIN;
-	return `${GROUP_DOMAIN_PREFIX}${id}`;
+export function groupResource(name: string): string {
+	if (name === WILDCARD_DOMAIN) return WILDCARD_DOMAIN;
+	return `${GROUP_DOMAIN_PREFIX}${name}`;
 }
 
 export function namespaceResource(name: string): string {
@@ -134,8 +134,8 @@ export function namespaceResource(name: string): string {
 	return `${NAMESPACE_DOMAIN_PREFIX}${name}`;
 }
 
-export function groupSubject(group: Pick<Group, "id">) {
-	return subject("Group", { domain: groupResource(group.id) });
+export function groupSubject(group: Pick<Group, "name">) {
+	return subject("Group", { domain: groupResource(group.name) });
 }
 
 export function canManageGroup(ability: AppAbility, group: Group): boolean {

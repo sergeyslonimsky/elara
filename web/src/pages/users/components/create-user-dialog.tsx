@@ -202,21 +202,21 @@ export function CreateUserDialog() {
 									<FieldLabel>Initial groups (optional)</FieldLabel>
 									<div className="max-h-48 overflow-y-auto rounded-md border divide-y">
 										{manageableGroups.map((g) => {
-											const cbId = `cu-group-${g.id}`;
-											const checked = selectedGroupIds.includes(g.id);
+											const cbId = `cu-group-${g.name}`;
+											const checked = selectedGroupIds.includes(g.name);
 											return (
 												<div
-													key={g.id}
+													key={g.name}
 													className="flex items-center gap-2 p-2 text-sm"
 												>
 													<Checkbox
 														id={cbId}
 														checked={checked}
-														onCheckedChange={() => toggleGroup(g.id)}
+														onCheckedChange={() => toggleGroup(g.name)}
 														aria-label={g.name}
 													/>
 													<label htmlFor={cbId} className="cursor-pointer">
-														{g.name}
+														{g.displayName || g.name}
 													</label>
 												</div>
 											);

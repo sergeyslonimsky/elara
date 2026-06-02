@@ -50,7 +50,6 @@ describe("GroupsPage", () => {
 			data: {
 				groups: [
 					create(GroupSchema, {
-						id: "group-1",
 						name: "Developers",
 						isSystem: false,
 						metadataVersion: 1n,
@@ -58,7 +57,6 @@ describe("GroupsPage", () => {
 						permissionsVersion: 1n,
 					}),
 					create(GroupSchema, {
-						id: "group-2",
 						name: "Admins",
 						isSystem: false,
 						metadataVersion: 1n,
@@ -91,7 +89,6 @@ describe("GroupsPage", () => {
 			data: {
 				groups: [
 					create(GroupSchema, {
-						id: "group-1",
 						name: "Developers",
 						isSystem: false,
 						metadataVersion: 1n,
@@ -114,7 +111,7 @@ describe("GroupsPage", () => {
 		);
 
 		await ue.click(screen.getByText("Developers"));
-		expect(mockNavigate).toHaveBeenCalledWith("/groups/group-1");
+		expect(mockNavigate).toHaveBeenCalledWith("/groups/Developers");
 	});
 
 	test("pagination interaction", async () => {

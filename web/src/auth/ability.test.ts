@@ -107,25 +107,23 @@ describe("buildAbility", () => {
 });
 
 describe("canManageGroup", () => {
-	it("returns false when isSystem=true, even with matching write rule", () => {
+	it("returns false when group is system", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
-		can("write", "Group", { domain: "group:foo" });
+		can("write", "Group", { domain: "group:g1" });
 		const ability = build();
 		const group = create(GroupSchema, {
-			id: "g1",
-			name: "foo",
+			name: "g1",
 			isSystem: true,
 		});
 		expect(canManageGroup(ability, group)).toBe(false);
 	});
 
-	it("returns true when ability has write Group { domain: 'group:<id>' } and group is not system", () => {
+	it("returns true when ability has write Group { domain: 'group:<name>' } and group is not system", () => {
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 		can("write", "Group", { domain: "group:g1" });
 		const ability = build();
 		const group = create(GroupSchema, {
-			id: "g1",
-			name: "foo",
+			name: "g1",
 			isSystem: false,
 		});
 		expect(canManageGroup(ability, group)).toBe(true);
@@ -135,8 +133,7 @@ describe("canManageGroup", () => {
 		const { build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 		const ability = build();
 		const group = create(GroupSchema, {
-			id: "g1",
-			name: "foo",
+			name: "g1",
 			isSystem: false,
 		});
 		expect(canManageGroup(ability, group)).toBe(false);

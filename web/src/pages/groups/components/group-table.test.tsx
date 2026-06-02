@@ -7,7 +7,6 @@ import { TestProviders } from "@/test/test-utils";
 import { GroupTable } from "./group-table";
 
 const mockGroup1 = create(GroupSchema, {
-	id: "g1",
 	name: "developers",
 	isSystem: false,
 	metadataVersion: 1n,
@@ -16,7 +15,6 @@ const mockGroup1 = create(GroupSchema, {
 });
 
 const mockGroup2 = create(GroupSchema, {
-	id: "g2",
 	name: "admins",
 	isSystem: false,
 	metadataVersion: 1n,

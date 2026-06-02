@@ -18,7 +18,7 @@ func (s *Service) Revoke(ctx context.Context, user domain.AuthInfo, id string) e
 	allowed := false
 
 	for _, ns := range token.Namespaces {
-		if s.pdp.Has(user.Email, domain.Permission{
+		if s.pdp.Has(user.UserID, domain.Permission{
 			Object: domain.ObjectToken,
 			Action: domain.ActionWrite,
 			Domain: ns,

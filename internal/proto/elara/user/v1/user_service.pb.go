@@ -129,7 +129,7 @@ func (x *ListUsersResponse) GetPagination() *v1.PaginationResponse {
 
 type GetUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -164,9 +164,9 @@ func (*GetUserRequest) Descriptor() ([]byte, []int) {
 	return file_elara_user_v1_user_service_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetUserRequest) GetEmail() string {
+func (x *GetUserRequest) GetUserId() string {
 	if x != nil {
-		return x.Email
+		return x.UserId
 	}
 	return ""
 }
@@ -367,7 +367,7 @@ func (x *CreateUserResponse) GetMembershipVersion() int64 {
 
 type ResetUserPasswordRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	NewPassword   string                 `protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -403,9 +403,9 @@ func (*ResetUserPasswordRequest) Descriptor() ([]byte, []int) {
 	return file_elara_user_v1_user_service_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ResetUserPasswordRequest) GetEmail() string {
+func (x *ResetUserPasswordRequest) GetUserId() string {
 	if x != nil {
-		return x.Email
+		return x.UserId
 	}
 	return ""
 }
@@ -455,7 +455,7 @@ func (*ResetUserPasswordResponse) Descriptor() ([]byte, []int) {
 
 type DeleteUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -490,9 +490,9 @@ func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
 	return file_elara_user_v1_user_service_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *DeleteUserRequest) GetEmail() string {
+func (x *DeleteUserRequest) GetUserId() string {
 	if x != nil {
-		return x.Email
+		return x.UserId
 	}
 	return ""
 }
@@ -535,7 +535,7 @@ func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
 
 type UpdateUserGroupsRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Email          string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	UserId         string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	AddGroupIds    []string               `protobuf:"bytes,2,rep,name=add_group_ids,json=addGroupIds,proto3" json:"add_group_ids,omitempty"`
 	RemoveGroupIds []string               `protobuf:"bytes,3,rep,name=remove_group_ids,json=removeGroupIds,proto3" json:"remove_group_ids,omitempty"`
 	// Optional optimistic lock. When set, server returns FAILED_PRECONDITION
@@ -575,9 +575,9 @@ func (*UpdateUserGroupsRequest) Descriptor() ([]byte, []int) {
 	return file_elara_user_v1_user_service_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *UpdateUserGroupsRequest) GetEmail() string {
+func (x *UpdateUserGroupsRequest) GetUserId() string {
 	if x != nil {
-		return x.Email
+		return x.UserId
 	}
 	return ""
 }
@@ -663,6 +663,182 @@ func (x *UpdateUserGroupsResponse) GetMembershipVersion() int64 {
 	return 0
 }
 
+type DeactivateUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeactivateUserRequest) Reset() {
+	*x = DeactivateUserRequest{}
+	mi := &file_elara_user_v1_user_service_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeactivateUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeactivateUserRequest) ProtoMessage() {}
+
+func (x *DeactivateUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_user_v1_user_service_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeactivateUserRequest.ProtoReflect.Descriptor instead.
+func (*DeactivateUserRequest) Descriptor() ([]byte, []int) {
+	return file_elara_user_v1_user_service_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *DeactivateUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type DeactivateUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeactivateUserResponse) Reset() {
+	*x = DeactivateUserResponse{}
+	mi := &file_elara_user_v1_user_service_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeactivateUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeactivateUserResponse) ProtoMessage() {}
+
+func (x *DeactivateUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_user_v1_user_service_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeactivateUserResponse.ProtoReflect.Descriptor instead.
+func (*DeactivateUserResponse) Descriptor() ([]byte, []int) {
+	return file_elara_user_v1_user_service_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *DeactivateUserResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+type ReactivateUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReactivateUserRequest) Reset() {
+	*x = ReactivateUserRequest{}
+	mi := &file_elara_user_v1_user_service_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReactivateUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReactivateUserRequest) ProtoMessage() {}
+
+func (x *ReactivateUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_user_v1_user_service_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReactivateUserRequest.ProtoReflect.Descriptor instead.
+func (*ReactivateUserRequest) Descriptor() ([]byte, []int) {
+	return file_elara_user_v1_user_service_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ReactivateUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type ReactivateUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReactivateUserResponse) Reset() {
+	*x = ReactivateUserResponse{}
+	mi := &file_elara_user_v1_user_service_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReactivateUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReactivateUserResponse) ProtoMessage() {}
+
+func (x *ReactivateUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_elara_user_v1_user_service_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReactivateUserResponse.ProtoReflect.Descriptor instead.
+func (*ReactivateUserResponse) Descriptor() ([]byte, []int) {
+	return file_elara_user_v1_user_service_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ReactivateUserResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
 var File_elara_user_v1_user_service_proto protoreflect.FileDescriptor
 
 const file_elara_user_v1_user_service_proto_rawDesc = "" +
@@ -677,10 +853,9 @@ const file_elara_user_v1_user_service_proto_rawDesc = "" +
 	"\x05users\x18\x01 \x03(\v2\x13.elara.user.v1.UserR\x05users\x12C\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2#.elara.common.v1.PaginationResponseR\n" +
-	"pagination\"2\n" +
-	"\x0eGetUserRequest\x12 \n" +
-	"\x05email\x18\x01 \x01(\tB\n" +
-	"\xbaH\a\xc8\x01\x01r\x02`\x01R\x05email\"\x95\x01\n" +
+	"pagination\"6\n" +
+	"\x0eGetUserRequest\x12$\n" +
+	"\auser_id\x18\x01 \x01(\tB\v\xbaH\b\xc8\x01\x01r\x03\xb0\x01\x01R\x06userId\"\x95\x01\n" +
 	"\x0fGetUserResponse\x12'\n" +
 	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\x12*\n" +
 	"\x11visible_group_ids\x18\x02 \x03(\tR\x0fvisibleGroupIds\x12-\n" +
@@ -695,20 +870,17 @@ const file_elara_user_v1_user_service_proto_rawDesc = "" +
 	"\x12CreateUserResponse\x12'\n" +
 	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\x12\x1b\n" +
 	"\tgroup_ids\x18\x02 \x03(\tR\bgroupIds\x12-\n" +
-	"\x12membership_version\x18\x03 \x01(\x03R\x11membershipVersion\"k\n" +
-	"\x18ResetUserPasswordRequest\x12 \n" +
-	"\x05email\x18\x01 \x01(\tB\n" +
-	"\xbaH\a\xc8\x01\x01r\x02`\x01R\x05email\x12-\n" +
+	"\x12membership_version\x18\x03 \x01(\x03R\x11membershipVersion\"o\n" +
+	"\x18ResetUserPasswordRequest\x12$\n" +
+	"\auser_id\x18\x01 \x01(\tB\v\xbaH\b\xc8\x01\x01r\x03\xb0\x01\x01R\x06userId\x12-\n" +
 	"\fnew_password\x18\x02 \x01(\tB\n" +
 	"\xbaH\a\xc8\x01\x01r\x02\x10\x01R\vnewPassword\"\x1b\n" +
-	"\x19ResetUserPasswordResponse\"5\n" +
-	"\x11DeleteUserRequest\x12 \n" +
-	"\x05email\x18\x01 \x01(\tB\n" +
-	"\xbaH\a\xc8\x01\x01r\x02`\x01R\x05email\"\x14\n" +
-	"\x12DeleteUserResponse\"\xf3\x01\n" +
-	"\x17UpdateUserGroupsRequest\x12 \n" +
-	"\x05email\x18\x01 \x01(\tB\n" +
-	"\xbaH\a\xc8\x01\x01r\x02`\x01R\x05email\x120\n" +
+	"\x19ResetUserPasswordResponse\"9\n" +
+	"\x11DeleteUserRequest\x12$\n" +
+	"\auser_id\x18\x01 \x01(\tB\v\xbaH\b\xc8\x01\x01r\x03\xb0\x01\x01R\x06userId\"\x14\n" +
+	"\x12DeleteUserResponse\"\xf7\x01\n" +
+	"\x17UpdateUserGroupsRequest\x12$\n" +
+	"\auser_id\x18\x01 \x01(\tB\v\xbaH\b\xc8\x01\x01r\x03\xb0\x01\x01R\x06userId\x120\n" +
 	"\radd_group_ids\x18\x02 \x03(\tB\f\xbaH\t\x92\x01\x06\"\x04r\x02\x10\x01R\vaddGroupIds\x126\n" +
 	"\x10remove_group_ids\x18\x03 \x03(\tB\f\xbaH\t\x92\x01\x06\"\x04r\x02\x10\x01R\x0eremoveGroupIds\x127\n" +
 	"\x10expected_version\x18\x04 \x01(\x03B\a\xbaH\x04\"\x02(\x00H\x00R\x0fexpectedVersion\x88\x01\x01B\x13\n" +
@@ -716,7 +888,15 @@ const file_elara_user_v1_user_service_proto_rawDesc = "" +
 	"\x18UpdateUserGroupsResponse\x12'\n" +
 	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\x12*\n" +
 	"\x11visible_group_ids\x18\x02 \x03(\tR\x0fvisibleGroupIds\x12-\n" +
-	"\x12membership_version\x18\x03 \x01(\x03R\x11membershipVersion2\x9a\x04\n" +
+	"\x12membership_version\x18\x03 \x01(\x03R\x11membershipVersion\"=\n" +
+	"\x15DeactivateUserRequest\x12$\n" +
+	"\auser_id\x18\x01 \x01(\tB\v\xbaH\b\xc8\x01\x01r\x03\xb0\x01\x01R\x06userId\"A\n" +
+	"\x16DeactivateUserResponse\x12'\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user\"=\n" +
+	"\x15ReactivateUserRequest\x12$\n" +
+	"\auser_id\x18\x01 \x01(\tB\v\xbaH\b\xc8\x01\x01r\x03\xb0\x01\x01R\x06userId\"A\n" +
+	"\x16ReactivateUserResponse\x12'\n" +
+	"\x04user\x18\x01 \x01(\v2\x13.elara.user.v1.UserR\x04user2\xd8\x05\n" +
 	"\vUserService\x12N\n" +
 	"\tListUsers\x12\x1f.elara.user.v1.ListUsersRequest\x1a .elara.user.v1.ListUsersResponse\x12H\n" +
 	"\aGetUser\x12\x1d.elara.user.v1.GetUserRequest\x1a\x1e.elara.user.v1.GetUserResponse\x12Q\n" +
@@ -725,7 +905,9 @@ const file_elara_user_v1_user_service_proto_rawDesc = "" +
 	"\x11ResetUserPassword\x12'.elara.user.v1.ResetUserPasswordRequest\x1a(.elara.user.v1.ResetUserPasswordResponse\x12Q\n" +
 	"\n" +
 	"DeleteUser\x12 .elara.user.v1.DeleteUserRequest\x1a!.elara.user.v1.DeleteUserResponse\x12c\n" +
-	"\x10UpdateUserGroups\x12&.elara.user.v1.UpdateUserGroupsRequest\x1a'.elara.user.v1.UpdateUserGroupsResponseB\xc1\x01\n" +
+	"\x10UpdateUserGroups\x12&.elara.user.v1.UpdateUserGroupsRequest\x1a'.elara.user.v1.UpdateUserGroupsResponse\x12]\n" +
+	"\x0eDeactivateUser\x12$.elara.user.v1.DeactivateUserRequest\x1a%.elara.user.v1.DeactivateUserResponse\x12]\n" +
+	"\x0eReactivateUser\x12$.elara.user.v1.ReactivateUserRequest\x1a%.elara.user.v1.ReactivateUserResponseB\xc1\x01\n" +
 	"\x11com.elara.user.v1B\x10UserServiceProtoP\x01ZDgithub.com/sergeyslonimsky/elara/internal/proto/elara/user/v1;userv1\xa2\x02\x03EUX\xaa\x02\rElara.User.V1\xca\x02\rElara\\User\\V1\xe2\x02\x19Elara\\User\\V1\\GPBMetadata\xea\x02\x0fElara::User::V1b\x06proto3"
 
 var (
@@ -740,7 +922,7 @@ func file_elara_user_v1_user_service_proto_rawDescGZIP() []byte {
 	return file_elara_user_v1_user_service_proto_rawDescData
 }
 
-var file_elara_user_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_elara_user_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_elara_user_v1_user_service_proto_goTypes = []any{
 	(*ListUsersRequest)(nil),          // 0: elara.user.v1.ListUsersRequest
 	(*ListUsersResponse)(nil),         // 1: elara.user.v1.ListUsersResponse
@@ -754,34 +936,44 @@ var file_elara_user_v1_user_service_proto_goTypes = []any{
 	(*DeleteUserResponse)(nil),        // 9: elara.user.v1.DeleteUserResponse
 	(*UpdateUserGroupsRequest)(nil),   // 10: elara.user.v1.UpdateUserGroupsRequest
 	(*UpdateUserGroupsResponse)(nil),  // 11: elara.user.v1.UpdateUserGroupsResponse
-	(*v1.PaginationRequest)(nil),      // 12: elara.common.v1.PaginationRequest
-	(*User)(nil),                      // 13: elara.user.v1.User
-	(*v1.PaginationResponse)(nil),     // 14: elara.common.v1.PaginationResponse
+	(*DeactivateUserRequest)(nil),     // 12: elara.user.v1.DeactivateUserRequest
+	(*DeactivateUserResponse)(nil),    // 13: elara.user.v1.DeactivateUserResponse
+	(*ReactivateUserRequest)(nil),     // 14: elara.user.v1.ReactivateUserRequest
+	(*ReactivateUserResponse)(nil),    // 15: elara.user.v1.ReactivateUserResponse
+	(*v1.PaginationRequest)(nil),      // 16: elara.common.v1.PaginationRequest
+	(*User)(nil),                      // 17: elara.user.v1.User
+	(*v1.PaginationResponse)(nil),     // 18: elara.common.v1.PaginationResponse
 }
 var file_elara_user_v1_user_service_proto_depIdxs = []int32{
-	12, // 0: elara.user.v1.ListUsersRequest.pagination:type_name -> elara.common.v1.PaginationRequest
-	13, // 1: elara.user.v1.ListUsersResponse.users:type_name -> elara.user.v1.User
-	14, // 2: elara.user.v1.ListUsersResponse.pagination:type_name -> elara.common.v1.PaginationResponse
-	13, // 3: elara.user.v1.GetUserResponse.user:type_name -> elara.user.v1.User
-	13, // 4: elara.user.v1.CreateUserResponse.user:type_name -> elara.user.v1.User
-	13, // 5: elara.user.v1.UpdateUserGroupsResponse.user:type_name -> elara.user.v1.User
-	0,  // 6: elara.user.v1.UserService.ListUsers:input_type -> elara.user.v1.ListUsersRequest
-	2,  // 7: elara.user.v1.UserService.GetUser:input_type -> elara.user.v1.GetUserRequest
-	4,  // 8: elara.user.v1.UserService.CreateUser:input_type -> elara.user.v1.CreateUserRequest
-	6,  // 9: elara.user.v1.UserService.ResetUserPassword:input_type -> elara.user.v1.ResetUserPasswordRequest
-	8,  // 10: elara.user.v1.UserService.DeleteUser:input_type -> elara.user.v1.DeleteUserRequest
-	10, // 11: elara.user.v1.UserService.UpdateUserGroups:input_type -> elara.user.v1.UpdateUserGroupsRequest
-	1,  // 12: elara.user.v1.UserService.ListUsers:output_type -> elara.user.v1.ListUsersResponse
-	3,  // 13: elara.user.v1.UserService.GetUser:output_type -> elara.user.v1.GetUserResponse
-	5,  // 14: elara.user.v1.UserService.CreateUser:output_type -> elara.user.v1.CreateUserResponse
-	7,  // 15: elara.user.v1.UserService.ResetUserPassword:output_type -> elara.user.v1.ResetUserPasswordResponse
-	9,  // 16: elara.user.v1.UserService.DeleteUser:output_type -> elara.user.v1.DeleteUserResponse
-	11, // 17: elara.user.v1.UserService.UpdateUserGroups:output_type -> elara.user.v1.UpdateUserGroupsResponse
-	12, // [12:18] is the sub-list for method output_type
-	6,  // [6:12] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	16, // 0: elara.user.v1.ListUsersRequest.pagination:type_name -> elara.common.v1.PaginationRequest
+	17, // 1: elara.user.v1.ListUsersResponse.users:type_name -> elara.user.v1.User
+	18, // 2: elara.user.v1.ListUsersResponse.pagination:type_name -> elara.common.v1.PaginationResponse
+	17, // 3: elara.user.v1.GetUserResponse.user:type_name -> elara.user.v1.User
+	17, // 4: elara.user.v1.CreateUserResponse.user:type_name -> elara.user.v1.User
+	17, // 5: elara.user.v1.UpdateUserGroupsResponse.user:type_name -> elara.user.v1.User
+	17, // 6: elara.user.v1.DeactivateUserResponse.user:type_name -> elara.user.v1.User
+	17, // 7: elara.user.v1.ReactivateUserResponse.user:type_name -> elara.user.v1.User
+	0,  // 8: elara.user.v1.UserService.ListUsers:input_type -> elara.user.v1.ListUsersRequest
+	2,  // 9: elara.user.v1.UserService.GetUser:input_type -> elara.user.v1.GetUserRequest
+	4,  // 10: elara.user.v1.UserService.CreateUser:input_type -> elara.user.v1.CreateUserRequest
+	6,  // 11: elara.user.v1.UserService.ResetUserPassword:input_type -> elara.user.v1.ResetUserPasswordRequest
+	8,  // 12: elara.user.v1.UserService.DeleteUser:input_type -> elara.user.v1.DeleteUserRequest
+	10, // 13: elara.user.v1.UserService.UpdateUserGroups:input_type -> elara.user.v1.UpdateUserGroupsRequest
+	12, // 14: elara.user.v1.UserService.DeactivateUser:input_type -> elara.user.v1.DeactivateUserRequest
+	14, // 15: elara.user.v1.UserService.ReactivateUser:input_type -> elara.user.v1.ReactivateUserRequest
+	1,  // 16: elara.user.v1.UserService.ListUsers:output_type -> elara.user.v1.ListUsersResponse
+	3,  // 17: elara.user.v1.UserService.GetUser:output_type -> elara.user.v1.GetUserResponse
+	5,  // 18: elara.user.v1.UserService.CreateUser:output_type -> elara.user.v1.CreateUserResponse
+	7,  // 19: elara.user.v1.UserService.ResetUserPassword:output_type -> elara.user.v1.ResetUserPasswordResponse
+	9,  // 20: elara.user.v1.UserService.DeleteUser:output_type -> elara.user.v1.DeleteUserResponse
+	11, // 21: elara.user.v1.UserService.UpdateUserGroups:output_type -> elara.user.v1.UpdateUserGroupsResponse
+	13, // 22: elara.user.v1.UserService.DeactivateUser:output_type -> elara.user.v1.DeactivateUserResponse
+	15, // 23: elara.user.v1.UserService.ReactivateUser:output_type -> elara.user.v1.ReactivateUserResponse
+	16, // [16:24] is the sub-list for method output_type
+	8,  // [8:16] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_elara_user_v1_user_service_proto_init() }
@@ -797,7 +989,7 @@ func file_elara_user_v1_user_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_user_v1_user_service_proto_rawDesc), len(file_elara_user_v1_user_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

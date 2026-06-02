@@ -16,7 +16,7 @@ import (
 // group-less user must remain selectable so the caller can, e.g., add them to
 // a group. Every returned item carries the same global User action set.
 func (s *Service) Users(ctx context.Context, actor domain.AuthInfo, query Query) ([]Item, error) {
-	perms, err := s.perms.ListPermissions(actor.Email)
+	perms, err := s.perms.ListPermissions(actor.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("list permissions: %w", err)
 	}
@@ -39,12 +39,12 @@ func (s *Service) Users(ctx context.Context, actor domain.AuthInfo, query Query)
 
 	items := make([]Item, 0, len(users))
 	for _, u := range users {
-		value := u.Name
+		value := u.DisplayName
 		if value == "" {
 			value = u.Email
 		}
 
-		items = append(items, Item{Key: u.Email, Value: value, Actions: actions})
+		items = append(items, Item{Key: u.ID.String(), Value: value, Actions: actions})
 	}
 
 	return items, nil

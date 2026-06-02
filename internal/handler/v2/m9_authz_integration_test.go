@@ -77,16 +77,15 @@ func TestIntegration_M9_CreatorOnly_CanCreateButNotUpdate(t *testing.T) {
 	require.Equalf(t, http.StatusOK, createResp.StatusCode,
 		"creator should be able to create group; body=%s", createBody)
 
-	createdID := extractGroupIDFromBody(t, createBody)
+	createdName := extractGroupNameFromBody(t, createBody)
 
 	// 2. Attempting to UpdateGroup the just-created group fails — creator has no
-	// (Group, Write, group:<id>) grant. CreateGroup didn't auto-grant Write.
+	// (Group, Write, group:<name>) grant. CreateGroup didn't auto-grant Write.
 	updateResp := itest.DoRequest(t, s,
 		groupv1connect.GroupServiceUpdateGroupProcedure,
 		mustJSON(t, map[string]any{
-			"id":      createdID,
-			"name":    "engineering-renamed",
-			"version": 1,
+			"name":        createdName,
+			"displayName": "engineering-renamed",
 		}),
 		itest.WithToken(creatorToken),
 	)
@@ -165,19 +164,19 @@ func requireConnectCode(t *testing.T, resp *http.Response, code string) {
 		code, resp.StatusCode, body)
 }
 
-// extractGroupIDFromBody parses a CreateGroupResponse body string and returns
-// the new group's id. Fails the test on parse error or missing field.
-func extractGroupIDFromBody(t *testing.T, body string) string {
+// extractGroupNameFromBody parses a CreateGroupResponse body string and returns
+// the new group's name. Fails the test on parse error or missing field.
+func extractGroupNameFromBody(t *testing.T, body string) string {
 	t.Helper()
 	var parsed struct {
 		Group struct {
-			ID string `json:"id"`
+			Name string `json:"name"`
 		} `json:"group"`
 	}
 	require.NoError(t, json.Unmarshal([]byte(body), &parsed),
 		"parsing CreateGroupResponse body: %s", body)
-	require.NotEmpty(t, parsed.Group.ID, "group.id missing in body: %s", body)
+	require.NotEmpty(t, parsed.Group.Name, "group.name missing in body: %s", body)
 	require.False(t, strings.Contains(body, "\"code\":"),
 		"expected success body, got error envelope: %s", body)
-	return parsed.Group.ID
+	return parsed.Group.Name
 }

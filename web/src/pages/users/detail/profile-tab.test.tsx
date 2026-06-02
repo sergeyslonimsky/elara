@@ -9,8 +9,8 @@ describe("ProfileTab", () => {
 	test("renders user fields", () => {
 		const user = create(UserSchema, {
 			email: "alice@example.com",
-			name: "Alice",
-			provider: "oidc",
+			displayName: "Alice",
+			identities: [{ provider: "oidc", subject: "alice-sub" }],
 		});
 
 		render(
@@ -27,8 +27,8 @@ describe("ProfileTab", () => {
 	test("provider falls back to 'internal' when empty", () => {
 		const user = create(UserSchema, {
 			email: "alice@example.com",
-			name: "Alice",
-			provider: "",
+			displayName: "Alice",
+			identities: [],
 		});
 
 		render(
@@ -43,7 +43,7 @@ describe("ProfileTab", () => {
 	test("last login shows 'Never' when timestamp is undefined", () => {
 		const user = create(UserSchema, {
 			email: "alice@example.com",
-			name: "Alice",
+			displayName: "Alice",
 		});
 
 		render(

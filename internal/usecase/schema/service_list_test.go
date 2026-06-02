@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -15,10 +16,10 @@ import (
 	schemamock "github.com/sergeyslonimsky/elara/internal/usecase/schema/mocks"
 )
 
+const testUserID = "11111111-2222-3333-4444-555555555555"
+
 func TestService_List(t *testing.T) {
 	t.Parallel()
-
-	const testEmail = "user@example.com"
 
 	tests := []struct {
 		name      string
@@ -32,10 +33,14 @@ func TestService_List(t *testing.T) {
 			name:      "success",
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: testEmail})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: "user@example.com"},
+				)
 
 				pdp := schemamock.NewMockpdp(ctrl)
-				pdp.EXPECT().HasNamespace(testEmail, "prod", domain.ActionRead).Return(true)
+				pdp.EXPECT().HasNamespace(testUserID, "prod", domain.ActionRead).Return(true)
 
 				store := schemamock.NewMockstore(ctrl)
 				list := []*domain.SchemaAttachment{{ID: "s1"}}
@@ -49,10 +54,14 @@ func TestService_List(t *testing.T) {
 			name:      "forbidden returns nil",
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: testEmail})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: "user@example.com"},
+				)
 
 				pdp := schemamock.NewMockpdp(ctrl)
-				pdp.EXPECT().HasNamespace(testEmail, "prod", domain.ActionRead).Return(false)
+				pdp.EXPECT().HasNamespace(testUserID, "prod", domain.ActionRead).Return(false)
 
 				return schema.New(pdp, nil, nil), ctx
 			},
@@ -70,10 +79,14 @@ func TestService_List(t *testing.T) {
 			name:      "list error",
 			namespace: "prod",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*schema.Service, context.Context) {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: testEmail})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: "user@example.com"},
+				)
 
 				pdp := schemamock.NewMockpdp(ctrl)
-				pdp.EXPECT().HasNamespace(testEmail, "prod", domain.ActionRead).Return(true)
+				pdp.EXPECT().HasNamespace(testUserID, "prod", domain.ActionRead).Return(true)
 
 				store := schemamock.NewMockstore(ctrl)
 				store.EXPECT().List(ctx, "prod").Return(nil, errors.New("db error"))

@@ -768,7 +768,6 @@ func (t *fakeWatchTracker) get(connID string) int {
 
 type connIDKeyType struct{}
 
-//nolint:gochecknoglobals // context key — standard Go pattern
 var connIDKeyForTest connIDKeyType
 
 func TestWatchServer_Tracker_IncOnCreateDecOnCancel(t *testing.T) {

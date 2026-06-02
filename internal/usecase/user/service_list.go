@@ -48,21 +48,21 @@ func (s *Service) List(
 	filter := domain.UserFilter{Search: params.Query}
 
 	// Fast path: global User:Read.
-	if s.pdp.HasGlobal(actor.Email, domain.ObjectUser, domain.ActionRead) {
+	if s.pdp.HasGlobal(actor.UserID, domain.ObjectUser, domain.ActionRead) {
 		filter.AnyUser = true
 	} else {
-		groupScope := s.pdp.EffectiveDomains(actor.Email, domain.ObjectGroup, domain.ActionRead)
+		groupScope := s.pdp.EffectiveDomains(actor.UserID, domain.ObjectGroup, domain.ActionRead)
 		switch {
 		case groupScope.Wildcard:
 			filter.AnyUser = true
 		case groupScope.IsEmpty():
 			return emptyList(limit, params.Offset), nil
 		default:
-			usernames := s.pap.MembersOfScope(groupScope)
-			if len(usernames) == 0 {
+			userIDs := s.pap.MembersOfScope(groupScope)
+			if len(userIDs) == 0 {
 				return emptyList(limit, params.Offset), nil
 			}
-			filter.Usernames = usernames
+			filter.UserIDs = userIDs
 		}
 	}
 

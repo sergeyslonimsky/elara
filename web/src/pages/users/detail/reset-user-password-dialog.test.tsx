@@ -28,8 +28,9 @@ vi.mock("sonner", async (importOriginal) => {
 });
 
 const mockUser = create(UserSchema, {
+	id: "00000000-0000-0000-0000-00000000000a",
 	email: "alice@example.com",
-	name: "Alice",
+	displayName: "Alice",
 });
 
 describe("ResetUserPasswordDialog", () => {
@@ -121,7 +122,7 @@ describe("ResetUserPasswordDialog", () => {
 
 		expect(mockMutate).toHaveBeenCalledWith(
 			expect.objectContaining({
-				email: "alice@example.com",
+				userId: "00000000-0000-0000-0000-00000000000a",
 				newPassword: "newpassword123",
 			}),
 		);

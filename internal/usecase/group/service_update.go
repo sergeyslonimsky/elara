@@ -2,7 +2,6 @@ package group
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -18,15 +17,14 @@ import (
 // bbolt. Members and permissions are managed by UpdateMembers and
 // UpdatePermissions respectively.
 type UpdateData struct {
-	ID                      string
 	Name                    string
+	DisplayName             string
 	Description             string
 	ExpectedMetadataVersion *int64
 }
 
-// Update mutates a group's metadata (name, description). MetadataVersion
-// is bumped and the Casbin subject is renamed in the same transaction when
-// the name changes.
+// Update mutates a group's metadata (display name, description). MetadataVersion
+// is bumped. RENAMING is not supported in this version - Name is immutable.
 func (s *Service) Update(
 	ctx context.Context,
 	_ domain.AuthInfo,
@@ -35,7 +33,7 @@ func (s *Service) Update(
 	var updated *domain.Group
 
 	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
-		existing, err := s.loadMutableGroup(ctx, data.ID)
+		existing, err := s.loadMutableGroup(ctx, data.Name)
 		if err != nil {
 			return err
 		}
@@ -43,13 +41,7 @@ func (s *Service) Update(
 			return fmt.Errorf("check version: %w", err)
 		}
 
-		oldName := existing.Name
-		if data.Name != oldName {
-			if err := s.ensureNameUnique(ctx, existing.ID, data.Name); err != nil {
-				return err
-			}
-		}
-		existing.Name = data.Name
+		existing.DisplayName = data.DisplayName
 		existing.Description = data.Description
 		existing.MetadataVersion++
 		existing.UpdatedAt = time.Now().UTC()
@@ -58,10 +50,6 @@ func (s *Service) Update(
 			return fmt.Errorf(errUpdateGroup, err)
 		}
 		updated = existing
-
-		if err := w.RenameGroup(oldName, data.Name); err != nil {
-			return fmt.Errorf("rename group: %w", err)
-		}
 
 		return nil
 	})
@@ -72,31 +60,9 @@ func (s *Service) Update(
 	return updated, nil
 }
 
-// ensureNameUnique returns an AlreadyExists error if a different group
-// already owns newName. Names are not the primary key but every Casbin
-// subject and every PAP.UserGroupNames consumer keys off them — two groups
-// sharing a name break FindByName-based lookups silently.
-func (s *Service) ensureNameUnique(
-	ctx context.Context,
-	selfID, newName string,
-) error {
-	other, err := s.store.FindByName(ctx, newName)
-	switch {
-	case err == nil && other != nil && other.ID != selfID:
-		return fmt.Errorf(
-			"check name uniqueness: %w",
-			domain.NewAlreadyExistsError("group", newName),
-		)
-	case err != nil && !errors.Is(err, domain.ErrNotFound):
-		return fmt.Errorf("check name uniqueness: %w", err)
-	}
-
-	return nil
-}
-
 // UpdateMembersData carries the explicit add/remove delta for membership.
 type UpdateMembersData struct {
-	GroupID                string
+	GroupName              string
 	AddEmails              []string
 	RemoveEmails           []string
 	ExpectedMembersVersion *int64
@@ -131,7 +97,7 @@ func (s *Service) UpdateMembers(
 	var result *UpdateMembersResult
 
 	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
-		existing, err := s.loadMutableGroup(ctx, data.GroupID)
+		existing, err := s.loadMutableGroup(ctx, data.GroupName)
 		if err != nil {
 			return err
 		}
@@ -145,7 +111,7 @@ func (s *Service) UpdateMembers(
 		removed := sliceutil.In(data.RemoveEmails, currentSet)
 
 		if len(added) > 0 {
-			if err := s.scope.RequireMembershipGrant(actor.Email, existing.Name); err != nil {
+			if err := s.scope.RequireMembershipGrant(actor.UserID, existing.Name); err != nil {
 				return fmt.Errorf("require membership grant: %w", err)
 			}
 		}
@@ -181,7 +147,7 @@ func (s *Service) UpdateMembers(
 // UpdatePermissionsData carries the explicit add/remove delta for the
 // group's permission set.
 type UpdatePermissionsData struct {
-	GroupID                    string
+	GroupName                  string
 	Add                        []domain.Permission
 	Remove                     []domain.Permission
 	ExpectedPermissionsVersion *int64
@@ -216,7 +182,7 @@ func (s *Service) UpdatePermissions(
 	var result *UpdatePermissionsResult
 
 	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
-		existing, err := s.loadMutableGroup(ctx, data.GroupID)
+		existing, err := s.loadMutableGroup(ctx, data.GroupName)
 		if err != nil {
 			return err
 		}
@@ -310,7 +276,7 @@ func (s *Service) commitPermissionDelta(
 // the actor's own permission set.
 func (s *Service) boundaryCheckPerms(actor domain.AuthInfo, added []domain.Permission) error {
 	for _, p := range added {
-		if !s.pdp.Has(actor.Email, p) {
+		if !s.pdp.Has(actor.UserID, p) {
 			return domain.ErrPermissionEscalation
 		}
 	}
@@ -385,7 +351,7 @@ func validateAssignmentDomain(scope filter.ObjectScope, obj domain.Object, dom s
 	case filter.ScopeNamespace:
 		return validatePrefixedDomain(obj, dom, domain.NamespaceResourcePrefix, "<name>")
 	case filter.ScopeGroup:
-		return validatePrefixedDomain(obj, dom, domain.GroupResourcePrefix, "<id>")
+		return validatePrefixedDomain(obj, dom, domain.GroupResourcePrefix, "<name>")
 	case filter.ScopeUnspecified:
 		return domain.NewValidationError(
 			"permissions",
@@ -410,9 +376,9 @@ func validateGlobalDomain(obj domain.Object, dom string) error {
 	)
 }
 
-// validatePrefixedDomain enforces the "<prefix><id>" or DomainAll shape for
+// validatePrefixedDomain enforces the "<prefix><name>" or DomainAll shape for
 // resource-scoped objects (Namespace, Group). idPlaceholder is the human-form
-// label of the suffix used in error messages, e.g. "<name>" or "<id>".
+// label of the suffix used in error messages, e.g. "<name>".
 func validatePrefixedDomain(obj domain.Object, dom, prefix, idPlaceholder string) error {
 	if dom == "" {
 		return domain.NewValidationError(
@@ -449,7 +415,7 @@ func (s *Service) cascadeCheckPerms(
 		return nil
 	}
 	for _, p := range post {
-		if !s.pdp.Has(actor.Email, p) {
+		if !s.pdp.Has(actor.UserID, p) {
 			return domain.ErrPermissionEscalation
 		}
 	}

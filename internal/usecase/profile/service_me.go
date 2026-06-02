@@ -20,14 +20,14 @@ func (s *Service) Me(ctx context.Context) (*MeResult, error) {
 		return nil, domain.ErrUnauthorized
 	}
 
-	permissions, err := s.pdp.ListPermissions(user.Email)
+	permissions, err := s.pdp.ListPermissions(user.ID.String())
 	if err != nil {
 		return nil, fmt.Errorf("me: %w", err)
 	}
 
 	return &MeResult{
 		Email:       user.Email,
-		Name:        user.Name,
+		Name:        user.DisplayName,
 		Permissions: permissions,
 	}, nil
 }

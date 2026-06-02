@@ -46,11 +46,16 @@ func newTestStack(t *testing.T) testStack {
 	}
 }
 
+// adminID is the stable Casbin subject used as the admin's UserID in tests.
+// Production code resolves actor.UserID as the Casbin subject, so both
+// seedAdminWildcard and adminAuth must use the same value.
+const adminID = "admin-id"
+
 func adminAuth() domain.AuthInfo {
-	return domain.AuthInfo{Email: "admin@example.com"}
+	return domain.AuthInfo{UserID: adminID, Email: "admin@example.com"}
 }
 
-// seedAdminWildcard grants admin@example.com the (*,*,*) policy used by
+// seedAdminWildcard grants adminID the (*,*,*) policy used by
 // happy-path cases where the PDP must accept any permission delta.
 func seedAdminWildcard(t *testing.T, st testStack) {
 	t.Helper()
@@ -59,7 +64,7 @@ func seedAdminWildcard(t *testing.T, st testStack) {
 		t,
 		st.enforcer.WriteTx(t.Context(), st.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			return txe.AddPolicy(
-				"admin@example.com",
+				adminID,
 				domain.DomainAll,
 				string(domain.ObjectAll),
 				string(domain.ActionAll),

@@ -10,18 +10,17 @@ import { UserDetailHeader } from "./user-detail-header";
 import { UserDetailTabs } from "./user-detail-tabs";
 
 export function UserDetailPage() {
-	const { email = "" } = useParams();
-	const decodedEmail = decodeURIComponent(email);
+	const { userId = "" } = useParams();
 
-	const { data, isLoading, error } = useQuery(
+	const { data, isLoading, error, refetch } = useQuery(
 		getUser,
-		{ email: decodedEmail },
-		{ enabled: !!decodedEmail },
+		{ userId },
+		{ enabled: !!userId },
 	);
 
 	useEffect(() => {
 		if (!data?.user) return;
-		const base = data.user.name || data.user.email;
+		const base = data.user.displayName || data.user.email;
 		document.title = `${base} • Elara`;
 		return () => {
 			document.title = "Elara";
@@ -48,9 +47,9 @@ export function UserDetailPage() {
 	}
 
 	return (
-		<PageShell title={data.user.name || data.user.email}>
+		<PageShell title={data.user.displayName || data.user.email}>
 			<BackButton to="/users" label="Back to users" />
-			<UserDetailHeader user={data.user} />
+			<UserDetailHeader user={data.user} onRefetch={() => refetch()} />
 			<UserDetailTabs
 				user={data.user}
 				visibleGroupIds={data.visibleGroupIds}

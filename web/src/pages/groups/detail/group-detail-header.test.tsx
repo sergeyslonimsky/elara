@@ -6,9 +6,8 @@ import { TestProviders } from "@/test/test-utils";
 import { GroupDetailHeader } from "./group-detail-header";
 
 describe("GroupDetailHeader", () => {
-	test("renders group name and id", () => {
+	test("renders group name and description", () => {
 		const group = create(GroupSchema, {
-			id: "g1",
 			name: "developers",
 			description: "Dev team",
 			isSystem: false,
@@ -23,14 +22,14 @@ describe("GroupDetailHeader", () => {
 			</TestProviders>,
 		);
 
-		expect(screen.getByText("developers")).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "developers" }),
+		).toBeInTheDocument();
 		expect(screen.getByText("Dev team")).toBeInTheDocument();
-		expect(screen.getByText("g1")).toBeInTheDocument();
 	});
 
 	test("shows System badge for system group", () => {
 		const group = create(GroupSchema, {
-			id: "g2",
 			name: "superadmin",
 			isSystem: true,
 			metadataVersion: 1n,

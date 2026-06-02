@@ -18,26 +18,26 @@ import (
 func (s *Service) authorizeUserWrite(
 	ctx context.Context,
 	actor domain.AuthInfo,
-	targetEmail string,
+	targetID string,
 ) error {
-	if err := s.scope.RequireWriteUser(ctx, actor.Email, targetEmail); err != nil {
+	if err := s.scope.RequireWriteUser(ctx, actor.UserID, targetID); err != nil {
 		return fmt.Errorf("require write user: %w", err)
 	}
 
-	return s.checkAntiEscalation(actor, targetEmail)
+	return s.checkAntiEscalation(actor, targetID)
 }
 
 // checkAntiEscalation asserts the actor's effective permissions are a
 // superset of target's. Used wherever a write operation could indirectly
 // transfer the target's capabilities to the actor (impersonation,
 // destructive admin).
-func (s *Service) checkAntiEscalation(actor domain.AuthInfo, targetEmail string) error {
-	targetPerms, err := s.pdp.ListPermissions(targetEmail)
+func (s *Service) checkAntiEscalation(actor domain.AuthInfo, targetID string) error {
+	targetPerms, err := s.pdp.ListPermissions(targetID)
 	if err != nil {
 		return fmt.Errorf("list target permissions: %w", err)
 	}
 	for _, p := range targetPerms {
-		if !s.pdp.Has(actor.Email, p) {
+		if !s.pdp.Has(actor.UserID, p) {
 			return domain.ErrPermissionEscalation
 		}
 	}

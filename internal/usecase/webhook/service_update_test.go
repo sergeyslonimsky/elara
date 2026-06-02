@@ -48,7 +48,7 @@ func TestService_Update(t *testing.T) {
 					Enabled:         true,
 				}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionWrite,
 						Domain: "prod",
@@ -86,7 +86,7 @@ func TestService_Update(t *testing.T) {
 						Events: []domain.WebhookEventType{domain.WebhookEventCreated},
 					}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionWrite,
 						Domain: domain.DomainAll,
@@ -109,7 +109,7 @@ func TestService_Update(t *testing.T) {
 					Get(ctx, "wh-1").
 					Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionWrite,
 						Domain: "prod",
@@ -153,7 +153,7 @@ func TestService_Update(t *testing.T) {
 						Events: []domain.WebhookEventType{domain.WebhookEventCreated},
 					}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionWrite,
 						Domain: domain.DomainAll,

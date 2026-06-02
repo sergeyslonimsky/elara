@@ -36,7 +36,7 @@ func TestService_List(t *testing.T) {
 			params: token.ListParams{},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", domain.ObjectToken, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectToken, domain.ActionRead).
 					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(gomock.Any(), domain.TokenFilter{
 					NamespaceScopes: nil,
@@ -57,7 +57,7 @@ func TestService_List(t *testing.T) {
 			params: token.ListParams{},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().
-					EffectiveDomains("user@example.com", domain.ObjectToken, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectToken, domain.ActionRead).
 					Return(authz.DomainSet{
 						Explicit: map[string]struct{}{"ns1": {}, "ns2": {}},
 					})
@@ -80,7 +80,7 @@ func TestService_List(t *testing.T) {
 			params: token.ListParams{},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().
-					EffectiveDomains("noaccess@example.com", domain.ObjectToken, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectToken, domain.ActionRead).
 					Return(authz.DomainSet{Explicit: map[string]struct{}{}})
 			},
 			want: &token.ListResult{
@@ -96,7 +96,7 @@ func TestService_List(t *testing.T) {
 			params: token.ListParams{IssuedBy: []string{"alice@example.com"}},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", domain.ObjectToken, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectToken, domain.ActionRead).
 					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(gomock.Any(), domain.TokenFilter{
 					AnyNamespace: true,
@@ -117,7 +117,7 @@ func TestService_List(t *testing.T) {
 			params: token.ListParams{QueryParams: []string{"prod"}},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", domain.ObjectToken, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectToken, domain.ActionRead).
 					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(gomock.Any(), domain.TokenFilter{
 					AnyNamespace: true,
@@ -138,7 +138,7 @@ func TestService_List(t *testing.T) {
 			params: token.ListParams{Limit: 5, Offset: 10},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", domain.ObjectToken, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectToken, domain.ActionRead).
 					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(gomock.Any(), domain.TokenFilter{
 					AnyNamespace: true,
@@ -158,7 +158,7 @@ func TestService_List(t *testing.T) {
 			params: token.ListParams{Limit: 0},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", domain.ObjectToken, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectToken, domain.ActionRead).
 					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(gomock.Any(), domain.TokenFilter{
 					AnyNamespace: true,
@@ -178,7 +178,7 @@ func TestService_List(t *testing.T) {
 			params: token.ListParams{},
 			mockFunc: func(m mocks) {
 				m.pdp.EXPECT().
-					EffectiveDomains("admin@example.com", domain.ObjectToken, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectToken, domain.ActionRead).
 					Return(authz.DomainSet{Wildcard: true})
 				m.store.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, 0, errors.New("db error"))

@@ -39,13 +39,13 @@ vi.mock("sonner", async (importOriginal) => {
 
 const regularUser = create(UserSchema, {
 	email: "alice@example.com",
-	name: "Alice",
+	displayName: "Alice",
 	isSystem: false,
 });
 
 const systemUser = create(UserSchema, {
 	email: "system@example.com",
-	name: "System",
+	displayName: "System",
 	isSystem: true,
 });
 
@@ -66,7 +66,7 @@ describe("UserDetailHeader", () => {
 
 		render(
 			<TestProviders authContext={authContext}>
-				<UserDetailHeader user={regularUser} />
+				<UserDetailHeader user={regularUser} onRefetch={vi.fn()} />
 			</TestProviders>,
 		);
 
@@ -82,7 +82,7 @@ describe("UserDetailHeader", () => {
 
 		render(
 			<TestProviders authContext={authContext}>
-				<UserDetailHeader user={regularUser} />
+				<UserDetailHeader user={regularUser} onRefetch={vi.fn()} />
 			</TestProviders>,
 		);
 
@@ -98,7 +98,7 @@ describe("UserDetailHeader", () => {
 
 		render(
 			<TestProviders authContext={authContext}>
-				<UserDetailHeader user={systemUser} />
+				<UserDetailHeader user={systemUser} onRefetch={vi.fn()} />
 			</TestProviders>,
 		);
 
@@ -113,7 +113,7 @@ describe("UserDetailHeader", () => {
 
 		render(
 			<TestProviders authContext={authContext}>
-				<UserDetailHeader user={regularUser} />
+				<UserDetailHeader user={regularUser} onRefetch={vi.fn()} />
 			</TestProviders>,
 		);
 

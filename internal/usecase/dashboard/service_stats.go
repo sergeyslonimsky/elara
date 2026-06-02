@@ -12,8 +12,8 @@ import (
 // Authenticated users always get a response; per-namespace counts are filtered
 // by config:read so users see their own scope rather than a forbidden error.
 func (s *Service) GetStats(ctx context.Context) (*StatsResult, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
@@ -28,7 +28,7 @@ func (s *Service) GetStats(ctx context.Context) (*StatsResult, error) {
 	)
 
 	for _, ns := range namespaces {
-		if !s.pdp.HasNamespace(claims.Email, ns.Name, domain.ActionRead) {
+		if !s.pdp.HasNamespace(info.UserID, ns.Name, domain.ActionRead) {
 			continue
 		}
 

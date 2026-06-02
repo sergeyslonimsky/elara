@@ -7,6 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 	"connectrpc.com/validate"
+	"github.com/google/uuid"
 
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
@@ -108,7 +109,7 @@ type server interface {
 // userLookup is the consumer-side interface required by the auth interceptor.
 // The concrete *bbolt.UserRepo satisfies it.
 type userLookup interface {
-	Get(ctx context.Context, email string) (*domain.User, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 }
 
 func V2Routes(
@@ -127,10 +128,14 @@ func V2Routes(
 	publicInterceptors := slices.Clone(sharedInterceptors)
 	privateInterceptors := slices.Clone(sharedInterceptors)
 
-	if cfg.UI.Auth.Enabled && sessionSvc != nil {
+	if (cfg.UI.Auth.Enabled || cfg.DangerouslySkipPermissions) && sessionSvc != nil {
 		privateInterceptors = append(
 			privateInterceptors,
-			interceptor.NewAuthInterceptor(sessionSvc, users),
+			interceptor.NewAuthInterceptor(
+				sessionSvc,
+				users,
+				interceptor.WithAuthSkipPermissions(cfg.DangerouslySkipPermissions),
+			),
 		)
 	}
 

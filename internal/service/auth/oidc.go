@@ -45,7 +45,7 @@ func NewOIDCProvider(ctx context.Context, cfg OIDCConfig) (*OIDCProvider, error)
 	}
 
 	return &OIDCProvider{
-		name:     domain.ProviderOIDC,
+		name:     string(domain.ProviderOIDC),
 		verifier: provider.Verifier(&gooidc.Config{ClientID: cfg.ClientID}),
 		oauth2: oauth2.Config{
 			ClientID:     cfg.ClientID,
@@ -90,10 +90,11 @@ func (p *OIDCProvider) Exchange(ctx context.Context, code, nonce string) (*Ident
 	}
 
 	var claims struct {
-		Email   string   `json:"email"`
-		Name    string   `json:"name"`
-		Picture string   `json:"picture"`
-		Groups  []string `json:"groups"`
+		Email         string   `json:"email"`
+		EmailVerified bool     `json:"email_verified"`
+		Name          string   `json:"name"`
+		Picture       string   `json:"picture"`
+		Groups        []string `json:"groups"`
 	}
 
 	if err = idToken.Claims(&claims); err != nil {
@@ -106,9 +107,11 @@ func (p *OIDCProvider) Exchange(ctx context.Context, code, nonce string) (*Ident
 	}
 
 	return &Identity{
-		Email:   claims.Email,
-		Name:    claims.Name,
-		Picture: claims.Picture,
-		Groups:  groups,
+		Subject:       idToken.Subject,
+		Email:         claims.Email,
+		EmailVerified: claims.EmailVerified,
+		Name:          claims.Name,
+		Picture:       claims.Picture,
+		Groups:        groups,
 	}, nil
 }

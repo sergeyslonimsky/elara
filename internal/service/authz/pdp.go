@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 )
 
 // pRuleLen is the column count of a Casbin p-rule projected by
@@ -22,11 +21,25 @@ type enforcer interface {
 }
 
 type PDP struct {
-	enforcer enforcer
+	enforcer        enforcer
+	skipPermissions bool
 }
 
-func NewPDP(e enforcer) *PDP {
-	return &PDP{enforcer: e}
+type Option func(*PDP)
+
+func WithSkipPermissions(skip bool) Option {
+	return func(p *PDP) {
+		p.skipPermissions = skip
+	}
+}
+
+func NewPDP(e enforcer, opts ...Option) *PDP {
+	p := &PDP{enforcer: e}
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p
 }
 
 func (p *PDP) EffectiveDomains(
@@ -34,6 +47,10 @@ func (p *PDP) EffectiveDomains(
 	object domain.Object,
 	action domain.Action,
 ) DomainSet {
+	if p.skipPermissions {
+		return DomainSet{Wildcard: true, Explicit: map[string]struct{}{}}
+	}
+
 	rules, err := p.enforcer.GetImplicitPermissionsForUser(principal)
 	if err != nil {
 		slog.Error("pdp: failed to get implicit permissions", "principal", principal, "err", err)
@@ -61,6 +78,10 @@ func (p *PDP) EffectiveDomains(
 }
 
 func (p *PDP) Has(principal string, perm domain.Permission) bool {
+	if p.skipPermissions {
+		return true
+	}
+
 	ok, err := p.enforcer.Enforce(principal, perm.Domain, string(perm.Object), string(perm.Action))
 	if err != nil {
 		slog.Error("pdp: enforce error", "principal", principal, "perm", perm, "err", err)
@@ -127,7 +148,7 @@ func (p *PDP) HasGlobal(actor string, object domain.Object, action domain.Action
 // Used by anti-escalation cascade checks where the principal is a group
 // rather than a user — hides the subject-string convention from callers.
 func (p *PDP) HasForGroup(groupName string, perm domain.Permission) bool {
-	return p.Has(casbin.GroupSubject(groupName), perm)
+	return p.Has(domain.GroupResource(groupName), perm)
 }
 
 // ListPermissions returns all effective permissions for the given principal,
@@ -135,6 +156,16 @@ func (p *PDP) HasForGroup(groupName string, perm domain.Permission) bool {
 // Wildcards in any field are returned as-is using domain.ObjectAll / ActionAll
 // / DomainAll. Returns a non-nil empty slice when there are no rules.
 func (p *PDP) ListPermissions(principal string) ([]domain.Permission, error) {
+	if p.skipPermissions {
+		return []domain.Permission{
+			{
+				Object: domain.ObjectAll,
+				Action: domain.ActionAll,
+				Domain: domain.DomainAll,
+			},
+		}, nil
+	}
+
 	rules, err := p.enforcer.GetImplicitPermissionsForUser(principal)
 	if err != nil {
 		return nil, fmt.Errorf("list permissions: %w", err)

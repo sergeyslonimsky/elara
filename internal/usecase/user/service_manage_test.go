@@ -10,7 +10,6 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/usecase/user"
 )
 
@@ -31,19 +30,17 @@ func TestService_Create(t *testing.T) {
 
 			res, err := st.svc.Create(t.Context(), adminActor(), user.CreateData{
 				Email:           newEmail,
-				Name:            "New User",
+				DisplayName:     "New User",
 				InitialPassword: "initial-password",
 			})
 			require.NoError(t, err)
 			require.NotNil(t, res)
 
 			// Persisted bbolt state matches the result and the input.
-			persisted, err := st.users.Get(t.Context(), newEmail)
+			persisted, err := st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), newEmail)
 			require.NoError(t, err)
 			assert.Equal(t, newEmail, persisted.Email)
-			assert.Equal(t, "New User", persisted.Name)
-			assert.Equal(t, domain.ProviderBasicAuth, persisted.Provider)
-			assert.True(t, persisted.PasswordChangeRequired)
+			assert.Equal(t, "New User", persisted.DisplayName)
 			// Password is stored as a bcrypt hash, not the plaintext.
 			assert.NotEqual(t, "initial-password", persisted.PasswordHash)
 			require.NoError(t, auth.VerifyPassword(persisted.PasswordHash, "initial-password"))
@@ -54,24 +51,26 @@ func TestService_Create(t *testing.T) {
 		},
 	)
 
-	t.Run("OIDC: empty password sets ProviderOIDC and no password hash", func(t *testing.T) {
+	t.Run("OIDC pre-provision: empty password leaves Identities empty", func(t *testing.T) {
 		t.Parallel()
 
 		st := setupServiceReal(t)
 		seedAdminAll(t, st)
 
 		res, err := st.svc.Create(t.Context(), adminActor(), user.CreateData{
-			Email: newEmail,
-			Name:  "OIDC User",
+			Email:       newEmail,
+			DisplayName: "OIDC User",
 		})
 		require.NoError(t, err)
-		assert.Equal(t, domain.ProviderOIDC, res.User.Provider)
 
-		persisted, err := st.users.Get(t.Context(), newEmail)
+		// OIDC users have no identity until the first successful OIDC
+		// callback links {oidc:<issuer>, sub} via email-fallback.
+		persisted, err := st.users.GetByEmail(t.Context(), newEmail)
 		require.NoError(t, err)
-		assert.Equal(t, domain.ProviderOIDC, persisted.Provider)
+		assert.Empty(t, persisted.Identities)
 		assert.Empty(t, persisted.PasswordHash)
 		assert.False(t, persisted.PasswordChangeRequired)
+		assert.Equal(t, persisted.ID, res.User.ID)
 	})
 
 	t.Run("with initial groups: persists memberships and bumps version to 1", func(t *testing.T) {
@@ -79,32 +78,32 @@ func TestService_Create(t *testing.T) {
 
 		st := setupServiceReal(t)
 		seedAdminAll(t, st)
-		seedGroup(t, st, "g1", "devs")
-		seedGroup(t, st, "g2", "platform")
+		seedGroup(t, st, "devs", "devs")
+		seedGroup(t, st, "platform", "platform")
 
 		res, err := st.svc.Create(t.Context(), adminActor(), user.CreateData{
 			Email:           newEmail,
-			Name:            "New User",
+			DisplayName:     "New User",
 			InitialPassword: "initial-password",
-			InitialGroupIDs: []string{"g1", "g2"},
+			InitialGroupIDs: []string{"devs", "platform"},
 		})
 		require.NoError(t, err)
-		assert.ElementsMatch(t, []string{"g1", "g2"}, res.GroupIDs)
+		assert.ElementsMatch(t, []string{"devs", "platform"}, res.GroupIDs)
 		assert.Equal(t, int64(1), res.MembershipVersion)
 
-		// Casbin g-rules reflect the membership additions.
-		roles, err := st.enforcer.GetRolesForUser(newEmail, domain.MembershipDomain)
+		// Casbin g-rules are stored under user.ID (UUID), not email.
+		// Resolve the persisted user to get the minted UUID.
+		persisted, err := st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), newEmail)
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), persisted.MembershipVersion)
+
+		roles, err := st.enforcer.GetRolesForUser(persisted.ID.String(), domain.MembershipDomain)
 		require.NoError(t, err)
 		assert.ElementsMatch(
 			t,
-			[]string{casbin.GroupSubject("devs"), casbin.GroupSubject("platform")},
+			[]string{domain.GroupResource("devs"), domain.GroupResource("platform")},
 			roles,
 		)
-
-		// bbolt MembershipVersion mirrors the result.
-		persisted, err := st.users.Get(t.Context(), newEmail)
-		require.NoError(t, err)
-		assert.Equal(t, int64(1), persisted.MembershipVersion)
 	})
 
 	t.Run("forbidden: no User:Create * and no initial groups", func(t *testing.T) {
@@ -115,13 +114,13 @@ func TestService_Create(t *testing.T) {
 		// Group:Write). Reject before any tx is opened.
 
 		_, err := st.svc.Create(t.Context(), actor(), user.CreateData{
-			Email: newEmail,
-			Name:  "New User",
+			Email:       newEmail,
+			DisplayName: "New User",
 		})
 		require.ErrorIs(t, err, domain.ErrForbidden)
 
 		// Nothing persisted: bbolt does not know about the user.
-		_, err = st.users.Get(t.Context(), newEmail)
+		_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), newEmail)
 		require.ErrorIs(t, err, domain.ErrNotFound)
 	})
 
@@ -131,24 +130,24 @@ func TestService_Create(t *testing.T) {
 			t.Parallel()
 
 			st := setupServiceReal(t)
-			seedGroup(t, st, "g1", "devs")
-			seedGroup(t, st, "g2", "platform")
+			seedGroup(t, st, "devs", "devs")
+			seedGroup(t, st, "platform", "platform")
 
-			// Actor only has Group:Write on g1.
+			// Actor only has Group:Write on devs (policy subject is actorID).
 			addPolicies(t, st, []policyRow{
-				{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
+				{actorID, domain.GroupResource("devs"), domain.ObjectGroup, domain.ActionWrite},
 			})
 
 			_, err := st.svc.Create(t.Context(), actor(), user.CreateData{
 				Email:           newEmail,
-				Name:            "New User",
+				DisplayName:     "New User",
 				InitialPassword: "p",
-				InitialGroupIDs: []string{"g1", "g2"},
+				InitialGroupIDs: []string{"devs", "platform"},
 			})
 			require.ErrorIs(t, err, domain.ErrForbidden)
 
 			// No user persisted, no g-rules added.
-			_, err = st.users.Get(t.Context(), newEmail)
+			_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), newEmail)
 			require.ErrorIs(t, err, domain.ErrNotFound)
 		},
 	)
@@ -157,29 +156,27 @@ func TestService_Create(t *testing.T) {
 		t.Parallel()
 
 		st := setupServiceReal(t)
-		seedGroup(t, st, "g1", "elevated")
+		seedGroup(t, st, "elevated", "elevated")
 
 		// elevated group grants config:write on ns-a; actor has only
-		// Group:Write on g1 (no config:write of its own).
+		// Group:Write on elevated (no config:write of its own).
+		// Policy subject is actorID (actor.UserID), not email.
 		addPolicies(t, st, []policyRow{
-			{casbin.GroupSubject("elevated"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
-			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
+			{domain.GroupResource("elevated"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
+			{actorID, domain.GroupResource("elevated"), domain.ObjectGroup, domain.ActionWrite},
 		})
 
 		_, err := st.svc.Create(t.Context(), actor(), user.CreateData{
 			Email:           newEmail,
-			Name:            "New User",
+			DisplayName:     "New User",
 			InitialPassword: "p",
-			InitialGroupIDs: []string{"g1"},
+			InitialGroupIDs: []string{"elevated"},
 		})
 		require.ErrorIs(t, err, domain.ErrPermissionEscalation)
 
 		// Tx rolled back: no user, no g-rules.
-		_, err = st.users.Get(t.Context(), newEmail)
+		_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), newEmail)
 		require.ErrorIs(t, err, domain.ErrNotFound)
-		roles, err := st.enforcer.GetRolesForUser(newEmail, domain.MembershipDomain)
-		require.NoError(t, err)
-		assert.Empty(t, roles)
 	})
 
 	t.Run("validation error: invalid email", func(t *testing.T) {
@@ -190,10 +187,10 @@ func TestService_Create(t *testing.T) {
 
 		_, err := st.svc.Create(t.Context(), adminActor(), user.CreateData{
 			Email:           "invalid-email",
-			Name:            "X",
+			DisplayName:     "X",
 			InitialPassword: "p",
 		})
-		require.ErrorContains(t, err, "validate user")
+		require.ErrorContains(t, err, "normalize email")
 		require.True(t, domain.IsValidationError(err))
 	})
 }
@@ -207,16 +204,16 @@ func TestService_Create_UpsertErrorWrapped(t *testing.T) {
 	m := setupServiceWithMockStore(t)
 	seedAdminAllOnMockStack(t, m)
 
-	m.store.EXPECT().
-		Upsert(gomock.Any(), gomock.AssignableToTypeOf(&domain.User{})).
+	m.users.EXPECT().
+		Create(gomock.Any(), gomock.AssignableToTypeOf(&domain.User{})).
 		Return(errors.New("boom"))
 
 	_, err := m.svc.Create(t.Context(), adminActor(), user.CreateData{
 		Email:           "new-user@example.com",
-		Name:            "New User",
+		DisplayName:     "New User",
 		InitialPassword: "initial-password",
 	})
-	require.ErrorContains(t, err, "upsert user")
+	require.ErrorContains(t, err, "create user")
 	require.ErrorContains(t, err, "boom")
 }
 
@@ -230,18 +227,19 @@ func TestService_Delete(t *testing.T) {
 
 		st := setupServiceReal(t)
 		seedAdminAll(t, st)
-		seedUser(t, st, targetEmail)
+		seedUserWithID(t, st, targetID, targetEmail)
 		seedGroup(t, st, "g1", "devs")
+		// Memberships are stored under user.ID (UUID) in Casbin.
 		addMemberships(t, st, []struct{ User, GroupName string }{
-			{targetEmail, "devs"},
+			{targetID, "devs"},
 		})
 
-		err := st.svc.Delete(t.Context(), adminActor(), targetEmail)
+		err := st.svc.Delete(t.Context(), adminActor(), targetUUID)
 		require.NoError(t, err)
 
-		_, err = st.users.Get(t.Context(), targetEmail)
+		_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 		require.ErrorIs(t, err, domain.ErrNotFound)
-		roles, err := st.enforcer.GetRolesForUser(targetEmail, domain.MembershipDomain)
+		roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
 		require.NoError(t, err)
 		assert.Empty(t, roles)
 	})
@@ -250,8 +248,10 @@ func TestService_Delete(t *testing.T) {
 		t.Parallel()
 
 		st := setupServiceReal(t)
+		// Seed the admin user with the stable adminID so that actor.UserID == user.ID.
+		seedUserWithID(t, st, adminID, adminEmail)
 
-		err := st.svc.Delete(t.Context(), adminActor(), adminEmail)
+		err := st.svc.Delete(t.Context(), adminActor(), adminUUID)
 		require.ErrorContains(t, err, "cannot delete your own account")
 		require.True(t, domain.IsValidationError(err))
 	})
@@ -262,7 +262,7 @@ func TestService_Delete(t *testing.T) {
 		st := setupServiceReal(t)
 		seedAdminAll(t, st)
 
-		err := st.svc.Delete(t.Context(), adminActor(), "ghost@example.com")
+		err := st.svc.Delete(t.Context(), adminActor(), ghostUUID)
 		require.ErrorIs(t, err, domain.ErrNotFound)
 		require.ErrorContains(t, err, "get user")
 	})
@@ -271,13 +271,13 @@ func TestService_Delete(t *testing.T) {
 		t.Parallel()
 
 		st := setupServiceReal(t)
-		seedUser(t, st, targetEmail)
+		seedUserWithID(t, st, targetID, targetEmail)
 
-		err := st.svc.Delete(t.Context(), actor(), targetEmail)
+		err := st.svc.Delete(t.Context(), actor(), targetUUID)
 		require.ErrorIs(t, err, domain.ErrForbidden)
 
 		// Target still exists.
-		_, err = st.users.Get(t.Context(), targetEmail)
+		_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 		require.NoError(t, err)
 	})
 
@@ -285,23 +285,24 @@ func TestService_Delete(t *testing.T) {
 		t.Parallel()
 
 		st := setupServiceReal(t)
-		seedUser(t, st, targetEmail)
+		seedUserWithID(t, st, targetID, targetEmail)
 		seedGroup(t, st, "g1", "devs")
+		// Memberships stored under user.ID (UUID), not email.
 		addMemberships(t, st, []struct{ User, GroupName string }{
-			{targetEmail, "devs"},
+			{targetID, "devs"},
 		})
 
-		// Actor: Group:Write on g1 (can write the target) but NO config:write
-		// permission that the target's group grants.
+		// Actor: Group:Write on devs (can write the target) but NO config:write
+		// permission that the target's group grants. Policy subject is actorID.
 		addPolicies(t, st, []policyRow{
-			{casbin.GroupSubject("devs"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
-			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
+			{domain.GroupResource("devs"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
+			{actorID, domain.GroupResource("devs"), domain.ObjectGroup, domain.ActionWrite},
 		})
 
-		err := st.svc.Delete(t.Context(), actor(), targetEmail)
+		err := st.svc.Delete(t.Context(), actor(), targetUUID)
 		require.ErrorIs(t, err, domain.ErrPermissionEscalation)
 
-		_, err = st.users.Get(t.Context(), targetEmail)
+		_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 		require.NoError(t, err)
 	})
 
@@ -313,22 +314,23 @@ func TestService_Delete(t *testing.T) {
 			st := setupServiceReal(t)
 			// The caller reaches the guard via a direct wildcard User:Write policy
 			// (not group membership), so it is not itself a superadmin-group member.
-			seedUser(t, st, targetEmail)
+			// Policy subject is adminID (actor.UserID).
+			seedUserWithID(t, st, targetID, targetEmail)
 			addPolicies(t, st, []policyRow{
-				{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+				{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 			})
-			// Target is the sole member of the superadmin group, so deleting them
-			// would lock everyone out of administration.
+			// Target is the sole member of the superadmin group — membership is
+			// stored under targetID (user.ID) in Casbin.
 			addMemberships(t, st, []struct{ User, GroupName string }{
-				{targetEmail, domain.SystemGroupSuperAdmin},
+				{targetID, domain.SystemGroupSuperAdmin},
 			})
 
-			err := st.svc.Delete(t.Context(), adminActor(), targetEmail)
+			err := st.svc.Delete(t.Context(), adminActor(), targetUUID)
 			require.ErrorContains(t, err, "cannot delete the last admin")
 			require.True(t, domain.IsValidationError(err))
 
 			// Target still exists.
-			_, err = st.users.Get(t.Context(), targetEmail)
+			_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 			require.NoError(t, err)
 		},
 	)
@@ -346,9 +348,9 @@ func TestService_Get(t *testing.T) {
 
 			st := setupServiceReal(t)
 			seedAdminAll(t, st)
-			seedUser(t, st, targetEmail)
+			seedUserWithID(t, st, targetID, targetEmail)
 
-			got, err := st.svc.Get(t.Context(), adminActor(), targetEmail)
+			got, err := st.svc.Get(t.Context(), adminActor(), targetUUID)
 			require.NoError(t, err)
 			require.NotNil(t, got)
 			assert.Equal(t, targetEmail, got.User.Email)
@@ -363,9 +365,9 @@ func TestService_Get(t *testing.T) {
 			t.Parallel()
 
 			st := setupServiceReal(t)
-			seedUser(t, st, targetEmail)
+			seedUserWithID(t, st, targetID, targetEmail)
 
-			_, err := st.svc.Get(t.Context(), actor(), targetEmail)
+			_, err := st.svc.Get(t.Context(), actor(), targetUUID)
 			require.ErrorIs(t, err, domain.ErrNotFound)
 		},
 	)
@@ -376,7 +378,7 @@ func TestService_Get(t *testing.T) {
 		st := setupServiceReal(t)
 		seedAdminAll(t, st)
 
-		_, err := st.svc.Get(t.Context(), adminActor(), "ghost@example.com")
+		_, err := st.svc.Get(t.Context(), adminActor(), ghostUUID)
 		require.ErrorIs(t, err, domain.ErrNotFound)
 	})
 
@@ -384,21 +386,22 @@ func TestService_Get(t *testing.T) {
 		t.Parallel()
 
 		st := setupServiceReal(t)
-		seedUser(t, st, targetEmail)
-		seedGroup(t, st, "visible", "visible-grp")
-		seedGroup(t, st, "hidden", "hidden-grp")
+		seedUserWithID(t, st, targetID, targetEmail)
+		seedGroup(t, st, "visible", "visible")
+		seedGroup(t, st, "hidden", "hidden")
+		// Memberships stored under targetID (user.ID) in Casbin.
 		addMemberships(t, st, []struct{ User, GroupName string }{
-			{targetEmail, "visible-grp"},
-			{targetEmail, "hidden-grp"},
+			{targetID, "visible"},
+			{targetID, "hidden"},
 		})
 
 		// Actor can read group:visible only (also Group:Read used to grant
-		// scope over the user itself).
+		// scope over the user itself). Policy subject is actorID.
 		addPolicies(t, st, []policyRow{
-			{actorEmail, domain.GroupResource("visible"), domain.ObjectGroup, domain.ActionRead},
+			{actorID, domain.GroupResource("visible"), domain.ObjectGroup, domain.ActionRead},
 		})
 
-		got, err := st.svc.Get(t.Context(), actor(), targetEmail)
+		got, err := st.svc.Get(t.Context(), actor(), targetUUID)
 		require.NoError(t, err)
 		assert.Equal(t, []string{"visible"}, got.VisibleGroupIDs)
 	})
@@ -414,10 +417,10 @@ func TestService_Get_StoreErrorWrapped(t *testing.T) {
 	seedAdminAllOnMockStack(t, m)
 
 	m.store.EXPECT().
-		Get(gomock.Any(), targetEmail).
+		GetByID(gomock.Any(), targetUUID).
 		Return(nil, errors.New("disk failure"))
 
-	_, err := m.svc.Get(t.Context(), adminActor(), targetEmail)
+	_, err := m.svc.Get(t.Context(), adminActor(), targetUUID)
 	require.ErrorContains(t, err, "get user")
 	require.ErrorContains(t, err, "disk failure")
 }

@@ -17,7 +17,7 @@ func (s *Service) Get(ctx context.Context, user domain.AuthInfo, id string) (*do
 	}
 
 	for _, ns := range token.Namespaces {
-		if s.pdp.Has(user.Email, domain.Permission{
+		if s.pdp.Has(user.UserID, domain.Permission{
 			Object: domain.ObjectToken,
 			Action: domain.ActionRead,
 			Domain: ns,

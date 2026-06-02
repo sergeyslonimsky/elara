@@ -3,6 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { User as UserIcon } from "lucide-react";
 import { DataTable } from "@/components/data-table";
+import { Badge } from "@/components/ui/badge";
 import {
 	Empty,
 	EmptyDescription,
@@ -10,12 +11,13 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
-import type { User } from "@/gen/elara/user/v1/user_pb";
+import { type User, UserStatus } from "@/gen/elara/user/v1/user_pb";
 
 interface UserTableProps {
 	users: User[];
 	isLoading: boolean;
 	query?: string;
+	showDeactivated?: boolean;
 	onRowClick: (user: User, event: React.MouseEvent) => void;
 }
 
@@ -23,31 +25,45 @@ export function UserTable({
 	users,
 	isLoading,
 	query,
+	showDeactivated = false,
 	onRowClick,
 }: Readonly<UserTableProps>) {
+	const visibleUsers = showDeactivated
+		? users
+		: users.filter((u) => u.status !== UserStatus.DEACTIVATED);
+
 	const columns: ColumnDef<User>[] = [
 		{
 			accessorKey: "email",
 			header: "Email",
-			cell: ({ row }) => (
-				<div className="flex items-center gap-2">
-					<UserIcon className="h-4 w-4 text-muted-foreground" />
-					<span className="font-medium">{row.original.email}</span>
-				</div>
-			),
+			cell: ({ row }) => {
+				const isDeactivated = row.original.status === UserStatus.DEACTIVATED;
+				return (
+					<div className="flex items-center gap-2">
+						<UserIcon
+							className={`h-4 w-4 ${isDeactivated ? "text-muted-foreground/50" : "text-muted-foreground"}`}
+						/>
+						<span
+							className={`font-medium ${isDeactivated ? "text-muted-foreground" : ""}`}
+						>
+							{row.original.email}
+						</span>
+						{isDeactivated && <Badge variant="outline">Deactivated</Badge>}
+					</div>
+				);
+			},
 		},
 		{
-			accessorKey: "name",
+			accessorKey: "displayName",
 			header: "Name",
 		},
 		{
-			accessorKey: "provider",
+			id: "provider",
 			header: "Provider",
-			cell: ({ row }) => (
-				<span className="capitalize">
-					{row.original.provider || "internal"}
-				</span>
-			),
+			cell: ({ row }) => {
+				const provider = row.original.identities?.[0]?.provider || "internal";
+				return <span className="capitalize">{provider}</span>;
+			},
 		},
 		{
 			accessorKey: "createdAt",
@@ -61,7 +77,7 @@ export function UserTable({
 		},
 	];
 
-	if (!isLoading && users.length === 0) {
+	if (!isLoading && visibleUsers.length === 0) {
 		return (
 			<Empty className="py-12">
 				<EmptyHeader>
@@ -82,7 +98,7 @@ export function UserTable({
 	return (
 		<DataTable
 			columns={columns}
-			data={users}
+			data={visibleUsers}
 			nameColumnWidth="w-[40%]"
 			onRowClick={onRowClick}
 		/>

@@ -17,7 +17,7 @@ func (s *Service) List(ctx context.Context, namespace string) ([]*domain.SchemaA
 		return nil, domain.ErrUnauthorized
 	}
 
-	if !s.pdp.HasNamespace(info.Email, namespace, domain.ActionRead) {
+	if !s.pdp.HasNamespace(info.UserID, namespace, domain.ActionRead) {
 		return nil, nil
 	}
 

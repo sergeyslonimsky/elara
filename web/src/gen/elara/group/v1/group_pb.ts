@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/group/v1/group.proto.
  */
 export const file_elara_group_v1_group: GenFile = /*@__PURE__*/
-  fileDesc("ChplbGFyYS9ncm91cC92MS9ncm91cC5wcm90bxIOZWxhcmEuZ3JvdXAudjEi+QEKBUdyb3VwEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSEQoJaXNfc3lzdGVtGAQgASgIEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKEG1ldGFkYXRhX3ZlcnNpb24YByABKAMSFwoPbWVtYmVyc192ZXJzaW9uGAggASgDEhsKE3Blcm1pc3Npb25zX3ZlcnNpb24YCSABKANCwgEKEmNvbS5lbGFyYS5ncm91cC52MUIKR3JvdXBQcm90b1ABWkZnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS9ncm91cC92MTtncm91cHYxogIDRUdYqgIORWxhcmEuR3JvdXAuVjHKAg5FbGFyYVxHcm91cFxWMeICGkVsYXJhXEdyb3VwXFYxXEdQQk1ldGFkYXRh6gIQRWxhcmE6Okdyb3VwOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChplbGFyYS9ncm91cC92MS9ncm91cC5wcm90bxIOZWxhcmEuZ3JvdXAudjEigwIKBUdyb3VwEgwKBG5hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSEQoJaXNfc3lzdGVtGAQgASgIEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi4KCnVwZGF0ZWRfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKEG1ldGFkYXRhX3ZlcnNpb24YByABKAMSFwoPbWVtYmVyc192ZXJzaW9uGAggASgDEhsKE3Blcm1pc3Npb25zX3ZlcnNpb24YCSABKAMSFAoMZGlzcGxheV9uYW1lGAogASgJQsIBChJjb20uZWxhcmEuZ3JvdXAudjFCCkdyb3VwUHJvdG9QAVpGZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvZ3JvdXAvdjE7Z3JvdXB2MaICA0VHWKoCDkVsYXJhLkdyb3VwLlYxygIORWxhcmFcR3JvdXBcVjHiAhpFbGFyYVxHcm91cFxWMVxHUEJNZXRhZGF0YeoCEEVsYXJhOjpHcm91cDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * Group entity metadata.
@@ -28,11 +28,6 @@ export const file_elara_group_v1_group: GenFile = /*@__PURE__*/
  * @generated from message elara.group.v1.Group
  */
 export type Group = Message<"elara.group.v1.Group"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
   /**
    * @generated from field: string name = 2;
    */
@@ -76,6 +71,11 @@ export type Group = Message<"elara.group.v1.Group"> & {
    * @generated from field: int64 permissions_version = 9;
    */
   permissionsVersion: bigint;
+
+  /**
+   * @generated from field: string display_name = 10;
+   */
+  displayName: string;
 };
 
 /**

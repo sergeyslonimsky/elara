@@ -91,7 +91,7 @@ export function PermissionsTab({
 
 	const handleSave = () => {
 		mutation.mutate({
-			groupId: group.id,
+			groupName: group.name,
 			add: addPerms,
 			remove: permissions.filter((p) => removeKeys.has(permKey(p))),
 			expectedPermissionsVersion: group.permissionsVersion,

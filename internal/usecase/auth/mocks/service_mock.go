@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	uuid "github.com/google/uuid"
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	auth "github.com/sergeyslonimsky/elara/internal/service/auth"
 	sessions "github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
@@ -96,33 +97,64 @@ func (m *MockuserStore) EXPECT() *MockuserStoreMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method.
-func (m *MockuserStore) Get(ctx context.Context, email string) (*domain.User, error) {
+// GetByEmail mocks base method.
+func (m *MockuserStore) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, email)
+	ret := m.ctrl.Call(m, "GetByEmail", ctx, email)
 	ret0, _ := ret[0].(*domain.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockuserStoreMockRecorder) Get(ctx, email any) *gomock.Call {
+// GetByEmail indicates an expected call of GetByEmail.
+func (mr *MockuserStoreMockRecorder) GetByEmail(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockuserStore)(nil).Get), ctx, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByEmail", reflect.TypeOf((*MockuserStore)(nil).GetByEmail), ctx, email)
 }
 
-// Upsert mocks base method.
-func (m *MockuserStore) Upsert(ctx context.Context, user *domain.User) error {
+// GetByIdentity mocks base method.
+func (m *MockuserStore) GetByIdentity(ctx context.Context, provider, subject string) (*domain.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Upsert", ctx, user)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "GetByIdentity", ctx, provider, subject)
+	ret0, _ := ret[0].(*domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// Upsert indicates an expected call of Upsert.
-func (mr *MockuserStoreMockRecorder) Upsert(ctx, user any) *gomock.Call {
+// GetByIdentity indicates an expected call of GetByIdentity.
+func (mr *MockuserStoreMockRecorder) GetByIdentity(ctx, provider, subject any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockuserStore)(nil).Upsert), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByIdentity", reflect.TypeOf((*MockuserStore)(nil).GetByIdentity), ctx, provider, subject)
+}
+
+// LinkIdentity mocks base method.
+func (m *MockuserStore) LinkIdentity(ctx context.Context, userID uuid.UUID, identity domain.Identity) (*domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LinkIdentity", ctx, userID, identity)
+	ret0, _ := ret[0].(*domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LinkIdentity indicates an expected call of LinkIdentity.
+func (mr *MockuserStoreMockRecorder) LinkIdentity(ctx, userID, identity any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkIdentity", reflect.TypeOf((*MockuserStore)(nil).LinkIdentity), ctx, userID, identity)
+}
+
+// RecordLogin mocks base method.
+func (m *MockuserStore) RecordLogin(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecordLogin", ctx, userID)
+	ret0, _ := ret[0].(*domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RecordLogin indicates an expected call of RecordLogin.
+func (mr *MockuserStoreMockRecorder) RecordLogin(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordLogin", reflect.TypeOf((*MockuserStore)(nil).RecordLogin), ctx, userID)
 }
 
 // MockadminBootstrap is a mock of adminBootstrap interface.
@@ -150,17 +182,17 @@ func (m *MockadminBootstrap) EXPECT() *MockadminBootstrapMockRecorder {
 }
 
 // EnsureMember mocks base method.
-func (m *MockadminBootstrap) EnsureMember(ctx context.Context, email string) error {
+func (m *MockadminBootstrap) EnsureMember(ctx context.Context, userID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnsureMember", ctx, email)
+	ret := m.ctrl.Call(m, "EnsureMember", ctx, userID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // EnsureMember indicates an expected call of EnsureMember.
-func (mr *MockadminBootstrapMockRecorder) EnsureMember(ctx, email any) *gomock.Call {
+func (mr *MockadminBootstrapMockRecorder) EnsureMember(ctx, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureMember", reflect.TypeOf((*MockadminBootstrap)(nil).EnsureMember), ctx, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureMember", reflect.TypeOf((*MockadminBootstrap)(nil).EnsureMember), ctx, userID)
 }
 
 // MocksessionsService is a mock of sessionsService interface.

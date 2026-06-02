@@ -10,6 +10,8 @@ import (
 	tokenmock "github.com/sergeyslonimsky/elara/internal/usecase/token/mocks"
 )
 
+const testUserID = "11111111-2222-3333-4444-555555555555"
+
 type mocks struct {
 	pdp   *tokenmock.Mockpdp
 	store *tokenmock.Mockstore
@@ -30,5 +32,8 @@ func setupService(t *testing.T) (*token.Service, mocks) {
 }
 
 func authUser(email string) domain.AuthInfo {
-	return domain.AuthInfo{Email: email}
+	return domain.AuthInfo{
+		UserID: testUserID,
+		Email:  email,
+	}
 }

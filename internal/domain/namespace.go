@@ -1,13 +1,9 @@
 package domain
 
 import (
-	"regexp"
+	"fmt"
 	"time"
 )
-
-var namespaceNameRegex = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9_-]*[a-zA-Z0-9])?$`)
-
-const maxNamespaceNameLen = 128
 
 // NamespaceFilter narrows a namespace list to the subset visible to the caller.
 //
@@ -34,6 +30,7 @@ type NamespaceListParams struct {
 
 type Namespace struct {
 	Name        string
+	DisplayName string
 	Description string
 	ConfigCount int
 	Locked      bool
@@ -49,18 +46,14 @@ type Namespace struct {
 }
 
 func (n *Namespace) Validate() error {
-	if n.Name == "" {
-		return NewValidationError("name", "namespace name is required")
+	if err := ValidateCanonicalName("name", n.Name); err != nil {
+		return err
 	}
 
-	if len(n.Name) > maxNamespaceNameLen {
-		return NewValidationError("name", "namespace name must be at most 128 characters")
-	}
-
-	if !namespaceNameRegex.MatchString(n.Name) {
+	if len(n.DisplayName) > maxDisplayNameLen {
 		return NewValidationError(
-			"name",
-			"namespace name must be alphanumeric with hyphens or underscores, starting with alphanumeric",
+			"displayName",
+			fmt.Sprintf("display name must be at most %d characters", maxDisplayNameLen),
 		)
 	}
 

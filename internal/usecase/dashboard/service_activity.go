@@ -36,7 +36,7 @@ func (s *Service) ListActivity(ctx context.Context, limit int) ([]*domain.Change
 	for _, e := range entries {
 		allowed, ok := allowedNamespace[e.Namespace]
 		if !ok {
-			allowed = s.pdp.HasNamespace(info.Email, e.Namespace, domain.ActionRead)
+			allowed = s.pdp.HasNamespace(info.UserID, e.Namespace, domain.ActionRead)
 			allowedNamespace[e.Namespace] = allowed
 		}
 

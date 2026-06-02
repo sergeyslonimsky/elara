@@ -174,7 +174,7 @@ func TestSession_CLIBearerToken(t *testing.T) {
 	s := itest.New(t)
 
 	sess, err := s.Managers.Sessions.Create(t.Context(), sessions.CreateParams{
-		UserID:     adminEmail,
+		UserID:     s.PersonaIDs["admin"],
 		ClientType: string(domain.ClientTypeCLI),
 	})
 	require.NoError(t, err)

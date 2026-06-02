@@ -23,12 +23,12 @@ func (s *Service) Get(
 	ctx context.Context,
 	id string,
 ) (*domain.Client, []domain.ClientEvent, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.pdp, claims.Email)
+	scope := newScopeChecker(s.pdp, info.Email)
 
 	if c := s.active.Get(id); c != nil {
 		if !scope.visible(c) {

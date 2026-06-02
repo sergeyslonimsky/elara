@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 	"github.com/sergeyslonimsky/elara/internal/storage"
@@ -17,11 +19,11 @@ type (
 	}
 
 	userGetter interface {
-		Get(ctx context.Context, email string) (*domain.User, error)
+		GetByIdentity(ctx context.Context, provider, subject string) (*domain.User, error)
 	}
 
 	passWriter interface {
-		SetPassword(ctx context.Context, email, hash string, changeRequired bool) error
+		SetPassword(ctx context.Context, userID uuid.UUID, hash string, changeRequired bool) error
 	}
 
 	sessionsService interface {

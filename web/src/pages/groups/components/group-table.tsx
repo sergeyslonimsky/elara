@@ -33,18 +33,27 @@ export function GroupTable({
 			accessorKey: "name",
 			header: "Name",
 			cell: ({ row }) => (
-				<div className="flex items-center gap-2">
-					<UsersRound className="h-4 w-4 text-muted-foreground" />
-					<span className="font-medium">{row.original.name}</span>
+				<div className="flex flex-col gap-0.5">
+					<div className="flex items-center gap-2">
+						<UsersRound className="h-4 w-4 text-muted-foreground" />
+						<span className="font-medium">
+							{row.original.displayName || row.original.name}
+						</span>
+					</div>
+					{row.original.displayName && (
+						<span className="font-mono text-xs text-muted-foreground pl-6">
+							{row.original.name}
+						</span>
+					)}
 				</div>
 			),
 		},
 		{
-			accessorKey: "id",
-			header: "ID",
+			accessorKey: "description",
+			header: "Description",
 			cell: ({ row }) => (
-				<span className="font-mono text-xs text-muted-foreground">
-					{row.original.id}
+				<span className="text-sm text-muted-foreground">
+					{row.original.description || "-"}
 				</span>
 			),
 		},

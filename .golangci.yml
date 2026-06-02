@@ -58,6 +58,7 @@ linters:
           - dogsled
           - dupl
           - ireturn
+          - gochecknoglobals
       # test/integration is a Go test-helper package (Suite, runner, JSON differ)
       # consumed by *_integration_test.go files. The "no globals / no magic numbers"
       # rules don't apply to fixture-style harness code.

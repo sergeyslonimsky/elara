@@ -57,7 +57,7 @@ func TestService_GetHistory(t *testing.T) {
 					Get(ctx, "wh-known").
 					Return(&domain.Webhook{ID: "wh-known", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionRead,
 						Domain: "prod",
@@ -82,7 +82,7 @@ func TestService_GetHistory(t *testing.T) {
 					Get(ctx, "wh-empty").
 					Return(&domain.Webhook{ID: "wh-empty", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionRead,
 						Domain: "prod",
@@ -119,7 +119,7 @@ func TestService_GetHistory(t *testing.T) {
 					Get(ctx, "wh-1").
 					Return(&domain.Webhook{ID: "wh-1", NamespaceFilter: "prod"}, nil)
 				pdp.EXPECT().
-					Has("test@example.com", domain.Permission{
+					Has(testUserID, domain.Permission{
 						Object: domain.ObjectWebhook,
 						Action: domain.ActionRead,
 						Domain: "prod",

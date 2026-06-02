@@ -13,8 +13,8 @@ import (
 const defaultSearchLimit = 20
 
 func (s *Service) Search(ctx context.Context, params SearchParams) (*SearchResult, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
@@ -23,7 +23,7 @@ func (s *Service) Search(ctx context.Context, params SearchParams) (*SearchResul
 		limit = defaultSearchLimit
 	}
 
-	scope := s.pdp.EffectiveNamespaces(claims.Email, domain.ActionRead)
+	scope := s.pdp.EffectiveNamespaces(info.UserID, domain.ActionRead)
 	if scope.IsEmpty() {
 		return &SearchResult{
 			Results: nil,

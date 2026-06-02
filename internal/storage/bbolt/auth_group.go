@@ -3,7 +3,6 @@ package bbolt
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -13,6 +12,8 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
+
+var _ domain.GroupReader = (*GroupRepo)(nil)
 
 // GroupRepo stores and retrieves auth groups in bbolt.
 type GroupRepo struct {
@@ -24,15 +25,14 @@ func NewGroupRepo(manager *Manager) *GroupRepo {
 	return &GroupRepo{manager: manager}
 }
 
-// Create stores a new group. Returns domain.ErrAlreadyExists if the ID is already taken.
+// Create stores a new group. Returns domain.ErrAlreadyExists if the name is already taken.
 func (r *GroupRepo) Create(ctx context.Context, group *domain.Group) error {
 	err := r.manager.Update(ctx, func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
-		key := []byte(group.ID)
-		// ...
+		key := []byte(group.Name)
 
 		if b.Get(key) != nil {
-			return domain.NewAlreadyExistsError("group", group.ID)
+			return domain.NewAlreadyExistsError("group", group.Name)
 		}
 
 		now := time.Now()
@@ -56,16 +56,16 @@ func (r *GroupRepo) Create(ctx context.Context, group *domain.Group) error {
 	return nil
 }
 
-// Get returns the group with the given ID. Returns domain.ErrNotFound if missing.
-func (r *GroupRepo) Get(ctx context.Context, id string) (*domain.Group, error) {
+// Get returns the group with the given name. Returns domain.ErrNotFound if missing.
+func (r *GroupRepo) Get(ctx context.Context, name string) (*domain.Group, error) {
 	var group *domain.Group
 
 	err := r.manager.View(ctx, func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
-		data := b.Get([]byte(id))
+		data := b.Get([]byte(name))
 
 		if data == nil {
-			return domain.NewNotFoundError("group", id)
+			return domain.NewNotFoundError("group", name)
 		}
 
 		m, err := authGroupMetaFromBytes(data)
@@ -84,15 +84,15 @@ func (r *GroupRepo) Get(ctx context.Context, id string) (*domain.Group, error) {
 	return group, nil
 }
 
-// Update replaces a group's Name and Members. Returns domain.ErrNotFound if missing.
+// Update replaces a group's metadata. Returns domain.ErrNotFound if missing.
 func (r *GroupRepo) Update(ctx context.Context, group *domain.Group) error {
 	err := r.manager.Update(ctx, func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
-		key := []byte(group.ID)
+		key := []byte(group.Name)
 		data := b.Get(key)
 
 		if data == nil {
-			return domain.NewNotFoundError("group", group.ID)
+			return domain.NewNotFoundError("group", group.Name)
 		}
 
 		existing, err := authGroupMetaFromBytes(data)
@@ -100,7 +100,7 @@ func (r *GroupRepo) Update(ctx context.Context, group *domain.Group) error {
 			return err
 		}
 
-		existing.Name = group.Name
+		existing.DisplayName = group.DisplayName
 		existing.Description = group.Description
 		existing.MetadataVersion = group.MetadataVersion
 		existing.MembersVersion = group.MembersVersion
@@ -125,14 +125,14 @@ func (r *GroupRepo) Update(ctx context.Context, group *domain.Group) error {
 	return nil
 }
 
-// Delete removes the group with the given ID. Returns domain.ErrNotFound if missing.
-func (r *GroupRepo) Delete(ctx context.Context, id string) error {
+// Delete removes the group with the given name. Returns domain.ErrNotFound if missing.
+func (r *GroupRepo) Delete(ctx context.Context, name string) error {
 	err := r.manager.Update(ctx, func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAuthGroups))
-		key := []byte(id)
+		key := []byte(name)
 
 		if b.Get(key) == nil {
-			return domain.NewNotFoundError("group", id)
+			return domain.NewNotFoundError("group", name)
 		}
 
 		return b.Delete(key)
@@ -144,49 +144,13 @@ func (r *GroupRepo) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-var errFound = errors.New("found") // sentinel for early ForEach exit
-
-// FindByName returns the first group with the given name.
-// Returns domain.ErrNotFound if no group has that name.
-func (r *GroupRepo) FindByName(ctx context.Context, name string) (*domain.Group, error) {
-	var found *domain.Group
-
-	err := r.manager.View(ctx, func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucketAuthGroups))
-
-		return b.ForEach(func(_, v []byte) error {
-			m, err := authGroupMetaFromBytes(v)
-			if err != nil {
-				return err
-			}
-
-			if m.Name == name {
-				found = authGroupMetaToDomain(m)
-
-				return errFound
-			}
-
-			return nil
-		})
-	})
-	if err != nil && !errors.Is(err, errFound) {
-		return nil, fmt.Errorf("find group by name: %w", err)
-	}
-
-	if found == nil {
-		return nil, fmt.Errorf("find group by name: %w", domain.NewNotFoundError("group", name))
-	}
-
-	return found, nil
-}
-
 // List returns groups matching filter, applies search + sort, and slices the
 // result by params.Offset / params.Limit. Total is the count after
 // filter+search but before pagination so callers can render page indicators.
 //
-// bbolt keys groups by UUID, not Name, so name-based filtering requires a
-// full bucket scan with per-item check. This is acceptable at the current
-// group cardinality (tens, not thousands).
+// bbolt keys groups by Name, so name-based filtering could in principle use
+// point lookups. We keep a single ForEach scan because the search filter still
+// requires touching every record and group cardinality is low.
 func (r *GroupRepo) List(
 	ctx context.Context,
 	filter domain.GroupFilter,

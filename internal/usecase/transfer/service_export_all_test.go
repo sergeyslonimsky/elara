@@ -39,7 +39,7 @@ func TestService_ExportAll(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, gomock.Any(), gomock.Any()).Return(true)
 				m.namespaces.EXPECT().
 					ListAll(gomock.Any()).
 					Return([]*domain.Namespace{{Name: "ns1"}}, nil)
@@ -66,7 +66,7 @@ func TestService_ExportAll(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, gomock.Any(), gomock.Any()).Return(true)
 				m.namespaces.EXPECT().
 					ListAll(gomock.Any()).
 					Return([]*domain.Namespace{{Name: "ns1"}}, nil)
@@ -94,7 +94,7 @@ func TestService_ExportAll(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, gomock.Any(), gomock.Any()).Return(true)
 				m.namespaces.EXPECT().
 					ListAll(gomock.Any()).
 					Return([]*domain.Namespace{{Name: "ns1"}}, nil)
@@ -179,7 +179,7 @@ func TestService_ExportAll(t *testing.T) {
 			name: "storage error - list configs",
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.pdp.EXPECT().HasNamespace(gomock.Any(), gomock.Any(), gomock.Any()).Return(true)
+				m.pdp.EXPECT().HasNamespace(testUserID, gomock.Any(), gomock.Any()).Return(true)
 				m.namespaces.EXPECT().
 					ListAll(gomock.Any()).
 					Return([]*domain.Namespace{{Name: "ns1"}}, nil)
@@ -202,10 +202,10 @@ func TestService_ExportAll(t *testing.T) {
 					ListAll(gomock.Any()).
 					Return([]*domain.Namespace{{Name: "ns1"}, {Name: "ns2"}}, nil)
 				m.pdp.EXPECT().
-					HasNamespace("test@example.com", "ns1", domain.ActionRead).
+					HasNamespace(testUserID, "ns1", domain.ActionRead).
 					Return(true)
 				m.pdp.EXPECT().
-					HasNamespace("test@example.com", "ns2", domain.ActionRead).
+					HasNamespace(testUserID, "ns2", domain.ActionRead).
 					Return(false)
 				m.configs.EXPECT().
 					ListAllByNamespace(gomock.Any(), "ns1").
@@ -233,7 +233,7 @@ func TestService_ExportAll(t *testing.T) {
 					ListAll(gomock.Any()).
 					Return([]*domain.Namespace{{Name: "secret"}}, nil)
 				m.pdp.EXPECT().
-					HasNamespace("test@example.com", "secret", domain.ActionRead).
+					HasNamespace(testUserID, "secret", domain.ActionRead).
 					Return(false)
 
 				return svc

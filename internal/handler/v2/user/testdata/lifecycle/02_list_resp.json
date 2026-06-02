@@ -1,18 +1,92 @@
 {
   "users": [
     {
-      "email": "alice@new.example.com",
-      "name": "Alice",
-      "provider": "basic-auth",
+      "id": "<<PRESENCE>>",
+      "email": "alice@example.com",
+      "displayName": "devops",
+      "status": "USER_STATUS_ACTIVE",
+      "identities": [
+        {
+          "provider": "basic",
+          "subject": "alice@example.com"
+        }
+      ],
       "createdAt": "<<PRESENCE>>",
       "lastLoginAt": "<<PRESENCE>>"
     },
     {
+      "id": "<<PRESENCE>>",
+      "email": "alice@new.example.com",
+      "displayName": "Alice",
+      "status": "USER_STATUS_ACTIVE",
+      "identities": [
+        {
+          "provider": "basic",
+          "subject": "alice@new.example.com"
+        }
+      ],
+      "createdAt": "<<PRESENCE>>",
+      "lastLoginAt": "<<PRESENCE>>"
+    },
+    {
+      "id": "<<PRESENCE>>",
+      "email": "bob@example.com",
+      "displayName": "developer",
+      "status": "USER_STATUS_ACTIVE",
+      "identities": [
+        {
+          "provider": "basic",
+          "subject": "bob@example.com"
+        }
+      ],
+      "createdAt": "<<PRESENCE>>",
+      "lastLoginAt": "<<PRESENCE>>"
+    },
+    {
+      "id": "<<PRESENCE>>",
       "email": "carol@example.com",
-      "name": "Super Admin",
-      "provider": "basic-auth",
+      "displayName": "Super Admin",
+      "status": "USER_STATUS_ACTIVE",
+      "identities": [
+        {
+          "provider": "basic",
+          "subject": "carol@example.com"
+        }
+      ],
+      "createdAt": "<<PRESENCE>>",
+      "lastLoginAt": "<<PRESENCE>>",
+      "isSystem": true
+    },
+    {
+      "id": "<<PRESENCE>>",
+      "email": "dave@example.com",
+      "displayName": "tester",
+      "status": "USER_STATUS_ACTIVE",
+      "identities": [
+        {
+          "provider": "basic",
+          "subject": "dave@example.com"
+        }
+      ],
+      "createdAt": "<<PRESENCE>>",
+      "lastLoginAt": "<<PRESENCE>>"
+    },
+    {
+      "id": "<<PRESENCE>>",
+      "email": "eve@example.com",
+      "displayName": "no-access",
+      "status": "USER_STATUS_ACTIVE",
+      "identities": [
+        {
+          "provider": "basic",
+          "subject": "eve@example.com"
+        }
+      ],
       "createdAt": "<<PRESENCE>>",
       "lastLoginAt": "<<PRESENCE>>"
     }
-  ]
+  ],
+  "pagination": {
+    "total": 6
+  }
 }

@@ -14,7 +14,6 @@ import "google/protobuf/timestamp.proto";
 // Three independent optimistic-lock counters let concurrent edits to
 // metadata, members, and permissions proceed without false conflicts.
 message Group {
-  string id = 1;
   string name = 2;
   string description = 3;
   // is_system flags built-in groups (e.g. system:superadmin) that the
@@ -26,4 +25,5 @@ message Group {
   int64 metadata_version = 7;
   int64 members_version = 8;
   int64 permissions_version = 9;
+  string display_name = 10;
 }

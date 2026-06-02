@@ -4,15 +4,40 @@ package elara.user.v1;
 
 import "google/protobuf/timestamp.proto";
 
+// UserStatus mirrors domain.UserStatus.
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED = 0;
+  USER_STATUS_ACTIVE = 1;
+  USER_STATUS_DEACTIVATED = 2;
+}
+
+// Identity represents a single provider/subject pair attached to a user.
+message Identity {
+  string provider = 1;
+  string subject = 2;
+}
+
+// UserRef is a stable reference to a user by UUID (pass-2 RPCs will use this
+// instead of email).
+message UserRef {
+  string id = 1;
+}
+
 message User {
+  reserved 2, 4;
+  reserved "name", "provider";
+
   string email = 1;
-  string name = 2;
   string picture = 3;
-  string provider = 4;
   google.protobuf.Timestamp created_at = 5;
   google.protobuf.Timestamp last_login_at = 6;
   // is_system flags built-in users (e.g. the bootstrap superadmin) that
   // the server protects from deletion. Clients should disable destructive
   // UI actions when this is true.
   bool is_system = 7;
+  // canonical UUID; empty in legacy responses until pass 2 wires it.
+  string id = 10;
+  string display_name = 11;
+  UserStatus status = 12;
+  repeated Identity identities = 13;
 }

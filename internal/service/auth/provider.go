@@ -4,10 +4,12 @@ import "context"
 
 // Identity is the normalized user identity returned by any provider.
 type Identity struct {
-	Email   string
-	Name    string
-	Picture string
-	Groups  []string // populated when the IdP supports a groups claim
+	Subject       string
+	Email         string
+	EmailVerified bool // true when the IdP asserted the email claim has been verified
+	Name          string
+	Picture       string
+	Groups        []string // populated when the IdP supports a groups claim
 }
 
 // IdentityProvider is the abstraction for any OIDC-compatible IdP.

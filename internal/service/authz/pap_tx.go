@@ -8,20 +8,19 @@ import (
 )
 
 // PAPTx is the per-transaction administration surface returned by PAP.Write.
-// It speaks the domain language (group name, domain.Permission, email)
+// It speaks the domain language (group name, domain.Permission, user ID)
 // instead of Casbin subject strings, so usecase code never has to know that
 // a group is stored as `group:<name>` or that memberships live on the
 // MembershipDomain g-rule.
 type PAPTx struct {
-	enforcer *casbin.Enforcer
-	txe      *casbin.TxEnforcer
+	txe *casbin.TxEnforcer
 }
 
 // GroupPermissions returns the permissions currently attached to the group,
 // reading the in-tx policy snapshot so callers see writes made earlier in
 // the same PAP.Write.
 func (t *PAPTx) GroupPermissions(name string) ([]domain.Permission, error) {
-	rules, err := t.txe.GetPermissionsForSubject(casbin.GroupSubject(name))
+	rules, err := t.txe.GetPermissionsForSubject(domain.GroupResource(name))
 	if err != nil {
 		return nil, fmt.Errorf("get group permissions: %w", err)
 	}
@@ -45,7 +44,7 @@ func (t *PAPTx) GroupPermissions(name string) ([]domain.Permission, error) {
 // the new ones. The caller is responsible for diffing the desired state
 // against the current state (typically via GroupPermissions).
 func (t *PAPTx) ApplyPermissionDeltas(name string, added, removed []domain.Permission) error {
-	subject := casbin.GroupSubject(name)
+	subject := domain.GroupResource(name)
 
 	for _, p := range removed {
 		if err := t.txe.RemovePolicy(subject, p.Domain, string(p.Object), string(p.Action)); err != nil {
@@ -63,16 +62,17 @@ func (t *PAPTx) ApplyPermissionDeltas(name string, added, removed []domain.Permi
 
 // ApplyMemberDeltas removes the listed users from the group then adds the
 // new ones. Membership g-rules live on domain.MembershipDomain.
+// added and removed contain user IDs (not emails).
 func (t *PAPTx) ApplyMemberDeltas(name string, added, removed []string) error {
-	subject := casbin.GroupSubject(name)
+	subject := domain.GroupResource(name)
 
-	for _, email := range removed {
-		if err := t.txe.RemoveRoleForUser(email, subject, domain.MembershipDomain); err != nil {
+	for _, userID := range removed {
+		if err := t.txe.RemoveRoleForUser(userID, subject, domain.MembershipDomain); err != nil {
 			return fmt.Errorf("remove membership: %w", err)
 		}
 	}
-	for _, email := range added {
-		if err := t.txe.AddRoleForUser(email, subject, domain.MembershipDomain); err != nil {
+	for _, userID := range added {
+		if err := t.txe.AddRoleForUser(userID, subject, domain.MembershipDomain); err != nil {
 			return fmt.Errorf("add membership: %w", err)
 		}
 	}
@@ -83,14 +83,15 @@ func (t *PAPTx) ApplyMemberDeltas(name string, added, removed []string) error {
 // ApplyUserMembershipDeltas removes the user from the listed groups and then
 // adds the user to the new ones. Group names are resolved to subjects
 // internally; membership g-rules live on domain.MembershipDomain.
-func (t *PAPTx) ApplyUserMembershipDeltas(email string, added, removed []string) error {
+// userID is the User.ID (UUID), not the email.
+func (t *PAPTx) ApplyUserMembershipDeltas(userID string, added, removed []string) error {
 	for _, name := range removed {
-		if err := t.txe.RemoveRoleForUser(email, casbin.GroupSubject(name), domain.MembershipDomain); err != nil {
+		if err := t.txe.RemoveRoleForUser(userID, domain.GroupResource(name), domain.MembershipDomain); err != nil {
 			return fmt.Errorf("remove membership %s: %w", name, err)
 		}
 	}
 	for _, name := range added {
-		if err := t.txe.AddRoleForUser(email, casbin.GroupSubject(name), domain.MembershipDomain); err != nil {
+		if err := t.txe.AddRoleForUser(userID, domain.GroupResource(name), domain.MembershipDomain); err != nil {
 			return fmt.Errorf("add membership %s: %w", name, err)
 		}
 	}
@@ -102,108 +103,19 @@ func (t *PAPTx) ApplyUserMembershipDeltas(email string, added, removed []string)
 // own permissions (p-rules), its role assignments, and all memberships
 // pointing at it.
 func (t *PAPTx) DeleteGroup(name string) error {
-	if err := t.txe.DeleteUser(casbin.GroupSubject(name)); err != nil {
+	if err := t.txe.DeleteUser(domain.GroupResource(name)); err != nil {
 		return fmt.Errorf("delete group: %w", err)
 	}
 
 	return nil
 }
 
-// DeleteUser removes every Casbin rule referencing the email, both as a
+// DeleteUser removes every Casbin rule referencing the user ID, both as a
 // subject (its role assignments / memberships) and as a target (none in the
 // current model, but covered for symmetry).
-func (t *PAPTx) DeleteUser(email string) error {
-	if err := t.txe.DeleteUser(email); err != nil {
+func (t *PAPTx) DeleteUser(userID string) error {
+	if err := t.txe.DeleteUser(userID); err != nil {
 		return fmt.Errorf("delete user: %w", err)
-	}
-
-	return nil
-}
-
-// RenameGroup transfers every Casbin rule attached to the old group subject
-// onto the new one. After this call the old subject has no remaining rules,
-// and any subsequent ApplyPermissionDeltas / ApplyMemberDeltas against the
-// new name behave exactly as if no rename had occurred. A no-op when
-// oldName == newName.
-//
-// The rename must move three rule families:
-//
-//  1. p-rules where the group is the subject — its own permissions.
-//     Read via t.txe.GetPermissionsForSubject(oldSubject); each row is
-//     [sub, dom, obj, act]. Use t.txe.RemovePolicy / AddPolicy.
-//
-//  2. g-rules where the group is the subject — roles assigned TO the group
-//     (e.g. `g, group:devs, admin, prod`). Read via
-//     t.enforcer.GetRulesForSubject(oldSubject); each row is
-//     [user, role, domain]. Use t.txe.RemoveRoleForUser / AddRoleForUser.
-//
-//  3. g-rules where the group is the target — memberships pointing AT the
-//     group (e.g. `g, alice, group:devs, *`). Read members via
-//     t.enforcer.GetMembersOfGroup(oldSubject); rebind each on
-//     domain.MembershipDomain.
-//
-// The parent-enforcer reads are safe here because rename runs before any
-// other mutation in the surrounding PAP.Write — the parent snapshot still
-// matches the on-disk state for the old subject.
-func (t *PAPTx) RenameGroup(oldName, newName string) error {
-	if oldName == newName {
-		return nil
-	}
-
-	oldSubject := casbin.GroupSubject(oldName)
-	newSubject := casbin.GroupSubject(newName)
-
-	if err := t.movePermissions(oldSubject, newSubject); err != nil {
-		return err
-	}
-	if err := t.moveGroupRoles(oldSubject, newSubject); err != nil {
-		return err
-	}
-
-	return t.moveMemberships(oldSubject, newSubject)
-}
-
-func (t *PAPTx) movePermissions(oldSubject, newSubject string) error {
-	rules, err := t.txe.GetPermissionsForSubject(oldSubject)
-	if err != nil {
-		return fmt.Errorf("read group permissions: %w", err)
-	}
-
-	for _, r := range rules {
-		dom, obj, act := r[1], r[2], r[3]
-		if err := t.txe.RemovePolicy(oldSubject, dom, obj, act); err != nil {
-			return fmt.Errorf("rename: remove policy: %w", err)
-		}
-		if err := t.txe.AddPolicy(newSubject, dom, obj, act); err != nil {
-			return fmt.Errorf("rename: add policy: %w", err)
-		}
-	}
-
-	return nil
-}
-
-func (t *PAPTx) moveGroupRoles(oldSubject, newSubject string) error {
-	for _, r := range t.enforcer.GetRulesForSubject(oldSubject) {
-		role, dom := r[1], r[2]
-		if err := t.txe.RemoveRoleForUser(oldSubject, role, dom); err != nil {
-			return fmt.Errorf("rename: remove group role: %w", err)
-		}
-		if err := t.txe.AddRoleForUser(newSubject, role, dom); err != nil {
-			return fmt.Errorf("rename: add group role: %w", err)
-		}
-	}
-
-	return nil
-}
-
-func (t *PAPTx) moveMemberships(oldSubject, newSubject string) error {
-	for _, email := range t.enforcer.GetMembersOfGroup(oldSubject) {
-		if err := t.txe.RemoveRoleForUser(email, oldSubject, domain.MembershipDomain); err != nil {
-			return fmt.Errorf("rename: remove membership: %w", err)
-		}
-		if err := t.txe.AddRoleForUser(email, newSubject, domain.MembershipDomain); err != nil {
-			return fmt.Errorf("rename: add membership: %w", err)
-		}
 	}
 
 	return nil

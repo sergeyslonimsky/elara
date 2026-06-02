@@ -40,13 +40,13 @@ describe("UsersPage", () => {
 				users: [
 					create(UserSchema, {
 						email: "user1@example.com",
-						name: "User One",
-						provider: "internal",
+						displayName: "User One",
+						identities: [],
 					}),
 					create(UserSchema, {
 						email: "user2@example.com",
-						name: "User Two",
-						provider: "oidc",
+						displayName: "User Two",
+						identities: [{ provider: "oidc", subject: "user2-sub" }],
 					}),
 				],
 				pagination: { total: 2 },
@@ -77,9 +77,10 @@ describe("UsersPage", () => {
 			data: {
 				users: [
 					create(UserSchema, {
+						id: "00000000-0000-0000-0000-000000000001",
 						email: "user1@example.com",
-						name: "User One",
-						provider: "internal",
+						displayName: "User One",
+						identities: [],
 					}),
 				],
 				pagination: { total: 1 },
@@ -97,7 +98,7 @@ describe("UsersPage", () => {
 		);
 
 		await ue.click(screen.getByText("user1@example.com"));
-		expect(mockNavigate).toHaveBeenCalledWith("/users/user1%40example.com");
+		expect(mockNavigate).toHaveBeenCalledWith("/users/00000000-0000-0000-0000-000000000001");
 	});
 
 	test("search interaction", async () => {

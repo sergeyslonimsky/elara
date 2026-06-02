@@ -29,7 +29,7 @@ func TestService_Get(t *testing.T) {
 			id:     "t1",
 			mockFunc: func(m mocks) {
 				m.store.EXPECT().GetByID(gomock.Any(), "t1").Return(testToken, nil)
-				m.pdp.EXPECT().Has("user@example.com", domain.Permission{
+				m.pdp.EXPECT().Has(testUserID, domain.Permission{
 					Object: domain.ObjectToken,
 					Action: domain.ActionRead,
 					Domain: "ns1",
@@ -42,7 +42,7 @@ func TestService_Get(t *testing.T) {
 			id:     "t1",
 			mockFunc: func(m mocks) {
 				m.store.EXPECT().GetByID(gomock.Any(), "t1").Return(testToken, nil)
-				m.pdp.EXPECT().Has("stranger@example.com", domain.Permission{
+				m.pdp.EXPECT().Has(testUserID, domain.Permission{
 					Object: domain.ObjectToken,
 					Action: domain.ActionRead,
 					Domain: "ns1",

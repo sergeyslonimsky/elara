@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/usecase/group"
 )
 
@@ -33,15 +33,15 @@ func TestService_Delete(t *testing.T) {
 				require.NoError(t, err)
 
 				_, err = st.svc.UpdateMembers(t.Context(), adminAuth(), group.UpdateMembersData{
-					GroupID:   created.Group.ID,
+					GroupName: created.Group.Name,
 					AddEmails: []string{"user1@example.com"},
 				})
 				require.NoError(t, err)
 
-				require.NotEmpty(t, st.enforcer.GetMembersOfGroup(casbin.GroupSubject("devops")),
+				require.NotEmpty(t, st.enforcer.GetMembersOfGroup(domain.GroupResource("devops")),
 					"precondition: group has members")
 
-				return created.Group.ID
+				return created.Group.Name
 			},
 			assert: func(t *testing.T, st testStack) {
 				t.Helper()
@@ -50,7 +50,7 @@ func TestService_Delete(t *testing.T) {
 				// removed from persistence but linger in the cache until the next
 				// LoadPolicy. Resync to assert persistence-side correctness.
 				require.NoError(t, st.enforcer.LoadPolicy())
-				assert.Empty(t, st.enforcer.GetMembersOfGroup(casbin.GroupSubject("devops")),
+				assert.Empty(t, st.enforcer.GetMembersOfGroup(domain.GroupResource("devops")),
 					"membership rules must be wiped after delete (post-LoadPolicy resync)")
 			},
 		},

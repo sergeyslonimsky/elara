@@ -20,6 +20,10 @@ func ToConnectError(err error) *connect.Error {
 		return connect.NewError(connect.CodeNotFound, err)
 	case errors.Is(err, domain.ErrAlreadyExists):
 		return connect.NewError(connect.CodeAlreadyExists, err)
+	case errors.Is(err, domain.ErrIdentityNotProvisioned):
+		return connect.NewError(connect.CodePermissionDenied, err)
+	case errors.Is(err, domain.ErrIdentityTaken):
+		return connect.NewError(connect.CodeAlreadyExists, err)
 	case errors.Is(err, domain.ErrVersionConflict):
 		return connect.NewError(connect.CodeAborted, err)
 	case errors.Is(err, domain.ErrLocked):

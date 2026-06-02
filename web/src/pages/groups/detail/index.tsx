@@ -14,13 +14,13 @@ export function GroupDetailPage() {
 
 	const { data, isLoading, error } = useQuery(
 		getGroup,
-		{ id },
+		{ name: id },
 		{ enabled: !!id },
 	);
 
 	useEffect(() => {
 		if (!data?.group) return;
-		document.title = `${data.group.name} • Elara`;
+		document.title = `${data.group.displayName || data.group.name} • Elara`;
 		return () => {
 			document.title = "Elara";
 		};
@@ -46,7 +46,7 @@ export function GroupDetailPage() {
 	}
 
 	return (
-		<PageShell title={data.group.name}>
+		<PageShell title={data.group.displayName || data.group.name}>
 			<BackButton to="/groups" label="Back to groups" />
 			<GroupDetailHeader group={data.group} />
 			<GroupDetailTabs

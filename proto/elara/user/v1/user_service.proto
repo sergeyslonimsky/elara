@@ -18,7 +18,7 @@ service UserService {
   // error — pagination returns an empty page.
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
 
-  // Fetches a single user by email.
+  // Fetches a single user by their UUID.
   //
   // Authorization:
   //   - User:Read * (global), OR
@@ -65,6 +65,12 @@ service UserService {
   // If expected_version is set and current membership_version differs,
   // returns FAILED_PRECONDITION — even if the net change would be a no-op.
   rpc UpdateUserGroups(UpdateUserGroupsRequest) returns (UpdateUserGroupsResponse);
+
+  // Deactivates a user, revoking all their sessions.
+  rpc DeactivateUser(DeactivateUserRequest) returns (DeactivateUserResponse);
+
+  // Reactivates a deactivated user.
+  rpc ReactivateUser(ReactivateUserRequest) returns (ReactivateUserResponse);
 }
 
 message ListUsersRequest {
@@ -78,9 +84,9 @@ message ListUsersResponse {
 }
 
 message GetUserRequest {
-  string email = 1 [
+  string user_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.email = true
+    (buf.validate.field).string.uuid = true
   ];
 }
 
@@ -116,9 +122,9 @@ message CreateUserResponse {
 }
 
 message ResetUserPasswordRequest {
-  string email = 1 [
+  string user_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.email = true
+    (buf.validate.field).string.uuid = true
   ];
   string new_password = 2 [
     (buf.validate.field).required = true,
@@ -129,18 +135,18 @@ message ResetUserPasswordRequest {
 message ResetUserPasswordResponse {}
 
 message DeleteUserRequest {
-  string email = 1 [
+  string user_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.email = true
+    (buf.validate.field).string.uuid = true
   ];
 }
 
 message DeleteUserResponse {}
 
 message UpdateUserGroupsRequest {
-  string email = 1 [
+  string user_id = 1 [
     (buf.validate.field).required = true,
-    (buf.validate.field).string.email = true
+    (buf.validate.field).string.uuid = true
   ];
   repeated string add_group_ids = 2 [(buf.validate.field).repeated.items.string.min_len = 1];
   repeated string remove_group_ids = 3 [(buf.validate.field).repeated.items.string.min_len = 1];
@@ -153,4 +159,26 @@ message UpdateUserGroupsResponse {
   User user = 1;
   repeated string visible_group_ids = 2;
   int64 membership_version = 3;
+}
+
+message DeactivateUserRequest {
+  string user_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.uuid = true
+  ];
+}
+
+message DeactivateUserResponse {
+  User user = 1;
+}
+
+message ReactivateUserRequest {
+  string user_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.uuid = true
+  ];
+}
+
+message ReactivateUserResponse {
+  User user = 1;
 }

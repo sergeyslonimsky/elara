@@ -12,7 +12,7 @@ import (
 // an interface so authz stays free of bbolt imports — callers wire the
 // usecase's existing reader (typically group.BoltGroupReader) at startup.
 type GroupResolver interface {
-	FindByName(ctx context.Context, name string) (*domain.Group, error)
+	Get(ctx context.Context, name string) (*domain.Group, error)
 }
 
 // Scope encapsulates the derived authorization rules that span actor and
@@ -78,13 +78,13 @@ func (s *Scope) FilterVisibleUsers(
 	return out
 }
 
-// VisibleUserGroupIDs returns the IDs of target's groups on which actor
+// VisibleUserGroupNames returns the IDs of target's groups on which actor
 // holds Group:Read. Mirrors the GetUser response contract: memberships
 // outside the actor's read scope are filtered out, not enumerated.
 //
 // Returns ([], nil) if the target belongs to no groups or to none the
 // actor can read. Resolution errors propagate as wrapped errors.
-func (s *Scope) VisibleUserGroupIDs(ctx context.Context, actor, target string) ([]string, error) {
+func (s *Scope) VisibleUserGroupNames(ctx context.Context, actor, target string) ([]string, error) {
 	groups, err := s.resolveTargetGroups(ctx, target)
 	if err != nil {
 		return nil, err
@@ -92,8 +92,8 @@ func (s *Scope) VisibleUserGroupIDs(ctx context.Context, actor, target string) (
 
 	out := make([]string, 0, len(groups))
 	for _, g := range groups {
-		if s.pdp.HasGroup(actor, g.ID, domain.ActionRead) {
-			out = append(out, g.ID)
+		if s.pdp.HasGroup(actor, g.Name, domain.ActionRead) {
+			out = append(out, g.Name)
 		}
 	}
 
@@ -143,8 +143,8 @@ func (s *Scope) RequireWriteUser(ctx context.Context, actor, target string) erro
 
 // resolveTargetGroups loads target's full group set in one place. Used by
 // every method that needs to fan out over target's memberships
-// (CanRead/CanWriteUser, FilterVisibleUsers, VisibleUserGroupIDs,
-// RequireWriteUser). Pulling the UserGroupNames → FindByName loop into a
+// (CanRead/CanWriteUser, FilterVisibleUsers, VisibleUserGroupNames,
+// RequireWriteUser). Pulling the UserGroupNames → Get loop into a
 // single helper means a future change to the resolution path updates one
 // site, not five.
 //
@@ -158,7 +158,7 @@ func (s *Scope) resolveTargetGroups(ctx context.Context, target string) ([]*doma
 
 	out := make([]*domain.Group, 0, len(names))
 	for _, name := range names {
-		g, err := s.groups.FindByName(ctx, name)
+		g, err := s.groups.Get(ctx, name)
 		if err != nil {
 			return nil, fmt.Errorf("find group by name %s: %w", name, err)
 		}
@@ -181,7 +181,7 @@ func (s *Scope) targetInGroupScope(
 		return false, err
 	}
 	for _, g := range groups {
-		if s.pdp.HasGroup(actor, g.ID, action) {
+		if s.pdp.HasGroup(actor, g.Name, action) {
 			return true, nil
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -39,10 +40,14 @@ func TestService_Me(t *testing.T) {
 		{
 			name: "pdp error is wrapped",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				ctx = authctx.WithSession(ctx, &domain.Session{}, &domain.User{Email: email, Name: name})
+				ctx = authctx.WithSession(
+					ctx,
+					&domain.Session{UserID: testUserID},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: email, DisplayName: name},
+				)
 				svc, m := setupService(ctrl)
 				m.pdp.EXPECT().
-					ListPermissions(email).
+					ListPermissions(testUserID).
 					Return(nil, errors.New("casbin boom"))
 
 				return svc, ctx
@@ -52,10 +57,14 @@ func TestService_Me(t *testing.T) {
 		{
 			name: "happy path - permissions passthrough",
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				ctx = authctx.WithSession(ctx, &domain.Session{}, &domain.User{Email: email, Name: name})
+				ctx = authctx.WithSession(
+					ctx,
+					&domain.Session{UserID: testUserID},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: email, DisplayName: name},
+				)
 				svc, m := setupService(ctrl)
 				m.pdp.EXPECT().
-					ListPermissions(email).
+					ListPermissions(testUserID).
 					Return([]domain.Permission{
 						{Object: domain.ObjectNamespace, Action: domain.ActionRead, Domain: "ns1"},
 						{Object: domain.ObjectUser, Action: domain.ActionRead, Domain: "ns2"},

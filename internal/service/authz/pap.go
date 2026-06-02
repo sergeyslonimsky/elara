@@ -46,7 +46,7 @@ func (p *PAP) Write(
 	fn func(ctx context.Context, w *PAPTx) error,
 ) error {
 	err := p.enforcer.WriteTx(ctx, p.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
-		return fn(ctx, &PAPTx{enforcer: p.enforcer, txe: txe})
+		return fn(ctx, &PAPTx{txe: txe})
 	})
 	if err != nil {
 		return fmt.Errorf("pap write: %w", err)
@@ -62,26 +62,26 @@ func (p *PAP) Write(
 func (p *PAP) GroupNamesFromScope(scope DomainSet) map[string]struct{} {
 	names := make(map[string]struct{}, len(scope.Explicit))
 	for d := range scope.Explicit {
-		if casbin.IsGroupSubject(d) {
-			names[casbin.GroupNameFromSubject(d)] = struct{}{}
+		if domain.IsGroupSubject(d) {
+			names[domain.GroupNameFromSubject(d)] = struct{}{}
 		}
 	}
 
 	return names
 }
 
-// MembersOfScope returns the set of user emails who are members of at least
+// MembersOfScope returns the set of user IDs who are members of at least
 // one group in the scope's explicit domains. Used to translate a
 // "groups I can see" scope into a "users I can see" filter. Nested-group
 // members are filtered out — see EL-4 §1.
 func (p *PAP) MembersOfScope(scope DomainSet) map[string]struct{} {
 	users := make(map[string]struct{})
 	for d := range scope.Explicit {
-		if !casbin.IsGroupSubject(d) {
+		if !domain.IsGroupSubject(d) {
 			continue
 		}
 		for _, m := range p.enforcer.GetMembersOfGroup(d) {
-			if !casbin.IsGroupSubject(m) {
+			if !domain.IsGroupSubject(m) {
 				users[m] = struct{}{}
 			}
 		}
@@ -101,7 +101,7 @@ func (p *PAP) MembersOfScope(scope DomainSet) map[string]struct{} {
 // p-rules are filtered to length 4 (subject, dom, obj, act); shorter rows
 // are skipped defensively. Order is unspecified.
 func (p *PAP) GroupPermissions(name string) []domain.Permission {
-	subject := casbin.GroupSubject(name)
+	subject := domain.GroupResource(name)
 
 	out := make([]domain.Permission, 0)
 	for _, r := range p.enforcer.GetPolicy() {
@@ -121,18 +121,18 @@ func (p *PAP) GroupPermissions(name string) []domain.Permission {
 	return out
 }
 
-// GroupMembers returns the emails of users currently in the given group,
+// GroupMembers returns the IDs of users currently in the given group,
 // reading from the in-memory Casbin snapshot. Nested-group subjects are
 // filtered out (matching the convention used by MembersOfScope) so the
-// returned set contains only user emails. Order is unspecified.
+// returned set contains only user IDs. Order is unspecified.
 //
 // Casbin is the source of truth for membership — bbolt does not persist
 // this relation.
 func (p *PAP) GroupMembers(name string) []string {
-	raw := p.enforcer.GetMembersOfGroup(casbin.GroupSubject(name))
+	raw := p.enforcer.GetMembersOfGroup(domain.GroupResource(name))
 	out := make([]string, 0, len(raw))
 	for _, m := range raw {
-		if !casbin.IsGroupSubject(m) {
+		if !domain.IsGroupSubject(m) {
 			out = append(out, m)
 		}
 	}
@@ -144,18 +144,18 @@ func (p *PAP) GroupMembers(name string) []string {
 // reading from the in-memory policy snapshot. Nested-group memberships and
 // non-group subjects (legacy direct user→role bindings) are skipped, matching
 // the convention used by the list-scoping code.
-func (p *PAP) UserGroupNames(email string) ([]string, error) {
-	subjects, err := p.enforcer.GetRolesForUser(email, domain.MembershipDomain)
+func (p *PAP) UserGroupNames(userID string) ([]string, error) {
+	subjects, err := p.enforcer.GetRolesForUser(userID, domain.MembershipDomain)
 	if err != nil {
 		return nil, fmt.Errorf("get user memberships: %w", err)
 	}
 
 	out := make([]string, 0, len(subjects))
 	for _, subject := range subjects {
-		if !casbin.IsGroupSubject(subject) {
+		if !domain.IsGroupSubject(subject) {
 			continue
 		}
-		out = append(out, casbin.GroupNameFromSubject(subject))
+		out = append(out, domain.GroupNameFromSubject(subject))
 	}
 
 	return out, nil

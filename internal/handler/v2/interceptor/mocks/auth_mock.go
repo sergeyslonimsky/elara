@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	uuid "github.com/google/uuid"
 	domain "github.com/sergeyslonimsky/elara/internal/domain"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -94,17 +95,17 @@ func (m *MockuserLookup) EXPECT() *MockuserLookupMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method.
-func (m *MockuserLookup) Get(ctx context.Context, email string) (*domain.User, error) {
+// GetByID mocks base method.
+func (m *MockuserLookup) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, email)
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
 	ret0, _ := ret[0].(*domain.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockuserLookupMockRecorder) Get(ctx, email any) *gomock.Call {
+// GetByID indicates an expected call of GetByID.
+func (mr *MockuserLookupMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockuserLookup)(nil).Get), ctx, email)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockuserLookup)(nil).GetByID), ctx, id)
 }

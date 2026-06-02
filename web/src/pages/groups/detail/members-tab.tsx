@@ -71,7 +71,7 @@ export function MembersTab({
 
 	const handleSave = () => {
 		mutation.mutate({
-			groupId: group.id,
+			groupName: group.name,
 			addEmails: pending.adds,
 			removeEmails: pending.removes,
 			expectedMembersVersion: group.membersVersion,

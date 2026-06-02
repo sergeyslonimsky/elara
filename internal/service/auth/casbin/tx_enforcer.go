@@ -84,22 +84,22 @@ func (t *TxEnforcer) RemoveRoleForUser(user, role, dom string) error {
 	return nil
 }
 
-// DeleteUser removes every g-rule where email appears as either the subject
+// DeleteUser removes every g-rule where userID appears as either the subject
 // (column 0, i.e. user→group/role bindings) or the role/group target
 // (column 1, i.e. inbound references). Two RemoveFilteredPolicy calls are
 // required because casbin's bbolt adapter filters by a single field index at a
 // time, and a user identifier can occur in both positions across different
 // rule shapes.
-func (t *TxEnforcer) DeleteUser(email string) error {
-	if err := t.parent.policies.RemoveFilteredPolicyCtx(t.ctx, "g", "g", 0, email); err != nil {
+func (t *TxEnforcer) DeleteUser(userID string) error {
+	if err := t.parent.policies.RemoveFilteredPolicyCtx(t.ctx, "g", "g", 0, userID); err != nil {
 		return fmt.Errorf("tx delete user (subject): %w", err)
 	}
 
-	if err := t.parent.policies.RemoveFilteredPolicyCtx(t.ctx, "g", "g", 1, email); err != nil {
+	if err := t.parent.policies.RemoveFilteredPolicyCtx(t.ctx, "g", "g", 1, userID); err != nil {
 		return fmt.Errorf("tx delete user (role): %w", err)
 	}
 
-	t.ops = append(t.ops, op{kind: opDeleteUser, user: email})
+	t.ops = append(t.ops, op{kind: opDeleteUser, user: userID})
 
 	return nil
 }

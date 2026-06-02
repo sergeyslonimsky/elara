@@ -13,13 +13,13 @@ import (
 func (s *Service) SubscribeChanges(
 	ctx context.Context,
 ) (<-chan domain.ClientChange, func(), error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, nil, domain.ErrUnauthorized
 	}
 
 	upstream, cancel := s.active.Subscribe()
-	scope := newScopeChecker(s.pdp, claims.Email)
+	scope := newScopeChecker(s.pdp, info.Email)
 
 	if scope.admin {
 		return upstream, cancel, nil
@@ -53,12 +53,12 @@ func (s *Service) SubscribeClient(
 	ctx context.Context,
 	connID string,
 ) (<-chan domain.ClientChange, func(), error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.pdp, claims.Email)
+	scope := newScopeChecker(s.pdp, info.Email)
 
 	if !scope.admin {
 		c := s.active.Get(connID)

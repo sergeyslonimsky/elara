@@ -118,8 +118,8 @@ func (s *Service) ExportNamespace(
 }
 
 func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return domain.AllBundle{}, domain.ErrUnauthorized
 	}
 
@@ -135,7 +135,7 @@ func (s *Service) buildAllBundle(ctx context.Context) (domain.AllBundle, error) 
 	}
 
 	for _, ns := range ns {
-		if !s.pdp.HasNamespace(claims.Email, ns.Name, domain.ActionRead) {
+		if !s.pdp.HasNamespace(info.UserID, ns.Name, domain.ActionRead) {
 			continue
 		}
 

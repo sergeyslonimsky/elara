@@ -3,7 +3,6 @@ package domain_test
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,66 +13,61 @@ import (
 func TestGroup_Validate(t *testing.T) {
 	t.Parallel()
 
-	validGroup := domain.Group{
-		ID:        "group-1",
-		Name:      "Admins",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
 	tests := []struct {
 		name    string
 		group   domain.Group
-		wantErr bool
-		errMsg  string
+		wantErr string
 	}{
 		{
-			name:    "valid group",
-			group:   validGroup,
-			wantErr: false,
-		},
-		{
-			name: "empty ID",
+			name: "valid group",
 			group: domain.Group{
-				ID:   "",
-				Name: "Admins",
+				Name:        "admins",
+				DisplayName: "Administrators",
+				Description: "System administrators",
 			},
-			wantErr: true,
-			errMsg:  "id",
 		},
 		{
 			name: "empty name",
 			group: domain.Group{
-				ID:   "group-1",
 				Name: "",
 			},
-			wantErr: true,
-			errMsg:  "name",
+			wantErr: "name is required",
 		},
 		{
 			name: "name too long",
 			group: domain.Group{
-				ID:   "group-1",
-				Name: strings.Repeat("a", 129),
+				Name: strings.Repeat("a", 64),
 			},
-			wantErr: true,
-			errMsg:  "name",
+			wantErr: "name must be at most 63 characters",
 		},
 		{
 			name: "name at max length is valid",
 			group: domain.Group{
-				ID:   "group-1",
-				Name: strings.Repeat("a", 128),
+				Name: strings.Repeat("a", 63),
 			},
-			wantErr: false,
 		},
 		{
-			name: "no members is valid",
+			name: "uppercase in name is invalid",
 			group: domain.Group{
-				ID:   "group-1",
 				Name: "Admins",
 			},
-			wantErr: false,
+			wantErr: "name must be a valid DNS-1123 label",
+		},
+		{
+			name: "display name too long",
+			group: domain.Group{
+				Name:        "admins",
+				DisplayName: strings.Repeat("a", 129),
+			},
+			wantErr: "display name must be at most 128 characters",
+		},
+		{
+			name: "description too long",
+			group: domain.Group{
+				Name:        "admins",
+				Description: strings.Repeat("a", 1025),
+			},
+			wantErr: "group description must be at most 1024 characters",
 		},
 	}
 
@@ -83,16 +77,14 @@ func TestGroup_Validate(t *testing.T) {
 
 			err := tt.group.Validate()
 
-			if tt.wantErr {
-				require.Error(t, err)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
 				assert.True(t, domain.IsValidationError(err))
 
-				if tt.errMsg != "" {
-					assert.Contains(t, err.Error(), tt.errMsg)
-				}
-			} else {
-				require.NoError(t, err)
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }
@@ -101,21 +93,18 @@ func TestGroup_EnsureMutable(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name    string
-		group   domain.Group
-		wantErr bool
-		errIs   error
+		name  string
+		group domain.Group
+		errIs error
 	}{
 		{
-			name:    "mutable group",
-			group:   domain.Group{System: false},
-			wantErr: false,
+			name:  "mutable group",
+			group: domain.Group{System: false},
 		},
 		{
-			name:    "immutable system group",
-			group:   domain.Group{System: true},
-			wantErr: true,
-			errIs:   domain.ErrSystemImmutable,
+			name:  "immutable system group",
+			group: domain.Group{System: true},
+			errIs: domain.ErrSystemImmutable,
 		},
 	}
 
@@ -125,14 +114,13 @@ func TestGroup_EnsureMutable(t *testing.T) {
 
 			err := tt.group.EnsureMutable()
 
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errIs != nil {
-					require.ErrorIs(t, err, tt.errIs)
-				}
-			} else {
-				require.NoError(t, err)
+			if tt.errIs != nil {
+				require.ErrorIs(t, err, tt.errIs)
+
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }

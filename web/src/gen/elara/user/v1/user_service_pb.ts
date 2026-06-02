@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/user/v1/user_service.proto.
  */
 export const file_elara_user_v1_user_service: GenFile = /*@__PURE__*/
-  fileDesc("CiBlbGFyYS91c2VyL3YxL3VzZXJfc2VydmljZS5wcm90bxINZWxhcmEudXNlci52MSJkChBMaXN0VXNlcnNSZXF1ZXN0EjYKCnBhZ2luYXRpb24YASABKAsyIi5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlcXVlc3QSGAoGc2VhcmNoGAIgASgJQgi6SAVyAxiAAiJwChFMaXN0VXNlcnNSZXNwb25zZRIiCgV1c2VycxgBIAMoCzITLmVsYXJhLnVzZXIudjEuVXNlchI3CgpwYWdpbmF0aW9uGAIgASgLMiMuZWxhcmEuY29tbW9uLnYxLlBhZ2luYXRpb25SZXNwb25zZSIrCg5HZXRVc2VyUmVxdWVzdBIZCgVlbWFpbBgBIAEoCUIKukgHyAEBcgJgASJrCg9HZXRVc2VyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLnVzZXIudjEuVXNlchIZChF2aXNpYmxlX2dyb3VwX2lkcxgCIAMoCRIaChJtZW1iZXJzaGlwX3ZlcnNpb24YAyABKAMiiwEKEUNyZWF0ZVVzZXJSZXF1ZXN0EhkKBWVtYWlsGAEgASgJQgq6SAfIAQFyAmABEhgKBG5hbWUYAiABKAlCCrpIB3IFEAEYgAISGAoQaW5pdGlhbF9wYXNzd29yZBgDIAEoCRInChFpbml0aWFsX2dyb3VwX2lkcxgEIAMoCUIMukgJkgEGIgRyAhABImYKEkNyZWF0ZVVzZXJSZXNwb25zZRIhCgR1c2VyGAEgASgLMhMuZWxhcmEudXNlci52MS5Vc2VyEhEKCWdyb3VwX2lkcxgCIAMoCRIaChJtZW1iZXJzaGlwX3ZlcnNpb24YAyABKAMiVwoYUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0EhkKBWVtYWlsGAEgASgJQgq6SAfIAQFyAmABEiAKDG5ld19wYXNzd29yZBgCIAEoCUIKukgHyAEBcgIQASIbChlSZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlIi4KEURlbGV0ZVVzZXJSZXF1ZXN0EhkKBWVtYWlsGAEgASgJQgq6SAfIAQFyAmABIhQKEkRlbGV0ZVVzZXJSZXNwb25zZSK+AQoXVXBkYXRlVXNlckdyb3Vwc1JlcXVlc3QSGQoFZW1haWwYASABKAlCCrpIB8gBAXICYAESIwoNYWRkX2dyb3VwX2lkcxgCIAMoCUIMukgJkgEGIgRyAhABEiYKEHJlbW92ZV9ncm91cF9pZHMYAyADKAlCDLpICZIBBiIEcgIQARImChBleHBlY3RlZF92ZXJzaW9uGAQgASgDQge6SAQiAigASACIAQFCEwoRX2V4cGVjdGVkX3ZlcnNpb24idAoYVXBkYXRlVXNlckdyb3Vwc1Jlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5lbGFyYS51c2VyLnYxLlVzZXISGQoRdmlzaWJsZV9ncm91cF9pZHMYAiADKAkSGgoSbWVtYmVyc2hpcF92ZXJzaW9uGAMgASgDMpoECgtVc2VyU2VydmljZRJOCglMaXN0VXNlcnMSHy5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1JlcXVlc3QaIC5lbGFyYS51c2VyLnYxLkxpc3RVc2Vyc1Jlc3BvbnNlEkgKB0dldFVzZXISHS5lbGFyYS51c2VyLnYxLkdldFVzZXJSZXF1ZXN0Gh4uZWxhcmEudXNlci52MS5HZXRVc2VyUmVzcG9uc2USUQoKQ3JlYXRlVXNlchIgLmVsYXJhLnVzZXIudjEuQ3JlYXRlVXNlclJlcXVlc3QaIS5lbGFyYS51c2VyLnYxLkNyZWF0ZVVzZXJSZXNwb25zZRJmChFSZXNldFVzZXJQYXNzd29yZBInLmVsYXJhLnVzZXIudjEuUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0GiguZWxhcmEudXNlci52MS5SZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlElEKCkRlbGV0ZVVzZXISIC5lbGFyYS51c2VyLnYxLkRlbGV0ZVVzZXJSZXF1ZXN0GiEuZWxhcmEudXNlci52MS5EZWxldGVVc2VyUmVzcG9uc2USYwoQVXBkYXRlVXNlckdyb3VwcxImLmVsYXJhLnVzZXIudjEuVXBkYXRlVXNlckdyb3Vwc1JlcXVlc3QaJy5lbGFyYS51c2VyLnYxLlVwZGF0ZVVzZXJHcm91cHNSZXNwb25zZULBAQoRY29tLmVsYXJhLnVzZXIudjFCEFVzZXJTZXJ2aWNlUHJvdG9QAVpEZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvdXNlci92MTt1c2VydjGiAgNFVViqAg1FbGFyYS5Vc2VyLlYxygINRWxhcmFcVXNlclxWMeICGUVsYXJhXFVzZXJcVjFcR1BCTWV0YWRhdGHqAg9FbGFyYTo6VXNlcjo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_elara_common_v1_common, file_elara_user_v1_user]);
+  fileDesc("CiBlbGFyYS91c2VyL3YxL3VzZXJfc2VydmljZS5wcm90bxINZWxhcmEudXNlci52MSJkChBMaXN0VXNlcnNSZXF1ZXN0EjYKCnBhZ2luYXRpb24YASABKAsyIi5lbGFyYS5jb21tb24udjEuUGFnaW5hdGlvblJlcXVlc3QSGAoGc2VhcmNoGAIgASgJQgi6SAVyAxiAAiJwChFMaXN0VXNlcnNSZXNwb25zZRIiCgV1c2VycxgBIAMoCzITLmVsYXJhLnVzZXIudjEuVXNlchI3CgpwYWdpbmF0aW9uGAIgASgLMiMuZWxhcmEuY29tbW9uLnYxLlBhZ2luYXRpb25SZXNwb25zZSIuCg5HZXRVc2VyUmVxdWVzdBIcCgd1c2VyX2lkGAEgASgJQgu6SAjIAQFyA7ABASJrCg9HZXRVc2VyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLnVzZXIudjEuVXNlchIZChF2aXNpYmxlX2dyb3VwX2lkcxgCIAMoCRIaChJtZW1iZXJzaGlwX3ZlcnNpb24YAyABKAMiiwEKEUNyZWF0ZVVzZXJSZXF1ZXN0EhkKBWVtYWlsGAEgASgJQgq6SAfIAQFyAmABEhgKBG5hbWUYAiABKAlCCrpIB3IFEAEYgAISGAoQaW5pdGlhbF9wYXNzd29yZBgDIAEoCRInChFpbml0aWFsX2dyb3VwX2lkcxgEIAMoCUIMukgJkgEGIgRyAhABImYKEkNyZWF0ZVVzZXJSZXNwb25zZRIhCgR1c2VyGAEgASgLMhMuZWxhcmEudXNlci52MS5Vc2VyEhEKCWdyb3VwX2lkcxgCIAMoCRIaChJtZW1iZXJzaGlwX3ZlcnNpb24YAyABKAMiWgoYUmVzZXRVc2VyUGFzc3dvcmRSZXF1ZXN0EhwKB3VzZXJfaWQYASABKAlCC7pICMgBAXIDsAEBEiAKDG5ld19wYXNzd29yZBgCIAEoCUIKukgHyAEBcgIQASIbChlSZXNldFVzZXJQYXNzd29yZFJlc3BvbnNlIjEKEURlbGV0ZVVzZXJSZXF1ZXN0EhwKB3VzZXJfaWQYASABKAlCC7pICMgBAXIDsAEBIhQKEkRlbGV0ZVVzZXJSZXNwb25zZSLBAQoXVXBkYXRlVXNlckdyb3Vwc1JlcXVlc3QSHAoHdXNlcl9pZBgBIAEoCUILukgIyAEBcgOwAQESIwoNYWRkX2dyb3VwX2lkcxgCIAMoCUIMukgJkgEGIgRyAhABEiYKEHJlbW92ZV9ncm91cF9pZHMYAyADKAlCDLpICZIBBiIEcgIQARImChBleHBlY3RlZF92ZXJzaW9uGAQgASgDQge6SAQiAigASACIAQFCEwoRX2V4cGVjdGVkX3ZlcnNpb24idAoYVXBkYXRlVXNlckdyb3Vwc1Jlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5lbGFyYS51c2VyLnYxLlVzZXISGQoRdmlzaWJsZV9ncm91cF9pZHMYAiADKAkSGgoSbWVtYmVyc2hpcF92ZXJzaW9uGAMgASgDIjUKFURlYWN0aXZhdGVVc2VyUmVxdWVzdBIcCgd1c2VyX2lkGAEgASgJQgu6SAjIAQFyA7ABASI7ChZEZWFjdGl2YXRlVXNlclJlc3BvbnNlEiEKBHVzZXIYASABKAsyEy5lbGFyYS51c2VyLnYxLlVzZXIiNQoVUmVhY3RpdmF0ZVVzZXJSZXF1ZXN0EhwKB3VzZXJfaWQYASABKAlCC7pICMgBAXIDsAEBIjsKFlJlYWN0aXZhdGVVc2VyUmVzcG9uc2USIQoEdXNlchgBIAEoCzITLmVsYXJhLnVzZXIudjEuVXNlcjLYBQoLVXNlclNlcnZpY2USTgoJTGlzdFVzZXJzEh8uZWxhcmEudXNlci52MS5MaXN0VXNlcnNSZXF1ZXN0GiAuZWxhcmEudXNlci52MS5MaXN0VXNlcnNSZXNwb25zZRJICgdHZXRVc2VyEh0uZWxhcmEudXNlci52MS5HZXRVc2VyUmVxdWVzdBoeLmVsYXJhLnVzZXIudjEuR2V0VXNlclJlc3BvbnNlElEKCkNyZWF0ZVVzZXISIC5lbGFyYS51c2VyLnYxLkNyZWF0ZVVzZXJSZXF1ZXN0GiEuZWxhcmEudXNlci52MS5DcmVhdGVVc2VyUmVzcG9uc2USZgoRUmVzZXRVc2VyUGFzc3dvcmQSJy5lbGFyYS51c2VyLnYxLlJlc2V0VXNlclBhc3N3b3JkUmVxdWVzdBooLmVsYXJhLnVzZXIudjEuUmVzZXRVc2VyUGFzc3dvcmRSZXNwb25zZRJRCgpEZWxldGVVc2VyEiAuZWxhcmEudXNlci52MS5EZWxldGVVc2VyUmVxdWVzdBohLmVsYXJhLnVzZXIudjEuRGVsZXRlVXNlclJlc3BvbnNlEmMKEFVwZGF0ZVVzZXJHcm91cHMSJi5lbGFyYS51c2VyLnYxLlVwZGF0ZVVzZXJHcm91cHNSZXF1ZXN0GicuZWxhcmEudXNlci52MS5VcGRhdGVVc2VyR3JvdXBzUmVzcG9uc2USXQoORGVhY3RpdmF0ZVVzZXISJC5lbGFyYS51c2VyLnYxLkRlYWN0aXZhdGVVc2VyUmVxdWVzdBolLmVsYXJhLnVzZXIudjEuRGVhY3RpdmF0ZVVzZXJSZXNwb25zZRJdCg5SZWFjdGl2YXRlVXNlchIkLmVsYXJhLnVzZXIudjEuUmVhY3RpdmF0ZVVzZXJSZXF1ZXN0GiUuZWxhcmEudXNlci52MS5SZWFjdGl2YXRlVXNlclJlc3BvbnNlQsEBChFjb20uZWxhcmEudXNlci52MUIQVXNlclNlcnZpY2VQcm90b1ABWkRnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS91c2VyL3YxO3VzZXJ2MaICA0VVWKoCDUVsYXJhLlVzZXIuVjHKAg1FbGFyYVxVc2VyXFYx4gIZRWxhcmFcVXNlclxWMVxHUEJNZXRhZGF0YeoCD0VsYXJhOjpVc2VyOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_elara_common_v1_common, file_elara_user_v1_user]);
 
 /**
  * @generated from message elara.user.v1.ListUsersRequest
@@ -66,9 +66,9 @@ export const ListUsersResponseSchema: GenMessage<ListUsersResponse> = /*@__PURE_
  */
 export type GetUserRequest = Message<"elara.user.v1.GetUserRequest"> & {
   /**
-   * @generated from field: string email = 1;
+   * @generated from field: string user_id = 1;
    */
-  email: string;
+  userId: string;
 };
 
 /**
@@ -179,9 +179,9 @@ export const CreateUserResponseSchema: GenMessage<CreateUserResponse> = /*@__PUR
  */
 export type ResetUserPasswordRequest = Message<"elara.user.v1.ResetUserPasswordRequest"> & {
   /**
-   * @generated from field: string email = 1;
+   * @generated from field: string user_id = 1;
    */
-  email: string;
+  userId: string;
 
   /**
    * @generated from field: string new_password = 2;
@@ -214,9 +214,9 @@ export const ResetUserPasswordResponseSchema: GenMessage<ResetUserPasswordRespon
  */
 export type DeleteUserRequest = Message<"elara.user.v1.DeleteUserRequest"> & {
   /**
-   * @generated from field: string email = 1;
+   * @generated from field: string user_id = 1;
    */
-  email: string;
+  userId: string;
 };
 
 /**
@@ -244,9 +244,9 @@ export const DeleteUserResponseSchema: GenMessage<DeleteUserResponse> = /*@__PUR
  */
 export type UpdateUserGroupsRequest = Message<"elara.user.v1.UpdateUserGroupsRequest"> & {
   /**
-   * @generated from field: string email = 1;
+   * @generated from field: string user_id = 1;
    */
-  email: string;
+  userId: string;
 
   /**
    * @generated from field: repeated string add_group_ids = 2;
@@ -302,6 +302,74 @@ export const UpdateUserGroupsResponseSchema: GenMessage<UpdateUserGroupsResponse
   messageDesc(file_elara_user_v1_user_service, 11);
 
 /**
+ * @generated from message elara.user.v1.DeactivateUserRequest
+ */
+export type DeactivateUserRequest = Message<"elara.user.v1.DeactivateUserRequest"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+};
+
+/**
+ * Describes the message elara.user.v1.DeactivateUserRequest.
+ * Use `create(DeactivateUserRequestSchema)` to create a new message.
+ */
+export const DeactivateUserRequestSchema: GenMessage<DeactivateUserRequest> = /*@__PURE__*/
+  messageDesc(file_elara_user_v1_user_service, 12);
+
+/**
+ * @generated from message elara.user.v1.DeactivateUserResponse
+ */
+export type DeactivateUserResponse = Message<"elara.user.v1.DeactivateUserResponse"> & {
+  /**
+   * @generated from field: elara.user.v1.User user = 1;
+   */
+  user?: User;
+};
+
+/**
+ * Describes the message elara.user.v1.DeactivateUserResponse.
+ * Use `create(DeactivateUserResponseSchema)` to create a new message.
+ */
+export const DeactivateUserResponseSchema: GenMessage<DeactivateUserResponse> = /*@__PURE__*/
+  messageDesc(file_elara_user_v1_user_service, 13);
+
+/**
+ * @generated from message elara.user.v1.ReactivateUserRequest
+ */
+export type ReactivateUserRequest = Message<"elara.user.v1.ReactivateUserRequest"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+};
+
+/**
+ * Describes the message elara.user.v1.ReactivateUserRequest.
+ * Use `create(ReactivateUserRequestSchema)` to create a new message.
+ */
+export const ReactivateUserRequestSchema: GenMessage<ReactivateUserRequest> = /*@__PURE__*/
+  messageDesc(file_elara_user_v1_user_service, 14);
+
+/**
+ * @generated from message elara.user.v1.ReactivateUserResponse
+ */
+export type ReactivateUserResponse = Message<"elara.user.v1.ReactivateUserResponse"> & {
+  /**
+   * @generated from field: elara.user.v1.User user = 1;
+   */
+  user?: User;
+};
+
+/**
+ * Describes the message elara.user.v1.ReactivateUserResponse.
+ * Use `create(ReactivateUserResponseSchema)` to create a new message.
+ */
+export const ReactivateUserResponseSchema: GenMessage<ReactivateUserResponse> = /*@__PURE__*/
+  messageDesc(file_elara_user_v1_user_service, 15);
+
+/**
  * @generated from service elara.user.v1.UserService
  */
 export const UserService: GenService<{
@@ -324,7 +392,7 @@ export const UserService: GenService<{
     output: typeof ListUsersResponseSchema;
   },
   /**
-   * Fetches a single user by email.
+   * Fetches a single user by their UUID.
    *
    * Authorization:
    *   - User:Read * (global), OR
@@ -405,6 +473,26 @@ export const UserService: GenService<{
     methodKind: "unary";
     input: typeof UpdateUserGroupsRequestSchema;
     output: typeof UpdateUserGroupsResponseSchema;
+  },
+  /**
+   * Deactivates a user, revoking all their sessions.
+   *
+   * @generated from rpc elara.user.v1.UserService.DeactivateUser
+   */
+  deactivateUser: {
+    methodKind: "unary";
+    input: typeof DeactivateUserRequestSchema;
+    output: typeof DeactivateUserResponseSchema;
+  },
+  /**
+   * Reactivates a deactivated user.
+   *
+   * @generated from rpc elara.user.v1.UserService.ReactivateUser
+   */
+  reactivateUser: {
+    methodKind: "unary";
+    input: typeof ReactivateUserRequestSchema;
+    output: typeof ReactivateUserResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_elara_user_v1_user_service, 0);

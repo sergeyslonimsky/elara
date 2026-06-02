@@ -13,8 +13,8 @@ func domainGroupToProto(g *domain.Group) *v1.Group {
 	}
 
 	return &v1.Group{
-		Id:                 g.ID,
 		Name:               g.Name,
+		DisplayName:        g.DisplayName,
 		Description:        g.Description,
 		IsSystem:           g.System,
 		CreatedAt:          timestamppb.New(g.CreatedAt),

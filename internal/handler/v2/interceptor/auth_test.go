@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -21,12 +22,15 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1/configv1connect"
 )
 
-const testUserEmail = "user@example.com"
+const (
+	testUserEmail = "user@example.com"
+	testUserID    = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+)
 
 func validSession() *domain.Session {
 	return &domain.Session{
 		ID:         "valid-session-id",
-		UserID:     testUserEmail,
+		UserID:     testUserID,
 		ClientType: domain.ClientTypeWeb,
 		CreatedAt:  time.Now(),
 		ExpiresAt:  time.Now().Add(time.Hour),
@@ -34,7 +38,12 @@ func validSession() *domain.Session {
 }
 
 func activeUser() *domain.User {
-	return &domain.User{Email: testUserEmail, Name: "Test User"}
+	return &domain.User{
+		ID:          uuid.MustParse(testUserID),
+		Email:       testUserEmail,
+		DisplayName: "Test User",
+		Status:      domain.UserStatusActive,
+	}
 }
 
 // testConfigServer implements a minimal configv1connect.ConfigServiceHandler for testing.
@@ -96,7 +105,7 @@ func TestAuthInterceptor_WrapUnary(t *testing.T) {
 			cookieValue: "valid-session-id",
 			setupMocks: func(sess *interceptor_mock.MocksessionValidator, users *interceptor_mock.MockuserLookup) {
 				sess.EXPECT().Validate(gomock.Any(), "valid-session-id").Return(validSession(), nil)
-				users.EXPECT().Get(gomock.Any(), testUserEmail).Return(activeUser(), nil)
+				users.EXPECT().GetByID(gomock.Any(), uuid.MustParse(testUserID)).Return(activeUser(), nil)
 				sess.EXPECT().Refresh(gomock.Any(), "valid-session-id").Return(nil)
 			},
 			wantClaims: true,
@@ -134,7 +143,9 @@ func TestAuthInterceptor_WrapUnary(t *testing.T) {
 			cookieValue: "valid-session-id",
 			setupMocks: func(sess *interceptor_mock.MocksessionValidator, users *interceptor_mock.MockuserLookup) {
 				sess.EXPECT().Validate(gomock.Any(), "valid-session-id").Return(validSession(), nil)
-				users.EXPECT().Get(gomock.Any(), testUserEmail).Return(nil, errors.New("user not found"))
+				users.EXPECT().
+					GetByID(gomock.Any(), uuid.MustParse(testUserID)).
+					Return(nil, errors.New("user not found"))
 			},
 			wantCode: connect.CodeUnauthenticated,
 		},
@@ -145,10 +156,21 @@ func TestAuthInterceptor_WrapUnary(t *testing.T) {
 			cookieValue: "valid-session-id",
 			setupMocks: func(sess *interceptor_mock.MocksessionValidator, users *interceptor_mock.MockuserLookup) {
 				sess.EXPECT().Validate(gomock.Any(), "bearer-session-id").Return(validSession(), nil)
-				users.EXPECT().Get(gomock.Any(), testUserEmail).Return(activeUser(), nil)
+				users.EXPECT().GetByID(gomock.Any(), uuid.MustParse(testUserID)).Return(activeUser(), nil)
 				sess.EXPECT().Refresh(gomock.Any(), "bearer-session-id").Return(nil)
 			},
 			wantClaims: true,
+		},
+		{
+			name:        "deactivated user returns unauthenticated",
+			cookieValue: "valid-session-id",
+			setupMocks: func(sess *interceptor_mock.MocksessionValidator, users *interceptor_mock.MockuserLookup) {
+				sess.EXPECT().Validate(gomock.Any(), "valid-session-id").Return(validSession(), nil)
+				deactivated := activeUser()
+				deactivated.Status = domain.UserStatusDeactivated
+				users.EXPECT().GetByID(gomock.Any(), uuid.MustParse(testUserID)).Return(deactivated, nil)
+			},
+			wantCode: connect.CodeUnauthenticated,
 		},
 	}
 
@@ -248,7 +270,7 @@ func TestAuthInterceptor_WrapStreamingHandler(t *testing.T) {
 			cookieValue: "valid-session-id",
 			setupMocks: func(sess *interceptor_mock.MocksessionValidator, users *interceptor_mock.MockuserLookup) {
 				sess.EXPECT().Validate(gomock.Any(), "valid-session-id").Return(validSession(), nil)
-				users.EXPECT().Get(gomock.Any(), testUserEmail).Return(activeUser(), nil)
+				users.EXPECT().GetByID(gomock.Any(), uuid.MustParse(testUserID)).Return(activeUser(), nil)
 				sess.EXPECT().Refresh(gomock.Any(), "valid-session-id").Return(nil)
 			},
 			wantClaims: true,

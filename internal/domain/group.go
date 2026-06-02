@@ -1,12 +1,12 @@
 package domain
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
 
 const (
-	maxGroupNameLen   = 128
 	maxDescriptionLen = 1024
 )
 
@@ -36,8 +36,8 @@ type GroupListParams struct {
 // metadata, members, and permissions proceed without false conflicts —
 // see the proto comment on the wire-level message for the full contract.
 type Group struct {
-	ID                 string
 	Name               string
+	DisplayName        string
 	Description        string
 	System             bool // protected from delete/rename; set by Seed, never by the API
 	MetadataVersion    int64
@@ -45,6 +45,11 @@ type Group struct {
 	PermissionsVersion int64
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
+}
+
+// GroupReader is the narrow read-only port over group persistence.
+type GroupReader interface {
+	Get(ctx context.Context, name string) (*Group, error)
 }
 
 func (g *Group) EnsureMutable() error {
@@ -56,18 +61,14 @@ func (g *Group) EnsureMutable() error {
 }
 
 func (g *Group) Validate() error {
-	if g.ID == "" {
-		return NewValidationError("id", "group id is required")
+	if err := ValidateCanonicalName("name", g.Name); err != nil {
+		return err
 	}
 
-	if g.Name == "" {
-		return NewValidationError("name", "group name is required")
-	}
-
-	if len(g.Name) > maxGroupNameLen {
+	if len(g.DisplayName) > maxDisplayNameLen {
 		return NewValidationError(
-			"name",
-			fmt.Sprintf("group name must be at most %d characters", maxGroupNameLen),
+			"displayName",
+			fmt.Sprintf("display name must be at most %d characters", maxDisplayNameLen),
 		)
 	}
 

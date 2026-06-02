@@ -33,7 +33,8 @@ func TestAdminBootstrap_PDPProbe(t *testing.T) {
 	groups := bbolt.NewGroupRepo(storageManager)
 	policies := bbolt.NewPolicyRepo(storageManager)
 
-	bs := auth.NewAdminBootstrap(storageManager, users, groups, policies)
+	userSvc := auth.NewUserService(users)
+	bs := auth.NewAdminBootstrap(storageManager, userSvc, groups, policies)
 
 	// Seed basic admin.
 	adminEmail := "admin@elara.internal"
@@ -44,8 +45,13 @@ func TestAdminBootstrap_PDPProbe(t *testing.T) {
 	require.NoError(t, err)
 	pdp := authz.NewPDP(enforcer)
 
+	// Bootstrap stores the superadmin policy under user.ID (UUID), not email.
+	// Resolve the seeded user to get the minted UUID.
+	seededUser, err := users.GetByIdentity(ctx, string(domain.ProviderBasic), adminEmail)
+	require.NoError(t, err)
+
 	// Admin must have wildcard.
-	ok := pdp.Has(adminEmail, domain.Permission{
+	ok := pdp.Has(seededUser.ID.String(), domain.Permission{
 		Object: "anything",
 		Action: "delete",
 		Domain: "prod",

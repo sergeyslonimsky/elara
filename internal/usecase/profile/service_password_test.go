@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -26,7 +27,7 @@ func TestService_ChangePassword(t *testing.T) {
 	// newUser returns a fresh *domain.User per sub-test to avoid sharing a
 	// pointer across parallel sub-tests.
 	newUser := func() *domain.User {
-		return &domain.User{Email: email, PasswordHash: oldHash}
+		return &domain.User{ID: uuid.MustParse(testUserID), Email: email, PasswordHash: oldHash}
 	}
 
 	tests := []struct {
@@ -45,8 +46,8 @@ func TestService_ChangePassword(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
 				ctx = auth2.WithSession(
 					ctx,
-					&domain.Session{},
-					&domain.User{Email: email, PasswordChangeRequired: false},
+					&domain.Session{UserID: testUserID},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: email, PasswordChangeRequired: false},
 				)
 				svc, m := setupService(ctrl)
 
@@ -55,8 +56,8 @@ func TestService_ChangePassword(t *testing.T) {
 						return fn(ctx)
 					},
 				)
-				m.users.EXPECT().Get(gomock.Any(), email).Return(newUser(), nil)
-				m.pass.EXPECT().SetPassword(gomock.Any(), email, gomock.Any(), false).Return(nil)
+				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).Return(newUser(), nil)
+				m.pass.EXPECT().SetPassword(gomock.Any(), uuid.MustParse(testUserID), gomock.Any(), false).Return(nil)
 				m.sessions.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&domain.Session{ID: "new-s1"}, nil)
 
 				return svc, ctx
@@ -71,8 +72,8 @@ func TestService_ChangePassword(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
 				ctx = auth2.WithSession(
 					ctx,
-					&domain.Session{},
-					&domain.User{Email: email, PasswordChangeRequired: true},
+					&domain.Session{UserID: testUserID},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: email, PasswordChangeRequired: true},
 				)
 				svc, m := setupService(ctrl)
 
@@ -81,8 +82,8 @@ func TestService_ChangePassword(t *testing.T) {
 						return fn(ctx)
 					},
 				)
-				m.users.EXPECT().Get(gomock.Any(), email).Return(newUser(), nil)
-				m.pass.EXPECT().SetPassword(gomock.Any(), email, gomock.Any(), false).Return(nil)
+				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).Return(newUser(), nil)
+				m.pass.EXPECT().SetPassword(gomock.Any(), uuid.MustParse(testUserID), gomock.Any(), false).Return(nil)
 				m.sessions.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&domain.Session{ID: "new-s1"}, nil)
 
 				return svc, ctx
@@ -108,8 +109,8 @@ func TestService_ChangePassword(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
 				ctx = auth2.WithSession(
 					ctx,
-					&domain.Session{},
-					&domain.User{Email: email, PasswordChangeRequired: false},
+					&domain.Session{UserID: testUserID},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: email, PasswordChangeRequired: false},
 				)
 				svc, m := setupService(ctrl)
 
@@ -118,7 +119,7 @@ func TestService_ChangePassword(t *testing.T) {
 						return fn(ctx)
 					},
 				)
-				m.users.EXPECT().Get(gomock.Any(), email).Return(newUser(), nil)
+				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).Return(newUser(), nil)
 
 				return svc, ctx
 			},
@@ -131,7 +132,11 @@ func TestService_ChangePassword(t *testing.T) {
 				NewPassword:     newPassword,
 			},
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
-				ctx = auth2.WithSession(ctx, &domain.Session{}, &domain.User{Email: email})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{UserID: testUserID},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: email},
+				)
 				svc, m := setupService(ctrl)
 
 				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
@@ -139,7 +144,9 @@ func TestService_ChangePassword(t *testing.T) {
 						return fn(ctx)
 					},
 				)
-				m.users.EXPECT().Get(gomock.Any(), email).Return(nil, errors.New("db error"))
+				m.users.EXPECT().
+					GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).
+					Return(nil, errors.New("db error"))
 
 				return svc, ctx
 			},
@@ -154,8 +161,8 @@ func TestService_ChangePassword(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
 				ctx = auth2.WithSession(
 					ctx,
-					&domain.Session{},
-					&domain.User{Email: email, PasswordChangeRequired: true},
+					&domain.Session{UserID: testUserID},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: email, PasswordChangeRequired: true},
 				)
 				svc, m := setupService(ctrl)
 
@@ -164,9 +171,9 @@ func TestService_ChangePassword(t *testing.T) {
 						return fn(ctx)
 					},
 				)
-				m.users.EXPECT().Get(gomock.Any(), email).Return(newUser(), nil)
+				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).Return(newUser(), nil)
 				m.pass.EXPECT().
-					SetPassword(gomock.Any(), email, gomock.Any(), false).
+					SetPassword(gomock.Any(), uuid.MustParse(testUserID), gomock.Any(), false).
 					Return(errors.New("db error"))
 
 				return svc, ctx
@@ -182,8 +189,8 @@ func TestService_ChangePassword(t *testing.T) {
 			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
 				ctx = auth2.WithSession(
 					ctx,
-					&domain.Session{},
-					&domain.User{Email: email, PasswordChangeRequired: true},
+					&domain.Session{UserID: testUserID},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: email, PasswordChangeRequired: true},
 				)
 				svc, m := setupService(ctrl)
 
@@ -192,8 +199,8 @@ func TestService_ChangePassword(t *testing.T) {
 						return fn(ctx)
 					},
 				)
-				m.users.EXPECT().Get(gomock.Any(), email).Return(newUser(), nil)
-				m.pass.EXPECT().SetPassword(gomock.Any(), email, gomock.Any(), false).Return(nil)
+				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).Return(newUser(), nil)
+				m.pass.EXPECT().SetPassword(gomock.Any(), uuid.MustParse(testUserID), gomock.Any(), false).Return(nil)
 				m.sessions.EXPECT().
 					Create(gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("session error"))

@@ -214,8 +214,11 @@ func etcdServerOptions(
 		opts = append(opts, coregrpc.WithOtel())
 	}
 
-	if cfg.Client.Auth.Enabled {
-		tokenInterceptor := etcdinterceptor.NewTokenInterceptor(adapters.AuthTokens)
+	if cfg.Client.Auth.Enabled || cfg.DangerouslySkipPermissions {
+		tokenInterceptor := etcdinterceptor.NewTokenInterceptor(
+			adapters.AuthTokens,
+			etcdinterceptor.WithTokenSkipPermissions(cfg.DangerouslySkipPermissions),
+		)
 		opts = append(opts,
 			coregrpc.WithUnaryInterceptor(tokenInterceptor.Unary()),
 			coregrpc.WithStreamInterceptor(tokenInterceptor.Stream()),

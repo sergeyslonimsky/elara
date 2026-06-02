@@ -32,8 +32,8 @@ type ListResult struct {
 // post-fetch pdp.Has loop. An empty effective set returns an empty list, not
 // an error (EL-4 §7 acceptance: empty responses → empty list, not 403).
 func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
@@ -42,7 +42,7 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 		limit = defaultListLimit
 	}
 
-	scope := s.pdp.EffectiveNamespaces(claims.Email, domain.ActionRead)
+	scope := s.pdp.EffectiveNamespaces(info.UserID, domain.ActionRead)
 	if scope.IsEmpty() {
 		return &ListResult{
 			Namespaces: []*domain.Namespace{},
@@ -73,7 +73,7 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 		return nil, err
 	}
 
-	s.annotatePermissions(claims.Email, namespaces)
+	s.annotatePermissions(info.UserID, namespaces)
 
 	return &ListResult{
 		Namespaces: namespaces,
@@ -87,9 +87,9 @@ func (s *Service) List(ctx context.Context, params ListParams) (*ListResult, err
 // CanRead is implicitly true (the list is already scoped to readable
 // namespaces); CanWrite gates the "Import here" action and requires
 // config/write on the namespace.
-func (s *Service) annotatePermissions(callerEmail string, namespaces []*domain.Namespace) {
+func (s *Service) annotatePermissions(callerID string, namespaces []*domain.Namespace) {
 	for _, ns := range namespaces {
 		ns.CanRead = true
-		ns.CanWrite = s.pdp.HasNamespace(callerEmail, ns.Name, domain.ActionWrite)
+		ns.CanWrite = s.pdp.HasNamespace(callerID, ns.Name, domain.ActionWrite)
 	}
 }

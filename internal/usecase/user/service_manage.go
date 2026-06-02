@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
@@ -17,7 +19,7 @@ import (
 // does for an existing user.
 type CreateData struct {
 	Email           string
-	Name            string
+	DisplayName     string
 	InitialPassword string // required basic-auth; must be empty in OIDC (handler-enforced)
 	InitialGroupIDs []string
 }
@@ -83,17 +85,35 @@ func (s *Service) Create(
 }
 
 // newUserFromCreateData builds a validated User entity from request data.
-// Provider is derived from whether InitialPassword is set — the handler
-// has already ensured the password/auth-type combination is valid.
+//
+// Identity model (per EL-50 §3.3.1 pre-provisioning flow):
+//   - basic auth: identity is created immediately with the normalized email
+//     as Subject — admin knows the "login" at create time.
+//   - OIDC: Identities is left EMPTY. The OIDC sub is unknown until the user
+//     actually logs in for the first time; the first OIDC-callback then
+//     links {oidc:<issuer>, sub} via email-fallback (resolver.ResolveOIDC).
 func newUserFromCreateData(data CreateData) (*domain.User, error) {
+	normalizedEmail, err := domain.NormalizeEmail(data.Email)
+	if err != nil {
+		return nil, fmt.Errorf("normalize email: %w", err)
+	}
+
 	user := &domain.User{
-		Email:    data.Email,
-		Name:     data.Name,
-		Provider: domain.ProviderBasicAuth,
+		ID:          uuid.New(),
+		Email:       normalizedEmail,
+		DisplayName: data.DisplayName,
+		Status:      domain.UserStatusActive,
 	}
+
 	if data.InitialPassword == "" {
-		user.Provider = domain.ProviderOIDC
+		// OIDC pre-provision: no identity until first login.
+		user.Identities = nil
+	} else {
+		user.Identities = []domain.Identity{
+			{Provider: domain.ProviderBasic, Subject: normalizedEmail},
+		}
 	}
+
 	if err := user.Validate(); err != nil {
 		return nil, fmt.Errorf("validate user: %w", err)
 	}
@@ -109,7 +129,7 @@ func newUserFromCreateData(data CreateData) (*domain.User, error) {
 // RequireMembershipGrant) so concurrent revocation between this pre-check
 // and the apply is caught — preauthorize is purely an optimization.
 func (s *Service) preauthorize(actor domain.AuthInfo, ids []string) error {
-	if s.pdp.HasGlobal(actor.Email, domain.ObjectUser, domain.ActionCreate) {
+	if s.pdp.HasGlobal(actor.UserID, domain.ObjectUser, domain.ActionCreate) {
 		return nil
 	}
 	if len(ids) == 0 {
@@ -125,7 +145,7 @@ func (s *Service) preauthorize(actor domain.AuthInfo, ids []string) error {
 // clearly has no scope, in-tx check closes the TOCTOU window.
 func (s *Service) authorizeInitialGroups(actor domain.AuthInfo, ids []string) error {
 	for _, id := range ids {
-		if !s.pdp.HasGroup(actor.Email, id, domain.ActionWrite) {
+		if !s.pdp.HasGroup(actor.UserID, id, domain.ActionWrite) {
 			return domain.ErrForbidden
 		}
 	}
@@ -140,8 +160,8 @@ func (s *Service) persistUser(
 	user *domain.User,
 	initialPassword string,
 ) error {
-	if err := s.store.Upsert(ctx, user); err != nil {
-		return fmt.Errorf("upsert user: %w", err)
+	if err := s.users.Create(ctx, user); err != nil {
+		return fmt.Errorf("create user: %w", err)
 	}
 	if initialPassword == "" {
 		return nil
@@ -150,7 +170,7 @@ func (s *Service) persistUser(
 	if err != nil {
 		return fmt.Errorf("hash password: %w", err)
 	}
-	if err := s.store.SetPassword(ctx, user.Email, hash, true); err != nil {
+	if err := s.store.SetPassword(ctx, user.ID, hash, true); err != nil {
 		return fmt.Errorf("set password: %w", err)
 	}
 
@@ -170,7 +190,7 @@ func (s *Service) applyInitialGroups(
 	ids []string,
 ) ([]string, int64, error) {
 	const initialVersion = int64(1)
-	if err := s.store.SetMembershipVersion(ctx, user.Email, initialVersion); err != nil {
+	if err := s.store.SetMembershipVersion(ctx, user.ID, initialVersion); err != nil {
 		return nil, 0, fmt.Errorf("persist initial membership version: %w", err)
 	}
 
@@ -185,13 +205,13 @@ func (s *Service) applyInitialGroups(
 		return nil, 0, err
 	}
 
-	desired, err := loadGroupsByIDs(ctx, s.groups, ids)
+	desired, err := loadGroupsByNames(ctx, s.groups, ids)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	for _, id := range ids {
-		if err := s.scope.RequireMembershipGrant(actor.Email, desired[id].Name); err != nil {
+		if err := s.scope.RequireMembershipGrant(actor.UserID, desired[id].Name); err != nil {
 			return nil, 0, fmt.Errorf("grant group %s: %w", id, err)
 		}
 	}
@@ -200,7 +220,7 @@ func (s *Service) applyInitialGroups(
 	for _, id := range ids {
 		names = append(names, desired[id].Name)
 	}
-	if err := papTx.ApplyUserMembershipDeltas(user.Email, names, nil); err != nil {
+	if err := papTx.ApplyUserMembershipDeltas(user.ID.String(), names, nil); err != nil {
 		return nil, 0, fmt.Errorf("pap apply user memberships: %w", err)
 	}
 
@@ -218,29 +238,29 @@ func (s *Service) applyInitialGroups(
 //
 // All checks run inside PAP.Write so they observe the same snapshot as the
 // apply step: no TOCTOU window between authorize and delete.
-func (s *Service) Delete(ctx context.Context, actor domain.AuthInfo, targetEmail string) error {
-	if actor.Email == targetEmail {
-		return domain.NewValidationError("email", "cannot delete your own account")
-	}
-
+func (s *Service) Delete(ctx context.Context, actor domain.AuthInfo, userID uuid.UUID) error {
 	err := s.pap.Write(ctx, func(ctx context.Context, papTx *authz.PAPTx) error {
-		if _, err := s.store.Get(ctx, targetEmail); err != nil {
+		user, err := s.store.GetByID(ctx, userID)
+		if err != nil {
 			return fmt.Errorf("get user: %w", err)
 		}
-		if err := s.authorizeUserWrite(ctx, actor, targetEmail); err != nil {
+		if actor.UserID == user.ID.String() {
+			return domain.NewValidationError("user_id", "cannot delete your own account")
+		}
+		if err := s.authorizeUserWrite(ctx, actor, user.ID.String()); err != nil {
 			return err
 		}
-		if err := s.validateLastAdmin(targetEmail); err != nil {
+		if err := s.validateLastAdmin(user.ID.String()); err != nil {
 			return err
 		}
-		if err := s.store.Delete(ctx, targetEmail); err != nil {
+		if err := s.store.Delete(ctx, user.ID); err != nil {
 			return fmt.Errorf("delete user: %w", err)
 		}
-		if err := papTx.DeleteUser(targetEmail); err != nil {
+		if err := papTx.DeleteUser(user.ID.String()); err != nil {
 			return fmt.Errorf("pap delete user: %w", err)
 		}
 
-		if err := s.sessions.RevokeAllForUser(ctx, targetEmail, actor.Email, "user deleted"); err != nil {
+		if err := s.sessions.RevokeAllForUser(ctx, user.ID.String(), actor.UserID, "user deleted"); err != nil {
 			return fmt.Errorf("revoke sessions: %w", err)
 		}
 
@@ -272,18 +292,18 @@ type GetResult struct {
 func (s *Service) Get(
 	ctx context.Context,
 	actor domain.AuthInfo,
-	email string,
+	userID uuid.UUID,
 ) (*GetResult, error) {
-	user, err := s.store.Get(ctx, email)
+	user, err := s.store.GetByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 
-	if !s.scope.CanReadUser(ctx, actor.Email, email) {
-		return nil, fmt.Errorf("get user: %w", domain.NewNotFoundError("user", email))
+	if !s.scope.CanReadUser(ctx, actor.UserID, user.ID.String()) {
+		return nil, fmt.Errorf("get user: %w", domain.NewNotFoundError("user", userID.String()))
 	}
 
-	visible, err := s.scope.VisibleUserGroupIDs(ctx, actor.Email, email)
+	visible, err := s.scope.VisibleUserGroupNames(ctx, actor.UserID, user.ID.String())
 	if err != nil {
 		return nil, fmt.Errorf("visible user group ids: %w", err)
 	}
@@ -298,10 +318,10 @@ func (s *Service) Get(
 // validateLastAdmin prevents removing the final member of the superadmin
 // group, which would lock everyone out of administration. Admin privilege is
 // held only via membership in domain.SystemGroupSuperAdmin (groups-only RBAC).
-func (s *Service) validateLastAdmin(targetEmail string) error {
+func (s *Service) validateLastAdmin(targetID string) error {
 	members := s.pap.GroupMembers(domain.SystemGroupSuperAdmin)
-	if len(members) == 1 && members[0] == targetEmail {
-		return domain.NewValidationError("email", "cannot delete the last admin")
+	if len(members) == 1 && members[0] == targetID {
+		return domain.NewValidationError("id", "cannot delete the last admin")
 	}
 
 	return nil

@@ -68,7 +68,7 @@ export function DeleteUserDialog({
 	});
 
 	const onSubmit = () => {
-		mutation.mutate({ email: user.email });
+		mutation.mutate({ userId: user.id });
 	};
 
 	return (

@@ -61,22 +61,22 @@ type GroupServiceClient interface {
 	// Authorization: Group:Create * (global).
 	// Anti-escalation:
 	//   - caller must hold every permission in initial_permissions;
-	//   - for each id in initial_manager_group_ids the caller must hold
+	//   - for each name in initial_manager_group_names the caller must hold
 	//     Group:Write on the group AND the group must hold every permission
 	//     in initial_permissions (cascade — its existing members will inherit
-	//     the new Group:Write group:<new-id>).
+	//     the new Group:Write group:<new-name>).
 	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.CreateGroupResponse], error)
-	// Fetches a single group by id.
+	// Fetches a single group by name.
 	//
-	// Authorization: Group:Read group:<id> (or Group:Read * — wildcard match).
+	// Authorization: Group:Read group:<name> (or Group:Read * — wildcard match).
 	// visible_members in the response is filtered through the derived
 	// User:Read rule (see user_service.proto). The full permission set of
 	// the group is always returned — visibility derives from holding
 	// Group:Read on the group itself, no extra per-permission filter.
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.GetGroupResponse], error)
-	// Updates only metadata (name, description).
+	// Updates only metadata (display_name, description).
 	//
-	// Authorization: Group:Write group:<id>.
+	// Authorization: Group:Write group:<name>.
 	// Members and permissions are managed by UpdateGroupMembers and
 	// UpdateGroupPermissions respectively — mixing them here would
 	// re-introduce the dual-write drift the split was designed to eliminate.
@@ -85,7 +85,7 @@ type GroupServiceClient interface {
 	// Adding an existing member is a no-op; removing an absent one is a no-op.
 	// Same email in both add_emails and remove_emails returns INVALID_ARGUMENT.
 	//
-	// Authorization: Group:Write group:<group_id>.
+	// Authorization: Group:Write group:<group_name>.
 	// Anti-escalation: each add_emails entry receives the group's full
 	// permission set, so the caller must hold every one of those permissions.
 	// Removals require no escalation check.
@@ -97,7 +97,7 @@ type GroupServiceClient interface {
 	// Adding an existing permission is a no-op; removing an absent one is a no-op.
 	// Same permission in both add and remove returns INVALID_ARGUMENT.
 	//
-	// Authorization: Group:Write group:<group_id>.
+	// Authorization: Group:Write group:<group_name>.
 	// Anti-escalation:
 	//   - per-delta: caller must hold each permission in add (boundary check);
 	//   - cascade: if the group has members, caller must hold every permission
@@ -109,7 +109,7 @@ type GroupServiceClient interface {
 	UpdateGroupPermissions(context.Context, *connect.Request[v1.UpdateGroupPermissionsRequest]) (*connect.Response[v1.UpdateGroupPermissionsResponse], error)
 	// Deletes a group along with all its membership and permission rules.
 	//
-	// Authorization: Group:Write group:<id>.
+	// Authorization: Group:Write group:<name>.
 	// System groups (is_system=true) cannot be deleted — returns
 	// FAILED_PRECONDITION. The entity, its p-rules, and its g-rules
 	// (both directions: members and roles) are removed atomically in one
@@ -120,7 +120,7 @@ type GroupServiceClient interface {
 	// Authorization:
 	//   - Group:Read * (global) returns every group.
 	//   - Without Group:Read *, only groups for which the caller holds
-	//     Group:Read group:<id> are returned.
+	//     Group:Read group:<name> are returned.
 	//
 	// An empty result is not an error — pagination returns an empty page.
 	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)
@@ -235,22 +235,22 @@ type GroupServiceHandler interface {
 	// Authorization: Group:Create * (global).
 	// Anti-escalation:
 	//   - caller must hold every permission in initial_permissions;
-	//   - for each id in initial_manager_group_ids the caller must hold
+	//   - for each name in initial_manager_group_names the caller must hold
 	//     Group:Write on the group AND the group must hold every permission
 	//     in initial_permissions (cascade — its existing members will inherit
-	//     the new Group:Write group:<new-id>).
+	//     the new Group:Write group:<new-name>).
 	CreateGroup(context.Context, *connect.Request[v1.CreateGroupRequest]) (*connect.Response[v1.CreateGroupResponse], error)
-	// Fetches a single group by id.
+	// Fetches a single group by name.
 	//
-	// Authorization: Group:Read group:<id> (or Group:Read * — wildcard match).
+	// Authorization: Group:Read group:<name> (or Group:Read * — wildcard match).
 	// visible_members in the response is filtered through the derived
 	// User:Read rule (see user_service.proto). The full permission set of
 	// the group is always returned — visibility derives from holding
 	// Group:Read on the group itself, no extra per-permission filter.
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.GetGroupResponse], error)
-	// Updates only metadata (name, description).
+	// Updates only metadata (display_name, description).
 	//
-	// Authorization: Group:Write group:<id>.
+	// Authorization: Group:Write group:<name>.
 	// Members and permissions are managed by UpdateGroupMembers and
 	// UpdateGroupPermissions respectively — mixing them here would
 	// re-introduce the dual-write drift the split was designed to eliminate.
@@ -259,7 +259,7 @@ type GroupServiceHandler interface {
 	// Adding an existing member is a no-op; removing an absent one is a no-op.
 	// Same email in both add_emails and remove_emails returns INVALID_ARGUMENT.
 	//
-	// Authorization: Group:Write group:<group_id>.
+	// Authorization: Group:Write group:<group_name>.
 	// Anti-escalation: each add_emails entry receives the group's full
 	// permission set, so the caller must hold every one of those permissions.
 	// Removals require no escalation check.
@@ -271,7 +271,7 @@ type GroupServiceHandler interface {
 	// Adding an existing permission is a no-op; removing an absent one is a no-op.
 	// Same permission in both add and remove returns INVALID_ARGUMENT.
 	//
-	// Authorization: Group:Write group:<group_id>.
+	// Authorization: Group:Write group:<group_name>.
 	// Anti-escalation:
 	//   - per-delta: caller must hold each permission in add (boundary check);
 	//   - cascade: if the group has members, caller must hold every permission
@@ -283,7 +283,7 @@ type GroupServiceHandler interface {
 	UpdateGroupPermissions(context.Context, *connect.Request[v1.UpdateGroupPermissionsRequest]) (*connect.Response[v1.UpdateGroupPermissionsResponse], error)
 	// Deletes a group along with all its membership and permission rules.
 	//
-	// Authorization: Group:Write group:<id>.
+	// Authorization: Group:Write group:<name>.
 	// System groups (is_system=true) cannot be deleted — returns
 	// FAILED_PRECONDITION. The entity, its p-rules, and its g-rules
 	// (both directions: members and roles) are removed atomically in one
@@ -294,7 +294,7 @@ type GroupServiceHandler interface {
 	// Authorization:
 	//   - Group:Read * (global) returns every group.
 	//   - Without Group:Read *, only groups for which the caller holds
-	//     Group:Read group:<id> are returned.
+	//     Group:Read group:<name> are returned.
 	//
 	// An empty result is not an error — pagination returns an empty page.
 	ListGroups(context.Context, *connect.Request[v1.ListGroupsRequest]) (*connect.Response[v1.ListGroupsResponse], error)

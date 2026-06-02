@@ -134,7 +134,7 @@ describe("CreateUserDialog", () => {
 
 		const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility);
 		can("create", "User");
-		can("write", "Group", { domain: "group:g1" });
+		can("write", "Group", { domain: "group:developers" });
 		const ability = build();
 		const authContext = authenticatedContext(ability, {
 			authType: AuthType.BASIC,
@@ -144,8 +144,8 @@ describe("CreateUserDialog", () => {
 			data: {
 				groups: [
 					create(GroupSchema, {
-						id: "g1",
 						name: "developers",
+						displayName: "Developers Group",
 						isSystem: false,
 						metadataVersion: 1n,
 						membersVersion: 1n,
@@ -183,13 +183,13 @@ describe("CreateUserDialog", () => {
 		await ue.type(screen.getByPlaceholderText("Jane Doe"), "New User");
 		await ue.type(screen.getByPlaceholderText(/at least/i), "password123");
 
-		await ue.click(screen.getByRole("checkbox", { name: "developers" }));
+		await ue.click(screen.getByRole("checkbox", { name: "Developers Group" }));
 		await ue.click(screen.getByRole("button", { name: /^create$/i }));
 
 		expect(mockMutate).toHaveBeenCalledWith(
 			expect.objectContaining({
 				email: "new@example.com",
-				initialGroupIds: ["g1"],
+				initialGroupIds: ["developers"],
 			}),
 		);
 	});

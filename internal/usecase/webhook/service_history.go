@@ -13,8 +13,8 @@ func (s *Service) GetHistory(
 	ctx context.Context,
 	webhookID string,
 ) ([]domain.DeliveryAttempt, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
@@ -23,7 +23,7 @@ func (s *Service) GetHistory(
 		return nil, fmt.Errorf("get webhook: %w", err)
 	}
 
-	if !s.pdp.Has(claims.Email, domain.Permission{
+	if !s.pdp.Has(info.UserID, domain.Permission{
 		Object: domain.ObjectWebhook,
 		Action: domain.ActionRead,
 		Domain: webhookDomain(w),

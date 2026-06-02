@@ -2,8 +2,8 @@
 // @generated from file elara/user/v1/user.proto (package elara.user.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
@@ -12,7 +12,51 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/user/v1/user.proto.
  */
 export const file_elara_user_v1_user: GenFile = /*@__PURE__*/
-  fileDesc("ChhlbGFyYS91c2VyL3YxL3VzZXIucHJvdG8SDWVsYXJhLnVzZXIudjEivAEKBFVzZXISDQoFZW1haWwYASABKAkSDAoEbmFtZRgCIAEoCRIPCgdwaWN0dXJlGAMgASgJEhAKCHByb3ZpZGVyGAQgASgJEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWxhc3RfbG9naW5fYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhEKCWlzX3N5c3RlbRgHIAEoCEK6AQoRY29tLmVsYXJhLnVzZXIudjFCCVVzZXJQcm90b1ABWkRnaXRodWIuY29tL3NlcmdleXNsb25pbXNreS9lbGFyYS9pbnRlcm5hbC9wcm90by9lbGFyYS91c2VyL3YxO3VzZXJ2MaICA0VVWKoCDUVsYXJhLlVzZXIuVjHKAg1FbGFyYVxVc2VyXFYx4gIZRWxhcmFcVXNlclxWMVxHUEJNZXRhZGF0YeoCD0VsYXJhOjpVc2VyOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChhlbGFyYS91c2VyL3YxL3VzZXIucHJvdG8SDWVsYXJhLnVzZXIudjEiLQoISWRlbnRpdHkSEAoIcHJvdmlkZXIYASABKAkSDwoHc3ViamVjdBgCIAEoCSIVCgdVc2VyUmVmEgoKAmlkGAEgASgJIrICCgRVc2VyEg0KBWVtYWlsGAEgASgJEg8KB3BpY3R1cmUYAyABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNbGFzdF9sb2dpbl9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEQoJaXNfc3lzdGVtGAcgASgIEgoKAmlkGAogASgJEhQKDGRpc3BsYXlfbmFtZRgLIAEoCRIpCgZzdGF0dXMYDCABKA4yGS5lbGFyYS51c2VyLnYxLlVzZXJTdGF0dXMSKwoKaWRlbnRpdGllcxgNIAMoCzIXLmVsYXJhLnVzZXIudjEuSWRlbnRpdHlKBAgCEANKBAgEEAVSBG5hbWVSCHByb3ZpZGVyKl4KClVzZXJTdGF0dXMSGwoXVVNFUl9TVEFUVVNfVU5TUEVDSUZJRUQQABIWChJVU0VSX1NUQVRVU19BQ1RJVkUQARIbChdVU0VSX1NUQVRVU19ERUFDVElWQVRFRBACQroBChFjb20uZWxhcmEudXNlci52MUIJVXNlclByb3RvUAFaRGdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL3VzZXIvdjE7dXNlcnYxogIDRVVYqgINRWxhcmEuVXNlci5WMcoCDUVsYXJhXFVzZXJcVjHiAhlFbGFyYVxVc2VyXFYxXEdQQk1ldGFkYXRh6gIPRWxhcmE6OlVzZXI6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+
+/**
+ * Identity represents a single provider/subject pair attached to a user.
+ *
+ * @generated from message elara.user.v1.Identity
+ */
+export type Identity = Message<"elara.user.v1.Identity"> & {
+  /**
+   * @generated from field: string provider = 1;
+   */
+  provider: string;
+
+  /**
+   * @generated from field: string subject = 2;
+   */
+  subject: string;
+};
+
+/**
+ * Describes the message elara.user.v1.Identity.
+ * Use `create(IdentitySchema)` to create a new message.
+ */
+export const IdentitySchema: GenMessage<Identity> = /*@__PURE__*/
+  messageDesc(file_elara_user_v1_user, 0);
+
+/**
+ * UserRef is a stable reference to a user by UUID (pass-2 RPCs will use this
+ * instead of email).
+ *
+ * @generated from message elara.user.v1.UserRef
+ */
+export type UserRef = Message<"elara.user.v1.UserRef"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message elara.user.v1.UserRef.
+ * Use `create(UserRefSchema)` to create a new message.
+ */
+export const UserRefSchema: GenMessage<UserRef> = /*@__PURE__*/
+  messageDesc(file_elara_user_v1_user, 1);
 
 /**
  * @generated from message elara.user.v1.User
@@ -24,19 +68,9 @@ export type User = Message<"elara.user.v1.User"> & {
   email: string;
 
   /**
-   * @generated from field: string name = 2;
-   */
-  name: string;
-
-  /**
    * @generated from field: string picture = 3;
    */
   picture: string;
-
-  /**
-   * @generated from field: string provider = 4;
-   */
-  provider: string;
 
   /**
    * @generated from field: google.protobuf.Timestamp created_at = 5;
@@ -56,6 +90,28 @@ export type User = Message<"elara.user.v1.User"> & {
    * @generated from field: bool is_system = 7;
    */
   isSystem: boolean;
+
+  /**
+   * canonical UUID; empty in legacy responses until pass 2 wires it.
+   *
+   * @generated from field: string id = 10;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string display_name = 11;
+   */
+  displayName: string;
+
+  /**
+   * @generated from field: elara.user.v1.UserStatus status = 12;
+   */
+  status: UserStatus;
+
+  /**
+   * @generated from field: repeated elara.user.v1.Identity identities = 13;
+   */
+  identities: Identity[];
 };
 
 /**
@@ -63,5 +119,33 @@ export type User = Message<"elara.user.v1.User"> & {
  * Use `create(UserSchema)` to create a new message.
  */
 export const UserSchema: GenMessage<User> = /*@__PURE__*/
-  messageDesc(file_elara_user_v1_user, 0);
+  messageDesc(file_elara_user_v1_user, 2);
+
+/**
+ * UserStatus mirrors domain.UserStatus.
+ *
+ * @generated from enum elara.user.v1.UserStatus
+ */
+export enum UserStatus {
+  /**
+   * @generated from enum value: USER_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: USER_STATUS_ACTIVE = 1;
+   */
+  ACTIVE = 1,
+
+  /**
+   * @generated from enum value: USER_STATUS_DEACTIVATED = 2;
+   */
+  DEACTIVATED = 2,
+}
+
+/**
+ * Describes the enum elara.user.v1.UserStatus.
+ */
+export const UserStatusSchema: GenEnum<UserStatus> = /*@__PURE__*/
+  enumDesc(file_elara_user_v1_user, 0);
 

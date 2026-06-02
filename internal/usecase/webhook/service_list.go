@@ -14,8 +14,8 @@ import (
 // from the result rather than returning an error. Global webhooks (empty
 // NamespaceFilter) require a (Webhook, Read, *) right to be visible.
 func (s *Service) List(ctx context.Context) ([]*domain.Webhook, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
@@ -24,7 +24,7 @@ func (s *Service) List(ctx context.Context) ([]*domain.Webhook, error) {
 		return nil, fmt.Errorf("list webhooks: %w", err)
 	}
 
-	scope := s.pdp.EffectiveDomains(claims.Email, domain.ObjectWebhook, domain.ActionRead)
+	scope := s.pdp.EffectiveDomains(info.UserID, domain.ObjectWebhook, domain.ActionRead)
 	if scope.IsEmpty() {
 		return []*domain.Webhook{}, nil
 	}

@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -35,17 +36,18 @@ func TestUserRepo_Delete(t *testing.T) {
 		ctx := t.Context()
 
 		user := &domain.User{
-			Email: "test@example.com",
-			Name:  "Test User",
+			ID:          uuid.New(),
+			Email:       "test@example.com",
+			DisplayName: "Test User",
 		}
 
-		err := repo.Upsert(ctx, user)
+		err := repo.Create(ctx, user)
 		require.NoError(t, err)
 
-		err = repo.Delete(ctx, user.Email)
+		err = repo.Delete(ctx, user.ID)
 		require.NoError(t, err)
 
-		got, err := repo.Get(ctx, user.Email)
+		got, err := repo.GetByID(ctx, user.ID)
 		require.ErrorIs(t, err, domain.ErrNotFound)
 		assert.Nil(t, got)
 	})
@@ -57,7 +59,7 @@ func TestUserRepo_Delete(t *testing.T) {
 		repo := NewUserRepo(NewManager(store.db))
 		ctx := t.Context()
 
-		err := repo.Delete(ctx, "nonexistent@example.com")
+		err := repo.Delete(ctx, uuid.New())
 		require.ErrorIs(t, err, domain.ErrNotFound)
 	})
 }

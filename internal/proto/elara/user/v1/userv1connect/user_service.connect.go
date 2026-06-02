@@ -47,6 +47,12 @@ const (
 	// UserServiceUpdateUserGroupsProcedure is the fully-qualified name of the UserService's
 	// UpdateUserGroups RPC.
 	UserServiceUpdateUserGroupsProcedure = "/elara.user.v1.UserService/UpdateUserGroups"
+	// UserServiceDeactivateUserProcedure is the fully-qualified name of the UserService's
+	// DeactivateUser RPC.
+	UserServiceDeactivateUserProcedure = "/elara.user.v1.UserService/DeactivateUser"
+	// UserServiceReactivateUserProcedure is the fully-qualified name of the UserService's
+	// ReactivateUser RPC.
+	UserServiceReactivateUserProcedure = "/elara.user.v1.UserService/ReactivateUser"
 )
 
 // UserServiceClient is a client for the elara.user.v1.UserService service.
@@ -62,7 +68,7 @@ type UserServiceClient interface {
 	// An empty result (no User:Read * and no Group:Read scope) is not an
 	// error — pagination returns an empty page.
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
-	// Fetches a single user by email.
+	// Fetches a single user by their UUID.
 	//
 	// Authorization:
 	//   - User:Read * (global), OR
@@ -108,6 +114,10 @@ type UserServiceClient interface {
 	// If expected_version is set and current membership_version differs,
 	// returns FAILED_PRECONDITION — even if the net change would be a no-op.
 	UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error)
+	// Deactivates a user, revoking all their sessions.
+	DeactivateUser(context.Context, *connect.Request[v1.DeactivateUserRequest]) (*connect.Response[v1.DeactivateUserResponse], error)
+	// Reactivates a deactivated user.
+	ReactivateUser(context.Context, *connect.Request[v1.ReactivateUserRequest]) (*connect.Response[v1.ReactivateUserResponse], error)
 }
 
 // NewUserServiceClient constructs a client for the elara.user.v1.UserService service. By default,
@@ -157,6 +167,18 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("UpdateUserGroups")),
 			connect.WithClientOptions(opts...),
 		),
+		deactivateUser: connect.NewClient[v1.DeactivateUserRequest, v1.DeactivateUserResponse](
+			httpClient,
+			baseURL+UserServiceDeactivateUserProcedure,
+			connect.WithSchema(userServiceMethods.ByName("DeactivateUser")),
+			connect.WithClientOptions(opts...),
+		),
+		reactivateUser: connect.NewClient[v1.ReactivateUserRequest, v1.ReactivateUserResponse](
+			httpClient,
+			baseURL+UserServiceReactivateUserProcedure,
+			connect.WithSchema(userServiceMethods.ByName("ReactivateUser")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -168,6 +190,8 @@ type userServiceClient struct {
 	resetUserPassword *connect.Client[v1.ResetUserPasswordRequest, v1.ResetUserPasswordResponse]
 	deleteUser        *connect.Client[v1.DeleteUserRequest, v1.DeleteUserResponse]
 	updateUserGroups  *connect.Client[v1.UpdateUserGroupsRequest, v1.UpdateUserGroupsResponse]
+	deactivateUser    *connect.Client[v1.DeactivateUserRequest, v1.DeactivateUserResponse]
+	reactivateUser    *connect.Client[v1.ReactivateUserRequest, v1.ReactivateUserResponse]
 }
 
 // ListUsers calls elara.user.v1.UserService.ListUsers.
@@ -200,6 +224,16 @@ func (c *userServiceClient) UpdateUserGroups(ctx context.Context, req *connect.R
 	return c.updateUserGroups.CallUnary(ctx, req)
 }
 
+// DeactivateUser calls elara.user.v1.UserService.DeactivateUser.
+func (c *userServiceClient) DeactivateUser(ctx context.Context, req *connect.Request[v1.DeactivateUserRequest]) (*connect.Response[v1.DeactivateUserResponse], error) {
+	return c.deactivateUser.CallUnary(ctx, req)
+}
+
+// ReactivateUser calls elara.user.v1.UserService.ReactivateUser.
+func (c *userServiceClient) ReactivateUser(ctx context.Context, req *connect.Request[v1.ReactivateUserRequest]) (*connect.Response[v1.ReactivateUserResponse], error) {
+	return c.reactivateUser.CallUnary(ctx, req)
+}
+
 // UserServiceHandler is an implementation of the elara.user.v1.UserService service.
 type UserServiceHandler interface {
 	// Lists users.
@@ -213,7 +247,7 @@ type UserServiceHandler interface {
 	// An empty result (no User:Read * and no Group:Read scope) is not an
 	// error — pagination returns an empty page.
 	ListUsers(context.Context, *connect.Request[v1.ListUsersRequest]) (*connect.Response[v1.ListUsersResponse], error)
-	// Fetches a single user by email.
+	// Fetches a single user by their UUID.
 	//
 	// Authorization:
 	//   - User:Read * (global), OR
@@ -259,6 +293,10 @@ type UserServiceHandler interface {
 	// If expected_version is set and current membership_version differs,
 	// returns FAILED_PRECONDITION — even if the net change would be a no-op.
 	UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error)
+	// Deactivates a user, revoking all their sessions.
+	DeactivateUser(context.Context, *connect.Request[v1.DeactivateUserRequest]) (*connect.Response[v1.DeactivateUserResponse], error)
+	// Reactivates a deactivated user.
+	ReactivateUser(context.Context, *connect.Request[v1.ReactivateUserRequest]) (*connect.Response[v1.ReactivateUserResponse], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -304,6 +342,18 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("UpdateUserGroups")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceDeactivateUserHandler := connect.NewUnaryHandler(
+		UserServiceDeactivateUserProcedure,
+		svc.DeactivateUser,
+		connect.WithSchema(userServiceMethods.ByName("DeactivateUser")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceReactivateUserHandler := connect.NewUnaryHandler(
+		UserServiceReactivateUserProcedure,
+		svc.ReactivateUser,
+		connect.WithSchema(userServiceMethods.ByName("ReactivateUser")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/elara.user.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceListUsersProcedure:
@@ -318,6 +368,10 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 			userServiceDeleteUserHandler.ServeHTTP(w, r)
 		case UserServiceUpdateUserGroupsProcedure:
 			userServiceUpdateUserGroupsHandler.ServeHTTP(w, r)
+		case UserServiceDeactivateUserProcedure:
+			userServiceDeactivateUserHandler.ServeHTTP(w, r)
+		case UserServiceReactivateUserProcedure:
+			userServiceReactivateUserHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -349,4 +403,12 @@ func (UnimplementedUserServiceHandler) DeleteUser(context.Context, *connect.Requ
 
 func (UnimplementedUserServiceHandler) UpdateUserGroups(context.Context, *connect.Request[v1.UpdateUserGroupsRequest]) (*connect.Response[v1.UpdateUserGroupsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.UpdateUserGroups is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) DeactivateUser(context.Context, *connect.Request[v1.DeactivateUserRequest]) (*connect.Response[v1.DeactivateUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.DeactivateUser is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) ReactivateUser(context.Context, *connect.Request[v1.ReactivateUserRequest]) (*connect.Response[v1.ReactivateUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("elara.user.v1.UserService.ReactivateUser is not implemented"))
 }

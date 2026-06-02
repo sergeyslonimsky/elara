@@ -55,6 +55,7 @@ func TestService_List(t *testing.T) {
 					require.NoError(t, err)
 				}
 
+				const delegatedID = "delegated-id"
 				require.NoError(
 					t,
 					st.enforcer.WriteTx(
@@ -62,8 +63,8 @@ func TestService_List(t *testing.T) {
 						st.txm,
 						func(ctx context.Context, txe *casbin.TxEnforcer) error {
 							return txe.AddPolicy(
-								"delegated@example.com",
-								casbin.GroupSubject("dev"),
+								delegatedID,
+								domain.GroupResource("dev"),
 								string(domain.ObjectGroup),
 								string(domain.ActionRead),
 							)
@@ -71,7 +72,7 @@ func TestService_List(t *testing.T) {
 					),
 				)
 
-				return domain.AuthInfo{Email: "delegated@example.com"}, group.ListParams{}
+				return domain.AuthInfo{UserID: delegatedID, Email: "delegated@example.com"}, group.ListParams{}
 			},
 			assert: func(t *testing.T, got *group.ListResult) {
 				t.Helper()

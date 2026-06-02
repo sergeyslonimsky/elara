@@ -45,7 +45,7 @@ describe("UserDetailPage", () => {
 
 		render(
 			<TestProviders
-				initialEntries={["/users/alice%40example.com"]}
+				initialEntries={["/users/00000000-0000-0000-0000-00000000000a"]}
 				authContext={authContext}
 			>
 				<UserDetailPage />
@@ -65,7 +65,7 @@ describe("UserDetailPage", () => {
 
 		render(
 			<TestProviders
-				initialEntries={["/users/alice%40example.com"]}
+				initialEntries={["/users/00000000-0000-0000-0000-00000000000a"]}
 				authContext={authContext}
 			>
 				<UserDetailPage />
@@ -78,8 +78,8 @@ describe("UserDetailPage", () => {
 	test("renders user detail when data loaded", () => {
 		const user = create(UserSchema, {
 			email: "alice@example.com",
-			name: "Alice",
-			provider: "internal",
+			displayName: "Alice",
+			identities: [],
 		});
 
 		vi.mocked(useQuery).mockReturnValue({
@@ -90,7 +90,7 @@ describe("UserDetailPage", () => {
 
 		render(
 			<TestProviders
-				initialEntries={["/users/alice%40example.com"]}
+				initialEntries={["/users/00000000-0000-0000-0000-00000000000a"]}
 				authContext={authContext}
 			>
 				<UserDetailPage />

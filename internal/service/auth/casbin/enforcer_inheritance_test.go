@@ -64,12 +64,12 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
 				seedRoleTemplates(t, e, txm)
-				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
+				seedRole(t, e, txm, alice, domain.GroupResource(devs), domain.MembershipDomain)
 				seedRole(
 					t,
 					e,
 					txm,
-					casbin.GroupSubject(devs),
+					domain.GroupResource(devs),
 					string(domain.RoleAdmin),
 					domain.NamespaceResource("prod"),
 				)
@@ -100,8 +100,8 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				e, txm := newTestEnforcerWithTxM(t, nil)
 
 				// Two memberships in domain "*" (global) — one Casbin mutation each.
-				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
-				seedRole(t, e, txm, bob, casbin.GroupSubject(devs), domain.MembershipDomain)
+				seedRole(t, e, txm, alice, domain.GroupResource(devs), domain.MembershipDomain)
+				seedRole(t, e, txm, bob, domain.GroupResource(devs), domain.MembershipDomain)
 
 				// Group gets admin in prod, then loses it. Exactly one
 				// AddRoleForUser + one RemoveRoleForUser — no per-member loop.
@@ -109,7 +109,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 					t,
 					e,
 					txm,
-					casbin.GroupSubject(devs),
+					domain.GroupResource(devs),
 					string(domain.RoleAdmin),
 					domain.NamespaceResource("prod"),
 				)
@@ -117,7 +117,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 					t,
 					e,
 					txm,
-					casbin.GroupSubject(devs),
+					domain.GroupResource(devs),
 					string(domain.RoleAdmin),
 					domain.NamespaceResource("prod"),
 				)
@@ -128,7 +128,7 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				require.Len(t, rules, 1)
 				assert.Equal(
 					t,
-					[]string{alice, casbin.GroupSubject(devs), domain.MembershipDomain},
+					[]string{alice, domain.GroupResource(devs), domain.MembershipDomain},
 					rules[0],
 				)
 
@@ -160,16 +160,16 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				t.Helper()
 				e, txm := newTestEnforcerWithTxM(t, nil)
 				seedRoleTemplates(t, e, txm)
-				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
+				seedRole(t, e, txm, alice, domain.GroupResource(devs), domain.MembershipDomain)
 				seedRole(
 					t,
 					e,
 					txm,
-					casbin.GroupSubject(devs),
+					domain.GroupResource(devs),
 					string(domain.RoleAdmin),
 					domain.NamespaceResource("prod"),
 				)
-				removeRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
+				removeRole(t, e, txm, alice, domain.GroupResource(devs), domain.MembershipDomain)
 
 				return e
 			},
@@ -189,12 +189,12 @@ func TestEnforcer_DynamicGroupInheritance(t *testing.T) {
 				e, txm := newTestEnforcerWithTxM(t, nil)
 				seedRoleTemplates(t, e, txm)
 				seedRole(t, e, txm, alice, string(domain.RoleReader), domain.DomainAll)
-				seedRole(t, e, txm, alice, casbin.GroupSubject(devs), domain.MembershipDomain)
+				seedRole(t, e, txm, alice, domain.GroupResource(devs), domain.MembershipDomain)
 				seedRole(
 					t,
 					e,
 					txm,
-					casbin.GroupSubject(devs),
+					domain.GroupResource(devs),
 					string(domain.RoleAdmin),
 					domain.NamespaceResource("prod"),
 				)

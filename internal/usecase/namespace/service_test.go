@@ -10,6 +10,8 @@ import (
 	namespacemock "github.com/sergeyslonimsky/elara/internal/usecase/namespace/mocks"
 )
 
+const testUserID = "11111111-2222-3333-4444-555555555555"
+
 type mocks struct {
 	txm      *storage_mock.MockManager
 	pdp      *namespacemock.Mockpdp

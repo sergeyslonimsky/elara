@@ -83,11 +83,11 @@ func (h *Handler) CreateGroup(
 	}
 
 	result, err := h.uc.Create(ctx, user, groupuc.CreateData{
-		Name:                   req.Msg.GetName(),
-		Description:            req.Msg.GetDescription(),
-		InitialMembers:         req.Msg.GetInitialMembers(),
-		InitialPermissions:     permission.AssignmentsToDomain(req.Msg.GetInitialPermissions()),
-		InitialManagerGroupIDs: req.Msg.GetInitialManagerGroupIds(),
+		Name:                     req.Msg.GetName(),
+		Description:              req.Msg.GetDescription(),
+		InitialMembers:           req.Msg.GetInitialMembers(),
+		InitialPermissions:       permission.AssignmentsToDomain(req.Msg.GetInitialPermissions()),
+		InitialManagerGroupNames: req.Msg.GetInitialManagerGroupNames(),
 	})
 	if err != nil {
 		return nil, v2.ToConnectError(err)
@@ -113,12 +113,12 @@ func (h *Handler) GetGroup(
 		user,
 		domain.ObjectGroup,
 		domain.ActionRead,
-		domain.GroupResource(req.Msg.GetId()),
+		domain.GroupResource(req.Msg.GetName()),
 	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	result, err := h.uc.Get(ctx, user, req.Msg.GetId())
+	result, err := h.uc.Get(ctx, user, req.Msg.GetName())
 	if err != nil {
 		return nil, v2.ToConnectError(err)
 	}
@@ -143,14 +143,14 @@ func (h *Handler) UpdateGroup(
 		user,
 		domain.ObjectGroup,
 		domain.ActionWrite,
-		domain.GroupResource(req.Msg.GetId()),
+		domain.GroupResource(req.Msg.GetName()),
 	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
 	group, err := h.uc.Update(ctx, user, groupuc.UpdateData{
-		ID:                      req.Msg.GetId(),
 		Name:                    req.Msg.GetName(),
+		DisplayName:             req.Msg.GetDisplayName(),
 		Description:             req.Msg.GetDescription(),
 		ExpectedMetadataVersion: req.Msg.ExpectedMetadataVersion,
 	})
@@ -174,13 +174,13 @@ func (h *Handler) UpdateGroupMembers(
 		user,
 		domain.ObjectGroup,
 		domain.ActionWrite,
-		domain.GroupResource(req.Msg.GetGroupId()),
+		domain.GroupResource(req.Msg.GetGroupName()),
 	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
 	result, err := h.uc.UpdateMembers(ctx, user, groupuc.UpdateMembersData{
-		GroupID:                req.Msg.GetGroupId(),
+		GroupName:              req.Msg.GetGroupName(),
 		AddEmails:              req.Msg.GetAddEmails(),
 		RemoveEmails:           req.Msg.GetRemoveEmails(),
 		ExpectedMembersVersion: req.Msg.ExpectedMembersVersion,
@@ -208,13 +208,13 @@ func (h *Handler) UpdateGroupPermissions(
 		user,
 		domain.ObjectGroup,
 		domain.ActionWrite,
-		domain.GroupResource(req.Msg.GetGroupId()),
+		domain.GroupResource(req.Msg.GetGroupName()),
 	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
 	result, err := h.uc.UpdatePermissions(ctx, user, groupuc.UpdatePermissionsData{
-		GroupID:                    req.Msg.GetGroupId(),
+		GroupName:                  req.Msg.GetGroupName(),
 		Add:                        permission.AssignmentsToDomain(req.Msg.GetAdd()),
 		Remove:                     permission.AssignmentsToDomain(req.Msg.GetRemove()),
 		ExpectedPermissionsVersion: req.Msg.ExpectedPermissionsVersion,
@@ -242,12 +242,12 @@ func (h *Handler) DeleteGroup(
 		user,
 		domain.ObjectGroup,
 		domain.ActionWrite,
-		domain.GroupResource(req.Msg.GetId()),
+		domain.GroupResource(req.Msg.GetName()),
 	); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 
-	if err := h.uc.Delete(ctx, user, req.Msg.GetId()); err != nil {
+	if err := h.uc.Delete(ctx, user, req.Msg.GetName()); err != nil {
 		return nil, v2.ToConnectError(err)
 	}
 

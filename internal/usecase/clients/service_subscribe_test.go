@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -23,10 +24,14 @@ func TestService_SubscribeChanges(t *testing.T) {
 		{
 			name: "success",
 			mockFunc: func(ctx context.Context, m mocks) (context.Context, <-chan domain.ClientChange) {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: testUserEmail},
+				)
 				m.pdp.EXPECT().
 					Has(
-						"test@example.com",
+						testUserEmail,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -92,10 +97,14 @@ func TestService_SubscribeClient(t *testing.T) {
 			name:   "success",
 			connID: "conn-1",
 			mockFunc: func(ctx context.Context, m mocks) (context.Context, <-chan domain.ClientChange) {
-				ctx = auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: testUserEmail},
+				)
 				m.pdp.EXPECT().
 					Has(
-						"test@example.com",
+						testUserEmail,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,

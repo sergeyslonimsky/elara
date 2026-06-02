@@ -24,6 +24,8 @@ var buckets = [][]byte{
 	[]byte("schemas"),
 	[]byte("webhooks"),
 	[]byte("auth_users"),
+	[]byte("users_by_identity"),
+	[]byte("users_by_email"),
 	[]byte("auth_groups"),
 	[]byte("auth_tokens"),
 	[]byte("auth_token_by_id"),
@@ -36,23 +38,24 @@ var buckets = [][]byte{
 }
 
 const (
-	bucketContent       = "content"
-	bucketMeta          = "meta"
-	bucketNamespaces    = "namespaces"
-	bucketChangelog     = "changelog"
-	bucketHistory       = "history"
-	bucketClientHistory = "client_history"
-	bucketSys           = "sys"
-	bucketLockHistory   = "lock_history"
-	bucketLockChangelog = "lock_changelog"
-	bucketSchemas       = "schemas"
-	bucketWebhooks      = "webhooks"
-	bucketAuthUsers     = "auth_users"
-	bucketAuthGroups    = "auth_groups"
-	bucketAuthTokens    = "auth_tokens"      //nolint:gosec // bucket name, not a credential
-	bucketAuthTokenByID = "auth_token_by_id" //nolint:gosec // bucket name, not a credential
-	bucketAuthPolicy    = "auth_policy"
-
+	bucketContent                = "content"
+	bucketMeta                   = "meta"
+	bucketNamespaces             = "namespaces"
+	bucketChangelog              = "changelog"
+	bucketHistory                = "history"
+	bucketClientHistory          = "client_history"
+	bucketSys                    = "sys"
+	bucketLockHistory            = "lock_history"
+	bucketLockChangelog          = "lock_changelog"
+	bucketSchemas                = "schemas"
+	bucketWebhooks               = "webhooks"
+	bucketAuthUsers              = "auth_users"
+	bucketUserIdentities         = "users_by_identity"
+	bucketUsersByEmail           = "users_by_email"
+	bucketAuthGroups             = "auth_groups"
+	bucketAuthTokens             = "auth_tokens"      //nolint:gosec // bucket name, not a credential
+	bucketAuthTokenByID          = "auth_token_by_id" //nolint:gosec // bucket name, not a credential
+	bucketAuthPolicy             = "auth_policy"
 	bucketSessions               = "sessions"
 	bucketSessionsByUser         = "sessions_by_user"
 	bucketSessionEvents          = "session_events"

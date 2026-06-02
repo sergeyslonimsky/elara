@@ -34,7 +34,7 @@ func (s *Service) ChangePassword(
 	var sess *domain.Session
 
 	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
-		user, err := s.users.Get(ctx, ctxUser.Email)
+		user, err := s.users.GetByIdentity(ctx, string(domain.ProviderBasic), ctxUser.Email)
 		if err != nil {
 			return fmt.Errorf("get user: %w", err)
 		}
@@ -50,13 +50,13 @@ func (s *Service) ChangePassword(
 			return fmt.Errorf("hash password: %w", err)
 		}
 
-		if err := s.pass.SetPassword(ctx, ctxUser.Email, newHash, false); err != nil {
+		if err := s.pass.SetPassword(ctx, user.ID, newHash, false); err != nil {
 			return fmt.Errorf("set password: %w", err)
 		}
 
 		// Create a new session after password change.
 		newSess, err := s.sessions.Create(ctx, sessions.CreateParams{
-			UserID:     ctxUser.Email,
+			UserID:     user.ID.String(),
 			ClientType: string(domain.ClientTypeWeb),
 			IP:         params.IP,
 			UserAgent:  params.UserAgent,

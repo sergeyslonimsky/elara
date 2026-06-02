@@ -3,12 +3,15 @@
 package config_test
 
 import (
+	"context"
 	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1/configv1connect"
+	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	itest "github.com/sergeyslonimsky/elara/test/integration"
 )
 
@@ -27,6 +30,36 @@ func runConfigCase(t *testing.T, endpoint string, tc configCase) {
 	t.Helper()
 
 	app := itest.New(t)
+
+	if tc.user == "admin" {
+		user, err := app.Adapters.AuthUsers.GetByEmail(t.Context(), "carol@example.com")
+		require.NoError(t, err)
+		user.PasswordChangeRequired = false
+		require.NoError(t, app.Adapters.AuthUsers.Update(t.Context(), user))
+	}
+
+	// EL-50: namespace domains are now prefixed with "namespace:".
+	// Suite.New seeds them without prefix, so we re-seed for the personas we use.
+	if tc.user == "devops" || tc.user == "tester" || tc.user == "developer" {
+		require.NoError(t, app.Managers.Enforcer.WriteTx(t.Context(), app.Adapters.StorageManager, func(ctx context.Context, txe *casbin.TxEnforcer) error {
+			for _, p := range itest.DefaultGroupPermissions {
+				if p.Group == tc.user {
+					// Add prefixed version of the policy
+					if err := txe.AddPolicy(
+						domain.GroupResource(p.Group),
+						domain.NamespaceResource(p.Domain),
+						string(p.Object),
+						string(p.Action),
+					); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		}))
+		require.NoError(t, app.Managers.Enforcer.LoadPolicy())
+	}
+
 	reqBody := itest.ReadFile(t, tc.reqPath)
 
 	resp := itest.DoRequest(t, app, endpoint, reqBody, itest.WithPersona(app, tc.user))

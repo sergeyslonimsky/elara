@@ -4,6 +4,7 @@ package domain
 // passed explicitly to usecases (the usecase layer does not consult the
 // request context for claims).
 type AuthInfo struct {
+	UserID     string
 	Email      string
 	Name       string
 	Namespaces []string

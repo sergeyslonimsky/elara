@@ -3,6 +3,8 @@ package group_test
 import (
 	"context"
 	"errors"
+	"regexp"
+	"strings"
 	"sync"
 	"testing"
 
@@ -14,6 +16,22 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/storage"
 	"github.com/sergeyslonimsky/elara/internal/usecase/group"
 )
+
+// slugify converts a test-case name into a DNS-1123-safe label by replacing
+// non-alphanumeric characters with hyphens and collapsing consecutive hyphens.
+var nonAlphanumRE = regexp.MustCompile(`[^a-z0-9]+`)
+
+func slugify(s string) string {
+	s = strings.ToLower(s)
+	s = nonAlphanumRE.ReplaceAllString(s, "-")
+	s = strings.Trim(s, "-")
+	if len(s) > 40 {
+		s = s[:40]
+	}
+	s = strings.TrimRight(s, "-")
+
+	return s
+}
 
 // Authorization for GroupService.Update is enforced in the handler layer
 // (EL-4 M9). These tests cover only the business logic remaining in the
@@ -47,7 +65,6 @@ func TestService_Update(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateData{
-					ID:                      created.Group.ID,
 					Name:                    "old-name",
 					Description:             "desc",
 					ExpectedMetadataVersion: new(created.Group.MetadataVersion),
@@ -63,108 +80,10 @@ func TestService_Update(t *testing.T) {
 			},
 		},
 		{
-			name: "rename rewrites memberships under the new prefix",
-			setup: func(t *testing.T, st testStack) (domain.AuthInfo, group.UpdateData) {
-				t.Helper()
-
-				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(
-					t.Context(),
-					adminAuth(),
-					group.CreateData{Name: "old-name"},
-				)
-				require.NoError(t, err)
-
-				_, err = st.svc.UpdateMembers(t.Context(), adminAuth(), group.UpdateMembersData{
-					GroupID:   created.Group.ID,
-					AddEmails: []string{"user1@example.com"},
-				})
-				require.NoError(t, err)
-
-				oldSub := casbin.GroupSubject("old-name")
-				require.NotEmpty(t, st.enforcer.GetMembersOfGroup(oldSub),
-					"precondition: membership rule exists under old name")
-
-				return adminAuth(), group.UpdateData{
-					ID:                      created.Group.ID,
-					Name:                    "new-name",
-					ExpectedMetadataVersion: new(created.Group.MetadataVersion),
-				}
-			},
-			assert: func(t *testing.T, st testStack, got *domain.Group) {
-				t.Helper()
-
-				assert.Equal(t, "new-name", got.Name)
-
-				oldSub := casbin.GroupSubject("old-name")
-				newSub := casbin.GroupSubject("new-name")
-				assert.Empty(t, st.enforcer.GetMembersOfGroup(oldSub),
-					"old subject must have no remaining members")
-				assert.Contains(t, st.enforcer.GetMembersOfGroup(newSub), "user1@example.com",
-					"new subject must inherit memberships")
-			},
-		},
-		{
-			name: "rename carries p-rules from old subject to new subject",
-			setup: func(t *testing.T, st testStack) (domain.AuthInfo, group.UpdateData) {
-				t.Helper()
-
-				seedAdminWildcard(t, st)
-				created, err := st.svc.Create(
-					t.Context(),
-					adminAuth(),
-					group.CreateData{Name: "old-name"},
-				)
-				require.NoError(t, err)
-
-				perm := domain.Permission{
-					Object: domain.ObjectNamespace,
-					Action: domain.ActionWrite,
-					Domain: domain.NamespaceResource("dev"),
-				}
-				_, err = st.svc.UpdatePermissions(
-					t.Context(),
-					adminAuth(),
-					group.UpdatePermissionsData{
-						GroupID: created.Group.ID,
-						Add:     []domain.Permission{perm},
-					},
-				)
-				require.NoError(t, err)
-
-				return adminAuth(), group.UpdateData{
-					ID:                      created.Group.ID,
-					Name:                    "new-name",
-					ExpectedMetadataVersion: new(created.Group.MetadataVersion),
-				}
-			},
-			assert: func(t *testing.T, st testStack, got *domain.Group) {
-				t.Helper()
-
-				assert.Equal(t, "new-name", got.Name)
-
-				oldSub := casbin.GroupSubject("old-name")
-				newSub := casbin.GroupSubject("new-name")
-
-				var oldCount, newCount int
-				for _, rule := range st.enforcer.GetPolicy() {
-					switch rule[0] {
-					case oldSub:
-						oldCount++
-					case newSub:
-						newCount++
-					}
-				}
-				assert.Zero(t, oldCount, "p-rules must not remain under old subject after rename")
-				assert.Equal(t, 1, newCount, "p-rules must be rebound to new subject after rename")
-			},
-		},
-		{
 			name: "group not found",
 			setup: func(_ *testing.T, _ testStack) (domain.AuthInfo, group.UpdateData) {
 				return adminAuth(), group.UpdateData{
-					ID:                      "missing-id",
-					Name:                    "any-name",
+					Name:                    "missing-name",
 					ExpectedMetadataVersion: new(int64(0)),
 				}
 			},
@@ -218,7 +137,6 @@ func TestService_Update_ConcurrentVersionConflict(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		_, err := st.svc.Update(ctx, adminAuth(), group.UpdateData{
-			ID:                      created.Group.ID,
 			Name:                    "concurrent-group",
 			Description:             "Update A",
 			ExpectedMetadataVersion: new(created.Group.MetadataVersion),
@@ -229,7 +147,6 @@ func TestService_Update_ConcurrentVersionConflict(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		_, err := st.svc.Update(ctx, adminAuth(), group.UpdateData{
-			ID:                      created.Group.ID,
 			Name:                    "concurrent-group",
 			Description:             "Update B",
 			ExpectedMetadataVersion: new(created.Group.MetadataVersion),
@@ -255,7 +172,7 @@ func TestService_Update_ConcurrentVersionConflict(t *testing.T) {
 	assert.Equal(t, 1, successCount, "exactly one update should succeed")
 	assert.Equal(t, 1, conflictCount, "exactly one update should fail with version conflict")
 
-	final, err := st.svc.Get(ctx, adminAuth(), created.Group.ID)
+	final, err := st.svc.Get(ctx, adminAuth(), created.Group.Name)
 	require.NoError(t, err)
 	assert.Equal(t, created.Group.MetadataVersion+1, final.Group.MetadataVersion,
 		"metadata version should increment exactly once")
@@ -314,7 +231,7 @@ func TestService_Update_Boundary(t *testing.T) {
 			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager) {
 				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddPolicy(
-						casbin.GroupSubject(g.Name),
+						domain.GroupResource(g.Name),
 						domain.NamespaceResource("prod"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
@@ -335,7 +252,7 @@ func TestService_Update_Boundary(t *testing.T) {
 			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager) {
 				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddPolicy(
-						casbin.GroupSubject(g.Name),
+						domain.GroupResource(g.Name),
 						domain.NamespaceResource("dev"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
@@ -351,8 +268,9 @@ func TestService_Update_Boundary(t *testing.T) {
 			},
 		},
 		{
+			// adminID matches the wildcard policy seeded in the test setup.
 			name:      "superadmin wildcard",
-			principal: "admin@example.com",
+			principal: adminID,
 			permissions: []domain.Permission{
 				{
 					Object: domain.ObjectNamespace,
@@ -369,7 +287,7 @@ func TestService_Update_Boundary(t *testing.T) {
 			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager) {
 				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddPolicy(
-						casbin.GroupSubject(g.Name),
+						domain.GroupResource(g.Name),
 						domain.NamespaceResource("prod"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
@@ -400,7 +318,7 @@ func TestService_Update_Boundary(t *testing.T) {
 				// the g-rule via casbin.WriteTx. TODO: revisit these cases.
 				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddPolicy(
-						casbin.GroupSubject(g.Name),
+						domain.GroupResource(g.Name),
 						domain.NamespaceResource("dev"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
@@ -425,7 +343,7 @@ func TestService_Update_Boundary(t *testing.T) {
 				// set and exercises the actor's boundary against the post-state.
 				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddRoleForUser(
-						"olduser@example.com", casbin.GroupSubject(g.Name), domain.MembershipDomain,
+						"olduser@example.com", domain.GroupResource(g.Name), domain.MembershipDomain,
 					)
 				})
 			},
@@ -444,7 +362,7 @@ func TestService_Update_Boundary(t *testing.T) {
 			setupGroup: func(ctx context.Context, g *domain.Group, enforcer *casbin.Enforcer, txm storage.Manager) {
 				_ = enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					return txe.AddPolicy(
-						casbin.GroupSubject(g.Name),
+						domain.GroupResource(g.Name),
 						domain.NamespaceResource("prod"),
 						string(domain.ObjectNamespace),
 						string(domain.ActionWrite),
@@ -474,7 +392,7 @@ func TestService_Update_Boundary(t *testing.T) {
 				t,
 				st.enforcer.WriteTx(ctx, st.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 					_ = txe.AddPolicy(
-						"admin@example.com",
+						adminID,
 						domain.DomainAll,
 						string(domain.ObjectAll),
 						string(domain.ActionAll),
@@ -490,7 +408,7 @@ func TestService_Update_Boundary(t *testing.T) {
 				}),
 			)
 
-			groupName := "group-" + tc.name
+			groupName := "g-" + slugify(tc.name)
 			created, err := st.svc.Create(ctx, adminAuth(), group.CreateData{Name: groupName})
 			require.NoError(t, err)
 
@@ -498,18 +416,19 @@ func TestService_Update_Boundary(t *testing.T) {
 				tc.setupGroup(ctx, created.Group, st.enforcer, st.txm)
 			}
 
-			fresh, err := st.svc.Get(ctx, adminAuth(), created.Group.ID)
+			fresh, err := st.svc.Get(ctx, adminAuth(), created.Group.Name)
 			require.NoError(t, err)
 
 			// Boundary semantics are split between UpdatePermissions and
 			// UpdateMembers. We exercise both in sequence; the first one to
 			// fail surfaces tc.errIs.
-			actor := domain.AuthInfo{Email: tc.principal}
+			// UserID is the Casbin subject; production code uses actor.UserID.
+			actor := domain.AuthInfo{UserID: tc.principal, Email: tc.principal}
 
 			_, permErr := st.svc.UpdatePermissions(ctx, actor, group.UpdatePermissionsData{
-				GroupID: fresh.Group.ID,
-				Add:     tc.permissions,
-				Remove:  tc.removePerms,
+				GroupName: fresh.Group.Name,
+				Add:       tc.permissions,
+				Remove:    tc.removePerms,
 			})
 			if tc.errIs != nil && permErr != nil {
 				require.ErrorIs(t, permErr, tc.errIs)
@@ -519,7 +438,7 @@ func TestService_Update_Boundary(t *testing.T) {
 			require.NoError(t, permErr)
 
 			_, memErr := st.svc.UpdateMembers(ctx, actor, group.UpdateMembersData{
-				GroupID:   fresh.Group.ID,
+				GroupName: fresh.Group.Name,
 				AddEmails: tc.members,
 			})
 			if tc.errIs != nil {
@@ -546,7 +465,6 @@ func TestService_Update_ImmutabilityAndVersion(t *testing.T) {
 				t.Helper()
 
 				created := &domain.Group{
-					ID:              "sys-group-id",
 					Name:            "sys-group",
 					System:          true,
 					MetadataVersion: 1,
@@ -554,7 +472,6 @@ func TestService_Update_ImmutabilityAndVersion(t *testing.T) {
 				require.NoError(t, st.repo.Create(t.Context(), created))
 
 				return group.UpdateData{
-					ID:                      created.ID,
 					Name:                    "sys-group",
 					ExpectedMetadataVersion: new(created.MetadataVersion),
 				}
@@ -574,7 +491,6 @@ func TestService_Update_ImmutabilityAndVersion(t *testing.T) {
 				require.NoError(t, err)
 
 				return group.UpdateData{
-					ID:                      created.Group.ID,
 					Name:                    "ver-group",
 					ExpectedMetadataVersion: new(created.Group.MetadataVersion + 99),
 				}
@@ -598,37 +514,29 @@ func TestService_Update_ImmutabilityAndVersion(t *testing.T) {
 	}
 }
 
-// TestService_Update_NameUniqueness verifies the rename guard against an
-// existing group's name. Self-rename (same name) and free renames must
-// succeed; collision with a different group fails with ErrAlreadyExists.
-func TestService_Update_NameUniqueness(t *testing.T) {
+// TestService_Update_NameImmutability verifies that Update is a metadata-only
+// operation (DisplayName, Description) and does not change the group's Name.
+// Name uniqueness at create time is covered by TestService_Create_NameUniqueness.
+func TestService_Update_NameImmutability(t *testing.T) {
 	t.Parallel()
 
 	st := newTestStack(t)
 	seedAdminWildcard(t, st)
 	ctx := t.Context()
 
-	first, err := st.svc.Create(ctx, adminAuth(), group.CreateData{Name: "alpha"})
-	require.NoError(t, err)
-	second, err := st.svc.Create(ctx, adminAuth(), group.CreateData{Name: "beta"})
+	created, err := st.svc.Create(ctx, adminAuth(), group.CreateData{Name: "alpha"})
 	require.NoError(t, err)
 
-	_, err = st.svc.Update(ctx, adminAuth(), group.UpdateData{
-		ID:                      second.Group.ID,
+	// Update with the same Name (lookup key) and new description succeeds; Name
+	// is unchanged — renaming is not supported.
+	got, err := st.svc.Update(ctx, adminAuth(), group.UpdateData{
 		Name:                    "alpha",
-		ExpectedMetadataVersion: new(second.Group.MetadataVersion),
-	})
-	require.ErrorIs(t, err, domain.ErrAlreadyExists)
-	require.ErrorContains(t, err, `group "alpha"`)
-
-	// Self-rename to the current name is a no-op for uniqueness (skipped).
-	_, err = st.svc.Update(ctx, adminAuth(), group.UpdateData{
-		ID:                      first.Group.ID,
-		Name:                    "alpha",
-		Description:             "updated-desc",
-		ExpectedMetadataVersion: new(first.Group.MetadataVersion),
+		Description:             "updated description",
+		ExpectedMetadataVersion: new(created.Group.MetadataVersion),
 	})
 	require.NoError(t, err)
+	assert.Equal(t, "alpha", got.Name)
+	assert.Equal(t, "updated description", got.Description)
 }
 
 // TestService_UpdateMembers covers the explicit add/remove delta for group
@@ -659,7 +567,7 @@ func TestService_UpdateMembers(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateMembersData{
-					GroupID:                created.Group.ID,
+					GroupName:              created.Group.Name,
 					AddEmails:              []string{"alice@example.com"},
 					ExpectedMembersVersion: new(created.Group.MembersVersion),
 				}
@@ -672,7 +580,7 @@ func TestService_UpdateMembers(t *testing.T) {
 				assert.ElementsMatch(t, []string{"alice@example.com"}, got.VisibleMembers)
 				assert.Contains(
 					t,
-					st.enforcer.GetMembersOfGroup(casbin.GroupSubject("g1")),
+					st.enforcer.GetMembersOfGroup(domain.GroupResource("g1")),
 					"alice@example.com",
 				)
 			},
@@ -690,7 +598,7 @@ func TestService_UpdateMembers(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateMembersData{
-					GroupID:                created.Group.ID,
+					GroupName:              created.Group.Name,
 					RemoveEmails:           []string{"alice@example.com"},
 					ExpectedMembersVersion: new(created.Group.MembersVersion),
 				}
@@ -706,7 +614,7 @@ func TestService_UpdateMembers(t *testing.T) {
 				// DeleteUser cache: g-rule removed from persistence; resync
 				// to confirm at the persistence layer.
 				require.NoError(t, st.enforcer.LoadPolicy())
-				assert.Empty(t, st.enforcer.GetMembersOfGroup(casbin.GroupSubject("g1")))
+				assert.Empty(t, st.enforcer.GetMembersOfGroup(domain.GroupResource("g1")))
 			},
 		},
 		{
@@ -722,7 +630,7 @@ func TestService_UpdateMembers(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateMembersData{
-					GroupID:                created.Group.ID,
+					GroupName:              created.Group.Name,
 					AddEmails:              []string{"alice@example.com"},
 					ExpectedMembersVersion: new(created.Group.MembersVersion),
 				}
@@ -749,7 +657,7 @@ func TestService_UpdateMembers(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateMembersData{
-					GroupID:                created.Group.ID,
+					GroupName:              created.Group.Name,
 					RemoveEmails:           []string{"ghost@example.com"},
 					ExpectedMembersVersion: new(created.Group.MembersVersion),
 				}
@@ -774,7 +682,7 @@ func TestService_UpdateMembers(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateMembersData{
-					GroupID:                created.Group.ID,
+					GroupName:              created.Group.Name,
 					AddEmails:              []string{"alice@example.com"},
 					RemoveEmails:           []string{"alice@example.com"},
 					ExpectedMembersVersion: new(created.Group.MembersVersion),
@@ -821,11 +729,14 @@ func TestService_UpdateMembers(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{Email: "devops@example.com"}, group.UpdateMembersData{
-					GroupID:                created.Group.ID,
-					AddEmails:              []string{"newcomer@example.com"},
-					ExpectedMembersVersion: new(created.Group.MembersVersion),
-				}
+				return domain.AuthInfo{
+						UserID: "devops@example.com",
+						Email:  "devops@example.com",
+					}, group.UpdateMembersData{
+						GroupName:              created.Group.Name,
+						AddEmails:              []string{"newcomer@example.com"},
+						ExpectedMembersVersion: new(created.Group.MembersVersion),
+					}
 			},
 			errIs: domain.ErrPermissionEscalation,
 		},
@@ -867,11 +778,14 @@ func TestService_UpdateMembers(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{Email: "devops@example.com"}, group.UpdateMembersData{
-					GroupID:                created.Group.ID,
-					RemoveEmails:           []string{"alice@example.com"},
-					ExpectedMembersVersion: new(created.Group.MembersVersion),
-				}
+				return domain.AuthInfo{
+						UserID: "devops@example.com",
+						Email:  "devops@example.com",
+					}, group.UpdateMembersData{
+						GroupName:              created.Group.Name,
+						RemoveEmails:           []string{"alice@example.com"},
+						ExpectedMembersVersion: new(created.Group.MembersVersion),
+					}
 			},
 			assert: func(t *testing.T, _ testStack, _ group.UpdateMembersData, got *group.UpdateMembersResult) {
 				t.Helper()
@@ -894,7 +808,7 @@ func TestService_UpdateMembers(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdateMembersData{
-					GroupID:                created.Group.ID,
+					GroupName:              created.Group.Name,
 					AddEmails:              []string{"alice@example.com"},
 					ExpectedMembersVersion: new(created.Group.MembersVersion + 99),
 				}
@@ -905,7 +819,7 @@ func TestService_UpdateMembers(t *testing.T) {
 			name: "group not found wrapped",
 			setup: func(_ *testing.T, _ testStack) (domain.AuthInfo, group.UpdateMembersData) {
 				return adminAuth(), group.UpdateMembersData{
-					GroupID:                "missing-id",
+					GroupName:              "missing-name",
 					AddEmails:              []string{"alice@example.com"},
 					ExpectedMembersVersion: new(int64(0)),
 				}
@@ -972,7 +886,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdatePermissionsData{
-					GroupID: created.Group.ID,
+					GroupName: created.Group.Name,
 					Add: []domain.Permission{
 						{
 							Object: domain.ObjectNamespace,
@@ -1006,7 +920,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdatePermissionsData{
-					GroupID: created.Group.ID,
+					GroupName: created.Group.Name,
 					Add: []domain.Permission{
 						{
 							Object: domain.ObjectNamespace,
@@ -1055,17 +969,20 @@ func TestService_UpdatePermissions(t *testing.T) {
 				)
 				require.NoError(t, err)
 
-				return domain.AuthInfo{Email: "devops@example.com"}, group.UpdatePermissionsData{
-					GroupID: created.Group.ID,
-					Add: []domain.Permission{
-						{
-							Object: domain.ObjectNamespace,
-							Action: domain.ActionWrite,
-							Domain: domain.NamespaceResource("prod"),
+				return domain.AuthInfo{
+						UserID: "devops@example.com",
+						Email:  "devops@example.com",
+					}, group.UpdatePermissionsData{
+						GroupName: created.Group.Name,
+						Add: []domain.Permission{
+							{
+								Object: domain.ObjectNamespace,
+								Action: domain.ActionWrite,
+								Domain: domain.NamespaceResource("prod"),
+							},
 						},
-					},
-					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
-				}
+						ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
+					}
 			},
 			errIs: domain.ErrPermissionEscalation,
 		},
@@ -1111,18 +1028,21 @@ func TestService_UpdatePermissions(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{Email: "devops@example.com"}, group.UpdatePermissionsData{
-					GroupID: created.Group.ID,
-					Add: []domain.Permission{
-						// devops holds dev, so the Add boundary passes.
-						{
-							Object: domain.ObjectNamespace,
-							Action: domain.ActionWrite,
-							Domain: domain.NamespaceResource("dev"),
+				return domain.AuthInfo{
+						UserID: "devops@example.com",
+						Email:  "devops@example.com",
+					}, group.UpdatePermissionsData{
+						GroupName: created.Group.Name,
+						Add: []domain.Permission{
+							// devops holds dev, so the Add boundary passes.
+							{
+								Object: domain.ObjectNamespace,
+								Action: domain.ActionWrite,
+								Domain: domain.NamespaceResource("dev"),
+							},
 						},
-					},
-					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
-				}
+						ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
+					}
 			},
 			errIs: domain.ErrPermissionEscalation,
 		},
@@ -1164,17 +1084,20 @@ func TestService_UpdatePermissions(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{Email: "devops@example.com"}, group.UpdatePermissionsData{
-					GroupID: created.Group.ID,
-					Remove: []domain.Permission{
-						{
-							Object: domain.ObjectNamespace,
-							Action: domain.ActionWrite,
-							Domain: domain.NamespaceResource("prod"),
+				return domain.AuthInfo{
+						UserID: "devops@example.com",
+						Email:  "devops@example.com",
+					}, group.UpdatePermissionsData{
+						GroupName: created.Group.Name,
+						Remove: []domain.Permission{
+							{
+								Object: domain.ObjectNamespace,
+								Action: domain.ActionWrite,
+								Domain: domain.NamespaceResource("prod"),
+							},
 						},
-					},
-					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
-				}
+						ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
+					}
 			},
 			assert: func(t *testing.T, _ testStack, _ group.UpdatePermissionsData, got *group.UpdatePermissionsResult) {
 				t.Helper()
@@ -1198,7 +1121,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdatePermissionsData{
-					GroupID: created.Group.ID,
+					GroupName: created.Group.Name,
 					Add: []domain.Permission{
 						{
 							Object: domain.ObjectNamespace,
@@ -1240,7 +1163,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdatePermissionsData{
-					GroupID: created.Group.ID,
+					GroupName: created.Group.Name,
 					// Add: already present -> noop. Remove: absent -> noop.
 					Add: []domain.Permission{
 						{
@@ -1280,7 +1203,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 				require.NoError(t, err)
 
 				return adminAuth(), group.UpdatePermissionsData{
-					GroupID: created.Group.ID,
+					GroupName: created.Group.Name,
 					Add: []domain.Permission{
 						{
 							Object: domain.ObjectNamespace,
@@ -1297,7 +1220,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 			name: "group not found wrapped",
 			setup: func(_ *testing.T, _ testStack) (domain.AuthInfo, group.UpdatePermissionsData) {
 				return adminAuth(), group.UpdatePermissionsData{
-					GroupID: "missing-id",
+					GroupName: "missing-name",
 					Add: []domain.Permission{
 						{
 							Object: domain.ObjectNamespace,

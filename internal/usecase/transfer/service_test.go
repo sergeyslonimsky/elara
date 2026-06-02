@@ -7,13 +7,17 @@ import (
 	"io"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
+	"github.com/sergeyslonimsky/elara/internal/authctx"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/usecase/transfer"
 	transfermock "github.com/sergeyslonimsky/elara/internal/usecase/transfer/mocks"
 )
+
+const testUserID = "11111111-2222-3333-4444-555555555555"
 
 type mocks struct {
 	pdp        *transfermock.Mockpdp
@@ -36,7 +40,12 @@ func setupService(t *testing.T, ctrl *gomock.Controller) (*transfer.Service, moc
 }
 
 func transferTestCtx(ctx context.Context) context.Context {
-	return auth2.WithClaims(ctx, &auth2.Claims{Email: "test@example.com"})
+	user := &domain.User{
+		ID:    uuid.MustParse(testUserID),
+		Email: "test@example.com",
+	}
+
+	return authctx.WithSession(ctx, &domain.Session{}, user)
 }
 
 // readZipEntries reads a ZIP archive and returns a map of filename -> content.

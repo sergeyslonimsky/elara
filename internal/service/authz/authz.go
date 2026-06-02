@@ -35,7 +35,7 @@ func (a *Authz) Require(
 	}
 
 	if !a.pdp.Has(
-		info.Email,
+		info.UserID,
 		domain.Permission{Object: object, Action: action, Domain: domainStr},
 	) {
 		return connect.NewError(connect.CodePermissionDenied, domain.ErrForbidden)
@@ -51,7 +51,7 @@ func (a *Authz) RequireUser(
 	domainStr string,
 ) error {
 	if !a.pdp.Has(
-		user.Email,
+		user.UserID,
 		domain.Permission{Object: object, Action: action, Domain: domainStr},
 	) {
 		return connect.NewError(connect.CodePermissionDenied, domain.ErrForbidden)

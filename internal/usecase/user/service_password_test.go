@@ -10,7 +10,6 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 )
 
 func TestService_ResetPassword(t *testing.T) {
@@ -21,12 +20,12 @@ func TestService_ResetPassword(t *testing.T) {
 
 		st := setupServiceReal(t)
 		seedAdminAll(t, st)
-		seedUser(t, st, targetEmail)
+		seedUserWithID(t, st, targetID, targetEmail)
 
-		err := st.svc.ResetPassword(t.Context(), adminActor(), targetEmail, resetPassword)
+		err := st.svc.ResetPassword(t.Context(), adminActor(), targetUUID, resetPassword)
 		require.NoError(t, err)
 
-		persisted, err := st.users.Get(t.Context(), targetEmail)
+		persisted, err := st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 		require.NoError(t, err)
 		require.NotEmpty(t, persisted.PasswordHash)
 		assert.NotEqual(t, resetPassword, persisted.PasswordHash) // hashed, not plaintext
@@ -38,21 +37,22 @@ func TestService_ResetPassword(t *testing.T) {
 		t.Parallel()
 
 		st := setupServiceReal(t)
-		seedUser(t, st, targetEmail)
-		seedGroup(t, st, "g1", "devs")
+		seedUserWithID(t, st, targetID, targetEmail)
+		seedGroup(t, st, "devs", "devs")
+		// Membership stored under targetID (user.ID) in Casbin.
 		addMemberships(t, st, []struct{ User, GroupName string }{
-			{targetEmail, "devs"},
+			{targetID, "devs"},
 		})
 		// No target permissions on the group → anti-escalation passes
-		// trivially. Actor only needs Group:Write on g1.
+		// trivially. Actor only needs Group:Write on devs. Policy subject is actorID.
 		addPolicies(t, st, []policyRow{
-			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
+			{actorID, domain.GroupResource("devs"), domain.ObjectGroup, domain.ActionWrite},
 		})
 
-		err := st.svc.ResetPassword(t.Context(), actor(), targetEmail, resetPassword)
+		err := st.svc.ResetPassword(t.Context(), actor(), targetUUID, resetPassword)
 		require.NoError(t, err)
 
-		persisted, err := st.users.Get(t.Context(), targetEmail)
+		persisted, err := st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 		require.NoError(t, err)
 		require.NoError(t, auth.VerifyPassword(persisted.PasswordHash, resetPassword))
 	})
@@ -61,13 +61,13 @@ func TestService_ResetPassword(t *testing.T) {
 		t.Parallel()
 
 		st := setupServiceReal(t)
-		seedUser(t, st, targetEmail)
+		seedUserWithID(t, st, targetID, targetEmail)
 
-		err := st.svc.ResetPassword(t.Context(), actor(), targetEmail, resetPassword)
+		err := st.svc.ResetPassword(t.Context(), actor(), targetUUID, resetPassword)
 		require.ErrorIs(t, err, domain.ErrForbidden)
 
 		// Password untouched.
-		persisted, err := st.users.Get(t.Context(), targetEmail)
+		persisted, err := st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 		require.NoError(t, err)
 		assert.Empty(t, persisted.PasswordHash)
 	})
@@ -76,24 +76,25 @@ func TestService_ResetPassword(t *testing.T) {
 		t.Parallel()
 
 		st := setupServiceReal(t)
-		seedUser(t, st, targetEmail)
+		seedUserWithID(t, st, targetID, targetEmail)
 		seedGroup(t, st, "g1", "elevated")
+		// Membership stored under targetID (user.ID) in Casbin.
 		addMemberships(t, st, []struct{ User, GroupName string }{
-			{targetEmail, "elevated"},
+			{targetID, "elevated"},
 		})
 
 		// Target inherits config:write on ns-a from group:elevated. Actor
-		// has only Group:Write on g1 (no config:write of its own).
+		// has only Group:Write on elevated (no config:write of its own). Policy subject is actorID.
 		addPolicies(t, st, []policyRow{
-			{casbin.GroupSubject("elevated"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
-			{actorEmail, domain.GroupResource("g1"), domain.ObjectGroup, domain.ActionWrite},
+			{domain.GroupResource("elevated"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
+			{actorID, domain.GroupResource("elevated"), domain.ObjectGroup, domain.ActionWrite},
 		})
 
-		err := st.svc.ResetPassword(t.Context(), actor(), targetEmail, resetPassword)
+		err := st.svc.ResetPassword(t.Context(), actor(), targetUUID, resetPassword)
 		require.ErrorIs(t, err, domain.ErrPermissionEscalation)
 
 		// Tx rolled back: password unchanged.
-		persisted, err := st.users.Get(t.Context(), targetEmail)
+		persisted, err := st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 		require.NoError(t, err)
 		assert.Empty(t, persisted.PasswordHash)
 	})
@@ -104,7 +105,7 @@ func TestService_ResetPassword(t *testing.T) {
 		st := setupServiceReal(t)
 		seedAdminAll(t, st)
 
-		err := st.svc.ResetPassword(t.Context(), adminActor(), "ghost@example.com", resetPassword)
+		err := st.svc.ResetPassword(t.Context(), adminActor(), ghostUUID, resetPassword)
 		require.ErrorIs(t, err, domain.ErrNotFound)
 	})
 }
@@ -119,13 +120,13 @@ func TestService_ResetPassword_SetPasswordErrorWrapped(t *testing.T) {
 	seedAdminAllOnMockStack(t, m)
 
 	m.store.EXPECT().
-		Get(gomock.Any(), targetEmail).
-		Return(&domain.User{Email: targetEmail}, nil)
+		GetByID(gomock.Any(), targetUUID).
+		Return(&domain.User{ID: targetUUID, Email: targetEmail}, nil)
 	m.store.EXPECT().
-		SetPassword(gomock.Any(), targetEmail, gomock.Any(), true).
+		SetPassword(gomock.Any(), targetUUID, gomock.Any(), true).
 		Return(errors.New("disk failure"))
 
-	err := m.svc.ResetPassword(t.Context(), adminActor(), targetEmail, resetPassword)
+	err := m.svc.ResetPassword(t.Context(), adminActor(), targetUUID, resetPassword)
 	require.ErrorContains(t, err, "set password")
 	require.ErrorContains(t, err, "disk failure")
 }

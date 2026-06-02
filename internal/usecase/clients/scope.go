@@ -23,8 +23,8 @@ type scopeChecker struct {
 	nsScope authz.DomainSet
 }
 
-func newScopeChecker(p pdp, email string) *scopeChecker {
-	admin := p.Has(email, domain.Permission{
+func newScopeChecker(p pdp, userID string) *scopeChecker {
+	admin := p.Has(userID, domain.Permission{
 		Object: domain.ObjectClient,
 		Action: domain.ActionRead,
 		Domain: domain.DomainAll,
@@ -34,7 +34,7 @@ func newScopeChecker(p pdp, email string) *scopeChecker {
 	}
 
 	return &scopeChecker{
-		nsScope: p.EffectiveNamespaces(email, domain.ActionRead),
+		nsScope: p.EffectiveNamespaces(userID, domain.ActionRead),
 	}
 }
 

@@ -44,12 +44,12 @@ func TestService_Groups(t *testing.T) {
 					{
 						Object: domain.ObjectGroup,
 						Action: domain.ActionRead,
-						Domain: domain.GroupResource("id-a"),
+						Domain: domain.GroupResource("alpha"),
 					},
 					{
 						Object: domain.ObjectGroup,
 						Action: domain.ActionWrite,
-						Domain: domain.GroupResource("id-b"),
+						Domain: domain.GroupResource("beta"),
 					},
 				}, nil)
 
@@ -57,16 +57,16 @@ func TestService_Groups(t *testing.T) {
 				groups.EXPECT().
 					List(gomock.Any(), domain.GroupFilter{Wildcard: true, Search: "x"}, domain.GroupListParams{}).
 					Return([]*domain.Group{
-						{ID: "id-a", Name: "alpha"},
-						{ID: "id-b", Name: "beta"},
-						{ID: "id-c", Name: "gamma"}, // no grant -> excluded
+						{Name: "alpha", DisplayName: "Alpha Group"},
+						{Name: "beta", DisplayName: "Beta Group"},
+						{Name: "gamma", DisplayName: "Gamma Group"}, // no grant -> excluded
 					}, 3, nil)
 
 				return filter.New(perms, nil, groups, nil)
 			},
 			want: []filter.Item{
-				{Key: "id-a", Value: "alpha", Actions: []domain.Action{domain.ActionRead}},
-				{Key: "id-b", Value: "beta", Actions: []domain.Action{domain.ActionWrite}},
+				{Key: "alpha", Value: "Alpha Group", Actions: []domain.Action{domain.ActionRead}},
+				{Key: "beta", Value: "Beta Group", Actions: []domain.Action{domain.ActionWrite}},
 			},
 		},
 		{
@@ -85,13 +85,16 @@ func TestService_Groups(t *testing.T) {
 				groups := filtermock.NewMockgroupLister(ctrl)
 				groups.EXPECT().
 					List(gomock.Any(), domain.GroupFilter{Wildcard: true}, domain.GroupListParams{}).
-					Return([]*domain.Group{{ID: "id-a", Name: "alpha"}, {ID: "id-b", Name: "beta"}}, 2, nil)
+					Return([]*domain.Group{
+						{Name: "alpha", DisplayName: "Alpha Group"},
+						{Name: "beta", DisplayName: "Beta Group"},
+					}, 2, nil)
 
 				return filter.New(perms, nil, groups, nil)
 			},
 			want: []filter.Item{
-				{Key: "id-a", Value: "alpha", Actions: []domain.Action{domain.ActionRead}},
-				{Key: "id-b", Value: "beta", Actions: []domain.Action{domain.ActionRead}},
+				{Key: "alpha", Value: "Alpha Group", Actions: []domain.Action{domain.ActionRead}},
+				{Key: "beta", Value: "Beta Group", Actions: []domain.Action{domain.ActionRead}},
 			},
 		},
 		{
@@ -124,7 +127,7 @@ func TestService_Groups(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			svc := tt.mockFunc(ctrl)
 
-			got, err := svc.Groups(t.Context(), domain.AuthInfo{Email: actorEmail}, tt.query)
+			got, err := svc.Groups(t.Context(), domain.AuthInfo{UserID: actorEmail}, tt.query)
 
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)

@@ -12,6 +12,8 @@ import (
 	profilemock "github.com/sergeyslonimsky/elara/internal/usecase/profile/mocks"
 )
 
+const testUserID = "11111111-2222-3333-4444-555555555555"
+
 type mocks struct {
 	txm      *storage_mock.MockManager
 	pdp      *profilemock.Mockpdp
@@ -45,9 +47,9 @@ func TestService_Logout(t *testing.T) {
 			return fn(ctx)
 		},
 	)
-	m.sessions.EXPECT().Revoke(gomock.Any(), "s1", "user@example.com", gomock.Any(), gomock.Any()).Return(nil)
+	m.sessions.EXPECT().Revoke(gomock.Any(), "s1", testUserID, gomock.Any(), gomock.Any()).Return(nil)
 
-	err := svc.Logout(t.Context(), "s1", "user@example.com")
+	err := svc.Logout(t.Context(), "s1", testUserID)
 
 	require.NoError(t, err)
 }

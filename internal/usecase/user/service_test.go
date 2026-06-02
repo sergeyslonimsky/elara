@@ -4,11 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
@@ -25,10 +27,28 @@ const (
 	actorEmail    = "actor@example.com"
 	targetEmail   = "target@example.com"
 	resetPassword = "S3cret-Reset-Pwd"
+
+	// adminID / actorID / targetID are the stable user IDs used in tests.
+	// Production code resolves actor.UserID as the Casbin subject for policy
+	// enforcement, and stores membership g-rules under user.ID (UUID). Both the
+	// AuthInfo and the bbolt seed must agree on the same value.
+	adminID  = "00000000-0000-0000-0000-000000000001"
+	actorID  = "00000000-0000-0000-0000-000000000002"
+	targetID = "00000000-0000-0000-0000-000000000003"
 )
 
-func adminActor() domain.AuthInfo { return domain.AuthInfo{Email: adminEmail} }
-func actor() domain.AuthInfo      { return domain.AuthInfo{Email: actorEmail} }
+// uuid-typed mirrors of the string IDs above. Usecase methods take uuid.UUID
+// for user targeting (handler parses the wire-level string); the string form
+// is still used for Casbin subjects and AuthInfo.UserID.
+var (
+	adminUUID  = uuid.MustParse(adminID)
+	targetUUID = uuid.MustParse(targetID)
+	// ghostUUID points at no user — tests use it for "not found" assertions.
+	ghostUUID = uuid.MustParse("00000000-0000-0000-0000-0000000000ff")
+)
+
+func adminActor() domain.AuthInfo { return domain.AuthInfo{UserID: adminID, Email: adminEmail} }
+func actor() domain.AuthInfo      { return domain.AuthInfo{UserID: actorID, Email: actorEmail} }
 
 // ---- real integration stack --------------------------------------------------
 
@@ -61,8 +81,10 @@ func setupServiceReal(t *testing.T) realStack {
 	pap := authz.NewPAP(enforcer, txm)
 	scope := authz.NewScope(pdp, pap, groupRepo)
 
+	userSvc := auth.NewUserService(users)
+
 	return realStack{
-		svc:      user.New(txm, users, groupRepo, sessionSvc, pdp, pap, scope),
+		svc:      user.New(txm, users, userSvc, groupRepo, sessionSvc, pdp, pap, scope),
 		store:    store,
 		enforcer: enforcer,
 		users:    users,
@@ -109,7 +131,7 @@ func addMemberships(t *testing.T, st realStack, rows []struct{ User, GroupName s
 		t,
 		st.enforcer.WriteTx(t.Context(), st.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			for _, m := range rows {
-				subject := casbin.GroupSubject(m.GroupName)
+				subject := domain.GroupResource(m.GroupName)
 				if err := txe.AddRoleForUser(m.User, subject, domain.MembershipDomain); err != nil {
 					return err
 				}
@@ -127,26 +149,49 @@ func seedAdminAll(t *testing.T, st realStack) {
 	t.Helper()
 
 	addPolicies(t, st, []policyRow{
-		{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+		{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 	})
 }
 
 // seedUser writes a baseline user into bbolt via the real UserRepo.
+// id is optional — pass "" to let bbolt mint a UUID.
 func seedUser(t *testing.T, st realStack, email string) {
 	t.Helper()
+	seedUserWithID(t, st, "", email)
+}
 
-	require.NoError(t, st.users.Upsert(t.Context(), &domain.User{
-		Email:    email,
-		Name:     email,
-		Provider: domain.ProviderBasicAuth,
+// seedUserWithID writes a baseline user with a known stable ID into bbolt.
+// Use this when the test needs actor.UserID to match the persisted user.ID.
+func seedUserWithID(t *testing.T, st realStack, id, email string) {
+	t.Helper()
+
+	var uid uuid.UUID
+	if id != "" {
+		var err error
+		uid, err = uuid.Parse(id)
+		require.NoError(t, err)
+	}
+
+	if uid == uuid.Nil {
+		uid = uuid.New()
+	}
+
+	require.NoError(t, st.users.Create(t.Context(), &domain.User{
+		ID:          uid,
+		Email:       email,
+		DisplayName: email,
+		Status:      domain.UserStatusActive,
+		Identities: []domain.Identity{
+			{Provider: domain.ProviderBasic, Subject: email},
+		},
 	}))
 }
 
 // seedGroup writes a baseline group into bbolt via the real GroupRepo.
-func seedGroup(t *testing.T, st realStack, id, name string) {
+func seedGroup(t *testing.T, st realStack, _, name string) {
 	t.Helper()
 
-	require.NoError(t, st.groups.Create(t.Context(), &domain.Group{ID: id, Name: name}))
+	require.NoError(t, st.groups.Create(t.Context(), &domain.Group{Name: name}))
 }
 
 // ---- mock stack (fault injection only) ---------------------------------------
@@ -158,6 +203,7 @@ func seedGroup(t *testing.T, st realStack, id, name string) {
 type mockStack struct {
 	svc      *user.Service
 	store    *usermock.MockUserReader
+	users    *usermock.MockUserManager
 	bolt     *bbolt.Store
 	enforcer *casbin.Enforcer
 	txm      *bbolt.Manager
@@ -176,10 +222,12 @@ func setupServiceWithMockStore(t *testing.T) mockStack {
 	scope := authz.NewScope(pdp, pap, groupRepo)
 
 	mockStore := usermock.NewMockUserReader(ctrl)
+	mockUsers := usermock.NewMockUserManager(ctrl)
 
 	return mockStack{
-		svc:      user.New(txm, mockStore, groupRepo, sessionSvc, pdp, pap, scope),
+		svc:      user.New(txm, mockStore, mockUsers, groupRepo, sessionSvc, pdp, pap, scope),
 		store:    mockStore,
+		users:    mockUsers,
 		bolt:     store,
 		enforcer: enforcer,
 		txm:      txm,
@@ -195,7 +243,7 @@ func seedAdminAllOnMockStack(t *testing.T, m mockStack) {
 		t,
 		m.enforcer.WriteTx(t.Context(), m.txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 			return txe.AddPolicy(
-				adminEmail,
+				adminID,
 				domain.DomainAll,
 				string(domain.ObjectAll),
 				string(domain.ActionAll),
@@ -277,21 +325,23 @@ func TestService_List(t *testing.T) {
 
 		st := setupServiceReal(t)
 
-		// Actor can read groups: dev and platform.
+		// Actor can read groups: dev and platform. Policy subject is actorID.
 		addPolicies(t, st, []policyRow{
-			{actorEmail, casbin.GroupSubject("dev"), domain.ObjectGroup, domain.ActionRead},
-			{actorEmail, casbin.GroupSubject("platform"), domain.ObjectGroup, domain.ActionRead},
+			{actorID, domain.GroupResource("dev"), domain.ObjectGroup, domain.ActionRead},
+			{actorID, domain.GroupResource("platform"), domain.ObjectGroup, domain.ActionRead},
 		})
 
+		// Seed users with stable IDs so membership g-rules match user.ID.
+		seedUserWithID(t, st, "00000000-0000-0000-0000-000000000011", "alice@x")
+		seedUserWithID(t, st, "00000000-0000-0000-0000-000000000012", "bob@x")
+		seedUserWithID(t, st, "00000000-0000-0000-0000-000000000013", "outsider@x")
+
+		// Memberships stored under user.ID (UUID) in Casbin.
 		addMemberships(t, st, []struct{ User, GroupName string }{
-			{"alice@x", "dev"},
-			{"bob@x", "platform"},
-			{"outsider@x", "other"},
+			{"00000000-0000-0000-0000-000000000011", "dev"},
+			{"00000000-0000-0000-0000-000000000012", "platform"},
+			{"00000000-0000-0000-0000-000000000013", "other"},
 		})
-
-		for _, email := range []string{"alice@x", "bob@x", "outsider@x"} {
-			seedUser(t, st, email)
-		}
 
 		got, err := st.svc.List(t.Context(), actor(), user.ListParams{})
 		require.NoError(t, err)

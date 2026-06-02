@@ -163,8 +163,8 @@ sections:
 | `config.ui.auth.oidc.redirectUrl`                | `""`                            | OIDC callback URL                                                    |
 | `config.ui.auth.oidc.scopes`                     | `[]`                            | OIDC scopes; defaults to `[openid, email, profile]`                  |
 | `config.ui.auth.oidc.adminEmail`                 | `""`                            | First-login admin email; elevated into superadmin group (required for OIDC) |
-| `config.ui.auth.session.secret`                  | `""`                            | HS256 JWT signing secret; stored in chart Secret                     |
-| `config.ui.auth.session.ttl`                     | `24h`                           | JWT session lifetime                                                 |
+| `config.ui.auth.session.secret`                  | `""`                            | Session signing secret; must be stable across restarts; stored in chart Secret |
+| `config.ui.auth.session.ttl`                     | `24h`                           | Server-side session lifetime                                         |
 | `config.ui.auth.session.secureCookie`            | `true`                          | Add `Secure` flag to session cookie; disable only for HTTP dev       |
 | `config.ui.auth.existingSecret`                  | `""`                            | Use a pre-existing Secret instead of the chart-managed one           |
 | `config.client.etcd.port`                        | `2379`                          | etcd-compatible gRPC API                                             |

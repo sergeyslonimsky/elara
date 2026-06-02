@@ -1,13 +1,10 @@
 package domain
 
 import (
-	"strings"
+	"fmt"
 	"time"
-)
 
-const (
-	ProviderOIDC      = "oidc"
-	ProviderBasicAuth = "basic-auth"
+	"github.com/google/uuid"
 )
 
 type AuthType string
@@ -20,14 +17,14 @@ const (
 
 // UserFilter narrows a user list to those the caller is permitted to see.
 //
-// When AnyUser is true, Usernames MUST be ignored — every user matches. This
+// When AnyUser is true, UserIDs MUST be ignored — every user matches. This
 // represents the wildcard scope (caller can read every group, hence every
-// user). Search applies a case-insensitive substring match on Email/Name and
-// is independent of AnyUser/Usernames.
+// user). Search applies a case-insensitive substring match on Email and
+// is independent of AnyUser/UserIDs.
 type UserFilter struct {
-	Usernames map[string]struct{}
-	AnyUser   bool
-	Search    string
+	UserIDs map[string]struct{}
+	AnyUser bool
+	Search  string
 }
 
 // UserListParams carries pagination and sort options for user list queries.
@@ -37,21 +34,14 @@ type UserListParams struct {
 	Sort   SortParams
 }
 
-// Source identifies where a user was created. Kept as a typed string so OIDC /
-// admin / seed handlers cannot drift on casing.
-const (
-	SourceLocal = "local"
-	SourceOIDC  = "oidc"
-	SourceSeed  = "seed"
-)
-
 type User struct {
-	Email                  string
-	Name                   string
+	ID                     uuid.UUID
+	Email                  string // login hint; required, globally unique (see EL-50 §3.3)
+	DisplayName            string
 	Picture                string
-	Provider               string
-	System                 bool   // protected from delete/rename; set by Seed, never by the API
-	Source                 string // where the user came from (e.g. "seed", "oidc", "admin")
+	Status                 UserStatus
+	Identities             []Identity
+	System                 bool // protected from delete/rename; set by Seed, never by the API
 	CreatedAt              time.Time
 	LastLoginAt            time.Time
 	PasswordHash           string
@@ -71,25 +61,52 @@ func (u *User) EnsureMutable() error {
 }
 
 func (u *User) Validate() error {
+	if u.ID == uuid.Nil {
+		return NewValidationError("id", "user id is required")
+	}
+
 	if u.Email == "" {
 		return NewValidationError("email", "email is required")
 	}
 
-	if !strings.Contains(u.Email, "@") {
-		return NewValidationError("email", "email must be a valid email address")
+	// Email shape (exactly one @, non-empty halves, NFKC, ≤254 chars) is
+	// enforced by NormalizeEmail at the service boundary — domain Validate
+	// only checks the post-normalization invariant of "non-empty".
+
+	if len(u.DisplayName) > maxDisplayNameLen {
+		return NewValidationError(
+			"displayName",
+			fmt.Sprintf("display name must be at most %d characters", maxDisplayNameLen),
+		)
 	}
 
-	if u.Name == "" {
-		return NewValidationError("name", "name is required")
+	if !u.Status.Valid() {
+		return NewValidationError("status", "invalid user status")
 	}
 
-	validProviders := map[string]struct{}{
-		ProviderOIDC:      {},
-		ProviderBasicAuth: {},
+	return nil
+}
+
+func (u *User) Deactivate() error {
+	if err := u.EnsureMutable(); err != nil {
+		return err
 	}
-	if _, ok := validProviders[u.Provider]; !ok {
-		return NewValidationError("provider", "provider must be one of: oidc, basic-auth")
+	if u.Status == UserStatusDeactivated {
+		return NewValidationError("status", "user is already deactivated")
 	}
+	u.Status = UserStatusDeactivated
+
+	return nil
+}
+
+func (u *User) Reactivate() error {
+	if err := u.EnsureMutable(); err != nil {
+		return err
+	}
+	if u.Status == UserStatusActive {
+		return NewValidationError("status", "user is already active")
+	}
+	u.Status = UserStatusActive
 
 	return nil
 }

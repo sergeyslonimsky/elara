@@ -7,25 +7,27 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/usecase/user"
 )
 
 const (
-	writableID = "writable-group"
-	escalateID = "escalate-group"
+	writableID = "writable"
+	escalateID = "escalate"
 )
 
 // updateGroupsSetup builds the canonical pre-state for the UpdateGroups
 // tests: three seeded users (admin, actor, target) and two seeded groups
 // ("writable" and "escalate"). Per-case grants are added via addPolicies.
+//
+// Users are seeded with stable IDs that match their AuthInfo.UserID so that
+// Casbin membership g-rules (stored under user.ID) agree with policy lookups.
 func updateGroupsSetup(t *testing.T) realStack {
 	t.Helper()
 
 	st := setupServiceReal(t)
-	for _, email := range []string{targetEmail, actorEmail, adminEmail} {
-		seedUser(t, st, email)
-	}
+	seedUserWithID(t, st, targetID, targetEmail)
+	seedUserWithID(t, st, actorID, actorEmail)
+	seedUserWithID(t, st, adminID, adminEmail)
 	seedGroup(t, st, writableID, "writable")
 	seedGroup(t, st, escalateID, "escalate")
 
@@ -44,25 +46,25 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 
 		st := updateGroupsSetup(t)
 		addPolicies(t, st, []policyRow{
-			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+			{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
 		res, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-			Email:       targetEmail,
+			UserID:      targetUUID,
 			AddGroupIDs: []string{writableID, escalateID},
 		})
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), res.MembershipVersion)
 		assert.ElementsMatch(t, []string{writableID, escalateID}, res.VisibleGroupIDs)
 
-		roles, err := st.enforcer.GetRolesForUser(targetEmail, domain.MembershipDomain)
+		roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
 		require.NoError(t, err)
 		assert.ElementsMatch(t,
-			[]string{casbin.GroupSubject("writable"), casbin.GroupSubject("escalate")},
+			[]string{domain.GroupResource("writable"), domain.GroupResource("escalate")},
 			roles,
 		)
 		// Persisted MembershipVersion mirrors the result.
-		persisted, err := st.users.Get(t.Context(), targetEmail)
+		persisted, err := st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), persisted.MembershipVersion)
 	})
@@ -73,20 +75,20 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 		st := updateGroupsSetup(t)
 		// Actor can write to writable only; request touches escalate too.
 		addPolicies(t, st, []policyRow{
-			{actorEmail, domain.GroupResource(writableID), domain.ObjectGroup, domain.ActionWrite},
+			{actorID, domain.GroupResource(writableID), domain.ObjectGroup, domain.ActionWrite},
 		})
 
 		_, err := st.svc.UpdateGroups(t.Context(), actor(), user.UpdateGroupsData{
-			Email:       targetEmail,
+			UserID:      targetUUID,
 			AddGroupIDs: []string{writableID, escalateID},
 		})
 		require.ErrorIs(t, err, domain.ErrForbidden)
 
 		// Transaction rolled back — no memberships persisted.
-		roles, err := st.enforcer.GetRolesForUser(targetEmail, domain.MembershipDomain)
+		roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
 		require.NoError(t, err)
 		assert.Empty(t, roles)
-		persisted, err := st.users.Get(t.Context(), targetEmail)
+		persisted, err := st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 		require.NoError(t, err)
 		assert.Equal(t, int64(0), persisted.MembershipVersion)
 	})
@@ -96,17 +98,17 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 
 		st := updateGroupsSetup(t)
 		addPolicies(t, st, []policyRow{
-			{casbin.GroupSubject("escalate"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
-			{actorEmail, domain.GroupResource(escalateID), domain.ObjectGroup, domain.ActionWrite},
+			{domain.GroupResource("escalate"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
+			{actorID, domain.GroupResource(escalateID), domain.ObjectGroup, domain.ActionWrite},
 		})
 
 		_, err := st.svc.UpdateGroups(t.Context(), actor(), user.UpdateGroupsData{
-			Email:       targetEmail,
+			UserID:      targetUUID,
 			AddGroupIDs: []string{escalateID},
 		})
 		require.ErrorIs(t, err, domain.ErrPermissionEscalation)
 
-		roles, err := st.enforcer.GetRolesForUser(targetEmail, domain.MembershipDomain)
+		roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
 		require.NoError(t, err)
 		assert.Empty(t, roles)
 	})
@@ -116,27 +118,27 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 
 		st := updateGroupsSetup(t)
 		addPolicies(t, st, []policyRow{
-			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
-			{casbin.GroupSubject("escalate"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
-			{actorEmail, domain.GroupResource(escalateID), domain.ObjectGroup, domain.ActionWrite},
+			{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+			{domain.GroupResource("escalate"), "ns-a", domain.ObjectNamespace, domain.ActionWrite},
+			{actorID, domain.GroupResource(escalateID), domain.ObjectGroup, domain.ActionWrite},
 		})
 
 		// Admin first adds target to escalate.
 		_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-			Email:       targetEmail,
+			UserID:      targetUUID,
 			AddGroupIDs: []string{escalateID},
 		})
 		require.NoError(t, err)
 
 		// Actor removes; only Group:Write needed, no config-write perm required.
 		res, err := st.svc.UpdateGroups(t.Context(), actor(), user.UpdateGroupsData{
-			Email:          targetEmail,
+			UserID:         targetUUID,
 			RemoveGroupIDs: []string{escalateID},
 		})
 		require.NoError(t, err)
 		assert.Equal(t, int64(2), res.MembershipVersion)
 
-		roles, err := st.enforcer.GetRolesForUser(targetEmail, domain.MembershipDomain)
+		roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
 		require.NoError(t, err)
 		assert.Empty(t, roles)
 	})
@@ -153,7 +155,7 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 			st := updateGroupsSetup(t)
 
 			_, err := st.svc.UpdateGroups(t.Context(), actor(), user.UpdateGroupsData{
-				Email:          targetEmail,
+				UserID:         targetUUID,
 				RemoveGroupIDs: []string{writableID},
 			})
 			require.ErrorIs(t, err, domain.ErrForbidden)
@@ -167,12 +169,12 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 
 			st := updateGroupsSetup(t)
 			addPolicies(t, st, []policyRow{
-				{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+				{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 			})
 
 			// First add: version 0 → 1.
 			res1, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-				Email:       targetEmail,
+				UserID:      targetUUID,
 				AddGroupIDs: []string{writableID},
 			})
 			require.NoError(t, err)
@@ -180,20 +182,20 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 
 			// Second add of same id: effective add is empty, version stays at 1.
 			res2, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-				Email:       targetEmail,
+				UserID:      targetUUID,
 				AddGroupIDs: []string{writableID},
 			})
 			require.NoError(t, err)
 			assert.Equal(t, int64(1), res2.MembershipVersion)
 
 			// Persisted version mirrors the no-op contract.
-			persisted, err := st.users.Get(t.Context(), targetEmail)
+			persisted, err := st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 			require.NoError(t, err)
 			assert.Equal(t, int64(1), persisted.MembershipVersion)
 
-			roles, err := st.enforcer.GetRolesForUser(targetEmail, domain.MembershipDomain)
+			roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
 			require.NoError(t, err)
-			assert.Equal(t, []string{casbin.GroupSubject("writable")}, roles)
+			assert.Equal(t, []string{domain.GroupResource("writable")}, roles)
 		},
 	)
 
@@ -202,11 +204,11 @@ func TestService_UpdateGroups_Apply(t *testing.T) {
 
 		st := updateGroupsSetup(t)
 		addPolicies(t, st, []policyRow{
-			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+			{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
 		_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-			Email:          targetEmail,
+			UserID:         targetUUID,
 			AddGroupIDs:    []string{writableID},
 			RemoveGroupIDs: []string{writableID},
 		})
@@ -224,18 +226,18 @@ func TestService_UpdateGroups_Version(t *testing.T) {
 
 		st := updateGroupsSetup(t)
 		addPolicies(t, st, []policyRow{
-			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+			{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
 		// Current MembershipVersion is 0; caller submits 5.
 		_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-			Email:                     targetEmail,
+			UserID:                    targetUUID,
 			AddGroupIDs:               []string{writableID},
 			ExpectedMembershipVersion: new(int64(5)),
 		})
 		require.ErrorIs(t, err, domain.ErrVersionConflict)
 
-		roles, err := st.enforcer.GetRolesForUser(targetEmail, domain.MembershipDomain)
+		roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
 		require.NoError(t, err)
 		assert.Empty(t, roles)
 	})
@@ -245,11 +247,11 @@ func TestService_UpdateGroups_Version(t *testing.T) {
 
 		st := updateGroupsSetup(t)
 		addPolicies(t, st, []policyRow{
-			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+			{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
 		res, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-			Email:                     targetEmail,
+			UserID:                    targetUUID,
 			AddGroupIDs:               []string{writableID},
 			ExpectedMembershipVersion: new(int64(0)),
 		})
@@ -262,12 +264,12 @@ func TestService_UpdateGroups_Version(t *testing.T) {
 
 		st := updateGroupsSetup(t)
 		addPolicies(t, st, []policyRow{
-			{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+			{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
 		})
 
 		// Apply once so version becomes 1.
 		_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-			Email:       targetEmail,
+			UserID:      targetUUID,
 			AddGroupIDs: []string{writableID},
 		})
 		require.NoError(t, err)
@@ -275,17 +277,47 @@ func TestService_UpdateGroups_Version(t *testing.T) {
 		// Optimistic lock matches and the request is an effective no-op
 		// (already a member). Version must stay at 1.
 		res, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-			Email:                     targetEmail,
+			UserID:                    targetUUID,
 			AddGroupIDs:               []string{writableID},
 			ExpectedMembershipVersion: new(int64(1)),
 		})
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), res.MembershipVersion)
 
-		persisted, err := st.users.Get(t.Context(), targetEmail)
+		persisted, err := st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), persisted.MembershipVersion)
 	})
+}
+
+// TestService_UpdateGroups_DeactivatedUser verifies that PAP is orthogonal to
+// user status: group membership can be updated for a deactivated user without
+// any extra status check in the usecase layer.
+func TestService_UpdateGroups_DeactivatedUser(t *testing.T) {
+	t.Parallel()
+
+	st := updateGroupsSetup(t)
+	addPolicies(t, st, []policyRow{
+		{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+	})
+
+	// Deactivate the target user.
+	_, err := st.svc.Deactivate(t.Context(), adminActor(), targetUUID)
+	require.NoError(t, err)
+
+	// UpdateGroups on a deactivated user must succeed — PAP has no status guard.
+	res, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
+		UserID:      targetUUID,
+		AddGroupIDs: []string{writableID},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), res.MembershipVersion)
+	assert.ElementsMatch(t, []string{writableID}, res.VisibleGroupIDs)
+
+	// Verify the Casbin g-rule was persisted.
+	roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{domain.GroupResource("writable")}, roles)
 }
 
 // TestService_UpdateGroups_VisibleGroupIDs locks the enumeration-leak
@@ -299,13 +331,13 @@ func TestService_UpdateGroups_VisibleGroupIDs(t *testing.T) {
 	// VisibleGroupIDs response (enumeration-leak protection). Note write⊇read
 	// (domain.ActionGrants): any escalate grant, even Write, would reveal it.
 	addPolicies(t, st, []policyRow{
-		{adminEmail, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
-		{actorEmail, domain.GroupResource(writableID), domain.ObjectGroup, domain.ActionRead},
-		{actorEmail, domain.GroupResource(writableID), domain.ObjectGroup, domain.ActionWrite},
+		{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+		{actorID, domain.GroupResource(writableID), domain.ObjectGroup, domain.ActionRead},
+		{actorID, domain.GroupResource(writableID), domain.ObjectGroup, domain.ActionWrite},
 	})
 
 	_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
-		Email:       targetEmail,
+		UserID:      targetUUID,
 		AddGroupIDs: []string{writableID, escalateID},
 	})
 	require.NoError(t, err)
@@ -314,7 +346,7 @@ func TestService_UpdateGroups_VisibleGroupIDs(t *testing.T) {
 	// escalate write is required). VisibleGroupIDs filters target's groups
 	// through the actor's Group:Read scope — escalate hidden, writable revealed.
 	res, err := st.svc.UpdateGroups(t.Context(), actor(), user.UpdateGroupsData{
-		Email:       targetEmail,
+		UserID:      targetUUID,
 		AddGroupIDs: []string{writableID}, // no-op
 	})
 	require.NoError(t, err)

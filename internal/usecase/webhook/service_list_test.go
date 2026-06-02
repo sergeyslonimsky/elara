@@ -54,7 +54,7 @@ func TestService_List(t *testing.T) {
 
 				repo.EXPECT().List(ctx).Return(webhooks, nil)
 				pdp.EXPECT().
-					EffectiveDomains("test@example.com", domain.ObjectWebhook, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectWebhook, domain.ActionRead).
 					Return(authz.NewDomainSet("prod"))
 
 				return webhookuc.New(pdp, repo, nil), ctx
@@ -70,7 +70,7 @@ func TestService_List(t *testing.T) {
 
 				repo.EXPECT().List(ctx).Return(webhooks, nil)
 				pdp.EXPECT().
-					EffectiveDomains("test@example.com", domain.ObjectWebhook, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectWebhook, domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
 
 				return webhookuc.New(pdp, repo, nil), ctx
@@ -86,7 +86,7 @@ func TestService_List(t *testing.T) {
 
 				repo.EXPECT().List(ctx).Return(webhooks, nil)
 				pdp.EXPECT().
-					EffectiveDomains("test@example.com", domain.ObjectWebhook, domain.ActionRead).
+					EffectiveDomains(testUserID, domain.ObjectWebhook, domain.ActionRead).
 					Return(authz.NewDomainSet())
 
 				return webhookuc.New(pdp, repo, nil), ctx

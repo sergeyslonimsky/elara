@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/di/config"
@@ -55,7 +56,10 @@ var DefaultGroupPermissions = func() []GroupPerm {
 	addGroup := func(group string, action domain.Action, namespaces ...string) {
 		for _, ns := range namespaces {
 			for _, obj := range scopedObjects {
-				out = append(out, GroupPerm{Group: group, Object: obj, Action: action, Domain: ns})
+				out = append(
+					out,
+					GroupPerm{Group: group, Object: obj, Action: action, Domain: domain.NamespaceResource(ns)},
+				)
 			}
 		}
 	}
@@ -92,10 +96,11 @@ var DefaultPersonas = map[string]Persona{
 
 // Suite is a running httptest.Server with persona session tokens pre-issued.
 type Suite struct {
-	Server   *httptest.Server
-	Tokens   map[string]string // persona name → raw session JWT
-	Managers *service.Managers
-	Adapters *service.Adapters
+	Server     *httptest.Server
+	Tokens     map[string]string // persona name → raw session JWT
+	PersonaIDs map[string]string // persona name → user UUID
+	Managers   *service.Managers
+	Adapters   *service.Adapters
 }
 
 // muxAdapter implements the server interface required by service.V2Routes.
@@ -140,7 +145,42 @@ func New(t *testing.T) *Suite {
 
 	seedData(t, ctx, adapters)
 
-	seedRBAC(t, ctx, managers.Enforcer, adapters.StorageManager)
+	tokens := make(map[string]string, len(DefaultPersonas))
+	personaIDs := make(map[string]string, len(DefaultPersonas))
+
+	for name, p := range DefaultPersonas {
+		if p.Email == "" {
+			continue
+		}
+
+		var user *domain.User
+		if name == "admin" {
+			var err error
+			user, err = adapters.AuthUsers.GetByEmail(ctx, p.Email)
+			require.NoError(t, err)
+		} else {
+			user = &domain.User{
+				ID:          uuid.New(),
+				Email:       p.Email,
+				DisplayName: name,
+				Identities: []domain.Identity{
+					{Provider: domain.ProviderBasic, Subject: p.Email},
+				},
+				Status: domain.UserStatusActive,
+			}
+			require.NoError(t, adapters.AuthUsers.Create(ctx, user))
+		}
+		personaIDs[name] = user.ID.String()
+
+		sess, err := managers.Sessions.Create(ctx, sessions.CreateParams{
+			UserID:     user.ID.String(),
+			ClientType: string(domain.ClientTypeWeb),
+		})
+		require.NoError(t, err)
+		tokens[name] = sess.ID
+	}
+
+	seedRBAC(t, ctx, managers.Enforcer, adapters.StorageManager, personaIDs)
 
 	// Bootstrap and seedRBAC write directly through the policy repo; reload
 	// the enforcer cache so subsequent Enforce checks see the new rules.
@@ -152,22 +192,7 @@ func New(t *testing.T) *Suite {
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 
-	tokens := make(map[string]string, len(DefaultPersonas))
-
-	for name, p := range DefaultPersonas {
-		if p.Email == "" {
-			continue
-		}
-
-		sess, err := managers.Sessions.Create(ctx, sessions.CreateParams{
-			UserID:     p.Email,
-			ClientType: string(domain.ClientTypeWeb),
-		})
-		require.NoError(t, err)
-		tokens[name] = sess.ID
-	}
-
-	return &Suite{Server: srv, Tokens: tokens, Managers: managers, Adapters: adapters}
+	return &Suite{Server: srv, Tokens: tokens, PersonaIDs: personaIDs, Managers: managers, Adapters: adapters}
 }
 
 func testConfig(t *testing.T) config.Config {
@@ -237,6 +262,17 @@ func (s *Suite) AddPersona(t *testing.T, email, group string, perms []GroupPerm)
 
 	ctx := t.Context()
 
+	user := &domain.User{
+		ID:          uuid.New(),
+		Email:       email,
+		DisplayName: "dynamic-" + email,
+		Identities: []domain.Identity{
+			{Provider: domain.ProviderBasic, Subject: email},
+		},
+		Status: domain.UserStatusActive,
+	}
+	require.NoError(t, s.Adapters.AuthUsers.Create(ctx, user))
+
 	require.NoError(
 		t,
 		s.Managers.Enforcer.WriteTx(
@@ -245,7 +281,7 @@ func (s *Suite) AddPersona(t *testing.T, email, group string, perms []GroupPerm)
 			func(ctx context.Context, txe *casbin.TxEnforcer) error {
 				for _, p := range perms {
 					if err := txe.AddPolicy(
-						casbin.GroupSubject(group),
+						domain.GroupResource(group),
 						p.Domain,
 						string(p.Object),
 						string(p.Action),
@@ -254,14 +290,14 @@ func (s *Suite) AddPersona(t *testing.T, email, group string, perms []GroupPerm)
 					}
 				}
 
-				return txe.AddRoleForUser(email, casbin.GroupSubject(group), domain.MembershipDomain)
+				return txe.AddRoleForUser(user.ID.String(), domain.GroupResource(group), domain.MembershipDomain)
 			},
 		),
 	)
 	require.NoError(t, s.Managers.Enforcer.LoadPolicy())
 
 	sess, err := s.Managers.Sessions.Create(ctx, sessions.CreateParams{
-		UserID:     email,
+		UserID:     user.ID.String(),
 		ClientType: string(domain.ClientTypeWeb),
 	})
 	require.NoError(t, err)
@@ -272,13 +308,19 @@ func (s *Suite) AddPersona(t *testing.T, email, group string, perms []GroupPerm)
 // seedRBAC writes DefaultGroupPermissions as Casbin p-rules and binds personas
 // to their groups via g-rules. All mutations run inside a single Manager.WithTx
 // so the test enforcer state matches production atomicity (architecture.md §4 L2).
-func seedRBAC(t *testing.T, ctx context.Context, enforcer *casbin.Enforcer, txm storage.Manager) {
+func seedRBAC(
+	t *testing.T,
+	ctx context.Context,
+	enforcer *casbin.Enforcer,
+	txm storage.Manager,
+	personaIDs map[string]string,
+) {
 	t.Helper()
 
 	require.NoError(t, enforcer.WriteTx(ctx, txm, func(ctx context.Context, txe *casbin.TxEnforcer) error {
 		for _, p := range DefaultGroupPermissions {
 			if err := txe.AddPolicy(
-				casbin.GroupSubject(p.Group),
+				domain.GroupResource(p.Group),
 				p.Domain,
 				string(p.Object),
 				string(p.Action),
@@ -287,14 +329,15 @@ func seedRBAC(t *testing.T, ctx context.Context, enforcer *casbin.Enforcer, txm 
 			}
 		}
 
-		for _, persona := range DefaultPersonas {
+		for name, persona := range DefaultPersonas {
 			if persona.Email == "" || persona.Group == "" {
 				continue
 			}
 
+			userID := personaIDs[name]
 			if err := txe.AddRoleForUser(
-				persona.Email,
-				casbin.GroupSubject(persona.Group),
+				userID,
+				domain.GroupResource(persona.Group),
 				domain.MembershipDomain,
 			); err != nil {
 				return err

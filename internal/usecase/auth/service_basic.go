@@ -19,14 +19,25 @@ type LoginParams struct {
 
 // BasicLogin verifies the user's credentials and returns a new session.
 //
-// Both operations are performed atomically within a single transaction.
+// User lookup, status check, and password verification run outside the tx
+// — they are read-only fast-fails. Only the session create is wrapped in
+// WithTx, because that is the only step with persistent state.
 func (s *Service) BasicLogin(
 	ctx context.Context,
 	params LoginParams,
 ) (*domain.User, *domain.Session, error) {
-	user, err := s.users.Get(ctx, params.Email)
+	normalizedEmail, err := domain.NormalizeEmail(params.Email)
 	if err != nil {
 		return nil, nil, domain.ErrUnauthorized
+	}
+
+	user, err := s.users.GetByIdentity(ctx, string(domain.ProviderBasic), normalizedEmail)
+	if err != nil {
+		return nil, nil, domain.ErrUnauthorized
+	}
+
+	if user.Status != domain.UserStatusActive {
+		return nil, nil, domain.ErrUserDeactivated
 	}
 
 	if err := internalauth.VerifyPassword(user.PasswordHash, params.Password); err != nil {
@@ -37,7 +48,7 @@ func (s *Service) BasicLogin(
 
 	err = s.txm.WithTx(ctx, func(ctx context.Context) error {
 		newSess, err := s.sessions.Create(ctx, sessions.CreateParams{
-			UserID:     user.Email,
+			UserID:     user.ID.String(),
 			ClientType: string(domain.ClientTypeWeb),
 			IP:         params.IP,
 			UserAgent:  params.UserAgent,

@@ -12,8 +12,8 @@ import (
 // namespace filter (or "*" for global webhooks). Load-then-check: we must fetch
 // the webhook before we know which namespace to gate on.
 func (s *Service) Get(ctx context.Context, id string) (*domain.Webhook, error) {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
 		return nil, domain.ErrUnauthorized
 	}
 
@@ -22,7 +22,7 @@ func (s *Service) Get(ctx context.Context, id string) (*domain.Webhook, error) {
 		return nil, fmt.Errorf("get webhook: %w", err)
 	}
 
-	if !s.pdp.Has(claims.Email, domain.Permission{
+	if !s.pdp.Has(info.UserID, domain.Permission{
 		Object: domain.ObjectWebhook,
 		Action: domain.ActionRead,
 		Domain: webhookDomain(webhook),

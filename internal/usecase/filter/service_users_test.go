@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -62,20 +63,27 @@ func TestService_Users(t *testing.T) {
 				users.EXPECT().
 					List(gomock.Any(), domain.UserFilter{AnyUser: true, Search: "a"}, domain.UserListParams{}).
 					Return([]*domain.User{
-						{Email: "alice@example.com", Name: "Alice"},
-						{Email: "bob@example.com"}, // no name -> value falls back to email
+						{
+							ID:          uuid.MustParse("00000000-0000-0000-0000-00000000000a"),
+							Email:       "alice@example.com",
+							DisplayName: "Alice",
+						},
+						{
+							ID:    uuid.MustParse("00000000-0000-0000-0000-00000000000b"),
+							Email: "bob@example.com",
+						}, // no display name -> value falls back to email
 					}, 2, nil)
 
 				return filter.New(perms, nil, nil, users)
 			},
 			want: []filter.Item{
 				{
-					Key:     "alice@example.com",
+					Key:     "00000000-0000-0000-0000-00000000000a",
 					Value:   "Alice",
 					Actions: []domain.Action{domain.ActionRead, domain.ActionWrite},
 				},
 				{
-					Key:     "bob@example.com",
+					Key:     "00000000-0000-0000-0000-00000000000b",
 					Value:   "bob@example.com",
 					Actions: []domain.Action{domain.ActionRead, domain.ActionWrite},
 				},
@@ -110,13 +118,19 @@ func TestService_Users(t *testing.T) {
 				users := filtermock.NewMockuserLister(ctrl)
 				users.EXPECT().
 					List(gomock.Any(), domain.UserFilter{AnyUser: true}, domain.UserListParams{}).
-					Return([]*domain.User{{Email: "alice@example.com", Name: "Alice"}}, 1, nil)
+					Return([]*domain.User{
+						{
+							ID:          uuid.MustParse("00000000-0000-0000-0000-00000000000a"),
+							Email:       "alice@example.com",
+							DisplayName: "Alice",
+						},
+					}, 1, nil)
 
 				return filter.New(perms, nil, nil, users)
 			},
 			want: []filter.Item{
 				{
-					Key:     "alice@example.com",
+					Key:     "00000000-0000-0000-0000-00000000000a",
 					Value:   "Alice",
 					Actions: []domain.Action{domain.ActionAll},
 				},
@@ -153,7 +167,7 @@ func TestService_Users(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			svc := tt.mockFunc(ctrl)
 
-			got, err := svc.Users(t.Context(), domain.AuthInfo{Email: actorEmail}, tt.query)
+			got, err := svc.Users(t.Context(), domain.AuthInfo{UserID: actorEmail}, tt.query)
 
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)

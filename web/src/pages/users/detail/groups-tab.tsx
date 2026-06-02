@@ -51,7 +51,7 @@ export function GroupsTab({
 
 	const toggle = (g: Group) => {
 		if (!canManageGroup(ability, g)) return;
-		const id = g.id;
+		const id = g.name;
 		const isMember = visibleSet.has(id);
 		if (isMember) {
 			// Currently a member → toggle by staging a remove (or un-staging).
@@ -96,7 +96,7 @@ export function GroupsTab({
 	const handleSave = () => {
 		if (!hasChanges) return;
 		mutation.mutate({
-			email: user.email,
+			userId: user.id,
 			addGroupIds: Array.from(addIds),
 			removeGroupIds: Array.from(removeIds),
 			expectedVersion: membershipVersion,
@@ -117,11 +117,11 @@ export function GroupsTab({
 				)}
 				{allGroups.map((g) => {
 					const editable = canManageGroup(ability, g);
-					const checked = isChecked(g.id);
-					const checkboxId = `group-cb-${g.id}`;
+					const checked = isChecked(g.name);
+					const checkboxId = `group-cb-${g.name}`;
 					return (
 						<div
-							key={g.id}
+							key={g.name}
 							className="flex items-center justify-between gap-3 p-3"
 						>
 							<div className="flex items-center gap-3">
@@ -137,10 +137,10 @@ export function GroupsTab({
 										htmlFor={checkboxId}
 										className="text-sm font-medium cursor-pointer"
 									>
-										{g.name}
+										{g.displayName || g.name}
 									</label>
 									<span className="font-mono text-xs text-muted-foreground">
-										{g.id}
+										{g.name}
 									</span>
 								</div>
 							</div>

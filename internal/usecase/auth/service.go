@@ -6,6 +6,8 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
@@ -22,9 +24,15 @@ type (
 		Exchange(ctx context.Context, code, nonce string) (*auth.Identity, error)
 	}
 
+	// userStore is the user-service surface the auth usecase composes inside
+	// its login flows. It mirrors a subset of *auth.UserService — narrow on
+	// purpose so the auth-flow tests can fake user mutations without dragging
+	// the full service surface into expectations.
 	userStore interface {
-		Get(ctx context.Context, email string) (*domain.User, error)
-		Upsert(ctx context.Context, user *domain.User) error
+		GetByIdentity(ctx context.Context, provider, subject string) (*domain.User, error)
+		GetByEmail(ctx context.Context, email string) (*domain.User, error)
+		LinkIdentity(ctx context.Context, userID uuid.UUID, identity domain.Identity) (*domain.User, error)
+		RecordLogin(ctx context.Context, userID uuid.UUID) (*domain.User, error)
 	}
 
 	// adminBootstrap is implemented by *auth.AdminBootstrap. It owns the
@@ -32,7 +40,7 @@ type (
 	// asks it to ensure the configured bootstrap admin is a member after a
 	// successful login.
 	adminBootstrap interface {
-		EnsureMember(ctx context.Context, email string) error
+		EnsureMember(ctx context.Context, userID string) error
 	}
 
 	sessionsService interface {
