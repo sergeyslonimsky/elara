@@ -71,6 +71,13 @@ linters:
           - mnd
           - wrapcheck
           - nlreturn
+      # pkg/bbolt is a generic transaction-orchestration library (extract-ready).
+      # Returning interfaces from constructors / getters is the core design;
+      # named returns in runTx are required by the defer-based rollback path.
+      - path: ^pkg/bbolt/
+        linters:
+          - ireturn
+          - nonamedreturns
 
     paths:
       - web/

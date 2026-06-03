@@ -2,9 +2,12 @@ package namespace
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // Create persists a new namespace. Authorization is enforced at the handler
@@ -14,10 +17,18 @@ func (s *Service) Create(ctx context.Context, ns *domain.Namespace) (*domain.Nam
 		return nil, fmt.Errorf("validate namespace: %w", err)
 	}
 
+	now := time.Now()
+	ns.CreatedAt = now
+	ns.UpdatedAt = now
+
 	var created *domain.Namespace
 
 	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
 		if err := s.store.Create(ctx, ns); err != nil {
+			if errors.Is(err, storage.ErrResourceAlreadyExists) {
+				return fmt.Errorf("create namespace: %w", domain.ErrAlreadyExists)
+			}
+
 			return fmt.Errorf("create namespace: %w", err)
 		}
 

@@ -98,7 +98,9 @@ describe("UsersPage", () => {
 		);
 
 		await ue.click(screen.getByText("user1@example.com"));
-		expect(mockNavigate).toHaveBeenCalledWith("/users/00000000-0000-0000-0000-000000000001");
+		expect(mockNavigate).toHaveBeenCalledWith(
+			"/users/00000000-0000-0000-0000-000000000001",
+		);
 	});
 
 	test("search interaction", async () => {

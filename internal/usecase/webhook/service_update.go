@@ -2,10 +2,13 @@ package webhook
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 type UpdateParams struct {
@@ -33,6 +36,10 @@ func (s *Service) Update(
 
 	existing, err := s.repo.Get(ctx, id)
 	if err != nil {
+		if errors.Is(err, storage.ErrResourceNotFound) {
+			return nil, fmt.Errorf("get webhook: %w", domain.ErrNotFound)
+		}
+
 		return nil, fmt.Errorf("get webhook: %w", err)
 	}
 
@@ -58,7 +65,13 @@ func (s *Service) Update(
 		return nil, fmt.Errorf("validate webhook: %w", err)
 	}
 
+	existing.UpdatedAt = time.Now()
+
 	if err := s.repo.Update(ctx, existing); err != nil {
+		if errors.Is(err, storage.ErrResourceNotFound) {
+			return nil, fmt.Errorf("update webhook: %w", domain.ErrNotFound)
+		}
+
 		return nil, fmt.Errorf("update webhook: %w", err)
 	}
 

@@ -12,17 +12,21 @@ import (
 	monitor2 "github.com/sergeyslonimsky/elara/internal/service/monitor"
 	"github.com/sergeyslonimsky/elara/internal/storage"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
+	clienthistoryrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/client_history"
+	namespacerepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/namespace"
+	webhookrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/webhook"
 	watchadapter "github.com/sergeyslonimsky/elara/internal/transport/watch"
 	webhookadapter "github.com/sergeyslonimsky/elara/internal/transport/webhook"
+	pkgbbolt "github.com/sergeyslonimsky/elara/pkg/bbolt"
 )
 
 type Adapters struct {
 	Store             *bbolt.Store
 	ConfigRepo        *bbolt.ConfigRepo
-	NamespaceRepo     *bbolt.NamespaceRepo
-	ClientHistoryRepo *bbolt.ClientHistoryRepo
+	NamespaceRepo     *namespacerepo.Repository
+	ClientHistoryRepo *clienthistoryrepo.Repository
 	SchemaRepo        *bbolt.SchemaRepo
-	WebhookRepo       *bbolt.WebhookRepo
+	WebhookRepo       *webhookrepo.Repository
 	AuthUsers         *bbolt.UserRepo
 	AuthGroups        *bbolt.GroupRepo
 	AuthTokens        *bbolt.TokenRepo
@@ -54,8 +58,9 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 	}
 
 	storageManager := bbolt.NewManager(store.DB())
+	pkgManager := pkgbbolt.NewManager(store.DB())
 
-	clientHistoryRepo := bbolt.NewClientHistoryRepo(storageManager)
+	clientHistoryRepo := clienthistoryrepo.NewRepository(pkgManager)
 	clientHistory := monitor2.NewHistoryStore(ctx, monitor2.HistoryConfig{
 		MaxRecords: cfg.Client.History.MaxRecords,
 		MaxAge:     cfg.Client.History.MaxAge,
@@ -66,14 +71,14 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 	}, clientHistory)
 
 	watchPublisher := watchadapter.NewPublisher()
-	webhookRepo := bbolt.NewWebhookRepo(storageManager)
+	webhookRepo := webhookrepo.NewRepository(pkgManager)
 	webhookDispatcher := webhookadapter.NewDispatcher(webhookRepo, watchPublisher)
 
 	//nolint:exhaustruct // shutdownOnce/shutdownErr have valid zero values
 	return &Adapters{
 		Store:             store,
 		ConfigRepo:        bbolt.NewConfigRepo(storageManager),
-		NamespaceRepo:     bbolt.NewNamespaceRepo(storageManager),
+		NamespaceRepo:     namespacerepo.NewRepository(pkgManager),
 		ClientHistoryRepo: clientHistoryRepo,
 		SchemaRepo:        bbolt.NewSchemaRepo(storageManager),
 		WebhookRepo:       webhookRepo,

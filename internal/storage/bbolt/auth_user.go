@@ -1,6 +1,7 @@
 package bbolt
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -49,20 +50,11 @@ func (r *UserRepo) Create(ctx context.Context, user *domain.User) error {
 			return domain.NewAlreadyExistsError("user", user.ID.String())
 		}
 
-		if user.Email != "" {
-			if owner := emails.Get([]byte(user.Email)); owner != nil && string(owner) != user.ID.String() {
-				return fmt.Errorf("email %s: %w", user.Email, domain.ErrEmailTaken)
-			}
+		if err := ensureEmailFree(emails, user.Email, key); err != nil {
+			return err
 		}
-
-		for _, ident := range user.Identities {
-			ikey := identityKey(ident)
-			if owner := idx.Get(ikey); owner != nil && string(owner) != user.ID.String() {
-				return fmt.Errorf(
-					"identity %s:%s: %w",
-					ident.Provider, ident.Subject, domain.ErrIdentityTaken,
-				)
-			}
+		if err := ensureIdentitiesFree(idx, user.Identities, key); err != nil {
+			return err
 		}
 
 		if user.CreatedAt.IsZero() {
@@ -78,22 +70,66 @@ func (r *UserRepo) Create(ctx context.Context, user *domain.User) error {
 			return fmt.Errorf("put user: %w", err)
 		}
 
-		for _, ident := range user.Identities {
-			if err := idx.Put(identityKey(ident), key); err != nil {
-				return fmt.Errorf("put identity index: %w", err)
-			}
+		if err := writeIdentityIndex(idx, user.Identities, key); err != nil {
+			return err
 		}
 
-		if user.Email != "" {
-			if err := emails.Put([]byte(user.Email), key); err != nil {
-				return fmt.Errorf("put email index: %w", err)
-			}
-		}
-
-		return nil
+		return writeEmailIndex(emails, user.Email, key)
 	})
 	if err != nil {
 		return fmt.Errorf("create user: %w", err)
+	}
+
+	return nil
+}
+
+// ensureEmailFree returns ErrEmailTaken if the email is owned by a different user.
+// A nil or empty email is a no-op (email is optional).
+func ensureEmailFree(emails *bolt.Bucket, email string, ownerKey []byte) error {
+	if email == "" {
+		return nil
+	}
+	if owner := emails.Get([]byte(email)); owner != nil && !bytes.Equal(owner, ownerKey) {
+		return fmt.Errorf("email %s: %w", email, domain.ErrEmailTaken)
+	}
+
+	return nil
+}
+
+// ensureIdentitiesFree returns ErrIdentityTaken if any identity is owned by a different user.
+func ensureIdentitiesFree(idx *bolt.Bucket, identities []domain.Identity, ownerKey []byte) error {
+	for _, ident := range identities {
+		ikey := identityKey(ident)
+		if owner := idx.Get(ikey); owner != nil && !bytes.Equal(owner, ownerKey) {
+			return fmt.Errorf(
+				"identity %s:%s: %w",
+				ident.Provider, ident.Subject, domain.ErrIdentityTaken,
+			)
+		}
+	}
+
+	return nil
+}
+
+// writeIdentityIndex puts every identity → ownerKey mapping. Caller must have
+// pre-validated freedom via ensureIdentitiesFree.
+func writeIdentityIndex(idx *bolt.Bucket, identities []domain.Identity, ownerKey []byte) error {
+	for _, ident := range identities {
+		if err := idx.Put(identityKey(ident), ownerKey); err != nil {
+			return fmt.Errorf("put identity index: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// writeEmailIndex puts email → ownerKey. No-op when email is empty.
+func writeEmailIndex(emails *bolt.Bucket, email string, ownerKey []byte) error {
+	if email == "" {
+		return nil
+	}
+	if err := emails.Put([]byte(email), ownerKey); err != nil {
+		return fmt.Errorf("put email index: %w", err)
 	}
 
 	return nil
@@ -135,43 +171,11 @@ func (r *UserRepo) Update(ctx context.Context, user *domain.User) error {
 			return fmt.Errorf(errUnmarshalUser, err)
 		}
 
-		oldKeys := identityKeySet(prev.Identities)
-		newKeys := identityKeySet(user.Identities)
-
-		for k := range oldKeys {
-			if _, kept := newKeys[k]; kept {
-				continue
-			}
-			if err := idx.Delete([]byte(k)); err != nil {
-				return fmt.Errorf("delete stale identity index %q: %w", k, err)
-			}
+		if err := reconcileIdentityIndex(idx, prev.Identities, user.Identities, key); err != nil {
+			return err
 		}
-		for k := range newKeys {
-			if _, was := oldKeys[k]; was {
-				continue
-			}
-			if owner := idx.Get([]byte(k)); owner != nil && string(owner) != user.ID.String() {
-				return fmt.Errorf("identity %q: %w", k, domain.ErrIdentityTaken)
-			}
-			if err := idx.Put([]byte(k), key); err != nil {
-				return fmt.Errorf("put identity index %q: %w", k, err)
-			}
-		}
-
-		if prev.Email != user.Email { //nolint:nestif
-			if prev.Email != "" {
-				if err := emails.Delete([]byte(prev.Email)); err != nil {
-					return fmt.Errorf("delete old email index: %w", err)
-				}
-			}
-			if user.Email != "" {
-				if owner := emails.Get([]byte(user.Email)); owner != nil && string(owner) != user.ID.String() {
-					return fmt.Errorf("email %s: %w", user.Email, domain.ErrEmailTaken)
-				}
-				if err := emails.Put([]byte(user.Email), key); err != nil {
-					return fmt.Errorf("put email index: %w", err)
-				}
-			}
+		if err := reconcileEmailIndex(emails, prev.Email, user.Email, key); err != nil {
+			return err
 		}
 
 		data, err := json.Marshal(domainToAuthUserMeta(user))
@@ -189,6 +193,63 @@ func (r *UserRepo) Update(ctx context.Context, user *domain.User) error {
 	}
 
 	return nil
+}
+
+// reconcileIdentityIndex diffs prev vs next identity slices and applies the
+// minimal set of index mutations: delete entries no longer present, then
+// add entries newly present (rejecting collisions with ErrIdentityTaken).
+// Identities unchanged across prev/next are left untouched.
+func reconcileIdentityIndex(
+	idx *bolt.Bucket,
+	prev, next []domain.Identity,
+	ownerKey []byte,
+) error {
+	oldKeys := identityKeySet(prev)
+	newKeys := identityKeySet(next)
+
+	for k := range oldKeys {
+		if _, kept := newKeys[k]; kept {
+			continue
+		}
+		if err := idx.Delete([]byte(k)); err != nil {
+			return fmt.Errorf("delete stale identity index %q: %w", k, err)
+		}
+	}
+	for k := range newKeys {
+		if _, was := oldKeys[k]; was {
+			continue
+		}
+		if owner := idx.Get([]byte(k)); owner != nil && !bytes.Equal(owner, ownerKey) {
+			return fmt.Errorf("identity %q: %w", k, domain.ErrIdentityTaken)
+		}
+		if err := idx.Put([]byte(k), ownerKey); err != nil {
+			return fmt.Errorf("put identity index %q: %w", k, err)
+		}
+	}
+
+	return nil
+}
+
+// reconcileEmailIndex updates the email→user index when the email changed.
+// Empty prev means "no old entry to remove"; empty next means "no new entry to add".
+// A change to an email already owned by another user returns ErrEmailTaken.
+func reconcileEmailIndex(emails *bolt.Bucket, prev, next string, ownerKey []byte) error {
+	if prev == next {
+		return nil
+	}
+	if prev != "" {
+		if err := emails.Delete([]byte(prev)); err != nil {
+			return fmt.Errorf("delete old email index: %w", err)
+		}
+	}
+	if next == "" {
+		return nil
+	}
+	if err := ensureEmailFree(emails, next, ownerKey); err != nil {
+		return err
+	}
+
+	return writeEmailIndex(emails, next, ownerKey)
 }
 
 func identityKey(i domain.Identity) []byte {

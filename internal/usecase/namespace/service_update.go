@@ -2,31 +2,41 @@ package namespace
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // Update changes a namespace's description. Authorization
 // (namespace/write on `name`) is enforced at the handler boundary.
 func (s *Service) Update(ctx context.Context, name, description string) (*domain.Namespace, error) {
-	ns := &domain.Namespace{
-		Name:        name,
-		Description: description,
-	}
-
 	var updated *domain.Namespace
 
 	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
-		if err := s.store.Update(ctx, ns); err != nil {
+		existing, err := s.store.Get(ctx, name)
+		if err != nil {
+			if errors.Is(err, storage.ErrResourceNotFound) {
+				return fmt.Errorf("get namespace: %w", domain.ErrNotFound)
+			}
+
+			return fmt.Errorf("get namespace: %w", err)
+		}
+
+		if existing.Locked {
+			return fmt.Errorf("namespace %q: %w", name, domain.ErrNamespaceLocked)
+		}
+
+		existing.Description = description
+		existing.UpdatedAt = time.Now()
+
+		if err := s.store.Update(ctx, existing); err != nil {
 			return fmt.Errorf("update namespace: %w", err)
 		}
 
-		u, err := s.store.Get(ctx, name)
-		if err != nil {
-			return fmt.Errorf("get updated namespace: %w", err)
-		}
-		updated = u
+		updated = existing
 
 		return s.populateConfigCount(ctx, updated)
 	})

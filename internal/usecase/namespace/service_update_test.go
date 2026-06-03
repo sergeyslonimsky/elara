@@ -21,11 +21,13 @@ func TestService_Update(t *testing.T) {
 	const name = "prod"
 
 	tests := []struct {
-		name        string
-		description string
-		mockFunc    func(ctx context.Context, m mocks) context.Context
-		wantErr     string
-		want        *domain.Namespace
+		name            string
+		description     string
+		mockFunc        func(ctx context.Context, m mocks) context.Context
+		errIs           error
+		wantErr         string
+		wantDescription string
+		wantCount       int
 	}{
 		{
 			name:        "success",
@@ -36,15 +38,33 @@ func TestService_Update(t *testing.T) {
 						return fn(ctx)
 					},
 				)
-				m.store.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
 				m.store.EXPECT().
 					Get(gomock.Any(), name).
-					Return(&domain.Namespace{Name: name, Description: "Production"}, nil)
+					Return(&domain.Namespace{Name: name, Description: "old"}, nil)
+				m.store.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
 				m.store.EXPECT().CountConfigs(gomock.Any(), name).Return(10, nil)
 
 				return ctx
 			},
-			want: &domain.Namespace{Name: name, Description: "Production", ConfigCount: 10},
+			wantDescription: "Production",
+			wantCount:       10,
+		},
+		{
+			name:        "locked returns ErrNamespaceLocked",
+			description: "x",
+			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.store.EXPECT().
+					Get(gomock.Any(), name).
+					Return(&domain.Namespace{Name: name, Locked: true}, nil)
+
+				return ctx
+			},
+			errIs: domain.ErrNamespaceLocked,
 		},
 		{
 			name: "update error",
@@ -54,6 +74,9 @@ func TestService_Update(t *testing.T) {
 						return fn(ctx)
 					},
 				)
+				m.store.EXPECT().
+					Get(gomock.Any(), name).
+					Return(&domain.Namespace{Name: name}, nil)
 				m.store.EXPECT().Update(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 
 				return ctx
@@ -71,13 +94,20 @@ func TestService_Update(t *testing.T) {
 
 			got, err := svc.Update(ctx, name, tt.description)
 
+			if tt.errIs != nil {
+				require.ErrorIs(t, err, tt.errIs)
+
+				return
+			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
 
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.wantDescription, got.Description)
+			assert.Equal(t, tt.wantCount, got.ConfigCount)
+			assert.False(t, got.UpdatedAt.IsZero(), "service should set UpdatedAt")
 		})
 	}
 }

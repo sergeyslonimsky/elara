@@ -127,46 +127,26 @@ func (i *AuthInterceptor) authenticate(
 ) (context.Context, error) {
 	sessionID := extractSessionID(header)
 	if sessionID == "" {
-		if i.skipPermissions {
-			return i.injectBypassUser(ctx), nil
-		}
-
-		return ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
+		return i.rejectOrBypass(ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized))
 	}
 
 	sess, err := i.sessions.Validate(ctx, sessionID)
 	if err != nil {
-		if i.skipPermissions {
-			return i.injectBypassUser(ctx), nil
-		}
-
-		return ctx, unauthenticatedError(err)
+		return i.rejectOrBypass(ctx, unauthenticatedError(err))
 	}
 
 	uid, err := uuid.Parse(sess.UserID)
 	if err != nil {
-		if i.skipPermissions {
-			return i.injectBypassUser(ctx), nil
-		}
-
-		return ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
+		return i.rejectOrBypass(ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized))
 	}
 
 	user, err := i.users.GetByID(ctx, uid)
 	if err != nil {
-		if i.skipPermissions {
-			return i.injectBypassUser(ctx), nil
-		}
-
-		return ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
+		return i.rejectOrBypass(ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized))
 	}
 
 	if user.Status != domain.UserStatusActive {
-		if i.skipPermissions {
-			return i.injectBypassUser(ctx), nil
-		}
-
-		return ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUserDeactivated)
+		return i.rejectOrBypass(ctx, connect.NewError(connect.CodeUnauthenticated, domain.ErrUserDeactivated))
 	}
 
 	// Best-effort refresh: extend LastSeenAt / sliding TTL. Failures are logged
@@ -176,6 +156,17 @@ func (i *AuthInterceptor) authenticate(
 	}
 
 	return authctx.WithSession(ctx, sess, user), nil
+}
+
+// rejectOrBypass returns the bypass-user context when skipPermissions is set
+// (local-dev mode), otherwise propagates the prepared error. Centralizing
+// this swap keeps authenticate() free of repeated branch boilerplate.
+func (i *AuthInterceptor) rejectOrBypass(ctx context.Context, err error) (context.Context, error) {
+	if i.skipPermissions {
+		return i.injectBypassUser(ctx), nil
+	}
+
+	return ctx, err
 }
 
 // extractSessionID resolves the session identifier from the request headers.

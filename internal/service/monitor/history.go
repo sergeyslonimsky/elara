@@ -170,6 +170,14 @@ func (s *HistoryStore) run(ctx context.Context) {
 }
 
 func (s *HistoryStore) persist(ctx context.Context, snap *domain.Client) {
+	if snap.DisconnectedAt == nil {
+		slog.Warn("monitor.history: skip save without DisconnectedAt",
+			"client_id", snap.ID,
+		)
+
+		return
+	}
+
 	if err := s.repo.Save(ctx, snap); err != nil {
 		slog.Warn("monitor.history: save failed",
 			"client_id", snap.ID,

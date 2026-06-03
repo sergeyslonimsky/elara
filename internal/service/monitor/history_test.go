@@ -145,7 +145,7 @@ func TestHistoryStore_Shutdown(t *testing.T) {
 
 		sut := monitor.NewHistoryStore(t.Context(), monitor.HistoryConfig{BufferSize: 10}, repo)
 		for range 5 {
-			sut.Record(&domain.Client{ID: "x"})
+			sut.Record(&domain.Client{ID: "x", DisconnectedAt: new(time.Now())})
 		}
 
 		require.NoError(t, sut.Shutdown(t.Context()))

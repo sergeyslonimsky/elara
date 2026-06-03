@@ -95,7 +95,9 @@ describe("DeleteUserDialog", () => {
 		await ue.click(screen.getByRole("button", { name: /delete user/i }));
 
 		expect(mockMutate).toHaveBeenCalledWith(
-			expect.objectContaining({ userId: "00000000-0000-0000-0000-00000000000a" }),
+			expect.objectContaining({
+				userId: "00000000-0000-0000-0000-00000000000a",
+			}),
 		);
 	});
 

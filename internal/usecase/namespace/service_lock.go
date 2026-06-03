@@ -2,7 +2,11 @@ package namespace
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
+	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // Lock and Unlock toggle the lock flag on a namespace. Authorization
@@ -13,6 +17,10 @@ func (s *Service) Lock(ctx context.Context, name string) error {
 		return s.store.LockNamespace(ctx, name)
 	})
 	if err != nil {
+		if errors.Is(err, storage.ErrResourceNotFound) {
+			return fmt.Errorf("lock namespace: %w", domain.ErrNotFound)
+		}
+
 		return fmt.Errorf("lock namespace: %w", err)
 	}
 
@@ -26,6 +34,10 @@ func (s *Service) Unlock(ctx context.Context, name string) error {
 		return s.store.UnlockNamespace(ctx, name)
 	})
 	if err != nil {
+		if errors.Is(err, storage.ErrResourceNotFound) {
+			return fmt.Errorf("unlock namespace: %w", domain.ErrNotFound)
+		}
+
 		return fmt.Errorf("unlock namespace: %w", err)
 	}
 
