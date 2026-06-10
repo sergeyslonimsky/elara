@@ -7,9 +7,7 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+-*"
 
 permissions:
-  contents: write   # chart-releaser pushes to gh-pages + creates GH releases
-  packages: write   # ghcr.io image push
-  id-token: write   # cosign keyless signing (optional, future)
+  contents: read
 
 env:
   REGISTRY: ghcr.io
@@ -23,6 +21,10 @@ jobs:
     name: Publish container image
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read   # actions/checkout
+      packages: write  # ghcr.io image push
+      id-token: write  # cosign keyless signing
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -85,6 +87,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: image
     timeout-minutes: 10
+    permissions:
+      contents: write  # chart-releaser pushes to gh-pages + creates GH releases
+      packages: write  # ghcr.io chart push
+      id-token: write  # cosign keyless signing
     steps:
       - uses: actions/checkout@v6
         with:

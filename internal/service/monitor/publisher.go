@@ -49,7 +49,7 @@ func (p *publisher) subscribe() (<-chan domain.ClientChange, func()) {
 		closed := make(chan domain.ClientChange)
 		close(closed)
 
-		return closed, func() {}
+		return closed, func() { /* no-op: publisher already stopped */ }
 	}
 
 	p.nextID++

@@ -31,6 +31,16 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reqPath = "index.html"
 	}
 
+	// Reject traversal explicitly: fs.FS already refuses ".." segments,
+	// but make the rejection visible to static analysis and fall back to SPA.
+	cleaned := path.Clean(reqPath)
+	if cleaned == "." || strings.HasPrefix(cleaned, "..") || strings.HasPrefix(cleaned, "/") {
+		h.serveFile(w, r, "index.html")
+
+		return
+	}
+	reqPath = cleaned
+
 	// Try to serve the exact file.
 	if h.serveFile(w, r, reqPath) {
 		return

@@ -62,7 +62,7 @@ type HistorySink interface {
 // noopHistorySink is the default when no HistorySink is provided.
 type noopHistorySink struct{}
 
-func (noopHistorySink) Record(*domain.Client) {}
+func (noopHistorySink) Record(*domain.Client) { /* no-op: history is disabled */ }
 
 // Registry is the in-memory source of truth for connected clients.
 //
@@ -392,7 +392,7 @@ func (r *Registry) SubscribeClient(connID string) (<-chan domain.ClientChange, f
 		closed := make(chan domain.ClientChange)
 		close(closed)
 
-		return closed, func() {}
+		return closed, func() { /* no-op: connection not registered */ }
 	}
 
 	e.pubMu.Lock()

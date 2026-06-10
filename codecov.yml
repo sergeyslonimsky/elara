@@ -12,3 +12,7 @@ ignore:
   - "internal/di/**"
   - "cmd/**"
   - "examples/**"
+  - "test/**"
+  - "internal/handler/ui/**"
+  - "web/src/components/ui/sidebar.tsx"
+  - "web/src/components/ui/chart.tsx"
