@@ -4,6 +4,7 @@ coverage:
       default:
         target: 80%
         threshold: 2%
+        only_pulls: true
 
 ignore:
   - "**/mocks/**"
