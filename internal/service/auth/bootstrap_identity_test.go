@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // TestBootstrapBasic_SingleBasicIdentity covers the EL-50 §3.3.2 contract:
@@ -80,7 +81,7 @@ func TestBootstrapBasic_SingleBasicIdentity(t *testing.T) {
 
 		// Old subject is no longer resolvable.
 		_, err = users.GetByIdentity(ctx, string(domain.ProviderBasic), "admin1@example.com")
-		require.ErrorIs(t, err, domain.ErrNotFound)
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
 
 		// New subject resolves.
 		userByNewName, err := users.GetByIdentity(ctx, string(domain.ProviderBasic), "admin2@example.com")

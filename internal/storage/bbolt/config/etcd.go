@@ -1,29 +1,29 @@
-package bbolt
+package config
 
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
-	bolt "go.etcd.io/bbolt"
-
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage/internal"
+	"github.com/sergeyslonimsky/elara/pkg/bbolt"
 )
 
-// GetKVAtRevision returns the value for (namespace, path) as it existed at the given
-// revision (looking up in the history bucket). Returns nil if no history entry exists
-// at or before that revision.
-func (r *ConfigRepo) GetKVAtRevision(
+// GetKVAtRevision returns the value for (namespace, path) as it existed at
+// the given revision (looked up in the history bucket). Returns (nil, nil)
+// when no history entry exists at or before that revision.
+func (r *Repository) GetKVAtRevision(
 	ctx context.Context,
 	namespace, path string,
 	revision int64,
 ) ([]byte, error) {
 	var out []byte
 
-	err := r.manager.View(ctx, func(tx *bolt.Tx) error {
-		history := tx.Bucket([]byte(bucketHistory))
+	err := r.dbm.WithReadTx(ctx, func(ctx context.Context) error {
+		history := r.dbm.GetQuerier(ctx).Bucket(bucketHistory)
 
 		val := lookupHistoryAtRevision(history, namespace, path, revision)
 		if val != nil {
@@ -40,32 +40,17 @@ func (r *ConfigRepo) GetKVAtRevision(
 	return out, nil
 }
 
-// CurrentRevisionValue returns the current global revision.
-func (r *ConfigRepo) CurrentRevisionValue(ctx context.Context) (int64, error) {
-	var rev int64
-
-	err := r.manager.View(ctx, func(tx *bolt.Tx) error {
-		sys := tx.Bucket([]byte(bucketSys))
-		b := sys.Get([]byte(sysRevisionKey))
-
-		if b != nil {
-			rev = parseRevision(b)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return 0, fmt.Errorf("get current revision: %w", err)
-	}
-
-	return rev, nil
+// CurrentRevisionValue returns the current global revision counter.
+func (r *Repository) CurrentRevisionValue(ctx context.Context) (int64, error) {
+	return r.CurrentRevision(ctx)
 }
 
-// RangeQuery returns key-value pairs in range [startNS, startPath) to [endNS, endPath).
-// If endNS and endPath are empty, returns only the single key at startNS/startPath.
-// If endNS+endPath represents "all keys >= start" (etcd convention with "\0"), scans everything >= start.
-// revision > 0 enables point-in-time read from history bucket.
-func (r *ConfigRepo) RangeQuery(
+// RangeQuery returns key-value pairs in range [startNS/startPath ..
+// endNS/endPath). If endNS and endPath are empty, returns only the single
+// key at startNS/startPath. If endNS == "\x00" (etcd "all keys >= start"
+// convention) scans everything >= start. revision > 0 enables point-in-time
+// reads from the history bucket.
+func (r *Repository) RangeQuery(
 	ctx context.Context,
 	startNS, startPath string,
 	endNS, endPath string,
@@ -80,10 +65,12 @@ func (r *ConfigRepo) RangeQuery(
 
 	rp := buildRangeParams(startNS, startPath, endNS, endPath)
 
-	err := r.manager.View(ctx, func(tx *bolt.Tx) error {
-		metaBkt := tx.Bucket([]byte(bucketMeta))
-		content := tx.Bucket([]byte(bucketContent))
-		history := tx.Bucket([]byte(bucketHistory))
+	err := r.dbm.WithReadTx(ctx, func(ctx context.Context) error {
+		q := r.dbm.GetQuerier(ctx)
+		metaBkt := q.Bucket(bucketMeta)
+		content := q.Bucket(bucketContent)
+		history := q.Bucket(bucketHistory)
+		codec := bbolt.JSONCodec[internal.ConfigMeta]{}
 		c := metaBkt.Cursor()
 
 		for k, v := c.Seek(rp.startKey); k != nil; k, v = c.Next() {
@@ -91,14 +78,14 @@ func (r *ConfigRepo) RangeQuery(
 				break
 			}
 
-			var m configMeta
-			if err := json.Unmarshal(v, &m); err != nil {
+			var m internal.ConfigMeta
+			if err := codec.Unmarshal(v, &m); err != nil {
 				return fmt.Errorf("unmarshal meta: %w", err)
 			}
 
 			ns, path := parseConfigKey(k)
 
-			val, modRev, ok := readKVValue(content, history, k, ns, path, &m, revision, keysOnly)
+			val, modRev, ok := readKVValue(content, history, k, ns, path, m, revision, keysOnly)
 			if !ok {
 				continue
 			}
@@ -130,7 +117,8 @@ func (r *ConfigRepo) RangeQuery(
 	return results, more, nil
 }
 
-// rangeParams holds precomputed range bounds used by RangeQuery and DeleteRangeKeys.
+// rangeParams holds precomputed range bounds used by RangeQuery and
+// DeleteRangeKeys.
 type rangeParams struct {
 	startKey  []byte
 	endKey    []byte
@@ -151,7 +139,6 @@ func buildRangeParams(startNS, startPath, endNS, endPath string) rangeParams {
 	return rangeParams{startKey: startKey, endKey: endKey, singleKey: singleKey, scanAll: scanAll}
 }
 
-// shouldBreakRange returns true when cursor key k is past the requested range.
 func shouldBreakRange(k []byte, rp rangeParams) bool {
 	if rp.singleKey {
 		return !bytes.Equal(k, rp.startKey)
@@ -165,13 +152,13 @@ func shouldBreakRange(k []byte, rp rangeParams) bool {
 }
 
 // readKVValue resolves the value for a KV pair, optionally performing a
-// point-in-time historical lookup. Returns (value, modRevision, ok). When ok is
-// false the key did not exist at the requested revision and the caller should
-// skip the entry.
+// point-in-time historical lookup. Returns (value, modRevision, ok). When ok
+// is false the key did not exist at the requested revision and the caller
+// should skip the entry.
 func readKVValue(
-	content, history *bolt.Bucket,
+	content, history bbolt.Bucket,
 	k []byte, ns, path string,
-	m *configMeta, revision int64, keysOnly bool,
+	m internal.ConfigMeta, revision int64, keysOnly bool,
 ) ([]byte, int64, bool) {
 	if keysOnly {
 		return nil, m.Revision, true
@@ -193,7 +180,7 @@ func readKVValue(
 	return val, m.Revision, true
 }
 
-func lookupHistoryAtRevision(history *bolt.Bucket, namespace, path string, revision int64) []byte {
+func lookupHistoryAtRevision(history bbolt.Bucket, namespace, path string, revision int64) []byte {
 	seekKey := historyKey(namespace, path, revision)
 
 	c := history.Cursor()
@@ -211,7 +198,6 @@ func lookupHistoryAtRevision(history *bolt.Bucket, namespace, path string, revis
 		return nil
 	}
 
-	// bbolt bytes are only valid inside the enclosing tx — copy before returning.
 	out := make([]byte, len(v))
 	copy(out, v)
 
@@ -220,33 +206,29 @@ func lookupHistoryAtRevision(history *bolt.Bucket, namespace, path string, revis
 
 // existingKeyInfo holds the pre-existing state of a key being upserted.
 type existingKeyInfo struct {
-	meta          *configMeta
+	meta          internal.ConfigMeta
 	prevValueCopy []byte
 }
 
-// resolveExistingKey reads the current meta + value for key. If the key does
-// not exist, found is false and info is zero-valued.
-func resolveExistingKey(metaBkt, content *bolt.Bucket, key []byte) (existingKeyInfo, bool, error) {
-	raw := metaBkt.Get(key)
-	if raw == nil {
+func resolveExistingKey(q bbolt.Querier, key []byte) (existingKeyInfo, bool, error) {
+	m, err := bbolt.Get[internal.ConfigMeta](q, bucketMeta, key)
+	if errors.Is(err, bbolt.ErrNotFound) {
 		return existingKeyInfo{}, false, nil
 	}
-
-	var m configMeta
-	if err := json.Unmarshal(raw, &m); err != nil {
+	if err != nil {
 		return existingKeyInfo{}, false, fmt.Errorf("unmarshal existing meta: %w", err)
 	}
 
 	var prevValueCopy []byte
-	if prevVal := content.Get(key); prevVal != nil {
+	if prevVal := q.Bucket(bucketContent).Get(key); prevVal != nil {
 		prevValueCopy = make([]byte, len(prevVal))
 		copy(prevValueCopy, prevVal)
 	}
 
-	return existingKeyInfo{meta: &m, prevValueCopy: prevValueCopy}, true, nil
+	return existingKeyInfo{meta: m, prevValueCopy: prevValueCopy}, true, nil
 }
 
-// buildPutMeta constructs the new configMeta for a Put. When the key already
+// buildPutMeta constructs the new ConfigMeta for a Put. When the key already
 // existed the version is bumped and create-time metadata is carried forward;
 // otherwise a fresh create record is built.
 func buildPutMeta(
@@ -255,9 +237,9 @@ func buildPutMeta(
 	revision int64,
 	existing existingKeyInfo,
 	found bool,
-) (*configMeta, domain.EventType) {
+) (internal.ConfigMeta, domain.EventType) {
 	now := time.Now()
-	newMeta := &configMeta{
+	newMeta := internal.ConfigMeta{
 		ContentHash: computeHash(value),
 		Format:      string(domain.DetectFormatFromPath(path)),
 		Revision:    revision,
@@ -281,9 +263,10 @@ func buildPutMeta(
 	return newMeta, domain.EventTypeCreated
 }
 
-// PutKey creates or updates a key in etcd semantics. Returns previous KV (if existed) and new revision.
-// Always upserts (no version check — etcd Put is always an upsert).
-func (r *ConfigRepo) PutKey(
+// PutKey creates or updates a key in etcd semantics. Returns the previous KV
+// (if it existed) and the new revision. Always upserts — etcd Put has no
+// version check.
+func (r *Repository) PutKey(
 	ctx context.Context,
 	namespace, path string,
 	value []byte,
@@ -293,38 +276,37 @@ func (r *ConfigRepo) PutKey(
 		newRev int64
 	)
 
-	if err := r.manager.Update(ctx, func(tx *bolt.Tx) error {
-		p, rev, err := putKeyTx(tx, namespace, path, value)
+	err := r.dbm.WithTx(ctx, func(ctx context.Context) error {
+		p, rev, err := putKeyTx(r.dbm.GetQuerier(ctx), namespace, path, value)
 		prev = p
 		newRev = rev
 
 		return err
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, 0, fmt.Errorf("put key: %w", err)
 	}
 
 	return prev, newRev, nil
 }
 
-func putKeyTx(tx *bolt.Tx, namespace, path string, value []byte) (*domain.KVPair, int64, error) {
-	metaBkt := tx.Bucket([]byte(bucketMeta))
-	content := tx.Bucket([]byte(bucketContent))
+func putKeyTx(q bbolt.Querier, namespace, path string, value []byte) (*domain.KVPair, int64, error) {
 	key := configKey(namespace, path)
 
-	existing, found, err := resolveExistingKey(metaBkt, content, key)
+	existing, found, err := resolveExistingKey(q, key)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	if err := validateNamespaceUnlocked(tx, namespace); err != nil {
-		return nil, 0, fmt.Errorf("validate namespace unlocked: %w", err)
+	if err := validateNamespaceUnlocked(q, namespace); err != nil {
+		return nil, 0, err
 	}
 
 	if err := checkPutAllowed(existing, found, path); err != nil {
 		return nil, 0, err
 	}
 
-	revision, err := nextRevision(tx)
+	revision, err := nextRevision(q)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -332,24 +314,19 @@ func putKeyTx(tx *bolt.Tx, namespace, path string, value []byte) (*domain.KVPair
 	newMeta, eventType := buildPutMeta(path, value, revision, existing, found)
 	prev := buildPrevKV(existing, found, namespace, path)
 
-	if err := content.Put(key, value); err != nil {
+	if err := q.Bucket(bucketContent).Put(key, value); err != nil {
 		return nil, 0, fmt.Errorf("put content: %w", err)
 	}
 
-	newMetaBytes, err := json.Marshal(newMeta)
-	if err != nil {
-		return nil, 0, fmt.Errorf("marshal meta: %w", err)
-	}
-
-	if err := metaBkt.Put(key, newMetaBytes); err != nil {
+	if err := bbolt.Put(q, bucketMeta, key, newMeta); err != nil {
 		return nil, 0, fmt.Errorf("put meta: %w", err)
 	}
 
-	if err := writeHistory(tx, namespace, path, revision, value); err != nil {
+	if err := writeHistory(q, namespace, path, revision, value); err != nil {
 		return nil, 0, err
 	}
 
-	if err := writeChangelog(tx, revision, eventType, path, namespace, newMeta.Version); err != nil {
+	if err := writeChangelog(q, revision, eventType, path, namespace, newMeta.Version); err != nil {
 		return nil, 0, err
 	}
 
@@ -363,15 +340,16 @@ type deleteTarget struct {
 	kv  *domain.KVPair
 }
 
-// collectDeleteTargets scans the meta bucket for keys in range and returns
-// copies of both the raw key and the domain KVPair (with optional value copy).
-// Returns an error if any target config is locked.
 func collectDeleteTargets(
-	metaBkt, content *bolt.Bucket,
+	q bbolt.Querier,
 	rp rangeParams,
 	returnPrev bool,
 ) ([]deleteTarget, error) {
+	metaBkt := q.Bucket(bucketMeta)
+	content := q.Bucket(bucketContent)
+	codec := bbolt.JSONCodec[internal.ConfigMeta]{}
 	c := metaBkt.Cursor()
+
 	var targets []deleteTarget
 
 	for k, v := c.Seek(rp.startKey); k != nil; k, v = c.Next() {
@@ -385,8 +363,8 @@ func collectDeleteTargets(
 		ns, path := parseConfigKey(k)
 		kv := &domain.KVPair{Namespace: ns, Path: path}
 
-		var m configMeta
-		if err := json.Unmarshal(v, &m); err != nil {
+		var m internal.ConfigMeta
+		if err := codec.Unmarshal(v, &m); err != nil {
 			return nil, fmt.Errorf("unmarshal meta: %w", err)
 		}
 
@@ -411,8 +389,9 @@ func collectDeleteTargets(
 	return targets, nil
 }
 
-// DeleteRangeKeys deletes keys in range and returns deleted KVPairs and new revision.
-func (r *ConfigRepo) DeleteRangeKeys(
+// DeleteRangeKeys deletes keys in range and returns deleted KVPairs and the
+// new revision.
+func (r *Repository) DeleteRangeKeys(
 	ctx context.Context,
 	startNS, startPath string,
 	endNS, endPath string,
@@ -425,13 +404,14 @@ func (r *ConfigRepo) DeleteRangeKeys(
 
 	rp := buildRangeParams(startNS, startPath, endNS, endPath)
 
-	if err := r.manager.Update(ctx, func(tx *bolt.Tx) error {
-		kvs, rev, err := deleteRangeKeysTx(tx, rp, startNS, returnPrev)
+	err := r.dbm.WithTx(ctx, func(ctx context.Context) error {
+		kvs, rev, err := deleteRangeKeysTx(r.dbm.GetQuerier(ctx), rp, startNS, returnPrev)
 		deleted = kvs
 		newRev = rev
 
 		return err
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, 0, fmt.Errorf("delete range keys: %w", err)
 	}
 
@@ -439,19 +419,16 @@ func (r *ConfigRepo) DeleteRangeKeys(
 }
 
 func deleteRangeKeysTx(
-	tx *bolt.Tx,
+	q bbolt.Querier,
 	rp rangeParams,
 	startNS string,
 	returnPrev bool,
 ) ([]*domain.KVPair, int64, error) {
-	if err := validateNamespaceUnlocked(tx, startNS); err != nil {
-		return nil, 0, fmt.Errorf("validate namespace unlocked: %w", err)
+	if err := validateNamespaceUnlocked(q, startNS); err != nil {
+		return nil, 0, err
 	}
 
-	metaBkt := tx.Bucket([]byte(bucketMeta))
-	content := tx.Bucket([]byte(bucketContent))
-
-	targets, err := collectDeleteTargets(metaBkt, content, rp, returnPrev)
+	targets, err := collectDeleteTargets(q, rp, returnPrev)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -460,11 +437,13 @@ func deleteRangeKeysTx(
 		return nil, 0, nil
 	}
 
-	revision, err := nextRevision(tx)
+	revision, err := nextRevision(q)
 	if err != nil {
 		return nil, 0, err
 	}
 
+	content := q.Bucket(bucketContent)
+	metaBkt := q.Bucket(bucketMeta)
 	kvs := make([]*domain.KVPair, 0, len(targets))
 
 	for _, t := range targets {
@@ -476,7 +455,7 @@ func deleteRangeKeysTx(
 			return nil, 0, fmt.Errorf("delete meta: %w", err)
 		}
 
-		if err := writeChangelog(tx, revision, domain.EventTypeDeleted, t.kv.Path, t.kv.Namespace, 0); err != nil {
+		if err := writeChangelog(q, revision, domain.EventTypeDeleted, t.kv.Path, t.kv.Namespace, 0); err != nil {
 			return nil, 0, err
 		}
 

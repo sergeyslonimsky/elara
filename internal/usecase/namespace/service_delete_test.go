@@ -35,7 +35,7 @@ func TestService_Delete(t *testing.T) {
 				m.store.EXPECT().
 					Get(gomock.Any(), name).
 					Return(&domain.Namespace{Name: name}, nil)
-				m.store.EXPECT().CountConfigs(gomock.Any(), name).Return(0, nil)
+				m.configs.EXPECT().CountByNamespace(gomock.Any(), name).Return(0, nil)
 				m.store.EXPECT().Delete(gomock.Any(), name).Return(nil)
 
 				return ctx
@@ -52,7 +52,7 @@ func TestService_Delete(t *testing.T) {
 				m.store.EXPECT().
 					Get(gomock.Any(), name).
 					Return(&domain.Namespace{Name: name}, nil)
-				m.store.EXPECT().CountConfigs(gomock.Any(), name).Return(5, nil)
+				m.configs.EXPECT().CountByNamespace(gomock.Any(), name).Return(5, nil)
 
 				return ctx
 			},
@@ -85,7 +85,7 @@ func TestService_Delete(t *testing.T) {
 				m.store.EXPECT().
 					Get(gomock.Any(), name).
 					Return(&domain.Namespace{Name: name}, nil)
-				m.store.EXPECT().CountConfigs(gomock.Any(), name).Return(0, nil)
+				m.configs.EXPECT().CountByNamespace(gomock.Any(), name).Return(0, nil)
 				m.store.EXPECT().Delete(gomock.Any(), name).Return(errors.New("db error"))
 
 				return ctx

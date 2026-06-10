@@ -29,14 +29,3 @@ func parseRevision(b []byte) int64 {
 
 	return int64(binary.BigEndian.Uint64(b))
 }
-
-// configKeyPrefix returns the prefix for scanning configs by namespace in the
-// `meta` bucket. Identical encoding to bbolt.configKey ("<ns>\x00<path>") —
-// keep in sync with config repo until CountConfigs moves there.
-func configKeyPrefix(namespace string) []byte {
-	if namespace == "" {
-		return nil
-	}
-
-	return []byte(namespace + string(keySep))
-}

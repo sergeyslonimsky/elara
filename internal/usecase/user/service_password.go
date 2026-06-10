@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -9,6 +10,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // ResetPassword sets a new password for another user.
@@ -34,6 +36,10 @@ func (s *Service) ResetPassword(
 	err = s.pap.Write(ctx, func(ctx context.Context, _ *authz.PAPTx) error {
 		user, err := s.store.GetByID(ctx, userID)
 		if err != nil {
+			if errors.Is(err, storage.ErrResourceNotFound) {
+				return fmt.Errorf("get user: %w", domain.ErrNotFound)
+			}
+
 			return fmt.Errorf("get user: %w", err)
 		}
 		if err := s.authorizeUserWrite(ctx, actor, user.ID.String()); err != nil {

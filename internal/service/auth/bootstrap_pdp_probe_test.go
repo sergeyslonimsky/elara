@@ -12,6 +12,10 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
+	grouprepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/group"
+	policyrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/policy"
+	userrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/user"
+	pkgbbolt "github.com/sergeyslonimsky/elara/pkg/bbolt"
 )
 
 // TestAdminBootstrap_PDPProbe verifies that after Bootstrap (local or OIDC),
@@ -29,9 +33,10 @@ func TestAdminBootstrap_PDPProbe(t *testing.T) {
 	t.Cleanup(func() { _ = store.Close() })
 
 	storageManager := bbolt.NewManager(store.DB())
-	users := bbolt.NewUserRepo(storageManager)
-	groups := bbolt.NewGroupRepo(storageManager)
-	policies := bbolt.NewPolicyRepo(storageManager)
+	pkgManager := pkgbbolt.NewManager(store.DB())
+	users := userrepo.NewRepository(pkgManager)
+	groups := grouprepo.NewRepository(pkgManager)
+	policies := policyrepo.NewRepository(pkgManager)
 
 	userSvc := auth.NewUserService(users)
 	bs := auth.NewAdminBootstrap(storageManager, userSvc, groups, policies)

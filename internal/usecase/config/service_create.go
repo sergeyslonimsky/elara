@@ -52,7 +52,7 @@ func (s *Service) Create(ctx context.Context, cfg *domain.Config) (*domain.Confi
 
 	err = s.txm.WithTx(ctx, func(ctx context.Context) error {
 		if err := s.storage.Create(ctx, cfg); err != nil {
-			return fmt.Errorf("create config: %w", err)
+			return fmt.Errorf("create config: %w", mapStorageErr(err, cfg.Path))
 		}
 
 		// namespace timestamp is cosmetic; failure must not abort the config write.

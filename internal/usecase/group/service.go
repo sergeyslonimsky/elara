@@ -2,6 +2,7 @@ package group
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
@@ -64,6 +65,10 @@ func (s *Service) loadMutableGroup(
 ) (*domain.Group, error) {
 	existing, err := s.store.Get(ctx, name)
 	if err != nil {
+		if errors.Is(err, storage.ErrResourceNotFound) {
+			return nil, fmt.Errorf(errGetGroup, domain.NewNotFoundError("group", name))
+		}
+
 		return nil, fmt.Errorf(errGetGroup, err)
 	}
 

@@ -160,7 +160,7 @@ func (a *AdminBootstrap) ensureSuperAdminGroup(ctx context.Context) error {
 		return nil
 	}
 
-	if !errors.Is(err, domain.ErrNotFound) {
+	if !errors.Is(err, storage.ErrResourceNotFound) {
 		return fmt.Errorf("lookup superadmin group: %w", err)
 	}
 

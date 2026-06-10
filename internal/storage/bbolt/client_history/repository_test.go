@@ -1,6 +1,7 @@
 package client_history_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,7 +15,16 @@ import (
 	pkgbbolt "github.com/sergeyslonimsky/elara/pkg/bbolt"
 )
 
-func newRepo(t *testing.T) *clienthistoryrepo.Repository {
+// stack bundles the repo with its underlying Manager so tests can open the
+// outer transaction that cursor-using methods (List, ListByClient,
+// DeleteOldest, DeleteOlderThan) require — the auto-querier returns an
+// empty cursor without one.
+type stack struct {
+	repo *clienthistoryrepo.Repository
+	mgr  *pkgbbolt.DBManager
+}
+
+func newRepo(t *testing.T) stack {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "test.db")
@@ -22,7 +32,43 @@ func newRepo(t *testing.T) *clienthistoryrepo.Repository {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = store.Close() })
 
-	return clienthistoryrepo.NewRepository(pkgbbolt.NewManager(store.DB()))
+	mgr := pkgbbolt.NewManager(store.DB())
+
+	return stack{repo: clienthistoryrepo.NewRepository(mgr), mgr: mgr}
+}
+
+// inReadTx runs fn inside a bbolt read transaction and returns its result.
+// Used by tests to exercise cursor-based read methods of the repository.
+func inReadTx[T any](t *testing.T, mgr *pkgbbolt.DBManager, fn func(ctx context.Context) (T, error)) T {
+	t.Helper()
+
+	var result T
+
+	require.NoError(t, mgr.WithReadTx(t.Context(), func(ctx context.Context) error {
+		var err error
+		result, err = fn(ctx)
+
+		return err
+	}))
+
+	return result
+}
+
+// inTx runs fn inside a bbolt read-write transaction and returns its result.
+// Used by tests to exercise cursor-based mutation methods of the repository.
+func inTx[T any](t *testing.T, mgr *pkgbbolt.DBManager, fn func(ctx context.Context) (T, error)) T {
+	t.Helper()
+
+	var result T
+
+	require.NoError(t, mgr.WithTx(t.Context(), func(ctx context.Context) error {
+		var err error
+		result, err = fn(ctx)
+
+		return err
+	}))
+
+	return result
 }
 
 func makeSnap(id, clientName, k8sNamespace string, disconnectedAt time.Time) *domain.Client {
@@ -45,41 +91,42 @@ func TestRepository_Save(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		setup  func(t *testing.T) (*clienthistoryrepo.Repository, *domain.Client)
-		assert func(t *testing.T, repo *clienthistoryrepo.Repository)
+		setup  func(t *testing.T) (stack, *domain.Client)
+		assert func(t *testing.T, s stack)
 	}{
 		{
 			name: "success persists snapshot",
-			setup: func(t *testing.T) (*clienthistoryrepo.Repository, *domain.Client) {
+			setup: func(t *testing.T) (stack, *domain.Client) {
 				t.Helper()
-				repo := newRepo(t)
 
-				return repo, makeSnap("a", "svc", "ns", time.Now())
+				return newRepo(t), makeSnap("a", "svc", "ns", time.Now())
 			},
-			assert: func(t *testing.T, repo *clienthistoryrepo.Repository) {
+			assert: func(t *testing.T, s stack) {
 				t.Helper()
 
-				got, err := repo.List(t.Context(), 0)
-				require.NoError(t, err)
+				got := inReadTx(t, s.mgr, func(ctx context.Context) ([]*domain.Client, error) {
+					return s.repo.List(ctx, 0)
+				})
 				assert.Len(t, got, 1)
 			},
 		},
 		{
 			name: "same-nano collision: both persisted via ID suffix",
-			setup: func(t *testing.T) (*clienthistoryrepo.Repository, *domain.Client) {
+			setup: func(t *testing.T) (stack, *domain.Client) {
 				t.Helper()
-				repo := newRepo(t)
+				s := newRepo(t)
 
 				t0 := time.Now()
-				require.NoError(t, repo.Save(t.Context(), makeSnap("a", "svc", "ns", t0)))
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("a", "svc", "ns", t0)))
 
-				return repo, makeSnap("b", "svc", "ns", t0)
+				return s, makeSnap("b", "svc", "ns", t0)
 			},
-			assert: func(t *testing.T, repo *clienthistoryrepo.Repository) {
+			assert: func(t *testing.T, s stack) {
 				t.Helper()
 
-				got, err := repo.List(t.Context(), 0)
-				require.NoError(t, err)
+				got := inReadTx(t, s.mgr, func(ctx context.Context) ([]*domain.Client, error) {
+					return s.repo.List(ctx, 0)
+				})
 				assert.Len(t, got, 2)
 			},
 		},
@@ -89,12 +136,12 @@ func TestRepository_Save(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo, snap := tt.setup(t)
+			s, snap := tt.setup(t)
 
-			err := repo.Save(t.Context(), snap)
+			err := s.repo.Save(t.Context(), snap)
 			require.NoError(t, err)
 
-			tt.assert(t, repo)
+			tt.assert(t, s)
 		})
 	}
 }
@@ -104,48 +151,48 @@ func TestRepository_List(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		setup   func(t *testing.T) *clienthistoryrepo.Repository
+		setup   func(t *testing.T) stack
 		limit   int
 		wantIDs []string
 	}{
 		{
 			name: "newest first, no limit",
-			setup: func(t *testing.T) *clienthistoryrepo.Repository {
+			setup: func(t *testing.T) stack {
 				t.Helper()
-				repo := newRepo(t)
+				s := newRepo(t)
 
 				t0 := time.Now().Truncate(time.Second)
-				require.NoError(t, repo.Save(t.Context(), makeSnap("a", "svc", "ns", t0)))
-				require.NoError(t, repo.Save(t.Context(), makeSnap("b", "svc", "ns", t0.Add(time.Second))))
-				require.NoError(t, repo.Save(t.Context(), makeSnap("c", "svc", "ns", t0.Add(2*time.Second))))
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("a", "svc", "ns", t0)))
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("b", "svc", "ns", t0.Add(time.Second))))
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("c", "svc", "ns", t0.Add(2*time.Second))))
 
-				return repo
+				return s
 			},
 			limit:   0,
 			wantIDs: []string{"c", "b", "a"},
 		},
 		{
 			name: "respects limit",
-			setup: func(t *testing.T) *clienthistoryrepo.Repository {
+			setup: func(t *testing.T) stack {
 				t.Helper()
-				repo := newRepo(t)
+				s := newRepo(t)
 
 				t0 := time.Now()
 				for i := range 5 {
 					require.NoError(
 						t,
-						repo.Save(t.Context(), makeSnap("c", "svc", "ns", t0.Add(time.Duration(i)*time.Second))),
+						s.repo.Save(t.Context(), makeSnap("c", "svc", "ns", t0.Add(time.Duration(i)*time.Second))),
 					)
 				}
 
-				return repo
+				return s
 			},
 			limit:   2,
 			wantIDs: nil, // assert only length
 		},
 		{
 			name: "empty bucket returns nil",
-			setup: func(t *testing.T) *clienthistoryrepo.Repository {
+			setup: func(t *testing.T) stack {
 				t.Helper()
 
 				return newRepo(t)
@@ -159,10 +206,11 @@ func TestRepository_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo := tt.setup(t)
+			s := tt.setup(t)
 
-			got, err := repo.List(t.Context(), tt.limit)
-			require.NoError(t, err)
+			got := inReadTx(t, s.mgr, func(ctx context.Context) ([]*domain.Client, error) {
+				return s.repo.List(ctx, tt.limit)
+			})
 
 			if tt.wantIDs != nil {
 				require.Len(t, got, len(tt.wantIDs))
@@ -183,9 +231,9 @@ func TestRepository_List(t *testing.T) {
 func TestRepository_ListByClient(t *testing.T) {
 	t.Parallel()
 
-	seed := func(t *testing.T) *clienthistoryrepo.Repository {
+	seed := func(t *testing.T) stack {
 		t.Helper()
-		repo := newRepo(t)
+		s := newRepo(t)
 		t0 := time.Now()
 
 		snaps := []*domain.Client{
@@ -194,11 +242,11 @@ func TestRepository_ListByClient(t *testing.T) {
 			makeSnap("c", "payment-service", "production", t0.Add(2*time.Second)),
 			makeSnap("d", "order-service", "production", t0.Add(3*time.Second)),
 		}
-		for _, s := range snaps {
-			require.NoError(t, repo.Save(t.Context(), s))
+		for _, snap := range snaps {
+			require.NoError(t, s.repo.Save(t.Context(), snap))
 		}
 
-		return repo
+		return s
 	}
 
 	tests := []struct {
@@ -242,10 +290,11 @@ func TestRepository_ListByClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo := seed(t)
+			s := seed(t)
 
-			got, err := repo.ListByClient(t.Context(), tt.clientName, tt.k8sNamespace, tt.limit)
-			require.NoError(t, err)
+			got := inReadTx(t, s.mgr, func(ctx context.Context) ([]*domain.Client, error) {
+				return s.repo.ListByClient(ctx, tt.clientName, tt.k8sNamespace, tt.limit)
+			})
 
 			require.Len(t, got, len(tt.wantIDs))
 			for i, want := range tt.wantIDs {
@@ -260,12 +309,12 @@ func TestRepository_Count(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		setup func(t *testing.T) *clienthistoryrepo.Repository
+		setup func(t *testing.T) stack
 		want  int
 	}{
 		{
 			name: "empty",
-			setup: func(t *testing.T) *clienthistoryrepo.Repository {
+			setup: func(t *testing.T) stack {
 				t.Helper()
 
 				return newRepo(t)
@@ -274,14 +323,14 @@ func TestRepository_Count(t *testing.T) {
 		},
 		{
 			name: "two entries",
-			setup: func(t *testing.T) *clienthistoryrepo.Repository {
+			setup: func(t *testing.T) stack {
 				t.Helper()
-				repo := newRepo(t)
+				s := newRepo(t)
 
-				require.NoError(t, repo.Save(t.Context(), makeSnap("a", "svc", "ns", time.Now())))
-				require.NoError(t, repo.Save(t.Context(), makeSnap("b", "svc", "ns", time.Now().Add(time.Second))))
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("a", "svc", "ns", time.Now())))
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("b", "svc", "ns", time.Now().Add(time.Second))))
 
-				return repo
+				return s
 			},
 			want: 2,
 		},
@@ -291,9 +340,9 @@ func TestRepository_Count(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo := tt.setup(t)
+			s := tt.setup(t)
 
-			got, err := repo.Count(t.Context())
+			got, err := s.repo.Count(t.Context())
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
@@ -305,26 +354,26 @@ func TestRepository_DeleteOldest(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		setup       func(t *testing.T) *clienthistoryrepo.Repository
+		setup       func(t *testing.T) stack
 		n           int
 		wantDeleted int
 		wantRemain  int
 	}{
 		{
 			name: "deletes oldest n keeping newest",
-			setup: func(t *testing.T) *clienthistoryrepo.Repository {
+			setup: func(t *testing.T) stack {
 				t.Helper()
-				repo := newRepo(t)
+				s := newRepo(t)
 
 				t0 := time.Now()
 				for i := range 5 {
 					require.NoError(
 						t,
-						repo.Save(t.Context(), makeSnap("c", "svc", "ns", t0.Add(time.Duration(i)*time.Second))),
+						s.repo.Save(t.Context(), makeSnap("c", "svc", "ns", t0.Add(time.Duration(i)*time.Second))),
 					)
 				}
 
-				return repo
+				return s
 			},
 			n:           3,
 			wantDeleted: 3,
@@ -332,12 +381,12 @@ func TestRepository_DeleteOldest(t *testing.T) {
 		},
 		{
 			name: "n larger than available deletes all",
-			setup: func(t *testing.T) *clienthistoryrepo.Repository {
+			setup: func(t *testing.T) stack {
 				t.Helper()
-				repo := newRepo(t)
-				require.NoError(t, repo.Save(t.Context(), makeSnap("a", "svc", "ns", time.Now())))
+				s := newRepo(t)
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("a", "svc", "ns", time.Now())))
 
-				return repo
+				return s
 			},
 			n:           10,
 			wantDeleted: 1,
@@ -345,12 +394,12 @@ func TestRepository_DeleteOldest(t *testing.T) {
 		},
 		{
 			name: "n zero is no-op",
-			setup: func(t *testing.T) *clienthistoryrepo.Repository {
+			setup: func(t *testing.T) stack {
 				t.Helper()
-				repo := newRepo(t)
-				require.NoError(t, repo.Save(t.Context(), makeSnap("a", "svc", "ns", time.Now())))
+				s := newRepo(t)
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("a", "svc", "ns", time.Now())))
 
-				return repo
+				return s
 			},
 			n:           0,
 			wantDeleted: 0,
@@ -362,13 +411,14 @@ func TestRepository_DeleteOldest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo := tt.setup(t)
+			s := tt.setup(t)
 
-			deleted, err := repo.DeleteOldest(t.Context(), tt.n)
-			require.NoError(t, err)
+			deleted := inTx(t, s.mgr, func(ctx context.Context) (int, error) {
+				return s.repo.DeleteOldest(ctx, tt.n)
+			})
 			assert.Equal(t, tt.wantDeleted, deleted)
 
-			remain, err := repo.Count(t.Context())
+			remain, err := s.repo.Count(t.Context())
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantRemain, remain)
 		})
@@ -380,35 +430,35 @@ func TestRepository_DeleteOlderThan(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		setup         func(t *testing.T) (*clienthistoryrepo.Repository, time.Time)
+		setup         func(t *testing.T) (stack, time.Time)
 		wantDeleted   int
 		wantRemainIDs []string
 	}{
 		{
 			name: "deletes entries strictly older than cutoff",
-			setup: func(t *testing.T) (*clienthistoryrepo.Repository, time.Time) {
+			setup: func(t *testing.T) (stack, time.Time) {
 				t.Helper()
-				repo := newRepo(t)
+				s := newRepo(t)
 				t0 := time.Now()
 
-				require.NoError(t, repo.Save(t.Context(), makeSnap("old1", "svc", "ns", t0.Add(-2*time.Hour))))
-				require.NoError(t, repo.Save(t.Context(), makeSnap("old2", "svc", "ns", t0.Add(-1*time.Hour))))
-				require.NoError(t, repo.Save(t.Context(), makeSnap("recent", "svc", "ns", t0.Add(-5*time.Minute))))
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("old1", "svc", "ns", t0.Add(-2*time.Hour))))
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("old2", "svc", "ns", t0.Add(-1*time.Hour))))
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("recent", "svc", "ns", t0.Add(-5*time.Minute))))
 
-				return repo, t0.Add(-30 * time.Minute)
+				return s, t0.Add(-30 * time.Minute)
 			},
 			wantDeleted:   2,
 			wantRemainIDs: []string{"recent"},
 		},
 		{
 			name: "cutoff older than all entries deletes nothing",
-			setup: func(t *testing.T) (*clienthistoryrepo.Repository, time.Time) {
+			setup: func(t *testing.T) (stack, time.Time) {
 				t.Helper()
-				repo := newRepo(t)
+				s := newRepo(t)
 				t0 := time.Now()
-				require.NoError(t, repo.Save(t.Context(), makeSnap("a", "svc", "ns", t0)))
+				require.NoError(t, s.repo.Save(t.Context(), makeSnap("a", "svc", "ns", t0)))
 
-				return repo, t0.Add(-1 * time.Hour)
+				return s, t0.Add(-1 * time.Hour)
 			},
 			wantDeleted:   0,
 			wantRemainIDs: []string{"a"},
@@ -419,14 +469,16 @@ func TestRepository_DeleteOlderThan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo, cutoff := tt.setup(t)
+			s, cutoff := tt.setup(t)
 
-			deleted, err := repo.DeleteOlderThan(t.Context(), cutoff)
-			require.NoError(t, err)
+			deleted := inTx(t, s.mgr, func(ctx context.Context) (int, error) {
+				return s.repo.DeleteOlderThan(ctx, cutoff)
+			})
 			assert.Equal(t, tt.wantDeleted, deleted)
 
-			got, err := repo.List(t.Context(), 0)
-			require.NoError(t, err)
+			got := inReadTx(t, s.mgr, func(ctx context.Context) ([]*domain.Client, error) {
+				return s.repo.List(ctx, 0)
+			})
 			require.Len(t, got, len(tt.wantRemainIDs))
 			for i, want := range tt.wantRemainIDs {
 				assert.Equal(t, want, got[i].ID)
@@ -438,7 +490,7 @@ func TestRepository_DeleteOlderThan(t *testing.T) {
 func TestRepository_PreservesAllFields(t *testing.T) {
 	t.Parallel()
 
-	repo := newRepo(t)
+	s := newRepo(t)
 
 	d := time.Now().Truncate(time.Second).UTC()
 	in := &domain.Client{
@@ -459,10 +511,11 @@ func TestRepository_PreservesAllFields(t *testing.T) {
 		ErrorCount:     2,
 	}
 
-	require.NoError(t, repo.Save(t.Context(), in))
+	require.NoError(t, s.repo.Save(t.Context(), in))
 
-	got, err := repo.List(t.Context(), 1)
-	require.NoError(t, err)
+	got := inReadTx(t, s.mgr, func(ctx context.Context) ([]*domain.Client, error) {
+		return s.repo.List(ctx, 1)
+	})
 	require.Len(t, got, 1)
 
 	out := got[0]

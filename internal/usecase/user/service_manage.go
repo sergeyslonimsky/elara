@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -9,6 +10,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // CreateData carries the parameters accepted by Create.
@@ -242,6 +244,10 @@ func (s *Service) Delete(ctx context.Context, actor domain.AuthInfo, userID uuid
 	err := s.pap.Write(ctx, func(ctx context.Context, papTx *authz.PAPTx) error {
 		user, err := s.store.GetByID(ctx, userID)
 		if err != nil {
+			if errors.Is(err, storage.ErrResourceNotFound) {
+				return fmt.Errorf("get user: %w", domain.ErrNotFound)
+			}
+
 			return fmt.Errorf("get user: %w", err)
 		}
 		if actor.UserID == user.ID.String() {
@@ -296,6 +302,10 @@ func (s *Service) Get(
 ) (*GetResult, error) {
 	user, err := s.store.GetByID(ctx, userID)
 	if err != nil {
+		if errors.Is(err, storage.ErrResourceNotFound) {
+			return nil, fmt.Errorf("get user: %w", domain.ErrNotFound)
+		}
+
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 

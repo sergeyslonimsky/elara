@@ -122,21 +122,6 @@ func (m *Mockstore) EXPECT() *MockstoreMockRecorder {
 	return m.recorder
 }
 
-// CountConfigs mocks base method.
-func (m *Mockstore) CountConfigs(ctx context.Context, name string) (int, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountConfigs", ctx, name)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CountConfigs indicates an expected call of CountConfigs.
-func (mr *MockstoreMockRecorder) CountConfigs(ctx, name any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountConfigs", reflect.TypeOf((*Mockstore)(nil).CountConfigs), ctx, name)
-}
-
 // Create mocks base method.
 func (m *Mockstore) Create(ctx context.Context, ns *domain.Namespace) error {
 	m.ctrl.T.Helper()
@@ -236,6 +221,45 @@ func (m *Mockstore) Update(ctx context.Context, ns *domain.Namespace) error {
 func (mr *MockstoreMockRecorder) Update(ctx, ns any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*Mockstore)(nil).Update), ctx, ns)
+}
+
+// MockconfigCounter is a mock of configCounter interface.
+type MockconfigCounter struct {
+	ctrl     *gomock.Controller
+	recorder *MockconfigCounterMockRecorder
+	isgomock struct{}
+}
+
+// MockconfigCounterMockRecorder is the mock recorder for MockconfigCounter.
+type MockconfigCounterMockRecorder struct {
+	mock *MockconfigCounter
+}
+
+// NewMockconfigCounter creates a new mock instance.
+func NewMockconfigCounter(ctrl *gomock.Controller) *MockconfigCounter {
+	mock := &MockconfigCounter{ctrl: ctrl}
+	mock.recorder = &MockconfigCounterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockconfigCounter) EXPECT() *MockconfigCounterMockRecorder {
+	return m.recorder
+}
+
+// CountByNamespace mocks base method.
+func (m *MockconfigCounter) CountByNamespace(ctx context.Context, namespace string) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountByNamespace", ctx, namespace)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountByNamespace indicates an expected call of CountByNamespace.
+func (mr *MockconfigCounterMockRecorder) CountByNamespace(ctx, namespace any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountByNamespace", reflect.TypeOf((*MockconfigCounter)(nil).CountByNamespace), ctx, namespace)
 }
 
 // Mocknotifier is a mock of notifier interface.

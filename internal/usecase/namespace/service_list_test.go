@@ -50,6 +50,7 @@ func TestService_List(t *testing.T) {
 					&domain.User{ID: uuid.MustParse(testUserID), Email: "admin@example.com"},
 				)
 
+				expectTxPassthrough(m)
 				m.pdp.EXPECT().
 					EffectiveNamespaces(testUserID, domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
@@ -65,8 +66,8 @@ func TestService_List(t *testing.T) {
 					List(ctx, expectedFilter, expectedParams).
 					Return([]*domain.Namespace{{Name: "dev"}, {Name: "prod"}}, 2, nil)
 
-				m.store.EXPECT().CountConfigs(ctx, "dev").Return(3, nil)
-				m.store.EXPECT().CountConfigs(ctx, "prod").Return(7, nil)
+				m.configs.EXPECT().CountByNamespace(ctx, "dev").Return(3, nil)
+				m.configs.EXPECT().CountByNamespace(ctx, "prod").Return(7, nil)
 
 				m.pdp.EXPECT().
 					HasNamespace(testUserID, "dev", domain.ActionWrite).
@@ -94,6 +95,7 @@ func TestService_List(t *testing.T) {
 					&domain.User{ID: uuid.MustParse(testUserID), Email: "user@example.com"},
 				)
 
+				expectTxPassthrough(mock)
 				mock.pdp.EXPECT().
 					EffectiveNamespaces(testUserID, domain.ActionRead).
 					Return(authz.NewDomainSet("ns1", "ns3"))
@@ -109,8 +111,8 @@ func TestService_List(t *testing.T) {
 					List(ctx, expectedFilter, expectedParams).
 					Return([]*domain.Namespace{{Name: "ns1"}, {Name: "ns3"}}, 2, nil)
 
-				mock.store.EXPECT().CountConfigs(ctx, "ns1").Return(1, nil)
-				mock.store.EXPECT().CountConfigs(ctx, "ns3").Return(2, nil)
+				mock.configs.EXPECT().CountByNamespace(ctx, "ns1").Return(1, nil)
+				mock.configs.EXPECT().CountByNamespace(ctx, "ns3").Return(2, nil)
 
 				mock.pdp.EXPECT().
 					HasNamespace(testUserID, "ns1", domain.ActionWrite).
@@ -164,6 +166,7 @@ func TestService_List(t *testing.T) {
 					&domain.User{ID: uuid.MustParse(testUserID), Email: "u@example.com"},
 				)
 
+				expectTxPassthrough(m)
 				m.pdp.EXPECT().
 					EffectiveNamespaces(testUserID, domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
@@ -179,7 +182,7 @@ func TestService_List(t *testing.T) {
 					List(ctx, expectedFilter, expectedParams).
 					Return([]*domain.Namespace{{Name: "prod"}}, 1, nil)
 
-				m.store.EXPECT().CountConfigs(ctx, "prod").Return(0, nil)
+				m.configs.EXPECT().CountByNamespace(ctx, "prod").Return(0, nil)
 				m.pdp.EXPECT().
 					HasNamespace(testUserID, "prod", domain.ActionWrite).
 					Return(true)
@@ -296,6 +299,7 @@ func TestService_List(t *testing.T) {
 					&domain.User{ID: uuid.MustParse(testUserID), Email: "u@example.com"},
 				)
 
+				expectTxPassthrough(m)
 				m.pdp.EXPECT().
 					EffectiveNamespaces(testUserID, domain.ActionRead).
 					Return(authz.NewDomainSet("*"))
@@ -304,7 +308,7 @@ func TestService_List(t *testing.T) {
 					List(ctx, gomock.Any(), gomock.Any()).
 					Return([]*domain.Namespace{{Name: "ns1"}}, 1, nil)
 
-				m.store.EXPECT().CountConfigs(ctx, "ns1").Return(0, errors.New("count failure"))
+				m.configs.EXPECT().CountByNamespace(ctx, "ns1").Return(0, errors.New("count failure"))
 
 				return ctx
 			},

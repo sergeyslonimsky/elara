@@ -14,7 +14,9 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
-	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
+	grouprepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/group"
+	sessionrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/session"
+	userrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/user"
 	"github.com/sergeyslonimsky/elara/internal/usecase/user"
 	usermock "github.com/sergeyslonimsky/elara/internal/usecase/user/mocks"
 	"github.com/sergeyslonimsky/elara/test/bbolttest"
@@ -42,8 +44,8 @@ func TestService_Deactivate(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create a session for the target user
-		sessionRepo := bbolt.NewSessionRepo(st.txm)
-		sessionEventRepo := bbolt.NewSessionEventRepo(st.txm)
+		sessionRepo := st.sessionRepo
+		sessionEventRepo := sessionrepo.NewEventRepository(st.pkgManager)
 		sessionSvc := sessions.New(sessionRepo, sessionEventRepo, sessions.RealClock{})
 
 		var session *domain.Session
@@ -116,10 +118,11 @@ func TestService_Deactivate_Rollback(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	_, enforcer, txm := bbolttest.OpenStack(t)
-	groupRepo := bbolt.NewGroupRepo(txm)
+	stack := bbolttest.OpenStack(t)
+	enforcer, txm := stack.Enforcer, stack.Txm
+	groupRepo := grouprepo.NewRepository(stack.PkgManager)
 
-	users := bbolt.NewUserRepo(txm)
+	users := userrepo.NewRepository(stack.PkgManager)
 	targetUUID := uuid.New()
 	err := users.Create(t.Context(), &domain.User{
 		ID:          targetUUID,

@@ -10,6 +10,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 	"github.com/sergeyslonimsky/elara/internal/usecase/user"
 )
 
@@ -121,7 +122,7 @@ func TestService_Create(t *testing.T) {
 
 		// Nothing persisted: bbolt does not know about the user.
 		_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), newEmail)
-		require.ErrorIs(t, err, domain.ErrNotFound)
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
 	})
 
 	t.Run(
@@ -148,7 +149,7 @@ func TestService_Create(t *testing.T) {
 
 			// No user persisted, no g-rules added.
 			_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), newEmail)
-			require.ErrorIs(t, err, domain.ErrNotFound)
+			require.ErrorIs(t, err, storage.ErrResourceNotFound)
 		},
 	)
 
@@ -176,7 +177,7 @@ func TestService_Create(t *testing.T) {
 
 		// Tx rolled back: no user, no g-rules.
 		_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), newEmail)
-		require.ErrorIs(t, err, domain.ErrNotFound)
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
 	})
 
 	t.Run("validation error: invalid email", func(t *testing.T) {
@@ -238,7 +239,7 @@ func TestService_Delete(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = st.users.GetByIdentity(t.Context(), string(domain.ProviderBasic), targetEmail)
-		require.ErrorIs(t, err, domain.ErrNotFound)
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
 		roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
 		require.NoError(t, err)
 		assert.Empty(t, roles)

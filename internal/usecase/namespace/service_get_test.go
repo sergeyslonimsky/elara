@@ -27,8 +27,9 @@ func TestService_Get(t *testing.T) {
 		{
 			name: "success",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
+				expectTxPassthrough(m)
 				m.store.EXPECT().Get(ctx, name).Return(&domain.Namespace{Name: name}, nil)
-				m.store.EXPECT().CountConfigs(ctx, name).Return(5, nil)
+				m.configs.EXPECT().CountByNamespace(ctx, name).Return(5, nil)
 
 				return ctx
 			},

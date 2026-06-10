@@ -26,7 +26,7 @@ func (s *Service) Delete(ctx context.Context, name string) error {
 			return fmt.Errorf("namespace %q: %w", name, domain.ErrNamespaceLocked)
 		}
 
-		count, err := s.store.CountConfigs(ctx, name)
+		count, err := s.configs.CountByNamespace(ctx, name)
 		if err != nil {
 			return fmt.Errorf("count configs in namespace: %w", err)
 		}

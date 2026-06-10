@@ -2,12 +2,14 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 	"github.com/sergeyslonimsky/elara/internal/util/sliceutil"
 )
 
@@ -62,6 +64,10 @@ func (s *Service) UpdateGroups(
 	err := s.pap.Write(ctx, func(ctx context.Context, w *authz.PAPTx) error {
 		user, err := s.store.GetByID(ctx, data.UserID)
 		if err != nil {
+			if errors.Is(err, storage.ErrResourceNotFound) {
+				return fmt.Errorf("get user: %w", domain.ErrNotFound)
+			}
+
 			return fmt.Errorf("get user: %w", err)
 		}
 		if err := domain.CheckVersion(data.ExpectedMembershipVersion, user.MembershipVersion); err != nil {

@@ -33,16 +33,14 @@ func TestService_Update(t *testing.T) {
 			name:        "success",
 			description: "Production",
 			mockFunc: func(ctx context.Context, m mocks) context.Context {
-				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(ctx context.Context, fn func(context.Context) error) error {
-						return fn(ctx)
-					},
-				)
+				// Two WithTx opens: outer for the update flow, inner from
+				// populateConfigCount around configs.CountByNamespace.
+				expectTxPassthrough(m)
 				m.store.EXPECT().
 					Get(gomock.Any(), name).
 					Return(&domain.Namespace{Name: name, Description: "old"}, nil)
 				m.store.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
-				m.store.EXPECT().CountConfigs(gomock.Any(), name).Return(10, nil)
+				m.configs.EXPECT().CountByNamespace(gomock.Any(), name).Return(10, nil)
 
 				return ctx
 			},

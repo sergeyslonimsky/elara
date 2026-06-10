@@ -10,12 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
+	policyrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/policy"
+	pkgbbolt "github.com/sergeyslonimsky/elara/pkg/bbolt"
 )
 
 // newInternalTestEnforcer creates an Enforcer and Manager backed by a real
 // bbolt store in t.TempDir. Returned together so tests can drive WriteTx /
 // WithTx via the real tx infrastructure.
-func newInternalTestEnforcer(t *testing.T) (*Enforcer, *bbolt.Manager, *bbolt.PolicyRepo) {
+func newInternalTestEnforcer(t *testing.T) (*Enforcer, *bbolt.Manager, *policyrepo.Repository) {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "casbin.db")
@@ -26,7 +28,7 @@ func newInternalTestEnforcer(t *testing.T) (*Enforcer, *bbolt.Manager, *bbolt.Po
 	t.Cleanup(func() { _ = store.Close() })
 
 	storageManager := bbolt.NewManager(store.DB())
-	policies := bbolt.NewPolicyRepo(storageManager)
+	policies := policyrepo.NewRepository(pkgbbolt.NewManager(store.DB()))
 
 	e, err := NewEnforcer(policies)
 	require.NoError(t, err)

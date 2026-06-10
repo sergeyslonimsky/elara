@@ -11,6 +11,8 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/storage"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
+	policyrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/policy"
+	pkgbbolt "github.com/sergeyslonimsky/elara/pkg/bbolt"
 )
 
 // newTestEnforcer creates an Enforcer backed by a real bbolt PolicyRepo in a
@@ -39,7 +41,7 @@ func newTestEnforcerWithTxM(t *testing.T, rules [][]string) (*casbin.Enforcer, s
 	t.Cleanup(func() { _ = store.Close() })
 
 	storageManager := bbolt.NewManager(store.DB())
-	policies := bbolt.NewPolicyRepo(storageManager)
+	policies := policyrepo.NewRepository(pkgbbolt.NewManager(store.DB()))
 
 	for _, rule := range rules {
 		if len(rule) < 2 {

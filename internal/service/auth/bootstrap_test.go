@@ -10,6 +10,10 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
+	grouprepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/group"
+	policyrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/policy"
+	userrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/user"
+	pkgbbolt "github.com/sergeyslonimsky/elara/pkg/bbolt"
 )
 
 // newBootstrapFixture wires a fresh bbolt store + repositories needed to
@@ -17,9 +21,9 @@ import (
 // repos used by assertions.
 func newBootstrapFixture(t *testing.T) (
 	*auth.AdminBootstrap,
-	*bbolt.UserRepo,
-	*bbolt.GroupRepo,
-	*bbolt.PolicyRepo,
+	*userrepo.Repository,
+	*grouprepo.Repository,
+	*policyrepo.Repository,
 ) {
 	t.Helper()
 
@@ -29,9 +33,10 @@ func newBootstrapFixture(t *testing.T) (
 	t.Cleanup(func() { _ = store.Close() })
 
 	storageManager := bbolt.NewManager(store.DB())
-	users := bbolt.NewUserRepo(storageManager)
-	groups := bbolt.NewGroupRepo(storageManager)
-	policies := bbolt.NewPolicyRepo(storageManager)
+	pkgManager := pkgbbolt.NewManager(store.DB())
+	users := userrepo.NewRepository(pkgManager)
+	groups := grouprepo.NewRepository(pkgManager)
+	policies := policyrepo.NewRepository(pkgManager)
 
 	userSvc := auth.NewUserService(users)
 

@@ -8,6 +8,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // requireTransferWrite returns ErrForbidden when the caller lacks
@@ -152,7 +153,7 @@ func (s *Service) importConfig(
 	report *domain.ImportReport,
 ) error {
 	existing, err := s.configs.Get(ctx, bc.Path, namespace)
-	if err != nil && !errors.Is(err, domain.ErrNotFound) {
+	if err != nil && !errors.Is(err, storage.ErrResourceNotFound) && !errors.Is(err, domain.ErrNotFound) {
 		return fmt.Errorf("check config %s: %w", bc.Path, err)
 	}
 
@@ -220,7 +221,7 @@ func (s *Service) ensureNamespace(ctx context.Context, name, description string)
 		return nil
 	}
 
-	if !errors.Is(err, domain.ErrNotFound) {
+	if !errors.Is(err, storage.ErrResourceNotFound) {
 		return fmt.Errorf("get namespace: %w", err)
 	}
 

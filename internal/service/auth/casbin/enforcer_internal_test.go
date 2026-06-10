@@ -9,11 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
+	policyrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/policy"
+	pkgbbolt "github.com/sergeyslonimsky/elara/pkg/bbolt"
 )
 
 // freshEnforcerAndManager creates a new bbolt-backed Enforcer + Manager and
 // returns the underlying PolicyRepo for out-of-band manipulations.
-func freshEnforcerAndManager(t *testing.T) (*Enforcer, *bbolt.Manager, *bbolt.PolicyRepo) {
+func freshEnforcerAndManager(t *testing.T) (*Enforcer, *bbolt.Manager, *policyrepo.Repository) {
 	t.Helper()
 
 	path := filepath.Join(t.TempDir(), "casbin.db")
@@ -24,7 +26,7 @@ func freshEnforcerAndManager(t *testing.T) (*Enforcer, *bbolt.Manager, *bbolt.Po
 	t.Cleanup(func() { _ = store.Close() })
 
 	storageManager := bbolt.NewManager(store.DB())
-	policies := bbolt.NewPolicyRepo(storageManager)
+	policies := policyrepo.NewRepository(pkgbbolt.NewManager(store.DB()))
 
 	e, err := NewEnforcer(policies)
 	require.NoError(t, err)

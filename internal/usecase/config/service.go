@@ -2,6 +2,8 @@ package config
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
@@ -94,5 +96,19 @@ func New(
 		watcher:           watcher,
 		namespaceProvider: namespaceProvider,
 		schemaValidator:   schemaValidator,
+	}
+}
+
+func mapStorageErr(err error, path string) error {
+	if err == nil {
+		return nil
+	}
+	switch {
+	case errors.Is(err, storage.ErrResourceNotFound):
+		return fmt.Errorf("map storage error: %w", domain.NewNotFoundError("config", path))
+	case errors.Is(err, storage.ErrResourceAlreadyExists):
+		return fmt.Errorf("map storage error: %w", domain.NewAlreadyExistsError("config", path))
+	default:
+		return err
 	}
 }

@@ -15,8 +15,12 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
+	grouprepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/group"
+	sessionrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/session"
+	userrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/user"
 	"github.com/sergeyslonimsky/elara/internal/usecase/user"
 	usermock "github.com/sergeyslonimsky/elara/internal/usecase/user/mocks"
+	pkgbbolt "github.com/sergeyslonimsky/elara/pkg/bbolt"
 	"github.com/sergeyslonimsky/elara/test/bbolttest"
 )
 
@@ -56,12 +60,14 @@ func actor() domain.AuthInfo      { return domain.AuthInfo{UserID: actorID, Emai
 // Casbin in addition to driving the Service under test. It is the integration
 // entry-point used by every happy-path / authz test in this package.
 type realStack struct {
-	svc      *user.Service
-	store    *bbolt.Store
-	enforcer *casbin.Enforcer
-	users    *bbolt.UserRepo
-	groups   *bbolt.GroupRepo
-	txm      *bbolt.Manager
+	svc         *user.Service
+	store       *bbolt.Store
+	enforcer    *casbin.Enforcer
+	users       *userrepo.Repository
+	groups      *grouprepo.Repository
+	txm         *bbolt.Manager
+	pkgManager  pkgbbolt.Manager
+	sessionRepo *sessionrepo.Repository
 }
 
 // setupServiceReal boots the full integration stack — real bbolt + real
@@ -70,26 +76,29 @@ type realStack struct {
 func setupServiceReal(t *testing.T) realStack {
 	t.Helper()
 
-	store, enforcer, txm := bbolttest.OpenStack(t)
-	users := bbolt.NewUserRepo(txm)
-	groupRepo := bbolt.NewGroupRepo(txm)
-	sessionRepo := bbolt.NewSessionRepo(txm)
-	sessionEventRepo := bbolt.NewSessionEventRepo(txm)
+	stack := bbolttest.OpenStack(t)
+	txm := stack.Txm
+	users := userrepo.NewRepository(stack.PkgManager)
+	groupRepo := grouprepo.NewRepository(stack.PkgManager)
+	sessionRepo := sessionrepo.NewRepository(stack.PkgManager)
+	sessionEventRepo := sessionrepo.NewEventRepository(stack.PkgManager)
 	sessionSvc := sessions.New(sessionRepo, sessionEventRepo, sessions.RealClock{})
 
-	pdp := authz.NewPDP(enforcer)
-	pap := authz.NewPAP(enforcer, txm)
+	pdp := authz.NewPDP(stack.Enforcer)
+	pap := authz.NewPAP(stack.Enforcer, txm)
 	scope := authz.NewScope(pdp, pap, groupRepo)
 
 	userSvc := auth.NewUserService(users)
 
 	return realStack{
-		svc:      user.New(txm, users, userSvc, groupRepo, sessionSvc, pdp, pap, scope),
-		store:    store,
-		enforcer: enforcer,
-		users:    users,
-		groups:   groupRepo,
-		txm:      txm,
+		svc:         user.New(txm, users, userSvc, groupRepo, sessionSvc, pdp, pap, scope),
+		store:       stack.Store,
+		enforcer:    stack.Enforcer,
+		users:       users,
+		groups:      groupRepo,
+		txm:         txm,
+		pkgManager:  stack.PkgManager,
+		sessionRepo: sessionRepo,
 	}
 }
 
@@ -213,12 +222,13 @@ func setupServiceWithMockStore(t *testing.T) mockStack {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 
-	store, enforcer, txm := bbolttest.OpenStack(t)
-	groupRepo := bbolt.NewGroupRepo(txm)
+	stack := bbolttest.OpenStack(t)
+	txm := stack.Txm
+	groupRepo := grouprepo.NewRepository(stack.PkgManager)
 	sessionSvc := usermock.NewMocksessionsService(ctrl)
 
-	pdp := authz.NewPDP(enforcer)
-	pap := authz.NewPAP(enforcer, txm)
+	pdp := authz.NewPDP(stack.Enforcer)
+	pap := authz.NewPAP(stack.Enforcer, txm)
 	scope := authz.NewScope(pdp, pap, groupRepo)
 
 	mockStore := usermock.NewMockUserReader(ctrl)
@@ -228,8 +238,8 @@ func setupServiceWithMockStore(t *testing.T) mockStack {
 		svc:      user.New(txm, mockStore, mockUsers, groupRepo, sessionSvc, pdp, pap, scope),
 		store:    mockStore,
 		users:    mockUsers,
-		bolt:     store,
-		enforcer: enforcer,
+		bolt:     stack.Store,
+		enforcer: stack.Enforcer,
 		txm:      txm,
 	}
 }

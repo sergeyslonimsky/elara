@@ -2,6 +2,7 @@ package bbolt
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,35 +39,13 @@ var buckets = [][]byte{
 }
 
 const (
-	bucketContent                = "content"
-	bucketMeta                   = "meta"
-	bucketNamespaces             = "namespaces"
-	bucketChangelog              = "changelog"
-	bucketHistory                = "history"
-	bucketClientHistory          = "client_history"
-	bucketSys                    = "sys"
-	bucketLockHistory            = "lock_history"
-	bucketLockChangelog          = "lock_changelog"
-	bucketSchemas                = "schemas"
-	bucketWebhooks               = "webhooks"
-	bucketAuthUsers              = "auth_users"
-	bucketUserIdentities         = "users_by_identity"
-	bucketUsersByEmail           = "users_by_email"
-	bucketAuthGroups             = "auth_groups"
-	bucketAuthTokens             = "auth_tokens"      //nolint:gosec // bucket name, not a credential
-	bucketAuthTokenByID          = "auth_token_by_id" //nolint:gosec // bucket name, not a credential
-	bucketAuthPolicy             = "auth_policy"
-	bucketSessions               = "sessions"
-	bucketSessionsByUser         = "sessions_by_user"
-	bucketSessionEvents          = "session_events"
-	bucketSessionEventsBySession = "session_events_by_session"
-	bucketSessionEventsByUser    = "session_events_by_user"
-
+	bucketSysName  = "sys"
 	sysRevisionKey = "revision"
 	sysSchemaKey   = "schema"
-	sysLockSeqKey  = "lock_event_seq"
 
 	schemaVersion uint64 = 1
+
+	revisionSize = 8
 )
 
 type Store struct {
@@ -122,7 +101,7 @@ func initBuckets(db *bolt.DB) error {
 			}
 		}
 
-		sys := tx.Bucket([]byte(bucketSys))
+		sys := tx.Bucket([]byte(bucketSysName))
 
 		if sys.Get([]byte(sysRevisionKey)) == nil {
 			if err := sys.Put([]byte(sysRevisionKey), revisionBytes(0)); err != nil {
@@ -143,4 +122,11 @@ func initBuckets(db *bolt.DB) error {
 	}
 
 	return nil
+}
+
+func revisionBytes(rev int64) []byte {
+	b := make([]byte, revisionSize)
+	binary.BigEndian.PutUint64(b, uint64(rev))
+
+	return b
 }

@@ -438,19 +438,6 @@ func TestRepository_LockUnlock(t *testing.T) {
 	})
 }
 
-func TestRepository_CountConfigs(t *testing.T) {
-	t.Parallel()
-
-	t.Run("empty namespace returns zero", func(t *testing.T) {
-		t.Parallel()
-		repo, _ := newRepo(t)
-
-		n, err := repo.CountConfigs(t.Context(), "ns1")
-		require.NoError(t, err)
-		assert.Equal(t, 0, n)
-	})
-}
-
 func TestRepository_WithTx_RollbackDiscardsWrites(t *testing.T) {
 	t.Parallel()
 

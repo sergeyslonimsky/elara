@@ -16,7 +16,7 @@ func (s *Service) Update(ctx context.Context, cfg *domain.Config) (*domain.Confi
 	// Format is immutable on update (simplifies versioning and schema tracking).
 	existing, err := s.storage.Get(ctx, cfg.Path, cfg.Namespace)
 	if err != nil {
-		return nil, fmt.Errorf("get existing: %w", err)
+		return nil, fmt.Errorf("get existing: %w", mapStorageErr(err, cfg.Path))
 	}
 
 	cfg.Format = existing.Format
@@ -39,7 +39,7 @@ func (s *Service) Update(ctx context.Context, cfg *domain.Config) (*domain.Confi
 
 	err = s.txm.WithTx(ctx, func(ctx context.Context) error {
 		if err := s.storage.Update(ctx, cfg); err != nil {
-			return fmt.Errorf("update config: %w", err)
+			return fmt.Errorf("update config: %w", mapStorageErr(err, cfg.Path))
 		}
 
 		// namespace timestamp is cosmetic; failure must not abort the config write.
@@ -66,12 +66,12 @@ func (s *Service) Lock(ctx context.Context, in LockInput) error {
 
 	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
 		if err := s.storage.LockConfig(ctx, in.Namespace, in.Path); err != nil {
-			return fmt.Errorf("lock: %w", err)
+			return fmt.Errorf("lock: %w", mapStorageErr(err, in.Path))
 		}
 
 		c, err := s.storage.Get(ctx, in.Path, in.Namespace)
 		if err != nil {
-			return fmt.Errorf("get config after lock: %w", err)
+			return fmt.Errorf("get config after lock: %w", mapStorageErr(err, in.Path))
 		}
 		cfg = c
 
@@ -96,12 +96,12 @@ func (s *Service) Unlock(ctx context.Context, in UnlockInput) error {
 
 	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
 		if err := s.storage.UnlockConfig(ctx, in.Namespace, in.Path); err != nil {
-			return fmt.Errorf("unlock: %w", err)
+			return fmt.Errorf("unlock: %w", mapStorageErr(err, in.Path))
 		}
 
 		c, err := s.storage.Get(ctx, in.Path, in.Namespace)
 		if err != nil {
-			return fmt.Errorf("get config after unlock: %w", err)
+			return fmt.Errorf("get config after unlock: %w", mapStorageErr(err, in.Path))
 		}
 		cfg = c
 

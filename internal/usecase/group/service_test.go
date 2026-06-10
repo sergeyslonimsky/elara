@@ -10,6 +10,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
+	grouprepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/group"
 	"github.com/sergeyslonimsky/elara/internal/usecase/group"
 	"github.com/sergeyslonimsky/elara/test/bbolttest"
 )
@@ -24,23 +25,24 @@ type testStack struct {
 	svc      *group.Service
 	store    *bbolt.Store
 	enforcer *casbin.Enforcer
-	repo     *bbolt.GroupRepo
+	repo     *grouprepo.Repository
 	txm      *bbolt.Manager
 }
 
 func newTestStack(t *testing.T) testStack {
 	t.Helper()
 
-	store, enforcer, txm := bbolttest.OpenStack(t)
-	repo := bbolt.NewGroupRepo(txm)
-	pdp := authz.NewPDP(enforcer)
-	pap := authz.NewPAP(enforcer, txm)
+	stack := bbolttest.OpenStack(t)
+	txm := stack.Txm
+	repo := grouprepo.NewRepository(stack.PkgManager)
+	pdp := authz.NewPDP(stack.Enforcer)
+	pap := authz.NewPAP(stack.Enforcer, txm)
 	scope := authz.NewScope(pdp, pap, repo)
 
 	return testStack{
 		svc:      group.New(txm, repo, pdp, pap, scope),
-		store:    store,
-		enforcer: enforcer,
+		store:    stack.Store,
+		enforcer: stack.Enforcer,
 		repo:     repo,
 		txm:      txm,
 	}

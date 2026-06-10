@@ -19,7 +19,7 @@ func (s *Service) Get(ctx context.Context, in GetInput) (*domain.Config, error) 
 
 	cfg, err := s.storage.Get(ctx, in.Path, in.Namespace)
 	if err != nil {
-		return nil, fmt.Errorf("get config: %w", err)
+		return nil, fmt.Errorf("get config: %w", mapStorageErr(err, in.Path))
 	}
 
 	return cfg, nil
@@ -41,7 +41,7 @@ func (s *Service) GetAtRevision(
 
 	entry, err := s.storage.GetAtRevision(ctx, in.Path, in.Namespace, in.Revision)
 	if err != nil {
-		return nil, fmt.Errorf("get config at revision: %w", err)
+		return nil, fmt.Errorf("get config at revision: %w", mapStorageErr(err, in.Path))
 	}
 
 	return entry, nil

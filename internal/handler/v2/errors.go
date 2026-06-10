@@ -40,6 +40,8 @@ func ToConnectError(err error) *connect.Error {
 		return connect.NewError(connect.CodePermissionDenied, err)
 	case errors.Is(err, domain.ErrInvalidToken):
 		return connect.NewError(connect.CodeUnauthenticated, err)
+	case errors.Is(err, domain.ErrUserDeactivated):
+		return connect.NewError(connect.CodePermissionDenied, err)
 	case domain.IsSchemaValidationError(err):
 		return schemaValidationConnectError(err)
 	case domain.IsValidationError(err):

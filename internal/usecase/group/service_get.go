@@ -2,9 +2,11 @@ package group
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // GetResult bundles the group entity with its members visible to the
@@ -20,6 +22,10 @@ type GetResult struct {
 func (s *Service) Get(ctx context.Context, actor domain.AuthInfo, name string) (*GetResult, error) {
 	group, err := s.store.Get(ctx, name)
 	if err != nil {
+		if errors.Is(err, storage.ErrResourceNotFound) {
+			return nil, fmt.Errorf(errGetGroup, domain.NewNotFoundError("group", name))
+		}
+
 		return nil, fmt.Errorf(errGetGroup, err)
 	}
 

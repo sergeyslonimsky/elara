@@ -13,7 +13,14 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/storage"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 	clienthistoryrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/client_history"
+	configrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/config"
+	grouprepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/group"
 	namespacerepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/namespace"
+	policyrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/policy"
+	schemarepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/schema"
+	sessionrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/session"
+	tokenrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/token"
+	userrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/user"
 	webhookrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/webhook"
 	watchadapter "github.com/sergeyslonimsky/elara/internal/transport/watch"
 	webhookadapter "github.com/sergeyslonimsky/elara/internal/transport/webhook"
@@ -22,17 +29,17 @@ import (
 
 type Adapters struct {
 	Store             *bbolt.Store
-	ConfigRepo        *bbolt.ConfigRepo
+	ConfigRepo        *configrepo.Repository
 	NamespaceRepo     *namespacerepo.Repository
 	ClientHistoryRepo *clienthistoryrepo.Repository
-	SchemaRepo        *bbolt.SchemaRepo
+	SchemaRepo        *schemarepo.Repository
 	WebhookRepo       *webhookrepo.Repository
-	AuthUsers         *bbolt.UserRepo
-	AuthGroups        *bbolt.GroupRepo
-	AuthTokens        *bbolt.TokenRepo
-	AuthPolicy        *bbolt.PolicyRepo
-	SessionRepo       *bbolt.SessionRepo
-	SessionEventRepo  *bbolt.SessionEventRepo
+	AuthUsers         *userrepo.Repository
+	AuthGroups        *grouprepo.Repository
+	AuthTokens        *tokenrepo.Repository
+	AuthPolicy        *policyrepo.Repository
+	SessionRepo       *sessionrepo.Repository
+	SessionEventRepo  *sessionrepo.EventRepository
 	Watch             *watchadapter.Publisher
 	WebhookDispatcher *webhookadapter.Dispatcher
 	StorageManager    storage.Manager
@@ -77,17 +84,17 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 	//nolint:exhaustruct // shutdownOnce/shutdownErr have valid zero values
 	return &Adapters{
 		Store:             store,
-		ConfigRepo:        bbolt.NewConfigRepo(storageManager),
+		ConfigRepo:        configrepo.NewRepository(pkgManager),
 		NamespaceRepo:     namespacerepo.NewRepository(pkgManager),
 		ClientHistoryRepo: clientHistoryRepo,
-		SchemaRepo:        bbolt.NewSchemaRepo(storageManager),
+		SchemaRepo:        schemarepo.NewRepository(pkgManager),
 		WebhookRepo:       webhookRepo,
-		AuthUsers:         bbolt.NewUserRepo(storageManager),
-		AuthGroups:        bbolt.NewGroupRepo(storageManager),
-		AuthTokens:        bbolt.NewTokenRepo(storageManager),
-		AuthPolicy:        bbolt.NewPolicyRepo(storageManager),
-		SessionRepo:       bbolt.NewSessionRepo(storageManager),
-		SessionEventRepo:  bbolt.NewSessionEventRepo(storageManager),
+		AuthUsers:         userrepo.NewRepository(pkgManager),
+		AuthGroups:        grouprepo.NewRepository(pkgManager),
+		AuthTokens:        tokenrepo.NewRepository(pkgManager),
+		AuthPolicy:        policyrepo.NewRepository(pkgManager),
+		SessionRepo:       sessionrepo.NewRepository(pkgManager),
+		SessionEventRepo:  sessionrepo.NewEventRepository(pkgManager),
 		Watch:             watchPublisher,
 		WebhookDispatcher: webhookDispatcher,
 		StorageManager:    storageManager,

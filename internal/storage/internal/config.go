@@ -1,4 +1,4 @@
-package bbolt
+package internal
 
 import (
 	"log/slog"
@@ -7,7 +7,10 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-type configMeta struct {
+// ConfigMeta is the on-disk JSON shape for a domain.Config metadata record
+// stored in the `meta` bucket. The bucket key encodes (namespace, path) — so
+// neither Namespace nor Path is serialized in the value.
+type ConfigMeta struct {
 	ContentHash    string            `json:"content_hash"`
 	Format         string            `json:"format"`
 	Version        int64             `json:"version"`
@@ -19,27 +22,21 @@ type configMeta struct {
 	UpdatedAt      time.Time         `json:"updated_at"`
 }
 
-type lockHistoryEntry struct {
-	Type      int       `json:"type"`
-	Timestamp time.Time `json:"timestamp"`
+func DomainToConfigMeta(cfg *domain.Config) ConfigMeta {
+	return ConfigMeta{
+		ContentHash:    cfg.ContentHash,
+		Format:         cfg.Format.String(),
+		Version:        cfg.Version,
+		Revision:       cfg.Revision,
+		CreateRevision: cfg.CreateRevision,
+		Metadata:       cfg.Metadata,
+		Locked:         cfg.Locked,
+		CreatedAt:      cfg.CreatedAt,
+		UpdatedAt:      cfg.UpdatedAt,
+	}
 }
 
-type changelogEntry struct {
-	Type      int       `json:"type"`
-	Path      string    `json:"path"`
-	Namespace string    `json:"namespace"`
-	Version   int64     `json:"version"`
-	Timestamp time.Time `json:"timestamp"`
-}
-
-type namespaceMeta struct {
-	Description string    `json:"description"`
-	Locked      bool      `json:"locked,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-func configMetaToDomain(m *configMeta, content, path, namespace string) *domain.Config {
+func ConfigMetaToDomain(m ConfigMeta, content, path, namespace string) *domain.Config {
 	format, err := domain.ParseFormat(m.Format)
 	if err != nil {
 		slog.Warn("unrecognized format in stored metadata", "format", m.Format)
@@ -67,7 +64,7 @@ func configMetaToDomain(m *configMeta, content, path, namespace string) *domain.
 	}
 }
 
-func configMetaToSummary(m *configMeta, path, namespace string) *domain.ConfigSummary {
+func ConfigMetaToSummary(m ConfigMeta, path, namespace string) *domain.ConfigSummary {
 	format, err := domain.ParseFormat(m.Format)
 	if err != nil {
 		slog.Warn("unrecognized format in stored metadata", "format", m.Format)
@@ -93,21 +90,7 @@ func configMetaToSummary(m *configMeta, path, namespace string) *domain.ConfigSu
 	}
 }
 
-func domainToConfigMeta(cfg *domain.Config) *configMeta {
-	return &configMeta{
-		ContentHash:    cfg.ContentHash,
-		Format:         cfg.Format.String(),
-		Version:        cfg.Version,
-		Revision:       cfg.Revision,
-		CreateRevision: cfg.CreateRevision,
-		Metadata:       cfg.Metadata,
-		Locked:         cfg.Locked,
-		CreatedAt:      cfg.CreatedAt,
-		UpdatedAt:      cfg.UpdatedAt,
-	}
-}
-
-func changelogEntryToDomain(e *changelogEntry, revision int64) *domain.ChangelogEntry {
+func ChangelogEntryToDomain(e ChangelogEntry, revision int64) *domain.ChangelogEntry {
 	return &domain.ChangelogEntry{
 		Revision:  revision,
 		Type:      domain.EventType(e.Type),
@@ -115,29 +98,5 @@ func changelogEntryToDomain(e *changelogEntry, revision int64) *domain.Changelog
 		Namespace: e.Namespace,
 		Version:   e.Version,
 		Timestamp: e.Timestamp,
-	}
-}
-
-type schemaMeta struct {
-	ID         string    `json:"id"`
-	JSONSchema string    `json:"json_schema"`
-	CreatedAt  time.Time `json:"created_at"`
-}
-
-func domainToSchemaMeta(s *domain.SchemaAttachment) *schemaMeta {
-	return &schemaMeta{
-		ID:         s.ID,
-		JSONSchema: s.JSONSchema,
-		CreatedAt:  s.CreatedAt,
-	}
-}
-
-func schemaMetaToDomain(m *schemaMeta, namespace, pathPattern string) *domain.SchemaAttachment {
-	return &domain.SchemaAttachment{
-		ID:          m.ID,
-		Namespace:   namespace,
-		PathPattern: pathPattern,
-		JSONSchema:  m.JSONSchema,
-		CreatedAt:   m.CreatedAt,
 	}
 }

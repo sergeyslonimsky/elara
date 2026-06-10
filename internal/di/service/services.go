@@ -81,7 +81,7 @@ func NewServices(
 			a.NamespaceRepo,
 			schemaValidator,
 		),
-		Namespace: nsuc.New(a.StorageManager, pdp, a.NamespaceRepo, a.Watch),
+		Namespace: nsuc.New(a.StorageManager, pdp, a.NamespaceRepo, a.ConfigRepo, a.Watch),
 		Schema:    schemauc.New(pdp, a.SchemaRepo, a.NamespaceRepo),
 		Clients:   clientsuc.New(pdp, a.ClientRegistry, a.ClientHistory),
 		Dashboard: dashboarduc.New(

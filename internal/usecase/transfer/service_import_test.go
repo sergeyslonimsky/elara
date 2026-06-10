@@ -11,6 +11,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	transferv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/transfer/v1"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 	"github.com/sergeyslonimsky/elara/internal/usecase/transfer"
 )
 
@@ -55,7 +56,7 @@ func TestService_Import(t *testing.T) {
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
 				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
-				m.namespaces.EXPECT().Get(gomock.Any(), "my-ns").Return(nil, domain.ErrNotFound)
+				m.namespaces.EXPECT().Get(gomock.Any(), "my-ns").Return(nil, storage.ErrResourceNotFound)
 				m.namespaces.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
 				m.configs.EXPECT().Get(gomock.Any(), "/c1", "my-ns").Return(nil, domain.ErrNotFound)
 				m.configs.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
@@ -226,7 +227,7 @@ func TestService_Import(t *testing.T) {
 			},
 			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
 				svc, m := setupService(t, ctrl)
-				m.namespaces.EXPECT().Get(gomock.Any(), "target").Return(nil, domain.ErrNotFound)
+				m.namespaces.EXPECT().Get(gomock.Any(), "target").Return(nil, storage.ErrResourceNotFound)
 				m.namespaces.EXPECT().Create(gomock.Any(), gomock.Cond(func(x any) bool {
 					ns, ok := x.(*domain.Namespace)
 					if !ok {

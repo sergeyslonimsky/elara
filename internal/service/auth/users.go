@@ -4,13 +4,32 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
+
+// mapStorageErr converts storage-layer sentinels to the domain sentinels
+// service-layer consumers already errors.Is-check. Repo functions returning
+// other domain errors (ErrEmailTaken / ErrIdentityTaken / ErrSystemImmutable)
+// are passed through unchanged.
+func mapStorageErr(err error, resource, identifier string) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, storage.ErrResourceNotFound):
+		return fmt.Errorf("map storage error : %w", domain.NewNotFoundError(resource, identifier))
+	case errors.Is(err, storage.ErrResourceAlreadyExists):
+		return fmt.Errorf("map storage error : %w", domain.NewAlreadyExistsError(resource, identifier))
+	default:
+		return err
+	}
+}
 
 // userRepository is the storage surface UserService consumes. It mirrors a
 // subset of bbolt.UserRepo — kept narrow so service-level tests can fake the
@@ -59,7 +78,7 @@ func NewUserService(repo userRepository) *UserService {
 func (s *UserService) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	user, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("get user by id: %w", err)
+		return nil, fmt.Errorf("get user by id: %w", mapStorageErr(err, "user", id.String()))
 	}
 
 	return user, nil
@@ -70,7 +89,10 @@ func (s *UserService) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, 
 func (s *UserService) GetByIdentity(ctx context.Context, provider, subject string) (*domain.User, error) {
 	user, err := s.repo.GetByIdentity(ctx, provider, subject)
 	if err != nil {
-		return nil, fmt.Errorf("get user by identity: %w", err)
+		return nil, fmt.Errorf(
+			"get user by identity: %w",
+			mapStorageErr(err, "user identity", provider+":"+subject),
+		)
 	}
 
 	return user, nil
@@ -88,7 +110,7 @@ func (s *UserService) GetByEmail(ctx context.Context, email string) (*domain.Use
 
 	user, err := s.repo.GetByEmail(ctx, normalized)
 	if err != nil {
-		return nil, fmt.Errorf("get user by email: %w", err)
+		return nil, fmt.Errorf("get user by email: %w", mapStorageErr(err, "user", normalized))
 	}
 
 	return user, nil
@@ -99,7 +121,7 @@ func (s *UserService) GetByEmail(ctx context.Context, email string) (*domain.Use
 func (s *UserService) GetSystemUser(ctx context.Context) (*domain.User, error) {
 	user, err := s.repo.GetSystemUser(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get system user: %w", err)
+		return nil, fmt.Errorf("get system user: %w", mapStorageErr(err, "system user", ""))
 	}
 
 	return user, nil
@@ -129,7 +151,7 @@ func (s *UserService) Create(ctx context.Context, user *domain.User) error {
 		user.Email = normalized
 	}
 	if err := s.repo.Create(ctx, user); err != nil {
-		return fmt.Errorf("create user: %w", err)
+		return fmt.Errorf("create user: %w", mapStorageErr(err, "user", user.ID.String()))
 	}
 
 	return nil
@@ -155,7 +177,7 @@ func (s *UserService) LinkIdentity(
 ) (*domain.User, error) {
 	user, err := s.repo.GetByID(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("load user: %w", err)
+		return nil, fmt.Errorf("load user: %w", mapStorageErr(err, "user", userID.String()))
 	}
 	if user.System {
 		return nil, fmt.Errorf("system user identities are immutable: %w", domain.ErrSystemImmutable)
@@ -184,7 +206,7 @@ func (s *UserService) LinkIdentity(
 func (s *UserService) RecordLogin(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
 	user, err := s.repo.GetByID(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("load user: %w", err)
+		return nil, fmt.Errorf("load user: %w", mapStorageErr(err, "user", userID.String()))
 	}
 
 	user.LastLoginAt = time.Now()
@@ -205,7 +227,7 @@ func (s *UserService) RecordLogin(ctx context.Context, userID uuid.UUID) (*domai
 func (s *UserService) BootstrapSync(ctx context.Context, user *domain.User) error {
 	prev, err := s.repo.GetByID(ctx, user.ID)
 	if err != nil {
-		return fmt.Errorf("load existing user: %w", err)
+		return fmt.Errorf("load existing user: %w", mapStorageErr(err, "user", user.ID.String()))
 	}
 	if !prev.System {
 		return fmt.Errorf("bootstrap sync forbidden on non-system user: %w", domain.ErrSystemImmutable)
@@ -224,7 +246,7 @@ func (s *UserService) BootstrapSync(ctx context.Context, user *domain.User) erro
 // not the orchestrated lifecycle event.
 func (s *UserService) Delete(ctx context.Context, userID uuid.UUID) error {
 	if err := s.repo.Delete(ctx, userID); err != nil {
-		return fmt.Errorf("delete user: %w", err)
+		return fmt.Errorf("delete user: %w", mapStorageErr(err, "user", userID.String()))
 	}
 
 	return nil
@@ -249,7 +271,7 @@ func (s *UserService) transitionStatus(
 ) (*domain.User, error) {
 	user, err := s.repo.GetByID(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("load user: %w", err)
+		return nil, fmt.Errorf("load user: %w", mapStorageErr(err, "user", userID.String()))
 	}
 	if err := apply(user); err != nil {
 		return nil, err

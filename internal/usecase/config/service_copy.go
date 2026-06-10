@@ -32,7 +32,7 @@ func (s *Service) Copy(ctx context.Context, in CopyInput) (*domain.Config, error
 	// Get source config.
 	source, err := s.storage.Get(ctx, in.SourcePath, in.SourceNamespace)
 	if err != nil {
-		return nil, fmt.Errorf("get source config: %w", err)
+		return nil, fmt.Errorf("get source config: %w", mapStorageErr(err, in.SourcePath))
 	}
 
 	// Check destination namespace exists and is not locked.
@@ -65,7 +65,7 @@ func (s *Service) Copy(ctx context.Context, in CopyInput) (*domain.Config, error
 	dest.Version = 1
 
 	if err := s.storage.Create(ctx, dest); err != nil {
-		return nil, fmt.Errorf("create copy: %w", err)
+		return nil, fmt.Errorf("create copy: %w", mapStorageErr(err, dest.Path))
 	}
 
 	// best-effort: namespace timestamp is cosmetic; failure must not abort the config write.

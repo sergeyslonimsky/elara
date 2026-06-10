@@ -2,9 +2,11 @@ package schema
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 func (s *Service) Get(
@@ -13,6 +15,10 @@ func (s *Service) Get(
 ) (*domain.SchemaAttachment, error) {
 	attachment, err := s.store.Get(ctx, namespace, pathPattern)
 	if err != nil {
+		if errors.Is(err, storage.ErrResourceNotFound) {
+			return nil, fmt.Errorf("get schema: %w", domain.ErrNotFound)
+		}
+
 		return nil, fmt.Errorf("get schema: %w", err)
 	}
 

@@ -8,8 +8,9 @@
 //   - Dedicated mutators (UpdateTimestamp, LockNamespace, UnlockNamespace)
 //     own their own timestamp / sequence logic and write atomically across
 //     the namespaces, lock_history, lock_changelog, and sys buckets.
-//   - CountConfigs reads the foreign `meta` bucket (configs). It will move
-//     into the config repository when configs are migrated.
+//   - Counting configs per namespace lives in the config repository
+//     (config.Repository.CountByNamespace) — the namespace repo does not
+//     read foreign buckets.
 package namespace
 
 import (
@@ -31,7 +32,6 @@ const (
 	bucketLockHistory   = "lock_history"
 	bucketLockChangelog = "lock_changelog"
 	bucketSys           = "sys"
-	bucketMeta          = "meta"
 	sysLockSeqKey       = "lock_event_seq"
 )
 
@@ -223,29 +223,6 @@ func (r *Repository) UnlockNamespace(ctx context.Context, name string) error {
 	return r.toggleLock(ctx, name, false, domain.EventTypeNamespaceUnlocked)
 }
 
-// CountConfigs counts entries in the foreign `meta` bucket whose key has the
-// given namespace prefix. This will move to the config repository when
-// configs are migrated.
-func (r *Repository) CountConfigs(ctx context.Context, name string) (int, error) {
-	var count int
-
-	err := r.dbm.WithReadTx(ctx, func(ctx context.Context) error {
-		c := r.dbm.GetQuerier(ctx).Bucket(bucketMeta).Cursor()
-		prefix := configKeyPrefix(name)
-
-		for k, _ := c.Seek(prefix); k != nil && hasPrefix(k, prefix); k, _ = c.Next() {
-			count++
-		}
-
-		return nil
-	})
-	if err != nil {
-		return 0, fmt.Errorf("count configs: %w", err)
-	}
-
-	return count, nil
-}
-
 func (r *Repository) toggleLock(
 	ctx context.Context,
 	name string,
@@ -257,29 +234,26 @@ func (r *Repository) toggleLock(
 		verb = "lock"
 	}
 
-	err := r.dbm.WithTx(ctx, func(ctx context.Context) error {
-		q := r.dbm.GetQuerier(ctx)
+	q := r.dbm.GetQuerier(ctx)
 
-		m, err := bbolt.Get[internal.NamespaceMeta](q, bucketName, []byte(name))
-		if errors.Is(err, bbolt.ErrNotFound) {
-			return fmt.Errorf("namespace %s: %w", name, storage.ErrResourceNotFound)
-		}
-		if err != nil {
-			return fmt.Errorf("get: %w", err)
-		}
-
-		if m.Locked == locked {
-			return nil
-		}
-
-		m.Locked = locked
-		if err := bbolt.Put(q, bucketName, []byte(name), m); err != nil {
-			return fmt.Errorf("put: %w", err)
-		}
-
-		return writeLockEvent(q, name, "", eventType)
-	})
+	m, err := bbolt.Get[internal.NamespaceMeta](q, bucketName, []byte(name))
+	if errors.Is(err, bbolt.ErrNotFound) {
+		return fmt.Errorf("%s namespace %s: %w", verb, name, storage.ErrResourceNotFound)
+	}
 	if err != nil {
+		return fmt.Errorf("%s namespace: %w", verb, err)
+	}
+
+	if m.Locked == locked {
+		return nil
+	}
+
+	m.Locked = locked
+	if err := bbolt.Put(q, bucketName, []byte(name), m); err != nil {
+		return fmt.Errorf("%s namespace: %w", verb, err)
+	}
+
+	if err := writeLockEvent(q, name, "", eventType); err != nil {
 		return fmt.Errorf("%s namespace: %w", verb, err)
 	}
 
@@ -379,17 +353,4 @@ func paginate(out []*domain.Namespace, offset, limit int) []*domain.Namespace {
 	}
 
 	return out[offset:end]
-}
-
-func hasPrefix(s, prefix []byte) bool {
-	if len(s) < len(prefix) {
-		return false
-	}
-	for i := range prefix {
-		if s[i] != prefix[i] {
-			return false
-		}
-	}
-
-	return true
 }

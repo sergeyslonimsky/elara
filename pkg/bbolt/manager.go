@@ -75,16 +75,27 @@ func (m *DBManager) DB() *bolt.DB {
 
 // GetQuerier — see Manager.GetQuerier.
 func (m *DBManager) GetQuerier(ctx context.Context) Querier {
-	if tx, ok := ctx.Value(txKey{}).(*bolt.Tx); ok {
+	if tx, ok := TxFromContext(ctx); ok {
 		return txQuerier{tx: tx}
 	}
 
 	return autoQuerier{db: m.db}
 }
 
+// TxFromContext returns the active bbolt transaction stored in ctx by
+// WithTx / WithReadTx, if any. It exists so adjacent layers (e.g. a
+// project-local storage.Manager facade) can read the same ctx-key the
+// package writes, keeping a single source of tx-handle truth across the
+// codebase. Returns (nil, false) when ctx carries no transaction.
+func TxFromContext(ctx context.Context) (*bolt.Tx, bool) {
+	tx, ok := ctx.Value(txKey{}).(*bolt.Tx)
+
+	return tx, ok
+}
+
 // WithTx — see Manager.WithTx.
 func (m *DBManager) WithTx(ctx context.Context, callback func(context.Context) error) error {
-	if existing, ok := ctx.Value(txKey{}).(*bolt.Tx); ok && existing.Writable() {
+	if existing, ok := TxFromContext(ctx); ok && existing.Writable() {
 		return callback(ctx)
 	}
 
@@ -98,7 +109,7 @@ func (m *DBManager) WithTx(ctx context.Context, callback func(context.Context) e
 
 // WithReadTx — see Manager.WithReadTx.
 func (m *DBManager) WithReadTx(ctx context.Context, callback func(context.Context) error) error {
-	if _, ok := ctx.Value(txKey{}).(*bolt.Tx); ok {
+	if _, ok := TxFromContext(ctx); ok {
 		return callback(ctx)
 	}
 

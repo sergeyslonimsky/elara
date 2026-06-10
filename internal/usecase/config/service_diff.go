@@ -28,7 +28,7 @@ func (s *Service) Diff(ctx context.Context, in DiffInput) (*domain.ConfigDiff, e
 
 	toEntry, err := s.storage.GetAtRevision(ctx, in.Path, in.Namespace, in.V2)
 	if err != nil {
-		return nil, fmt.Errorf("get revision %d: %w", in.V2, err)
+		return nil, fmt.Errorf("get revision %d: %w", in.V2, mapStorageErr(err, in.Path))
 	}
 
 	var fromContent string
@@ -38,7 +38,7 @@ func (s *Service) Diff(ctx context.Context, in DiffInput) (*domain.ConfigDiff, e
 	if in.V1 > 0 {
 		fromEntry, err := s.storage.GetAtRevision(ctx, in.Path, in.Namespace, in.V1)
 		if err != nil {
-			return nil, fmt.Errorf("get revision %d: %w", in.V1, err)
+			return nil, fmt.Errorf("get revision %d: %w", in.V1, mapStorageErr(err, in.Path))
 		}
 
 		fromContent, err = normalizeDiffContent(in.Path, fromEntry.Content)

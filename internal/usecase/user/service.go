@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -86,7 +87,7 @@ func New(
 // UserManager), and the side-effect (session revoke for deactivate).
 // Extracting the common path keeps both endpoints in sync — adding e.g.
 // an audit-event step lands in one place, not two.
-func (s *Service) transitionStatus(
+func (s *Service) transitionStatus( //nolint:cyclop //refactor later
 	ctx context.Context,
 	actor domain.AuthInfo,
 	userID uuid.UUID,
@@ -100,6 +101,10 @@ func (s *Service) transitionStatus(
 	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
 		user, err := s.store.GetByID(ctx, userID)
 		if err != nil {
+			if errors.Is(err, storage.ErrResourceNotFound) {
+				return fmt.Errorf("get user: %w", domain.ErrNotFound)
+			}
+
 			return fmt.Errorf("get user: %w", err)
 		}
 

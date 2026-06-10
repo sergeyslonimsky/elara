@@ -8,6 +8,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 // CreateData carries the parameters CreateGroup accepts.
@@ -117,6 +118,14 @@ func (s *Service) authorizeCreate(
 		}
 		mg, err := s.store.Get(ctx, name)
 		if err != nil {
+			if errors.Is(err, storage.ErrResourceNotFound) {
+				return nil, fmt.Errorf(
+					"get manager group %s: %w",
+					name,
+					domain.NewNotFoundError("group", name),
+				)
+			}
+
 			return nil, fmt.Errorf("get manager group %s: %w", name, err)
 		}
 		// Cascade: the manager group itself must dominate every initial
@@ -155,7 +164,7 @@ func (s *Service) persistEntity(
 			"check name uniqueness: %w",
 			domain.NewAlreadyExistsError("group", data.Name),
 		)
-	case err != nil && !errors.Is(err, domain.ErrNotFound):
+	case err != nil && !errors.Is(err, storage.ErrResourceNotFound):
 		return nil, fmt.Errorf("check name uniqueness: %w", err)
 	}
 
@@ -172,6 +181,13 @@ func (s *Service) persistEntity(
 		return nil, fmt.Errorf("validate group: %w", err)
 	}
 	if err := s.store.Create(ctx, group); err != nil {
+		if errors.Is(err, storage.ErrResourceAlreadyExists) {
+			return nil, fmt.Errorf(
+				"create group: %w",
+				domain.NewAlreadyExistsError("group", data.Name),
+			)
+		}
+
 		return nil, fmt.Errorf("create group: %w", err)
 	}
 

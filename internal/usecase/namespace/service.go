@@ -35,7 +35,10 @@ type (
 		Update(ctx context.Context, ns *domain.Namespace) error
 		LockNamespace(ctx context.Context, name string) error
 		UnlockNamespace(ctx context.Context, name string) error
-		CountConfigs(ctx context.Context, name string) (int, error)
+	}
+
+	configCounter interface {
+		CountByNamespace(ctx context.Context, namespace string) (int, error)
 	}
 
 	notifier interface {
@@ -48,25 +51,44 @@ type Service struct {
 	txm      storage.Manager
 	pdp      pdp
 	store    store
+	configs  configCounter
 	notifier notifier
 }
 
-func New(txm storage.Manager, pdp pdp, store store, notifier notifier) *Service {
+func New(
+	txm storage.Manager,
+	pdp pdp,
+	store store,
+	configs configCounter,
+	notifier notifier,
+) *Service {
 	return &Service{
 		txm:      txm,
 		pdp:      pdp,
 		store:    store,
+		configs:  configs,
 		notifier: notifier,
 	}
 }
 
+// populateConfigCount fills ns.ConfigCount via the bbolt cursor in
+// configs.CountByNamespace. That cursor requires a tx-backed querier, so we
+// run the count inside Manager.WithTx — when this helper is invoked from a
+// usecase that already opened a transaction (e.g. service_update) the
+// inner WithTx flattens onto the outer one and reuses its tx.
 func (s *Service) populateConfigCount(ctx context.Context, ns *domain.Namespace) error {
-	count, err := s.store.CountConfigs(ctx, ns.Name)
-	if err != nil {
-		return fmt.Errorf("count configs: %w", err)
-	}
+	if err := s.txm.WithTx(ctx, func(ctx context.Context) error {
+		count, err := s.configs.CountByNamespace(ctx, ns.Name)
+		if err != nil {
+			return fmt.Errorf("count configs: %w", err)
+		}
 
-	ns.ConfigCount = count
+		ns.ConfigCount = count
+
+		return nil
+	}); err != nil {
+		return fmt.Errorf("populate config count: %w", err)
+	}
 
 	return nil
 }

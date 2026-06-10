@@ -1,14 +1,15 @@
-package bbolt
+package internal
 
 import (
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
-type sessionMeta struct {
+// SessionMeta is the on-disk JSON shape for a domain.Session. The primary
+// bucket key is the session ID; a secondary index (`sessions_by_user`) maps
+// userID/sessionID composite keys back to the primary bucket.
+type SessionMeta struct {
 	ID         string     `json:"id"`
 	UserID     string     `json:"user_id"`
 	ClientType string     `json:"client_type"`
@@ -21,8 +22,8 @@ type sessionMeta struct {
 	RevokedBy  string     `json:"revoked_by,omitempty"`
 }
 
-func domainToSessionMeta(s *domain.Session) *sessionMeta {
-	return &sessionMeta{
+func DomainToSessionMeta(s *domain.Session) SessionMeta {
+	return SessionMeta{
 		ID:         s.ID,
 		UserID:     s.UserID,
 		ClientType: string(s.ClientType),
@@ -36,7 +37,7 @@ func domainToSessionMeta(s *domain.Session) *sessionMeta {
 	}
 }
 
-func sessionMetaToDomain(m *sessionMeta) *domain.Session {
+func SessionMetaToDomain(m SessionMeta) *domain.Session {
 	return &domain.Session{
 		ID:         m.ID,
 		UserID:     m.UserID,
@@ -51,17 +52,11 @@ func sessionMetaToDomain(m *sessionMeta) *domain.Session {
 	}
 }
 
-func sessionMetaFromBytes(data []byte) (*sessionMeta, error) {
-	var m sessionMeta
-
-	if err := json.Unmarshal(data, &m); err != nil {
-		return nil, fmt.Errorf("unmarshal session: %w", err)
-	}
-
-	return &m, nil
-}
-
-type sessionEventMeta struct {
+// SessionEventMeta is the on-disk JSON shape for a domain.SessionEvent. The
+// primary bucket key is the event ID; two secondary indexes
+// (`session_events_by_session`, `session_events_by_user`) hold composite keys
+// for prefix scans.
+type SessionEventMeta struct {
 	ID        string    `json:"id"`
 	SessionID string    `json:"session_id"`
 	UserID    string    `json:"user_id"`
@@ -72,8 +67,8 @@ type sessionEventMeta struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func domainToSessionEventMeta(e *domain.SessionEvent) *sessionEventMeta {
-	return &sessionEventMeta{
+func DomainToSessionEventMeta(e *domain.SessionEvent) SessionEventMeta {
+	return SessionEventMeta{
 		ID:        e.ID,
 		SessionID: e.SessionID,
 		UserID:    e.UserID,
@@ -85,7 +80,7 @@ func domainToSessionEventMeta(e *domain.SessionEvent) *sessionEventMeta {
 	}
 }
 
-func sessionEventMetaToDomain(m *sessionEventMeta) *domain.SessionEvent {
+func SessionEventMetaToDomain(m SessionEventMeta) *domain.SessionEvent {
 	return &domain.SessionEvent{
 		ID:        m.ID,
 		SessionID: m.SessionID,
@@ -96,14 +91,4 @@ func sessionEventMetaToDomain(m *sessionEventMeta) *domain.SessionEvent {
 		UserAgent: m.UserAgent,
 		Timestamp: m.Timestamp,
 	}
-}
-
-func sessionEventMetaFromBytes(data []byte) (*sessionEventMeta, error) {
-	var m sessionEventMeta
-
-	if err := json.Unmarshal(data, &m); err != nil {
-		return nil, fmt.Errorf("unmarshal session event: %w", err)
-	}
-
-	return &m, nil
 }

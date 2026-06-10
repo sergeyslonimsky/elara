@@ -2,9 +2,11 @@ package schema
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 func (s *Service) Detach(ctx context.Context, namespace, pathPattern string) error {
@@ -18,6 +20,10 @@ func (s *Service) Detach(ctx context.Context, namespace, pathPattern string) err
 	}
 
 	if err := s.store.Detach(ctx, namespace, pathPattern); err != nil {
+		if errors.Is(err, storage.ErrResourceNotFound) {
+			return fmt.Errorf("detach schema: %w", domain.ErrNotFound)
+		}
+
 		return fmt.Errorf("detach schema: %w", err)
 	}
 

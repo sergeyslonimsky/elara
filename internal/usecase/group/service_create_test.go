@@ -9,6 +9,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 	"github.com/sergeyslonimsky/elara/internal/usecase/group"
 )
 
@@ -369,8 +370,8 @@ func TestService_Create_AntiEscalation(t *testing.T) {
 			// Transaction rollback: bbolt must not have a group with this name.
 			_, findErr := st.repo.Get(t.Context(), data.Name)
 			require.Error(t, findErr, "entity must not be persisted when authorization fails")
-			require.ErrorIs(t, findErr, domain.ErrNotFound,
-				"Get must report ErrNotFound after rollback, got: %v", findErr)
+			require.ErrorIs(t, findErr, storage.ErrResourceNotFound,
+				"Get must report ErrResourceNotFound after rollback, got: %v", findErr)
 		})
 	}
 }
