@@ -5,47 +5,21 @@
 import { AuthService } from "./auth_service_pb";
 
 /**
- * Public — returns the configured auth type so the frontend knows which UI to render
- *
  * @generated from rpc elara.auth.v1.AuthService.GetAuthInfo
  */
 export const getAuthInfo = AuthService.method.getAuthInfo;
 
 /**
- * OIDC flow — returns redirect URL to the identity provider
- *
  * @generated from rpc elara.auth.v1.AuthService.OIDCLogin
  */
 export const oIDCLogin = AuthService.method.oIDCLogin;
 
 /**
- * OIDC flow — exchanges the provider callback code for a session cookie
- *
  * @generated from rpc elara.auth.v1.AuthService.OIDCCallback
  */
 export const oIDCCallback = AuthService.method.oIDCCallback;
 
 /**
- * Basic-auth flow — verifies email/password and sets a session cookie
- *
  * @generated from rpc elara.auth.v1.AuthService.BasicLogin
  */
 export const basicLogin = AuthService.method.basicLogin;
-
-/**
- * Basic-auth flow — changes the current user's password
- * current_password is required unless password_change_required is true in the session
- *
- * @generated from rpc elara.auth.v1.AuthService.ChangePassword
- */
-export const changePassword = AuthService.method.changePassword;
-
-/**
- * @generated from rpc elara.auth.v1.AuthService.Logout
- */
-export const logout = AuthService.method.logout;
-
-/**
- * @generated from rpc elara.auth.v1.AuthService.Me
- */
-export const me = AuthService.method.me;

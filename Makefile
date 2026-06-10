@@ -10,14 +10,28 @@ build-fe:
 lint:
 	@buf format -w
 	@buf lint
+	@govulncheck ./...
 	@golangci-lint run --fix
 	@npm --prefix ./web run format
 	@npm --prefix ./web run lint:fix
 	@helm lint helm/elara
 
 .PHONY: test
-test:
+test: test-go test-react
+
+.PHONY: test-go
+test-go:
 	@go tool gotestsum --hide-summary=output -- -race -count=1 -shuffle=on ./...
+
+.PHONY: test-integration
+test-integration:
+	@go tool gotestsum --hide-summary=output -- -race -count=1 -shuffle=on -tags=integration ./...
+
+.PHONY: test-all
+test-all: test-react test-integration
+
+.PHONY: test-react
+test-react:
 	@npm --prefix ./web run test
 
 .PHONY: generate

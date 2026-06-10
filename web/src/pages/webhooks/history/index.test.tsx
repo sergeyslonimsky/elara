@@ -1,13 +1,18 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { TestProviders } from "@/test/test-utils";
 import { WebhookHistoryPage } from "./index";
 
 const mockUseQuery = vi.fn();
 
-vi.mock("@connectrpc/connect-query", () => ({
-	useQuery: (...args: unknown[]) => mockUseQuery(...args),
-}));
+vi.mock("@connectrpc/connect-query", async (importOriginal) => {
+	const actual =
+		await importOriginal<typeof import("@connectrpc/connect-query")>();
+	return {
+		...actual,
+		useQuery: (...args: unknown[]) => mockUseQuery(...args),
+	};
+});
 
 vi.mock("react-router", async (importOriginal) => {
 	const actual = await importOriginal();
@@ -30,9 +35,9 @@ describe("WebhookHistoryPage", () => {
 		});
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhookHistoryPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(
@@ -48,9 +53,9 @@ describe("WebhookHistoryPage", () => {
 		});
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhookHistoryPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(
@@ -71,9 +76,9 @@ describe("WebhookHistoryPage", () => {
 		});
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhookHistoryPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("https://example.com/hook")).toBeInTheDocument();
@@ -87,9 +92,9 @@ describe("WebhookHistoryPage", () => {
 		});
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhookHistoryPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("No delivery attempts yet")).toBeInTheDocument();
@@ -123,9 +128,9 @@ describe("WebhookHistoryPage", () => {
 		});
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhookHistoryPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("1")).toBeInTheDocument();
@@ -141,9 +146,9 @@ describe("WebhookHistoryPage", () => {
 		});
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhookHistoryPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("Failed to fetch webhook")).toBeInTheDocument();

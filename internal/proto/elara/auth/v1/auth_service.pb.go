@@ -21,58 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type AuthType int32
-
-const (
-	AuthType_AUTH_TYPE_UNSPECIFIED AuthType = 0
-	AuthType_AUTH_TYPE_OIDC        AuthType = 1
-	AuthType_AUTH_TYPE_BASIC       AuthType = 2
-	AuthType_AUTH_TYPE_NONE        AuthType = 3
-)
-
-// Enum value maps for AuthType.
-var (
-	AuthType_name = map[int32]string{
-		0: "AUTH_TYPE_UNSPECIFIED",
-		1: "AUTH_TYPE_OIDC",
-		2: "AUTH_TYPE_BASIC",
-		3: "AUTH_TYPE_NONE",
-	}
-	AuthType_value = map[string]int32{
-		"AUTH_TYPE_UNSPECIFIED": 0,
-		"AUTH_TYPE_OIDC":        1,
-		"AUTH_TYPE_BASIC":       2,
-		"AUTH_TYPE_NONE":        3,
-	}
-)
-
-func (x AuthType) Enum() *AuthType {
-	p := new(AuthType)
-	*p = x
-	return p
-}
-
-func (x AuthType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (AuthType) Descriptor() protoreflect.EnumDescriptor {
-	return file_elara_auth_v1_auth_service_proto_enumTypes[0].Descriptor()
-}
-
-func (AuthType) Type() protoreflect.EnumType {
-	return &file_elara_auth_v1_auth_service_proto_enumTypes[0]
-}
-
-func (x AuthType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use AuthType.Descriptor instead.
-func (AuthType) EnumDescriptor() ([]byte, []int) {
-	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{0}
-}
-
 type GetAuthInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -417,359 +365,11 @@ func (x *BasicLoginResponse) GetPasswordChangeRequired() bool {
 	return false
 }
 
-type ChangePasswordRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	CurrentPassword *string                `protobuf:"bytes,1,opt,name=current_password,json=currentPassword,proto3,oneof" json:"current_password,omitempty"`
-	NewPassword     string                 `protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *ChangePasswordRequest) Reset() {
-	*x = ChangePasswordRequest{}
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChangePasswordRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChangePasswordRequest) ProtoMessage() {}
-
-func (x *ChangePasswordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChangePasswordRequest.ProtoReflect.Descriptor instead.
-func (*ChangePasswordRequest) Descriptor() ([]byte, []int) {
-	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *ChangePasswordRequest) GetCurrentPassword() string {
-	if x != nil && x.CurrentPassword != nil {
-		return *x.CurrentPassword
-	}
-	return ""
-}
-
-func (x *ChangePasswordRequest) GetNewPassword() string {
-	if x != nil {
-		return x.NewPassword
-	}
-	return ""
-}
-
-type ChangePasswordResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChangePasswordResponse) Reset() {
-	*x = ChangePasswordResponse{}
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChangePasswordResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChangePasswordResponse) ProtoMessage() {}
-
-func (x *ChangePasswordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChangePasswordResponse.ProtoReflect.Descriptor instead.
-func (*ChangePasswordResponse) Descriptor() ([]byte, []int) {
-	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{9}
-}
-
-type LogoutRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LogoutRequest) Reset() {
-	*x = LogoutRequest{}
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LogoutRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LogoutRequest) ProtoMessage() {}
-
-func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LogoutRequest.ProtoReflect.Descriptor instead.
-func (*LogoutRequest) Descriptor() ([]byte, []int) {
-	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{10}
-}
-
-type LogoutResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LogoutResponse) Reset() {
-	*x = LogoutResponse{}
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LogoutResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LogoutResponse) ProtoMessage() {}
-
-func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LogoutResponse.ProtoReflect.Descriptor instead.
-func (*LogoutResponse) Descriptor() ([]byte, []int) {
-	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{11}
-}
-
-type MeRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MeRequest) Reset() {
-	*x = MeRequest{}
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MeRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MeRequest) ProtoMessage() {}
-
-func (x *MeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MeRequest.ProtoReflect.Descriptor instead.
-func (*MeRequest) Descriptor() ([]byte, []int) {
-	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{12}
-}
-
-type NamespaceAccess struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	CanWrite      bool                   `protobuf:"varint,2,opt,name=can_write,json=canWrite,proto3" json:"can_write,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *NamespaceAccess) Reset() {
-	*x = NamespaceAccess{}
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *NamespaceAccess) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*NamespaceAccess) ProtoMessage() {}
-
-func (x *NamespaceAccess) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use NamespaceAccess.ProtoReflect.Descriptor instead.
-func (*NamespaceAccess) Descriptor() ([]byte, []int) {
-	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *NamespaceAccess) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *NamespaceAccess) GetCanWrite() bool {
-	if x != nil {
-		return x.CanWrite
-	}
-	return false
-}
-
-type MeResponse struct {
-	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Email                  string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	Name                   string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Picture                string                 `protobuf:"bytes,3,opt,name=picture,proto3" json:"picture,omitempty"`
-	IsAdmin                bool                   `protobuf:"varint,4,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
-	Namespaces             []*NamespaceAccess     `protobuf:"bytes,5,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
-	CanViewWebhooks        bool                   `protobuf:"varint,6,opt,name=can_view_webhooks,json=canViewWebhooks,proto3" json:"can_view_webhooks,omitempty"`
-	CanManageWebhooks      bool                   `protobuf:"varint,7,opt,name=can_manage_webhooks,json=canManageWebhooks,proto3" json:"can_manage_webhooks,omitempty"`
-	PasswordChangeRequired bool                   `protobuf:"varint,8,opt,name=password_change_required,json=passwordChangeRequired,proto3" json:"password_change_required,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *MeResponse) Reset() {
-	*x = MeResponse{}
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MeResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MeResponse) ProtoMessage() {}
-
-func (x *MeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_elara_auth_v1_auth_service_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MeResponse.ProtoReflect.Descriptor instead.
-func (*MeResponse) Descriptor() ([]byte, []int) {
-	return file_elara_auth_v1_auth_service_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *MeResponse) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *MeResponse) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *MeResponse) GetPicture() string {
-	if x != nil {
-		return x.Picture
-	}
-	return ""
-}
-
-func (x *MeResponse) GetIsAdmin() bool {
-	if x != nil {
-		return x.IsAdmin
-	}
-	return false
-}
-
-func (x *MeResponse) GetNamespaces() []*NamespaceAccess {
-	if x != nil {
-		return x.Namespaces
-	}
-	return nil
-}
-
-func (x *MeResponse) GetCanViewWebhooks() bool {
-	if x != nil {
-		return x.CanViewWebhooks
-	}
-	return false
-}
-
-func (x *MeResponse) GetCanManageWebhooks() bool {
-	if x != nil {
-		return x.CanManageWebhooks
-	}
-	return false
-}
-
-func (x *MeResponse) GetPasswordChangeRequired() bool {
-	if x != nil {
-		return x.PasswordChangeRequired
-	}
-	return false
-}
-
 var File_elara_auth_v1_auth_service_proto protoreflect.FileDescriptor
 
 const file_elara_auth_v1_auth_service_proto_rawDesc = "" +
 	"\n" +
-	" elara/auth/v1/auth_service.proto\x12\relara.auth.v1\"\x14\n" +
+	" elara/auth/v1/auth_service.proto\x12\relara.auth.v1\x1a\x18elara/auth/v1/auth.proto\"\x14\n" +
 	"\x12GetAuthInfoRequest\"K\n" +
 	"\x13GetAuthInfoResponse\x124\n" +
 	"\tauth_type\x18\x01 \x01(\x0e2\x17.elara.auth.v1.AuthTypeR\bauthType\"\x12\n" +
@@ -784,44 +384,13 @@ const file_elara_auth_v1_auth_service_proto_rawDesc = "" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"N\n" +
 	"\x12BasicLoginResponse\x128\n" +
-	"\x18password_change_required\x18\x01 \x01(\bR\x16passwordChangeRequired\"\x7f\n" +
-	"\x15ChangePasswordRequest\x12.\n" +
-	"\x10current_password\x18\x01 \x01(\tH\x00R\x0fcurrentPassword\x88\x01\x01\x12!\n" +
-	"\fnew_password\x18\x02 \x01(\tR\vnewPasswordB\x13\n" +
-	"\x11_current_password\"\x18\n" +
-	"\x16ChangePasswordResponse\"\x0f\n" +
-	"\rLogoutRequest\"\x10\n" +
-	"\x0eLogoutResponse\"\v\n" +
-	"\tMeRequest\"B\n" +
-	"\x0fNamespaceAccess\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
-	"\tcan_write\x18\x02 \x01(\bR\bcanWrite\"\xc1\x02\n" +
-	"\n" +
-	"MeResponse\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
-	"\apicture\x18\x03 \x01(\tR\apicture\x12\x19\n" +
-	"\bis_admin\x18\x04 \x01(\bR\aisAdmin\x12>\n" +
-	"\n" +
-	"namespaces\x18\x05 \x03(\v2\x1e.elara.auth.v1.NamespaceAccessR\n" +
-	"namespaces\x12*\n" +
-	"\x11can_view_webhooks\x18\x06 \x01(\bR\x0fcanViewWebhooks\x12.\n" +
-	"\x13can_manage_webhooks\x18\a \x01(\bR\x11canManageWebhooks\x128\n" +
-	"\x18password_change_required\x18\b \x01(\bR\x16passwordChangeRequired*b\n" +
-	"\bAuthType\x12\x19\n" +
-	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\x12\n" +
-	"\x0eAUTH_TYPE_OIDC\x10\x01\x12\x13\n" +
-	"\x0fAUTH_TYPE_BASIC\x10\x02\x12\x12\n" +
-	"\x0eAUTH_TYPE_NONE\x10\x032\xc0\x04\n" +
+	"\x18password_change_required\x18\x01 \x01(\bR\x16passwordChangeRequired2\xdf\x02\n" +
 	"\vAuthService\x12T\n" +
 	"\vGetAuthInfo\x12!.elara.auth.v1.GetAuthInfoRequest\x1a\".elara.auth.v1.GetAuthInfoResponse\x12N\n" +
 	"\tOIDCLogin\x12\x1f.elara.auth.v1.OIDCLoginRequest\x1a .elara.auth.v1.OIDCLoginResponse\x12W\n" +
 	"\fOIDCCallback\x12\".elara.auth.v1.OIDCCallbackRequest\x1a#.elara.auth.v1.OIDCCallbackResponse\x12Q\n" +
 	"\n" +
-	"BasicLogin\x12 .elara.auth.v1.BasicLoginRequest\x1a!.elara.auth.v1.BasicLoginResponse\x12]\n" +
-	"\x0eChangePassword\x12$.elara.auth.v1.ChangePasswordRequest\x1a%.elara.auth.v1.ChangePasswordResponse\x12E\n" +
-	"\x06Logout\x12\x1c.elara.auth.v1.LogoutRequest\x1a\x1d.elara.auth.v1.LogoutResponse\x129\n" +
-	"\x02Me\x12\x18.elara.auth.v1.MeRequest\x1a\x19.elara.auth.v1.MeResponseB\xc1\x01\n" +
+	"BasicLogin\x12 .elara.auth.v1.BasicLoginRequest\x1a!.elara.auth.v1.BasicLoginResponseB\xc1\x01\n" +
 	"\x11com.elara.auth.v1B\x10AuthServiceProtoP\x01ZDgithub.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1;authv1\xa2\x02\x03EAX\xaa\x02\rElara.Auth.V1\xca\x02\rElara\\Auth\\V1\xe2\x02\x19Elara\\Auth\\V1\\GPBMetadata\xea\x02\x0fElara::Auth::V1b\x06proto3"
 
 var (
@@ -836,48 +405,33 @@ func file_elara_auth_v1_auth_service_proto_rawDescGZIP() []byte {
 	return file_elara_auth_v1_auth_service_proto_rawDescData
 }
 
-var file_elara_auth_v1_auth_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_elara_auth_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_elara_auth_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_elara_auth_v1_auth_service_proto_goTypes = []any{
-	(AuthType)(0),                  // 0: elara.auth.v1.AuthType
-	(*GetAuthInfoRequest)(nil),     // 1: elara.auth.v1.GetAuthInfoRequest
-	(*GetAuthInfoResponse)(nil),    // 2: elara.auth.v1.GetAuthInfoResponse
-	(*OIDCLoginRequest)(nil),       // 3: elara.auth.v1.OIDCLoginRequest
-	(*OIDCLoginResponse)(nil),      // 4: elara.auth.v1.OIDCLoginResponse
-	(*OIDCCallbackRequest)(nil),    // 5: elara.auth.v1.OIDCCallbackRequest
-	(*OIDCCallbackResponse)(nil),   // 6: elara.auth.v1.OIDCCallbackResponse
-	(*BasicLoginRequest)(nil),      // 7: elara.auth.v1.BasicLoginRequest
-	(*BasicLoginResponse)(nil),     // 8: elara.auth.v1.BasicLoginResponse
-	(*ChangePasswordRequest)(nil),  // 9: elara.auth.v1.ChangePasswordRequest
-	(*ChangePasswordResponse)(nil), // 10: elara.auth.v1.ChangePasswordResponse
-	(*LogoutRequest)(nil),          // 11: elara.auth.v1.LogoutRequest
-	(*LogoutResponse)(nil),         // 12: elara.auth.v1.LogoutResponse
-	(*MeRequest)(nil),              // 13: elara.auth.v1.MeRequest
-	(*NamespaceAccess)(nil),        // 14: elara.auth.v1.NamespaceAccess
-	(*MeResponse)(nil),             // 15: elara.auth.v1.MeResponse
+	(*GetAuthInfoRequest)(nil),   // 0: elara.auth.v1.GetAuthInfoRequest
+	(*GetAuthInfoResponse)(nil),  // 1: elara.auth.v1.GetAuthInfoResponse
+	(*OIDCLoginRequest)(nil),     // 2: elara.auth.v1.OIDCLoginRequest
+	(*OIDCLoginResponse)(nil),    // 3: elara.auth.v1.OIDCLoginResponse
+	(*OIDCCallbackRequest)(nil),  // 4: elara.auth.v1.OIDCCallbackRequest
+	(*OIDCCallbackResponse)(nil), // 5: elara.auth.v1.OIDCCallbackResponse
+	(*BasicLoginRequest)(nil),    // 6: elara.auth.v1.BasicLoginRequest
+	(*BasicLoginResponse)(nil),   // 7: elara.auth.v1.BasicLoginResponse
+	(AuthType)(0),                // 8: elara.auth.v1.AuthType
 }
 var file_elara_auth_v1_auth_service_proto_depIdxs = []int32{
-	0,  // 0: elara.auth.v1.GetAuthInfoResponse.auth_type:type_name -> elara.auth.v1.AuthType
-	14, // 1: elara.auth.v1.MeResponse.namespaces:type_name -> elara.auth.v1.NamespaceAccess
-	1,  // 2: elara.auth.v1.AuthService.GetAuthInfo:input_type -> elara.auth.v1.GetAuthInfoRequest
-	3,  // 3: elara.auth.v1.AuthService.OIDCLogin:input_type -> elara.auth.v1.OIDCLoginRequest
-	5,  // 4: elara.auth.v1.AuthService.OIDCCallback:input_type -> elara.auth.v1.OIDCCallbackRequest
-	7,  // 5: elara.auth.v1.AuthService.BasicLogin:input_type -> elara.auth.v1.BasicLoginRequest
-	9,  // 6: elara.auth.v1.AuthService.ChangePassword:input_type -> elara.auth.v1.ChangePasswordRequest
-	11, // 7: elara.auth.v1.AuthService.Logout:input_type -> elara.auth.v1.LogoutRequest
-	13, // 8: elara.auth.v1.AuthService.Me:input_type -> elara.auth.v1.MeRequest
-	2,  // 9: elara.auth.v1.AuthService.GetAuthInfo:output_type -> elara.auth.v1.GetAuthInfoResponse
-	4,  // 10: elara.auth.v1.AuthService.OIDCLogin:output_type -> elara.auth.v1.OIDCLoginResponse
-	6,  // 11: elara.auth.v1.AuthService.OIDCCallback:output_type -> elara.auth.v1.OIDCCallbackResponse
-	8,  // 12: elara.auth.v1.AuthService.BasicLogin:output_type -> elara.auth.v1.BasicLoginResponse
-	10, // 13: elara.auth.v1.AuthService.ChangePassword:output_type -> elara.auth.v1.ChangePasswordResponse
-	12, // 14: elara.auth.v1.AuthService.Logout:output_type -> elara.auth.v1.LogoutResponse
-	15, // 15: elara.auth.v1.AuthService.Me:output_type -> elara.auth.v1.MeResponse
-	9,  // [9:16] is the sub-list for method output_type
-	2,  // [2:9] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	8, // 0: elara.auth.v1.GetAuthInfoResponse.auth_type:type_name -> elara.auth.v1.AuthType
+	0, // 1: elara.auth.v1.AuthService.GetAuthInfo:input_type -> elara.auth.v1.GetAuthInfoRequest
+	2, // 2: elara.auth.v1.AuthService.OIDCLogin:input_type -> elara.auth.v1.OIDCLoginRequest
+	4, // 3: elara.auth.v1.AuthService.OIDCCallback:input_type -> elara.auth.v1.OIDCCallbackRequest
+	6, // 4: elara.auth.v1.AuthService.BasicLogin:input_type -> elara.auth.v1.BasicLoginRequest
+	1, // 5: elara.auth.v1.AuthService.GetAuthInfo:output_type -> elara.auth.v1.GetAuthInfoResponse
+	3, // 6: elara.auth.v1.AuthService.OIDCLogin:output_type -> elara.auth.v1.OIDCLoginResponse
+	5, // 7: elara.auth.v1.AuthService.OIDCCallback:output_type -> elara.auth.v1.OIDCCallbackResponse
+	7, // 8: elara.auth.v1.AuthService.BasicLogin:output_type -> elara.auth.v1.BasicLoginResponse
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_elara_auth_v1_auth_service_proto_init() }
@@ -885,20 +439,19 @@ func file_elara_auth_v1_auth_service_proto_init() {
 	if File_elara_auth_v1_auth_service_proto != nil {
 		return
 	}
-	file_elara_auth_v1_auth_service_proto_msgTypes[8].OneofWrappers = []any{}
+	file_elara_auth_v1_auth_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_elara_auth_v1_auth_service_proto_rawDesc), len(file_elara_auth_v1_auth_service_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   15,
+			NumEnums:      0,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_elara_auth_v1_auth_service_proto_goTypes,
 		DependencyIndexes: file_elara_auth_v1_auth_service_proto_depIdxs,
-		EnumInfos:         file_elara_auth_v1_auth_service_proto_enumTypes,
 		MessageInfos:      file_elara_auth_v1_auth_service_proto_msgTypes,
 	}.Build()
 	File_elara_auth_v1_auth_service_proto = out.File

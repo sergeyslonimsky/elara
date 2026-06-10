@@ -10,7 +10,7 @@ import (
 )
 
 //nolint:cyclop // error-mapping switch is intentionally exhaustive; splitting would obscure the mapping
-func toConnectError(err error) error {
+func ToConnectError(err error) *connect.Error {
 	if err == nil {
 		return nil
 	}
@@ -20,7 +20,11 @@ func toConnectError(err error) error {
 		return connect.NewError(connect.CodeNotFound, err)
 	case errors.Is(err, domain.ErrAlreadyExists):
 		return connect.NewError(connect.CodeAlreadyExists, err)
-	case errors.Is(err, domain.ErrConflict):
+	case errors.Is(err, domain.ErrIdentityNotProvisioned):
+		return connect.NewError(connect.CodePermissionDenied, err)
+	case errors.Is(err, domain.ErrIdentityTaken):
+		return connect.NewError(connect.CodeAlreadyExists, err)
+	case errors.Is(err, domain.ErrVersionConflict):
 		return connect.NewError(connect.CodeAborted, err)
 	case errors.Is(err, domain.ErrLocked):
 		return connect.NewError(connect.CodeFailedPrecondition, err)
@@ -30,8 +34,14 @@ func toConnectError(err error) error {
 		return connect.NewError(connect.CodeUnauthenticated, err)
 	case errors.Is(err, domain.ErrForbidden):
 		return connect.NewError(connect.CodePermissionDenied, err)
+	case errors.Is(err, domain.ErrPermissionEscalation):
+		return connect.NewError(connect.CodePermissionDenied, err)
+	case errors.Is(err, domain.ErrSystemImmutable):
+		return connect.NewError(connect.CodePermissionDenied, err)
 	case errors.Is(err, domain.ErrInvalidToken):
 		return connect.NewError(connect.CodeUnauthenticated, err)
+	case errors.Is(err, domain.ErrUserDeactivated):
+		return connect.NewError(connect.CodePermissionDenied, err)
 	case domain.IsSchemaValidationError(err):
 		return schemaValidationConnectError(err)
 	case domain.IsValidationError(err):

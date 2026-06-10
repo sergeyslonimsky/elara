@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package elara.group.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Group entity metadata.
+//
+// Members and permissions are NOT carried on this message — they are
+// returned alongside the group via GetGroupResponse / UpdateGroup*Response.
+// The split lets caller-scope filtering apply uniformly and avoids the
+// dual-write drift between bbolt and Casbin that the SSoT refactor closed.
+//
+// Three independent optimistic-lock counters let concurrent edits to
+// metadata, members, and permissions proceed without false conflicts.
+message Group {
+  string name = 2;
+  string description = 3;
+  // is_system flags built-in groups (e.g. system:superadmin) that the
+  // server protects from deletion and renaming. Clients should disable
+  // destructive UI actions when this is true.
+  bool is_system = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  int64 metadata_version = 7;
+  int64 members_version = 8;
+  int64 permissions_version = 9;
+  string display_name = 10;
+}

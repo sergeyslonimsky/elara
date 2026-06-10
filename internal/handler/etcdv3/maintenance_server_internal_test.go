@@ -9,14 +9,14 @@ import (
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.uber.org/mock/gomock"
 
-	mock_etcd "github.com/sergeyslonimsky/elara/internal/handler/etcdv3/mocks"
+	mocketcd "github.com/sergeyslonimsky/elara/internal/handler/etcdv3/mocks"
 )
 
 func TestMaintenanceServer_Status(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	repo := mock_etcd.NewMockMaintenanceRepo(ctrl)
+	repo := mocketcd.NewMockMaintenanceRepo(ctrl)
 	s := NewMaintenanceServer(repo)
 
 	repo.EXPECT().CurrentRevisionValue(gomock.Any()).Return(int64(200), nil)
@@ -33,7 +33,7 @@ func TestMaintenanceServer_Alarm(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	repo := mock_etcd.NewMockMaintenanceRepo(ctrl)
+	repo := mocketcd.NewMockMaintenanceRepo(ctrl)
 	s := NewMaintenanceServer(repo)
 
 	repo.EXPECT().CurrentRevisionValue(gomock.Any()).Return(int64(42), nil)

@@ -72,13 +72,13 @@
               "type": "object",
               "properties": {
                 "enabled":        { "type": "boolean" },
-                "type":           { "enum": ["basic-auth", "oidc"] },
-                "adminEmail":     { "type": "string" },
+                "type":           { "enum": ["basic-auth", "oidc", "none"] },
                 "existingSecret": { "type": "string" },
                 "basicAuth": {
                   "type": "object",
                   "properties": {
-                    "adminInitialPassword": { "type": "string" }
+                    "username": { "type": "string" },
+                    "password": { "type": "string" }
                   }
                 },
                 "oidc": {
@@ -88,7 +88,8 @@
                     "clientId":     { "type": "string" },
                     "clientSecret": { "type": "string" },
                     "redirectUrl":  { "type": "string" },
-                    "scopes":       { "type": "array", "items": { "type": "string" } }
+                    "scopes":       { "type": "array", "items": { "type": "string" } },
+                    "adminEmail":   { "type": "string" }
                   }
                 },
                 "session": {
@@ -109,6 +110,12 @@
               "type": "object",
               "properties": {
                 "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+              }
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" }
               }
             },
             "history": {

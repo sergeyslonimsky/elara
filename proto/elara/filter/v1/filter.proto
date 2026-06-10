@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package elara.filter.v1;
+
+import "elara/common/v1/permission.proto";
+
+message Filters {
+  string query = 1;
+}
+
+message Item {
+  string key = 1;
+  string value = 2;
+  repeated elara.common.v1.PermissionAction actions = 3;
+}

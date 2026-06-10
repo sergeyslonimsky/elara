@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
@@ -56,13 +56,20 @@ func NewKVServer(repo KVRepo, publisher KVPublisher) *KVServer {
 	return &KVServer{repo: repo, publisher: publisher, metrics: newKVMetrics()}
 }
 
-func (s *KVServer) Range(ctx context.Context, req *etcdserverpb.RangeRequest) (*etcdserverpb.RangeResponse, error) {
+func (s *KVServer) Range(
+	ctx context.Context,
+	req *etcdserverpb.RangeRequest,
+) (*etcdserverpb.RangeResponse, error) {
 	startNS, startPath, endNS, endPath, ok := SplitRange(req.Key, req.RangeEnd)
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid key encoding: %q", string(req.Key))
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"invalid key encoding: %q",
+			string(req.Key),
+		)
 	}
 
-	if err := s.checkRangeAccess(ctx, startNS, endNS, "read"); err != nil {
+	if err := s.checkRangeAccess(ctx, startNS, endNS, domain.ActionRead); err != nil {
 		return nil, err
 	}
 
@@ -103,13 +110,20 @@ func (s *KVServer) Range(ctx context.Context, req *etcdserverpb.RangeRequest) (*
 	}, nil
 }
 
-func (s *KVServer) Put(ctx context.Context, req *etcdserverpb.PutRequest) (*etcdserverpb.PutResponse, error) {
+func (s *KVServer) Put(
+	ctx context.Context,
+	req *etcdserverpb.PutRequest,
+) (*etcdserverpb.PutResponse, error) {
 	namespace, path, ok := SplitKey(req.Key)
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid key encoding: %q", string(req.Key))
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"invalid key encoding: %q",
+			string(req.Key),
+		)
 	}
 
-	if err := s.checkAccess(ctx, namespace, "write"); err != nil {
+	if err := s.checkAccess(ctx, namespace, domain.ActionWrite); err != nil {
 		return nil, err
 	}
 
@@ -143,14 +157,25 @@ func (s *KVServer) DeleteRange(
 ) (*etcdserverpb.DeleteRangeResponse, error) {
 	startNS, startPath, endNS, endPath, ok := SplitRange(req.Key, req.RangeEnd)
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid key encoding: %q", string(req.Key))
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			"invalid key encoding: %q",
+			string(req.Key),
+		)
 	}
 
-	if err := s.checkRangeAccess(ctx, startNS, endNS, "write"); err != nil {
+	if err := s.checkRangeAccess(ctx, startNS, endNS, domain.ActionWrite); err != nil {
 		return nil, err
 	}
 
-	deleted, newRev, err := s.repo.DeleteRangeKeys(ctx, startNS, startPath, endNS, endPath, req.PrevKv)
+	deleted, newRev, err := s.repo.DeleteRangeKeys(
+		ctx,
+		startNS,
+		startPath,
+		endNS,
+		endPath,
+		req.PrevKv,
+	)
 	if err != nil {
 		s.recordRejectedWrite(ctx, "delete", startNS, err)
 
@@ -179,7 +204,10 @@ func (s *KVServer) DeleteRange(
 // this matches etcd behaviour for the common case (e.g. leader election,
 // distributed locks) under low contention but can race under high write
 // concurrency. TODO: expose bbolt tx to make this truly atomic.
-func (s *KVServer) Txn(ctx context.Context, req *etcdserverpb.TxnRequest) (*etcdserverpb.TxnResponse, error) {
+func (s *KVServer) Txn(
+	ctx context.Context,
+	req *etcdserverpb.TxnRequest,
+) (*etcdserverpb.TxnResponse, error) {
 	succeeded := true
 
 	for _, cmp := range req.Compare {
@@ -245,7 +273,11 @@ func (s *KVServer) Compact(
 	return &etcdserverpb.CompactionResponse{Header: newHeader(rev)}, nil
 }
 
-func (s *KVServer) checkRangeAccess(ctx context.Context, startNS, endNS, action string) error {
+func (s *KVServer) checkRangeAccess(
+	ctx context.Context,
+	startNS, endNS string,
+	action domain.Action,
+) error {
 	if err := s.checkAccess(ctx, startNS, action); err != nil {
 		return err
 	}
@@ -319,7 +351,11 @@ func (s *KVServer) notifyPut(
 func (s *KVServer) evalCompare(ctx context.Context, cmp *etcdserverpb.Compare) (bool, error) {
 	startNS, startPath, endNS, endPath, ok := SplitRange(cmp.Key, cmp.RangeEnd)
 	if !ok {
-		return false, status.Errorf(codes.InvalidArgument, "invalid compare key: %q", string(cmp.Key))
+		return false, status.Errorf(
+			codes.InvalidArgument,
+			"invalid compare key: %q",
+			string(cmp.Key),
+		)
 	}
 
 	kvs, _, err := s.repo.RangeQuery(ctx, startNS, startPath, endNS, endPath, 0, 0, false)
@@ -414,7 +450,10 @@ func compareBytes(op etcdserverpb.Compare_CompareResult, got, want []byte) bool 
 
 // runOp executes a single txn request op and returns its response wrapped in a ResponseOp.
 // Returns the revision produced by the op (0 if op was a Range).
-func (s *KVServer) runOp(ctx context.Context, op *etcdserverpb.RequestOp) (*etcdserverpb.ResponseOp, int64, error) {
+func (s *KVServer) runOp(
+	ctx context.Context,
+	op *etcdserverpb.RequestOp,
+) (*etcdserverpb.ResponseOp, int64, error) {
 	switch r := op.Request.(type) {
 	case *etcdserverpb.RequestOp_RequestRange:
 		resp, err := s.Range(ctx, r.RequestRange)
@@ -525,8 +564,8 @@ func toKVStatus(err error, op, path string) error {
 	return status.Errorf(codes.Internal, "%s: %v", op, err)
 }
 
-func (s *KVServer) checkAccess(ctx context.Context, namespace, action string) error {
-	claims, ok := auth.ClaimsFromContext(ctx)
+func (s *KVServer) checkAccess(ctx context.Context, namespace string, action domain.Action) error {
+	claims, ok := authctx.ClaimsFromContext(ctx)
 	if !ok {
 		// If auth is disabled, allow all.
 		return nil
@@ -544,10 +583,14 @@ func (s *KVServer) checkAccess(ctx context.Context, namespace, action string) er
 		}
 
 		if !allowedNS {
-			return status.Errorf(codes.PermissionDenied, "permission denied for namespace %q", namespace)
+			return status.Errorf(
+				codes.PermissionDenied,
+				"permission denied for namespace %q",
+				namespace,
+			)
 		}
 
-		if action == auth.ActionWrite && claims.Role != "writer" {
+		if action == domain.ActionWrite && domain.Role(claims.Role) != domain.RoleWriter {
 			return status.Errorf(codes.PermissionDenied, "permission denied for action %q", action)
 		}
 

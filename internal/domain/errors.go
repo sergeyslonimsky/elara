@@ -6,12 +6,14 @@ import (
 )
 
 var (
-	ErrNotFound       = errors.New("not found")
-	ErrAlreadyExists  = errors.New("already exists")
-	ErrConflict       = errors.New("version conflict")
-	ErrInvalidFormat  = errors.New("invalid format")
-	ErrInvalidContent = errors.New("invalid content")
-	ErrLocked         = errors.New("config is locked")
+	ErrNotFound             = errors.New("not found")
+	ErrAlreadyExists        = errors.New("already exists")
+	ErrVersionConflict      = errors.New("version conflict")
+	ErrSystemImmutable      = errors.New("system entity is immutable")
+	ErrPermissionEscalation = errors.New("permission escalation")
+	ErrInvalidFormat        = errors.New("invalid format")
+	ErrInvalidContent       = errors.New("invalid content")
+	ErrLocked               = errors.New("config is locked")
 	// ErrNamespaceLocked wraps ErrLocked so callers can attribute the cause
 	// (e.g. for metrics) while still matching errors.Is(err, ErrLocked).
 	ErrNamespaceLocked        = fmt.Errorf("namespace is locked: %w", ErrLocked)
@@ -20,6 +22,17 @@ var (
 	ErrInvalidToken           = errors.New("invalid token")
 	ErrPasswordChangeRequired = errors.New("password change required")
 	ErrFeatureNotAvailable    = errors.New("feature not available")
+	ErrSessionNotFound        = errors.New("session not found")
+	ErrSessionExpired         = errors.New("session expired")
+	ErrSessionRevoked         = errors.New("session revoked")
+	ErrUserDeactivated        = errors.New("user is deactivated")
+	ErrIdentityTaken          = errors.New("identity already taken")
+	ErrEmailTaken             = errors.New("email already taken")
+	ErrCanonicalNameImmutable = errors.New("canonical name is immutable")
+	// ErrIdentityNotProvisioned is returned when an identity (provider+subject)
+	// has no corresponding user record. JIT-provisioning is not supported;
+	// admins must pre-provision users.
+	ErrIdentityNotProvisioned = errors.New("identity not provisioned")
 )
 
 type ValidationError struct {
@@ -62,5 +75,23 @@ func NewAlreadyExistsError(resource, identifier string) error {
 }
 
 func NewConflictError(expected, actual int64) error {
-	return fmt.Errorf("expected version %d, got %d: %w", expected, actual, ErrConflict)
+	return fmt.Errorf("expected version %d, got %d: %w", expected, actual, ErrVersionConflict)
+}
+
+// CheckVersion compares the optional caller-supplied expected version
+// against the current value. Nil expected means the caller opted out of
+// optimistic concurrency; matching values pass; a mismatch returns
+// ErrVersionConflict.
+//
+// Lives here rather than in a usecase package so every Update* flow that
+// exposes optimistic locking shares the same contract.
+func CheckVersion(expected *int64, current int64) error {
+	if expected == nil {
+		return nil
+	}
+	if *expected != current {
+		return ErrVersionConflict
+	}
+
+	return nil
 }

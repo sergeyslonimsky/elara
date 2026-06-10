@@ -130,7 +130,14 @@ func (h *StatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	}
 
 	method := methodFromContext(ctx)
-	h.reg.RecordRequest(connID, method, "" /*key — populated by per-RPC code if desired*/, 0, dur, end.Error)
+	h.reg.RecordRequest(
+		connID,
+		method,
+		"", /*key — populated by per-RPC code if desired*/
+		0,
+		dur,
+		end.Error,
+	)
 }
 
 // identityFromMetadata extracts client identity headers from incoming context.

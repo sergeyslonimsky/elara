@@ -20,47 +20,21 @@ linters:
   default: all
 
   disable:
+    # should be enabled
+    - varnamelen
+
     - iface
     # Covered by govet + staticcheck; revive too noisy with exported/package-comments
     - revive
-    - depguard
 
     - exhaustruct
-    - forbidigo
-    - gochecknoinits
-    - gocognit       # redundant with cyclop
-    - gocyclo        # redundant with cyclop
-    - godot
-    - goheader
-    - gomodguard
-    - gosmopolitan
-    - grouper
-    - interfacebloat
-    - lll            # redundant with golines
-    - maintidx       # redundant with cyclop
-    - nestif
     - noinlineerr
-    - tparallel       # redundant with paralleltest
-    - tagalign
     - tagliatelle
-    - varnamelen
     - wsl_v5
     - godoclint
 
-    # Not relevant for this project
-    - arangolint
-    - embeddedstructfieldcheck
-    - ginkgolinter
-    - gochecksumtype
-    - goprintffuncname
-    - importas
-    - promlinter
-    - rowserrcheck
-    - spancheck
-    - sqlclosecheck
-    - testableexamples
-    - unqueryvet
-    - zerologlint
+    # deprecated
+    - gomodguard
     - wsl
 
   exclusions:
@@ -77,14 +51,146 @@ linters:
           - err113    # test fakes use errors.New("boom") idiomatically; sentinel errors add noise
           - funlen    # table-driven tests are naturally longer
           - cyclop    # table-driven tests with multiple cases are naturally more complex
+          - maintidx
+          - gocognit
           - wrapcheck
           - dogsled
           - dupl
           - ireturn
+          - gochecknoglobals
+      # test/integration is a Go test-helper package (Suite, runner, JSON differ)
+      # consumed by *_integration_test.go files. The "no globals / no magic numbers"
+      # rules don't apply to fixture-style harness code.
+      - path: ^test/integration/
+        linters:
+          - cyclop
+          - goconst
+          - gochecknoglobals
+          - gosec
+          - mnd
+          - wrapcheck
+          - nlreturn
+      # pkg/bbolt is a generic transaction-orchestration library (extract-ready).
+      # Returning interfaces from constructors / getters is the core design;
+      # named returns in runTx are required by the defer-based rollback path.
+      - path: ^pkg/bbolt/
+        linters:
+          - ireturn
+          - nonamedreturns
 
     paths:
       - web/
+
   settings:
+    # depguard locks in DDD-layering invariants that are currently clean.
+    # Add new rules as more layers are refactored to respect their seam.
+    depguard:
+      rules:
+        # pkg/* is extract-ready: it must not depend on anything inside the
+        # project so it can be lifted into a shared core repo unchanged.
+        pkg-extract-ready:
+          list-mode: lax
+          files:
+            - "**/pkg/**"
+          deny:
+            - pkg: github.com/sergeyslonimsky/elara/internal
+              desc: pkg/* must be self-contained (extract-ready); no internal/* imports
+        # internal/storage is the bottom of the dependency graph for backend
+        # repositories. It must not reach UP into usecase / service / handler /
+        # transport / di — those layers depend on storage, not the other way
+        # around. internal/domain (entities) and internal/storage (sentinels)
+        # are allowed.
+        storage-no-upward:
+          list-mode: lax
+          files:
+            - "**/internal/storage/**"
+          deny:
+            - pkg: github.com/sergeyslonimsky/elara/internal/usecase
+              desc: storage must not depend on usecase (DDD inversion)
+            - pkg: github.com/sergeyslonimsky/elara/internal/service
+              desc: storage must not depend on service (DDD inversion)
+            - pkg: github.com/sergeyslonimsky/elara/internal/handler
+              desc: storage must not depend on handler (DDD inversion)
+            - pkg: github.com/sergeyslonimsky/elara/internal/transport
+              desc: storage must not depend on transport (DDD inversion)
+            - pkg: github.com/sergeyslonimsky/elara/internal/di
+              desc: storage must not depend on DI wiring
+        # internal/di owns wiring of the entire service graph. Only the
+        # process entrypoint (cmd/) and integration tests (which bootstrap
+        # a real DI-wired stack) may import it. Application code MUST NOT
+        # — pulling DI inward would invert the dependency direction.
+        di-only-from-main:
+          list-mode: lax
+          files:
+            - "**/*.go"
+            - "!**/cmd/**"
+            - "!**/internal/di/**"
+            - "!**/test/integration/**"
+          deny:
+            - pkg: github.com/sergeyslonimsky/elara/internal/di
+              desc: di is wired by cmd/ only; do not pull DI inward
+        # internal/handler is the inbound boundary. Only di assembles
+        # handlers into the server — usecase / service / storage / domain
+        # must not depend on it.
+        handler-only-from-di:
+          list-mode: lax
+          files:
+            - "**/*.go"
+            - "!**/cmd/**"
+            - "!**/internal/di/**"
+            - "!**/internal/handler/**"
+          deny:
+            - pkg: github.com/sergeyslonimsky/elara/internal/handler
+              desc: handler is assembled by di only (inbound boundary)
+        # internal/transport (etcd grpc server, watch pub/sub, webhook
+        # dispatcher) is wired into the server by di. No inward consumer
+        # should import it directly.
+        transport-only-from-di:
+          list-mode: lax
+          files:
+            - "**/*.go"
+            - "!**/cmd/**"
+            - "!**/internal/di/**"
+            - "!**/internal/transport/**"
+          deny:
+            - pkg: github.com/sergeyslonimsky/elara/internal/transport
+              desc: transport is wired by di only
+        # internal/usecase is consumed by handler (request flow) and di
+        # (wiring). Nothing else may import it — service / storage / domain
+        # are below usecase in the dependency graph.
+        usecase-only-from-handler-and-di:
+          list-mode: lax
+          files:
+            - "**/*.go"
+            - "!**/cmd/**"
+            - "!**/internal/di/**"
+            - "!**/internal/handler/**"
+            - "!**/internal/usecase/**"
+          deny:
+            - pkg: github.com/sergeyslonimsky/elara/internal/usecase
+              desc: usecase is consumed only by handler / di
+        # internal/domain is pure entities + business invariants. It must not
+        # depend on any infrastructure or higher layer — only on itself.
+        domain-purity:
+          list-mode: lax
+          files:
+            - "**/internal/domain/**"
+          deny:
+            - pkg: github.com/sergeyslonimsky/elara/internal/storage
+              desc: domain must not depend on storage (DDD inversion)
+            - pkg: github.com/sergeyslonimsky/elara/internal/usecase
+              desc: domain must not depend on usecase
+            - pkg: github.com/sergeyslonimsky/elara/internal/service
+              desc: domain must not depend on service
+            - pkg: github.com/sergeyslonimsky/elara/internal/handler
+              desc: domain must not depend on handler
+            - pkg: github.com/sergeyslonimsky/elara/internal/transport
+              desc: domain must not depend on transport
+            - pkg: github.com/sergeyslonimsky/elara/internal/di
+              desc: domain must not depend on DI wiring
+            - pkg: github.com/sergeyslonimsky/elara/pkg
+              desc: domain must not depend on infrastructure pkg (e.g. bbolt)
+
     exhaustive:
       default-signifies-exhaustive: true
 
@@ -111,6 +217,8 @@ linters:
         - G301
         # G118: CompileRegex is not always safe — not applicable here.
         - G118
+        # G124: Cookie Secure attribute set from config param
+        - G124
 
     funlen:
       lines: 80
@@ -129,3 +237,14 @@ linters:
 
     unparam:
       check-exported: false
+
+    varnamelen:
+      ignore-names:
+        - ui
+        - id
+        - in
+        - tx
+        - ok
+        - ns
+        - tt
+        - fx

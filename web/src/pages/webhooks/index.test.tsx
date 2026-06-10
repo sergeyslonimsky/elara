@@ -1,15 +1,20 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { TestProviders } from "@/test/test-utils";
 import { WebhooksPage } from "./index";
 
 const mockUseQuery = vi.fn();
 const mockUseMutation = vi.fn();
 
-vi.mock("@connectrpc/connect-query", () => ({
-	useQuery: (...args: unknown[]) => mockUseQuery(...args),
-	useMutation: (...args: unknown[]) => mockUseMutation(...args),
-}));
+vi.mock("@connectrpc/connect-query", async (importOriginal) => {
+	const actual =
+		await importOriginal<typeof import("@connectrpc/connect-query")>();
+	return {
+		...actual,
+		useQuery: (...args: unknown[]) => mockUseQuery(...args),
+		useMutation: (...args: unknown[]) => mockUseMutation(...args),
+	};
+});
 
 vi.mock("@tanstack/react-query", async (importOriginal) => {
 	const actual = await importOriginal();
@@ -51,9 +56,9 @@ describe("WebhooksPage", () => {
 		defaultMutationMock();
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhooksPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(
@@ -72,9 +77,9 @@ describe("WebhooksPage", () => {
 		defaultMutationMock();
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhooksPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(
@@ -93,9 +98,9 @@ describe("WebhooksPage", () => {
 		defaultMutationMock();
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhooksPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("No webhooks")).toBeInTheDocument();
@@ -123,9 +128,9 @@ describe("WebhooksPage", () => {
 		defaultMutationMock();
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhooksPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("https://example.com/hook")).toBeInTheDocument();
@@ -142,9 +147,9 @@ describe("WebhooksPage", () => {
 		defaultMutationMock();
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<WebhooksPage />
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("Network failure")).toBeInTheDocument();

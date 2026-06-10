@@ -61,7 +61,12 @@ func (r *fakeRegistry) UnregisterConnection(connID string) {
 	r.unregistered = append(r.unregistered, connID)
 }
 
-func (r *fakeRegistry) RecordRequest(connID, method, key string, rev int64, dur time.Duration, err error) {
+func (r *fakeRegistry) RecordRequest(
+	connID, method, key string,
+	rev int64,
+	dur time.Duration,
+	err error,
+) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.requests = append(r.requests, reqRecord{connID, method, key, rev, dur, err})

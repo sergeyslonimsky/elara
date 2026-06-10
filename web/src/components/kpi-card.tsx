@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import { Sparkline } from "@/components/sparkline";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface KpiCardProps {
 	label: string;
-	value: string | number;
+	value: ReactNode;
 	/** Optional subtitle below the main value (e.g. "since 2m ago"). */
 	subtitle?: string;
 	/** Optional time-series for the bottom sparkline. */

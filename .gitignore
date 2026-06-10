@@ -3,9 +3,12 @@
 .vscode/
 .claude/
 .gemini/
+.antigravitycli/
+.agora-code/
 *.swp
 *.swo
 *~
+graphify-out/
 
 # OS cruft
 .DS_Store
@@ -35,5 +38,6 @@ vendor/
 
 # Claude code
 CLAUDE.md
+GEMINI.md
 .mcp.json
 plans

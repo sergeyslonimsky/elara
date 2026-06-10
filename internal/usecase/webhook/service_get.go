@@ -1,0 +1,51 @@
+package webhook
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/sergeyslonimsky/elara/internal/authctx"
+	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/storage"
+)
+
+// Get returns the webhook if the caller holds (Webhook, Read) on the webhook's
+// namespace filter (or "*" for global webhooks). Load-then-check: we must fetch
+// the webhook before we know which namespace to gate on.
+func (s *Service) Get(ctx context.Context, id string) (*domain.Webhook, error) {
+	info, err := authctx.AuthInfoFromContext(ctx)
+	if err != nil {
+		return nil, domain.ErrUnauthorized
+	}
+
+	webhook, err := s.repo.Get(ctx, id)
+	if err != nil {
+		if errors.Is(err, storage.ErrResourceNotFound) {
+			return nil, fmt.Errorf("get webhook: %w", domain.ErrNotFound)
+		}
+
+		return nil, fmt.Errorf("get webhook: %w", err)
+	}
+
+	if !s.pdp.Has(info.UserID, domain.Permission{
+		Object: domain.ObjectWebhook,
+		Action: domain.ActionRead,
+		Domain: webhookDomain(webhook),
+	}) {
+		return nil, domain.ErrForbidden
+	}
+
+	return webhook, nil
+}
+
+// webhookDomain returns the Casbin domain for a webhook. An empty
+// NamespaceFilter means the webhook fires for every namespace; we map that to
+// the global domain so the check is "can the caller read/write *any* namespace".
+func webhookDomain(w *domain.Webhook) string {
+	if w.NamespaceFilter == "" {
+		return domain.DomainAll
+	}
+
+	return w.NamespaceFilter
+}

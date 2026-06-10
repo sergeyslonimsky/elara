@@ -1,5 +1,6 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useParams } from "react-router";
+import { useAuth } from "@/components/auth-provider";
 import { useTheme } from "@/components/theme-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { UserMenu } from "@/components/user-menu";
+import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 
 export function AppHeader() {
 	const { namespace } = useParams();
 	const { setTheme } = useTheme();
+	const { state } = useAuth();
+	const authType =
+		state.status === "authenticated" ? state.authType : undefined;
 
 	return (
 		<header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
@@ -27,7 +33,7 @@ export function AppHeader() {
 				</Badge>
 			)}
 
-			<div className="ml-auto">
+			<div className="ml-auto flex items-center gap-2">
 				<DropdownMenu>
 					<DropdownMenuTrigger
 						render={<Button variant="ghost" size="icon-xs" />}
@@ -51,6 +57,8 @@ export function AppHeader() {
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
+
+				{authType !== AuthType.NONE && <UserMenu />}
 			</div>
 		</header>
 	);

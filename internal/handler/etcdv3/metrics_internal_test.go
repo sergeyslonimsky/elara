@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
@@ -25,7 +24,11 @@ func newMetricsTestServer(t *testing.T) (*KVServer, metric.Reader) {
 	return &KVServer{metrics: &kvMetrics{writesRejected: c}}, reader
 }
 
-func collectRejectedCounter(t *testing.T, ctx context.Context, reader metric.Reader) *metricdata.Sum[int64] {
+func collectRejectedCounter(
+	t *testing.T,
+	ctx context.Context,
+	reader metric.Reader,
+) *metricdata.Sum[int64] {
 	t.Helper()
 
 	var rm metricdata.ResourceMetrics
@@ -59,15 +62,15 @@ func TestKVServer_RecordRejectedWrite_ConfigLocked(t *testing.T) {
 	assert.Equal(t, int64(1), sum.DataPoints[0].Value)
 
 	attrs := sum.DataPoints[0].Attributes
-	op, ok := attrs.Value(attribute.Key("op"))
+	op, ok := attrs.Value("op")
 	require.True(t, ok)
 	assert.Equal(t, "Put", op.AsString())
 
-	reason, ok := attrs.Value(attribute.Key("reason"))
+	reason, ok := attrs.Value("reason")
 	require.True(t, ok)
 	assert.Equal(t, "config_locked", reason.AsString())
 
-	ns, ok := attrs.Value(attribute.Key("namespace"))
+	ns, ok := attrs.Value("namespace")
 	require.True(t, ok)
 	assert.Equal(t, "prod", ns.AsString())
 }
@@ -84,7 +87,7 @@ func TestKVServer_RecordRejectedWrite_NamespaceLocked(t *testing.T) {
 	require.NotNil(t, sum)
 	require.Len(t, sum.DataPoints, 1)
 
-	reason, ok := sum.DataPoints[0].Attributes.Value(attribute.Key("reason"))
+	reason, ok := sum.DataPoints[0].Attributes.Value("reason")
 	require.True(t, ok)
 	assert.Equal(t, "namespace_locked", reason.AsString())
 }

@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package elara.profile.v1;
+
+import "elara/common/v1/permission.proto";
+
+service ProfileService {
+  rpc Me(MeRequest) returns (MeResponse);
+  // Basic-auth flow — changes the current user's password
+  // current_password is required unless password_change_required is true in the session
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+}
+
+message MeRequest {}
+
+message MeResponse {
+  string email = 1;
+  string name = 2;
+  string picture = 3;
+  bool password_change_required = 4;
+  repeated elara.common.v1.PermissionAssignment permissions = 5;
+}
+
+message ChangePasswordRequest {
+  optional string current_password = 1;
+  string new_password = 2;
+}
+
+message ChangePasswordResponse {}
+
+message LogoutRequest {}
+
+message LogoutResponse {}

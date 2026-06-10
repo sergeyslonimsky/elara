@@ -9,7 +9,16 @@ import {
 	getSchema,
 	listSchemas,
 } from "@/gen/elara/config/v1/schema_service-SchemaService_connectquery";
+import {
+	getGroup,
+	listGroups,
+} from "@/gen/elara/group/v1/group_service-GroupService_connectquery";
 import { listNamespaces } from "@/gen/elara/namespace/v1/namespace_service-NamespaceService_connectquery";
+import { listTokens } from "@/gen/elara/token/v1/token_service-TokenService_connectquery";
+import {
+	getUser,
+	listUsers,
+} from "@/gen/elara/user/v1/user_service-UserService_connectquery";
 import { listWebhooks } from "@/gen/elara/webhook/v1/webhook_service-WebhookService_connectquery";
 
 export type QueryClient = ReturnType<typeof useQueryClient>;
@@ -29,6 +38,16 @@ const queryKeys = {
 		createConnectQueryKey({ schema: getSchema, cardinality: undefined }),
 	schemas: () =>
 		createConnectQueryKey({ schema: listSchemas, cardinality: undefined }),
+	groups: () =>
+		createConnectQueryKey({ schema: listGroups, cardinality: undefined }),
+	group: () =>
+		createConnectQueryKey({ schema: getGroup, cardinality: undefined }),
+	users: () =>
+		createConnectQueryKey({ schema: listUsers, cardinality: undefined }),
+	user: () =>
+		createConnectQueryKey({ schema: getUser, cardinality: undefined }),
+	tokens: () =>
+		createConnectQueryKey({ schema: listTokens, cardinality: undefined }),
 } as const;
 
 type QueryKey = keyof typeof queryKeys;
@@ -53,4 +72,16 @@ export function invalidateAllConfigData(client: QueryClient): void {
 	invalidate(client, "configs");
 	invalidate(client, "config");
 	invalidate(client, "configHistory");
+}
+
+/**
+ * Invalidate everything affected by a user↔group membership change.
+ * Used by UpdateUserGroups, UpdateGroupMembers, CreateUser/Group with initial
+ * members, and DeleteUser.
+ */
+export function invalidateUserGroupGraph(client: QueryClient): void {
+	invalidate(client, "users");
+	invalidate(client, "user");
+	invalidate(client, "groups");
+	invalidate(client, "group");
 }

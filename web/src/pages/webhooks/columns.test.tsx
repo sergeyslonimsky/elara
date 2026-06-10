@@ -1,10 +1,10 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Webhook } from "@/gen/elara/webhook/v1/webhook_pb";
 import { WebhookEvent } from "@/gen/elara/webhook/v1/webhook_pb";
+import { TestProviders } from "@/test/test-utils";
 import { makeColumns } from "./columns";
 
 vi.mock("./delete-dialog", () => ({
@@ -39,7 +39,7 @@ function renderCell<T>(column: ColumnDef<T>, row: T) {
 		table: {} as never,
 	};
 	const result = column.cell(cellContext as never);
-	return render(<MemoryRouter>{result as React.ReactElement}</MemoryRouter>);
+	return render(<TestProviders>{result as React.ReactElement}</TestProviders>);
 }
 
 describe("makeColumns", () => {

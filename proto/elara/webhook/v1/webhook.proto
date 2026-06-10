@@ -3,8 +3,6 @@ package elara.webhook.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/sergeyslonimsky/elara/internal/proto/elara/webhook/v1;webhookv1";
-
 enum WebhookEvent {
   WEBHOOK_EVENT_UNSPECIFIED = 0;
   WEBHOOK_EVENT_CREATED = 1;

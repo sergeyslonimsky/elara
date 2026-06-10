@@ -1,0 +1,6 @@
+{
+  "namespaces": [
+    {"name":"prod","configCount":2,"createdAt":"<<PRESENCE>>","updatedAt":"<<PRESENCE>>"}
+  ],
+  "pagination": {"total":1,"limit":20}
+}

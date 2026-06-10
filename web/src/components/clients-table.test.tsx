@@ -1,8 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import type { Client } from "@/gen/elara/clients/v1/clients_pb";
+import { TestProviders } from "@/test/test-utils";
 import { ClientsTable } from "./clients-table";
 
 vi.mock("react-router", async (importOriginal) => {
@@ -35,7 +36,7 @@ describe("ClientsTable", () => {
 
 	it("renders active clients", () => {
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<ClientsTable
 					clients={mockClients as Client[]}
 					isLoading={false}
@@ -43,7 +44,7 @@ describe("ClientsTable", () => {
 					sorting={[]}
 					onSortingChange={() => {}}
 				/>
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByText("Client A")).toBeInTheDocument();
@@ -53,7 +54,7 @@ describe("ClientsTable", () => {
 
 	it("renders loading state", () => {
 		const { container } = render(
-			<MemoryRouter>
+			<TestProviders>
 				<ClientsTable
 					clients={[]}
 					isLoading={true}
@@ -61,7 +62,7 @@ describe("ClientsTable", () => {
 					sorting={[]}
 					onSortingChange={() => {}}
 				/>
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(
@@ -71,7 +72,7 @@ describe("ClientsTable", () => {
 
 	it("renders empty slot when no clients", () => {
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<ClientsTable
 					clients={[]}
 					isLoading={false}
@@ -80,7 +81,7 @@ describe("ClientsTable", () => {
 					onSortingChange={() => {}}
 					emptySlot={<div data-testid="empty">No clients</div>}
 				/>
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		expect(screen.getByTestId("empty")).toBeInTheDocument();
@@ -92,7 +93,7 @@ describe("ClientsTable", () => {
 		const user = userEvent.setup();
 
 		render(
-			<MemoryRouter>
+			<TestProviders>
 				<ClientsTable
 					clients={mockClients as Client[]}
 					isLoading={false}
@@ -100,7 +101,7 @@ describe("ClientsTable", () => {
 					sorting={[]}
 					onSortingChange={() => {}}
 				/>
-			</MemoryRouter>,
+			</TestProviders>,
 		);
 
 		await user.click(screen.getByText("Client A"));

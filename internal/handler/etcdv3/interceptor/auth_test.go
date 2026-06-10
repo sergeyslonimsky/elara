@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/etcdv3/interceptor"
 )
@@ -54,7 +54,11 @@ func (s *stubTokenLookup) GetByHash(_ context.Context, hash string) (*domain.Tok
 	return token, nil
 }
 
-func (s *stubTokenLookup) UpdateLastUsed(_ context.Context, tokenHash, _ string, _ time.Time) error {
+func (s *stubTokenLookup) UpdateLastUsed(
+	_ context.Context,
+	tokenHash, _ string,
+	_ time.Time,
+) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.updateLastUsed = append(s.updateLastUsed, tokenHash)
@@ -151,7 +155,10 @@ func TestTokenInterceptor_Unary(t *testing.T) {
 		{
 			name: "header without Bearer prefix returns unauthenticated",
 			buildCtx: func(ctx context.Context) context.Context {
-				return metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", testRawToken))
+				return metadata.NewIncomingContext(
+					ctx,
+					metadata.Pairs("authorization", testRawToken),
+				)
 			},
 			tokens:   []*domain.Token{validToken()},
 			wantCode: codes.Unauthenticated,
@@ -187,7 +194,7 @@ func TestTokenInterceptor_Unary(t *testing.T) {
 
 			if tc.wantClaims {
 				require.NotNil(t, capturedCtx)
-				claims, ok := auth.ClaimsFromContext(*capturedCtx)
+				claims, ok := authctx.ClaimsFromContext(*capturedCtx)
 				require.True(t, ok)
 				assert.Equal(t, "user@example.com", claims.Email)
 			}
@@ -207,6 +214,7 @@ func TestTokenInterceptor_Unary(t *testing.T) {
 // stubServerStream is a minimal grpc.ServerStream for testing Stream interceptor.
 type stubServerStream struct {
 	grpc.ServerStream
+
 	ctx context.Context //nolint:containedctx // test helper; context stored to implement ServerStream.Context()
 }
 
@@ -278,7 +286,7 @@ func TestTokenInterceptor_Stream(t *testing.T) {
 
 			if tc.wantClaims {
 				require.NotNil(t, capturedCtx)
-				claims, ok := auth.ClaimsFromContext(*capturedCtx)
+				claims, ok := authctx.ClaimsFromContext(*capturedCtx)
 				require.True(t, ok)
 				assert.Equal(t, "user@example.com", claims.Email)
 			}

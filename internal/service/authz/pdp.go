@@ -1,0 +1,209 @@
+package authz
+
+//go:generate mockgen -destination=mocks/pdp_mock.go -package=authz_mock -source=pdp.go
+
+import (
+	"fmt"
+	"log/slog"
+	"sort"
+	"strings"
+
+	"github.com/sergeyslonimsky/elara/internal/domain"
+)
+
+// pRuleLen is the column count of a Casbin p-rule projected by
+// GetImplicitPermissionsForUser / GetPolicy: [sub, dom, obj, act].
+const pRuleLen = 4
+
+type enforcer interface {
+	GetImplicitPermissionsForUser(user string) ([][]string, error)
+	Enforce(subject, domainStr, object, action string) (bool, error)
+}
+
+type PDP struct {
+	enforcer        enforcer
+	skipPermissions bool
+}
+
+type Option func(*PDP)
+
+func WithSkipPermissions(skip bool) Option {
+	return func(p *PDP) {
+		p.skipPermissions = skip
+	}
+}
+
+func NewPDP(e enforcer, opts ...Option) *PDP {
+	p := &PDP{enforcer: e}
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p
+}
+
+func (p *PDP) EffectiveDomains(
+	principal string,
+	object domain.Object,
+	action domain.Action,
+) DomainSet {
+	if p.skipPermissions {
+		return DomainSet{Wildcard: true, Explicit: map[string]struct{}{}}
+	}
+
+	rules, err := p.enforcer.GetImplicitPermissionsForUser(principal)
+	if err != nil {
+		slog.Error("pdp: failed to get implicit permissions", "principal", principal, "err", err)
+
+		return NewDomainSet()
+	}
+
+	var domains []string
+	for _, rule := range rules {
+		// rule format: [sub, dom, obj, act]
+		if len(rule) < pRuleLen {
+			continue
+		}
+
+		// Same matching semantics as the Casbin matcher (domain.ObjectGrants /
+		// ActionGrants): wildcards and write⊇read. Keeps this scan and Enforce
+		// in agreement — e.g. a namespace:write grant surfaces for a read query.
+		if domain.ObjectGrants(domain.Object(rule[2]), object) &&
+			domain.ActionGrants(domain.Action(rule[3]), action) {
+			domains = append(domains, rule[1])
+		}
+	}
+
+	return NewDomainSet(domains...)
+}
+
+func (p *PDP) Has(principal string, perm domain.Permission) bool {
+	if p.skipPermissions {
+		return true
+	}
+
+	ok, err := p.enforcer.Enforce(principal, perm.Domain, string(perm.Object), string(perm.Action))
+	if err != nil {
+		slog.Error("pdp: enforce error", "principal", principal, "perm", perm, "err", err)
+
+		return false
+	}
+
+	return ok
+}
+
+// HasGroup reports whether actor holds the given action on group:<id>.
+// Hides the group:<id> domain convention from callers.
+func (p *PDP) HasGroup(actor, groupID string, action domain.Action) bool {
+	return p.Has(actor, domain.Permission{
+		Object: domain.ObjectGroup,
+		Action: action,
+		Domain: domain.GroupResource(groupID),
+	})
+}
+
+// HasNamespace reports whether actor holds the given action on
+// namespace:<name>. Hides the namespace:<name> domain convention from callers.
+// Pass domain.DomainAll for a wildcard check.
+func (p *PDP) HasNamespace(actor, name string, action domain.Action) bool {
+	return p.Has(actor, domain.Permission{
+		Object: domain.ObjectNamespace,
+		Action: action,
+		Domain: domain.NamespaceResource(name),
+	})
+}
+
+// EffectiveNamespaces returns the namespaces the actor can act on with the
+// given action, stripped of the "namespace:" prefix so consumers can compare
+// bare names directly. Wildcard p-rules (domain "*") set DomainSet.Wildcard,
+// matching EffectiveDomains semantics.
+func (p *PDP) EffectiveNamespaces(actor string, action domain.Action) DomainSet {
+	raw := p.EffectiveDomains(actor, domain.ObjectNamespace, action)
+	if raw.Wildcard {
+		return DomainSet{Wildcard: true, Explicit: map[string]struct{}{}}
+	}
+
+	out := make(map[string]struct{}, len(raw.Explicit))
+	for d := range raw.Explicit {
+		out[strings.TrimPrefix(d, domain.NamespaceResourcePrefix)] = struct{}{}
+	}
+
+	return DomainSet{Explicit: out}
+}
+
+// HasGlobal reports whether actor holds the given (object, action) on the
+// global "*" domain. Used for objects whose permissions are global by
+// convention — e.g. User:Read/Write/Create and Group:Create (see
+// permission.proto). User creation may also be derived through the caller
+// supplying initial_group_ids backed by Group:Write — see CreateUser.
+func (p *PDP) HasGlobal(actor string, object domain.Object, action domain.Action) bool {
+	return p.Has(actor, domain.Permission{
+		Object: object,
+		Action: action,
+		Domain: domain.DomainAll,
+	})
+}
+
+// HasForGroup reports whether the group (as a Casbin subject) holds `perm`.
+// Used by anti-escalation cascade checks where the principal is a group
+// rather than a user — hides the subject-string convention from callers.
+func (p *PDP) HasForGroup(groupName string, perm domain.Permission) bool {
+	return p.Has(domain.GroupResource(groupName), perm)
+}
+
+// ListPermissions returns all effective permissions for the given principal,
+// deduplicated and sorted deterministically by (Object, Action, Domain).
+// Wildcards in any field are returned as-is using domain.ObjectAll / ActionAll
+// / DomainAll. Returns a non-nil empty slice when there are no rules.
+func (p *PDP) ListPermissions(principal string) ([]domain.Permission, error) {
+	if p.skipPermissions {
+		return []domain.Permission{
+			{
+				Object: domain.ObjectAll,
+				Action: domain.ActionAll,
+				Domain: domain.DomainAll,
+			},
+		}, nil
+	}
+
+	rules, err := p.enforcer.GetImplicitPermissionsForUser(principal)
+	if err != nil {
+		return nil, fmt.Errorf("list permissions: %w", err)
+	}
+
+	seen := make(map[domain.Permission]struct{}, len(rules))
+	permissions := make([]domain.Permission, 0, len(rules))
+
+	for _, rule := range rules {
+		// rule format: [sub, dom, obj, act]; skip malformed.
+		if len(rule) < pRuleLen {
+			continue
+		}
+
+		perm := domain.Permission{
+			Domain: rule[1],
+			Object: domain.Object(rule[2]),
+			Action: domain.Action(rule[3]),
+		}
+		if _, dup := seen[perm]; dup {
+			continue
+		}
+
+		seen[perm] = struct{}{}
+		permissions = append(permissions, perm)
+	}
+
+	sort.Slice(permissions, func(i, j int) bool {
+		if permissions[i].Object != permissions[j].Object {
+			return permissions[i].Object < permissions[j].Object
+		}
+
+		if permissions[i].Action != permissions[j].Action {
+			return permissions[i].Action < permissions[j].Action
+		}
+
+		return permissions[i].Domain < permissions[j].Domain
+	})
+
+	return permissions, nil
+}

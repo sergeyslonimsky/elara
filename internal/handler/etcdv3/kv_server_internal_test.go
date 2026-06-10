@@ -8,7 +8,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 func TestKVServer_CheckAccess_ServiceToken(t *testing.T) {
@@ -18,9 +19,9 @@ func TestKVServer_CheckAccess_ServiceToken(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		claims    *auth.Claims
+		claims    *auth2.Claims
 		namespace string
-		action    string
+		action    domain.Action
 		wantCode  codes.Code
 	}{
 		{
@@ -32,7 +33,7 @@ func TestKVServer_CheckAccess_ServiceToken(t *testing.T) {
 		},
 		{
 			name: "allow matching namespace",
-			claims: &auth.Claims{
+			claims: &auth2.Claims{
 				Namespaces: []string{"prod"},
 				Role:       "reader",
 			},
@@ -42,7 +43,7 @@ func TestKVServer_CheckAccess_ServiceToken(t *testing.T) {
 		},
 		{
 			name: "allow star wildcard",
-			claims: &auth.Claims{
+			claims: &auth2.Claims{
 				Namespaces: []string{"*"},
 				Role:       "writer",
 			},
@@ -52,7 +53,7 @@ func TestKVServer_CheckAccess_ServiceToken(t *testing.T) {
 		},
 		{
 			name: "deny non-matching namespace",
-			claims: &auth.Claims{
+			claims: &auth2.Claims{
 				Namespaces: []string{"prod"},
 				Role:       "reader",
 			},
@@ -62,7 +63,7 @@ func TestKVServer_CheckAccess_ServiceToken(t *testing.T) {
 		},
 		{
 			name: "deny write for reader role",
-			claims: &auth.Claims{
+			claims: &auth2.Claims{
 				Namespaces: []string{"prod"},
 				Role:       "reader",
 			},
@@ -72,7 +73,7 @@ func TestKVServer_CheckAccess_ServiceToken(t *testing.T) {
 		},
 		{
 			name: "deny user claims (not service token)",
-			claims: &auth.Claims{
+			claims: &auth2.Claims{
 				Email: "user@example.com",
 			},
 			namespace: "prod",
@@ -87,7 +88,7 @@ func TestKVServer_CheckAccess_ServiceToken(t *testing.T) {
 
 			ctx := context.Background()
 			if tt.claims != nil {
-				ctx = auth.WithClaims(ctx, tt.claims)
+				ctx = auth2.WithClaims(ctx, tt.claims)
 			}
 
 			err := s.checkAccess(ctx, tt.namespace, tt.action)

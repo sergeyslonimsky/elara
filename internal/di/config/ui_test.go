@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sergeyslonimsky/elara/internal/di/config"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 func TestUIAuthConfig_Validate(t *testing.T) {
@@ -25,46 +26,68 @@ func TestUIAuthConfig_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "basic-auth with all fields",
+			name: "none type requires nothing",
 			auth: config.UIAuthConfig{
-				Enabled:    true,
-				Type:       config.AuthTypeBasicAuth,
-				AdminEmail: "admin@example.com",
+				Enabled: true,
+				Type:    domain.AuthTypeNone,
+			},
+			wantErr: false,
+		},
+		{
+			name: "basic-auth with username and password",
+			auth: config.UIAuthConfig{
+				Enabled: true,
+				Type:    domain.AuthTypeBasicAuth,
 				BasicAuth: config.BasicAuthConfig{
-					AdminInitialPassword: "password",
+					Username: "admin",
+					Password: "password",
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "basic-auth missing email",
+			name: "basic-auth missing username",
 			auth: config.UIAuthConfig{
 				Enabled: true,
-				Type:    config.AuthTypeBasicAuth,
+				Type:    domain.AuthTypeBasicAuth,
 				BasicAuth: config.BasicAuthConfig{
-					AdminInitialPassword: "password",
+					Password: "password",
 				},
 			},
 			wantErr: true,
-			errMsg:  "basic-auth requires ui.auth.adminEmail to be set",
+			errMsg:  "basic-auth requires ui.auth.basicAuth.username to be set",
 		},
 		{
 			name: "basic-auth missing password",
 			auth: config.UIAuthConfig{
-				Enabled:    true,
-				Type:       config.AuthTypeBasicAuth,
-				AdminEmail: "admin@example.com",
+				Enabled: true,
+				Type:    domain.AuthTypeBasicAuth,
+				BasicAuth: config.BasicAuthConfig{
+					Username: "admin",
+				},
 			},
 			wantErr: true,
-			errMsg:  "basic-auth requires ui.auth.basicAuth.adminInitialPassword to be set",
+			errMsg:  "basic-auth requires ui.auth.basicAuth.password to be set",
 		},
 		{
-			name: "oidc missing fields (not validated yet)",
+			name: "oidc with admin email",
 			auth: config.UIAuthConfig{
 				Enabled: true,
-				Type:    config.AuthTypeOIDC,
+				Type:    domain.AuthTypeOIDC,
+				OIDC: config.OIDCConfig{
+					AdminEmail: "admin@example.com",
+				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "oidc missing admin email",
+			auth: config.UIAuthConfig{
+				Enabled: true,
+				Type:    domain.AuthTypeOIDC,
+			},
+			wantErr: true,
+			errMsg:  "oidc requires ui.auth.oidc.adminEmail to be set",
 		},
 	}
 

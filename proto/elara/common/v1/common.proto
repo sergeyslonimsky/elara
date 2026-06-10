@@ -23,3 +23,8 @@ message SortRequest {
   string field = 1;
   SortDirection direction = 2;
 }
+
+message SortResponse {
+  string field = 1;
+  SortDirection direction = 2;
+}

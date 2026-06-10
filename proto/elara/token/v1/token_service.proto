@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package elara.token.v1;
+
+import "buf/validate/validate.proto";
+import "elara/common/v1/common.proto";
+import "elara/common/v1/permission.proto";
+import "elara/token/v1/token.proto";
+import "google/protobuf/timestamp.proto";
+
+service TokenService {
+  rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse);
+  rpc ListTokens(ListTokensRequest) returns (ListTokensResponse);
+  rpc GetToken(GetTokenRequest) returns (GetTokenResponse);
+  rpc RevokeToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+}
+
+message CreateTokenRequest {
+  string name = 1 [(buf.validate.field).required = true];
+  repeated string namespaces = 2 [(buf.validate.field).required = true];
+  elara.common.v1.PermissionAction permission = 3 [(buf.validate.field).required = true];
+  optional google.protobuf.Timestamp expires_at = 4;
+}
+
+message CreateTokenResponse {
+  Token token = 1;
+  string raw_token = 2;
+}
+
+message ListTokensRequest {
+  message Filters {
+    repeated string query_params = 1;
+    repeated string issued_by = 2;
+    repeated string namespaces = 3;
+  }
+
+  elara.common.v1.PaginationRequest pagination = 1;
+  elara.common.v1.SortRequest sorting = 2;
+  Filters filters = 3;
+}
+
+message ListTokensResponse {
+  elara.common.v1.PaginationResponse pagination = 1;
+  elara.common.v1.SortResponse sorting = 2;
+  repeated Token tokens = 3;
+}
+
+message GetTokenRequest {
+  string id = 1 [(buf.validate.field).required = true];
+}
+
+message GetTokenResponse {
+  Token token = 1;
+}
+
+message RevokeTokenRequest {
+  string id = 1 [(buf.validate.field).required = true];
+}
+
+message RevokeTokenResponse {}

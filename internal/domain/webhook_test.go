@@ -30,8 +30,11 @@ func TestWebhook_Validate(t *testing.T) {
 		{
 			name: "valid webhook with http",
 			webhook: domain.Webhook{
-				URL:    "http://example.com/hook",
-				Events: []domain.WebhookEventType{domain.WebhookEventCreated, domain.WebhookEventUpdated},
+				URL: "http://example.com/hook",
+				Events: []domain.WebhookEventType{
+					domain.WebhookEventCreated,
+					domain.WebhookEventUpdated,
+				},
 			},
 			wantErr: false,
 		},

@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router";
+import { Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { TestProviders } from "@/test/test-utils";
@@ -10,9 +10,7 @@ describe("AppHeader", () => {
 		render(
 			<TestProviders>
 				<SidebarProvider>
-					<MemoryRouter>
-						<AppHeader />
-					</MemoryRouter>
+					<AppHeader />
 				</SidebarProvider>
 			</TestProviders>,
 		);
@@ -27,13 +25,11 @@ describe("AppHeader", () => {
 
 	it("shows namespace badge when namespace param is present", () => {
 		render(
-			<TestProviders>
+			<TestProviders initialEntries={["/ns/test-namespace"]}>
 				<SidebarProvider>
-					<MemoryRouter initialEntries={["/ns/test-namespace"]}>
-						<Routes>
-							<Route path="/ns/:namespace" element={<AppHeader />} />
-						</Routes>
-					</MemoryRouter>
+					<Routes>
+						<Route path="/ns/:namespace" element={<AppHeader />} />
+					</Routes>
 				</SidebarProvider>
 			</TestProviders>,
 		);
@@ -43,13 +39,11 @@ describe("AppHeader", () => {
 
 	it("does not show namespace badge when namespace param is absent", () => {
 		render(
-			<TestProviders>
+			<TestProviders initialEntries={["/"]}>
 				<SidebarProvider>
-					<MemoryRouter initialEntries={["/"]}>
-						<Routes>
-							<Route path="/" element={<AppHeader />} />
-						</Routes>
-					</MemoryRouter>
+					<Routes>
+						<Route path="/" element={<AppHeader />} />
+					</Routes>
 				</SidebarProvider>
 			</TestProviders>,
 		);

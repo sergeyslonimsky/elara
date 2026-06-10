@@ -14,11 +14,11 @@ import (
 	coreapp "github.com/sergeyslonimsky/core/app"
 	coregrpc "github.com/sergeyslonimsky/core/grpc"
 	corehttp "github.com/sergeyslonimsky/core/http2"
-	coreotel "github.com/sergeyslonimsky/core/otel"
 
 	"github.com/sergeyslonimsky/elara/internal/di"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/di/service"
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	etcdinterceptor "github.com/sergeyslonimsky/elara/internal/handler/etcdv3/interceptor"
 	"github.com/sergeyslonimsky/elara/internal/handler/ui"
 	grpctransport "github.com/sergeyslonimsky/elara/internal/transport/grpc"
@@ -66,6 +66,35 @@ func run() error {
 		return fmt.Errorf("setup tracing: %w", err)
 	}
 
+	// Idempotent data-plane seeding (admin user, casbin policies). Runs after
+	// the container is wired but before any traffic-serving runners — the
+	// container itself stays a pure constructor.
+	if err := bootstrap(ctx, svc, cfg); err != nil {
+		return fmt.Errorf("bootstrap: %w", err)
+	}
+
+	// Reload Casbin's in-memory model from bbolt. Bootstrap writes p- and
+	// g-rules directly through PolicyRepo (it must, because the rules are
+	// what the enforcer would otherwise load on construction). On a fresh
+	// DB those rules land in bbolt but never enter the enforcer cache that
+	// was loaded before bootstrap ran — without this reload the superadmin's
+	// (*,*,*) wildcard is invisible until the next process restart, which
+	// presents to the operator as "logged in as admin but only see Dashboard".
+	if err := svc.Enforcer.LoadPolicy(); err != nil {
+		return fmt.Errorf("reload casbin policy after bootstrap: %w", err)
+	}
+
+	// Background worker: fan-out webhook delivery. Lives for the lifetime of
+	// ctx — app.App's signal handler cancels ctx on shutdown, the dispatcher
+	// drains and exits.
+	go func() {
+		if err := svc.Adapters.WebhookDispatcher.Run(ctx); err != nil {
+			// Dispatcher's Run blocks until ctx cancel; non-nil error is
+			// logged but doesn't fail the process — Shutdown handles drain.
+			_ = err
+		}
+	}()
+
 	// Registration order is LIFO for shutdown:
 	//   otelProvider      ← shuts down LAST (telemetry exporters close last)
 	//   promMetrics       ← just before otel (flushes metrics before close)
@@ -81,7 +110,7 @@ func run() error {
 	a.AddResource(svc.Adapters)
 
 	frontendServer := corehttp.NewServer(cfg.UI.Server, frontendServerOptions(a, cfg, promMetrics)...)
-	service.V2Routes(frontendServer, svc.V2Handlers, svc.SessionManager, cfg)
+	service.V2Routes(frontendServer, svc.V2Handlers, svc.Sessions, svc.Adapters.AuthUsers, cfg)
 
 	// Mount UI static file handler (serves frontend, fallback to index.html).
 	if distFS := web.DistFS(); distFS != nil {
@@ -107,74 +136,40 @@ func run() error {
 	return nil
 }
 
-func setupLogger(cfg config.Config) {
-	level := parseLogLevel(cfg.Log.Level)
-	opts := &slog.HandlerOptions{AddSource: !cfg.Log.NoSource, Level: level}
-
-	var handler slog.Handler
-	if cfg.Log.Format == "text" {
-		handler = slog.NewTextHandler(os.Stdout, opts)
-	} else {
-		handler = slog.NewJSONHandler(os.Stdout, opts)
-	}
-
-	slog.SetDefault(slog.New(handler))
-}
-
-func parseLogLevel(s string) slog.Level {
-	switch strings.ToLower(s) {
-	case "debug":
-		return slog.LevelDebug
-	case "warn":
-		return slog.LevelWarn
-	case "error":
-		return slog.LevelError
-	default:
-		return slog.LevelInfo
-	}
-}
-
-// setupMetrics initialises a Prometheus pull-based MeterProvider and the
-// /metrics HTTP handler if cfg.Metrics.Enabled is true. Returns nil (no
-// error) when metrics are disabled — callers must check the returned
-// value before using it.
-func setupMetrics(cfg config.Config) (*service.PrometheusMetrics, error) {
-	if !cfg.Metrics.Enabled {
-		return nil, nil //nolint:nilnil // "disabled" is a valid non-error outcome
-	}
-
-	pm, err := service.NewPrometheusMetrics(cfg.ServiceName, cfg.ServiceVersion)
-	if err != nil {
-		return nil, fmt.Errorf("init prometheus metrics: %w", err)
-	}
-
-	return pm, nil
-}
-
-// setupTracing initialises the core/otel tracer with an OTLP HTTP trace
-// exporter when cfg.Tracing.Enabled is true. Metrics and logs are left
-// off: metrics go via Prometheus pull (see setupMetrics), logs go to
-// stdout as JSON and are picked up by the cluster log collector.
+// bootstrap performs idempotent superadmin seeding: the system:superadmin
+// group, the (*,*,*) p-rule, and a type-specific admin identity. Safe to call
+// on every startup — each step is idempotent.
 //
-// When tracing is disabled, returns a noop Provider so the lifecycle
-// registration path stays uniform.
-func setupTracing(ctx context.Context, cfg config.Config) (*coreotel.Provider, error) {
-	otelCfg := coreotel.Config{ //nolint:exhaustruct // we intentionally only enable traces
-		Disabled:       !cfg.Tracing.Enabled,
-		OTelHost:       cfg.Tracing.OTLPEndpoint,
-		ServiceName:    cfg.ServiceName,
-		ServiceVersion: cfg.ServiceVersion,
-		EnableTracer:   cfg.Tracing.Enabled,
-		EnableMetrics:  false,
-		EnableLogger:   false,
+//   - basic-auth: creates a local admin user from cfg.UI.Auth.BasicAuth and
+//     adds it to the superadmin group.
+//   - oidc: creates only the group and policy; the first OIDC login matching
+//     cfg.UI.Auth.OIDC.AdminEmail is elevated into the group on callback.
+//   - none: creates the synthetic passthrough user used by the interceptor.
+func bootstrap(ctx context.Context, svc *service.Managers, cfg config.Config) error {
+	if svc.Services.AdminBootstrap == nil {
+		return nil
 	}
 
-	provider, err := coreotel.Setup(ctx, otelCfg)
+	var err error
+
+	switch cfg.UI.Auth.Type {
+	case domain.AuthTypeBasicAuth:
+		err = svc.Services.AdminBootstrap.BootstrapBasic(
+			ctx,
+			cfg.UI.Auth.BasicAuth.Username,
+			cfg.UI.Auth.BasicAuth.Password,
+		)
+	case domain.AuthTypeOIDC:
+		err = svc.Services.AdminBootstrap.BootstrapOIDC(ctx)
+	case domain.AuthTypeNone:
+		err = svc.Services.AdminBootstrap.BootstrapPassthrough(ctx)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("otel setup: %w", err)
+		return fmt.Errorf("admin bootstrap: %w", err)
 	}
 
-	return provider, nil
+	return nil
 }
 
 // frontendServerOptions builds the http2.Option list, adding otel + metrics
@@ -219,8 +214,11 @@ func etcdServerOptions(
 		opts = append(opts, coregrpc.WithOtel())
 	}
 
-	if cfg.Client.Auth.Enabled {
-		tokenInterceptor := etcdinterceptor.NewTokenInterceptor(adapters.AuthTokens)
+	if cfg.Client.Auth.Enabled || cfg.DangerouslySkipPermissions {
+		tokenInterceptor := etcdinterceptor.NewTokenInterceptor(
+			adapters.AuthTokens,
+			etcdinterceptor.WithTokenSkipPermissions(cfg.DangerouslySkipPermissions),
+		)
 		opts = append(opts,
 			coregrpc.WithUnaryInterceptor(tokenInterceptor.Unary()),
 			coregrpc.WithStreamInterceptor(tokenInterceptor.Stream()),
@@ -228,4 +226,31 @@ func etcdServerOptions(
 	}
 
 	return opts
+}
+
+func setupLogger(cfg config.Config) {
+	level := parseLogLevel(cfg.Log.Level)
+	opts := &slog.HandlerOptions{AddSource: !cfg.Log.NoSource, Level: level}
+
+	var handler slog.Handler
+	if cfg.Log.Format == "text" {
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	} else {
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	}
+
+	slog.SetDefault(slog.New(handler))
+}
+
+func parseLogLevel(s string) slog.Level {
+	switch strings.ToLower(s) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

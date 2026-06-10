@@ -1,0 +1,16 @@
+{
+  "user": {
+    "id": "<<PRESENCE>>",
+    "email": "new@example.com",
+    "displayName": "New User",
+    "status": "USER_STATUS_ACTIVE",
+    "identities": [
+      {
+        "provider": "basic",
+        "subject": "new@example.com"
+      }
+    ],
+    "createdAt": "<<PRESENCE>>",
+    "lastLoginAt": "<<PRESENCE>>"
+  }
+}

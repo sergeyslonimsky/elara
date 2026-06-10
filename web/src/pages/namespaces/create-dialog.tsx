@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useAbility } from "@/auth/ability-context";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -20,10 +21,13 @@ import { invalidate } from "@/lib/queries";
 import { toastError } from "@/lib/toast";
 
 export function CreateDialog() {
+	const ability = useAbility();
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
 	const queryClient = useQueryClient();
+
+	const canCreate = ability.can("write", "Namespace");
 
 	const mutation = useMutation(createNamespace, {
 		onSuccess: () => {
@@ -35,6 +39,10 @@ export function CreateDialog() {
 		},
 		onError: toastError,
 	});
+
+	if (!canCreate) {
+		return null;
+	}
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>

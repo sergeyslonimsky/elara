@@ -1,9 +1,11 @@
+import { subject } from "@casl/ability";
 import { useMutation, useQuery } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
+import { useAbility } from "@/auth/ability-context";
 import { PageShell } from "@/components/page-shell";
 import { PathBreadcrumb } from "@/components/path-breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -124,6 +126,12 @@ export function ConfigFormPage() {
 		}
 	};
 
+	const ability = useAbility();
+	const canWriteConfig = ability.can(
+		"write",
+		subject("Namespace", { domain: namespace }),
+	);
+
 	const isPending = createMutation.isPending || updateMutation.isPending;
 	const backTo = isEdit
 		? `/config/${namespace}${configPath}`
@@ -159,21 +167,28 @@ export function ConfigFormPage() {
 						content={content}
 						onContentChange={setContent}
 						protoFormat={protoFormat}
+						readOnly={!canWriteConfig}
 					/>
 				</div>
 
 				<div className="space-y-4">
-					<MetadataEditor metadata={metadata} onChange={setMetadata} />
+					<MetadataEditor
+						metadata={metadata}
+						onChange={setMetadata}
+						readOnly={!canWriteConfig}
+					/>
 
 					<Separator />
 
-					<Button
-						type="submit"
-						className="w-full"
-						disabled={isPending || !filename || !content}
-					>
-						{submitButtonLabel(isEdit, isPending)}
-					</Button>
+					{canWriteConfig && (
+						<Button
+							type="submit"
+							className="w-full"
+							disabled={isPending || !filename || !content}
+						>
+							{submitButtonLabel(isEdit, isPending)}
+						</Button>
+					)}
 				</div>
 			</form>
 		</PageShell>

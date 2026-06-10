@@ -38,5 +38,8 @@ type BundleImportError struct {
 
 func (r *ImportReport) AddError(path, namespace, message string) {
 	r.Failed++
-	r.Errors = append(r.Errors, BundleImportError{Path: path, Namespace: namespace, Message: message})
+	r.Errors = append(
+		r.Errors,
+		BundleImportError{Path: path, Namespace: namespace, Message: message},
+	)
 }

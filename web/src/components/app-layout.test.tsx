@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { AppLayout } from "./app-layout";
 
@@ -11,11 +12,18 @@ vi.mock("@/components/app-sidebar", () => ({
 }));
 
 describe("AppLayout", () => {
-	it("renders sidebar, header and children", () => {
+	it("renders sidebar, header and outlet content", () => {
 		render(
-			<AppLayout>
-				<div data-testid="child">Child Content</div>
-			</AppLayout>,
+			<MemoryRouter initialEntries={["/"]}>
+				<Routes>
+					<Route element={<AppLayout />}>
+						<Route
+							path="/"
+							element={<div data-testid="child">Child Content</div>}
+						/>
+					</Route>
+				</Routes>
+			</MemoryRouter>,
 		);
 
 		expect(screen.getByTestId("app-sidebar")).toBeInTheDocument();

@@ -561,7 +561,10 @@ func TestKVServer_DeleteRange_InvalidKey(t *testing.T) {
 
 	s := etcdv3.NewKVServer(newFakeKVRepo(), &fakePublisher{})
 
-	_, err := s.DeleteRange(context.Background(), &etcdserverpb.DeleteRangeRequest{Key: []byte("bad")})
+	_, err := s.DeleteRange(
+		context.Background(),
+		&etcdserverpb.DeleteRangeRequest{Key: []byte("bad")},
+	)
 	require.Error(t, err)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 }
@@ -635,7 +638,9 @@ func TestKVServer_Txn_FailureBranch(t *testing.T) {
 	// Compare mismatches → failure branch executes (just a Range here).
 	resp, err := s.Txn(ctx, &etcdserverpb.TxnRequest{
 		Compare: []*etcdserverpb.Compare{{
-			Key: []byte("/ns/k"), Target: etcdserverpb.Compare_VALUE, Result: etcdserverpb.Compare_EQUAL,
+			Key: []byte(
+				"/ns/k",
+			), Target: etcdserverpb.Compare_VALUE, Result: etcdserverpb.Compare_EQUAL,
 			TargetUnion: &etcdserverpb.Compare_Value{Value: []byte("different")},
 		}},
 		Success: []*etcdserverpb.RequestOp{{
@@ -672,11 +677,15 @@ func TestKVServer_Txn_ConjunctionShortCircuit(t *testing.T) {
 	resp, err := s.Txn(ctx, &etcdserverpb.TxnRequest{
 		Compare: []*etcdserverpb.Compare{
 			{
-				Key: []byte("/ns/k"), Target: etcdserverpb.Compare_VALUE, Result: etcdserverpb.Compare_EQUAL,
+				Key: []byte(
+					"/ns/k",
+				), Target: etcdserverpb.Compare_VALUE, Result: etcdserverpb.Compare_EQUAL,
 				TargetUnion: &etcdserverpb.Compare_Value{Value: []byte("v")},
 			},
 			{
-				Key: []byte("/ns/k"), Target: etcdserverpb.Compare_VERSION, Result: etcdserverpb.Compare_EQUAL,
+				Key: []byte(
+					"/ns/k",
+				), Target: etcdserverpb.Compare_VERSION, Result: etcdserverpb.Compare_EQUAL,
 				TargetUnion: &etcdserverpb.Compare_Version{Version: 999},
 			},
 		},
@@ -694,7 +703,9 @@ func TestKVServer_Txn_MissingKey_AgainstCreateRev0(t *testing.T) {
 
 	resp, err := s.Txn(context.Background(), &etcdserverpb.TxnRequest{
 		Compare: []*etcdserverpb.Compare{{
-			Key: []byte("/ns/new"), Target: etcdserverpb.Compare_CREATE, Result: etcdserverpb.Compare_EQUAL,
+			Key: []byte(
+				"/ns/new",
+			), Target: etcdserverpb.Compare_CREATE, Result: etcdserverpb.Compare_EQUAL,
 			TargetUnion: &etcdserverpb.Compare_CreateRevision{CreateRevision: 0},
 		}},
 		Success: []*etcdserverpb.RequestOp{{
@@ -828,7 +839,11 @@ func TestKVServer_Txn_RunOp_DeleteRange(t *testing.T) {
 
 // txnWithSingleOp seeds a key, runs a Txn with a single success op, and
 // returns the response. Shared setup for RunOp_Range and RunOp_DeleteRange.
-func txnWithSingleOp(t *testing.T, key string, op *etcdserverpb.RequestOp) *etcdserverpb.TxnResponse {
+func txnWithSingleOp(
+	t *testing.T,
+	key string,
+	op *etcdserverpb.RequestOp,
+) *etcdserverpb.TxnResponse {
 	t.Helper()
 
 	repo := newFakeKVRepo()
@@ -887,7 +902,10 @@ func TestKVServer_DeleteRange_CurrentRevError(t *testing.T) {
 	repo.currentErr = errors.New("boom")
 	s := etcdv3.NewKVServer(repo, &fakePublisher{})
 
-	_, err := s.DeleteRange(context.Background(), &etcdserverpb.DeleteRangeRequest{Key: []byte("/ns/x")})
+	_, err := s.DeleteRange(
+		context.Background(),
+		&etcdserverpb.DeleteRangeRequest{Key: []byte("/ns/x")},
+	)
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
 }
@@ -923,7 +941,10 @@ func TestKVServer_DeleteRange_RepoError(t *testing.T) {
 	repo.deleteErr = errors.New("boom")
 	s := etcdv3.NewKVServer(repo, &fakePublisher{})
 
-	_, err := s.DeleteRange(context.Background(), &etcdserverpb.DeleteRangeRequest{Key: []byte("/ns/x")})
+	_, err := s.DeleteRange(
+		context.Background(),
+		&etcdserverpb.DeleteRangeRequest{Key: []byte("/ns/x")},
+	)
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
 }

@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 
-	"github.com/sergeyslonimsky/elara/internal/auth"
+	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
@@ -30,12 +30,26 @@ type tokenLookup interface {
 
 // TokenInterceptor validates Bearer service tokens from gRPC metadata.
 type TokenInterceptor struct {
-	tokens tokenLookup
+	tokens          tokenLookup
+	skipPermissions bool
+}
+
+type TokenInterceptorOption func(*TokenInterceptor)
+
+func WithTokenSkipPermissions(skip bool) TokenInterceptorOption {
+	return func(i *TokenInterceptor) {
+		i.skipPermissions = skip
+	}
 }
 
 // NewTokenInterceptor returns a TokenInterceptor that authenticates requests using service tokens.
-func NewTokenInterceptor(tokens tokenLookup) *TokenInterceptor {
-	return &TokenInterceptor{tokens: tokens}
+func NewTokenInterceptor(tokens tokenLookup, opts ...TokenInterceptorOption) *TokenInterceptor {
+	i := &TokenInterceptor{tokens: tokens}
+	for _, opt := range opts {
+		opt(i)
+	}
+
+	return i
 }
 
 // Unary returns a gRPC unary server interceptor that validates service tokens.
@@ -62,12 +76,27 @@ func (i *TokenInterceptor) Stream() grpc.StreamServerInterceptor {
 	}
 }
 
+func (i *TokenInterceptor) injectBypassClaims(ctx context.Context) context.Context {
+	claims := &auth2.Claims{
+		Email:      "local-admin@elara.internal",
+		Name:       "Local Admin",
+		Namespaces: []string{"*"},
+		Role:       "admin",
+	}
+
+	return auth2.WithClaims(ctx, claims)
+}
+
 // authenticate extracts and validates the bearer token, injecting claims into the context.
 //
 //nolint:wrapcheck // gRPC status errors are terminal; wrapping corrupts the status code
 func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, error) {
 	rawToken, err := extractBearerToken(ctx)
 	if err != nil {
+		if i.skipPermissions {
+			return i.injectBypassClaims(ctx), nil
+		}
+
 		return ctx, err
 	}
 
@@ -75,10 +104,18 @@ func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, e
 
 	token, err := i.tokens.GetByHash(ctx, hash)
 	if err != nil {
+		if i.skipPermissions {
+			return i.injectBypassClaims(ctx), nil
+		}
+
 		return ctx, status.Error(codes.Unauthenticated, "invalid token")
 	}
 
 	if token.IsExpired() {
+		if i.skipPermissions {
+			return i.injectBypassClaims(ctx), nil
+		}
+
 		return ctx, status.Error(codes.Unauthenticated, "token expired")
 	}
 
@@ -88,14 +125,14 @@ func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, e
 	}()
 
 	// Inject claims so usecases/handlers can check namespace/role scope.
-	claims := &auth.Claims{
+	claims := &auth2.Claims{
 		Email:      token.IssuedBy,
 		Name:       token.Name,
 		Namespaces: token.Namespaces,
-		Role:       token.Role,
+		Role:       string(token.Role),
 	}
 
-	return auth.WithClaims(ctx, claims), nil
+	return auth2.WithClaims(ctx, claims), nil
 }
 
 //nolint:wrapcheck // gRPC status errors are terminal; wrapping corrupts the status code
@@ -135,7 +172,9 @@ func extractPeerIP(ctx context.Context) string {
 // wrappedStream replaces the context of a gRPC ServerStream.
 type wrappedStream struct {
 	grpc.ServerStream
-	ctx context.Context //nolint:containedctx //NOSONAR standard gRPC pattern: context stored to override ServerStream.Context()
+
+	//nolint:containedctx //NOSONAR standard gRPC pattern: context stored to override ServerStream.Context()
+	ctx context.Context
 }
 
 func (w *wrappedStream) Context() context.Context {

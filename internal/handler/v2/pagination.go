@@ -18,12 +18,12 @@ const (
 	maxPaginationOffset = 1_000_000
 )
 
-// normalizeLimit validates and clamps a client-supplied page limit.
+// NormalizeLimit validates and clamps a client-supplied page limit.
 //
 // Returns an InvalidArgument ConnectRPC error when the limit is negative or
 // larger than maxPaginationLimit. Zero is treated as "unspecified" and caller
 // decides the default.
-func normalizeLimit(limit int32) (int, error) {
+func NormalizeLimit(limit int32) (int, error) {
 	if limit < 0 {
 		return 0, connect.NewError(
 			connect.CodeInvalidArgument,
@@ -41,8 +41,8 @@ func normalizeLimit(limit int32) (int, error) {
 	return int(limit), nil
 }
 
-// normalizeOffset validates a client-supplied page offset.
-func normalizeOffset(offset int32) (int, error) {
+// NormalizeOffset validates a client-supplied page offset.
+func NormalizeOffset(offset int32) (int, error) {
 	if offset < 0 {
 		return 0, connect.NewError(
 			connect.CodeInvalidArgument,

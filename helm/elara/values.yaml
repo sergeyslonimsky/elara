@@ -109,15 +109,18 @@ config:
       # -- Enable authentication for the Web UI and ConnectRPC API.
       # When false all RPCs are public (default dev behaviour).
       enabled: false
-      # -- Authentication type: basic-auth or oidc.
+      # -- Authentication type: basic-auth, oidc, or none.
       type: basic-auth
-      # -- Email of the initial admin user. Required when auth.enabled=true.
-      adminEmail: ""
       basicAuth:
-        # -- Initial password for the bootstrap admin on first boot.
-        # The admin is forced to change it on first login.
-        # Stored in a Kubernetes Secret. Use existingSecret in production.
-        adminInitialPassword: ""
+        # -- Username (email) of the bootstrap admin user. Required when
+        # type=basic-auth. The user is created on first boot and added to
+        # the superadmin group. Changing this value on an existing install
+        # updates the bootstrap user's login identity in-place (UUID preserved).
+        username: ""
+        # -- Initial password for the bootstrap admin. The admin is forced
+        # to change it on first login. Stored in a Kubernetes Secret.
+        # Use existingSecret in production.
+        password: ""
       oidc:
         # -- OIDC issuer URL (e.g. https://accounts.google.com).
         issuerUrl: ""
@@ -130,17 +133,24 @@ config:
         redirectUrl: ""
         # -- Scopes to request. Leave empty to use defaults: [openid, email, profile].
         scopes: []
+        # -- Email of the bootstrap admin. Required when type=oidc.
+        # The first OIDC login matching this email is elevated into the
+        # superadmin group.
+        adminEmail: ""
       session:
-        # -- HS256 JWT signing secret. Must be stable across pod restarts.
+        # -- Session signing secret. Must be stable across pod restarts.
         # If empty the service will fail to start when auth is enabled.
         # Use existingSecret in production.
         secret: ""
-        # -- JWT session lifetime (Go duration).
+        # -- Server-side session lifetime (Go duration).
         ttl: "24h"
+        # -- Add the Secure flag to the session cookie.
+        # Must be true in production (HTTPS). Set to false for local HTTP development.
+        secureCookie: true
       # -- Name of a pre-existing Secret that supplies sensitive env vars:
       #    UI_AUTH_SESSION_SECRET
-      #    UI_AUTH_BASICAUTH_ADMININITIALPASSWORD  (basic-auth mode)
-      #    UI_AUTH_OIDC_CLIENTSECRET              (oidc mode)
+      #    UI_AUTH_BASICAUTH_PASSWORD   (basic-auth mode)
+      #    UI_AUTH_OIDC_CLIENTSECRET    (oidc mode)
       # When set the chart does NOT create its own auth Secret.
       existingSecret: ""
 
@@ -148,6 +158,13 @@ config:
     etcd:
       # -- etcd-compatible gRPC API port.
       port: 2379
+    auth:
+      # -- Enable bearer-token authentication on the etcd-compatible gRPC API
+      # (port 2379) and mount the TokenService ConnectRPC endpoint on the
+      # HTTP port. When false (default) the etcd gRPC surface is public to
+      # everyone with network reachability — fine for fully internal clusters,
+      # required for multi-tenant. Independent of `ui.auth.enabled`.
+      enabled: false
     history:
       # -- Max historical client events retained in memory.
       maxRecords: 1000
