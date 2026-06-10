@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -132,6 +133,14 @@ func TestAuthHandler_Login(t *testing.T) {
 
 			cookies := resp.Header().Values("Set-Cookie")
 			assert.Len(t, cookies, 2, "expected state and nonce cookies")
+
+			// Regression: state/nonce cookies must use Path=/ so the browser
+			// sends them on the ConnectRPC callback POST to
+			// /elara.auth.v1.AuthService/OIDCCallback (which is not under /auth).
+			for _, c := range cookies {
+				assert.Contains(t, c, "Path=/",
+					"OIDC bootstrap cookies must be Path=/ so they reach the ConnectRPC callback endpoint")
+			}
 		})
 	}
 }
@@ -193,6 +202,7 @@ func TestAuthHandler_Callback(t *testing.T) {
 		setupMocks    func(uc *auth_mock.Mockusecase)
 		wantErr       bool
 		wantCode      connect.Code
+		wantMsgPart   string
 		verifyCookies bool
 	}{
 		{
@@ -243,6 +253,56 @@ func TestAuthHandler_Callback(t *testing.T) {
 					Return(nil, nil, errors.New("provider error"))
 			},
 		},
+		{
+			// Regression for the EL-OIDC structured-errors fix: unprovisioned
+			// users must see a stable user-facing string in the SPA, not the
+			// raw "identity not provisioned" sentinel.
+			name:         "ErrIdentityNotProvisioned returns permission_denied with stable account-not-provisioned message",
+			requestState: "test-state",
+			stateCookie:  "test-state",
+			nonceCookie:  "test-nonce",
+			wantErr:      true,
+			wantCode:     connect.CodePermissionDenied,
+			wantMsgPart:  "Account not provisioned",
+			setupMocks: func(uc *auth_mock.Mockusecase) {
+				uc.EXPECT().
+					Callback(gomock.Any(), gomock.Any()).
+					Return(nil, nil, fmt.Errorf("oidc callback tx: %w", domain.ErrIdentityNotProvisioned))
+			},
+		},
+		{
+			name:         "ErrUserDeactivated returns permission_denied with stable account-deactivated message",
+			requestState: "test-state",
+			stateCookie:  "test-state",
+			nonceCookie:  "test-nonce",
+			wantErr:      true,
+			wantCode:     connect.CodePermissionDenied,
+			wantMsgPart:  "Account deactivated",
+			setupMocks: func(uc *auth_mock.Mockusecase) {
+				uc.EXPECT().
+					Callback(gomock.Any(), gomock.Any()).
+					Return(nil, nil, fmt.Errorf("oidc callback tx: %w", domain.ErrUserDeactivated))
+			},
+		},
+		{
+			// oauth2 "invalid_grant" surfaces when the authorization code is
+			// reused or expired. Must map to failed_precondition so the SPA can
+			// auto-redirect back to /login instead of showing a 500.
+			name:         "oauth2 invalid_grant returns failed_precondition with authorization-expired message",
+			requestState: "test-state",
+			stateCookie:  "test-state",
+			nonceCookie:  "test-nonce",
+			wantErr:      true,
+			wantCode:     connect.CodeFailedPrecondition,
+			wantMsgPart:  "Authorization expired",
+			setupMocks: func(uc *auth_mock.Mockusecase) {
+				uc.EXPECT().
+					Callback(gomock.Any(), gomock.Any()).
+					Return(nil, nil, errors.New(
+						`oidc callback tx: exchange code: oauth2: cannot fetch token: 400 Bad Request {"error":"invalid_grant"}`,
+					))
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -284,6 +344,10 @@ func TestAuthHandler_Callback(t *testing.T) {
 				require.Error(t, err)
 				if tt.wantCode != 0 {
 					assert.Equal(t, tt.wantCode, connect.CodeOf(err))
+				}
+				if tt.wantMsgPart != "" {
+					assert.Contains(t, err.Error(), tt.wantMsgPart,
+						"OIDC callback error must surface stable user-facing message")
 				}
 
 				return

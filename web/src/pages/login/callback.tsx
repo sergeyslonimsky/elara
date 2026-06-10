@@ -2,7 +2,7 @@ import { createConnectQueryKey, useMutation } from "@connectrpc/connect-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { ErrorCard } from "@/components/error-card";
 import { oIDCCallback } from "@/gen/elara/auth/v1/auth_service-AuthService_connectquery";
 import { me } from "@/gen/elara/profile/v1/profile_service-ProfileService_connectquery";
@@ -10,6 +10,7 @@ import { me } from "@/gen/elara/profile/v1/profile_service-ProfileService_connec
 export function CallbackPage() {
 	const [searchParams] = useSearchParams();
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 	const mutation = useMutation(oIDCCallback);
 	const { mutate } = mutation;
 	const called = useRef(false);
@@ -18,23 +19,31 @@ export function CallbackPage() {
 	const state = searchParams.get("state");
 
 	useEffect(() => {
-		if (code && state && !called.current) {
-			called.current = true;
-			mutate(
-				{ code, state },
-				{
-					onSuccess: async () => {
-						await queryClient.invalidateQueries({
-							queryKey: createConnectQueryKey({
-								schema: me,
-								cardinality: "finite",
-							}),
-						});
-					},
-				},
-			);
+		if (!code || !state || called.current) {
+			return;
 		}
-	}, [code, state, queryClient, mutate]);
+		called.current = true;
+
+		// Strip code+state from URL so any remount (HMR, browser back-forward
+		// cache, React Router state churn) sees an empty querystring and
+		// cannot re-fire mutate with the same one-time-use OAuth code.
+		window.history.replaceState({}, "", window.location.pathname);
+
+		mutate(
+			{ code, state },
+			{
+				onSuccess: async () => {
+					await queryClient.invalidateQueries({
+						queryKey: createConnectQueryKey({
+							schema: me,
+							cardinality: "finite",
+						}),
+					});
+					navigate("/", { replace: true });
+				},
+			},
+		);
+	}, [code, state, queryClient, mutate, navigate]);
 
 	if (!code || !state) {
 		return (

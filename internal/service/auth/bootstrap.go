@@ -92,16 +92,24 @@ func (a *AdminBootstrap) BootstrapBasic(ctx context.Context, username, password 
 	return nil
 }
 
-// BootstrapOIDC seeds the system for OIDC: only the superadmin group and the
-// wildcard policy are created. The first OIDC login matching the configured
-// admin email is elevated into the group via EnsureMember (see auth usecase).
-func (a *AdminBootstrap) BootstrapOIDC(ctx context.Context) error {
+// BootstrapOIDC seeds the system for OIDC: superadmin group + wildcard
+// policy + a placeholder system user whose Email equals adminEmail and whose
+// Identities slice is intentionally empty. The first OIDC login matching
+// adminEmail flows through linkOIDCByEmail in the auth usecase, which attaches
+// the (provider, sub) identity to this placeholder and EnsureMember promotes
+// it into the superadmin group. Without the placeholder, the email-fallback
+// lookup misses and the first login is rejected with ErrIdentityNotProvisioned.
+func (a *AdminBootstrap) BootstrapOIDC(ctx context.Context, adminEmail string) error {
 	if err := a.txm.WithTx(ctx, func(ctx context.Context) error {
 		if err := a.ensureSuperAdminGroup(ctx); err != nil {
 			return err
 		}
 
-		return a.ensureSuperAdminPolicy(ctx)
+		if err := a.ensureSuperAdminPolicy(ctx); err != nil {
+			return err
+		}
+
+		return a.ensureOIDCAdminUser(ctx, adminEmail)
 	}); err != nil {
 		return fmt.Errorf("bootstrap oidc: %w", err)
 	}
@@ -227,6 +235,49 @@ func (a *AdminBootstrap) ensureBasicAdminUser(
 	}
 
 	if changed {
+		if err := a.users.BootstrapSync(ctx, user); err != nil {
+			return fmt.Errorf("sync superadmin user: %w", err)
+		}
+	}
+
+	return a.ensureMembership(ctx, user.ID.String())
+}
+
+// ensureOIDCAdminUser creates the placeholder system user that the first
+// OIDC login will adopt, or syncs its Email when adminEmail has been rotated
+// in config. Membership in the superadmin group is ensured idempotently.
+//
+// The placeholder is created with Identities = nil because the OIDC subject
+// is not knowable at bootstrap time. linkOIDCByEmail attaches the real
+// {ProviderOIDC, sub} identity on the first matching callback, inside the
+// same write-tx that observes "no existing oidc identity", so the
+// anti-hijack invariant (EL-50 §6.2 inv 9) holds.
+func (a *AdminBootstrap) ensureOIDCAdminUser(ctx context.Context, adminEmail string) error {
+	user, err := a.users.GetSystemUser(ctx)
+	if err != nil {
+		if !errors.Is(err, domain.ErrNotFound) {
+			return fmt.Errorf("lookup superadmin user: %w", err)
+		}
+
+		now := time.Now().UTC()
+		created := &domain.User{
+			ID:          uuid.New(),
+			Email:       adminEmail,
+			DisplayName: "Super Admin",
+			Status:      domain.UserStatusActive,
+			System:      true,
+			CreatedAt:   now,
+		}
+
+		if err := a.users.Create(ctx, created); err != nil {
+			return fmt.Errorf("create superadmin user: %w", err)
+		}
+
+		return a.ensureMembership(ctx, created.ID.String())
+	}
+
+	if user.Email != adminEmail {
+		user.Email = adminEmail
 		if err := a.users.BootstrapSync(ctx, user); err != nil {
 			return fmt.Errorf("sync superadmin user: %w", err)
 		}

@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -22,6 +24,19 @@ const (
 
 	oauthStateCookieName = "elara_oauth_state"
 	oauthNonceCookieName = "elara_oauth_nonce"
+)
+
+// Stable, user-facing OIDC callback errors. Returned through ConnectRPC so the
+// SPA renders a fixed message instead of leaking raw oauth2 / casbin / bbolt
+// internals. The original wrapped error is logged for operators in
+// mapOIDCCallbackError. These intentionally violate the ST1005 convention
+// (lowercase, no punctuation) because they are rendered verbatim in the UI.
+//
+//nolint:staticcheck // ST1005: user-facing UI strings, sentence-cased on purpose
+var (
+	errAccountNotProvisioned = errors.New("Account not provisioned. Contact your administrator.")
+	errAccountDeactivated    = errors.New("Account deactivated. Contact your administrator.")
+	errAuthorizationExpired  = errors.New("Authorization expired. Please log in again.")
 )
 
 type (
@@ -103,7 +118,7 @@ func (h *Handler) OIDCLogin(
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
-		Path:     "/auth",
+		Path:     "/",
 	}
 	resp.Header().Add(cookieHeader, stateCookie.String())
 
@@ -113,7 +128,7 @@ func (h *Handler) OIDCLogin(
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
-		Path:     "/auth",
+		Path:     "/",
 	}
 	resp.Header().Add(cookieHeader, nonceCookie.String())
 
@@ -154,7 +169,7 @@ func (h *Handler) OIDCCallback(
 		UserAgent: ua,
 	})
 	if err != nil {
-		return nil, v2.ToConnectError(err)
+		return nil, mapOIDCCallbackError(ctx, err)
 	}
 
 	_ = user // OIDC identity accepted
@@ -198,6 +213,28 @@ func (h *Handler) BasicLogin(
 	sessions_handler.SetSessionCookie(resp.Header(), sess.ID, sess.ExpiresAt, h.secureCookie)
 
 	return resp, nil
+}
+
+// mapOIDCCallbackError converts a usecase-level Callback error into a
+// ConnectRPC error with a stable, user-facing message. The original wrapped
+// error is logged for operators; the message returned to the SPA is a clean
+// constant string keyed on error class so the UI can react deterministically
+// (and so we never leak raw oauth2 / bbolt / casbin internals to the browser).
+func mapOIDCCallbackError(ctx context.Context, err error) *connect.Error {
+	slog.ErrorContext(ctx, "oidc callback failed", "error", err)
+
+	switch {
+	case errors.Is(err, domain.ErrIdentityNotProvisioned):
+		return connect.NewError(connect.CodePermissionDenied, errAccountNotProvisioned)
+	case errors.Is(err, domain.ErrUserDeactivated):
+		return connect.NewError(connect.CodePermissionDenied, errAccountDeactivated)
+	case strings.Contains(err.Error(), "invalid_grant"):
+		// oauth2 code reuse / expired authorization. Either a double-fire on
+		// the client or a stale tab — SPA should redirect back to /login.
+		return connect.NewError(connect.CodeFailedPrecondition, errAuthorizationExpired)
+	default:
+		return v2.ToConnectError(err)
+	}
 }
 
 func extractCookieFromRequest(header http.Header, name string) (string, error) {

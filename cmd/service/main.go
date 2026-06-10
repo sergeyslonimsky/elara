@@ -142,8 +142,10 @@ func run() error {
 //
 //   - basic-auth: creates a local admin user from cfg.UI.Auth.BasicAuth and
 //     adds it to the superadmin group.
-//   - oidc: creates only the group and policy; the first OIDC login matching
-//     cfg.UI.Auth.OIDC.AdminEmail is elevated into the group on callback.
+//   - oidc: creates the group, policy, and a placeholder system user with
+//     Email=cfg.UI.Auth.OIDC.AdminEmail. The first OIDC login matching that
+//     email attaches its (provider, sub) identity to the placeholder and is
+//     elevated into the group on callback.
 //   - none: creates the synthetic passthrough user used by the interceptor.
 func bootstrap(ctx context.Context, svc *service.Managers, cfg config.Config) error {
 	if svc.Services.AdminBootstrap == nil {
@@ -160,7 +162,7 @@ func bootstrap(ctx context.Context, svc *service.Managers, cfg config.Config) er
 			cfg.UI.Auth.BasicAuth.Password,
 		)
 	case domain.AuthTypeOIDC:
-		err = svc.Services.AdminBootstrap.BootstrapOIDC(ctx)
+		err = svc.Services.AdminBootstrap.BootstrapOIDC(ctx, cfg.UI.Auth.OIDC.AdminEmail)
 	case domain.AuthTypeNone:
 		err = svc.Services.AdminBootstrap.BootstrapPassthrough(ctx)
 	}

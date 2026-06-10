@@ -106,8 +106,21 @@ helm install elara ./helm/elara \
   --set config.ui.auth.oidc.adminEmail=admin@example.com \
   --set config.ui.auth.session.secret=a-long-random-string
 ```
-The first OIDC login matching `oidc.adminEmail` is elevated into the
-superadmin group. No local user is pre-created.
+On startup Elara pre-creates a placeholder system user with
+`Email = oidc.adminEmail` and adds it to the superadmin group. The first OIDC
+login whose ID-token has `email_verified=true` and `email == oidc.adminEmail`
+adopts this placeholder: the `(provider, sub)` identity is attached to it and
+subsequent logins go through the fast-path. Subsequent OIDC users matching
+the same email are rejected by the anti-hijack invariant.
+
+JIT-provisioning is not supported: OIDC users whose email does not match
+`oidc.adminEmail` and who do not have a pre-provisioned user record are
+rejected with `permission_denied`. To onboard additional users, create them
+via the UI/API (a future enhancement) — they will then be reachable through
+the email-fallback link on first login.
+
+The `email_verified` claim is required — Elara will not link an identity by
+an unverified email even when it matches `oidc.adminEmail`.
 
 ### With production-grade resources + persistence
 ```yaml
@@ -162,7 +175,7 @@ sections:
 | `config.ui.auth.oidc.clientSecret`               | `""`                            | OIDC client secret; stored in chart Secret                           |
 | `config.ui.auth.oidc.redirectUrl`                | `""`                            | OIDC callback URL                                                    |
 | `config.ui.auth.oidc.scopes`                     | `[]`                            | OIDC scopes; defaults to `[openid, email, profile]`                  |
-| `config.ui.auth.oidc.adminEmail`                 | `""`                            | First-login admin email; elevated into superadmin group (required for OIDC) |
+| `config.ui.auth.oidc.adminEmail`                 | `""`                            | Bootstrap admin email; pre-provisioned as superadmin placeholder, claimed by first matching OIDC login (required for OIDC) |
 | `config.ui.auth.session.secret`                  | `""`                            | Session signing secret; must be stable across restarts; stored in chart Secret |
 | `config.ui.auth.session.ttl`                     | `24h`                           | Server-side session lifetime                                         |
 | `config.ui.auth.session.secureCookie`            | `true`                          | Add `Secure` flag to session cookie; disable only for HTTP dev       |
