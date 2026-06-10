@@ -128,13 +128,14 @@ func V2Routes(
 	publicInterceptors := slices.Clone(sharedInterceptors)
 	privateInterceptors := slices.Clone(sharedInterceptors)
 
-	if (cfg.UI.Auth.Enabled || cfg.DangerouslySkipPermissions) && sessionSvc != nil {
+	if sessionSvc != nil {
+		skip := !cfg.UI.Auth.Enabled || cfg.DangerouslySkipPermissions
 		privateInterceptors = append(
 			privateInterceptors,
 			interceptor.NewAuthInterceptor(
 				sessionSvc,
 				users,
-				interceptor.WithAuthSkipPermissions(cfg.DangerouslySkipPermissions),
+				interceptor.WithAuthSkipPermissions(skip),
 			),
 		)
 	}
