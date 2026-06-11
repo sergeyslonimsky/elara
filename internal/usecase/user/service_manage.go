@@ -111,9 +111,11 @@ func newUserFromCreateData(data CreateData) (*domain.User, error) {
 		// OIDC pre-provision: no identity until first login.
 		user.Identities = nil
 	} else {
-		user.Identities = []domain.Identity{
-			{Provider: domain.ProviderBasic, Subject: normalizedEmail},
+		identity, err := domain.NewIdentity(domain.ProviderBasic, normalizedEmail)
+		if err != nil {
+			return nil, fmt.Errorf("construct basic identity: %w", err)
 		}
+		user.Identities = []domain.Identity{identity}
 	}
 
 	if err := user.Validate(); err != nil {

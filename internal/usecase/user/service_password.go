@@ -20,6 +20,13 @@ import (
 // caller must hold every permission target currently has, because
 // rewriting the password enables impersonation.
 //
+// Sessions: every active session of the target user is revoked inside the
+// same PAP.Write transaction. The target is force-logged-out across all
+// devices and must re-authenticate with the new password. Revoke runs
+// BEFORE SetPassword so the credential and authority mutations land
+// atomically — if SetPassword fails afterward, the revoke is rolled back
+// with the rest of the tx.
+//
 // All checks run inside PAP.Write so they observe the same snapshot as
 // the password mutation: no TOCTOU window between authorize and apply.
 func (s *Service) ResetPassword(
@@ -44,6 +51,14 @@ func (s *Service) ResetPassword(
 		}
 		if err := s.authorizeUserWrite(ctx, actor, user.ID.String()); err != nil {
 			return err
+		}
+		if err := s.sessions.RevokeAllForUser(
+			ctx,
+			user.ID.String(),
+			actor.UserID,
+			"password reset by admin",
+		); err != nil {
+			return fmt.Errorf("revoke sessions: %w", err)
 		}
 		if err := s.store.SetPassword(ctx, user.ID, newHash, true); err != nil {
 			return fmt.Errorf("set password: %w", err)

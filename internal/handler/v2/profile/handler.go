@@ -3,6 +3,7 @@ package profile
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -117,7 +118,15 @@ func (h *Handler) Logout(
 			revokedBy = user.Email
 		}
 
-		_ = h.uc.Logout(ctx, sess.ID, revokedBy)
+		// Logout MUST NOT fail the client response — clearing the cookie
+		// below is the user-visible side of "I logged out" — but any
+		// server-side revoke failure (bbolt write fail, audit append
+		// fail) leaves the session row alive after the cookie is gone.
+		// Surface those failures to operators via slog so the discrepancy
+		// is observable instead of silently dropped.
+		if err := h.uc.Logout(ctx, sess.ID, revokedBy); err != nil {
+			slog.WarnContext(ctx, "logout revoke failed", "session_id", sess.ID, "err", err)
+		}
 	}
 
 	resp := connect.NewResponse(&profilev1.LogoutResponse{})

@@ -149,20 +149,48 @@ func TestUserService_LinkIdentity(t *testing.T) {
 			},
 		},
 		{
-			name:     "rejects system user",
+			name:     "rejects system user with existing identities",
 			userID:   userID,
 			identity: newIdentity,
 			mockFunc: func(ctrl *gomock.Controller) *auth.UserService {
 				repo := auth_mock.NewMockuserRepository(ctrl)
 				user := &domain.User{
-					ID:     userID,
-					System: true,
+					ID:         userID,
+					System:     true,
+					Identities: []domain.Identity{existingIdentity},
 				}
 				repo.EXPECT().GetByID(gomock.Any(), userID).Return(user, nil)
 
 				return auth.NewUserService(repo)
 			},
 			errIs: domain.ErrSystemImmutable,
+		},
+		{
+			name:     "allows first identity link on placeholder system user",
+			userID:   userID,
+			identity: newIdentity,
+			mockFunc: func(ctrl *gomock.Controller) *auth.UserService {
+				repo := auth_mock.NewMockuserRepository(ctrl)
+				placeholder := &domain.User{
+					ID:     userID,
+					System: true,
+				}
+				repo.EXPECT().GetByID(gomock.Any(), userID).Return(placeholder, nil)
+
+				expectedUser := &domain.User{
+					ID:         userID,
+					System:     true,
+					Identities: []domain.Identity{newIdentity},
+				}
+				repo.EXPECT().Update(gomock.Any(), expectedUser).Return(nil)
+
+				return auth.NewUserService(repo)
+			},
+			want: &domain.User{
+				ID:         userID,
+				System:     true,
+				Identities: []domain.Identity{newIdentity},
+			},
 		},
 		{
 			name:     "propagates GetByID error",

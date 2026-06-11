@@ -207,17 +207,28 @@ func (a *AdminBootstrap) ensureSuperAdminPolicy(ctx context.Context) error {
 // ensureBasicAdminUser creates the local basic-auth admin user (or upgrades
 // its System flag and syncs the basic identity) and ensures it is a member of
 // the superadmin group.
+//
+// The raw username from SUPERADMIN_USERNAME is normalized through
+// domain.NewIdentity once here so that user.Email, the basic-identity
+// Subject, and the lookup key used by BasicLogin all share the same
+// canonical form. A non-email-shaped username fails fast at startup
+// rather than silently locking the operator out of the login flow.
 func (a *AdminBootstrap) ensureBasicAdminUser(
 	ctx context.Context,
 	username, password string,
 ) error {
+	basicIdentity, err := domain.NewIdentity(domain.ProviderBasic, username)
+	if err != nil {
+		return fmt.Errorf("normalize superadmin username: %w", err)
+	}
+
 	user, err := a.users.GetSystemUser(ctx)
 	if err != nil {
 		if !errors.Is(err, domain.ErrNotFound) {
 			return fmt.Errorf("lookup superadmin user: %w", err)
 		}
 
-		created, createErr := a.createUser(ctx, username, password)
+		created, createErr := a.createUser(ctx, basicIdentity, password)
 		if createErr != nil {
 			return fmt.Errorf("create superadmin user: %w", createErr)
 		}
@@ -225,12 +236,12 @@ func (a *AdminBootstrap) ensureBasicAdminUser(
 		return a.ensureMembership(ctx, created.ID.String())
 	}
 
-	changed := syncBasicIdentity(user, username)
-	if user.Email != username {
+	changed := syncBasicIdentity(user, basicIdentity)
+	if user.Email != basicIdentity.Subject {
 		// Email tracks the basic-identity Subject for the bootstrap admin —
 		// both are the "login handle" surfaced to the operator. Keep them in
 		// lockstep when SUPERADMIN_USERNAME changes.
-		user.Email = username
+		user.Email = basicIdentity.Subject
 		changed = true
 	}
 
@@ -247,12 +258,25 @@ func (a *AdminBootstrap) ensureBasicAdminUser(
 // OIDC login will adopt, or syncs its Email when adminEmail has been rotated
 // in config. Membership in the superadmin group is ensured idempotently.
 //
+// adminEmail is normalized once at function entry so the bbolt-stored
+// Email matches the form linkOIDCByEmail uses for lookup (which also
+// normalizes the IdP-provided email claim). Without this, an upper-cased
+// OIDC_ADMIN_EMAIL would land normalized via Create on first bootstrap,
+// then get reverted to raw by the subsequent BootstrapSync diff-check —
+// permanently desynchronizing the bbolt user_by_email index from the
+// callback lookup. A non-email-shaped adminEmail fails fast at startup.
+//
 // The placeholder is created with Identities = nil because the OIDC subject
 // is not knowable at bootstrap time. linkOIDCByEmail attaches the real
 // {ProviderOIDC, sub} identity on the first matching callback, inside the
 // same write-tx that observes "no existing oidc identity", so the
 // anti-hijack invariant (EL-50 §6.2 inv 9) holds.
 func (a *AdminBootstrap) ensureOIDCAdminUser(ctx context.Context, adminEmail string) error {
+	normalizedEmail, err := domain.NormalizeEmail(adminEmail)
+	if err != nil {
+		return fmt.Errorf("normalize superadmin email: %w", err)
+	}
+
 	user, err := a.users.GetSystemUser(ctx)
 	if err != nil {
 		if !errors.Is(err, domain.ErrNotFound) {
@@ -262,7 +286,7 @@ func (a *AdminBootstrap) ensureOIDCAdminUser(ctx context.Context, adminEmail str
 		now := time.Now().UTC()
 		created := &domain.User{
 			ID:          uuid.New(),
-			Email:       adminEmail,
+			Email:       normalizedEmail,
 			DisplayName: "Super Admin",
 			Status:      domain.UserStatusActive,
 			System:      true,
@@ -276,8 +300,8 @@ func (a *AdminBootstrap) ensureOIDCAdminUser(ctx context.Context, adminEmail str
 		return a.ensureMembership(ctx, created.ID.String())
 	}
 
-	if user.Email != adminEmail {
-		user.Email = adminEmail
+	if user.Email != normalizedEmail {
+		user.Email = normalizedEmail
 		if err := a.users.BootstrapSync(ctx, user); err != nil {
 			return fmt.Errorf("sync superadmin user: %w", err)
 		}
@@ -288,24 +312,22 @@ func (a *AdminBootstrap) ensureOIDCAdminUser(ctx context.Context, adminEmail str
 
 // syncBasicIdentity updates or adds the basic-auth identity entry in the
 // user's identity list when the subject has changed or is absent.
-// Returns true if the slice was modified.
-func syncBasicIdentity(user *domain.User, username string) bool {
+// Returns true if the slice was modified. The identity must already be
+// normalized — callers go through domain.NewIdentity before invoking this.
+func syncBasicIdentity(user *domain.User, identity domain.Identity) bool {
 	for i, id := range user.Identities {
 		if id.Provider == domain.ProviderBasic {
-			if id.Subject == username {
+			if id.Subject == identity.Subject {
 				return false
 			}
 
-			user.Identities[i].Subject = username
+			user.Identities[i].Subject = identity.Subject
 
 			return true
 		}
 	}
 
-	user.Identities = append(user.Identities, domain.Identity{
-		Provider: domain.ProviderBasic,
-		Subject:  username,
-	})
+	user.Identities = append(user.Identities, identity)
 
 	return true
 }
@@ -315,7 +337,12 @@ func syncBasicIdentity(user *domain.User, username string) bool {
 // is a member of the superadmin group. The user is marked System: true; the
 // basic identity is what the passthrough interceptor matches at request time.
 func (a *AdminBootstrap) ensurePassthroughUser(ctx context.Context) error {
-	user, err := a.users.GetByIdentity(ctx, string(domain.ProviderBasic), PassthroughEmail)
+	passthroughIdentity, err := domain.NewIdentity(domain.ProviderBasic, PassthroughEmail)
+	if err != nil {
+		return fmt.Errorf("normalize passthrough identity: %w", err)
+	}
+
+	user, err := a.users.GetByIdentity(ctx, string(passthroughIdentity.Provider), passthroughIdentity.Subject)
 	if err != nil {
 		if !errors.Is(err, domain.ErrNotFound) {
 			return fmt.Errorf("lookup passthrough user: %w", err)
@@ -324,14 +351,12 @@ func (a *AdminBootstrap) ensurePassthroughUser(ctx context.Context) error {
 		now := time.Now().UTC()
 		user = &domain.User{
 			ID:          uuid.New(),
-			Email:       PassthroughEmail,
+			Email:       passthroughIdentity.Subject,
 			DisplayName: "Local Admin",
 			Status:      domain.UserStatusActive,
-			Identities: []domain.Identity{
-				{Provider: domain.ProviderBasic, Subject: PassthroughEmail},
-			},
-			System:    true,
-			CreatedAt: now,
+			Identities:  []domain.Identity{passthroughIdentity},
+			System:      true,
+			CreatedAt:   now,
 		}
 
 		if err := a.users.Create(ctx, user); err != nil {
@@ -364,9 +389,13 @@ func (a *AdminBootstrap) ensureMembership(ctx context.Context, userID string) er
 	return nil
 }
 
+// createUser persists the basic-auth superadmin user. The identity is
+// constructed by the caller via domain.NewIdentity so its Subject is
+// already in the canonical normalized form; user.Email mirrors it.
 func (a *AdminBootstrap) createUser(
 	ctx context.Context,
-	username, password string,
+	identity domain.Identity,
+	password string,
 ) (*domain.User, error) {
 	hash, err := HashPassword(password)
 	if err != nil {
@@ -375,13 +404,11 @@ func (a *AdminBootstrap) createUser(
 
 	now := time.Now().UTC()
 	user := &domain.User{
-		ID:          uuid.New(),
-		Email:       username,
-		DisplayName: "Super Admin",
-		Status:      domain.UserStatusActive,
-		Identities: []domain.Identity{
-			{Provider: domain.ProviderBasic, Subject: username},
-		},
+		ID:                     uuid.New(),
+		Email:                  identity.Subject,
+		DisplayName:            "Super Admin",
+		Status:                 domain.UserStatusActive,
+		Identities:             []domain.Identity{identity},
 		PasswordHash:           hash,
 		PasswordChangeRequired: true,
 		System:                 true,

@@ -10,8 +10,16 @@ import (
 
 // Refresh updates LastSeenAt and, for web sessions, extends ExpiresAt under
 // the sliding-TTL policy. It is a no-op when the session was seen recently
-// (within refreshThrottle). CLI sessions get only LastSeenAt updated — no
-// sliding extension.
+// (within refreshThrottle) or when the session has been revoked / expired
+// since the caller's earlier Validate observed it. CLI sessions get only
+// LastSeenAt updated — no sliding extension.
+//
+// Refresh re-runs Session.EnsureActive after Get so a concurrent Revoke
+// landing between the interceptor's Validate and the throttle-driven
+// Refresh cannot write a Refreshed audit event over a session that is no
+// longer alive. The Validate→Refresh pair is NOT wrapped in a single tx
+// (Refresh is best-effort observability, not part of the auth gate), so
+// the in-memory re-check is the defence against that TOCTOU.
 func (s *Service) Refresh(ctx context.Context, id string) error {
 	sess, err := s.repo.Get(ctx, id)
 	if err != nil {
@@ -19,6 +27,13 @@ func (s *Service) Refresh(ctx context.Context, id string) error {
 	}
 
 	now := s.clock.Now()
+
+	if err := sess.EnsureActive(now); err != nil {
+		// Silent: a concurrent Revoke already mutated the row, or the
+		// session crossed its expiry. Either way, this refresh would
+		// either be a no-op (data-wise) or write a misleading event.
+		return nil //nolint:nilerr //commented
+	}
 
 	// Throttle: skip the write if the session was touched recently.
 	if now.Sub(sess.LastSeenAt) < refreshThrottle {

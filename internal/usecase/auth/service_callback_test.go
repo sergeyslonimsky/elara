@@ -67,16 +67,26 @@ func TestService_Callback(t *testing.T) {
 			wantUser: &domain.User{ID: userID, Email: email},
 		},
 		{
-			name:   "success email-fallback link",
+			// Exercises the BootstrapOIDC adoption path: the placeholder is
+			// System=true with no identities yet. The use case must NOT gate
+			// on System=true before reaching UserService.LinkIdentity, which
+			// is the layer that owns the placeholder-allowance invariant.
+			name:   "success email-fallback link adopts placeholder system user",
 			params: authuc.CallbackParams{Code: code, Nonce: nonce},
 			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
 				svc, m := setupService(t, ctrl)
 				identity := &auth.Identity{Subject: subject, Email: email, EmailVerified: true}
-				userNoIdent := &domain.User{ID: userID, Email: email, Status: domain.UserStatusActive}
+				userNoIdent := &domain.User{
+					ID:     userID,
+					Email:  email,
+					Status: domain.UserStatusActive,
+					System: true,
+				}
 				userLinked := &domain.User{
 					ID:     userID,
 					Email:  email,
 					Status: domain.UserStatusActive,
+					System: true,
 					Identities: []domain.Identity{
 						{Provider: domain.ProviderOIDC, Subject: subject},
 					},
@@ -212,38 +222,6 @@ func TestService_Callback(t *testing.T) {
 				return svc
 			},
 			errIs: domain.ErrUserDeactivated,
-		},
-		{
-			name:   "OIDC admin email triggers EnsureMember",
-			params: authuc.CallbackParams{Code: code, Nonce: nonce},
-			mockFunc: func(ctrl *gomock.Controller) *authuc.Service {
-				svc, m := setupService(t, ctrl)
-				// oidcAdminEmail is "admin@example.com" in setupService
-				adminEmail := "admin@example.com"
-				identity := &auth.Identity{Subject: subject, Email: adminEmail, EmailVerified: true}
-				user := &domain.User{
-					ID:     userID,
-					Email:  adminEmail,
-					Status: domain.UserStatusActive,
-					Identities: []domain.Identity{
-						{Provider: domain.ProviderOIDC, Subject: subject},
-					},
-				}
-
-				m.provider.EXPECT().Exchange(gomock.Any(), code, nonce).Return(identity, nil)
-				m.txm.EXPECT().
-					WithTx(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
-						return fn(ctx)
-					})
-				m.users.EXPECT().GetByIdentity(gomock.Any(), provider, subject).Return(user, nil)
-				m.users.EXPECT().RecordLogin(gomock.Any(), userID).Return(user, nil)
-				m.admin.EXPECT().EnsureMember(gomock.Any(), userID.String()).Return(nil)
-				m.sessions.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&domain.Session{ID: "sess-admin"}, nil)
-
-				return svc
-			},
-			wantUser: &domain.User{ID: userID, Email: "admin@example.com"},
 		},
 		{
 			name:   "Provider.Exchange error short-circuits",

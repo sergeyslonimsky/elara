@@ -28,6 +28,7 @@ type (
 
 	sessionsService interface {
 		Revoke(ctx context.Context, id, revokedBy, reason string, eventType domain.SessionEventType) error
+		RevokeAllForUser(ctx context.Context, userID, revokedBy, reason string) error
 		Create(ctx context.Context, params sessions.CreateParams) (*domain.Session, error)
 	}
 )

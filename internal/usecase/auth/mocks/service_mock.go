@@ -157,44 +157,6 @@ func (mr *MockuserStoreMockRecorder) RecordLogin(ctx, userID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordLogin", reflect.TypeOf((*MockuserStore)(nil).RecordLogin), ctx, userID)
 }
 
-// MockadminBootstrap is a mock of adminBootstrap interface.
-type MockadminBootstrap struct {
-	ctrl     *gomock.Controller
-	recorder *MockadminBootstrapMockRecorder
-	isgomock struct{}
-}
-
-// MockadminBootstrapMockRecorder is the mock recorder for MockadminBootstrap.
-type MockadminBootstrapMockRecorder struct {
-	mock *MockadminBootstrap
-}
-
-// NewMockadminBootstrap creates a new mock instance.
-func NewMockadminBootstrap(ctrl *gomock.Controller) *MockadminBootstrap {
-	mock := &MockadminBootstrap{ctrl: ctrl}
-	mock.recorder = &MockadminBootstrapMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockadminBootstrap) EXPECT() *MockadminBootstrapMockRecorder {
-	return m.recorder
-}
-
-// EnsureMember mocks base method.
-func (m *MockadminBootstrap) EnsureMember(ctx context.Context, userID string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnsureMember", ctx, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// EnsureMember indicates an expected call of EnsureMember.
-func (mr *MockadminBootstrapMockRecorder) EnsureMember(ctx, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnsureMember", reflect.TypeOf((*MockadminBootstrap)(nil).EnsureMember), ctx, userID)
-}
-
 // MocksessionsService is a mock of sessionsService interface.
 type MocksessionsService struct {
 	ctrl     *gomock.Controller

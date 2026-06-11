@@ -57,6 +57,9 @@ func TestService_ChangePassword(t *testing.T) {
 					},
 				)
 				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).Return(newUser(), nil)
+				m.sessions.EXPECT().
+					RevokeAllForUser(gomock.Any(), testUserID, testUserID, "password changed").
+					Return(nil)
 				m.pass.EXPECT().SetPassword(gomock.Any(), uuid.MustParse(testUserID), gomock.Any(), false).Return(nil)
 				m.sessions.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&domain.Session{ID: "new-s1"}, nil)
 
@@ -83,11 +86,45 @@ func TestService_ChangePassword(t *testing.T) {
 					},
 				)
 				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).Return(newUser(), nil)
+				m.sessions.EXPECT().
+					RevokeAllForUser(gomock.Any(), testUserID, testUserID, "password changed").
+					Return(nil)
 				m.pass.EXPECT().SetPassword(gomock.Any(), uuid.MustParse(testUserID), gomock.Any(), false).Return(nil)
 				m.sessions.EXPECT().Create(gomock.Any(), gomock.Any()).Return(&domain.Session{ID: "new-s1"}, nil)
 
 				return svc, ctx
 			},
+		},
+		{
+			name: "revoke sessions fails: error propagates and password not set",
+			params: profile.ChangePasswordParams{
+				CurrentPassword: currentPassword,
+				NewPassword:     newPassword,
+			},
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) (*profile.Service, context.Context) {
+				ctx = auth2.WithSession(
+					ctx,
+					&domain.Session{UserID: testUserID},
+					&domain.User{ID: uuid.MustParse(testUserID), Email: email, PasswordChangeRequired: false},
+				)
+				svc, m := setupService(ctrl)
+
+				m.txm.EXPECT().WithTx(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, fn func(context.Context) error) error {
+						return fn(ctx)
+					},
+				)
+				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).Return(newUser(), nil)
+				m.sessions.EXPECT().
+					RevokeAllForUser(gomock.Any(), testUserID, testUserID, "password changed").
+					Return(errors.New("audit store down"))
+				// NOTE: SetPassword must NOT be called when revoke fails — this
+				// is the architectural invariant: invalidate authority before
+				// changing the secret.
+
+				return svc, ctx
+			},
+			wantErr: "revoke sessions: audit store down",
 		},
 		{
 			name: "unauthorized - no user in context",
@@ -172,6 +209,9 @@ func TestService_ChangePassword(t *testing.T) {
 					},
 				)
 				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).Return(newUser(), nil)
+				m.sessions.EXPECT().
+					RevokeAllForUser(gomock.Any(), testUserID, testUserID, "password changed").
+					Return(nil)
 				m.pass.EXPECT().
 					SetPassword(gomock.Any(), uuid.MustParse(testUserID), gomock.Any(), false).
 					Return(errors.New("db error"))
@@ -200,6 +240,9 @@ func TestService_ChangePassword(t *testing.T) {
 					},
 				)
 				m.users.EXPECT().GetByIdentity(gomock.Any(), string(domain.ProviderBasic), email).Return(newUser(), nil)
+				m.sessions.EXPECT().
+					RevokeAllForUser(gomock.Any(), testUserID, testUserID, "password changed").
+					Return(nil)
 				m.pass.EXPECT().SetPassword(gomock.Any(), uuid.MustParse(testUserID), gomock.Any(), false).Return(nil)
 				m.sessions.EXPECT().
 					Create(gomock.Any(), gomock.Any()).

@@ -141,6 +141,16 @@ func TestAuthHandler_Login(t *testing.T) {
 				assert.Contains(t, c, "Path=/",
 					"OIDC bootstrap cookies must be Path=/ so they reach the ConnectRPC callback endpoint")
 			}
+
+			// Regression for Bug A: when secureCookie=false (HTTP dev env)
+			// the Secure attribute MUST be absent so the browser actually
+			// stores and sends the cookies. The handler under test was
+			// constructed with secureCookie=false via setupHandler.
+			for _, c := range cookies {
+				assert.NotContains(t, c, "Secure",
+					"OIDC bootstrap cookies must respect handler.secureCookie; "+
+						"hard-coded Secure: true breaks the HTTP-only dev OIDC flow")
+			}
 		})
 	}
 }

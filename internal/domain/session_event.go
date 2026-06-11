@@ -9,13 +9,25 @@ import (
 
 type SessionEventType string
 
+// SessionEvent log records ACTIVE state mutations only:
+//   - Created: a session was minted (login).
+//   - Refreshed: sliding-TTL extension applied (web sessions only).
+//   - RevokedByUser / RevokedByAdmin / RevokedCascade: an explicit caller
+//     terminated the session.
+//
+// Passive expiration is NOT logged: when ExpiresAt < now the session
+// simply stops authenticating. The expiration moment is observable
+// directly from sess.ExpiresAt in the row; the audit log captures
+// observed actions, not time-driven transitions. An "expired" event
+// type was scoped during EL-49 design but never implemented — the
+// product call (2026-06) is that login events suffice for the
+// forensics use case and idle-expired sessions don't need a paper trail.
 const (
 	SessionEventCreated        SessionEventType = "created"
 	SessionEventRefreshed      SessionEventType = "refreshed"
 	SessionEventRevokedByUser  SessionEventType = "revoked_by_user"
 	SessionEventRevokedByAdmin SessionEventType = "revoked_by_admin"
 	SessionEventRevokedCascade SessionEventType = "revoked_cascade"
-	SessionEventExpired        SessionEventType = "expired"
 )
 
 type SessionEvent struct {

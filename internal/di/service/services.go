@@ -113,7 +113,7 @@ func NewServices(
 		AdminBootstrap: adminBootstrap,
 	}
 
-	if err := configureAuthService(ctx, services, a, cfg, userSvc, adminBootstrap, sessionSvc); err != nil {
+	if err := configureAuthService(ctx, services, a, cfg, userSvc, sessionSvc); err != nil {
 		return nil, err
 	}
 
@@ -129,7 +129,6 @@ func configureAuthService(
 	a *Adapters,
 	cfg config.Config,
 	userSvc *auth.UserService,
-	adminBootstrap *auth.AdminBootstrap,
 	sessionSvc *sessions.Service,
 ) error {
 	if !cfg.UI.Auth.Enabled || cfg.UI.Auth.Type == domain.AuthTypeNone {
@@ -157,9 +156,7 @@ func configureAuthService(
 		a.StorageManager,
 		oidcProvider,
 		userSvc,
-		adminBootstrap,
 		sessionSvc,
-		cfg.UI.Auth.OIDC.AdminEmail,
 	)
 
 	return nil

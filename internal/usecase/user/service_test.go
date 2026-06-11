@@ -213,6 +213,7 @@ type mockStack struct {
 	svc      *user.Service
 	store    *usermock.MockUserReader
 	users    *usermock.MockUserManager
+	sessions *usermock.MocksessionsService
 	bolt     *bbolt.Store
 	enforcer *casbin.Enforcer
 	txm      *bbolt.Manager
@@ -238,6 +239,7 @@ func setupServiceWithMockStore(t *testing.T) mockStack {
 		svc:      user.New(txm, mockStore, mockUsers, groupRepo, sessionSvc, pdp, pap, scope),
 		store:    mockStore,
 		users:    mockUsers,
+		sessions: sessionSvc,
 		bolt:     stack.Store,
 		enforcer: stack.Enforcer,
 		txm:      txm,

@@ -61,11 +61,15 @@ func (s *Service) Callback(
 		}
 		resolved = stamped
 
-		if identity.Email == s.oidcAdminEmail {
-			if err := s.admin.EnsureMember(ctx, resolved.ID.String()); err != nil {
-				return fmt.Errorf("bootstrap admin: %w", err)
-			}
-		}
+		// The previous runtime re-promotion ("if identity matches admin
+		// email → EnsureMember in superadmin") has been removed. The
+		// superadmin user + group + membership is an immutable system
+		// invariant enforced at the write-path (User.EnsureMutable on
+		// system users, Group.EnsureMutable on system groups, and the
+		// System-aware loader in usecase/user). BootstrapOIDC is the sole
+		// writer of the initial membership rule, so login-time repair is
+		// neither needed nor desirable — it leaks bootstrap config into
+		// the request hot path.
 
 		newSess, err := s.sessions.Create(ctx, sessions.CreateParams{
 			UserID:     resolved.ID.String(),
@@ -160,10 +164,12 @@ func (s *Service) linkOIDCByEmail(
 		}
 	}
 
-	linked, err := s.users.LinkIdentity(ctx, candidate.ID, domain.Identity{
-		Provider: domain.IdentityProvider(provider),
-		Subject:  identity.Subject,
-	})
+	oidcIdentity, err := domain.NewIdentity(domain.IdentityProvider(provider), identity.Subject)
+	if err != nil {
+		return nil, fmt.Errorf("construct oidc identity: %w", err)
+	}
+
+	linked, err := s.users.LinkIdentity(ctx, candidate.ID, oidcIdentity)
 	if err != nil {
 		return nil, fmt.Errorf("link oidc identity: %w", err)
 	}

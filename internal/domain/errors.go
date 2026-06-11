@@ -27,8 +27,12 @@ var (
 	ErrSessionRevoked         = errors.New("session revoked")
 	ErrUserDeactivated        = errors.New("user is deactivated")
 	ErrIdentityTaken          = errors.New("identity already taken")
-	ErrEmailTaken             = errors.New("email already taken")
-	ErrCanonicalNameImmutable = errors.New("canonical name is immutable")
+	// ErrInvalidIdentityProvider is returned by NewIdentity when the provider
+	// tag is neither ProviderBasic nor an OIDC variant ("oidc" / "oidc:<id>").
+	// This is a programming error (typo in code), not user input.
+	ErrInvalidIdentityProvider = errors.New("invalid identity provider")
+	ErrEmailTaken              = errors.New("email already taken")
+	ErrCanonicalNameImmutable  = errors.New("canonical name is immutable")
 	// ErrIdentityNotProvisioned is returned when an identity (provider+subject)
 	// has no corresponding user record. JIT-provisioning is not supported;
 	// admins must pre-provision users.

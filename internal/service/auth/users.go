@@ -159,8 +159,14 @@ func (s *UserService) Create(ctx context.Context, user *domain.User) error {
 
 // LinkIdentity appends a new external identity to an existing user. The
 // operation is append-only by contract (EL-50 §6.2 inv 3): existing
-// identities cannot be substituted or removed through this path. System
-// users reject linking via domain.ErrSystemImmutable.
+// identities cannot be substituted or removed through this path.
+//
+// System users are normally locked, but the BootstrapOIDC placeholder
+// (System=true, Identities=nil) MUST accept its first append — otherwise
+// the first OIDC callback can never adopt the placeholder and login is
+// permanently rejected with ErrIdentityNotProvisioned. Once that first
+// identity lands, the System lock re-engages and further mutations reject
+// with ErrSystemImmutable.
 //
 // Returns the freshly loaded user with the new identity appended. If the
 // identity is already present on the user, the call is a no-op (idempotent)
@@ -179,7 +185,10 @@ func (s *UserService) LinkIdentity(
 	if err != nil {
 		return nil, fmt.Errorf("load user: %w", mapStorageErr(err, "user", userID.String()))
 	}
-	if user.System {
+	// The BootstrapOIDC placeholder (System=true, Identities=nil) MUST
+	// accept its first append; once any identity is linked, the System
+	// lock re-engages and every further mutation rejects.
+	if user.System && len(user.Identities) > 0 {
 		return nil, fmt.Errorf("system user identities are immutable: %w", domain.ErrSystemImmutable)
 	}
 

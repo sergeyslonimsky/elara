@@ -39,6 +39,17 @@ type (
 
 // AuthInterceptor validates the elara_session cookie (or Authorization Bearer token)
 // and injects *domain.Session and *domain.User into the request context.
+//
+// When skipPermissions is true the interceptor turns into a development
+// bypass: any unauthenticated or invalid-session request is silently
+// rewritten with a synthetic admin context (UserID = uuid.Nil). This mode
+// is meant ONLY for dev / passthrough deployments where PDP also runs with
+// SkipPermissions enabled (see internal/di/service/services.go). The two
+// flags MUST be configured in lockstep — if PDP enforcement remains on
+// while the interceptor bypasses auth, the synthetic uuid.Nil principal
+// has no Casbin policy and gets locked out of everything. A startup
+// warning is emitted in NewAuthInterceptor so operators see the bypass
+// active in logs.
 type AuthInterceptor struct {
 	sessions        sessionValidator
 	users           userLookup
@@ -55,11 +66,23 @@ func WithAuthSkipPermissions(skip bool) AuthInterceptorOption {
 
 var _ connect.Interceptor = (*AuthInterceptor)(nil)
 
-// NewAuthInterceptor returns an AuthInterceptor that authenticates all requests.
+// NewAuthInterceptor returns an AuthInterceptor that authenticates all
+// requests. When constructed with WithAuthSkipPermissions(true) it logs a
+// one-shot WARN so operators see — in production-shaped logs — that auth
+// enforcement is off. This is the cheapest defence against accidentally
+// shipping the bypass mode to a non-dev environment: silent bypass is
+// indistinguishable from working auth until something goes wrong; logged
+// bypass is grep-able the moment the service starts.
 func NewAuthInterceptor(sessionSvc sessionValidator, users userLookup, opts ...AuthInterceptorOption) *AuthInterceptor {
 	i := &AuthInterceptor{sessions: sessionSvc, users: users}
 	for _, opt := range opts {
 		opt(i)
+	}
+
+	if i.skipPermissions {
+		slog.Warn(
+			"auth interceptor running with skip_permissions=true — all requests are admin-bypassed; PDP MUST also run with SkipPermissions in this deployment", //nolint:lll // log message
+		)
 	}
 
 	return i

@@ -35,26 +35,16 @@ type (
 		RecordLogin(ctx context.Context, userID uuid.UUID) (*domain.User, error)
 	}
 
-	// adminBootstrap is implemented by *auth.AdminBootstrap. It owns the
-	// system admins group and writes membership g-rules; the auth usecase
-	// asks it to ensure the configured bootstrap admin is a member after a
-	// successful login.
-	adminBootstrap interface {
-		EnsureMember(ctx context.Context, userID string) error
-	}
-
 	sessionsService interface {
 		Create(ctx context.Context, params sessions.CreateParams) (*domain.Session, error)
 	}
 )
 
 type Service struct {
-	txm            storage.Manager
-	provider       oidcProvider
-	users          userStore
-	admin          adminBootstrap
-	sessions       sessionsService
-	oidcAdminEmail string
+	txm      storage.Manager
+	provider oidcProvider
+	users    userStore
+	sessions sessionsService
 }
 
 // New constructs the auth Service.
@@ -62,17 +52,13 @@ func New(
 	txm storage.Manager,
 	provider oidcProvider,
 	users userStore,
-	admin adminBootstrap,
 	sessionsSvc sessionsService,
-	oidcAdminEmail string,
 ) *Service {
 	return &Service{
-		txm:            txm,
-		provider:       provider,
-		users:          users,
-		admin:          admin,
-		sessions:       sessionsSvc,
-		oidcAdminEmail: oidcAdminEmail,
+		txm:      txm,
+		provider: provider,
+		users:    users,
+		sessions: sessionsSvc,
 	}
 }
 

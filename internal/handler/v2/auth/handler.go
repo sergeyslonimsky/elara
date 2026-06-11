@@ -19,13 +19,6 @@ import (
 
 //go:generate mockgen -destination=mocks/handler_mock.go -package=auth_mock -source=handler.go
 
-const (
-	cookieHeader = "Set-Cookie"
-
-	oauthStateCookieName = "elara_oauth_state"
-	oauthNonceCookieName = "elara_oauth_nonce"
-)
-
 // Stable, user-facing OIDC callback errors. Returned through ConnectRPC so the
 // SPA renders a fixed message instead of leaking raw oauth2 / casbin / bbolt
 // internals. The original wrapped error is logged for operators in
@@ -111,26 +104,8 @@ func (h *Handler) OIDCLogin(
 	resp := connect.NewResponse(&authv1.OIDCLoginResponse{
 		RedirectUrl: redirectURL,
 	})
-
-	stateCookie := &http.Cookie{
-		Name:     oauthStateCookieName,
-		Value:    state,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-		Path:     "/",
-	}
-	resp.Header().Add(cookieHeader, stateCookie.String())
-
-	nonceCookie := &http.Cookie{
-		Name:     oauthNonceCookieName,
-		Value:    nonce,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-		Path:     "/",
-	}
-	resp.Header().Add(cookieHeader, nonceCookie.String())
+	sessions_handler.SetOAuthStateCookie(resp.Header(), state, h.secureCookie)
+	sessions_handler.SetOAuthNonceCookie(resp.Header(), nonce, h.secureCookie)
 
 	return resp, nil
 }
@@ -150,12 +125,12 @@ func (h *Handler) OIDCCallback(
 		)
 	}
 
-	expectedState, err := extractCookieFromRequest(req.Header(), oauthStateCookieName)
+	expectedState, err := extractCookieFromRequest(req.Header(), sessions_handler.OAuthStateCookieName)
 	if err != nil || expectedState != req.Msg.GetState() {
 		return nil, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
 	}
 
-	nonce, err := extractCookieFromRequest(req.Header(), oauthNonceCookieName)
+	nonce, err := extractCookieFromRequest(req.Header(), sessions_handler.OAuthNonceCookieName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, domain.ErrUnauthorized)
 	}

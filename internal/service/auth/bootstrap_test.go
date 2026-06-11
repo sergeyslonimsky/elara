@@ -127,6 +127,60 @@ func TestAdminBootstrap_OIDC_CreatesPlaceholderUser(t *testing.T) {
 	)
 }
 
+// TestAdminBootstrap_OIDC_NormalizesAdminEmail pins the fix for the
+// case-sensitivity desync bug: a mixed-case OIDC_ADMIN_EMAIL must land in
+// bbolt as the normalized form on first run AND must not trigger a
+// spurious BootstrapSync flip on subsequent runs. Without normalization at
+// the bootstrap entry, Create would normalize the Email on the first run,
+// then the second run's diff-check (`user.Email != adminEmail`) would
+// detect a mismatch and overwrite the normalized form with the raw one
+// via BootstrapSync (which does NOT normalize). linkOIDCByEmail's lookup
+// then misses the user_by_email index → first OIDC login is rejected
+// with ErrIdentityNotProvisioned.
+func TestAdminBootstrap_OIDC_NormalizesAdminEmail(t *testing.T) {
+	t.Parallel()
+
+	bs, users, _, _ := newBootstrapFixture(t)
+	ctx := t.Context()
+
+	rawEmail := "Admin@Example.Com"
+	normalizedEmail := "admin@example.com"
+
+	// First bootstrap: raw mixed-case input must land normalized in bbolt.
+	require.NoError(t, bs.BootstrapOIDC(ctx, rawEmail))
+
+	user, err := users.GetSystemUser(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, normalizedEmail, user.Email,
+		"first BootstrapOIDC must persist the normalized form, not the raw config value")
+
+	// Second bootstrap with the SAME raw config: must be a no-op for Email
+	// (BootstrapSync not triggered). Pre-fix, this overwrote the normalized
+	// form with the raw "Admin@Example.Com", desynchronizing the
+	// user_by_email index from linkOIDCByEmail's normalized lookup.
+	require.NoError(t, bs.BootstrapOIDC(ctx, rawEmail))
+
+	user, err = users.GetSystemUser(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, normalizedEmail, user.Email,
+		"second BootstrapOIDC with same raw config must not flip Email back to raw")
+}
+
+// TestAdminBootstrap_OIDC_RejectsMalformedAdminEmail guards the fail-fast
+// contract: a non-email-shaped OIDC_ADMIN_EMAIL fails at bootstrap startup
+// rather than silently storing garbage that later breaks the login flow.
+func TestAdminBootstrap_OIDC_RejectsMalformedAdminEmail(t *testing.T) {
+	t.Parallel()
+
+	bs, _, _, _ := newBootstrapFixture(t)
+	ctx := t.Context()
+
+	// Username without @ — operator typo, must fail at bootstrap not at first login.
+	err := bs.BootstrapOIDC(ctx, "not-an-email")
+	require.Error(t, err)
+	require.ErrorContains(t, err, "normalize superadmin email")
+}
+
 // TestAdminBootstrap_OIDC_SyncsRotatedEmail verifies that rotating
 // oidc.adminEmail in config and restarting Elara updates the placeholder's
 // Email in place via BootstrapSync, rather than failing or creating a duplicate

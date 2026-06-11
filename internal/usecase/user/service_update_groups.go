@@ -70,6 +70,15 @@ func (s *Service) UpdateGroups(
 
 			return fmt.Errorf("get user: %w", err)
 		}
+		// System users (bootstrap superadmin) have immutable group
+		// memberships per the business invariant — only their credential
+		// layer (password, OIDC identity link) can change. Trying to
+		// add/remove them from any group is rejected at this gate so the
+		// invariant break is impossible through the API rather than being
+		// repaired at runtime.
+		if err := user.EnsureMutable(); err != nil {
+			return fmt.Errorf("ensure mutable user: %w", err)
+		}
 		if err := domain.CheckVersion(data.ExpectedMembershipVersion, user.MembershipVersion); err != nil {
 			return fmt.Errorf("check version: %w", err)
 		}
@@ -150,9 +159,19 @@ func (s *Service) computeGroupDelta(
 	effectiveAdd := sliceutil.NotIn(data.AddGroupIDs, currentSet)
 	effectiveRemove := sliceutil.In(data.RemoveGroupIDs, currentSet)
 
-	// Resolve added group names to (name -> group) for anti-escalation.
+	// Resolve added group names to (name -> group) for anti-escalation;
+	// loadGroupsByNames also rejects any System group, mirroring the
+	// group package's loadMutableGroup invariant.
 	addedGroups, err := loadGroupsByNames(ctx, s.groups, effectiveAdd)
 	if err != nil {
+		return groupDelta{}, err
+	}
+
+	// Removal path is symmetric: pulling a user out of a System group is
+	// also a membership mutation on that group. loadGroupsByNames here
+	// runs only for its EnsureMutable side-effect; the returned map is
+	// discarded since removes don't need anti-escalation grants.
+	if _, err := loadGroupsByNames(ctx, s.groups, effectiveRemove); err != nil {
 		return groupDelta{}, err
 	}
 
@@ -222,8 +241,13 @@ func filterVisibleGroupIDs(pdp *authz.PDP, actor string, ids []string) []string 
 	return out
 }
 
-// loadGroupsByNames fetches each requested group inside the current context and
-// returns them keyed by Name.
+// loadGroupsByNames fetches each requested group inside the current
+// context and returns them keyed by Name. Every loaded group is also
+// checked via Group.EnsureMutable — System groups (the bootstrap
+// system-superadmin) are membership-immutable per business invariant, so
+// any write-path operation that would touch them is rejected here with
+// ErrSystemImmutable. Callers must use this loader for write paths only;
+// read-only paths use repo.Get directly.
 func loadGroupsByNames(
 	ctx context.Context,
 	repo domain.GroupReader,
@@ -234,6 +258,9 @@ func loadGroupsByNames(
 		g, err := repo.Get(ctx, name)
 		if err != nil {
 			return nil, fmt.Errorf("get group %s: %w", name, err)
+		}
+		if err := g.EnsureMutable(); err != nil {
+			return nil, fmt.Errorf("group %s: %w", name, err)
 		}
 		out[name] = g
 	}

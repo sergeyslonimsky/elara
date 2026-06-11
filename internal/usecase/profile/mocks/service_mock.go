@@ -187,3 +187,17 @@ func (mr *MocksessionsServiceMockRecorder) Revoke(ctx, id, revokedBy, reason, ev
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revoke", reflect.TypeOf((*MocksessionsService)(nil).Revoke), ctx, id, revokedBy, reason, eventType)
 }
+
+// RevokeAllForUser mocks base method.
+func (m *MocksessionsService) RevokeAllForUser(ctx context.Context, userID, revokedBy, reason string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RevokeAllForUser", ctx, userID, revokedBy, reason)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RevokeAllForUser indicates an expected call of RevokeAllForUser.
+func (mr *MocksessionsServiceMockRecorder) RevokeAllForUser(ctx, userID, revokedBy, reason any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAllForUser", reflect.TypeOf((*MocksessionsService)(nil).RevokeAllForUser), ctx, userID, revokedBy, reason)
+}

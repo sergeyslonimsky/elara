@@ -3,6 +3,7 @@ package user_test
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -351,4 +352,147 @@ func TestService_UpdateGroups_VisibleGroupIDs(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, []string{writableID}, res.VisibleGroupIDs)
+}
+
+// TestService_UpdateGroups_SystemImmutability pins the business invariant:
+// the bootstrap superadmin user and the system-superadmin group are
+// immutable through the membership-mutation API. These guards replace the
+// previous runtime "EnsureMember on every OIDC login" pattern; with the
+// guards in place, breaking the superadmin invariant becomes structurally
+// impossible rather than something runtime tries to repair after the fact.
+func TestService_UpdateGroups_SystemImmutability(t *testing.T) {
+	t.Parallel()
+
+	const (
+		sysUserID = "00000000-0000-0000-0000-0000000000aa"
+		sysEmail  = "superadmin@elara.internal"
+		sysGroup  = "system-superadmin"
+	)
+	sysUserUUID := uuid.MustParse(sysUserID)
+
+	seedSystemUser := func(t *testing.T, st realStack) {
+		t.Helper()
+		require.NoError(t, st.users.Create(t.Context(), &domain.User{
+			ID:          sysUserUUID,
+			Email:       sysEmail,
+			DisplayName: "Super Admin",
+			Status:      domain.UserStatusActive,
+			System:      true,
+		}))
+	}
+	seedSystemGroup := func(t *testing.T, st realStack) {
+		t.Helper()
+		require.NoError(t, st.groups.Create(t.Context(), &domain.Group{
+			Name:   sysGroup,
+			System: true,
+		}))
+	}
+
+	t.Run("rejects mutation when target user is System", func(t *testing.T) {
+		t.Parallel()
+
+		st := updateGroupsSetup(t)
+		seedSystemUser(t, st)
+		// Admin holds wildcard, so authorization would pass — the guard
+		// is on the user-side EnsureMutable, not authz.
+		addPolicies(t, st, []policyRow{
+			{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+		})
+
+		_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
+			UserID:      sysUserUUID,
+			AddGroupIDs: []string{writableID},
+		})
+		require.ErrorIs(t, err, domain.ErrSystemImmutable)
+
+		// Tx rolled back: no g-rule for system user.
+		roles, err := st.enforcer.GetRolesForUser(sysUserID, domain.MembershipDomain)
+		require.NoError(t, err)
+		assert.Empty(t, roles)
+	})
+
+	t.Run("rejects adding regular user to system-superadmin group", func(t *testing.T) {
+		t.Parallel()
+
+		st := updateGroupsSetup(t)
+		seedSystemGroup(t, st)
+		// Wildcard admin clears authz/escalation gates so the only
+		// remaining reason to reject is the System guard on the group.
+		addPolicies(t, st, []policyRow{
+			{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+		})
+
+		_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
+			UserID:      targetUUID,
+			AddGroupIDs: []string{sysGroup},
+		})
+		require.ErrorIs(t, err, domain.ErrSystemImmutable)
+
+		// Tx rolled back: target is not a member of system-superadmin.
+		roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
+		require.NoError(t, err)
+		assert.Empty(t, roles)
+	})
+
+	t.Run("rejects removing user from system-superadmin group", func(t *testing.T) {
+		t.Parallel()
+
+		st := updateGroupsSetup(t)
+		seedSystemUser(t, st)
+		seedSystemGroup(t, st)
+		// Pre-seed the bootstrap g-rule directly so the remove path has
+		// something to (try to) remove — bypasses the same guard we're
+		// validating, which is the correct shape for setup.
+		addMemberships(t, st, []struct{ User, GroupName string }{
+			{sysUserID, sysGroup},
+		})
+		addPolicies(t, st, []policyRow{
+			{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+		})
+
+		// Removing the system user from the system group must hit BOTH
+		// guards (System user + System group). The first encountered
+		// rejects the call; either is enough to satisfy the invariant.
+		_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
+			UserID:         sysUserUUID,
+			RemoveGroupIDs: []string{sysGroup},
+		})
+		require.ErrorIs(t, err, domain.ErrSystemImmutable)
+
+		// Membership rule untouched.
+		roles, err := st.enforcer.GetRolesForUser(sysUserID, domain.MembershipDomain)
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []string{domain.GroupResource(sysGroup)}, roles)
+	})
+
+	t.Run("rejects removing non-system user from system-superadmin group", func(t *testing.T) {
+		t.Parallel()
+
+		// Scenario: admin tries to remove someone (anyone) from
+		// system-superadmin via API. Even if no one is currently a member,
+		// the request must reject — submitting "remove X from sys group"
+		// is itself a forbidden operation under the immutability invariant.
+		st := updateGroupsSetup(t)
+		seedSystemGroup(t, st)
+		// Stick target into the group via Casbin directly to make this
+		// a real "remove from system group" attempt rather than a no-op.
+		addMemberships(t, st, []struct{ User, GroupName string }{
+			{targetID, sysGroup},
+		})
+		addPolicies(t, st, []policyRow{
+			{adminID, domain.DomainAll, domain.ObjectAll, domain.ActionAll},
+		})
+
+		_, err := st.svc.UpdateGroups(t.Context(), adminActor(), user.UpdateGroupsData{
+			UserID:         targetUUID,
+			RemoveGroupIDs: []string{sysGroup},
+		})
+		require.ErrorIs(t, err, domain.ErrSystemImmutable)
+
+		// Membership intact: target stays in system group despite the
+		// (rejected) remove request.
+		roles, err := st.enforcer.GetRolesForUser(targetID, domain.MembershipDomain)
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []string{domain.GroupResource(sysGroup)}, roles)
+	})
 }

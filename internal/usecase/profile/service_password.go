@@ -18,10 +18,22 @@ type ChangePasswordParams struct {
 	UserAgent       string
 }
 
-// ChangePassword verifies the current password (unless forced change is required),
-// hashes and stores the new one, and creates a new session.
+// ChangePassword verifies the current password (unless forced change is
+// required), invalidates every existing session of the user, hashes and
+// stores the new password, and mints a fresh session that the handler
+// returns as the new cookie.
 //
-// Both operations are performed atomically within a single transaction.
+// The revoke-all step is mandatory and runs inside the same WithTx as the
+// password mutation: anyone holding a stale session ID (the current cookie
+// included, plus any leaked IDs from XSS / logs / other devices) is
+// authoritatively logged out atomically with the credential change. A new
+// session is then created so the user remains "logged in" from their own
+// browser via the freshly issued cookie.
+//
+// Ordering inside the tx is deliberate: revoke BEFORE SetPassword. The
+// principle is "invalidate authority before changing the secret". If
+// SetPassword later fails, tx rollback restores both the password and the
+// session states atomically.
 func (s *Service) ChangePassword(
 	ctx context.Context,
 	params ChangePasswordParams,
@@ -50,11 +62,19 @@ func (s *Service) ChangePassword(
 			return fmt.Errorf("hash password: %w", err)
 		}
 
+		if err := s.sessions.RevokeAllForUser(
+			ctx,
+			user.ID.String(),
+			user.ID.String(),
+			"password changed",
+		); err != nil {
+			return fmt.Errorf("revoke sessions: %w", err)
+		}
+
 		if err := s.pass.SetPassword(ctx, user.ID, newHash, false); err != nil {
 			return fmt.Errorf("set password: %w", err)
 		}
 
-		// Create a new session after password change.
 		newSess, err := s.sessions.Create(ctx, sessions.CreateParams{
 			UserID:     user.ID.String(),
 			ClientType: string(domain.ClientTypeWeb),

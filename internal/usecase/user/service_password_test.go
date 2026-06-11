@@ -112,7 +112,9 @@ func TestService_ResetPassword(t *testing.T) {
 
 // TestService_ResetPassword_SetPasswordErrorWrapped is fault injection: the
 // in-tx SetPassword call returns a contrived error and we lock the
-// wrapping message — refactor catches future regressions.
+// wrapping message — refactor catches future regressions. RevokeAllForUser
+// is expected to fire BEFORE SetPassword (revoke-before-mutate invariant);
+// it returns nil here so the failure path lands cleanly on SetPassword.
 func TestService_ResetPassword_SetPasswordErrorWrapped(t *testing.T) {
 	t.Parallel()
 
@@ -122,6 +124,9 @@ func TestService_ResetPassword_SetPasswordErrorWrapped(t *testing.T) {
 	m.store.EXPECT().
 		GetByID(gomock.Any(), targetUUID).
 		Return(&domain.User{ID: targetUUID, Email: targetEmail}, nil)
+	m.sessions.EXPECT().
+		RevokeAllForUser(gomock.Any(), targetID, adminID, "password reset by admin").
+		Return(nil)
 	m.store.EXPECT().
 		SetPassword(gomock.Any(), targetUUID, gomock.Any(), true).
 		Return(errors.New("disk failure"))
@@ -129,4 +134,29 @@ func TestService_ResetPassword_SetPasswordErrorWrapped(t *testing.T) {
 	err := m.svc.ResetPassword(t.Context(), adminActor(), targetUUID, resetPassword)
 	require.ErrorContains(t, err, "set password")
 	require.ErrorContains(t, err, "disk failure")
+}
+
+// TestService_ResetPassword_RevokeErrorWrapped guards the revoke-before-mutate
+// invariant: if RevokeAllForUser fails, SetPassword MUST NOT be called.
+// This pins the ordering — future refactors that move revoke after the
+// password write will fail this test loudly.
+func TestService_ResetPassword_RevokeErrorWrapped(t *testing.T) {
+	t.Parallel()
+
+	m := setupServiceWithMockStore(t)
+	seedAdminAllOnMockStack(t, m)
+
+	m.store.EXPECT().
+		GetByID(gomock.Any(), targetUUID).
+		Return(&domain.User{ID: targetUUID, Email: targetEmail}, nil)
+	m.sessions.EXPECT().
+		RevokeAllForUser(gomock.Any(), targetID, adminID, "password reset by admin").
+		Return(errors.New("session store down"))
+	// No m.store.EXPECT().SetPassword(...) — gomock fails the test if SetPassword
+	// is called when no expectation was registered, which is exactly the guard
+	// we want here.
+
+	err := m.svc.ResetPassword(t.Context(), adminActor(), targetUUID, resetPassword)
+	require.ErrorContains(t, err, "revoke sessions")
+	require.ErrorContains(t, err, "session store down")
 }

@@ -96,8 +96,11 @@ func TestService_Refresh(t *testing.T) {
 				evt := sessions_mock.NewMocksessionEventRepository(ctrl)
 				clk := sessions_mock.NewMockClock(ctrl)
 
-				// CreatedAt = 29d23h ago → hardCap = CreatedAt + 30d = 1h from now
-				// newExpires = now + 8h > hardCap → capped at CreatedAt + 30d
+				// CreatedAt = 29d23h ago → hardCap = CreatedAt + 30d = 1h from now.
+				// ExpiresAt = now + 30min keeps the session active so Refresh's
+				// EnsureActive guard lets it through; newExpires = now + 8h still
+				// exceeds hardCap → capped at CreatedAt + 30d. The cap and the
+				// active-window check are orthogonal.
 				createdAt := now.Add(-(29*24*time.Hour + 23*time.Hour))
 				hardCap := createdAt.Add(maxWebSlidingTTL)
 
@@ -107,7 +110,7 @@ func TestService_Refresh(t *testing.T) {
 					ClientType: domain.ClientTypeWeb,
 					CreatedAt:  createdAt,
 					LastSeenAt: now.Add(-5 * time.Minute),
-					ExpiresAt:  now.Add(-10 * time.Minute),
+					ExpiresAt:  now.Add(30 * time.Minute),
 				}
 
 				repo.EXPECT().Get(gomock.Any(), sessionID).Return(sess, nil)
