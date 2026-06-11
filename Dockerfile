@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------
 # Stage 1 — Build the React frontend (static bundle embedded later by Go).
 # -----------------------------------------------------------------------
-FROM node:25.9.0-alpine3.22 AS frontend
+FROM node:26.3.0-alpine3.22 AS frontend
 
 WORKDIR /app/web
 
