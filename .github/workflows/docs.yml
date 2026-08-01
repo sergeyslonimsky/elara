@@ -1,0 +1,48 @@
+name: Docs
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
+
+# Cancel in-progress runs for the same branch — save Actions minutes.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write # peaceiris/actions-gh-pages pushes the built site to gh-pages
+
+jobs:
+  build-deploy:
+    name: Build & deploy MkDocs site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install MkDocs
+        run: pip install mkdocs-material
+
+      - name: Build site
+        run: mkdocs build --strict
+
+      # NOTE: gh-pages also hosts the Helm chart repository (index.yaml + chart
+      # tarballs) published by release.yml. keep_files: true preserves those
+      # artifacts so the docs site and the Helm repo coexist on the same branch.
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          keep_files: true
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com

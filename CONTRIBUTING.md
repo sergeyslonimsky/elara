@@ -44,6 +44,11 @@ go run ./cmd/service
 cd web && npm run dev   # http://localhost:3000
 ```
 
+## Questions
+
+- **Usage questions, ideas, design discussion** — use [GitHub Discussions](https://github.com/sergeyslonimsky/elara/discussions).
+- **Bugs, confirmed feature requests** — use [Issues](https://github.com/sergeyslonimsky/elara/issues).
+
 ## Pull request guidelines
 
 - Keep PRs focused — one logical change per PR.

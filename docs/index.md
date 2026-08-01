@@ -1,48 +1,20 @@
-<p align="center">
-  <img src="./logo.svg" alt="Elara" width="128" height="128"/>
-</p>
+<!--
+  This page mirrors the repository README.md (EL-53 M1.1), adapted for MkDocs:
+  repo-root file links (LICENSE, CONTRIBUTING.md, SECURITY.md) point at absolute
+  GitHub URLs, in-docs links stay relative (quickstart.md, architecture.md,
+  adr/…); the repo-root logo (logo.svg) is omitted so the MkDocs build stays
+  clean, but the dashboard screenshot lives under docs/assets/ and is included
+  below with a relative path.
+-->
 
-<h1 align="center">Elara</h1>
+# Elara
 
-<p align="center">
-  <strong>etcd-compatible config store for Kubernetes — UI, RBAC, schema validation.</strong>
-</p>
+**etcd-compatible config store for Kubernetes — UI, RBAC, schema validation.**
 
-<p align="center">
-  <a href="https://github.com/sergeyslonimsky/elara/actions/workflows/ci.yml">
-    <img src="https://github.com/sergeyslonimsky/elara/actions/workflows/ci.yml/badge.svg" alt="CI"/>
-  </a>
-  <a href="https://github.com/sergeyslonimsky/elara/actions/workflows/github-code-scanning/codeql">
-    <img src="https://github.com/sergeyslonimsky/elara/actions/workflows/github-code-scanning/codeql/badge.svg" alt="CodeQL"/>
-  </a>
-  <a href="https://codecov.io/gh/sergeyslonimsky/elara" >
-    <img src="https://codecov.io/gh/sergeyslonimsky/elara/graph/badge.svg?token=7DW6HXEG21"/>
-  </a>
-  <a href="https://sonarcloud.io/project/overview?id=sergeyslonimsky_elara">
-    <img src="https://sonarcloud.io/api/project_badges/measure?project=sergeyslonimsky_elara&metric=alert_status" alt="Quality Gate"/>
-  </a>
-  <a href="https://github.com/sergeyslonimsky/elara/releases/latest">
-    <img src="https://img.shields.io/github/v/release/sergeyslonimsky/elara" alt="Latest Release"/>
-  </a>
-  <a href="https://pkg.go.dev/github.com/sergeyslonimsky/elara">
-    <img src="https://img.shields.io/github/go-mod/go-version/sergeyslonimsky/elara" alt="Go Version"/>
-  </a>
-  <a href="https://goreportcard.com/report/github.com/sergeyslonimsky/elara">
-    <img src="https://goreportcard.com/badge/github.com/sergeyslonimsky/elara" alt="Go Report Card"/>
-  </a>
-  <a href="https://pkg.go.dev/github.com/sergeyslonimsky/elara">
-    <img src="https://pkg.go.dev/badge/github.com/sergeyslonimsky/elara.svg" alt="Go Reference"/>
-  </a>
-  <a href="https://github.com/sergeyslonimsky/elara/pkgs/container/elara">
-    <img src="https://img.shields.io/badge/ghcr.io-elara-blue?logo=docker&logoColor=white" alt="Container Image"/>
-  </a>
-  <a href="https://artifacthub.io/packages/helm/elara/elara">
-    <img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/elara" alt="Artifact Hub"/>
-  </a>
-  <a href="LICENSE">
-    <img src="https://img.shields.io/github/license/sergeyslonimsky/elara" alt="License: MIT"/>
-  </a>
-</p>
+[![CI](https://github.com/sergeyslonimsky/elara/actions/workflows/ci.yml/badge.svg)](https://github.com/sergeyslonimsky/elara/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/sergeyslonimsky/elara)](https://github.com/sergeyslonimsky/elara/releases/latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/sergeyslonimsky/elara)](https://goreportcard.com/report/github.com/sergeyslonimsky/elara)
+[![License: MIT](https://img.shields.io/github/license/sergeyslonimsky/elara)](https://github.com/sergeyslonimsky/elara/blob/master/LICENSE)
 
 Elara is a Kubernetes service that speaks the **etcd v3 wire protocol**, so your
 services keep reading config with their existing etcd client — no new SDK. On
@@ -57,7 +29,10 @@ consumer view that shows **which pod reads which key**. One binary, one
 - **Operator-friendly** — browse, edit, diff, and audit config from a UI, with
   Casbin RBAC scoped by namespace.
 
-![Elara dashboard](./docs/assets/aha-hero.webp)
+![Elara dashboard](assets/aha-hero.webp)
+
+New here? Start with the [Quickstart](quickstart.md), then read the
+[Architecture](architecture.md) overview.
 
 ## Quickstart
 
@@ -76,9 +51,9 @@ them. Try editing `production/api/limits.json` to a bad value to watch schema
 validation reject the write. The etcd-compatible API is live at `localhost:2379`
 at the same time.
 
-For a guided 5-minute tour see the [Quickstart guide](docs/quickstart.md); for a
-worked example with three services reading config live, follow the
-[todo-app tutorial](docs/tutorial-todo-app.md).
+See the [Quickstart guide](quickstart.md) for a guided 5-minute tour, or the
+[todo-app tutorial](tutorial-todo-app.md) for a worked example with three
+services reading config live.
 
 ## Why Elara
 
@@ -143,42 +118,12 @@ trade Elara makes.
 ## Architecture
 
 Three client surfaces — the React Web UI, typed ConnectRPC clients, and any
-etcd v3 client — converge on one layered core and one bbolt store.
+etcd v3 client — converge on one layered core and one bbolt store. See the
+[Architecture](architecture.md) page for the full diagram, layer table, ports,
+and links to the two architecture decision records:
 
-```mermaid
-flowchart TB
-    ui[Web UI React] --> http
-    rpc[ConnectRPC client] --> http
-    etcd[etcdctl / etcd v3 SDK] --> grpc
-
-    http["HTTP/2 server :8080"]
-    grpc["gRPC server :2379<br/>etcd-compatible"]
-
-    http --> handler
-    grpc --> handler
-
-    subgraph core[Layered core]
-        direction TB
-        handler[Handler — proto ↔ domain]
-        usecase[UseCase — business flows, owns tx boundary]
-        service[Service — auth, authz, content, monitor, schema]
-        domain[Domain — pure entities, validation]
-    end
-
-    handler --> usecase
-    usecase --> service
-    usecase --> storage
-    service --> domain
-
-    storage[(Storage — bbolt<br/>single file, ACID, global revision)]
-```
-
-The full diagram, layer table, and ports live in
-[docs/architecture.md](docs/architecture.md). Two architecture decision records
-capture the non-obvious choices:
-
-- [ADR 0001 — Usecase-owned transactions with context-injected tx handles](docs/adr/0001-usecase-owned-transactions.md)
-- [ADR 0002 — Groups-only RBAC](docs/adr/0002-groups-only-rbac.md)
+- [ADR 0001 — Usecase-owned transactions with context-injected tx handles](adr/0001-usecase-owned-transactions.md)
+- [ADR 0002 — Groups-only RBAC](adr/0002-groups-only-rbac.md)
 
 ## Roadmap
 
@@ -187,15 +132,17 @@ validation, RBAC, webhooks, and Helm chart are working today; the API and
 on-disk format may still change before 1.0. The headline gap is high
 availability: Elara runs as a single instance because bbolt holds an exclusive
 file lock. Raft-based HA and pluggable storage backends (PostgreSQL, S3) are the
-main direction after 1.0. HA is intentionally left out of the comparison table
-above until it ships.
+main direction after 1.0.
 
 ## Contributing
 
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the dev
-setup, test commands, and conventions. Security issues should be reported
-privately per [SECURITY.md](SECURITY.md), not as public issues.
+Contributions are welcome — see
+[CONTRIBUTING.md](https://github.com/sergeyslonimsky/elara/blob/master/CONTRIBUTING.md)
+for the dev setup, test commands, and conventions. Security issues should be
+reported privately per
+[SECURITY.md](https://github.com/sergeyslonimsky/elara/blob/master/SECURITY.md),
+not as public issues.
 
 ## License
 
-[MIT](LICENSE).
+[MIT](https://github.com/sergeyslonimsky/elara/blob/master/LICENSE).

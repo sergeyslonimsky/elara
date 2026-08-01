@@ -1,0 +1,102 @@
+# Elara "todo app" demo stack.
+#
+# One Elara instance plus three toy microservices (api, worker, notifier) that
+# each read a config key from Elara over the etcd v3 wire protocol and watch it
+# for live changes. A one-shot `seed` container writes the initial config so the
+# services show real values on first boot.
+#
+# Walkthrough: ../../docs/tutorial-todo-app.md
+#
+# Run:  docker compose up --build
+# UI:   http://localhost:8080   (login: admin@elara.local / password)
+
+name: elara-todo-demo
+
+services:
+  # ---------------------------------------------------------------------------
+  # Elara — built from the repository root Dockerfile so the demo always tracks
+  # the code in this checkout. Swap `build:` for the commented `image:` line to
+  # pin a published image instead.
+  # ---------------------------------------------------------------------------
+  elara:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    # image: ghcr.io/sergeyslonimsky/elara:latest
+    ports:
+      - "8080:8080"   # Web UI + ConnectRPC
+      - "2379:2379"   # etcd-compatible gRPC
+    environment:
+      # UI auth: seed a local admin so you can log in and manage configs.
+      UI_AUTH_ENABLED: "true"
+      UI_AUTH_TYPE: "basic-auth"
+      UI_AUTH_BASICAUTH_USERNAME: "admin@elara.local"
+      UI_AUTH_BASICAUTH_PASSWORD: "password"
+      UI_AUTH_SESSION_SECURECOOKIE: "false"  # demo runs on plain HTTP
+      # etcd client auth: disabled so the toy services connect without a token.
+      # In production leave this on and issue a service Token per client.
+      CLIENT_AUTH_ENABLED: "false"
+      LOG_FORMAT: "text"
+    volumes:
+      - elara-data:/var/lib/elara
+
+  # ---------------------------------------------------------------------------
+  # One-shot seeder: writes the initial config keys so the services below start
+  # with real data. Exits after seeding; re-runs are idempotent.
+  # ---------------------------------------------------------------------------
+  seed:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        SERVICE: seed
+    environment:
+      ELARA_ENDPOINT: "elara:2379"
+    depends_on:
+      - elara
+    restart: "no"
+
+  # ---------------------------------------------------------------------------
+  # Toy microservices — each watches one config key and logs changes.
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        SERVICE: api
+    environment:
+      ELARA_ENDPOINT: "elara:2379"
+      CONFIG_KEY: "/production/api/limits.json"
+    depends_on:
+      - elara
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        SERVICE: worker
+    environment:
+      ELARA_ENDPOINT: "elara:2379"
+      CONFIG_KEY: "/production/worker/settings.json"
+    depends_on:
+      - elara
+    restart: unless-stopped
+
+  notifier:
+    build:
+      context: ./services
+      dockerfile: Dockerfile
+      args:
+        SERVICE: notifier
+    environment:
+      ELARA_ENDPOINT: "elara:2379"
+      CONFIG_KEY: "/production/notifier/config.json"
+    depends_on:
+      - elara
+    restart: unless-stopped
+
+volumes:
+  elara-data:
