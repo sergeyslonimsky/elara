@@ -246,6 +246,39 @@ func TestService_ExportAll(t *testing.T) {
 				assert.Empty(t, bundle.Namespaces)
 			},
 		},
+		{
+			// buildNamespaceBundle sorts its Configs by Path; the sort
+			// comparator only runs when a namespace has 2+ configs.
+			name: "multiple configs in one namespace are sorted by path",
+			input: input{
+				encoding: transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.pdp.EXPECT().HasNamespace(testUserID, gomock.Any(), gomock.Any()).Return(true)
+				m.namespaces.EXPECT().
+					ListAll(gomock.Any()).
+					Return([]*domain.Namespace{{Name: "ns1"}}, nil)
+				m.configs.EXPECT().
+					ListAllByNamespace(gomock.Any(), "ns1").
+					Return([]*domain.Config{
+						{Path: "/z.json", Namespace: "ns1"},
+						{Path: "/a.json", Namespace: "ns1"},
+					}, nil)
+
+				return svc
+			},
+			check: func(t *testing.T, payload []byte, ct, fname string) {
+				t.Helper()
+
+				var bundle domain.AllBundle
+				require.NoError(t, json.Unmarshal(payload, &bundle))
+				require.Len(t, bundle.Namespaces, 1)
+				require.Len(t, bundle.Namespaces[0].Configs, 2)
+				assert.Equal(t, "/a.json", bundle.Namespaces[0].Configs[0].Path)
+				assert.Equal(t, "/z.json", bundle.Namespaces[0].Configs[1].Path)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -279,4 +312,21 @@ func TestService_ExportAll(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestService_ExportAll_Unauthorized asserts buildAllBundle rejects a context
+// with no injected AuthInfo before touching any dependency.
+func TestService_ExportAll_Unauthorized(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	svc, _ := setupService(t, ctrl)
+
+	_, _, _, err := svc.ExportAll(
+		t.Context(),
+		false,
+		transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+		transferv1.ZipLayout_ZIP_LAYOUT_UNSPECIFIED,
+	)
+	require.ErrorIs(t, err, domain.ErrUnauthorized)
 }

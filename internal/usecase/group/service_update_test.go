@@ -1233,6 +1233,99 @@ func TestService_UpdatePermissions(t *testing.T) {
 			},
 			wantErr: "get group",
 		},
+		{
+			// Unlike the "cascade fail" case above (which seeds the actor's
+			// policy with a bare, non-canonical domain that never matches
+			// canonical Permission.Domain values and so actually fails at
+			// the boundaryCheckPerms step), this case grants the actor a
+			// canonical dev policy so boundaryCheckPerms passes on Add, and
+			// the group's pre-existing prod perm — which is outside the
+			// actor's grants — is what trips cascadeCheckPerms once the
+			// group has a member.
+			name: "cascade fail: actor holds added perm but not an existing one, with members",
+			setup: func(t *testing.T, st testStack) (domain.AuthInfo, group.UpdatePermissionsData) {
+				t.Helper()
+
+				seedAdminWildcard(t, st)
+
+				require.NoError(
+					t,
+					st.enforcer.WriteTx(
+						t.Context(),
+						st.txm,
+						func(ctx context.Context, txe *casbin.TxEnforcer) error {
+							return txe.AddPolicy(
+								"devops@example.com",
+								domain.NamespaceResource("dev"),
+								string(domain.ObjectNamespace),
+								string(domain.ActionWrite),
+							)
+						},
+					),
+				)
+
+				created, err := st.svc.Create(t.Context(), adminAuth(), group.CreateData{
+					Name:           "g1",
+					InitialMembers: []string{"alice@example.com"},
+					InitialPermissions: []domain.Permission{
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: domain.NamespaceResource("prod"),
+						},
+					},
+				})
+				require.NoError(t, err)
+
+				return domain.AuthInfo{
+						UserID: "devops@example.com",
+						Email:  "devops@example.com",
+					}, group.UpdatePermissionsData{
+						GroupName: created.Group.Name,
+						Add: []domain.Permission{
+							// devops holds canonical dev, so the boundary
+							// check on Add passes; the cascade check then
+							// fails on the group's existing prod perm.
+							{
+								Object: domain.ObjectNamespace,
+								Action: domain.ActionWrite,
+								Domain: domain.NamespaceResource("dev"),
+							},
+						},
+						ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
+					}
+			},
+			errIs: domain.ErrPermissionEscalation,
+		},
+		{
+			name: "invalid permission assignment rejected before any mutation",
+			setup: func(t *testing.T, st testStack) (domain.AuthInfo, group.UpdatePermissionsData) {
+				t.Helper()
+
+				seedAdminWildcard(t, st)
+				created, err := st.svc.Create(
+					t.Context(),
+					adminAuth(),
+					group.CreateData{Name: "g1"},
+				)
+				require.NoError(t, err)
+
+				return adminAuth(), group.UpdatePermissionsData{
+					GroupName: created.Group.Name,
+					Add: []domain.Permission{
+						// domain.ObjectPolicy has no catalog entry, so
+						// validatePermissionAssignment rejects it.
+						{
+							Object: domain.ObjectPolicy,
+							Action: domain.ActionRead,
+							Domain: domain.DomainAll,
+						},
+					},
+					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
+				}
+			},
+			wantErr: "not assignable",
+		},
 	}
 
 	for _, tt := range tests {

@@ -311,6 +311,74 @@ func TestRepository_CtxAware_JoinsOuterTx(t *testing.T) {
 	})
 }
 
+const bucketPolicyForTest = "auth_policy"
+
+// seedRawKey writes a raw key directly into the policy bucket, bypassing
+// ruleKey encoding — used to exercise the malformed-key skip branches.
+func seedRawKey(t *testing.T, mgr pkgbbolt.Manager, key []byte) {
+	t.Helper()
+
+	err := mgr.WithTx(t.Context(), func(ctx context.Context) error {
+		return mgr.GetQuerier(ctx).Bucket(bucketPolicyForTest).Put(key, []byte{})
+	})
+	require.NoError(t, err)
+}
+
+func TestRepository_LoadPolicyCtx_SkipsMalformedKeys(t *testing.T) {
+	t.Parallel()
+
+	repo, mgr := newRepo(t)
+
+	// Not valid JSON — triggers the json.Unmarshal error / warn-and-skip branch.
+	seedRawKey(t, mgr, []byte("not-json"))
+	// Valid JSON but fewer than minPartsLen parts — triggers the short-parts skip branch.
+	seedRawKey(t, mgr, []byte(`["p"]`))
+	// Valid parts but an invalid policy array for the model — triggers the
+	// persist.LoadPolicyArray error / warn-and-skip branch.
+	seedRawKey(t, mgr, []byte(`["bogus-sec","bogus-ptype","x"]`))
+
+	require.NoError(t, repo.AddPolicy("p", "p", []string{"admin", "*", "*", "*"}))
+
+	m := newTestModel(t)
+	require.NoError(t, repo.LoadPolicyCtx(t.Context(), m))
+
+	pRules := m["p"]["p"].Policy
+	require.Len(t, pRules, 1)
+	assert.Equal(t, []string{"admin", "*", "*", "*"}, pRules[0])
+}
+
+func TestRepository_RemoveFilteredPolicyCtx_SkipsMalformedKeys(t *testing.T) {
+	t.Parallel()
+
+	repo, mgr := newRepo(t)
+
+	seedRawKey(t, mgr, []byte("not-json"))
+	seedRawKey(t, mgr, []byte(`["g"]`))
+	require.NoError(t, repo.AddPolicy("g", "g", []string{"alice", "admin", "*"}))
+
+	// Must not error despite malformed entries in the bucket.
+	require.NoError(t, repo.RemoveFilteredPolicy("g", "g", 0, "alice"))
+
+	m := newTestModel(t)
+	require.NoError(t, repo.LoadPolicy(m))
+	assert.Empty(t, m["g"]["g"].Policy)
+}
+
+func TestRepository_ListPermissionsForSubject_SkipsMalformedKeys(t *testing.T) {
+	t.Parallel()
+
+	repo, mgr := newRepo(t)
+
+	seedRawKey(t, mgr, []byte("not-json"))
+	seedRawKey(t, mgr, []byte(`["p"]`))
+	require.NoError(t, repo.AddPolicy("p", "p", []string{"admin", "*", "*", "*"}))
+
+	got, err := repo.ListPermissionsForSubject(t.Context(), "admin")
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Equal(t, "admin", got[0][0])
+}
+
 func TestRepository_ListPermissionsForSubject(t *testing.T) {
 	t.Parallel()
 

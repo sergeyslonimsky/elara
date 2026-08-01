@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,6 +40,16 @@ func TestHashPassword(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestHashPassword_TooLongFails(t *testing.T) {
+	t.Parallel()
+
+	// bcrypt rejects inputs over 72 bytes.
+	tooLong := strings.Repeat("a", 73)
+
+	_, err := auth.HashPassword(tooLong)
+	require.ErrorContains(t, err, "hash password")
 }
 
 func TestVerifyPassword(t *testing.T) {

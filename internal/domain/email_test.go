@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,6 +40,11 @@ func TestNormalizeEmail(t *testing.T) {
 		{name: "two @ rejected", in: "alice@two@example.com", wantErr: true},
 		{name: "empty local part rejected", in: "@example.com", wantErr: true},
 		{name: "empty domain rejected", in: "alice@", wantErr: true},
+		{
+			name:    "exceeds maximum length rejected",
+			in:      strings.Repeat("a", 250) + "@example.com",
+			wantErr: true,
+		},
 	}
 
 	for _, tc := range tests {

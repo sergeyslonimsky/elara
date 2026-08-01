@@ -14,6 +14,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/v2/filter"
 	filtermock "github.com/sergeyslonimsky/elara/internal/handler/v2/filter/mocks"
+	"github.com/sergeyslonimsky/elara/internal/handler/v2/permission"
 	commonv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/common/v1"
 	filterv1 "github.com/sergeyslonimsky/elara/internal/proto/elara/filter/v1"
 	filteruc "github.com/sergeyslonimsky/elara/internal/usecase/filter"
@@ -302,6 +303,92 @@ func TestHandler_GetUsers(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, resp.Msg.GetItems())
+		})
+	}
+}
+
+func TestHandler_GetPermissionCatalog(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		mockFunc func(ctrl *gomock.Controller) *filter.Handler
+		want     []*filterv1.ObjectCatalogEntry
+	}{
+		{
+			name: "maps catalog entries including every scope",
+			mockFunc: func(ctrl *gomock.Controller) *filter.Handler {
+				uc := filtermock.NewMockfilterUsecase(ctrl)
+				uc.EXPECT().Catalog().Return([]filteruc.CatalogEntry{
+					{
+						Object:  domain.ObjectNamespace,
+						Scope:   filteruc.ScopeNamespace,
+						Actions: []domain.Action{domain.ActionRead},
+					},
+					{
+						Object:  domain.ObjectGroup,
+						Scope:   filteruc.ScopeGroup,
+						Actions: []domain.Action{domain.ActionWrite},
+					},
+					{
+						Object:  domain.ObjectUser,
+						Scope:   filteruc.ScopeGlobal,
+						Actions: []domain.Action{domain.ActionAll},
+					},
+					{Object: domain.ObjectToken, Scope: filteruc.ScopeUnspecified, Actions: nil},
+				})
+
+				return filter.New(uc)
+			},
+			want: []*filterv1.ObjectCatalogEntry{
+				{
+					Object:  permission.ObjectToProto(domain.ObjectNamespace),
+					Scope:   filterv1.ObjectScope_OBJECT_SCOPE_NAMESPACE,
+					Actions: []commonv1.PermissionAction{commonv1.PermissionAction_PERMISSION_ACTION_READ},
+				},
+				{
+					Object:  permission.ObjectToProto(domain.ObjectGroup),
+					Scope:   filterv1.ObjectScope_OBJECT_SCOPE_GROUP,
+					Actions: []commonv1.PermissionAction{commonv1.PermissionAction_PERMISSION_ACTION_WRITE},
+				},
+				{
+					Object:  permission.ObjectToProto(domain.ObjectUser),
+					Scope:   filterv1.ObjectScope_OBJECT_SCOPE_GLOBAL,
+					Actions: []commonv1.PermissionAction{commonv1.PermissionAction_PERMISSION_ACTION_ALL},
+				},
+				{
+					Object:  permission.ObjectToProto(domain.ObjectToken),
+					Scope:   filterv1.ObjectScope_OBJECT_SCOPE_UNSPECIFIED,
+					Actions: []commonv1.PermissionAction{},
+				},
+			},
+		},
+		{
+			name: "empty catalog returns empty entries",
+			mockFunc: func(ctrl *gomock.Controller) *filter.Handler {
+				uc := filtermock.NewMockfilterUsecase(ctrl)
+				uc.EXPECT().Catalog().Return(nil)
+
+				return filter.New(uc)
+			},
+			want: []*filterv1.ObjectCatalogEntry{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			h := tt.mockFunc(ctrl)
+
+			resp, err := h.GetPermissionCatalog(
+				t.Context(),
+				connect.NewRequest(&filterv1.GetPermissionCatalogRequest{}),
+			)
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, resp.Msg.GetEntries())
 		})
 	}
 }

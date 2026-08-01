@@ -139,6 +139,24 @@ func TestAuthInterceptor_WrapUnary(t *testing.T) {
 			wantCode: connect.CodeUnauthenticated,
 		},
 		{
+			name:        "session with malformed user id returns unauthenticated",
+			cookieValue: "valid-session-id",
+			setupMocks: func(sess *interceptor_mock.MocksessionValidator, _ *interceptor_mock.MockuserLookup) {
+				badSession := validSession()
+				badSession.UserID = "not-a-uuid"
+				sess.EXPECT().Validate(gomock.Any(), "valid-session-id").Return(badSession, nil)
+			},
+			wantCode: connect.CodeUnauthenticated,
+		},
+		{
+			name:        "generic session validation error still maps to unauthenticated",
+			cookieValue: "garbage",
+			setupMocks: func(sess *interceptor_mock.MocksessionValidator, _ *interceptor_mock.MockuserLookup) {
+				sess.EXPECT().Validate(gomock.Any(), "garbage").Return(nil, errors.New("db unavailable"))
+			},
+			wantCode: connect.CodeUnauthenticated,
+		},
+		{
 			name:        "user lookup fails returns unauthenticated",
 			cookieValue: "valid-session-id",
 			setupMocks: func(sess *interceptor_mock.MocksessionValidator, users *interceptor_mock.MockuserLookup) {
@@ -148,6 +166,16 @@ func TestAuthInterceptor_WrapUnary(t *testing.T) {
 					Return(nil, errors.New("user not found"))
 			},
 			wantCode: connect.CodeUnauthenticated,
+		},
+		{
+			name:        "session refresh failure is logged but does not fail the request",
+			cookieValue: "valid-session-id",
+			setupMocks: func(sess *interceptor_mock.MocksessionValidator, users *interceptor_mock.MockuserLookup) {
+				sess.EXPECT().Validate(gomock.Any(), "valid-session-id").Return(validSession(), nil)
+				users.EXPECT().GetByID(gomock.Any(), uuid.MustParse(testUserID)).Return(activeUser(), nil)
+				sess.EXPECT().Refresh(gomock.Any(), "valid-session-id").Return(errors.New("refresh backend down"))
+			},
+			wantClaims: true,
 		},
 		{
 			name:   "bearer token wins over cookie",
@@ -171,6 +199,18 @@ func TestAuthInterceptor_WrapUnary(t *testing.T) {
 				users.EXPECT().GetByID(gomock.Any(), uuid.MustParse(testUserID)).Return(deactivated, nil)
 			},
 			wantCode: connect.CodeUnauthenticated,
+		},
+		{
+			name:        "password change required blocks non-whitelisted procedure",
+			cookieValue: "valid-session-id",
+			setupMocks: func(sess *interceptor_mock.MocksessionValidator, users *interceptor_mock.MockuserLookup) {
+				sess.EXPECT().Validate(gomock.Any(), "valid-session-id").Return(validSession(), nil)
+				mustChangePassword := activeUser()
+				mustChangePassword.PasswordChangeRequired = true
+				users.EXPECT().GetByID(gomock.Any(), uuid.MustParse(testUserID)).Return(mustChangePassword, nil)
+				sess.EXPECT().Refresh(gomock.Any(), "valid-session-id").Return(nil)
+			},
+			wantCode: connect.CodePermissionDenied,
 		},
 	}
 
@@ -289,6 +329,19 @@ func TestAuthInterceptor_WrapStreamingHandler(t *testing.T) {
 			},
 			wantCode: connect.CodeUnauthenticated,
 		},
+		{
+			name:        "password change required blocks non-whitelisted procedure",
+			procedure:   protectedProc,
+			cookieValue: "valid-session-id",
+			setupMocks: func(sess *interceptor_mock.MocksessionValidator, users *interceptor_mock.MockuserLookup) {
+				sess.EXPECT().Validate(gomock.Any(), "valid-session-id").Return(validSession(), nil)
+				mustChangePassword := activeUser()
+				mustChangePassword.PasswordChangeRequired = true
+				users.EXPECT().GetByID(gomock.Any(), uuid.MustParse(testUserID)).Return(mustChangePassword, nil)
+				sess.EXPECT().Refresh(gomock.Any(), "valid-session-id").Return(nil)
+			},
+			wantCode: connect.CodePermissionDenied,
+		},
 	}
 
 	for _, tc := range tests {
@@ -342,4 +395,23 @@ func TestAuthInterceptor_WrapStreamingHandler(t *testing.T) {
 			assert.True(t, called)
 		})
 	}
+}
+
+func TestAuthInterceptor_WithAuthSkipPermissions_BypassesMissingSession(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	sess := interceptor_mock.NewMocksessionValidator(ctrl)
+	users := interceptor_mock.NewMockuserLookup(ctrl)
+
+	authI := interceptor.NewAuthInterceptor(sess, users, interceptor.WithAuthSkipPermissions(true))
+	ts, srv := setupTestServer(t, authI, false)
+	client := configv1connect.NewConfigServiceClient(http.DefaultClient, ts.URL)
+
+	// No cookie/bearer header set: without the bypass this would be unauthenticated.
+	req := connect.NewRequest(&configv1.GetConfigRequest{Namespace: "ns", Path: "/test"})
+	_, err := client.GetConfig(t.Context(), req)
+
+	require.NoError(t, err)
+	assert.True(t, srv.called)
 }

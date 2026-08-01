@@ -118,6 +118,102 @@ func TestUnzipIfNeeded(t *testing.T) {
 	}
 }
 
+func TestUnzipIfNeeded_CorruptedEntry(t *testing.T) {
+	t.Parallel()
+
+	// Build a two-entry zip by hand: a directory entry (skipped by the
+	// IsDir continue branch) followed by a real file entry. This lets us
+	// corrupt the SECOND entry's local file header without touching the
+	// archive's first four bytes, which IsZIP inspects to decide whether
+	// to attempt unzipping at all.
+	buildTwoEntryZip := func(t *testing.T) []byte {
+		t.Helper()
+
+		var buf bytes.Buffer
+		zw := zip.NewWriter(&buf)
+		_, err := zw.Create("empty_dir/")
+		require.NoError(t, err)
+
+		fw, err := zw.Create("file.txt")
+		require.NoError(t, err)
+		_, err = fw.Write([]byte("payload contents for corruption tests"))
+		require.NoError(t, err)
+
+		require.NoError(t, zw.Close())
+
+		return buf.Bytes()
+	}
+
+	tests := []struct {
+		name    string
+		corrupt func(t *testing.T, data []byte) []byte
+		wantErr string
+	}{
+		{
+			name: "corrupted local file header signature causes open error",
+			corrupt: func(t *testing.T, data []byte) []byte {
+				t.Helper()
+
+				sig := []byte{0x50, 0x4B, 0x03, 0x04}
+				// Skip the first occurrence (offset 0, the directory entry -
+				// corrupting it would also break IsZIP's signature check).
+				firstIdx := bytes.Index(data, sig)
+				require.GreaterOrEqual(t, firstIdx, 0)
+
+				secondIdx := bytes.Index(data[firstIdx+1:], sig)
+				require.GreaterOrEqual(t, secondIdx, 0)
+				secondIdx += firstIdx + 1
+
+				out := append([]byte(nil), data...)
+				out[secondIdx] ^= 0xFF
+
+				return out
+			},
+			wantErr: "open zip file file.txt",
+		},
+		{
+			name: "corrupted compressed payload causes read error",
+			corrupt: func(t *testing.T, data []byte) []byte {
+				t.Helper()
+
+				sig := []byte{0x50, 0x4B, 0x03, 0x04}
+				firstIdx := bytes.Index(data, sig)
+				require.GreaterOrEqual(t, firstIdx, 0)
+
+				secondIdx := bytes.Index(data[firstIdx+1:], sig)
+				require.GreaterOrEqual(t, secondIdx, 0)
+				secondIdx += firstIdx + 1
+
+				// Local file header is 30 fixed bytes + filename ("file.txt",
+				// 8 bytes) + extra field (0 bytes here). Flip the first byte
+				// of the compressed data stream right after the header so
+				// the deflate decoder chokes on it, without touching the
+				// header itself or any trailing data descriptor.
+				payloadStart := secondIdx + 30 + len("file.txt")
+				require.Less(t, payloadStart, len(data))
+
+				out := append([]byte(nil), data...)
+				out[payloadStart] ^= 0xFF
+
+				return out
+			},
+			wantErr: "read zip file file.txt",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			data := tt.corrupt(t, buildTwoEntryZip(t))
+			require.True(t, archive.IsZIP(data))
+
+			_, err := archive.UnzipIfNeeded(data)
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
 func TestIsZIP(t *testing.T) {
 	t.Parallel()
 

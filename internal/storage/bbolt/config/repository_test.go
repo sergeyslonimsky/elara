@@ -381,6 +381,35 @@ func TestRepository_LockUnlock(t *testing.T) {
 		err := repo.LockConfig(t.Context(), "ns", "/missing")
 		require.ErrorIs(t, err, storage.ErrResourceNotFound)
 	})
+
+	t.Run("locking an already-locked config is a no-op", func(t *testing.T) {
+		t.Parallel()
+		repo, nsr, _ := newRepo(t)
+		ctx := t.Context()
+		seedNamespace(t, nsr, "ns")
+		require.NoError(t, repo.Create(ctx, newTestConfig("ns", "/a", "v1")))
+
+		require.NoError(t, repo.LockConfig(ctx, "ns", "/a"))
+		require.NoError(t, repo.LockConfig(ctx, "ns", "/a"))
+
+		got, err := repo.Get(ctx, "/a", "ns")
+		require.NoError(t, err)
+		assert.True(t, got.Locked)
+	})
+
+	t.Run("unlocking an already-unlocked config is a no-op", func(t *testing.T) {
+		t.Parallel()
+		repo, nsr, _ := newRepo(t)
+		ctx := t.Context()
+		seedNamespace(t, nsr, "ns")
+		require.NoError(t, repo.Create(ctx, newTestConfig("ns", "/a", "v1")))
+
+		require.NoError(t, repo.UnlockConfig(ctx, "ns", "/a"))
+
+		got, err := repo.Get(ctx, "/a", "ns")
+		require.NoError(t, err)
+		assert.False(t, got.Locked)
+	})
 }
 
 func TestRepository_CurrentRevision(t *testing.T) {
@@ -509,6 +538,86 @@ func TestRepository_ListByPrefix(t *testing.T) {
 	assert.Equal(t, "/svc/b", got[1].Path)
 }
 
+func TestRepository_ListByPrefix_CrossNamespaceFiltersByPath(t *testing.T) {
+	t.Parallel()
+
+	repo, nsr, _ := newRepo(t)
+	ctx := t.Context()
+	seedNamespace(t, nsr, "ns1")
+	seedNamespace(t, nsr, "ns2")
+
+	require.NoError(t, repo.Create(ctx, newTestConfig("ns1", "/match/a", "v")))
+	require.NoError(t, repo.Create(ctx, newTestConfig("ns2", "/match/b", "v")))
+	require.NoError(t, repo.Create(ctx, newTestConfig("ns1", "/other/c", "v")))
+
+	// Empty namespace triggers a full scan; shouldSkipByPath filters entries
+	// whose path does not carry the requested prefix.
+	got, err := repo.ListByPrefix(ctx, "/match", "")
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	for _, c := range got {
+		assert.Contains(t, c.Path, "/match")
+	}
+}
+
+func TestRepository_ListAllByNamespace(t *testing.T) {
+	t.Parallel()
+
+	repo, nsr, _ := newRepo(t)
+	ctx := t.Context()
+	seedNamespace(t, nsr, "ns")
+	seedNamespace(t, nsr, "other")
+
+	require.NoError(t, repo.Create(ctx, newTestConfig("ns", "/svc/a", "v")))
+	require.NoError(t, repo.Create(ctx, newTestConfig("ns", "/other/c", "v")))
+	require.NoError(t, repo.Create(ctx, newTestConfig("other", "/svc/d", "v")))
+
+	got, err := repo.ListAllByNamespace(ctx, "ns")
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	assert.Equal(t, "/other/c", got[0].Path)
+	assert.Equal(t, "/svc/a", got[1].Path)
+}
+
+func TestRepository_ListSummariesByPrefix(t *testing.T) {
+	t.Parallel()
+
+	repo, nsr, _ := newRepo(t)
+	ctx := t.Context()
+	seedNamespace(t, nsr, "ns")
+
+	require.NoError(t, repo.Create(ctx, newTestConfig("ns", "/svc/a", "v")))
+	require.NoError(t, repo.Create(ctx, newTestConfig("ns", "/svc/b", "v")))
+	require.NoError(t, repo.Create(ctx, newTestConfig("ns", "/other/c", "v")))
+
+	got, err := repo.ListSummariesByPrefix(ctx, "/svc", "ns")
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	assert.Equal(t, "/svc/a", got[0].Path)
+	assert.Equal(t, "/svc/b", got[1].Path)
+	assert.False(t, got[0].NamespaceLocked)
+}
+
+func TestRepository_ListConfigPage(t *testing.T) {
+	t.Parallel()
+
+	repo, nsr, _ := newRepo(t)
+	ctx := t.Context()
+	seedNamespace(t, nsr, "ns")
+
+	for _, p := range []string{"/a", "/b", "/c", "/d"} {
+		require.NoError(t, repo.Create(ctx, newTestConfig("ns", p, "v")))
+	}
+
+	page, total, err := repo.ListConfigPage(ctx, "", "ns", 2, 1)
+	require.NoError(t, err)
+	assert.Equal(t, 4, total)
+	require.Len(t, page, 2)
+	assert.Equal(t, "/b", page[0].Path)
+	assert.Equal(t, "v", page[0].Content)
+	assert.Equal(t, "/c", page[1].Path)
+}
+
 func TestRepository_CountByNamespace(t *testing.T) {
 	t.Parallel()
 
@@ -597,6 +706,27 @@ func TestRepository_GetConfigHistory_Merges(t *testing.T) {
 		assert.True(t, seen[domain.EventTypeLocked])
 		assert.True(t, seen[domain.EventTypeUnlocked])
 		assert.True(t, seen[domain.EventTypeUpdated])
+	})
+
+	t.Run("namespace lock event surfaces in config history", func(t *testing.T) {
+		t.Parallel()
+		repo, nsr, _ := newRepo(t)
+		ctx := t.Context()
+		seedNamespace(t, nsr, "ns")
+		require.NoError(t, repo.Create(ctx, newTestConfig("ns", "/a", "v1")))
+		require.NoError(t, nsr.LockNamespace(ctx, "ns"))
+		require.NoError(t, nsr.UnlockNamespace(ctx, "ns"))
+
+		hist, err := repo.GetConfigHistory(ctx, "/a", "ns", 100)
+		require.NoError(t, err)
+
+		seen := map[domain.EventType]bool{}
+		for _, h := range hist {
+			seen[h.EventType] = true
+		}
+		assert.True(t, seen[domain.EventTypeCreated])
+		assert.True(t, seen[domain.EventTypeNamespaceLocked])
+		assert.True(t, seen[domain.EventTypeNamespaceUnlocked])
 	})
 }
 
