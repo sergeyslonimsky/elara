@@ -324,6 +324,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Quickstart">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-to-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploy to Kubernetes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -500,6 +517,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Quickstart">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-to-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploy to Kubernetes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -645,6 +679,13 @@ at the same time.</p>
 <p>See the <a href="quickstart/">Quickstart guide</a> for a guided 5-minute tour, or the
 <a href="tutorial-todo-app/">todo-app tutorial</a> for a worked example with three
 services reading config live.</p>
+<h3 id="deploy-to-kubernetes">Deploy to Kubernetes</h3>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>elara<span class="w"> </span>https://sergeyslonimsky.github.io/elara
+helm<span class="w"> </span>install<span class="w"> </span>elara<span class="w"> </span>elara/elara
+</code></pre></div>
+<p>See the <a href="https://github.com/sergeyslonimsky/elara/blob/master/helm/elara/README.md">Helm chart docs</a>
+for prerequisites, <code>values.yaml</code> reference, and production configuration
+(ingress, persistence, resource limits).</p>
 <h2 id="why-elara">Why Elara</h2>
 <p>Three things Elara gives you that a bare etcd cluster does not:</p>
 <ol>
