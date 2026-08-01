@@ -19,7 +19,7 @@ func (s *Service) SubscribeChanges(
 	}
 
 	upstream, cancel := s.active.Subscribe()
-	scope := newScopeChecker(s.pdp, info.Email)
+	scope := newScopeChecker(s.pdp, info.UserID)
 
 	if scope.admin {
 		return upstream, cancel, nil
@@ -58,7 +58,7 @@ func (s *Service) SubscribeClient(
 		return nil, nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.pdp, info.Email)
+	scope := newScopeChecker(s.pdp, info.UserID)
 
 	if !scope.admin {
 		c := s.active.Get(connID)

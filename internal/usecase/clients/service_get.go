@@ -28,7 +28,7 @@ func (s *Service) Get(
 		return nil, nil, domain.ErrUnauthorized
 	}
 
-	scope := newScopeChecker(s.pdp, info.Email)
+	scope := newScopeChecker(s.pdp, info.UserID)
 
 	if c := s.active.Get(id); c != nil {
 		if !scope.visible(c) {
