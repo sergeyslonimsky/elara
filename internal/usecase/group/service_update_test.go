@@ -1007,7 +1007,7 @@ func TestService_UpdatePermissions(t *testing.T) {
 						func(ctx context.Context, txe *casbin.TxEnforcer) error {
 							return txe.AddPolicy(
 								"devops@example.com",
-								"dev",
+								domain.NamespaceResource("dev"),
 								string(domain.ObjectNamespace),
 								string(domain.ActionWrite),
 							)

@@ -309,8 +309,18 @@ func (e *Enforcer) applyOpsToCache(ops []op) error { //nolint:cyclop //refactor
 				return fmt.Errorf("cache remove grouping policy: %w", err)
 			}
 		case opDeleteUser:
+			// gocasbin's DeleteUser only strips g-rules where o.user is the
+			// subject (column 0) plus p-rules naming it — it never removes
+			// g-rules where o.user is the role/group target (column 1). The
+			// on-disk delete (TxEnforcer.DeleteUser) issues both
+			// RemoveFilteredPolicyCtx calls, so the cache must mirror that
+			// second pass or it goes stale relative to bbolt.
 			if _, err := e.e.DeleteUser(o.user); err != nil {
 				return fmt.Errorf("cache delete user: %w", err)
+			}
+
+			if _, err := e.e.RemoveFilteredGroupingPolicy(1, o.user); err != nil {
+				return fmt.Errorf("cache delete user (role): %w", err)
 			}
 		}
 	}

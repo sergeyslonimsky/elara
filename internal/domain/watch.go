@@ -8,6 +8,11 @@ const (
 	EventTypeCreated EventType = iota + 1
 	EventTypeUpdated
 	EventTypeDeleted
+	// EventTypeLocked/EventTypeUnlocked fire for a single config being
+	// locked/unlocked. EventTypeNamespaceLocked/EventTypeNamespaceUnlocked
+	// (below) are the distinct namespace-scope variants — do not conflate
+	// the two when asserting on or emitting lock/unlock events; both pairs
+	// compile fine in either spot, so a mismatch fails silently.
 	EventTypeLocked
 	EventTypeUnlocked
 	EventTypeNamespaceLocked
