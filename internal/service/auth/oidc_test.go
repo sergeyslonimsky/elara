@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
@@ -120,8 +121,13 @@ func (s *oidcServer) token(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]any{
 		"access_token": "fake-access-token",
 		"token_type":   "Bearer",
-		"id_token":     rawIDToken,
 		"expires_in":   3600,
+	}
+
+	// "no-id-token" is a sentinel code used to exercise the errIDTokenMissing
+	// branch of Exchange — every other code gets a normal signed id_token.
+	if r.FormValue("code") != "no-id-token" {
+		resp["id_token"] = rawIDToken
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -233,6 +239,69 @@ func TestOIDCProvider_Exchange(t *testing.T) {
 	assert.Equal(t, "Alice", identity.Name)
 	assert.Equal(t, "https://example.com/alice.png", identity.Picture)
 	assert.Equal(t, []string{"admin"}, identity.Groups)
+}
+
+func TestOIDCProvider_Exchange_NonceMismatch(t *testing.T) {
+	t.Parallel()
+
+	srv := newOIDCServer(t, "test-client")
+
+	cfg := auth.OIDCConfig{
+		IssuerURL:    srv.issuer(),
+		ClientID:     "test-client",
+		ClientSecret: "secret",
+		RedirectURL:  "http://localhost/callback",
+	}
+
+	p, err := auth.NewOIDCProvider(t.Context(), cfg)
+	require.NoError(t, err)
+
+	// The fake token handler embeds "" as the id_token nonce (see
+	// newOIDCServer.token). Requesting verification against a non-empty
+	// nonce forces the errNonceMismatch branch.
+	_, err = p.Exchange(t.Context(), "fake-code", "expected-nonce")
+	require.ErrorContains(t, err, "nonce mismatch")
+}
+
+func TestOIDCProvider_Exchange_IDTokenMissing(t *testing.T) {
+	t.Parallel()
+
+	srv := newOIDCServer(t, "test-client")
+
+	cfg := auth.OIDCConfig{
+		IssuerURL:    srv.issuer(),
+		ClientID:     "test-client",
+		ClientSecret: "secret",
+		RedirectURL:  "http://localhost/callback",
+	}
+
+	p, err := auth.NewOIDCProvider(t.Context(), cfg)
+	require.NoError(t, err)
+
+	_, err = p.Exchange(t.Context(), "no-id-token", "")
+	require.ErrorContains(t, err, "id_token missing from response")
+}
+
+func TestOIDCProvider_Exchange_CodeExchangeFails(t *testing.T) {
+	t.Parallel()
+
+	srv := newOIDCServer(t, "test-client")
+
+	cfg := auth.OIDCConfig{
+		IssuerURL:    srv.issuer(),
+		ClientID:     "test-client",
+		ClientSecret: "secret",
+		RedirectURL:  "http://localhost/callback",
+	}
+
+	p, err := auth.NewOIDCProvider(t.Context(), cfg)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	_, err = p.Exchange(ctx, "fake-code", "")
+	require.ErrorContains(t, err, "exchange code")
 }
 
 func TestOIDCProvider_DefaultScopes(t *testing.T) {

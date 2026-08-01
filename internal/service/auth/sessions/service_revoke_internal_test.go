@@ -109,6 +109,74 @@ func TestService_Revoke(t *testing.T) {
 	}
 }
 
+func TestService_Revoke_ErrorPaths(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC)
+	sessionID := "session-revoke-err"
+
+	tests := []struct {
+		name     string
+		mockFunc func(*gomock.Controller) *Service
+		wantErr  string
+	}{
+		{
+			name: "repo Update error propagated",
+			mockFunc: func(ctrl *gomock.Controller) *Service {
+				repo := sessions_mock.NewMocksessionRepository(ctrl)
+				evt := sessions_mock.NewMocksessionEventRepository(ctrl)
+				clk := sessions_mock.NewMockClock(ctrl)
+
+				sess := &domain.Session{ID: sessionID, UserID: "user-1", ExpiresAt: now.Add(time.Hour)}
+
+				repo.EXPECT().Get(gomock.Any(), sessionID).Return(sess, nil)
+				clk.EXPECT().Now().Return(now)
+				repo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(errors.New("db down"))
+
+				return New(repo, evt, clk)
+			},
+			wantErr: "update revoked session: db down",
+		},
+		{
+			name: "events Append error propagated",
+			mockFunc: func(ctrl *gomock.Controller) *Service {
+				repo := sessions_mock.NewMocksessionRepository(ctrl)
+				evt := sessions_mock.NewMocksessionEventRepository(ctrl)
+				clk := sessions_mock.NewMockClock(ctrl)
+
+				sess := &domain.Session{ID: sessionID, UserID: "user-1", ExpiresAt: now.Add(time.Hour)}
+
+				repo.EXPECT().Get(gomock.Any(), sessionID).Return(sess, nil)
+				clk.EXPECT().Now().Return(now)
+				repo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+				evt.EXPECT().Append(gomock.Any(), gomock.Any()).Return(errors.New("append failed"))
+
+				return New(repo, evt, clk)
+			},
+			wantErr: "append revoke event: append failed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			sut := tt.mockFunc(ctrl)
+
+			err := sut.Revoke(
+				t.Context(),
+				sessionID,
+				"admin-user",
+				"security policy",
+				domain.SessionEventRevokedByAdmin,
+			)
+
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
 func TestService_RevokeAllForUser(t *testing.T) {
 	t.Parallel()
 
@@ -230,6 +298,72 @@ func TestService_RevokeAllForUser(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestService_RevokeAllForUser_ErrorPaths(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC)
+	userID := "user-cascade-err"
+	revokedBy := "admin"
+	reason := "account deactivated"
+
+	tests := []struct {
+		name     string
+		mockFunc func(*gomock.Controller) *Service
+		wantErr  string
+	}{
+		{
+			name: "bulk RevokeAllForUser error propagated",
+			mockFunc: func(ctrl *gomock.Controller) *Service {
+				repo := sessions_mock.NewMocksessionRepository(ctrl)
+				evt := sessions_mock.NewMocksessionEventRepository(ctrl)
+				clk := sessions_mock.NewMockClock(ctrl)
+
+				clk.EXPECT().Now().Return(now)
+
+				activeSessions := []*domain.Session{{ID: "s1", UserID: userID}}
+
+				repo.EXPECT().ListActiveByUser(gomock.Any(), userID).Return(activeSessions, nil)
+				repo.EXPECT().RevokeAllForUser(gomock.Any(), userID, revokedBy).Return(0, errors.New("db down"))
+
+				return New(repo, evt, clk)
+			},
+			wantErr: "bulk revoke: db down",
+		},
+		{
+			name: "events Append error propagated mid-loop",
+			mockFunc: func(ctrl *gomock.Controller) *Service {
+				repo := sessions_mock.NewMocksessionRepository(ctrl)
+				evt := sessions_mock.NewMocksessionEventRepository(ctrl)
+				clk := sessions_mock.NewMockClock(ctrl)
+
+				clk.EXPECT().Now().Return(now)
+
+				activeSessions := []*domain.Session{{ID: "s1", UserID: userID}}
+
+				repo.EXPECT().ListActiveByUser(gomock.Any(), userID).Return(activeSessions, nil)
+				repo.EXPECT().RevokeAllForUser(gomock.Any(), userID, revokedBy).Return(1, nil)
+				evt.EXPECT().Append(gomock.Any(), gomock.Any()).Return(errors.New("append failed"))
+
+				return New(repo, evt, clk)
+			},
+			wantErr: "append cascade revoke event for session s1: append failed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			sut := tt.mockFunc(ctrl)
+
+			err := sut.RevokeAllForUser(t.Context(), userID, revokedBy, reason)
+
+			require.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }

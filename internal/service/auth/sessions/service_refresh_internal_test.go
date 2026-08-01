@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -205,6 +206,145 @@ func TestService_Refresh(t *testing.T) {
 					clk,
 				)
 			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			sut := tt.mockFunc(ctrl)
+
+			err := sut.Refresh(t.Context(), sessionID)
+
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestService_Refresh_ErrorPaths(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC)
+	sessionID := "session-refresh-err"
+
+	tests := []struct {
+		name     string
+		mockFunc func(*gomock.Controller) *Service
+		wantErr  string
+	}{
+		{
+			name: "repo Get error propagated",
+			mockFunc: func(ctrl *gomock.Controller) *Service {
+				repo := sessions_mock.NewMocksessionRepository(ctrl)
+				clk := sessions_mock.NewMockClock(ctrl)
+
+				repo.EXPECT().Get(gomock.Any(), sessionID).Return(nil, errors.New("db failure"))
+
+				return New(repo, nil, clk)
+			},
+			wantErr: "sessions: refresh: db failure",
+		},
+		{
+			name: "already revoked is a silent no-op",
+			mockFunc: func(ctrl *gomock.Controller) *Service {
+				repo := sessions_mock.NewMocksessionRepository(ctrl)
+				clk := sessions_mock.NewMockClock(ctrl)
+
+				revokedAt := now.Add(-time.Minute)
+				sess := &domain.Session{
+					ID:         sessionID,
+					UserID:     "user-1",
+					ClientType: domain.ClientTypeWeb,
+					CreatedAt:  now.Add(-time.Hour),
+					LastSeenAt: now.Add(-5 * time.Minute),
+					ExpiresAt:  now.Add(time.Hour),
+					RevokedAt:  &revokedAt,
+				}
+
+				repo.EXPECT().Get(gomock.Any(), sessionID).Return(sess, nil)
+				clk.EXPECT().Now().Return(now)
+				// No Update or Append expected — concurrent revoke wins silently.
+
+				return New(repo, nil, clk)
+			},
+		},
+		{
+			name: "expired session is a silent no-op",
+			mockFunc: func(ctrl *gomock.Controller) *Service {
+				repo := sessions_mock.NewMocksessionRepository(ctrl)
+				clk := sessions_mock.NewMockClock(ctrl)
+
+				sess := &domain.Session{
+					ID:         sessionID,
+					UserID:     "user-1",
+					ClientType: domain.ClientTypeWeb,
+					CreatedAt:  now.Add(-time.Hour),
+					LastSeenAt: now.Add(-5 * time.Minute),
+					ExpiresAt:  now.Add(-time.Minute),
+				}
+
+				repo.EXPECT().Get(gomock.Any(), sessionID).Return(sess, nil)
+				clk.EXPECT().Now().Return(now)
+
+				return New(repo, nil, clk)
+			},
+		},
+		{
+			name: "repo Update error propagated from persistRefresh",
+			mockFunc: func(ctrl *gomock.Controller) *Service {
+				repo := sessions_mock.NewMocksessionRepository(ctrl)
+				evt := sessions_mock.NewMocksessionEventRepository(ctrl)
+				clk := sessions_mock.NewMockClock(ctrl)
+
+				sess := &domain.Session{
+					ID:         sessionID,
+					UserID:     "user-1",
+					ClientType: domain.ClientTypeWeb,
+					CreatedAt:  now.Add(-time.Hour),
+					LastSeenAt: now.Add(-5 * time.Minute),
+					ExpiresAt:  now.Add(time.Hour),
+				}
+
+				repo.EXPECT().Get(gomock.Any(), sessionID).Return(sess, nil)
+				clk.EXPECT().Now().Return(now)
+				repo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(errors.New("db down"))
+
+				return New(repo, evt, clk)
+			},
+			wantErr: "update session: db down",
+		},
+		{
+			name: "events Append error propagated from persistRefresh",
+			mockFunc: func(ctrl *gomock.Controller) *Service {
+				repo := sessions_mock.NewMocksessionRepository(ctrl)
+				evt := sessions_mock.NewMocksessionEventRepository(ctrl)
+				clk := sessions_mock.NewMockClock(ctrl)
+
+				sess := &domain.Session{
+					ID:         sessionID,
+					UserID:     "user-1",
+					ClientType: domain.ClientTypeWeb,
+					CreatedAt:  now.Add(-time.Hour),
+					LastSeenAt: now.Add(-5 * time.Minute),
+					ExpiresAt:  now.Add(time.Hour),
+				}
+
+				repo.EXPECT().Get(gomock.Any(), sessionID).Return(sess, nil)
+				clk.EXPECT().Now().Return(now)
+				repo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+				evt.EXPECT().Append(gomock.Any(), gomock.Any()).Return(errors.New("append failed"))
+
+				return New(repo, evt, clk)
+			},
+			wantErr: "append refreshed event: append failed",
 		},
 	}
 
