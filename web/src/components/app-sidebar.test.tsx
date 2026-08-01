@@ -6,6 +6,7 @@ import { buildAbility } from "@/auth/ability";
 import type { AuthContextType } from "@/components/auth-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import { GetCapabilitiesResponseSchema } from "@/gen/elara/capabilities/v1/capabilities_service_pb";
 import { MeResponseSchema } from "@/gen/elara/profile/v1/profile_service_pb";
 import { TestProviders } from "@/test/test-utils";
 import { AppSidebar } from "./app-sidebar";
@@ -18,12 +19,18 @@ const adminUser = create(MeResponseSchema, {
 	picture: "",
 });
 
+const allCapabilitiesEnabled = create(GetCapabilitiesResponseSchema, {
+	etcdTokenAuthEnabled: true,
+	userManagementEnabled: true,
+});
+
 const mockAdminContext: AuthContextType = {
 	state: {
 		status: "authenticated",
 		authType: AuthType.BASIC,
 		user: adminUser,
 		ability: buildAbility([{ object: 99, action: 99, domain: "*" } as any]),
+		capabilities: allCapabilitiesEnabled,
 	},
 	logout: async () => {},
 };
@@ -44,6 +51,7 @@ const mockUserContext: AuthContextType = {
 			{ object: 5, action: 1, domain: "*" } as any, // TOKEN READ
 			{ object: 5, action: 2, domain: "*" } as any, // TOKEN WRITE
 		]),
+		capabilities: allCapabilitiesEnabled,
 	},
 	logout: async () => {},
 };
@@ -54,6 +62,7 @@ const mockOidcAdminContext: AuthContextType = {
 		authType: AuthType.OIDC,
 		user: adminUser,
 		ability: buildAbility([{ object: 99, action: 99, domain: "*" } as any]),
+		capabilities: allCapabilitiesEnabled,
 	},
 	logout: async () => {},
 };
@@ -64,6 +73,7 @@ const mockNoneContext: AuthContextType = {
 		authType: AuthType.NONE,
 		user: adminUser,
 		ability: buildAbility([{ object: 99, action: 99, domain: "*" } as any]),
+		capabilities: allCapabilitiesEnabled,
 	},
 	logout: async () => {},
 };
@@ -115,6 +125,7 @@ describe("AppSidebar", () => {
 				ability: buildAbility([
 					{ object: 6, action: 1, domain: "*" } as any, // WEBHOOK READ
 				]),
+				capabilities: allCapabilitiesEnabled,
 			},
 			logout: async () => {},
 		};
@@ -213,5 +224,57 @@ describe("AppSidebar", () => {
 
 		const configsLink = screen.getByRole("link", { name: "Configs" });
 		expect(configsLink).toHaveAttribute("href", "/browse/my-ns");
+	});
+
+	it("hides Tokens when etcdTokenAuthEnabled is false even though RBAC allows it", () => {
+		const context: AuthContextType = {
+			state: {
+				status: "authenticated",
+				authType: AuthType.BASIC,
+				user: adminUser,
+				ability: buildAbility([{ object: 99, action: 99, domain: "*" } as any]),
+				capabilities: create(GetCapabilitiesResponseSchema, {
+					etcdTokenAuthEnabled: false,
+					userManagementEnabled: true,
+				}),
+			},
+			logout: async () => {},
+		};
+		render(
+			<TestProviders authContext={context}>
+				<SidebarProvider>
+					<AppSidebar />
+				</SidebarProvider>
+			</TestProviders>,
+		);
+
+		expect(screen.queryByText("Tokens")).not.toBeInTheDocument();
+	});
+
+	it("hides Users and Groups when userManagementEnabled is false even though RBAC allows it", () => {
+		const context: AuthContextType = {
+			state: {
+				status: "authenticated",
+				authType: AuthType.BASIC,
+				user: adminUser,
+				ability: buildAbility([{ object: 99, action: 99, domain: "*" } as any]),
+				capabilities: create(GetCapabilitiesResponseSchema, {
+					etcdTokenAuthEnabled: true,
+					userManagementEnabled: false,
+				}),
+			},
+			logout: async () => {},
+		};
+		render(
+			<TestProviders authContext={context}>
+				<SidebarProvider>
+					<AppSidebar />
+				</SidebarProvider>
+			</TestProviders>,
+		);
+
+		expect(screen.queryByText("Administration")).not.toBeInTheDocument();
+		expect(screen.queryByText("Users")).not.toBeInTheDocument();
+		expect(screen.queryByText("Groups")).not.toBeInTheDocument();
 	});
 });

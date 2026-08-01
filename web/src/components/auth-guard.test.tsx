@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { buildAbility } from "@/auth/ability";
 import type { AuthContextType } from "@/components/auth-provider";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import { GetCapabilitiesResponseSchema } from "@/gen/elara/capabilities/v1/capabilities_service_pb";
 import { MeResponseSchema } from "@/gen/elara/profile/v1/profile_service_pb";
 import { TestProviders } from "@/test/test-utils";
 import { AuthGuard } from "./auth-guard";
@@ -16,6 +17,11 @@ const authenticatedUser = create(MeResponseSchema, {
 	permissions: [],
 	passwordChangeRequired: false,
 	picture: "",
+});
+
+const allCapabilitiesEnabled = create(GetCapabilitiesResponseSchema, {
+	etcdTokenAuthEnabled: true,
+	userManagementEnabled: true,
 });
 
 function TestApp() {
@@ -100,6 +106,7 @@ describe("AuthGuard", () => {
 				authType: AuthType.BASIC,
 				user: authenticatedUser,
 				ability: buildAbility([]),
+				capabilities: allCapabilitiesEnabled,
 			},
 			logout: vi.fn(),
 		};
@@ -123,6 +130,7 @@ describe("AuthGuard", () => {
 				authType: AuthType.BASIC,
 				user: userWithPasswordChange,
 				ability: buildAbility([]),
+				capabilities: allCapabilitiesEnabled,
 			},
 			logout: vi.fn(),
 		};
@@ -142,6 +150,7 @@ describe("AuthGuard", () => {
 				authType: AuthType.BASIC,
 				user: authenticatedUser,
 				ability: buildAbility([]),
+				capabilities: allCapabilitiesEnabled,
 			},
 			logout: vi.fn(),
 		};
@@ -164,6 +173,7 @@ describe("AuthGuard", () => {
 				authType: AuthType.BASIC,
 				user: userWithPasswordChange,
 				ability: buildAbility([]),
+				capabilities: allCapabilitiesEnabled,
 			},
 			logout: vi.fn(),
 		};
@@ -190,5 +200,49 @@ describe("AuthGuard", () => {
 			</TestProviders>,
 		);
 		expect(screen.getByText("Callback Page")).toBeInTheDocument();
+	});
+
+	it("redirects from /tokens to / when etcdTokenAuthEnabled is false", () => {
+		const authContext: AuthContextType = {
+			state: {
+				status: "authenticated",
+				authType: AuthType.BASIC,
+				user: authenticatedUser,
+				ability: buildAbility([{ object: 5, action: 1, domain: "*" } as any]), // TOKEN READ
+				capabilities: create(GetCapabilitiesResponseSchema, {
+					etcdTokenAuthEnabled: false,
+					userManagementEnabled: true,
+				}),
+			},
+			logout: vi.fn(),
+		};
+		render(
+			<TestProviders initialEntries={["/tokens"]} authContext={authContext}>
+				<TestApp />
+			</TestProviders>,
+		);
+		expect(screen.getByText("Dashboard")).toBeInTheDocument();
+	});
+
+	it("redirects from /users to / when userManagementEnabled is false", () => {
+		const authContext: AuthContextType = {
+			state: {
+				status: "authenticated",
+				authType: AuthType.BASIC,
+				user: authenticatedUser,
+				ability: buildAbility([{ object: 3, action: 1, domain: "*" } as any]), // USER READ
+				capabilities: create(GetCapabilitiesResponseSchema, {
+					etcdTokenAuthEnabled: true,
+					userManagementEnabled: false,
+				}),
+			},
+			logout: vi.fn(),
+		};
+		render(
+			<TestProviders initialEntries={["/users"]} authContext={authContext}>
+				<TestApp />
+			</TestProviders>,
+		);
+		expect(screen.getByText("Dashboard")).toBeInTheDocument();
 	});
 });

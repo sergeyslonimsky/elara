@@ -12,6 +12,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	authhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/auth"
+	capabilitieshandler "github.com/sergeyslonimsky/elara/internal/handler/v2/capabilities"
 	clientshandler "github.com/sergeyslonimsky/elara/internal/handler/v2/clients"
 	confighandler "github.com/sergeyslonimsky/elara/internal/handler/v2/config"
 	dashboardhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/dashboard"
@@ -25,6 +26,7 @@ import (
 	userhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/user"
 	webhookhandler "github.com/sergeyslonimsky/elara/internal/handler/v2/webhook"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/auth/v1/authv1connect"
+	"github.com/sergeyslonimsky/elara/internal/proto/elara/capabilities/v1/capabilitiesv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/clients/v1/clientsv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/config/v1/configv1connect"
 	"github.com/sergeyslonimsky/elara/internal/proto/elara/dashboard/v1/dashboardv1connect"
@@ -40,19 +42,20 @@ import (
 )
 
 type V2Handlers struct {
-	Config    *confighandler.ConfigHandler
-	Schema    *confighandler.SchemaHandler
-	Namespace *namespacehandler.Handler
-	Clients   *clientshandler.Handler
-	Dashboard *dashboardhandler.Handler
-	Transfer  *transferhandler.Handler
-	Webhook   *webhookhandler.Handler
-	Filter    *filterhandler.Handler
-	Auth      *authhandler.Handler
-	Profile   *profilehandler.Handler
-	Users     *userhandler.Handler
-	Groups    *grouphandler.Handler
-	Tokens    *tokenhandler.Handler
+	Config       *confighandler.ConfigHandler
+	Schema       *confighandler.SchemaHandler
+	Namespace    *namespacehandler.Handler
+	Clients      *clientshandler.Handler
+	Dashboard    *dashboardhandler.Handler
+	Transfer     *transferhandler.Handler
+	Webhook      *webhookhandler.Handler
+	Filter       *filterhandler.Handler
+	Auth         *authhandler.Handler
+	Profile      *profilehandler.Handler
+	Users        *userhandler.Handler
+	Groups       *grouphandler.Handler
+	Tokens       *tokenhandler.Handler
+	Capabilities capabilitiesv1connect.CapabilitiesServiceHandler
 }
 
 func NewV2Handlers(s *Services, _ *sessions.Service, cfg config.Config) *V2Handlers {
@@ -91,6 +94,8 @@ func initAuthHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
 	if cfg.Client.Auth.Enabled {
 		handlers.Tokens = tokenhandler.New(s.Authz, s.Token)
 	}
+
+	handlers.Capabilities = capabilitieshandler.New(cfg.Client.Auth.Enabled, cfg.UI.Auth.Enabled)
 }
 
 func initIAMHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
@@ -170,6 +175,9 @@ func V2Routes(
 	server.Mount(path, handler)
 
 	path, handler = profilev1connect.NewProfileServiceHandler(handlers.Profile, privateOpts)
+	server.Mount(path, handler)
+
+	path, handler = capabilitiesv1connect.NewCapabilitiesServiceHandler(handlers.Capabilities, privateOpts)
 	server.Mount(path, handler)
 
 	path, handler = filterv1connect.NewFilterServiceHandler(handlers.Filter, privateOpts)

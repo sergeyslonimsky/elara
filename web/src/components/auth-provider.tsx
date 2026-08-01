@@ -9,6 +9,8 @@ import { createContext, useCallback, useContext, useMemo } from "react";
 import { type AppAbility, buildAbility } from "@/auth/ability";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 import { getAuthInfo } from "@/gen/elara/auth/v1/auth_service-AuthService_connectquery";
+import type { GetCapabilitiesResponse } from "@/gen/elara/capabilities/v1/capabilities_service_pb";
+import { getCapabilities } from "@/gen/elara/capabilities/v1/capabilities_service-CapabilitiesService_connectquery";
 import type { MeResponse } from "@/gen/elara/profile/v1/profile_service_pb";
 import {
 	logout as logoutRpc,
@@ -24,6 +26,7 @@ export type AuthState =
 			authType: AuthType;
 			user: MeResponse;
 			ability: AppAbility;
+			capabilities: GetCapabilitiesResponse;
 	  };
 
 export interface AuthContextType {
@@ -61,6 +64,12 @@ function AuthProviderInner({ children }: { children: React.ReactNode }) {
 		},
 	);
 
+	const { data: capabilitiesData, error: capabilitiesError } = useQuery(
+		getCapabilities,
+		{},
+		{ enabled: !!meData, staleTime: Infinity, gcTime: Infinity },
+	);
+
 	const { mutateAsync: mutateLogout } = useMutation(logoutRpc);
 
 	const logout = useCallback(async () => {
@@ -80,26 +89,39 @@ function AuthProviderInner({ children }: { children: React.ReactNode }) {
 		if (authType === AuthType.UNSPECIFIED) return { status: "loading" };
 
 		if (authType === AuthType.NONE) {
-			if (meData)
+			if (meData) {
+				if (capabilitiesError)
+					return {
+						status: "error",
+						error: ConnectError.from(capabilitiesError),
+					};
+				if (!capabilitiesData) return { status: "loading" };
 				return {
 					status: "authenticated",
 					authType,
 					user: meData,
 					ability: buildAbility(meData.permissions),
+					capabilities: capabilitiesData,
 				};
+			}
 			if (meError)
 				return { status: "error", error: ConnectError.from(meError) };
 			return { status: "loading" };
 		}
 
 		// BASIC / OIDC
-		if (meData)
+		if (meData) {
+			if (capabilitiesError)
+				return { status: "error", error: ConnectError.from(capabilitiesError) };
+			if (!capabilitiesData) return { status: "loading" };
 			return {
 				status: "authenticated",
 				authType,
 				user: meData,
 				ability: buildAbility(meData.permissions),
+				capabilities: capabilitiesData,
 			};
+		}
 		if (meError) return { status: "anonymous", authType };
 		if (isMeLoading) return { status: "loading" };
 		return { status: "anonymous", authType };
@@ -110,6 +132,8 @@ function AuthProviderInner({ children }: { children: React.ReactNode }) {
 		meData,
 		meError,
 		isMeLoading,
+		capabilitiesData,
+		capabilitiesError,
 	]);
 
 	const value = useMemo(
