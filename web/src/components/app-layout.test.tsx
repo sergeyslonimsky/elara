@@ -11,6 +11,10 @@ vi.mock("@/components/app-sidebar", () => ({
 	AppSidebar: () => <div data-testid="app-sidebar" />,
 }));
 
+vi.mock("@/components/demo-welcome-modal", () => ({
+	DemoWelcomeModal: () => null,
+}));
+
 describe("AppLayout", () => {
 	it("renders sidebar, header and outlet content", () => {
 		render(

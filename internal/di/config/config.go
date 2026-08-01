@@ -48,7 +48,18 @@ type Config struct {
 	Tracing TracingConfig
 	Log     LogConfig
 
+	// Demo enables sample-data seeding and the first-run welcome modal. Off by
+	// default; the `elara:demo` image sets DEMO_MODE=true.
+	Demo DemoConfig
+
 	DangerouslySkipPermissions bool
+}
+
+// DemoConfig controls demo mode. When Enabled, the service seeds sample
+// namespaces/configs/schemas on startup and injects simulated etcd clients
+// into the connected-clients monitor, and the UI shows a welcome modal.
+type DemoConfig struct {
+	Enabled bool
 }
 
 // LogConfig controls structured-log verbosity, output format, and source location.
@@ -106,6 +117,10 @@ func NewConfig(ctx context.Context) (Config, error) {
 			Level:    cfg.GetStringOrDefault("log.level", defaultLogLevel),
 			Format:   cfg.GetStringOrDefault("log.format", defaultLogFormat),
 			NoSource: cfg.GetBool("log.noSource"),
+		},
+		Demo: DemoConfig{
+			// Reads demo.mode / DEMO_MODE. Default: false.
+			Enabled: cfg.GetBool("demo.mode"),
 		},
 		DangerouslySkipPermissions: cfg.GetBool("dangerously.skip.permissions"),
 	}, nil

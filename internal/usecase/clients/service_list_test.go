@@ -37,7 +37,7 @@ func TestService_ListActive(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -69,7 +69,7 @@ func TestService_ListActive(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -77,7 +77,7 @@ func TestService_ListActive(t *testing.T) {
 						}).
 					Return(false)
 				m.pdp.EXPECT().
-					EffectiveNamespaces(testUserEmail, domain.ActionRead).
+					EffectiveNamespaces(testUserID, domain.ActionRead).
 					Return(authz.NewDomainSet("prod"))
 
 				m.active.EXPECT().ListActive().Return([]*domain.Client{
@@ -162,7 +162,7 @@ func TestService_ListHistorical(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -191,7 +191,7 @@ func TestService_ListHistorical(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -220,7 +220,7 @@ func TestService_ListHistorical(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -289,7 +289,7 @@ func TestService_ListSessions(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -334,7 +334,7 @@ func TestService_ListSessions(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -376,7 +376,7 @@ func TestService_ListSessions(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -402,7 +402,7 @@ func TestService_ListSessions(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -452,7 +452,7 @@ func TestService_ListSessions(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,

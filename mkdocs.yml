@@ -1,0 +1,50 @@
+site_name: Elara
+site_description: Configuration management service with a Web UI, a ConnectRPC API, and an etcd-compatible gRPC API.
+repo_url: https://github.com/sergeyslonimsky/elara
+repo_name: sergeyslonimsky/elara
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.top
+    - content.code.copy
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+# ADR pages live under docs/adr/ and are linked from architecture.md, but are
+# intentionally not top-level nav entries (nav lists the 3 core pages only).
+not_in_nav: |
+  /adr/*
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Architecture: architecture.md

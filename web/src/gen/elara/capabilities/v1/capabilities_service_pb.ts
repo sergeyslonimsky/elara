@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/capabilities/v1/capabilities_service.proto.
  */
 export const file_elara_capabilities_v1_capabilities_service: GenFile = /*@__PURE__*/
-  fileDesc("CjBlbGFyYS9jYXBhYmlsaXRpZXMvdjEvY2FwYWJpbGl0aWVzX3NlcnZpY2UucHJvdG8SFWVsYXJhLmNhcGFiaWxpdGllcy52MSIYChZHZXRDYXBhYmlsaXRpZXNSZXF1ZXN0IlsKF0dldENhcGFiaWxpdGllc1Jlc3BvbnNlEh8KF2V0Y2RfdG9rZW5fYXV0aF9lbmFibGVkGAEgASgIEh8KF3VzZXJfbWFuYWdlbWVudF9lbmFibGVkGAIgASgIMocBChNDYXBhYmlsaXRpZXNTZXJ2aWNlEnAKD0dldENhcGFiaWxpdGllcxItLmVsYXJhLmNhcGFiaWxpdGllcy52MS5HZXRDYXBhYmlsaXRpZXNSZXF1ZXN0Gi4uZWxhcmEuY2FwYWJpbGl0aWVzLnYxLkdldENhcGFiaWxpdGllc1Jlc3BvbnNlQoECChljb20uZWxhcmEuY2FwYWJpbGl0aWVzLnYxQhhDYXBhYmlsaXRpZXNTZXJ2aWNlUHJvdG9QAVpUZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvY2FwYWJpbGl0aWVzL3YxO2NhcGFiaWxpdGllc3YxogIDRUNYqgIVRWxhcmEuQ2FwYWJpbGl0aWVzLlYxygIVRWxhcmFcQ2FwYWJpbGl0aWVzXFYx4gIhRWxhcmFcQ2FwYWJpbGl0aWVzXFYxXEdQQk1ldGFkYXRh6gIXRWxhcmE6OkNhcGFiaWxpdGllczo6VjFiBnByb3RvMw");
+  fileDesc("CjBlbGFyYS9jYXBhYmlsaXRpZXMvdjEvY2FwYWJpbGl0aWVzX3NlcnZpY2UucHJvdG8SFWVsYXJhLmNhcGFiaWxpdGllcy52MSIYChZHZXRDYXBhYmlsaXRpZXNSZXF1ZXN0Im4KF0dldENhcGFiaWxpdGllc1Jlc3BvbnNlEh8KF2V0Y2RfdG9rZW5fYXV0aF9lbmFibGVkGAEgASgIEh8KF3VzZXJfbWFuYWdlbWVudF9lbmFibGVkGAIgASgIEhEKCWRlbW9fbW9kZRgDIAEoCDKHAQoTQ2FwYWJpbGl0aWVzU2VydmljZRJwCg9HZXRDYXBhYmlsaXRpZXMSLS5lbGFyYS5jYXBhYmlsaXRpZXMudjEuR2V0Q2FwYWJpbGl0aWVzUmVxdWVzdBouLmVsYXJhLmNhcGFiaWxpdGllcy52MS5HZXRDYXBhYmlsaXRpZXNSZXNwb25zZUKBAgoZY29tLmVsYXJhLmNhcGFiaWxpdGllcy52MUIYQ2FwYWJpbGl0aWVzU2VydmljZVByb3RvUAFaVGdpdGh1Yi5jb20vc2VyZ2V5c2xvbmltc2t5L2VsYXJhL2ludGVybmFsL3Byb3RvL2VsYXJhL2NhcGFiaWxpdGllcy92MTtjYXBhYmlsaXRpZXN2MaICA0VDWKoCFUVsYXJhLkNhcGFiaWxpdGllcy5WMcoCFUVsYXJhXENhcGFiaWxpdGllc1xWMeICIUVsYXJhXENhcGFiaWxpdGllc1xWMVxHUEJNZXRhZGF0YeoCF0VsYXJhOjpDYXBhYmlsaXRpZXM6OlYxYgZwcm90bzM");
 
 /**
  * @generated from message elara.capabilities.v1.GetCapabilitiesRequest
@@ -44,6 +44,14 @@ export type GetCapabilitiesResponse = Message<"elara.capabilities.v1.GetCapabili
    * @generated from field: bool user_management_enabled = 2;
    */
   userManagementEnabled: boolean;
+
+  /**
+   * Whether the server was started in demo mode (demo.mode / DEMO_MODE). When true,
+   * the instance was seeded with sample data and the UI shows a first-run welcome modal.
+   *
+   * @generated from field: bool demo_mode = 3;
+   */
+  demoMode: boolean;
 };
 
 /**

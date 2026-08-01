@@ -22,6 +22,7 @@ import (
 	etcdinterceptor "github.com/sergeyslonimsky/elara/internal/handler/etcdv3/interceptor"
 	"github.com/sergeyslonimsky/elara/internal/handler/ui"
 	grpctransport "github.com/sergeyslonimsky/elara/internal/transport/grpc"
+	"github.com/sergeyslonimsky/elara/internal/usecase/demo"
 	"github.com/sergeyslonimsky/elara/web"
 )
 
@@ -169,6 +170,27 @@ func bootstrap(ctx context.Context, svc *service.Managers, cfg config.Config) er
 
 	if err != nil {
 		return fmt.Errorf("admin bootstrap: %w", err)
+	}
+
+	return seedDemo(ctx, svc, cfg)
+}
+
+// seedDemo populates sample data when DEMO_MODE is set. It is a no-op for a
+// normal deployment. Idempotent for persistent data; simulated clients are
+// re-injected on every startup because the monitor is in-memory.
+func seedDemo(ctx context.Context, svc *service.Managers, cfg config.Config) error {
+	if !cfg.Demo.Enabled {
+		return nil
+	}
+
+	err := demo.Seed(ctx, demo.Deps{
+		Namespaces: svc.Services.Namespace,
+		Configs:    svc.Services.Config,
+		Schemas:    svc.Services.Schema,
+		Clients:    svc.Adapters.ClientRegistry,
+	})
+	if err != nil {
+		return fmt.Errorf("seed demo data: %w", err)
 	}
 
 	return nil

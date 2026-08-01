@@ -36,7 +36,7 @@ func TestService_Get(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -66,7 +66,7 @@ func TestService_Get(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -96,7 +96,7 @@ func TestService_Get(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -126,7 +126,7 @@ func TestService_Get(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,

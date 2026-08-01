@@ -31,7 +31,7 @@ func TestService_SubscribeChanges(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
@@ -104,7 +104,7 @@ func TestService_SubscribeClient(t *testing.T) {
 				)
 				m.pdp.EXPECT().
 					Has(
-						testUserEmail,
+						testUserID,
 						domain.Permission{
 							Object: domain.ObjectClient,
 							Action: domain.ActionRead,
