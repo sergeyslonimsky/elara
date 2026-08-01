@@ -12,13 +12,15 @@ import (
 type Handler struct {
 	etcdTokenAuthEnabled  bool
 	userManagementEnabled bool
+	demoMode              bool
 }
 
 // New returns a new Handler wired with the conditionally-mounted feature flags.
-func New(etcdTokenAuthEnabled, userManagementEnabled bool) *Handler {
+func New(etcdTokenAuthEnabled, userManagementEnabled, demoMode bool) *Handler {
 	return &Handler{
 		etcdTokenAuthEnabled:  etcdTokenAuthEnabled,
 		userManagementEnabled: userManagementEnabled,
+		demoMode:              demoMode,
 	}
 }
 
@@ -29,5 +31,6 @@ func (h *Handler) GetCapabilities(
 	return connect.NewResponse(&capabilitiesv1.GetCapabilitiesResponse{
 		EtcdTokenAuthEnabled:  h.etcdTokenAuthEnabled,
 		UserManagementEnabled: h.userManagementEnabled,
+		DemoMode:              h.demoMode,
 	}), nil
 }

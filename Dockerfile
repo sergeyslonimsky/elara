@@ -62,8 +62,15 @@ COPY --from=backend --chown=65532:65532 /out/data /var/lib/elara
 # running as root when deployed outside the chart.
 USER 65532:65532
 
+# Demo variant: build with `--build-arg DEMO_MODE=true -t elara:demo`. When set,
+# the service seeds sample namespaces/configs/schemas on first start and injects
+# simulated k8s etcd clients into the monitor, and the UI shows a welcome modal.
+# The default (false) produces the normal empty-start image.
+ARG DEMO_MODE=false
+
 # Sane runtime defaults so docker run ghcr.io/…/elara works zero-config.
-ENV CONFIG_DATA_PATH=/var/lib/elara
+ENV CONFIG_DATA_PATH=/var/lib/elara \
+    DEMO_MODE=${DEMO_MODE}
 VOLUME ["/var/lib/elara"]
 EXPOSE 8080 2379
 

@@ -95,7 +95,7 @@ func initAuthHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {
 		handlers.Tokens = tokenhandler.New(s.Authz, s.Token)
 	}
 
-	handlers.Capabilities = capabilitieshandler.New(cfg.Client.Auth.Enabled, cfg.UI.Auth.Enabled)
+	handlers.Capabilities = capabilitieshandler.New(cfg.Client.Auth.Enabled, cfg.UI.Auth.Enabled, cfg.Demo.Enabled)
 }
 
 func initIAMHandlers(handlers *V2Handlers, s *Services, cfg config.Config) {

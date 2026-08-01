@@ -65,8 +65,11 @@ type GetCapabilitiesResponse struct {
 	// Whether UI login is enabled (ui.auth.enabled). When false, UserService/GroupService
 	// are not mounted — there is no concept of managing users/groups in single-user mode.
 	UserManagementEnabled bool `protobuf:"varint,2,opt,name=user_management_enabled,json=userManagementEnabled,proto3" json:"user_management_enabled,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// Whether the server was started in demo mode (demo.mode / DEMO_MODE). When true,
+	// the instance was seeded with sample data and the UI shows a first-run welcome modal.
+	DemoMode      bool `protobuf:"varint,3,opt,name=demo_mode,json=demoMode,proto3" json:"demo_mode,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetCapabilitiesResponse) Reset() {
@@ -113,15 +116,23 @@ func (x *GetCapabilitiesResponse) GetUserManagementEnabled() bool {
 	return false
 }
 
+func (x *GetCapabilitiesResponse) GetDemoMode() bool {
+	if x != nil {
+		return x.DemoMode
+	}
+	return false
+}
+
 var File_elara_capabilities_v1_capabilities_service_proto protoreflect.FileDescriptor
 
 const file_elara_capabilities_v1_capabilities_service_proto_rawDesc = "" +
 	"\n" +
 	"0elara/capabilities/v1/capabilities_service.proto\x12\x15elara.capabilities.v1\"\x18\n" +
-	"\x16GetCapabilitiesRequest\"\x88\x01\n" +
+	"\x16GetCapabilitiesRequest\"\xa5\x01\n" +
 	"\x17GetCapabilitiesResponse\x125\n" +
 	"\x17etcd_token_auth_enabled\x18\x01 \x01(\bR\x14etcdTokenAuthEnabled\x126\n" +
-	"\x17user_management_enabled\x18\x02 \x01(\bR\x15userManagementEnabled2\x87\x01\n" +
+	"\x17user_management_enabled\x18\x02 \x01(\bR\x15userManagementEnabled\x12\x1b\n" +
+	"\tdemo_mode\x18\x03 \x01(\bR\bdemoMode2\x87\x01\n" +
 	"\x13CapabilitiesService\x12p\n" +
 	"\x0fGetCapabilities\x12-.elara.capabilities.v1.GetCapabilitiesRequest\x1a..elara.capabilities.v1.GetCapabilitiesResponseB\x81\x02\n" +
 	"\x19com.elara.capabilities.v1B\x18CapabilitiesServiceProtoP\x01ZTgithub.com/sergeyslonimsky/elara/internal/proto/elara/capabilities/v1;capabilitiesv1\xa2\x02\x03ECX\xaa\x02\x15Elara.Capabilities.V1\xca\x02\x15Elara\\Capabilities\\V1\xe2\x02!Elara\\Capabilities\\V1\\GPBMetadata\xea\x02\x17Elara::Capabilities::V1b\x06proto3"

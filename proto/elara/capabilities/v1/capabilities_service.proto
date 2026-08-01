@@ -16,4 +16,8 @@ message GetCapabilitiesResponse {
   // Whether UI login is enabled (ui.auth.enabled). When false, UserService/GroupService
   // are not mounted — there is no concept of managing users/groups in single-user mode.
   bool user_management_enabled = 2;
+
+  // Whether the server was started in demo mode (demo.mode / DEMO_MODE). When true,
+  // the instance was seeded with sample data and the UI shows a first-run welcome modal.
+  bool demo_mode = 3;
 }
