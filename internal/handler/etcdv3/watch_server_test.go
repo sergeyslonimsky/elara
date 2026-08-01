@@ -790,6 +790,35 @@ func TestWatchServer_Create_AllowedForScanAllWithWildcardToken(t *testing.T) {
 	<-done
 }
 
+func TestWatchServer_Create_AllowedForScanAllWithNilClaims(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeWatchRepo{rev: 3}
+	pub := &fakeWatchPublisher{}
+	ws := etcdv3.NewWatchServer(repo, pub)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	stream := newFakeStream(ctx)
+
+	done := make(chan error, 1)
+	go func() { done <- ws.Watch(stream) }()
+
+	stream.pushReq(&etcdserverpb.WatchRequest{
+		RequestUnion: &etcdserverpb.WatchRequest_CreateRequest{
+			CreateRequest: &etcdserverpb.WatchCreateRequest{
+				Key:      []byte("/a/"),
+				RangeEnd: []byte{0},
+			},
+		},
+	})
+
+	resps := waitForResps(t, stream, 1)
+	assert.True(t, resps[0].Created, "auth disabled (nil claims) must allow scanAll watch creation")
+
+	cancel()
+	<-done
+}
+
 func TestWatchServer_CrossNamespaceRange_DeniedWhenEndOutOfScope(t *testing.T) {
 	t.Parallel()
 
