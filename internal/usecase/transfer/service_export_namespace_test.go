@@ -118,6 +118,64 @@ func TestService_ExportNamespace(t *testing.T) {
 			wantErr: "list configs: db error",
 		},
 		{
+			name: "success as zip",
+			input: input{
+				namespace: "my-ns",
+				asZip:     true,
+				encoding:  transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "my-ns").
+					Return(&domain.Namespace{Name: "my-ns"}, nil)
+				m.configs.EXPECT().
+					ListAllByNamespace(gomock.Any(), "my-ns").
+					Return([]*domain.Config{{Path: "/c1", Namespace: "my-ns"}}, nil)
+
+				return svc
+			},
+			check: func(t *testing.T, payload []byte, ct, fname string) {
+				t.Helper()
+
+				assert.Equal(t, "application/zip", ct)
+				assert.Equal(t, "my-ns-export.zip", fname)
+				entries := readZipEntries(t, payload)
+				assert.Contains(t, entries, "my-ns-export.json")
+			},
+		},
+		{
+			// sort.Slice's comparator only runs when Configs has 2+ entries.
+			name: "multiple configs are sorted by path",
+			input: input{
+				namespace: "my-ns",
+				encoding:  transferv1.BundleEncoding_BUNDLE_ENCODING_JSON,
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "my-ns").
+					Return(&domain.Namespace{Name: "my-ns"}, nil)
+				m.configs.EXPECT().
+					ListAllByNamespace(gomock.Any(), "my-ns").
+					Return([]*domain.Config{
+						{Path: "/z", Namespace: "my-ns"},
+						{Path: "/a", Namespace: "my-ns"},
+					}, nil)
+
+				return svc
+			},
+			check: func(t *testing.T, payload []byte, ct, fname string) {
+				t.Helper()
+
+				var bundle domain.NamespaceBundle
+				require.NoError(t, json.Unmarshal(payload, &bundle))
+				require.Len(t, bundle.Configs, 2)
+				assert.Equal(t, "/a", bundle.Configs[0].Path)
+				assert.Equal(t, "/z", bundle.Configs[1].Path)
+			},
+		},
+		{
 			name: "lock state stripped",
 			input: input{
 				namespace: "locked-ns",

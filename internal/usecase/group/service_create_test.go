@@ -376,6 +376,44 @@ func TestService_Create_AntiEscalation(t *testing.T) {
 	}
 }
 
+// TestService_Create_ManagerGroupNotFound asserts that a nonexistent manager
+// group name surfaces a wrapped NotFound error and no entity is persisted.
+func TestService_Create_ManagerGroupNotFound(t *testing.T) {
+	t.Parallel()
+
+	st := newTestStack(t)
+	seedAdminWildcard(t, st)
+	ctx := t.Context()
+
+	result, err := st.svc.Create(ctx, adminAuth(), group.CreateData{
+		Name:                     "orphan-child",
+		InitialManagerGroupNames: []string{"does-not-exist"},
+	})
+
+	require.ErrorContains(t, err, "get manager group does-not-exist")
+	require.ErrorIs(t, err, domain.ErrNotFound)
+	assert.Nil(t, result)
+
+	_, findErr := st.repo.Get(ctx, "orphan-child")
+	require.ErrorIs(t, findErr, storage.ErrResourceNotFound,
+		"entity must not be persisted when a manager group is missing")
+}
+
+// TestService_Create_InvalidName asserts that persistEntity's group.Validate()
+// call rejects a non-DNS-1123 name and that no entity is persisted.
+func TestService_Create_InvalidName(t *testing.T) {
+	t.Parallel()
+
+	st := newTestStack(t)
+	seedAdminWildcard(t, st)
+	ctx := t.Context()
+
+	result, err := st.svc.Create(ctx, adminAuth(), group.CreateData{Name: "Invalid Name!!"})
+
+	require.ErrorContains(t, err, "validate group")
+	assert.Nil(t, result)
+}
+
 // TestService_Create_NameUniqueness asserts the duplicate-name guard inside
 // the same write transaction. Pre-seeds a group then attempts a second create
 // with the same name; the second must fail with ErrAlreadyExists and not

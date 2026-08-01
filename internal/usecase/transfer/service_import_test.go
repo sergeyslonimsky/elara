@@ -2,6 +2,7 @@ package transfer_test
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -26,12 +27,13 @@ func TestService_Import(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		input    func(t *testing.T) input
-		mockFunc func(ctrl *gomock.Controller) *transfer.Service
-		errIs    error
-		wantErr  string
-		want     *domain.ImportReport
+		name            string
+		input           func(t *testing.T) input
+		mockFunc        func(ctrl *gomock.Controller) *transfer.Service
+		unauthenticated bool // when true, Import runs against a ctx with no injected AuthInfo
+		errIs           error
+		wantErr         string
+		want            *domain.ImportReport
 	}{
 		{
 			name: "success namespace bundle JSON new configs",
@@ -309,6 +311,316 @@ func TestService_Import(t *testing.T) {
 			errIs: domain.ErrForbidden,
 		},
 		{
+			name: "conflict resolution fail",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.NamespaceBundle{
+							Namespace: "my-ns",
+							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+					resolution: transferv1.ConflictResolution_CONFLICT_RESOLUTION_FAIL,
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "my-ns").
+					Return(&domain.Namespace{Name: "my-ns"}, nil)
+				m.configs.EXPECT().
+					Get(gomock.Any(), "/c1", "my-ns").
+					Return(&domain.Config{Path: "/c1", Namespace: "my-ns"}, nil)
+
+				return svc
+			},
+			want: &domain.ImportReport{Failed: 1},
+		},
+		{
+			name: "conflict resolution overwrite dry run",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.NamespaceBundle{
+							Namespace: "my-ns",
+							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+					resolution: transferv1.ConflictResolution_CONFLICT_RESOLUTION_OVERWRITE,
+					dryRun:     true,
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
+				// Dry run must not touch the namespace or config store.
+				m.configs.EXPECT().
+					Get(gomock.Any(), "/c1", "my-ns").
+					Return(&domain.Config{Path: "/c1", Namespace: "my-ns"}, nil)
+
+				return svc
+			},
+			want: &domain.ImportReport{Updated: 1, DryRun: true},
+		},
+		{
+			name: "conflict resolution overwrite - update fails",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.NamespaceBundle{
+							Namespace: "my-ns",
+							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+					resolution: transferv1.ConflictResolution_CONFLICT_RESOLUTION_OVERWRITE,
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "my-ns").
+					Return(&domain.Namespace{Name: "my-ns"}, nil)
+				m.configs.EXPECT().
+					Get(gomock.Any(), "/c1", "my-ns").
+					Return(&domain.Config{Path: "/c1", Namespace: "my-ns", Version: 42}, nil)
+				m.configs.EXPECT().Update(gomock.Any(), gomock.Any()).
+					Return(errors.New("db write error"))
+
+				return svc
+			},
+			want: &domain.ImportReport{Failed: 1},
+		},
+		{
+			name: "new config create fails",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.NamespaceBundle{
+							Namespace: "my-ns",
+							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "my-ns").
+					Return(&domain.Namespace{Name: "my-ns"}, nil)
+				m.configs.EXPECT().Get(gomock.Any(), "/c1", "my-ns").Return(nil, domain.ErrNotFound)
+				m.configs.EXPECT().Create(gomock.Any(), gomock.Any()).
+					Return(errors.New("disk full"))
+
+				return svc
+			},
+			want: &domain.ImportReport{Failed: 1},
+		},
+		{
+			name: "check config error - not a not-found sentinel",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.NamespaceBundle{
+							Namespace: "my-ns",
+							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "my-ns").
+					Return(&domain.Namespace{Name: "my-ns"}, nil)
+				m.configs.EXPECT().Get(gomock.Any(), "/c1", "my-ns").
+					Return(nil, errors.New("timeout"))
+
+				return svc
+			},
+			wantErr: "check config /c1: timeout",
+		},
+		{
+			name: "ensure namespace get fails with non-not-found error",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.NamespaceBundle{
+							Namespace: "my-ns",
+							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "my-ns").
+					Return(nil, errors.New("connection refused"))
+
+				return svc
+			},
+			wantErr: "ensure namespace: get namespace: connection refused",
+		},
+		{
+			name: "ensure namespace create fails",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.NamespaceBundle{
+							Namespace: "my-ns",
+							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.pdp.EXPECT().HasNamespace(testUserID, "my-ns", domain.ActionWrite).Return(true)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "my-ns").
+					Return(nil, storage.ErrResourceNotFound)
+				m.namespaces.EXPECT().
+					Create(gomock.Any(), gomock.Any()).
+					Return(errors.New("disk full"))
+
+				return svc
+			},
+			wantErr: "ensure namespace: create namespace: disk full",
+		},
+		{
+			name: "all bundle propagates per-namespace error",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.AllBundle{
+							Namespaces: []domain.NamespaceBundle{
+								{
+									Namespace: "ns1",
+									Configs:   []domain.BundleConfig{{Path: "/a", Content: "{}"}},
+								},
+							},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, m := setupService(t, ctrl)
+				m.pdp.EXPECT().HasNamespace(testUserID, domain.DomainAll, domain.ActionWrite).Return(true)
+				m.namespaces.EXPECT().
+					Get(gomock.Any(), "ns1").
+					Return(nil, errors.New("connection refused"))
+
+				return svc
+			},
+			wantErr: "ensure namespace: get namespace: connection refused",
+		},
+		{
+			name: "unauthenticated context on single-namespace fallback",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: func() []byte {
+						b, err := json.Marshal(domain.NamespaceBundle{
+							Namespace: "my-ns",
+							Configs:   []domain.BundleConfig{{Path: "/c1", Content: "{}"}},
+						})
+						require.NoError(t, err)
+
+						return b
+					}(),
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, _ := setupService(t, ctrl)
+
+				return svc
+			},
+			unauthenticated: true,
+			errIs:           domain.ErrUnauthorized,
+		},
+		{
+			name: "target namespace - corrupt bundle data",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data:            []byte(`{corrupt`),
+					targetNamespace: "target",
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, _ := setupService(t, ctrl)
+
+				return svc
+			},
+			wantErr: "validation: data: parse bundle: json unmarshal bundle",
+		},
+		{
+			// The data parses fine as an (empty) AllBundle but has a field
+			// type mismatch against NamespaceBundle, so the fallback
+			// unmarshalNamespaceBundle call in importInferredScope fails.
+			name: "inferred scope - namespace bundle unmarshal type mismatch",
+			input: func(t *testing.T) input {
+				t.Helper()
+
+				return input{
+					data: []byte(`{"namespaces":null,"configs":"not-an-array"}`),
+				}
+			},
+			mockFunc: func(ctrl *gomock.Controller) *transfer.Service {
+				svc, _ := setupService(t, ctrl)
+
+				return svc
+			},
+			wantErr: "validation: data: parse bundle: json unmarshal bundle",
+		},
+		{
 			name: "validation error - empty namespace",
 			input: func(t *testing.T) input {
 				t.Helper()
@@ -358,8 +670,13 @@ func TestService_Import(t *testing.T) {
 			sut := tt.mockFunc(ctrl)
 			testInput := tt.input(t)
 
+			ctx := transferTestCtx(t.Context())
+			if tt.unauthenticated {
+				ctx = t.Context()
+			}
+
 			got, err := sut.Import(
-				transferTestCtx(t.Context()),
+				ctx,
 				testInput.data,
 				testInput.resolution,
 				testInput.dryRun,

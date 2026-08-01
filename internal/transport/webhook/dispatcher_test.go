@@ -869,3 +869,282 @@ func TestDispatcher_ConcurrentDeliveries_SemaphoreNotExceeded(t *testing.T) {
 
 	assert.Equal(t, int32(numEvents), received.Load())
 }
+
+// TestDispatcher_Run_RecoversFromPanic asserts Run's top-level recover
+// swallows a panic (e.g. from a misbehaving Subscribe implementation) and
+// returns nil instead of crashing the process.
+func TestDispatcher_Run_RecoversFromPanic(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+
+	pub := webhookmock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().
+		Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(context.Context, string, string) (<-chan domain.WatchEvent, func()) {
+			panic("boom")
+		})
+
+	lister := webhookmock.NewMockwebhookLister(ctrl)
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- dispatcher.Run(t.Context())
+	}()
+
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run did not return after panic")
+	}
+}
+
+// TestDispatcher_Shutdown_TimesOutWithInflightDelivery asserts Shutdown
+// returns a wrapped context error when its budget expires before an
+// in-flight delivery drains.
+func TestDispatcher_Shutdown_TimesOutWithInflightDelivery(t *testing.T) {
+	t.Parallel()
+
+	unblock := make(chan struct{})
+	reached := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(reached)
+		<-unblock
+		w.WriteHeader(http.StatusOK)
+	}))
+	// t.Cleanup runs LIFO: registering the unblock-closer after srv.Close
+	// ensures the blocked handler is released before Close waits on it.
+	t.Cleanup(srv.Close)
+	t.Cleanup(func() { close(unblock) })
+
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhookmock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhookmock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
+		{
+			ID:      "wh-shutdown-timeout",
+			URL:     srv.URL,
+			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+			Enabled: true,
+		},
+	}, nil).AnyTimes()
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
+
+	ch <- domain.WatchEvent{
+		Type:      domain.EventTypeCreated,
+		Path:      "/config.json",
+		Namespace: "prod",
+		Revision:  1,
+		Timestamp: time.Now(),
+	}
+
+	// Wait until the handler is blocking the in-flight delivery (it stays
+	// blocked until t.Cleanup unblocks it, well after this test returns), so
+	// the "drained" case can never become ready during this test.
+	<-reached
+
+	// Passing an already-expired ctx guarantees ctx.Done() is ready the
+	// instant Shutdown's select runs, making the timeout branch
+	// deterministic rather than racing against cancellation cascading to
+	// the in-flight request (which, per Shutdown's doc comment, usually
+	// aborts promptly and would otherwise make "drained" win the race).
+	shutdownCtx, shutdownCancel := context.WithTimeout(t.Context(), time.Nanosecond)
+	defer shutdownCancel()
+	<-shutdownCtx.Done()
+
+	err := dispatcher.Shutdown(shutdownCtx)
+	require.ErrorContains(t, err, "webhook dispatcher shutdown")
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+}
+
+// TestDispatcher_DeletedEventPayload asserts buildPayloadBody's
+// EventTypeDeleted branch is exercised end to end.
+func TestDispatcher_DeletedEventPayload(t *testing.T) {
+	t.Parallel()
+
+	var (
+		receivedMu sync.Mutex
+		receivedEv string
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+
+		var p struct {
+			Event string `json:"event"`
+		}
+		_ = json.Unmarshal(body, &p)
+
+		receivedMu.Lock()
+		receivedEv = p.Event
+		receivedMu.Unlock()
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhookmock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	lister := webhookmock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
+		{
+			ID:      "wh-deleted",
+			URL:     srv.URL,
+			Events:  []domain.WebhookEventType{domain.WebhookEventDeleted},
+			Enabled: true,
+		},
+	}, nil).AnyTimes()
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
+
+	ch <- domain.WatchEvent{
+		Type:      domain.EventTypeDeleted,
+		Path:      "/config.json",
+		Namespace: "prod",
+		Revision:  1,
+		Timestamp: time.Now(),
+	}
+
+	require.Eventually(t, func() bool {
+		receivedMu.Lock()
+		defer receivedMu.Unlock()
+
+		return receivedEv != ""
+	}, 2*time.Second, 10*time.Millisecond)
+
+	receivedMu.Lock()
+	defer receivedMu.Unlock()
+	assert.Equal(t, "deleted", receivedEv)
+}
+
+// TestDispatcher_SendRequest_InvalidURL_RecordsFailure asserts sendRequest's
+// http.NewRequestWithContext error branch is recorded as a failed delivery
+// attempt rather than propagating a panic or hang.
+func TestDispatcher_SendRequest_InvalidURL_RecordsFailure(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, 10)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhookmock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	webhookID := "wh-invalid-url"
+	lister := webhookmock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
+		{
+			ID: webhookID,
+			// A control character in the URL makes http.NewRequestWithContext
+			// return a parse error before any network I/O happens.
+			URL:     "http://example.com/\x7f",
+			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+			Enabled: true,
+		},
+	}, nil).AnyTimes()
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
+
+	ch <- domain.WatchEvent{
+		Type:      domain.EventTypeCreated,
+		Path:      "/config.json",
+		Namespace: "prod",
+		Revision:  1,
+		Timestamp: time.Now(),
+	}
+
+	require.Eventually(t, func() bool {
+		return len(dispatcher.GetDeliveryHistory(webhookID)) > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	history := dispatcher.GetDeliveryHistory(webhookID)
+	require.NotEmpty(t, history)
+	assert.False(t, history[0].Success)
+	assert.Contains(t, history[0].Error, "create request")
+}
+
+// TestDispatcher_GetOrCreateBuffer_ConcurrentInitRace fires a large burst of
+// events at the same webhook ID simultaneously so multiple goroutines race
+// to initialize that webhook's history ring buffer, exercising the
+// double-checked-lock's "found on second check" branch inside
+// getOrCreateBuffer.
+func TestDispatcher_GetOrCreateBuffer_ConcurrentInitRace(t *testing.T) {
+	t.Parallel()
+
+	const numEvents = 200
+
+	var received atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	ctrl := gomock.NewController(t)
+
+	ch := make(chan domain.WatchEvent, numEvents)
+	var chRecv <-chan domain.WatchEvent = ch
+	pub := webhookmock.NewMockeventPublisher(ctrl)
+	pub.EXPECT().Subscribe(gomock.Any(), gomock.Any(), gomock.Any()).Return(chRecv, func() {})
+
+	webhookID := "wh-race"
+	lister := webhookmock.NewMockwebhookLister(ctrl)
+	lister.EXPECT().List(gomock.Any()).Return([]*domain.Webhook{
+		{
+			ID:      webhookID,
+			URL:     srv.URL,
+			Events:  []domain.WebhookEventType{domain.WebhookEventCreated},
+			Enabled: true,
+		},
+	}, nil).AnyTimes()
+
+	dispatcher := webhookadapter.NewDispatcher(lister, pub)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go dispatcher.Run(ctx) //nolint:errcheck // Run exits with context.Canceled when ctx is cancelled
+
+	for i := range numEvents {
+		ch <- domain.WatchEvent{
+			Type:      domain.EventTypeCreated,
+			Path:      fmt.Sprintf("/config-%d.json", i),
+			Namespace: "prod",
+			Revision:  int64(i + 1),
+			Timestamp: time.Now(),
+		}
+	}
+
+	require.Eventually(t, func() bool {
+		return received.Load() == numEvents
+	}, 5*time.Second, 20*time.Millisecond)
+}
