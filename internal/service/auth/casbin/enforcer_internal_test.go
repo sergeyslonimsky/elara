@@ -147,6 +147,33 @@ func TestEnforcer_WriteTx(t *testing.T) {
 	}
 }
 
+// TestEnforcer_WriteTx_DeleteUser_SyncsRolePositionCache is a regression test
+// for applyOpsToCache's opDeleteUser branch: gocasbin's DeleteUser only
+// strips g-rules where the deleted identifier is the subject (column 0), not
+// the role/group target (column 1). TxEnforcer.DeleteUser removes both on
+// disk, so the in-memory cache must mirror that or it goes stale relative to
+// bbolt — e.g. PAP.GroupMembers would keep returning a deleted group's
+// members until the process restarts and reloads policy.
+func TestEnforcer_WriteTx_DeleteUser_SyncsRolePositionCache(t *testing.T) {
+	t.Parallel()
+
+	e, txm, _ := freshEnforcerAndManager(t)
+
+	// "alice" is a member of group "devs" -- devs sits in the role/target
+	// position (column 1) of this g-rule, not the subject position.
+	require.NoError(t, e.WriteTx(t.Context(), txm, func(_ context.Context, txe *TxEnforcer) error {
+		return txe.AddRoleForUser("alice", "devs", "*")
+	}))
+	require.True(t, cachePolicyContains(e.GetGroupingPolicy(), []string{"alice", "devs", "*"}))
+
+	require.NoError(t, e.WriteTx(t.Context(), txm, func(_ context.Context, txe *TxEnforcer) error {
+		return txe.DeleteUser("devs")
+	}))
+
+	assert.False(t, cachePolicyContains(e.GetGroupingPolicy(), []string{"alice", "devs", "*"}),
+		"cache must not retain a g-rule naming the deleted identifier in the role position")
+}
+
 func TestEnforcer_WriteTx_EnforceSeesRulesAfterCommit(t *testing.T) {
 	t.Parallel()
 

@@ -242,6 +242,30 @@ func TestPAPTx_DeleteGroup(t *testing.T) {
 		assert.Empty(t, pap.GroupPermissions("devs"))
 	})
 
+	t.Run("success removes group's members from the in-memory cache", func(t *testing.T) {
+		t.Parallel()
+
+		pap, _, _ := newTestPAP(t)
+
+		require.NoError(t, pap.Write(t.Context(), func(_ context.Context, w *authz.PAPTx) error {
+			return w.ApplyMemberDeltas("devs", []string{"alice", "bob"}, nil)
+		}))
+		require.ElementsMatch(t, []string{"alice", "bob"}, pap.GroupMembers("devs"))
+
+		require.NoError(t, pap.Write(t.Context(), func(_ context.Context, w *authz.PAPTx) error {
+			return w.DeleteGroup("devs")
+		}))
+
+		// Regression test: gocasbin's DeleteUser only strips g-rules where
+		// the deleted identifier is the subject (column 0), not the
+		// role/group target (column 1) that member rows use. Without the
+		// RemoveFilteredGroupingPolicy(1, ...) follow-up in
+		// Enforcer.applyOpsToCache, this would still return the pre-delete
+		// members from the stale in-memory cache even though bbolt is
+		// correct.
+		assert.Empty(t, pap.GroupMembers("devs"))
+	})
+
 	t.Run("repository error is wrapped", func(t *testing.T) {
 		t.Parallel()
 
