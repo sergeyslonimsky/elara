@@ -1,5 +1,7 @@
 package authz
 
+//go:generate mockgen -destination=mocks/scope_mock.go -package=authz_mock -source=scope.go
+
 import (
 	"context"
 	"fmt"
