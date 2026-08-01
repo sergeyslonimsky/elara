@@ -80,6 +80,16 @@ For a guided 5-minute tour see the [Quickstart guide](docs/quickstart.md); for a
 worked example with three services reading config live, follow the
 [todo-app tutorial](docs/tutorial-todo-app.md).
 
+### Deploy to Kubernetes
+
+```bash
+helm repo add elara https://sergeyslonimsky.github.io/elara
+helm install elara elara/elara
+```
+
+See the [Helm chart docs](helm/elara/README.md) for prerequisites, `values.yaml`
+reference, and production configuration (ingress, persistence, resource limits).
+
 ## Why Elara
 
 Three things Elara gives you that a bare etcd cluster does not:
