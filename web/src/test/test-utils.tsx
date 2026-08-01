@@ -12,6 +12,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import { GetCapabilitiesResponseSchema } from "@/gen/elara/capabilities/v1/capabilities_service_pb";
 import { MeResponseSchema } from "@/gen/elara/profile/v1/profile_service_pb";
 
 // In-process transport — no network calls during tests.
@@ -36,6 +37,7 @@ export function authenticatedContext(
 		authType?: AuthType;
 		user?: MessageInitShape<typeof MeResponseSchema>;
 		logout?: () => Promise<void>;
+		capabilities?: MessageInitShape<typeof GetCapabilitiesResponseSchema>;
 	},
 ): AuthContextType {
 	return {
@@ -47,6 +49,11 @@ export function authenticatedContext(
 				email: "admin@example.com",
 				name: "Admin",
 				...opts?.user,
+			}),
+			capabilities: create(GetCapabilitiesResponseSchema, {
+				etcdTokenAuthEnabled: true,
+				userManagementEnabled: true,
+				...opts?.capabilities,
 			}),
 		},
 		logout: opts?.logout ?? vi.fn(),

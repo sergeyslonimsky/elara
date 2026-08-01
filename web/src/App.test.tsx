@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { buildAbility } from "@/auth/ability";
 import type { AuthContextType } from "@/components/auth-provider";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import { GetCapabilitiesResponseSchema } from "@/gen/elara/capabilities/v1/capabilities_service_pb";
 import { MeResponseSchema } from "@/gen/elara/profile/v1/profile_service_pb";
 import { TestProviders } from "@/test/test-utils";
 import App from "./App";
@@ -36,6 +37,10 @@ describe("App", () => {
 				picture: "",
 			}),
 			ability: buildAbility([{ object: 99, action: 99, domain: "*" } as any]),
+			capabilities: create(GetCapabilitiesResponseSchema, {
+				etcdTokenAuthEnabled: true,
+				userManagementEnabled: true,
+			}),
 		},
 		logout: vi.fn(),
 	};

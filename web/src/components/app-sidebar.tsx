@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import {
 	ChevronDown,
 	Database,
@@ -28,6 +29,7 @@ import {
 	SidebarRail,
 } from "@/components/ui/sidebar";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import { GetCapabilitiesResponseSchema } from "@/gen/elara/capabilities/v1/capabilities_service_pb";
 
 export function AppSidebar() {
 	const { pathname } = useLocation();
@@ -38,8 +40,13 @@ export function AppSidebar() {
 
 	const authType =
 		state.status === "authenticated" ? state.authType : undefined;
+	const capabilities =
+		state.status === "authenticated" ? state.capabilities : undefined;
 
-	const visibility = uiVisibility(ability);
+	const visibility = uiVisibility(
+		ability,
+		capabilities ?? create(GetCapabilitiesResponseSchema, {}),
+	);
 
 	const navItems = [
 		{

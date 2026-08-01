@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
@@ -81,6 +82,12 @@ type watcher struct {
 	progress    bool
 	cancel      context.CancelFunc
 	unsubscribe func()
+
+	// claims is the caller's service-token scope, captured at creation time.
+	// nil means auth is disabled (allow all). Re-checked per event in
+	// matchesKey as defense-in-depth against the publisher-side subscribe
+	// filter drifting from the originally granted scope.
+	claims *authctx.Claims
 
 	// tracked carries the connID this watcher was registered against, or "" if
 	// not tracked. release() is idempotent against this state — cleared after
@@ -212,31 +219,14 @@ func (s *WatchServer) createWatcher(
 	scanAll := endNS == "\x00"
 	singleKey := endNS == "" && endPath == ""
 
-	// Derive the publisher filter. Publisher filters cheaply by namespace + pathPrefix;
-	// the fine-grained single-key / cross-namespace filtering happens in matchesEvent.
-	var (
-		subNamespace string
-		subPrefix    string
-	)
-
-	switch {
-	case scanAll:
-		// Leave both empty — subscribe to every event.
-
-	case singleKey:
-		subNamespace = startNS
-		subPrefix = startPath
-
-	case startNS == endNS:
-		// Bounded within one namespace — subscribe to that namespace with a common prefix.
-		subNamespace = startNS
-		subPrefix = commonPathPrefix(startPath, endPath)
-
-	default:
-		// Cross-namespace range — must receive events from all namespaces and filter in matchesEvent.
-		subNamespace = ""
-		subPrefix = ""
+	claims, _ := authctx.ClaimsFromContext(ctx)
+	if err := checkWatchAccess(claims, scanAll, startNS, endNS); err != nil {
+		return nil, err
 	}
+
+	// Publisher filters cheaply by namespace + pathPrefix; the fine-grained
+	// single-key / cross-namespace filtering happens in matchesEvent.
+	subNamespace, subPrefix := subscribeFilter(scanAll, singleKey, startNS, startPath, endNS, endPath)
 
 	currentRev, err := s.repo.CurrentRevisionValue(ctx)
 	if err != nil {
@@ -268,6 +258,7 @@ func (s *WatchServer) createWatcher(
 		progress:    req.ProgressNotify,
 		cancel:      cancel,
 		unsubscribe: unsubscribe,
+		claims:      claims,
 	}
 
 	if singleKey {
@@ -280,6 +271,28 @@ func (s *WatchServer) createWatcher(
 	go s.runWatcher(subCtx, w, req.StartRevision, currentRev, events, send)
 
 	return w, nil
+}
+
+// subscribeFilter derives the publisher-side subscription filter for a watch
+// request. scanAll and cross-namespace ranges leave both fields empty
+// (subscribe to everything, filter per-event in matchesEvent); the other
+// cases narrow the subscription to a single namespace.
+func subscribeFilter(scanAll, singleKey bool, startNS, startPath, endNS, endPath string) (string, string) {
+	switch {
+	case scanAll:
+		return "", ""
+
+	case singleKey:
+		return startNS, startPath
+
+	case startNS == endNS:
+		// Bounded within one namespace — subscribe to that namespace with a common prefix.
+		return startNS, commonPathPrefix(startPath, endPath)
+
+	default:
+		// Cross-namespace range — must receive events from all namespaces and filter in matchesEvent.
+		return "", ""
+	}
 }
 
 // trackWatcher registers an active-watch against the originating connection,
@@ -515,6 +528,10 @@ func (w *watcher) matchesChangelog(e *domain.ChangelogEntry) bool {
 // matchesKey implements etcd range semantics over our (namespace, path) encoding.
 // Keys outside the originally requested [key, range_end) range are rejected.
 func (w *watcher) matchesKey(namespace, path string) bool {
+	if !namespaceAllowed(w.claims, namespace, domain.ActionRead) {
+		return false
+	}
+
 	if w.scanAll {
 		return true
 	}

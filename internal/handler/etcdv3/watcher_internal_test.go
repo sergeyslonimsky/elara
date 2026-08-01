@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
@@ -45,6 +46,61 @@ func makeWatcher(t *testing.T, key, rangeEnd []byte) *watcher {
 	}
 
 	return w
+}
+
+// makeWatcherWithClaims builds on makeWatcher, additionally scoping the
+// watcher to claims — mirrors what createWatcher does after Ш3.
+func makeWatcherWithClaims(t *testing.T, key, rangeEnd []byte, claims *authctx.Claims) *watcher {
+	t.Helper()
+
+	w := makeWatcher(t, key, rangeEnd)
+	w.claims = claims
+
+	return w
+}
+
+func TestWatcher_MatchesKey_DeniedByScopedClaims(t *testing.T) {
+	t.Parallel()
+
+	// Boundary namespaces "a" and "z" are in scope; "m" lies between them in
+	// the byte range but was never granted — matchesKey must still reject it.
+	claims := &authctx.Claims{Namespaces: []string{"a", "z"}}
+	w := makeWatcherWithClaims(t, []byte("/a/x"), []byte("/z/y"), claims)
+
+	assert.True(t, w.matchesKey("a", "/x"), "in-scope start namespace still matches")
+	assert.True(t, w.matchesKey("z", "/a"), "in-scope end namespace still matches")
+	assert.False(t, w.matchesKey("m", "/anything"), "in-range but out-of-scope namespace is denied")
+}
+
+func TestWatcher_MatchesKey_ScanAll_WildcardClaimsStillMatchAll(t *testing.T) {
+	t.Parallel()
+
+	claims := &authctx.Claims{Namespaces: []string{"*"}}
+	w := makeWatcherWithClaims(t, []byte("/a/"), []byte{0}, claims)
+
+	assert.True(t, w.matchesKey("default", "/any"))
+	assert.True(t, w.matchesKey("prod", "/services/api"))
+}
+
+func TestWatcher_MatchesKey_ScanAll_ScopedClaimsDenyOtherNamespaces(t *testing.T) {
+	t.Parallel()
+
+	// scanAll watchers are only ever created for wildcard tokens (checkWatchAccess
+	// rejects the rest at creation time); this exercises the defense-in-depth
+	// path directly, independent of that creation-time gate.
+	claims := &authctx.Claims{Namespaces: []string{"prod"}}
+	w := makeWatcherWithClaims(t, []byte("/a/"), []byte{0}, claims)
+
+	assert.True(t, w.matchesKey("prod", "/any"), "scoped namespace still matches")
+	assert.False(t, w.matchesKey("staging", "/any"), "out-of-scope namespace denied despite scanAll")
+}
+
+func TestWatcher_MatchesKey_NilClaimsAllowsAll(t *testing.T) {
+	t.Parallel()
+
+	w := makeWatcherWithClaims(t, []byte("/a/x"), []byte("/z/y"), nil)
+
+	assert.True(t, w.matchesKey("m", "/anything"), "auth disabled (nil claims) — no namespace restriction")
 }
 
 func TestWatcher_MatchesKey_SingleKey(t *testing.T) {

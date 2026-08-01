@@ -565,37 +565,11 @@ func toKVStatus(err error, op, path string) error {
 }
 
 func (s *KVServer) checkAccess(ctx context.Context, namespace string, action domain.Action) error {
-	claims, ok := authctx.ClaimsFromContext(ctx)
-	if !ok {
-		// If auth is disabled, allow all.
-		return nil
+	claims, _ := authctx.ClaimsFromContext(ctx)
+
+	if !namespaceAllowed(claims, namespace, action) {
+		return status.Errorf(codes.PermissionDenied, "permission denied for namespace %q", namespace)
 	}
 
-	// Service tokens have explicit Namespaces and Role.
-	if len(claims.Namespaces) > 0 {
-		allowedNS := false
-		for _, ns := range claims.Namespaces {
-			if ns == namespace || ns == "*" {
-				allowedNS = true
-
-				break
-			}
-		}
-
-		if !allowedNS {
-			return status.Errorf(
-				codes.PermissionDenied,
-				"permission denied for namespace %q",
-				namespace,
-			)
-		}
-
-		if action == domain.ActionWrite && domain.Role(claims.Role) != domain.RoleWriter {
-			return status.Errorf(codes.PermissionDenied, "permission denied for action %q", action)
-		}
-
-		return nil
-	}
-
-	return status.Errorf(codes.PermissionDenied, "forbidden")
+	return nil
 }
