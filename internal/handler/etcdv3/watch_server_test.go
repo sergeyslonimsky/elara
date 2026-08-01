@@ -13,8 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/etcdv3"
 )
@@ -694,6 +697,168 @@ func TestWatchServer_InvalidKey_ReturnsError(t *testing.T) {
 
 	err := <-done
 	require.Error(t, err, "invalid key returns from Watch() with an error")
+}
+
+func TestWatchServer_Create_DeniedForOutOfScopeNamespace(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeWatchRepo{rev: 0}
+	ws := etcdv3.NewWatchServer(repo, &fakeWatchPublisher{})
+
+	ctx := authctx.WithClaims(t.Context(), &authctx.Claims{Namespaces: []string{"prod"}})
+	stream := newFakeStream(ctx)
+
+	done := make(chan error, 1)
+	go func() { done <- ws.Watch(stream) }()
+
+	stream.pushReq(&etcdserverpb.WatchRequest{
+		RequestUnion: &etcdserverpb.WatchRequest_CreateRequest{
+			CreateRequest: &etcdserverpb.WatchCreateRequest{Key: []byte("/staging/foo")},
+		},
+	})
+
+	err := <-done
+	require.Error(t, err, "watch on a namespace outside the token's scope must be denied")
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+func TestWatchServer_Create_DeniedForScanAllWithScopedToken(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeWatchRepo{rev: 0}
+	ws := etcdv3.NewWatchServer(repo, &fakeWatchPublisher{})
+
+	ctx := authctx.WithClaims(t.Context(), &authctx.Claims{Namespaces: []string{"prod"}})
+	stream := newFakeStream(ctx)
+
+	done := make(chan error, 1)
+	go func() { done <- ws.Watch(stream) }()
+
+	stream.pushReq(&etcdserverpb.WatchRequest{
+		RequestUnion: &etcdserverpb.WatchRequest_CreateRequest{
+			CreateRequest: &etcdserverpb.WatchCreateRequest{
+				Key:      []byte("/prod/"),
+				RangeEnd: []byte{0},
+			},
+		},
+	})
+
+	err := <-done
+	require.Error(t, err, "scanAll watch is not bounded to any namespace, so a scoped token must be denied")
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+func TestWatchServer_Create_AllowedForScanAllWithWildcardToken(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeWatchRepo{rev: 3}
+	pub := &fakeWatchPublisher{}
+	ws := etcdv3.NewWatchServer(repo, pub)
+
+	ctx, cancel := context.WithCancel(
+		authctx.WithClaims(context.Background(), &authctx.Claims{Namespaces: []string{"*"}}),
+	)
+	stream := newFakeStream(ctx)
+
+	done := make(chan error, 1)
+	go func() { done <- ws.Watch(stream) }()
+
+	stream.pushReq(&etcdserverpb.WatchRequest{
+		RequestUnion: &etcdserverpb.WatchRequest_CreateRequest{
+			CreateRequest: &etcdserverpb.WatchCreateRequest{
+				Key:      []byte("/a/"),
+				RangeEnd: []byte{0},
+			},
+		},
+	})
+
+	resps := waitForResps(t, stream, 1)
+	assert.True(t, resps[0].Created, "wildcard token may create a scanAll watch")
+
+	pub.push(domain.WatchEvent{
+		Type: domain.EventTypeCreated, Path: "/foo", Namespace: "anything-else", Revision: 5,
+		Config: &domain.Config{
+			Path: "/foo", Namespace: "anything-else",
+			Content: "v1", Revision: 5, CreateRevision: 5, Version: 1,
+		},
+	})
+
+	resps = waitForResps(t, stream, 2)
+	require.Len(t, resps[1].Events, 1, "wildcard token receives events from any namespace under scanAll")
+
+	cancel()
+	<-done
+}
+
+func TestWatchServer_CrossNamespaceRange_DeniedWhenEndOutOfScope(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeWatchRepo{rev: 0}
+	ws := etcdv3.NewWatchServer(repo, &fakeWatchPublisher{})
+
+	ctx := authctx.WithClaims(t.Context(), &authctx.Claims{Namespaces: []string{"a"}})
+	stream := newFakeStream(ctx)
+
+	done := make(chan error, 1)
+	go func() { done <- ws.Watch(stream) }()
+
+	stream.pushReq(&etcdserverpb.WatchRequest{
+		RequestUnion: &etcdserverpb.WatchRequest_CreateRequest{
+			CreateRequest: &etcdserverpb.WatchCreateRequest{
+				Key:      []byte("/a/x"),
+				RangeEnd: []byte("/z/y"),
+			},
+		},
+	})
+
+	err := <-done
+	require.Error(t, err, "cross-namespace range reaching an out-of-scope namespace must be denied")
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+func TestWatchServer_CrossNamespaceRange_FiltersNamespaceOutsideScope(t *testing.T) {
+	t.Parallel()
+
+	repo := &fakeWatchRepo{rev: 0}
+	pub := &fakeWatchPublisher{}
+	ws := etcdv3.NewWatchServer(repo, pub)
+
+	// Token is scoped to both range boundaries ("a" and "z"), so creation is
+	// allowed — but namespace "m" lying between them in the byte range was
+	// never granted. The per-event check in matchesKey must still reject it.
+	ctx, cancel := context.WithCancel(
+		authctx.WithClaims(context.Background(), &authctx.Claims{Namespaces: []string{"a", "z"}}),
+	)
+	stream := newFakeStream(ctx)
+
+	done := make(chan error, 1)
+	go func() { done <- ws.Watch(stream) }()
+
+	stream.pushReq(&etcdserverpb.WatchRequest{
+		RequestUnion: &etcdserverpb.WatchRequest_CreateRequest{
+			CreateRequest: &etcdserverpb.WatchCreateRequest{
+				Key:      []byte("/a/x"),
+				RangeEnd: []byte("/z/y"),
+			},
+		},
+	})
+
+	waitForResps(t, stream, 1) // Created ack
+
+	// Out of scope despite being inside the requested byte range.
+	pub.push(domain.WatchEvent{Path: "/anything", Namespace: "m", Revision: 2})
+	// In scope.
+	pub.push(domain.WatchEvent{
+		Path: "/x", Namespace: "a", Revision: 3,
+		Config: &domain.Config{Path: "/x", Namespace: "a", Revision: 3, Version: 1},
+	})
+
+	resps := waitForResps(t, stream, 2)
+	require.Len(t, resps[1].Events, 1)
+	assert.Equal(t, []byte("/a/x"), resps[1].Events[0].Kv.Key, "only the in-scope namespace event is delivered")
+
+	cancel()
+	<-done
 }
 
 func TestWatchServer_MultipleWatchers_DistinctIDs(t *testing.T) {
