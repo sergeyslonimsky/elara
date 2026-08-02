@@ -5,9 +5,13 @@ repo_name: sergeyslonimsky/elara
 
 theme:
   name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
   features:
     - navigation.instant
     - navigation.top
+    - navigation.sections
+    - navigation.indexes
     - content.code.copy
   palette:
     # Light mode
@@ -27,11 +31,6 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 
-# ADR pages live under docs/adr/ and are linked from architecture.md, but are
-# intentionally not top-level nav entries (nav lists the 3 core pages only).
-not_in_nav: |
-  /adr/*
-
 plugins:
   - search
 
@@ -46,5 +45,14 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Quickstart: quickstart.md
-  - Architecture: architecture.md
+  - Getting Started:
+      - Quickstart: quickstart.md
+      - Configuration: configuration.md
+  - Concepts: concepts.md
+  - Authentication: authentication.md
+  - Guides:
+      - Todo-App Tutorial: tutorial-todo-app.md
+  - Architecture:
+      - Overview: architecture.md
+      - "ADR 0001: Usecase-owned Transactions": adr/0001-usecase-owned-transactions.md
+      - "ADR 0002: Groups-only RBAC": adr/0002-groups-only-rbac.md
