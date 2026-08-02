@@ -4,6 +4,9 @@
 .idea/
 .vscode/
 .claude/
+.gemini/
+.antigravitycli/
+.agents/
 .mcp.json
 *.swp
 *.swo
@@ -13,6 +16,16 @@
 docs/
 doc/
 *.md
+mkdocs.yml
+
+# Internal planning / tooling — never needed for the build. plans/ is
+# gitignored (internal-only) but the build context isn't git-scoped, so it
+# still needs an explicit entry here.
+plans/
+graphify-out/
+helm-signing-key.asc
+sonar-project.properties
+codecov.yml
 
 # CI/CD & tooling configs
 .github/
@@ -24,6 +37,7 @@ helm/
 # Local runtime state
 data/
 .env*
+config.yaml
 config.local.yaml
 *.local
 Makefile
@@ -45,6 +59,7 @@ Thumbs.db
 # Repo-only testing & examples
 test/
 coverage.out
+coverage.txt
 examples/
 assets/
 
