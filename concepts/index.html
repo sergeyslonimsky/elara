@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../authentication/">
+        <link rel="prev" href="../configuration/">
       
       
-        <link rel="next" href="../architecture/">
+        <link rel="next" href="../authentication/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Todo-App Tutorial - Elara</title>
+        <title>Concepts - Elara</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tutorial-manage-configs-for-a-3-service-todo-app" class="md-skip">
+        <a href="#core-concepts" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Todo-App Tutorial
+              Concepts
             
           </span>
         </div>
@@ -401,10 +401,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../concepts/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -420,6 +447,114 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#namespaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Namespaces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bundles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bundles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clients-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clients &amp; Observability
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#webhooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Webhooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RBAC
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#global-revision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Revision
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -455,10 +590,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -473,11 +606,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
@@ -498,7 +631,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -513,37 +646,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Todo-App Tutorial
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../tutorial-todo-app/" class="md-nav__link">
         
   
   
@@ -559,120 +665,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prerequisites
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-1-start-the-stack" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 1 — Start the stack
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 1 — Start the stack">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#register-the-namespace-in-the-ui" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Register the namespace in the UI
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-2-change-a-limit-and-watch-it-propagate-live" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 2 — Change a limit and watch it propagate live
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-3-attach-a-json-schema-and-reject-an-invalid-value" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3 — Attach a JSON Schema and reject an invalid value
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-4-bundle-export-edit-in-git-import-back" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 4 — Bundle export → edit in Git → import back
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tear-down" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tear down
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-it-fits-together" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How it fits together
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -863,10 +855,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#namespaces" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        Namespaces
       
     </span>
   </a>
@@ -874,38 +866,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-1-start-the-stack" class="md-nav__link">
+  <a href="#configs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1 — Start the stack
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Step 1 — Start the stack">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#register-the-namespace-in-the-ui" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Register the namespace in the UI
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#step-2-change-a-limit-and-watch-it-propagate-live" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 2 — Change a limit and watch it propagate live
+        Configs
       
     </span>
   </a>
@@ -913,10 +877,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-3-attach-a-json-schema-and-reject-an-invalid-value" class="md-nav__link">
+  <a href="#schema-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3 — Attach a JSON Schema and reject an invalid value
+        Schema Validation
       
     </span>
   </a>
@@ -924,10 +888,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#step-4-bundle-export-edit-in-git-import-back" class="md-nav__link">
+  <a href="#bundles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4 — Bundle export → edit in Git → import back
+        Bundles
       
     </span>
   </a>
@@ -935,10 +899,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tear-down" class="md-nav__link">
+  <a href="#clients-observability" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tear down
+        Clients &amp; Observability
       
     </span>
   </a>
@@ -946,10 +910,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-it-fits-together" class="md-nav__link">
+  <a href="#webhooks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it fits together
+        Webhooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RBAC
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#global-revision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Revision
       
     </span>
   </a>
@@ -976,194 +962,252 @@
   
 
 
-<h1 id="tutorial-manage-configs-for-a-3-service-todo-app">Tutorial: manage configs for a 3-service todo app</h1>
-<p>This walkthrough runs a small stack — Elara plus three toy microservices — and
-takes you through the four things that make Elara more than "etcd with a UI":</p>
-<ol>
-<li>Start the stack and watch the services read their config from Elara.</li>
-<li>Change a limit in the Web UI and watch a service pick it up <strong>live</strong>, with
-   no restart, over the etcd watch protocol.</li>
-<li>Attach a JSON Schema to a key and see an invalid value get <strong>rejected</strong>
-   before it is ever stored.</li>
-<li>Export a config bundle, edit it in Git, and import it back — a GitOps
-   round-trip.</li>
-</ol>
-<p>The three services (<code>api</code>, <code>worker</code>, <code>notifier</code>) are deliberately tiny. Each is
-a ~40-line Go program that uses the <strong>stock <code>go.etcd.io/etcd/client/v3</code>
-library</strong> — unchanged — to read one config key on startup and watch it for
-changes. That's the whole point: your existing etcd clients talk to Elara with
-zero code changes.</p>
-<p>Everything for this tutorial lives in
-<a href="../examples/todo-app/"><code>examples/todo-app/</code></a>.</p>
-<hr />
-<h2 id="prerequisites">Prerequisites</h2>
+<h1 id="core-concepts">Core Concepts</h1>
+<p>This page is a reference for Elara's core building blocks — what each one is,
+the fields that matter, and the rules the server actually enforces. It is not a
+walkthrough: for hands-on introductions see the
+<a href="../quickstart/">Quickstart</a> and the <a href="../tutorial-todo-app/">To-Do app tutorial</a>.</p>
+<p>Elara stores everything in a single <a href="https://github.com/etcd-io/bbolt">bbolt</a>
+file and exposes it three ways: a Web UI, a ConnectRPC API (both on port
+<code>8080</code>), and an etcd-compatible gRPC API (port <code>2379</code>). The concepts below are
+shared across all three surfaces.</p>
+<h2 id="namespaces">Namespaces</h2>
+<p>A <strong>namespace</strong> is the top-level container for configs. It maps directly to the
+first path segment of an etcd key (see <a href="#configs">Configs</a>), so every config
+lives in exactly one namespace.</p>
+<p>Fields (<code>internal/domain/namespace.go</code>):</p>
 <ul>
-<li>Docker with the Compose plugin (<code>docker compose version</code> should work).</li>
-<li>Ports <code>8080</code> (Web UI) and <code>2379</code> (etcd gRPC) free on your machine.</li>
+<li><code>Name</code> — canonical identifier, validated as a canonical name (used verbatim
+  in etcd keys and RBAC scopes).</li>
+<li><code>DisplayName</code> — optional human-friendly label.</li>
+<li><code>Description</code> — optional free text.</li>
+<li><code>Locked</code> — change-freeze flag (see below).</li>
+<li><code>ConfigCount</code>, <code>CreatedAt</code>, <code>UpdatedAt</code> — bookkeeping.</li>
 </ul>
-<p>No Go toolchain is needed on your host — everything builds inside containers.</p>
-<hr />
-<h2 id="step-1-start-the-stack">Step 1 — Start the stack</h2>
-<p>From the repository root:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>examples/todo-app
-docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>--build
-</code></pre></div>
-<p>The first build compiles the Elara image (frontend + Go binary) and the three
-toy services, so it takes a minute or two. When it settles you'll see the
-services connect and load their config. A one-shot <code>seed</code> container writes the
-initial keys, so the services show real values right away:</p>
-<div class="highlight"><pre><span></span><code>api-1       | [api] loaded /production/api/limits.json = {&quot;max_todos_per_user&quot;:100,&quot;rate_limit_per_min&quot;:60}
-api-1       | [api] watching /production/api/limits.json for changes...
-worker-1    | [worker] loaded /production/worker/settings.json = {&quot;batch_size&quot;:50,&quot;poll_interval_seconds&quot;:5}
-notifier-1  | [notifier] loaded /production/notifier/config.json = {&quot;channel&quot;:&quot;email&quot;,&quot;digest_enabled&quot;:true}
-</code></pre></div>
-<p>If a service starts before Elara is ready it retries automatically, so a few
-"cannot reach Elara … retrying" lines at the top are normal.</p>
-<p>Now open the Web UI at <a href="http://localhost:8080">http://localhost:8080</a> and log in:</p>
+<p>Lifecycle operations (<code>internal/usecase/namespace/</code>): create, update, delete,
+lock, unlock.</p>
+<p><strong>Locking.</strong> Locking a namespace sets <code>Locked = true</code>. While a namespace is
+locked, every config write inside it — create, update, delete, both via the
+Web/ConnectRPC API and the etcd gRPC API — is rejected with <code>ErrNamespaceLocked</code>.
+Use it as a change freeze to protect a whole environment (e.g. <code>prod</code>) from
+edits. A locked namespace also cannot be deleted; you must unlock it first.</p>
+<p><strong>Delete guard.</strong> A namespace can only be deleted when it is unlocked <em>and</em>
+empty. Deleting a namespace that still contains one or more configs fails with a
+validation error reporting the config count — Elara never cascades a namespace
+delete into its configs.</p>
+<h2 id="configs">Configs</h2>
+<p>A <strong>config</strong> is a single key/value entry inside a namespace
+(<code>internal/domain/config.go</code>).</p>
+<p>Fields that matter:</p>
 <ul>
-<li><strong>Username:</strong> <code>admin@elara.local</code></li>
-<li><strong>Password:</strong> <code>password</code></li>
+<li><code>Path</code> — must start with <code>/</code>, must not contain <code>//</code>, and must not end with
+  <code>/</code> (e.g. <code>/services/api.yaml</code>).</li>
+<li><code>Content</code> — the config body, stored normalized.</li>
+<li><code>Format</code> — <code>json</code>, <code>yaml</code>, or <code>other</code>. Parsed via <code>ParseFormat</code> (<code>yml</code> is
+  accepted as an alias for <code>yaml</code>); auto-detected from the path extension
+  (<code>.json</code> / <code>.yaml</code> / <code>.yml</code>, else <code>other</code>) when not set. <strong>Format is
+  immutable on update</strong> — you cannot change a config's format after creation.</li>
+<li><code>ContentHash</code> — SHA-256 of the content, used to detect no-op writes.</li>
+<li><code>Version</code> — per-config counter, starts at <code>1</code> and increments on each write.</li>
+<li><code>Revision</code> / <code>CreateRevision</code> — the <a href="#global-revision">global revision</a> at
+  last modify (etcd <code>mod_revision</code>) and at first create.</li>
+<li><code>Metadata</code> — arbitrary string map.</li>
+<li><code>Locked</code> / <code>NamespaceLocked</code> — this config's own lock, and whether its
+  namespace is locked.</li>
 </ul>
-<h3 id="register-the-namespace-in-the-ui">Register the namespace in the UI</h3>
-<p>The services and the seeder address config by <code>namespace/path</code> and talk to
-Elara over the raw etcd wire, which doesn't create a namespace <em>record</em>. To
-manage those keys in the UI, create the matching namespace once:</p>
-<ol>
-<li>Create a namespace named <strong><code>production</code></strong> in the Web UI.</li>
-</ol>
-<p>The three keys the seeder already wrote (<code>api/limits.json</code>,
-<code>worker/settings.json</code>, <code>notifier/config.json</code>) now appear inside it — creating
-the namespace record doesn't touch the config data that's already there.</p>
-<blockquote>
-<p><strong>Tip:</strong> keep the <code>docker compose up</code> terminal visible. The service logs are
-how you'll <em>see</em> config changes propagate in the next steps.</p>
-</blockquote>
-<hr />
-<h2 id="step-2-change-a-limit-and-watch-it-propagate-live">Step 2 — Change a limit and watch it propagate live</h2>
-<p>The <code>api</code> service reads <code>/production/api/limits.json</code>. Let's raise its todo
-limit and watch the running service react without a restart.</p>
-<ol>
-<li>In the Web UI, open the <strong><code>production</code></strong> namespace.</li>
-<li>Open the config <strong><code>api/limits.json</code></strong>.</li>
-<li>Change <code>max_todos_per_user</code> from <code>100</code> to <code>500</code> and save.</li>
-</ol>
-<p>Within a second, the <code>api</code> service logs the new value in your <code>docker compose</code>
-terminal:</p>
-<div class="highlight"><pre><span></span><code>api-1  | [api] config changed: /production/api/limits.json = {&quot;max_todos_per_user&quot;:500,&quot;rate_limit_per_min&quot;:60} (revision 6)
+<p><strong>etcd key mapping.</strong> A config is addressable over the etcd gRPC API as
+<code>/{namespace}{path}</code>, where the path keeps its leading slash
+(<code>internal/handler/etcdv3/keyencoding.go</code>):</p>
+<div class="highlight"><pre><span></span><code>namespace &quot;prod&quot; + path &quot;/services/api.yaml&quot;  →  /prod/services/api.yaml
+namespace &quot;default&quot; + path &quot;/foo.json&quot;        →  /default/foo.json
 </code></pre></div>
-<p>That change travelled from the Web UI → Elara → the etcd <strong>watch</strong> stream the
-<code>api</code> service opened at startup. The service used the ordinary
-<code>clientv3.Watch(...)</code> API — the same call it would make against a real etcd
-cluster.</p>
-<p>You can prove the drop-in compatibility from your host too, if you have
-<code>etcdctl</code> installed (client auth is disabled in this demo, so no token is
-needed):</p>
-<div class="highlight"><pre><span></span><code>etcdctl<span class="w"> </span>--endpoints<span class="o">=</span>localhost:2379<span class="w"> </span>get<span class="w"> </span>/production/api/limits.json
-etcdctl<span class="w"> </span>--endpoints<span class="o">=</span>localhost:2379<span class="w"> </span>put<span class="w"> </span>/production/worker/settings.json<span class="w"> </span><span class="s1">&#39;{&quot;batch_size&quot;:100,&quot;poll_interval_seconds&quot;:2}&#39;</span>
+<p>The first path segment after the leading <code>/</code> is the namespace; everything from
+the second <code>/</code> onward (leading slash included) is the config path.</p>
+<p><strong>History.</strong> Every write appends a revision-stamped entry to the history
+bucket. You can list a config's history and read it as it existed at any past
+revision (<code>internal/usecase/config/service_history.go</code>, <code>GetKVAtRevision</code>) —
+this is what backs etcd point-in-time reads and watch-from-revision.</p>
+<p><strong>Config locking.</strong> Individual configs can be locked and unlocked
+(<code>internal/usecase/config/service_update.go</code>). While a config is locked, any
+attempt to update or delete it is rejected with <code>ErrLocked</code> — enforced in
+storage, so it holds for both the UI and the etcd API (the etcd <code>Put</code>/
+<code>DeleteRange</code> paths return the same error). Lock/unlock transitions are recorded
+in a lock-history bucket. Over ConnectRPC a locked write surfaces as a
+<code>failed_precondition</code> error. Locking a namespace has the same effect on all of
+its configs (<code>NamespaceLocked</code>).</p>
+<h2 id="schema-validation">Schema Validation</h2>
+<p>Elara can validate config content against a <strong>JSON Schema</strong> attached to a
+namespace (<code>internal/domain/schema.go</code>, <code>internal/usecase/schema/</code>).</p>
+<p>A <code>SchemaAttachment</code> binds one JSON Schema to a <code>(Namespace, PathPattern)</code> pair.
+The pattern is a <strong>glob</strong> (using <code>github.com/gobwas/glob</code> with <code>/</code> as separator),
+so a single schema can cover many configs:</p>
+<div class="highlight"><pre><span></span><code>// attach to namespace &quot;prod&quot;, pattern &quot;/services/*.json&quot;
+{
+  &quot;$schema&quot;: &quot;https://json-schema.org/draft/2020-12/schema&quot;,
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;required&quot;: [&quot;port&quot;],
+  &quot;properties&quot;: {
+    &quot;port&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 1, &quot;maximum&quot;: 65535 }
+  }
+}
 </code></pre></div>
-<p>Watch the <code>worker</code> service log the change you just made with <code>etcdctl</code>.</p>
-<hr />
-<h2 id="step-3-attach-a-json-schema-and-reject-an-invalid-value">Step 3 — Attach a JSON Schema and reject an invalid value</h2>
-<p>Elara can validate config content against a JSON Schema <strong>before</strong> it is
-written. Invalid values are rejected up front instead of quietly breaking a
-consumer.</p>
-<blockquote>
-<p><strong>Where it applies:</strong> schema validation runs on the config-management path —
-edits made through the Web UI and the ConnectRPC API. It is what protects a
-human (or a CI job) from saving a broken config. (Raw etcd <code>Put</code> calls are
-the low-level wire path and are not schema-checked, so keep management edits
-going through the UI/API where the guardrails live.)</p>
-</blockquote>
-<ol>
-<li>In the Web UI, open the <strong><code>production</code></strong> namespace.</li>
-<li>Use the namespace's <strong>Attach Schema</strong> action. Fill in:</li>
-<li><strong>Path Pattern:</strong> <code>/api/**</code> (this glob matches <code>api/limits.json</code>).</li>
-<li><strong>JSON Schema:</strong> paste the schema below.</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;max_todos_per_user&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;maximum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;rate_limit_per_min&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;max_todos_per_user&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;rate_limit_per_min&quot;</span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-<span class="p">}</span>
+<p><strong>Which schema applies.</strong> When more than one attached pattern matches a config
+path, the <strong>most specific pattern wins</strong> — specificity is scored by counting
+wildcard characters (<code>*</code>, <code>?</code>, <code>[</code>); fewer wildcards is more specific. On a tie,
+the oldest attachment wins (<code>findBestMatch</code>). Only the single best match is
+applied to a given config.</p>
+<p><strong>When it runs.</strong> Validation happens on every config create and update, before
+the write. <code>other</code>-format configs are skipped (only <code>json</code> and <code>yaml</code> are
+validated; YAML is re-marshaled through JSON before checking). Schemas are
+compiled with <code>github.com/santhosh-tekuri/jsonschema</code> v6, which reads the draft
+from the schema's <code>$schema</code> keyword (through draft 2020-12), and compiled
+schemas are cached by content hash.</p>
+<p><strong>On failure.</strong> The write is rejected with a <code>SchemaValidationError</code> carrying a
+list of violations, each <code>{path, message, keyword}</code>. Its message reads:</p>
+<div class="highlight"><pre><span></span><code>schema validation failed: N violation(s): /field: message [keyword]; ...
 </code></pre></div>
-<ol>
-<li>Now open <code>api/limits.json</code> and try to save an invalid value, for example:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="w"> </span><span class="nt">&quot;max_todos_per_user&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;rate_limit_per_min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="w"> </span><span class="p">}</span>
-</code></pre></div>
-<p><code>5000</code> exceeds the schema's <code>maximum</code> of <code>1000</code>, so Elara rejects the save
-   and the UI shows a schema-validation error. The stored value — and what the
-   <code>api</code> service sees — is unchanged.</p>
-<ol>
-<li>Fix the value (e.g. <code>750</code>) and save. This time it succeeds, and the <code>api</code>
-   service logs the update.</li>
-</ol>
-<p>Try another invalid case to get a feel for it: change <code>max_todos_per_user</code> to
-the string <code>"lots"</code> and save — the <code>integer</code> type constraint rejects it.</p>
-<hr />
-<h2 id="step-4-bundle-export-edit-in-git-import-back">Step 4 — Bundle export → edit in Git → import back</h2>
-<p>Elara can round-trip a namespace to a YAML or JSON bundle, so you can review
-config changes in a pull request and apply them back — a lightweight GitOps
-flow.</p>
-<p><strong>Export.</strong> In the Web UI, open the <code>production</code> namespace and use its
-<strong>Export</strong> action. Choose the bundle format (<strong>YAML</strong> or <strong>JSON</strong>) and
-download. You'll get a file like <code>production-export.yaml</code> containing every key
-in the namespace:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-<span class="nt">configs</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/api/limits.json</span>
-<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{&quot;max_todos_per_user&quot;:750,&quot;rate_limit_per_min&quot;:60}&#39;</span>
-<span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/notifier/config.json</span>
-<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{&quot;channel&quot;:&quot;email&quot;,&quot;digest_enabled&quot;:true}&#39;</span>
-<span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/worker/settings.json</span>
-<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{&quot;batch_size&quot;:100,&quot;poll_interval_seconds&quot;:2}&#39;</span>
-<span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
-</code></pre></div>
-<p><strong>Edit in Git.</strong> Commit that file to a repo and change a value in a normal
-editor — say, flip the notifier channel:</p>
-<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/notifier/config.json</span>
-<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{&quot;channel&quot;:&quot;slack&quot;,&quot;digest_enabled&quot;:true}&#39;</span>
-<span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
-</code></pre></div>
-<p><strong>Import back.</strong> In the Web UI, use the <strong>Import Configs</strong> action, upload the
-edited bundle, and choose how to resolve conflicts (overwrite existing keys to
-apply your edit). You can do a dry run first to preview what would change.</p>
-<p>Once imported, the <code>notifier</code> service logs the new value it picked up over its
-watch:</p>
-<div class="highlight"><pre><span></span><code>notifier-1  | [notifier] config changed: /production/notifier/config.json = {&quot;channel&quot;:&quot;slack&quot;,&quot;digest_enabled&quot;:true} (revision 9)
-</code></pre></div>
-<p>Your Git history is now the audit trail for that change, and Elara enforced it
-against any attached schemas on the way in.</p>
-<hr />
-<h2 id="tear-down">Tear down</h2>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w">          </span><span class="c1"># stop the stack, keep the data volume</span>
-docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w"> </span>-v<span class="w">       </span><span class="c1"># also delete Elara&#39;s stored data</span>
-</code></pre></div>
-<hr />
-<h2 id="how-it-fits-together">How it fits together</h2>
-<div class="highlight"><pre><span></span><code>Web UI / ConnectRPC ─┐
-                     ├─→  Elara  ─(bbolt)
-etcdctl / your app ──┘      │
-                            └─→ etcd v3 watch stream ──→ api / worker / notifier
-</code></pre></div>
+<p>Over ConnectRPC this maps to an <code>invalid_argument</code> error whose message is the
+string above, plus a structured <code>SchemaValidationFailure</code> error detail
+containing every violation's path, message, and keyword
+(<code>internal/handler/v2/errors.go</code>).</p>
+<h2 id="bundles">Bundles</h2>
+<p>A <strong>bundle</strong> is a portable snapshot of configs used for export/import
+(<code>internal/domain/bundle.go</code>, <code>internal/usecase/transfer/</code>).</p>
 <ul>
-<li>The toy services use the <strong>unmodified</strong> <code>go.etcd.io/etcd/client/v3</code> library.
-  Keys are addressed as <code>/{namespace}/{path}</code>, e.g.
-  <code>/production/api/limits.json</code>.</li>
-<li>A change made in the UI, via the ConnectRPC API, or via <code>etcdctl</code> all land in
-  the same store and fan out to every watcher.</li>
-<li>The management path (UI/API) adds the guardrails bare etcd doesn't have:
-  JSON Schema validation, RBAC, audit history, and GitOps bundles.</li>
+<li><code>BundleConfig</code> — <code>{Path, Content, Format, Metadata}</code>.</li>
+<li><code>NamespaceBundle</code> — one namespace and its configs.</li>
+<li><code>AllBundle</code> — every namespace (multi-namespace export/import).</li>
 </ul>
-<p>To go deeper, read the service code in
-<a href="../examples/todo-app/services/"><code>examples/todo-app/services/</code></a> — it's about a
-page of Go per service.</p>
+<p><strong>Export</strong> produces JSON or YAML (encoding chosen per request), optionally
+packaged as a <strong>ZIP</strong> for an all-namespaces export (one file per namespace under
+<code>namespaces/&lt;name&gt;.&lt;ext&gt;</code> plus an index).</p>
+<p><strong>Import</strong> replays a bundle. When a config in the bundle already exists, the
+<code>onConflict</code> mode decides the outcome (<code>service_import.go</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behavior on an existing config</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SKIP</code> (default, also used for <code>UNSPECIFIED</code>)</td>
+<td>Left untouched; counted as <em>Skipped</em>.</td>
+</tr>
+<tr>
+<td><code>OVERWRITE</code></td>
+<td>Existing config is updated (its current <code>Version</code> is preserved); counted as <em>Updated</em>.</td>
+</tr>
+<tr>
+<td><code>FAIL</code></td>
+<td>Recorded as an error (<code>"config already exists"</code>); counted as <em>Failed</em>.</td>
+</tr>
+</tbody>
+</table>
+<p>Configs that don't yet exist are always created. Imports can target an explicit
+namespace (overriding the bundle's own namespace field) or infer scope from the
+bundle; a multi-namespace <code>AllBundle</code> import requires <code>Transfer:write</code> on <code>*</code>.</p>
+<p><strong>Preview is dry-run, not a diff.</strong> The import preview runs with <code>dryRun = true</code>
+and returns an <code>ImportReport</code> — aggregate counts of <code>Created</code> / <code>Updated</code> /
+<code>Skipped</code> / <code>Failed</code> plus a per-path error list. It does <strong>not</strong> show a
+per-config content diff: an <code>OVERWRITE</code> preview reports a config as <em>Updated</em>
+without telling you what would change. Treat the preview as a summary of how
+many entries fall into each bucket, not as a review of the actual changes.</p>
+<h2 id="clients-observability">Clients &amp; Observability</h2>
+<p>"Clients" in Elara means consumers of the <strong>etcd-compatible gRPC API</strong> — the
+services reading configs over the etcd wire protocol. UI and ConnectRPC users
+are not clients.</p>
+<p>When a gRPC connection is established, Elara captures a <code>ConnectionInfo</code> from
+gRPC metadata (<code>internal/transport/grpc/stats_handler.go</code>,
+<code>internal/domain/client.go</code>):</p>
+<ul>
+<li><code>UserAgent</code> — the standard gRPC <code>user-agent</code>.</li>
+<li><code>ClientName</code> / <code>ClientVersion</code> — from the <code>x-client-name</code> and
+  <code>x-client-version</code> headers.</li>
+<li><code>K8sNamespace</code> / <code>K8sPod</code> / <code>K8sNode</code> — from <code>x-client-k8s-namespace</code>,
+  <code>x-client-k8s-pod</code>, <code>x-client-k8s-node</code>.</li>
+<li><code>InstanceID</code> — from <code>x-client-instance-id</code>.</li>
+<li><code>PeerAddress</code> — the connecting address.</li>
+</ul>
+<p>Those <code>x-client-*</code> headers are supplied by the client (typically wired from the
+Kubernetes downward API); when absent, the fields are simply empty.</p>
+<p>The in-memory monitor registry (<code>internal/service/monitor/registry.go</code>) tracks,
+per connected client: request counts by RPC method, error count, last-activity
+time, and the list of <strong>active watches</strong> (each with its key range, start
+revision, and flags). It also keeps a small ring buffer of recent per-RPC events
+and publishes changes so the UI can update live.</p>
+<ul>
+<li>The <strong>Active</strong> view lists clients that are currently connected
+  (<code>DisconnectedAt == nil</code>).</li>
+<li>The <strong>History</strong> view shows clients that have since disconnected.</li>
+</ul>
+<p>All of this state is in-memory only — it is not persisted and is lost on
+restart.</p>
+<h2 id="webhooks">Webhooks</h2>
+<p>A <strong>webhook</strong> delivers config-change notifications to an external HTTP endpoint
+(<code>internal/domain/webhook.go</code>, <code>internal/usecase/webhook/</code>).</p>
+<p>Fields:</p>
+<ul>
+<li><code>URL</code> — target endpoint (must be <code>http</code>/<code>https</code>).</li>
+<li><code>Events</code> — any of <code>created</code>, <code>updated</code>, <code>deleted</code> (at least one required).</li>
+<li><code>NamespaceFilter</code> — if set, only events in that namespace fire.</li>
+<li><code>PathPrefix</code> — if set, only configs whose path is at or below that prefix fire
+  (boundary-aware: <code>/svc</code> matches <code>/svc</code> and <code>/svc/...</code> but not <code>/svcold</code>).</li>
+<li><code>Secret</code> — optional HMAC signing key.</li>
+<li><code>Enabled</code> — disabled webhooks match nothing.</li>
+</ul>
+<p><strong>Delivery &amp; signing.</strong> The dispatcher POSTs a JSON body with
+<code>Content-Type: application/json</code>. When a <code>Secret</code> is set, it computes an
+HMAC-SHA256 over the body and sends it in the <code>X-Elara-Signature</code> header, formatted
+as <code>sha256=&lt;hex&gt;</code> (<code>internal/transport/webhook/dispatcher.go</code>) — verify it on
+your receiver to authenticate the payload.</p>
+<p>Each attempt is recorded as a <code>DeliveryAttempt</code> (<code>AttemptNumber</code>, <code>StatusCode</code>,
+<code>LatencyMS</code>, <code>Error</code>, <code>Success</code>, <code>Timestamp</code>), giving a delivery history with
+retries and latency.</p>
+<h2 id="rbac">RBAC</h2>
+<p>Elara uses Casbin RBAC with one hard invariant: <strong>users get permissions only
+through group membership</strong> — there is no way to grant a permission directly to a
+user. For the rationale and the full model, see
+<a href="../adr/0002-groups-only-rbac/">ADR 0002: Groups-only RBAC</a>. This section covers
+the practical mechanics (<code>internal/domain/rbac.go</code>).</p>
+<p><strong>Permissions are tuples, not canned roles.</strong> A group holds a set of
+<code>Permission{Object, Action, Domain}</code> grants, assigned explicitly through the API
+or UI. There is no fixed "reader gets X, writer gets Y" expansion table on the
+web side — you compose the exact objects/actions/scopes a group needs.</p>
+<ul>
+<li><strong>Objects</strong>: <code>namespace</code>, <code>token</code>, <code>client</code>, <code>dashboard</code>, <code>user</code>, <code>group</code>,
+  <code>policy</code>, <code>webhook</code>, and <code>*</code> (all). Note that <code>namespace</code> covers <em>all</em>
+  namespace-scoped content — configs, schemas, and export/import included; there
+  is no separate object for those.</li>
+<li><strong>Actions</strong>: <code>read</code>, <code>write</code>, <code>create</code>, <code>delete</code>, and <code>*</code> (all). <code>write</code>
+  implies <code>read</code> (you can't edit what you can't read), and <code>*</code> matches any
+  action.</li>
+<li><strong>Domain (scope)</strong>: the scope a grant applies to — a namespace
+  (<code>namespace:&lt;name&gt;</code>), a group (<code>group:&lt;name&gt;</code>), or <code>*</code> (global / every
+  namespace).</li>
+</ul>
+<p><strong>Namespace-scoped vs global.</strong> A grant like <code>namespace / write / namespace:prod</code>
+lets the group write configs in <code>prod</code> only. The same grant with domain <code>*</code>
+applies to every namespace. Group membership itself is always global.</p>
+<p><strong>The role names.</strong> <code>admin</code>, <code>writer</code>, and <code>reader</code> exist as constants. <code>admin</code>
+is the wildcard role: the seeded system superadmin group is granted
+<code>* / * / *</code> (all objects, all actions, all namespaces) as a break-glass policy.
+<code>reader</code> and <code>writer</code> are used primarily as <strong>etcd service-token roles</strong> — a
+token carries a role plus a namespace list, where <code>reader</code> is read-only and
+<code>writer</code> additionally permits writes within its namespaces
+(<code>internal/handler/etcdv3/access.go</code>). (Service tokens are independent
+credentials — see the notes on tokens in the project overview.)</p>
+<h2 id="global-revision">Global Revision</h2>
+<p>Elara maintains a single <strong>monotonic revision counter</strong> that increments on every
+config write across all namespaces — the etcd <code>mod_revision</code> model. Each write
+stamps the config's <code>Revision</code> (and, on create, <code>CreateRevision</code>) with the
+counter's value and records a history entry at that revision.</p>
+<p>This counter is what enables point-in-time reads and etcd
+watch-from-revision, and it surfaces on the dashboard as the <strong>Global Revision</strong>
+KPI (<code>internal/usecase/dashboard/service_stats.go</code>, <code>CurrentRevision</code>). Because
+it is global, its value reflects total write activity across the whole store,
+not any single namespace.</p>
 
 
 

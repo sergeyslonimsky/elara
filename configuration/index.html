@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../quickstart/">
       
       
-        <link rel="next" href="../configuration/">
+        <link rel="next" href="../concepts/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Quickstart - Elara</title>
+        <title>Configuration - Elara</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#quickstart" class="md-skip">
+        <a href="#configuration" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Quickstart
+              Configuration
             
           </span>
         </div>
@@ -340,6 +340,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -359,7 +387,7 @@
   <span class="md-ellipsis">
     
   
-    Quickstart
+    Configuration
   
 
     
@@ -377,7 +405,7 @@
   <span class="md-ellipsis">
     
   
-    Quickstart
+    Configuration
   
 
     
@@ -403,10 +431,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-run-elara" class="md-nav__link">
+  <a href="#environment-variable-naming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Run Elara
+        Environment-variable naming
       
     </span>
   </a>
@@ -414,33 +442,77 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-tour-the-seeded-demo-data" class="md-nav__link">
+  <a href="#reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Tour the seeded demo data
+        Reference
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-make-your-first-change-through-the-ui" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Make your first change through the UI
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Make your first change through the UI">
+    <nav class="md-nav" aria-label="Reference">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-same-change-from-an-etcd-client" class="md-nav__link">
+  <a href="#server-data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The same change from an etcd client
+        Server &amp; data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#client-etcd-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client / etcd API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#demo-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Demo mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-dangerous" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced / dangerous
       
     </span>
   </a>
@@ -453,21 +525,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
+  <a href="#docker-deployment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next steps
+        Docker deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimal-production-ish-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal production-ish run
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#developing-elara-itself" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Developing Elara itself
+        docker-compose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes deployment
       
     </span>
   </a>
@@ -478,34 +578,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Configuration
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -841,10 +913,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-run-elara" class="md-nav__link">
+  <a href="#environment-variable-naming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Run Elara
+        Environment-variable naming
       
     </span>
   </a>
@@ -852,33 +924,77 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-tour-the-seeded-demo-data" class="md-nav__link">
+  <a href="#reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Tour the seeded demo data
+        Reference
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-make-your-first-change-through-the-ui" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Make your first change through the UI
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Make your first change through the UI">
+    <nav class="md-nav" aria-label="Reference">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-same-change-from-an-etcd-client" class="md-nav__link">
+  <a href="#server-data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The same change from an etcd client
+        Server &amp; data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#client-etcd-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client / etcd API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#demo-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Demo mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-dangerous" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced / dangerous
       
     </span>
   </a>
@@ -891,21 +1007,49 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
+  <a href="#docker-deployment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next steps
+        Docker deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimal-production-ish-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal production-ish run
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#developing-elara-itself" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Developing Elara itself
+        docker-compose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes deployment
       
     </span>
   </a>
@@ -932,142 +1076,353 @@
   
 
 
-<h1 id="quickstart">Quickstart</h1>
-<p>This walkthrough takes about <strong>5 minutes</strong>. You'll start Elara from a single
-Docker command, tour the seeded demo data, and make your first configuration
-change through the Web UI — watching schema validation reject a bad value along
-the way.</p>
-<h2 id="1-run-elara">1. Run Elara</h2>
-<p>There's no published <code>:demo</code> image yet — build the demo variant locally from
-the repo, which seeds sample data via <code>DEMO_MODE</code>:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/sergeyslonimsky/elara.git
-<span class="nb">cd</span><span class="w"> </span>elara
-docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">DEMO_MODE</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>-t<span class="w"> </span>elara:demo<span class="w"> </span>.
-docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span>-p<span class="w"> </span><span class="m">2379</span>:2379<span class="w"> </span>elara:demo
+<h1 id="configuration">Configuration</h1>
+<p>Elara is configured entirely through <a href="https://github.com/spf13/viper">Viper</a>.
+Values can come from a config file, but <strong>environment variables override every
+other source</strong> — so a container deployment can be driven purely by env vars with
+no config file at all.</p>
+<h2 id="environment-variable-naming">Environment-variable naming</h2>
+<p>Config keys are dotted (e.g. <code>ui.auth.basicAuth.username</code>). Viper is set up with
+<code>AutomaticEnv()</code> and a <code>.</code> → <code>_</code> key replacer, then uppercases the whole key.
+The mapping is therefore mechanical:</p>
+<div class="highlight"><pre><span></span><code>ui.auth.basicAuth.username   →   UI_AUTH_BASICAUTH_USERNAME
+config.data.path             →   CONFIG_DATA_PATH
 </code></pre></div>
-<p>That's the whole install. Elara is a single binary backed by one
-<a href="https://github.com/etcd-io/bbolt">bbolt</a> file — there's no external database,
-message broker, or cluster to stand up.</p>
-<p>Two ports are now listening:</p>
+<p>camelCase segments are <strong>not</strong> split on case — <code>basicAuth</code> becomes <code>BASICAUTH</code>,
+not <code>BASIC_AUTH</code>. Every env var in the tables below was derived from this rule
+and cross-checked against the key strings in <code>internal/di/config/</code>.</p>
+<h2 id="reference">Reference</h2>
+<h3 id="server-data">Server &amp; data</h3>
 <table>
 <thead>
 <tr>
-<th>Port</th>
-<th>Surface</th>
+<th>Env Var</th>
+<th>Config Key</th>
+<th>Default</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
+<td><code>UI_SERVER_PORT</code></td>
+<td><code>ui.server.port</code></td>
 <td><code>8080</code></td>
-<td>Web UI + ConnectRPC API (HTTP/2)</td>
+<td>Port for the HTTP/2 server that serves the Web UI, the ConnectRPC API, and (when enabled) <code>/metrics</code>.</td>
 </tr>
 <tr>
+<td><code>UI_SERVER_READTIMEOUT</code></td>
+<td><code>ui.server.readTimeout</code></td>
+<td><code>0</code> (no timeout)</td>
+<td>Max duration for reading a request. Accepts Go durations (<code>5s</code>, <code>250ms</code>).</td>
+</tr>
+<tr>
+<td><code>UI_SERVER_WRITETIMEOUT</code></td>
+<td><code>ui.server.writeTimeout</code></td>
+<td><code>24h</code></td>
+<td>Max duration for writing a response. Defaults to 24h because server-streaming RPCs (<code>WatchClients</code>, <code>WatchClient</code>) are hosted on this port and must not be cut off mid-stream. Lower it only if you do not use watch streams.</td>
+</tr>
+<tr>
+<td><code>CLIENT_ETCD_PORT</code></td>
+<td><code>client.etcd.port</code></td>
 <td><code>2379</code></td>
-<td>etcd-compatible gRPC API (drop-in for etcd v3)</td>
+<td>Port for the etcd-compatible gRPC API consumed by <code>etcdctl</code> and typed clients.</td>
+</tr>
+<tr>
+<td><code>CONFIG_DATA_PATH</code></td>
+<td><code>config.data.path</code></td>
+<td><code>./data</code></td>
+<td>Directory holding the single bbolt state file (<code>elara.db</code>). Only one instance may run against it at a time (exclusive file lock). In the container image this defaults to <code>/var/lib/elara</code>.</td>
+</tr>
+<tr>
+<td><code>SERVICE_NAME</code></td>
+<td><code>service.name</code></td>
+<td><code>elara</code></td>
+<td>Service identity embedded in Prometheus / OTLP resource labels.</td>
+</tr>
+<tr>
+<td><code>SERVICE_VERSION</code></td>
+<td><code>service.version</code></td>
+<td><em>(empty)</em></td>
+<td>Service version embedded in Prometheus / OTLP resource labels.</td>
 </tr>
 </tbody>
 </table>
-<p>Open <a href="http://localhost:8080">http://localhost:8080</a> in your browser. On first launch demo mode
-greets you with a welcome modal explaining that you're looking at sample data —
-dismiss it to reach the dashboard.</p>
-<div class="admonition note">
-<p class="admonition-title">Prefer a clean instance?</p>
-<p>Build without <code>--build-arg DEMO_MODE=true</code> (or run the binary directly via
-<code>go run ./cmd/service</code>) and the instance starts empty. Create a namespace
-and a config from the UI (or with <code>etcdctl</code>, see below) and the rest of
-this tour still applies.</p>
+<h3 id="observability">Observability</h3>
+<table>
+<thead>
+<tr>
+<th>Env Var</th>
+<th>Config Key</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>METRICS_ENABLED</code></td>
+<td><code>metrics.enabled</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, the HTTP server serves Prometheus-format metrics at <code>/metrics</code> (scrapeable by Prometheus / a <code>ServiceMonitor</code>).</td>
+</tr>
+<tr>
+<td><code>TRACING_ENABLED</code></td>
+<td><code>tracing.enabled</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, Elara creates spans for HTTP requests and gRPC RPCs and pushes them via OTLP. Requires <code>TRACING_OTLP_ENDPOINT</code>.</td>
+</tr>
+<tr>
+<td><code>TRACING_OTLP_ENDPOINT</code></td>
+<td><code>tracing.otlp.endpoint</code></td>
+<td><em>(empty)</em></td>
+<td>OTLP collector endpoint (OTel Collector, Tempo, or Jaeger OTLP gateway). Required when tracing is enabled; validated at startup.</td>
+</tr>
+<tr>
+<td><code>LOG_LEVEL</code></td>
+<td><code>log.level</code></td>
+<td><code>info</code></td>
+<td>Structured-log verbosity: <code>debug</code> | <code>info</code> | <code>warn</code> | <code>error</code>.</td>
+</tr>
+<tr>
+<td><code>LOG_FORMAT</code></td>
+<td><code>log.format</code></td>
+<td><code>json</code></td>
+<td>Log output format: <code>json</code> | <code>text</code>.</td>
+</tr>
+<tr>
+<td><code>LOG_NOSOURCE</code></td>
+<td><code>log.noSource</code></td>
+<td><code>false</code></td>
+<td>When <code>true</code>, omit source file/line from log records.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="authentication">Authentication</h3>
+<p>The variables below are listed for completeness. Auth setup — basic-auth vs OIDC,
+the bootstrap superadmin flow, and session behavior — is covered in depth on the
+<a href="../authentication/">Authentication</a> page. Do not enable auth from this table
+alone; read that page first.</p>
+<table>
+<thead>
+<tr>
+<th>Env Var</th>
+<th>Config Key</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UI_AUTH_ENABLED</code></td>
+<td><code>ui.auth.enabled</code></td>
+<td><code>false</code></td>
+<td>Master switch for UI/API authentication. When <code>false</code>, auth type is forced to <code>none</code> and permission checks are skipped.</td>
+</tr>
+<tr>
+<td><code>UI_AUTH_TYPE</code></td>
+<td><code>ui.auth.type</code></td>
+<td><code>none</code></td>
+<td><code>basic-auth</code> | <code>oidc</code> | <code>none</code>. Anything unrecognized falls back to <code>none</code>.</td>
+</tr>
+<tr>
+<td><code>UI_AUTH_BASICAUTH_USERNAME</code></td>
+<td><code>ui.auth.basicAuth.username</code></td>
+<td><em>(empty)</em></td>
+<td>Initial superadmin username (required when type is <code>basic-auth</code>; <strong>must be email-shaped</strong> — Elara refuses to boot otherwise).</td>
+</tr>
+<tr>
+<td><code>UI_AUTH_BASICAUTH_PASSWORD</code></td>
+<td><code>ui.auth.basicAuth.password</code></td>
+<td><em>(empty)</em></td>
+<td>Initial superadmin password (required when type is <code>basic-auth</code>).</td>
+</tr>
+<tr>
+<td><code>UI_AUTH_OIDC_ISSUERURL</code></td>
+<td><code>ui.auth.oidc.issuerUrl</code></td>
+<td><em>(empty)</em></td>
+<td>OIDC issuer URL.</td>
+</tr>
+<tr>
+<td><code>UI_AUTH_OIDC_CLIENTID</code></td>
+<td><code>ui.auth.oidc.clientId</code></td>
+<td><em>(empty)</em></td>
+<td>OIDC client ID.</td>
+</tr>
+<tr>
+<td><code>UI_AUTH_OIDC_CLIENTSECRET</code></td>
+<td><code>ui.auth.oidc.clientSecret</code></td>
+<td><em>(empty)</em></td>
+<td>OIDC client secret.</td>
+</tr>
+<tr>
+<td><code>UI_AUTH_OIDC_REDIRECTURL</code></td>
+<td><code>ui.auth.oidc.redirectUrl</code></td>
+<td><em>(empty)</em></td>
+<td>OIDC callback/redirect URL.</td>
+</tr>
+<tr>
+<td><code>UI_AUTH_OIDC_SCOPES</code></td>
+<td><code>ui.auth.oidc.scopes</code></td>
+<td><code>openid,email,profile</code></td>
+<td>OIDC scopes (comma-separated).</td>
+</tr>
+<tr>
+<td><code>UI_AUTH_OIDC_ADMINEMAIL</code></td>
+<td><code>ui.auth.oidc.adminEmail</code></td>
+<td><em>(empty)</em></td>
+<td>Email that bootstraps the first superadmin on OIDC (required when type is <code>oidc</code>).</td>
+</tr>
+<tr>
+<td><code>UI_AUTH_SESSION_SECURECOOKIE</code></td>
+<td><code>ui.auth.session.secureCookie</code></td>
+<td><code>false</code></td>
+<td>Marks the session cookie <code>Secure</code>. Set to <code>true</code> only when served over HTTPS — browsers drop <code>Secure</code> cookies on plain HTTP.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="client-etcd-api">Client / etcd API</h3>
+<table>
+<thead>
+<tr>
+<th>Env Var</th>
+<th>Config Key</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CLIENT_AUTH_ENABLED</code></td>
+<td><code>client.auth.enabled</code></td>
+<td><code>false</code></td>
+<td>Requires token authentication on the etcd-compatible gRPC API.</td>
+</tr>
+<tr>
+<td><code>CLIENT_HISTORY_MAX_RECORDS</code></td>
+<td><code>client.history.max_records</code></td>
+<td><code>1000</code></td>
+<td>Max connected-client history records retained. Values <code>&lt;= 0</code> fall back to the default.</td>
+</tr>
+<tr>
+<td><code>CLIENT_HISTORY_MAX_AGE</code></td>
+<td><code>client.history.max_age</code></td>
+<td><code>720h</code> (30 days)</td>
+<td>Max age of retained client-history records. Values <code>&lt;= 0</code> fall back to the default.</td>
+</tr>
+<tr>
+<td><code>CLIENT_RECENT_EVENTS_CAPACITY</code></td>
+<td><code>client.recent_events.capacity</code></td>
+<td><code>100</code></td>
+<td>Ring-buffer capacity for recent client events. Values <code>&lt;= 0</code> fall back to the default.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="demo-mode">Demo mode</h3>
+<table>
+<thead>
+<tr>
+<th>Env Var</th>
+<th>Config Key</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DEMO_MODE</code></td>
+<td><code>demo.mode</code></td>
+<td><code>false</code></td>
+<td>Seeds sample namespaces/configs/schemas on startup, injects simulated etcd clients into the monitor, and shows a first-run welcome modal. See the <a href="../quickstart/">Quickstart</a> for the demo walkthrough.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="advanced-dangerous">Advanced / dangerous</h3>
+<table>
+<thead>
+<tr>
+<th>Env Var</th>
+<th>Config Key</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DANGEROUSLY_SKIP_PERMISSIONS</code></td>
+<td><code>dangerously.skip.permissions</code></td>
+<td><code>false</code></td>
+<td><strong>Disables RBAC authorization entirely.</strong> When <code>true</code>, every request (UI/ConnectRPC handlers and the etcd token interceptor) bypasses permission enforcement — any authenticated caller gets full access. Never enable this in production; it exists only for local debugging.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title"><code>DANGEROUSLY_SKIP_PERMISSIONS</code></p>
+<p>This flag turns off all authorization checks. It does not weaken permissions
+— it removes them. Leave it unset (<code>false</code>) in any shared or production
+environment.</p>
 </div>
-<h2 id="2-tour-the-seeded-demo-data">2. Tour the seeded demo data</h2>
-<p>The demo image ships with three namespaces, roughly ten keys, JSON Schemas
-attached to a few path patterns, and a set of simulated Kubernetes pod
-consumers so the observability views have something to show.</p>
-<p>Start on the <strong>Dashboard</strong>. It gives you the cluster-wide picture at a glance:</p>
-<ul>
-<li>Total namespaces, configs, active clients, and the current <strong>global
-  revision</strong> (a monotonic, etcd-style counter that bumps on every write).</li>
-<li>The last 20 config changes.</li>
-<li>A per-namespace config count.</li>
-</ul>
-<p>Now click through the left navigation:</p>
-<ul>
-<li><strong>Namespaces</strong> — three logical groups are seeded: <code>production</code>, <code>staging</code>,
-  and <code>dev</code>. Namespaces are just containers for configs; a namespace can't be
-  deleted while it still holds any.</li>
-<li><strong>Configs</strong> — a directory-style browser. Open <code>production</code> and drill into the
-  seeded keys, for example <code>production/api/limits.json</code>. The editor is
-  format-aware (JSON / YAML / raw) and every key carries <strong>version history</strong> —
-  each edit is retained and retrievable by revision.</li>
-<li><strong>Clients</strong> — the live list of connected etcd-compatible clients. The demo
-  seeds simulated k8s pod consumers here so you can see which workloads are
-  reading configuration and at which revision, without wiring up a real
-  cluster.</li>
-</ul>
-<p>Take a minute to open a config's <strong>history</strong> tab and a side-by-side diff of two
-revisions — this is the audit trail Elara keeps for every change.</p>
-<h2 id="3-make-your-first-change-through-the-ui">3. Make your first change through the UI</h2>
-<p>Let's edit a value and watch Elara enforce a schema.</p>
-<ol>
-<li>Go to <strong>Configs → <code>production</code></strong> and open <code>api/limits.json</code>. In the demo
-   seed this file has a JSON Schema attached to its path pattern (visible on the
-   config's <strong>Schema</strong> tab), so writes are validated before they're stored.</li>
-<li>Click <strong>Edit</strong>. Change a numeric field — say bump a rate limit from <code>100</code> to
-   <code>250</code> — and <strong>Save</strong>. The write succeeds, the <strong>global revision increments</strong>
-   (watch the dashboard counter), and a new entry appears in the change feed.</li>
-<li>Now break it on purpose. Edit the same file and set that field to a string,
-   e.g. <code>"lots"</code>, or delete a required property. <strong>Save</strong> again.</li>
-</ol>
-<p>The write is <strong>rejected before storage</strong>. Elara returns a validation error
-   listing the exact failing path, the message, and the JSON Schema keyword
-   that failed — the config on disk is untouched. This is the core guardrail:
-   invalid configuration never reaches the services that consume it.</p>
-<ol>
-<li>Fix the value back to a valid number and save once more to confirm the write
-   goes through.</li>
-</ol>
-<h3 id="the-same-change-from-an-etcd-client">The same change from an etcd client</h3>
-<p>Every UI edit is just a write against the same store your services read from.
-Any etcd v3 client can do it too:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">ETCDCTL_API</span><span class="o">=</span><span class="m">3</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">ETCDCTL_ENDPOINTS</span><span class="o">=</span>localhost:2379
-
-<span class="c1"># Read the seeded value</span>
-etcdctl<span class="w"> </span>get<span class="w"> </span>/production/api/limits.json
-
-<span class="c1"># Watch the key while you edit it in the UI — updates stream live</span>
-etcdctl<span class="w"> </span>watch<span class="w"> </span>/production/api/limits.json
+<h2 id="docker-deployment">Docker deployment</h2>
+<p>The image builds to a <code>scratch</code>-based runtime that runs as a non-root user
+(UID/GID <code>65532</code>), exposes ports <code>8080</code> and <code>2379</code>, and defaults
+<code>CONFIG_DATA_PATH</code> to <code>/var/lib/elara</code> (declared as a <code>VOLUME</code>).</p>
+<p>Build the image locally (no published image is required):</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>elara:latest<span class="w"> </span>.
 </code></pre></div>
-<p>Leave the <code>watch</code> running and repeat step 3 in the browser: valid writes show
-up on the stream immediately, and rejected ones never appear — because they
-were never stored.</p>
-<h2 id="next-steps">Next steps</h2>
-<ul>
-<li>Read the <a href="../architecture/">Architecture</a> overview to understand how a request
-  flows from the UI or an etcd client down to the bbolt file.</li>
-<li>Turn on <strong>authentication</strong> (basic-auth or OIDC) and explore the groups-based
-  RBAC model — see <a href="../adr/0002-groups-only-rbac/">ADR 0002 — Groups-only RBAC</a>.</li>
-<li>Point one of your own services at <code>localhost:2379</code> with its existing etcd v3
-  client. No code changes: Elara speaks the etcd v3 wire protocol.</li>
-</ul>
-<h2 id="developing-elara-itself">Developing Elara itself</h2>
-<p>Want to build from source rather than run the image? Prerequisites are Go
-1.23+, Node.js 20+, <code>buf</code>, and <code>golangci-lint</code>.</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/sergeyslonimsky/elara.git
-<span class="nb">cd</span><span class="w"> </span>elara
-
-<span class="c1"># Build the frontend first — web/embed.go embeds web/dist at compile time</span>
-<span class="nb">cd</span><span class="w"> </span>web<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>install<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>..
-
-<span class="c1"># Run the service</span>
-go<span class="w"> </span>run<span class="w"> </span>./cmd/service
-
-<span class="c1"># Tests (race detector on) and lint</span>
-make<span class="w"> </span><span class="nb">test</span>
-make<span class="w"> </span>lint
+<p>For the pre-seeded demo variant, build with <code>--build-arg DEMO_MODE=true</code> — see
+the <a href="../quickstart/">Quickstart</a> for the full demo walkthrough.</p>
+<h3 id="minimal-production-ish-run">Minimal production-ish run</h3>
+<p>Mount a host directory for the bbolt state so data survives container restarts,
+and enable basic-auth:</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>elara<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span><span class="m">2379</span>:2379<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>elara-data:/var/lib/elara<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_TYPE</span><span class="o">=</span>basic-auth<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_BASICAUTH_USERNAME</span><span class="o">=</span>admin@example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_BASICAUTH_PASSWORD</span><span class="o">=</span><span class="s1">&#39;change-me&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_SESSION_SECURECOOKIE</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>elara:latest
 </code></pre></div>
-<p>For live frontend reload, run the backend in one terminal and
-<code>cd web &amp;&amp; npm run dev</code> (<a href="http://localhost:3000">http://localhost:3000</a>) in another. The full
-contributor guide is in
-<a href="https://github.com/sergeyslonimsky/elara/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
+<p>Notes:</p>
+<ul>
+<li>The volume target must match <code>CONFIG_DATA_PATH</code> (<code>/var/lib/elara</code> in the
+  image). A named volume (<code>elara-data</code>) or a bind mount both work; only one
+  Elara instance may use a given data file at a time.</li>
+<li>Set <code>UI_AUTH_SESSION_SECURECOOKIE=true</code> only when the service is reached over
+  HTTPS (e.g. behind a TLS-terminating proxy). On plain HTTP the browser drops
+  the cookie and login silently fails.</li>
+<li>To scrape metrics, add <code>-e METRICS_ENABLED=true</code> and scrape <code>/metrics</code> on
+  port <code>8080</code>.</li>
+</ul>
+<h3 id="docker-compose">docker-compose</h3>
+<div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">elara</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">elara:latest</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8080:8080&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;2379:2379&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">elara-data:/var/lib/elara</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">UI_AUTH_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">UI_AUTH_TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;basic-auth&quot;</span>
+<span class="w">      </span><span class="nt">UI_AUTH_BASICAUTH_USERNAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin@example.com&quot;</span>
+<span class="w">      </span><span class="nt">UI_AUTH_BASICAUTH_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;change-me&quot;</span>
+<span class="w">      </span><span class="nt">UI_AUTH_SESSION_SECURECOOKIE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">elara-data</span><span class="p">:</span>
+</code></pre></div>
+<h2 id="kubernetes-deployment">Kubernetes deployment</h2>
+<p>Elara ships an official Helm chart. Every environment variable above maps to a
+chart value, and the chart wires up a <code>Deployment</code>, <code>Service</code>, persistence, and
+optional <code>ServiceMonitor</code>. The TL;DR:</p>
+<div class="highlight"><pre><span></span><code>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>elara<span class="w"> </span>https://sergeyslonimsky.github.io/elara
+helm<span class="w"> </span>install<span class="w"> </span>elara<span class="w"> </span>elara/elara
+</code></pre></div>
+<p>For prerequisites, the full <code>values.yaml</code> reference, ingress, persistence, and
+observability wiring, see the <a href="https://github.com/sergeyslonimsky/elara/blob/master/helm/elara/README.md">Helm chart docs</a>.</p>
 
 
 
