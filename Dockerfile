@@ -18,7 +18,7 @@ RUN npm run build
 # -----------------------------------------------------------------------
 # Stage 2 — Compile the Go binary with the bundled frontend embedded.
 # -----------------------------------------------------------------------
-FROM golang:1.26.5-alpine3.24 AS backend
+FROM golang:1.26.6-alpine3.24 AS backend
 
 WORKDIR /app
 
