@@ -90,6 +90,21 @@ helm install elara elara/elara
 See the [Helm chart docs](helm/elara/README.md) for prerequisites, `values.yaml`
 reference, and production configuration (ingress, persistence, resource limits).
 
+### Run locally without Docker
+
+Every [release](https://github.com/sergeyslonimsky/elara/releases) publishes
+prebuilt binaries for macOS and Linux (amd64/arm64). Download the archive for
+your platform, extract it, and run:
+
+```bash
+./elara
+```
+
+With no config at all, it stores its bbolt state at `~/.elara/data/elara.db`
+and auto-loads `~/.elara/config.yaml` if you create one — see the
+[Configuration docs](docs/configuration.md) for the full reference and every
+env var.
+
 ## Why Elara
 
 Three things Elara gives you that a bare etcd cluster does not:

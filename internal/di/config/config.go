@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/sergeyslonimsky/core/di"
@@ -11,7 +12,6 @@ import (
 const (
 	defaultHTTPPort  = "8080"
 	defaultGRPCPort  = "2379"
-	defaultDataPath  = "./data"
 	defaultLogLevel  = "info"
 	defaultLogFormat = "json"
 
@@ -99,7 +99,7 @@ func NewConfig(ctx context.Context) (Config, error) {
 		UI:     ui,
 		Client: newClientConfig(cfg),
 
-		DataPath:       cfg.GetStringOrDefault("config.data.path", defaultDataPath),
+		DataPath:       cfg.GetStringOrDefault("config.data.path", defaultDataPath()),
 		ServiceName:    cfg.GetStringOrDefault("service.name", defaultServiceName),
 		ServiceVersion: cfg.GetString("service.version"),
 		Metrics: MetricsConfig{
@@ -124,6 +124,20 @@ func NewConfig(ctx context.Context) (Config, error) {
 		},
 		DangerouslySkipPermissions: cfg.GetBool("dangerously.skip.permissions"),
 	}, nil
+}
+
+// defaultDataPath is the bbolt data directory used when config.data.path /
+// CONFIG_DATA_PATH is not set. Inside the container image CONFIG_DATA_PATH
+// is always set explicitly (to /var/lib/elara), so this only matters for a
+// bare binary run from a shell: prefer ~/.elara/data there, falling back to
+// the previous relative "./data" when no home directory is available.
+func defaultDataPath() string {
+	home := ElaraHomeDir()
+	if home == "" {
+		return "./data"
+	}
+
+	return filepath.Join(home, "data")
 }
 
 func intOrDefault(v, d int) int {

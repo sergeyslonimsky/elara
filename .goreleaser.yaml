@@ -1,0 +1,44 @@
+version: 2
+
+# web/dist is built by the CI step before goreleaser runs (see
+# .github/workflows/release.yml) — web/embed.go's `//go:embed all:dist`
+# needs it populated at compile time, same requirement as the Dockerfile.
+
+builds:
+  - id: elara
+    main: ./cmd/service
+    binary: elara
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: elara
+    ids: [elara]
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  disable: true
+
+release:
+  # release.yml's `image` job already extracts and validates the version
+  # from the tag; goreleaser only attaches archives to the same GitHub
+  # Release (created implicitly from the pushed tag).
+  mode: append
