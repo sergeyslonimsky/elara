@@ -729,14 +729,16 @@ func TestService_UpdateMembers(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{
-						UserID: "devops@example.com",
-						Email:  "devops@example.com",
-					}, group.UpdateMembersData{
-						GroupName:              created.Group.Name,
-						AddEmails:              []string{"newcomer@example.com"},
-						ExpectedMembersVersion: new(created.Group.MembersVersion),
-					}
+				auth := domain.AuthInfo{
+					UserID: "devops@example.com",
+					Email:  "devops@example.com",
+				}
+
+				return auth, group.UpdateMembersData{
+					GroupName:              created.Group.Name,
+					AddEmails:              []string{"newcomer@example.com"},
+					ExpectedMembersVersion: new(created.Group.MembersVersion),
+				}
 			},
 			errIs: domain.ErrPermissionEscalation,
 		},
@@ -778,14 +780,16 @@ func TestService_UpdateMembers(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{
-						UserID: "devops@example.com",
-						Email:  "devops@example.com",
-					}, group.UpdateMembersData{
-						GroupName:              created.Group.Name,
-						RemoveEmails:           []string{"alice@example.com"},
-						ExpectedMembersVersion: new(created.Group.MembersVersion),
-					}
+				auth := domain.AuthInfo{
+					UserID: "devops@example.com",
+					Email:  "devops@example.com",
+				}
+
+				return auth, group.UpdateMembersData{
+					GroupName:              created.Group.Name,
+					RemoveEmails:           []string{"alice@example.com"},
+					ExpectedMembersVersion: new(created.Group.MembersVersion),
+				}
 			},
 			assert: func(t *testing.T, _ testStack, _ group.UpdateMembersData, got *group.UpdateMembersResult) {
 				t.Helper()
@@ -969,20 +973,22 @@ func TestService_UpdatePermissions(t *testing.T) {
 				)
 				require.NoError(t, err)
 
-				return domain.AuthInfo{
-						UserID: "devops@example.com",
-						Email:  "devops@example.com",
-					}, group.UpdatePermissionsData{
-						GroupName: created.Group.Name,
-						Add: []domain.Permission{
-							{
-								Object: domain.ObjectNamespace,
-								Action: domain.ActionWrite,
-								Domain: domain.NamespaceResource("prod"),
-							},
+				auth := domain.AuthInfo{
+					UserID: "devops@example.com",
+					Email:  "devops@example.com",
+				}
+
+				return auth, group.UpdatePermissionsData{
+					GroupName: created.Group.Name,
+					Add: []domain.Permission{
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: domain.NamespaceResource("prod"),
 						},
-						ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
-					}
+					},
+					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
+				}
 			},
 			errIs: domain.ErrPermissionEscalation,
 		},
@@ -1028,21 +1034,23 @@ func TestService_UpdatePermissions(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{
-						UserID: "devops@example.com",
-						Email:  "devops@example.com",
-					}, group.UpdatePermissionsData{
-						GroupName: created.Group.Name,
-						Add: []domain.Permission{
-							// devops holds dev, so the Add boundary passes.
-							{
-								Object: domain.ObjectNamespace,
-								Action: domain.ActionWrite,
-								Domain: domain.NamespaceResource("dev"),
-							},
+				auth := domain.AuthInfo{
+					UserID: "devops@example.com",
+					Email:  "devops@example.com",
+				}
+
+				return auth, group.UpdatePermissionsData{
+					GroupName: created.Group.Name,
+					Add: []domain.Permission{
+						// devops holds dev, so the Add boundary passes.
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: domain.NamespaceResource("dev"),
 						},
-						ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
-					}
+					},
+					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
+				}
 			},
 			errIs: domain.ErrPermissionEscalation,
 		},
@@ -1084,20 +1092,22 @@ func TestService_UpdatePermissions(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{
-						UserID: "devops@example.com",
-						Email:  "devops@example.com",
-					}, group.UpdatePermissionsData{
-						GroupName: created.Group.Name,
-						Remove: []domain.Permission{
-							{
-								Object: domain.ObjectNamespace,
-								Action: domain.ActionWrite,
-								Domain: domain.NamespaceResource("prod"),
-							},
+				auth := domain.AuthInfo{
+					UserID: "devops@example.com",
+					Email:  "devops@example.com",
+				}
+
+				return auth, group.UpdatePermissionsData{
+					GroupName: created.Group.Name,
+					Remove: []domain.Permission{
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: domain.NamespaceResource("prod"),
 						},
-						ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
-					}
+					},
+					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
+				}
 			},
 			assert: func(t *testing.T, _ testStack, _ group.UpdatePermissionsData, got *group.UpdatePermissionsResult) {
 				t.Helper()
@@ -1277,23 +1287,25 @@ func TestService_UpdatePermissions(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				return domain.AuthInfo{
-						UserID: "devops@example.com",
-						Email:  "devops@example.com",
-					}, group.UpdatePermissionsData{
-						GroupName: created.Group.Name,
-						Add: []domain.Permission{
-							// devops holds canonical dev, so the boundary
-							// check on Add passes; the cascade check then
-							// fails on the group's existing prod perm.
-							{
-								Object: domain.ObjectNamespace,
-								Action: domain.ActionWrite,
-								Domain: domain.NamespaceResource("dev"),
-							},
+				auth := domain.AuthInfo{
+					UserID: "devops@example.com",
+					Email:  "devops@example.com",
+				}
+
+				return auth, group.UpdatePermissionsData{
+					GroupName: created.Group.Name,
+					Add: []domain.Permission{
+						// devops holds canonical dev, so the boundary
+						// check on Add passes; the cascade check then
+						// fails on the group's existing prod perm.
+						{
+							Object: domain.ObjectNamespace,
+							Action: domain.ActionWrite,
+							Domain: domain.NamespaceResource("dev"),
 						},
-						ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
-					}
+					},
+					ExpectedPermissionsVersion: new(created.Group.PermissionsVersion),
+				}
 			},
 			errIs: domain.ErrPermissionEscalation,
 		},
