@@ -27,7 +27,11 @@ linters:
     # Covered by govet + staticcheck; revive too noisy with exported/package-comments
     - revive
 
+    # exhaustruct_v5 replaces exhaustruct upstream, but under `default: all`
+    # both are still separately registered and enabled — disabling only one
+    # leaves the other firing on the exact same lines.
     - exhaustruct
+    - exhaustruct_v5
     - noinlineerr
     - tagliatelle
     - wsl_v5

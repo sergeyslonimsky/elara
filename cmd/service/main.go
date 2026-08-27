@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -28,6 +29,17 @@ import (
 
 const shutdownTimeout = 30 * time.Second
 
+// Env vars core/di's config loader checks to decide whether to read a
+// config file at all (see vendor/.../core/di/config.go loadFromFile) — it
+// only loads a file when one of these is explicitly set, it never searches
+// standard locations on its own.
+const (
+	envConfigFilePaths = "APP_CONFIG_FILE_PATHS"
+	envConfigFilePath  = "APP_CONFIG_FILE_PATH"
+)
+
+const localConfigFileName = "config.yaml"
+
 func main() {
 	if err := run(); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("service exited with error", slog.Any("err", err))
@@ -42,6 +54,8 @@ func run() error {
 	// is separate so the watcher goroutine doesn't outlive the process.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	useLocalConfigFileIfPresent()
 
 	container, err := di.LoadContainer(ctx)
 	if err != nil {
@@ -250,6 +264,35 @@ func etcdServerOptions(
 	}
 
 	return opts
+}
+
+// useLocalConfigFileIfPresent lets a bare binary run (go install / a
+// downloaded release, as opposed to the container image, which always sets
+// CONFIG_DATA_PATH and its own config explicitly) pick up ~/.elara/config.yaml
+// automatically, the way e.g. ~/.docker/config.json or ~/.kube/config do for
+// other CLI-shaped tools.
+//
+// core/di's config loader (see vendor/.../core/di/config.go) never searches
+// standard locations on its own — it only reads a file when
+// APP_CONFIG_FILE_PATH(S) is set. So: if the operator already set one of
+// those, or ~/.elara/config.yaml doesn't exist, this is a no-op.
+func useLocalConfigFileIfPresent() {
+	if os.Getenv(envConfigFilePaths) != "" || os.Getenv(envConfigFilePath) != "" {
+		return
+	}
+
+	home := config.ElaraHomeDir()
+	if home == "" {
+		return
+	}
+
+	if _, err := os.Stat(filepath.Join(home, localConfigFileName)); err != nil {
+		return
+	}
+
+	// loadFromFile does SetConfigName("config") + AddConfigPath(<dir>), so
+	// the value here is the directory, not the file path.
+	_ = os.Setenv(envConfigFilePaths, home)
 }
 
 func setupLogger(cfg config.Config) {

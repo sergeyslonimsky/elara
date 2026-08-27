@@ -20,6 +20,26 @@ camelCase segments are **not** split on case — `basicAuth` becomes `BASICAUTH`
 not `BASIC_AUTH`. Every env var in the tables below was derived from this rule
 and cross-checked against the key strings in `internal/di/config/`.
 
+## Config file for local installs
+
+When you run the `elara` binary directly (rather than the container image),
+it auto-loads `~/.elara/config.yaml` if that file exists — no `APP_CONFIG_FILE_PATH`
+needed. This is skipped entirely if you already set `APP_CONFIG_FILE_PATH` /
+`APP_CONFIG_FILE_PATHS` yourself, and it never applies inside the container
+image, which always configures itself through environment variables.
+
+```yaml
+# ~/.elara/config.yaml
+ui:
+  auth:
+    type: basicAuth
+    basicAuth:
+      username: admin
+      password: change-me
+```
+
+Environment variables still override anything set here.
+
 ## Reference
 
 ### Server & data
@@ -30,7 +50,7 @@ and cross-checked against the key strings in `internal/di/config/`.
 | `UI_SERVER_READTIMEOUT` | `ui.server.readTimeout` | `0` (no timeout) | Max duration for reading a request. Accepts Go durations (`5s`, `250ms`). |
 | `UI_SERVER_WRITETIMEOUT` | `ui.server.writeTimeout` | `24h` | Max duration for writing a response. Defaults to 24h because server-streaming RPCs (`WatchClients`, `WatchClient`) are hosted on this port and must not be cut off mid-stream. Lower it only if you do not use watch streams. |
 | `CLIENT_ETCD_PORT` | `client.etcd.port` | `2379` | Port for the etcd-compatible gRPC API consumed by `etcdctl` and typed clients. |
-| `CONFIG_DATA_PATH` | `config.data.path` | `./data` | Directory holding the single bbolt state file (`elara.db`). Only one instance may run against it at a time (exclusive file lock). In the container image this defaults to `/var/lib/elara`. |
+| `CONFIG_DATA_PATH` | `config.data.path` | `~/.elara/data` (bare binary) / `/var/lib/elara` (container image) | Directory holding the single bbolt state file (`elara.db`). Only one instance may run against it at a time (exclusive file lock). |
 | `SERVICE_NAME` | `service.name` | `elara` | Service identity embedded in Prometheus / OTLP resource labels. |
 | `SERVICE_VERSION` | `service.version` | _(empty)_ | Service version embedded in Prometheus / OTLP resource labels. |
 

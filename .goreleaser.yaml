@@ -1,0 +1,61 @@
+version: 2
+
+# web/dist is built by the CI step before goreleaser runs (see
+# .github/workflows/release.yml) — web/embed.go's `//go:embed all:dist`
+# needs it populated at compile time, same requirement as the Dockerfile.
+
+builds:
+  - id: elara
+    main: ./cmd/service
+    binary: elara
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: elara
+    ids: [elara]
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  use: git
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^Merge"
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+
+release:
+  # No other job creates a GitHub Release for the vX.Y.Z tag (the Helm
+  # chart's chart-releaser publishes separate elara-X.Y.Z releases), so
+  # goreleaser is the one that creates it — mode: append just means a
+  # second goreleaser run for the same tag adds to it rather than failing.
+  mode: append

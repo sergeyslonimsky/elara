@@ -36,6 +36,9 @@ vendor/
 *.tgz
 .cr-release-packages/
 
+# goreleaser local build output (`goreleaser release --snapshot --clean`)
+/dist/
+
 # Claude code
 CLAUDE.md
 GEMINI.md

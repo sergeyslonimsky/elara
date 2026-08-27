@@ -38,6 +38,12 @@ dismiss it to reach the dashboard.
     and a config from the UI (or with `etcdctl`, see below) and the rest of
     this tour still applies.
 
+!!! note "Don't want Docker?"
+    Every [release](https://github.com/sergeyslonimsky/elara/releases) also
+    publishes prebuilt binaries for macOS and Linux — download, extract, and
+    run `./elara`. See [Configuration](configuration.md#config-file-for-local-installs)
+    for its `~/.elara` data/config defaults.
+
 ## 2. Tour the seeded demo data
 
 The demo image ships with three namespaces, roughly ten keys, JSON Schemas
@@ -120,8 +126,9 @@ were never stored.
 
 ## Developing Elara itself
 
-Want to build from source rather than run the image? Prerequisites are Go
-1.23+, Node.js 20+, `buf`, and `golangci-lint`.
+Want to build from source rather than run the image? Prerequisites are the Go
+version pinned in [`go.mod`](https://github.com/sergeyslonimsky/elara/blob/master/go.mod),
+Node.js 20+, `buf`, and `golangci-lint`.
 
 ```bash
 git clone https://github.com/sergeyslonimsky/elara.git

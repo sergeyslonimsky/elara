@@ -97,18 +97,16 @@ func (s *oidcServer) token(w http.ResponseWriter, r *http.Request) {
 		Groups  []string `json:"groups"`
 		Nonce   string   `json:"nonce"`
 	}{
-		Claims: josejwt.Claims{
-			Issuer:   s.issuer(),
-			Subject:  "user-123",
-			Audience: josejwt.Audience{s.clientID},
-			IssuedAt: josejwt.NewNumericDate(now),
-			Expiry:   josejwt.NewNumericDate(now.Add(time.Hour)),
-		},
-		Email:   "alice@example.com",
-		Name:    "Alice",
-		Picture: "https://example.com/alice.png",
-		Groups:  []string{"admin"},
-		Nonce:   r.FormValue("nonce"),
+		Issuer:   s.issuer(),
+		Subject:  "user-123",
+		Audience: josejwt.Audience{s.clientID},
+		IssuedAt: josejwt.NewNumericDate(now),
+		Expiry:   josejwt.NewNumericDate(now.Add(time.Hour)),
+		Email:    "alice@example.com",
+		Name:     "Alice",
+		Picture:  "https://example.com/alice.png",
+		Groups:   []string{"admin"},
+		Nonce:    r.FormValue("nonce"),
 	}
 
 	rawIDToken, err := josejwt.Signed(sig).Claims(idTokenClaims).Serialize()
