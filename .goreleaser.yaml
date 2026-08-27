@@ -35,10 +35,27 @@ checksum:
   name_template: checksums.txt
 
 changelog:
-  disable: true
+  sort: asc
+  use: git
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^Merge"
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
 
 release:
-  # release.yml's `image` job already extracts and validates the version
-  # from the tag; goreleaser only attaches archives to the same GitHub
-  # Release (created implicitly from the pushed tag).
+  # No other job creates a GitHub Release for the vX.Y.Z tag (the Helm
+  # chart's chart-releaser publishes separate elara-X.Y.Z releases), so
+  # goreleaser is the one that creates it — mode: append just means a
+  # second goreleaser run for the same tag adds to it rather than failing.
   mode: append
