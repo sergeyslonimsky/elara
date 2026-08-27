@@ -1012,10 +1012,10 @@ docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> 
 toy services, so it takes a minute or two. When it settles you'll see the
 services connect and load their config. A one-shot <code>seed</code> container writes the
 initial keys, so the services show real values right away:</p>
-<div class="highlight"><pre><span></span><code>api-1       | [api] loaded /production/api/limits.json = {&quot;max_todos_per_user&quot;:100,&quot;rate_limit_per_min&quot;:60}
+<div class="highlight"><pre><span></span><code>api-1       | [api] loaded /production/api/limits.json = {"max_todos_per_user":100,"rate_limit_per_min":60}
 api-1       | [api] watching /production/api/limits.json for changes...
-worker-1    | [worker] loaded /production/worker/settings.json = {&quot;batch_size&quot;:50,&quot;poll_interval_seconds&quot;:5}
-notifier-1  | [notifier] loaded /production/notifier/config.json = {&quot;channel&quot;:&quot;email&quot;,&quot;digest_enabled&quot;:true}
+worker-1    | [worker] loaded /production/worker/settings.json = {"batch_size":50,"poll_interval_seconds":5}
+notifier-1  | [notifier] loaded /production/notifier/config.json = {"channel":"email","digest_enabled":true}
 </code></pre></div>
 <p>If a service starts before Elara is ready it retries automatically, so a few
 "cannot reach Elara … retrying" lines at the top are normal.</p>
@@ -1049,7 +1049,7 @@ limit and watch the running service react without a restart.</p>
 </ol>
 <p>Within a second, the <code>api</code> service logs the new value in your <code>docker compose</code>
 terminal:</p>
-<div class="highlight"><pre><span></span><code>api-1  | [api] config changed: /production/api/limits.json = {&quot;max_todos_per_user&quot;:500,&quot;rate_limit_per_min&quot;:60} (revision 6)
+<div class="highlight"><pre><span></span><code>api-1  | [api] config changed: /production/api/limits.json = {"max_todos_per_user":500,"rate_limit_per_min":60} (revision 6)
 </code></pre></div>
 <p>That change travelled from the Web UI → Elara → the etcd <strong>watch</strong> stream the
 <code>api</code> service opened at startup. The service used the ordinary
@@ -1059,7 +1059,7 @@ cluster.</p>
 <code>etcdctl</code> installed (client auth is disabled in this demo, so no token is
 needed):</p>
 <div class="highlight"><pre><span></span><code>etcdctl<span class="w"> </span>--endpoints<span class="o">=</span>localhost:2379<span class="w"> </span>get<span class="w"> </span>/production/api/limits.json
-etcdctl<span class="w"> </span>--endpoints<span class="o">=</span>localhost:2379<span class="w"> </span>put<span class="w"> </span>/production/worker/settings.json<span class="w"> </span><span class="s1">&#39;{&quot;batch_size&quot;:100,&quot;poll_interval_seconds&quot;:2}&#39;</span>
+etcdctl<span class="w"> </span>--endpoints<span class="o">=</span>localhost:2379<span class="w"> </span>put<span class="w"> </span>/production/worker/settings.json<span class="w"> </span><span class="s1">'{"batch_size":100,"poll_interval_seconds":2}'</span>
 </code></pre></div>
 <p>Watch the <code>worker</code> service log the change you just made with <code>etcdctl</code>.</p>
 <hr />
@@ -1081,19 +1081,19 @@ going through the UI/API where the guardrails live.)</p>
 <li><strong>JSON Schema:</strong> paste the schema below.</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;max_todos_per_user&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;maximum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;rate_limit_per_min&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"max_todos_per_user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span><span class="w"> </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">"maximum"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"rate_limit_per_min"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span><span class="w"> </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;max_todos_per_user&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;rate_limit_per_min&quot;</span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">  </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"max_todos_per_user"</span><span class="p">,</span><span class="w"> </span><span class="s2">"rate_limit_per_min"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
 <span class="p">}</span>
 </code></pre></div>
 <ol>
 <li>Now open <code>api/limits.json</code> and try to save an invalid value, for example:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="w"> </span><span class="nt">&quot;max_todos_per_user&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;rate_limit_per_min&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="w"> </span><span class="nt">"max_todos_per_user"</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span><span class="w"> </span><span class="nt">"rate_limit_per_min"</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <p><code>5000</code> exceeds the schema's <code>maximum</code> of <code>1000</code>, so Elara rejects the save
    and the UI shows a schema-validation error. The stored value — and what the
@@ -1116,19 +1116,19 @@ in the namespace:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
 <span class="nt">configs</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/api/limits.json</span>
-<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{&quot;max_todos_per_user&quot;:750,&quot;rate_limit_per_min&quot;:60}&#39;</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">'{"max_todos_per_user":750,"rate_limit_per_min":60}'</span>
 <span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/notifier/config.json</span>
-<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{&quot;channel&quot;:&quot;email&quot;,&quot;digest_enabled&quot;:true}&#39;</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">'{"channel":"email","digest_enabled":true}'</span>
 <span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/worker/settings.json</span>
-<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{&quot;batch_size&quot;:100,&quot;poll_interval_seconds&quot;:2}&#39;</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">'{"batch_size":100,"poll_interval_seconds":2}'</span>
 <span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
 </code></pre></div>
 <p><strong>Edit in Git.</strong> Commit that file to a repo and change a value in a normal
 editor — say, flip the notifier channel:</p>
 <div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/notifier/config.json</span>
-<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{&quot;channel&quot;:&quot;slack&quot;,&quot;digest_enabled&quot;:true}&#39;</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">'{"channel":"slack","digest_enabled":true}'</span>
 <span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
 </code></pre></div>
 <p><strong>Import back.</strong> In the Web UI, use the <strong>Import Configs</strong> action, upload the
@@ -1136,14 +1136,14 @@ edited bundle, and choose how to resolve conflicts (overwrite existing keys to
 apply your edit). You can do a dry run first to preview what would change.</p>
 <p>Once imported, the <code>notifier</code> service logs the new value it picked up over its
 watch:</p>
-<div class="highlight"><pre><span></span><code>notifier-1  | [notifier] config changed: /production/notifier/config.json = {&quot;channel&quot;:&quot;slack&quot;,&quot;digest_enabled&quot;:true} (revision 9)
+<div class="highlight"><pre><span></span><code>notifier-1  | [notifier] config changed: /production/notifier/config.json = {"channel":"slack","digest_enabled":true} (revision 9)
 </code></pre></div>
 <p>Your Git history is now the audit trail for that change, and Elara enforced it
 against any attached schemas on the way in.</p>
 <hr />
 <h2 id="tear-down">Tear down</h2>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w">          </span><span class="c1"># stop the stack, keep the data volume</span>
-docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w"> </span>-v<span class="w">       </span><span class="c1"># also delete Elara&#39;s stored data</span>
+docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w"> </span>-v<span class="w">       </span><span class="c1"># also delete Elara's stored data</span>
 </code></pre></div>
 <hr />
 <h2 id="how-it-fits-together">How it fits together</h2>

@@ -442,6 +442,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#config-file-for-local-installs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config file for local installs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -924,6 +935,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#config-file-for-local-installs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config file for local installs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1091,6 +1113,21 @@ config.data.path             →   CONFIG_DATA_PATH
 <p>camelCase segments are <strong>not</strong> split on case — <code>basicAuth</code> becomes <code>BASICAUTH</code>,
 not <code>BASIC_AUTH</code>. Every env var in the tables below was derived from this rule
 and cross-checked against the key strings in <code>internal/di/config/</code>.</p>
+<h2 id="config-file-for-local-installs">Config file for local installs</h2>
+<p>When you run the <code>elara</code> binary directly (rather than the container image),
+it auto-loads <code>~/.elara/config.yaml</code> if that file exists — no <code>APP_CONFIG_FILE_PATH</code>
+needed. This is skipped entirely if you already set <code>APP_CONFIG_FILE_PATH</code> /
+<code>APP_CONFIG_FILE_PATHS</code> yourself, and it never applies inside the container
+image, which always configures itself through environment variables.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ~/.elara/config.yaml</span>
+<span class="nt">ui</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">auth</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">basicAuth</span>
+<span class="w">    </span><span class="nt">basicAuth</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
+<span class="w">      </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">change-me</span>
+</code></pre></div>
+<p>Environment variables still override anything set here.</p>
 <h2 id="reference">Reference</h2>
 <h3 id="server-data">Server &amp; data</h3>
 <table>
@@ -1130,8 +1167,8 @@ and cross-checked against the key strings in <code>internal/di/config/</code>.</
 <tr>
 <td><code>CONFIG_DATA_PATH</code></td>
 <td><code>config.data.path</code></td>
-<td><code>./data</code></td>
-<td>Directory holding the single bbolt state file (<code>elara.db</code>). Only one instance may run against it at a time (exclusive file lock). In the container image this defaults to <code>/var/lib/elara</code>.</td>
+<td><code>~/.elara/data</code> (bare binary) / <code>/var/lib/elara</code> (container image)</td>
+<td>Directory holding the single bbolt state file (<code>elara.db</code>). Only one instance may run against it at a time (exclusive file lock).</td>
 </tr>
 <tr>
 <td><code>SERVICE_NAME</code></td>
@@ -1379,7 +1416,7 @@ and enable basic-auth:</p>
 <span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_TYPE</span><span class="o">=</span>basic-auth<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_BASICAUTH_USERNAME</span><span class="o">=</span>admin@example.com<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_BASICAUTH_PASSWORD</span><span class="o">=</span><span class="s1">&#39;change-me&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_BASICAUTH_PASSWORD</span><span class="o">=</span><span class="s1">'change-me'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-e<span class="w"> </span><span class="nv">UI_AUTH_SESSION_SECURECOOKIE</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>elara:latest
 </code></pre></div>
@@ -1400,16 +1437,16 @@ and enable basic-auth:</p>
 <span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">elara:latest</span>
 <span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8080:8080&quot;</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;2379:2379&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"8080:8080"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"2379:2379"</span>
 <span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">elara-data:/var/lib/elara</span>
 <span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">UI_AUTH_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-<span class="w">      </span><span class="nt">UI_AUTH_TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;basic-auth&quot;</span>
-<span class="w">      </span><span class="nt">UI_AUTH_BASICAUTH_USERNAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin@example.com&quot;</span>
-<span class="w">      </span><span class="nt">UI_AUTH_BASICAUTH_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;change-me&quot;</span>
-<span class="w">      </span><span class="nt">UI_AUTH_SESSION_SECURECOOKIE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">UI_AUTH_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
+<span class="w">      </span><span class="nt">UI_AUTH_TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">"basic-auth"</span>
+<span class="w">      </span><span class="nt">UI_AUTH_BASICAUTH_USERNAME</span><span class="p">:</span><span class="w"> </span><span class="s">"admin@example.com"</span>
+<span class="w">      </span><span class="nt">UI_AUTH_BASICAUTH_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="s">"change-me"</span>
+<span class="w">      </span><span class="nt">UI_AUTH_SESSION_SECURECOOKIE</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 
 <span class="nt">volumes</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">elara-data</span><span class="p">:</span>

@@ -1056,7 +1056,7 @@ for prerequisites, <code>values.yaml</code> reference, and production configurat
    revision all work as they do against real etcd.</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">ETCDCTL_API</span><span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="nv">ETCDCTL_ENDPOINTS</span><span class="o">=</span>localhost:2379
-etcdctl<span class="w"> </span>put<span class="w"> </span>/prod/services/billing/config.yaml<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>cat<span class="w"> </span>config.yaml<span class="k">)</span><span class="s2">&quot;</span>
+etcdctl<span class="w"> </span>put<span class="w"> </span>/prod/services/billing/config.yaml<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>config.yaml<span class="k">)</span><span class="s2">"</span>
 etcdctl<span class="w"> </span>watch<span class="w"> </span>--prefix<span class="w"> </span>/prod/services/billing/
 </code></pre></div>
 <ol>

@@ -1018,8 +1018,8 @@ delete into its configs.</p>
 <p><strong>etcd key mapping.</strong> A config is addressable over the etcd gRPC API as
 <code>/{namespace}{path}</code>, where the path keeps its leading slash
 (<code>internal/handler/etcdv3/keyencoding.go</code>):</p>
-<div class="highlight"><pre><span></span><code>namespace &quot;prod&quot; + path &quot;/services/api.yaml&quot;  →  /prod/services/api.yaml
-namespace &quot;default&quot; + path &quot;/foo.json&quot;        →  /default/foo.json
+<div class="highlight"><pre><span></span><code>namespace "prod" + path "/services/api.yaml"  →  /prod/services/api.yaml
+namespace "default" + path "/foo.json"        →  /default/foo.json
 </code></pre></div>
 <p>The first path segment after the leading <code>/</code> is the namespace; everything from
 the second <code>/</code> onward (leading slash included) is the config path.</p>
@@ -1041,13 +1041,13 @@ namespace (<code>internal/domain/schema.go</code>, <code>internal/usecase/schema
 <p>A <code>SchemaAttachment</code> binds one JSON Schema to a <code>(Namespace, PathPattern)</code> pair.
 The pattern is a <strong>glob</strong> (using <code>github.com/gobwas/glob</code> with <code>/</code> as separator),
 so a single schema can cover many configs:</p>
-<div class="highlight"><pre><span></span><code>// attach to namespace &quot;prod&quot;, pattern &quot;/services/*.json&quot;
+<div class="highlight"><pre><span></span><code>// attach to namespace "prod", pattern "/services/*.json"
 {
-  &quot;$schema&quot;: &quot;https://json-schema.org/draft/2020-12/schema&quot;,
-  &quot;type&quot;: &quot;object&quot;,
-  &quot;required&quot;: [&quot;port&quot;],
-  &quot;properties&quot;: {
-    &quot;port&quot;: { &quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 1, &quot;maximum&quot;: 65535 }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["port"],
+  "properties": {
+    "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
   }
 }
 </code></pre></div>

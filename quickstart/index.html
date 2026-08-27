@@ -977,6 +977,13 @@ dismiss it to reach the dashboard.</p>
 and a config from the UI (or with <code>etcdctl</code>, see below) and the rest of
 this tour still applies.</p>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Don't want Docker?</p>
+<p>Every <a href="https://github.com/sergeyslonimsky/elara/releases">release</a> also
+publishes prebuilt binaries for macOS and Linux — download, extract, and
+run <code>./elara</code>. See <a href="../configuration/#config-file-for-local-installs">Configuration</a>
+for its <code>~/.elara</code> data/config defaults.</p>
+</div>
 <h2 id="2-tour-the-seeded-demo-data">2. Tour the seeded demo data</h2>
 <p>The demo image ships with three namespaces, roughly ten keys, JSON Schemas
 attached to a few path patterns, and a set of simulated Kubernetes pod
@@ -1049,8 +1056,9 @@ were never stored.</p>
   client. No code changes: Elara speaks the etcd v3 wire protocol.</li>
 </ul>
 <h2 id="developing-elara-itself">Developing Elara itself</h2>
-<p>Want to build from source rather than run the image? Prerequisites are Go
-1.23+, Node.js 20+, <code>buf</code>, and <code>golangci-lint</code>.</p>
+<p>Want to build from source rather than run the image? Prerequisites are the Go
+version pinned in <a href="https://github.com/sergeyslonimsky/elara/blob/master/go.mod"><code>go.mod</code></a>,
+Node.js 20+, <code>buf</code>, and <code>golangci-lint</code>.</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/sergeyslonimsky/elara.git
 <span class="nb">cd</span><span class="w"> </span>elara
 

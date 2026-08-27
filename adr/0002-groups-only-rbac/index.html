@@ -1036,7 +1036,7 @@ SSO/OIDC group synchronization, where the identity provider is authoritative ove
 surface</strong> that can write a <code>user → role</code> grant. The only <code>g</code>-rules the system
 ever writes are:</p>
 <div class="highlight"><pre><span></span><code>g, &lt;user-UUID&gt;, group:&lt;name&gt;, *              # membership, global (MembershipDomain)
-g, group:&lt;name&gt;, &lt;role&gt;, &lt;namespace-or-*&gt;    # the group&#39;s role in a domain
+g, group:&lt;name&gt;, &lt;role&gt;, &lt;namespace-or-*&gt;    # the group's role in a domain
 </code></pre></div>
 <p>Users appear as bare UUIDs, groups as <code>group:&lt;name&gt;</code> (<code>domain.IsUserSubject</code> /
 <code>IsGroupSubject</code>). Casbin resolves the two-hop chain natively: the enforcer
