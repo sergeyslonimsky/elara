@@ -1,5 +1,6 @@
 import { KeyRound, Shield, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { useState } from "react";
+import { useAbility } from "@/auth/ability-context";
 import { ActionMenu } from "@/components/action-menu";
 import { useAuth } from "@/components/auth-provider";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ export function UserDetailHeader({
 	onRefetch,
 }: Readonly<UserDetailHeaderProps>) {
 	const { state } = useAuth();
+	const ability = useAbility();
 	const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [deactivateOpen, setDeactivateOpen] = useState(false);
@@ -33,6 +35,7 @@ export function UserDetailHeader({
 	const isBasicAuth = authType === AuthType.BASIC;
 	const isSystem = user.isSystem;
 	const isDeactivated = user.status === UserStatus.DEACTIVATED;
+	const canWriteUser = ability.can("write", "User");
 
 	const provider = user.identities?.[0]?.provider || "internal";
 
@@ -55,17 +58,28 @@ export function UserDetailHeader({
 				<p className="text-sm text-muted-foreground capitalize">{provider}</p>
 			</div>
 
-			{isBasicAuth && (
-				<ActionMenu
-					label="User actions"
-					items={[
-						{
-							label: "Reset password",
-							icon: <KeyRound className="h-4 w-4" />,
-							onClick: () => setResetPasswordOpen(true),
-							disabled: isSystem,
-						},
-						...(!isDeactivated
+			{(() => {
+				// Reset/Delete require basic-auth on the backend (requireBasicAuth in
+				// handler.go) — meaningless in OIDC mode. Deactivate/Reactivate have no
+				// such gate server-side (User:Write only), so they must not be hidden
+				// behind isBasicAuth or OIDC admins can never deactivate a user via UI.
+				// Delete additionally requires User:Write (service_manage.go's
+				// authorizeUserWrite) — canWriteUser gates it too, same as
+				// Deactivate/Reactivate, so a read-only basic-auth user doesn't see an
+				// enabled action the backend will reject.
+				const items = [
+					...(isBasicAuth
+						? [
+								{
+									label: "Reset password",
+									icon: <KeyRound className="h-4 w-4" />,
+									onClick: () => setResetPasswordOpen(true),
+									disabled: isSystem,
+								},
+							]
+						: []),
+					...(canWriteUser
+						? !isDeactivated
 							? [
 									{
 										label: "Deactivate user",
@@ -82,17 +96,24 @@ export function UserDetailHeader({
 										onClick: () => setReactivateOpen(true),
 										disabled: isSystem,
 									},
-								]),
-						{
-							label: "Delete user",
-							icon: <Trash2 className="h-4 w-4" />,
-							onClick: () => setDeleteOpen(true),
-							variant: "destructive" as const,
-							disabled: isSystem,
-						},
-					]}
-				/>
-			)}
+								]
+						: []),
+					...(isBasicAuth && canWriteUser
+						? [
+								{
+									label: "Delete user",
+									icon: <Trash2 className="h-4 w-4" />,
+									onClick: () => setDeleteOpen(true),
+									variant: "destructive" as const,
+									disabled: isSystem,
+								},
+							]
+						: []),
+				];
+				return items.length > 0 ? (
+					<ActionMenu label="User actions" items={items} />
+				) : null;
+			})()}
 
 			<ResetUserPasswordDialog
 				key={`reset-${user.email}`}

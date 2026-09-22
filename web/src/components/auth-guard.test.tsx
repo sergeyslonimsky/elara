@@ -35,6 +35,8 @@ function TestApp() {
 				/>
 				<Route path="/auth/callback" element={<div>Callback Page</div>} />
 				<Route path="/" element={<div>Dashboard</div>} />
+				<Route path="/webhooks" element={<div>Webhooks Page</div>} />
+				<Route path="/config/*" element={<div>Config Page</div>} />
 				<Route path="*" element={<div>Not Found</div>} />
 			</Route>
 		</Routes>
@@ -224,6 +226,90 @@ describe("AuthGuard", () => {
 		expect(screen.getByText("Dashboard")).toBeInTheDocument();
 	});
 
+	it("redirects from /webhooks to / when ability lacks Webhook:Read", () => {
+		const authContext: AuthContextType = {
+			state: {
+				status: "authenticated",
+				authType: AuthType.BASIC,
+				user: authenticatedUser,
+				ability: buildAbility([]),
+				capabilities: allCapabilitiesEnabled,
+			},
+			logout: vi.fn(),
+		};
+		render(
+			<TestProviders initialEntries={["/webhooks"]} authContext={authContext}>
+				<TestApp />
+			</TestProviders>,
+		);
+		expect(screen.getByText("Dashboard")).toBeInTheDocument();
+		expect(screen.queryByText("Webhooks Page")).not.toBeInTheDocument();
+	});
+
+	it("allows /webhooks when ability grants Webhook:Read", () => {
+		const authContext: AuthContextType = {
+			state: {
+				status: "authenticated",
+				authType: AuthType.BASIC,
+				user: authenticatedUser,
+				ability: buildAbility([{ object: 6, action: 1, domain: "*" } as any]), // WEBHOOK READ
+				capabilities: allCapabilitiesEnabled,
+			},
+			logout: vi.fn(),
+		};
+		render(
+			<TestProviders initialEntries={["/webhooks"]} authContext={authContext}>
+				<TestApp />
+			</TestProviders>,
+		);
+		expect(screen.getByText("Webhooks Page")).toBeInTheDocument();
+	});
+
+	it("redirects from /config/... to / when ability lacks Namespace:Read", () => {
+		const authContext: AuthContextType = {
+			state: {
+				status: "authenticated",
+				authType: AuthType.BASIC,
+				user: authenticatedUser,
+				ability: buildAbility([]),
+				capabilities: allCapabilitiesEnabled,
+			},
+			logout: vi.fn(),
+		};
+		render(
+			<TestProviders
+				initialEntries={["/config/ns/path"]}
+				authContext={authContext}
+			>
+				<TestApp />
+			</TestProviders>,
+		);
+		expect(screen.getByText("Dashboard")).toBeInTheDocument();
+		expect(screen.queryByText("Config Page")).not.toBeInTheDocument();
+	});
+
+	it("allows /config/... when ability grants Namespace:Read", () => {
+		const authContext: AuthContextType = {
+			state: {
+				status: "authenticated",
+				authType: AuthType.BASIC,
+				user: authenticatedUser,
+				ability: buildAbility([{ object: 1, action: 1, domain: "*" } as any]), // NAMESPACE READ
+				capabilities: allCapabilitiesEnabled,
+			},
+			logout: vi.fn(),
+		};
+		render(
+			<TestProviders
+				initialEntries={["/config/ns/path"]}
+				authContext={authContext}
+			>
+				<TestApp />
+			</TestProviders>,
+		);
+		expect(screen.getByText("Config Page")).toBeInTheDocument();
+	});
+
 	it("redirects from /users to / when userManagementEnabled is false", () => {
 		const authContext: AuthContextType = {
 			state: {
@@ -244,5 +330,51 @@ describe("AuthGuard", () => {
 			</TestProviders>,
 		);
 		expect(screen.getByText("Dashboard")).toBeInTheDocument();
+	});
+
+	it("redirects from /users to / when authType is NONE, even with userManagementEnabled true and User:Read", () => {
+		// Passthrough mode (ui.auth.enabled=true, ui.auth.type=none): capabilities
+		// are enabled/RBAC grants read, but there's no real identity provider —
+		// CreateUser is rejected backend-side (internal/handler/v2/user/handler.go).
+		const authContext: AuthContextType = {
+			state: {
+				status: "authenticated",
+				authType: AuthType.NONE,
+				user: authenticatedUser,
+				ability: buildAbility([{ object: 3, action: 1, domain: "*" } as any]), // USER READ
+				capabilities: allCapabilitiesEnabled,
+			},
+			logout: vi.fn(),
+		};
+		render(
+			<TestProviders initialEntries={["/users"]} authContext={authContext}>
+				<TestApp />
+			</TestProviders>,
+		);
+		expect(screen.getByText("Dashboard")).toBeInTheDocument();
+	});
+
+	it("allows /users when authType is a real provider, userManagementEnabled true, and User:Read", () => {
+		const authContext: AuthContextType = {
+			state: {
+				status: "authenticated",
+				authType: AuthType.BASIC,
+				user: authenticatedUser,
+				ability: buildAbility([{ object: 3, action: 1, domain: "*" } as any]), // USER READ
+				capabilities: allCapabilitiesEnabled,
+			},
+			logout: vi.fn(),
+		};
+		render(
+			<TestProviders initialEntries={["/users"]} authContext={authContext}>
+				<Routes>
+					<Route element={<AuthGuard />}>
+						<Route path="/" element={<div>Dashboard</div>} />
+						<Route path="/users" element={<div>Users Page</div>} />
+					</Route>
+				</Routes>
+			</TestProviders>,
+		);
+		expect(screen.getByText("Users Page")).toBeInTheDocument();
 	});
 });

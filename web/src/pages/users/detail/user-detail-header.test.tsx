@@ -3,11 +3,26 @@ import { useMutation } from "@connectrpc/connect-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { denyAllAbility } from "@/auth/ability";
+import { buildAbility, denyAllAbility } from "@/auth/ability";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
+import {
+	PermissionAction,
+	PermissionAssignmentSchema,
+	PermissionObject,
+} from "@/gen/elara/common/v1/permission_pb";
 import { UserSchema } from "@/gen/elara/user/v1/user_pb";
 import { authenticatedContext, TestProviders } from "@/test/test-utils";
 import { UserDetailHeader } from "./user-detail-header";
+
+// Grants exactly User:Write, matching the backend authorization on
+// Deactivate/Reactivate (internal/usecase/user/service_deactivate.go).
+const canWriteUserAbility = buildAbility([
+	create(PermissionAssignmentSchema, {
+		object: PermissionObject.USER,
+		action: PermissionAction.WRITE,
+		domain: "*",
+	}),
+]);
 
 vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 	const actual = await importOriginal<Record<string, unknown>>();
@@ -73,6 +88,110 @@ describe("UserDetailHeader", () => {
 		expect(
 			screen.queryByRole("button", { name: /user actions/i }),
 		).not.toBeInTheDocument();
+	});
+
+	test("shows Deactivate but not Reset password/Delete in OIDC mode with User:Write", async () => {
+		// Regression test: this menu used to be hidden entirely behind
+		// isBasicAuth, so an OIDC admin with User:Write could never deactivate
+		// a user through the UI even though the backend allowed it.
+		const ue = userEvent.setup();
+		const authContext = authenticatedContext(canWriteUserAbility, {
+			authType: AuthType.OIDC,
+		});
+
+		render(
+			<TestProviders authContext={authContext}>
+				<UserDetailHeader user={regularUser} onRefetch={vi.fn()} />
+			</TestProviders>,
+		);
+
+		await ue.click(screen.getByRole("button", { name: /user actions/i }));
+
+		expect(
+			screen.getByRole("menuitem", { name: /deactivate user/i }),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("menuitem", { name: /reset password/i }),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("menuitem", { name: /delete user/i }),
+		).not.toBeInTheDocument();
+	});
+
+	test("hides actions menu in OIDC mode when ability lacks User:Write", () => {
+		const authContext = authenticatedContext(denyAllAbility, {
+			authType: AuthType.OIDC,
+		});
+
+		render(
+			<TestProviders authContext={authContext}>
+				<UserDetailHeader user={regularUser} onRefetch={vi.fn()} />
+			</TestProviders>,
+		);
+
+		expect(
+			screen.queryByRole("button", { name: /user actions/i }),
+		).not.toBeInTheDocument();
+	});
+
+	test("hides Deactivate/Reactivate under basic auth when ability lacks User:Write", async () => {
+		const ue = userEvent.setup();
+		const authContext = authenticatedContext(denyAllAbility, {
+			authType: AuthType.BASIC,
+		});
+
+		render(
+			<TestProviders authContext={authContext}>
+				<UserDetailHeader user={regularUser} onRefetch={vi.fn()} />
+			</TestProviders>,
+		);
+
+		await ue.click(screen.getByRole("button", { name: /user actions/i }));
+
+		expect(
+			screen.queryByRole("menuitem", { name: /deactivate user/i }),
+		).not.toBeInTheDocument();
+	});
+
+	test("hides Delete user under basic auth when ability lacks User:Write", async () => {
+		// Regression test: Delete was gated only by isBasicAuth, so a read-only
+		// basic-auth user saw an enabled "Delete user" action the backend
+		// rejects (authorizeUserWrite in service_manage.go).
+		const ue = userEvent.setup();
+		const authContext = authenticatedContext(denyAllAbility, {
+			authType: AuthType.BASIC,
+		});
+
+		render(
+			<TestProviders authContext={authContext}>
+				<UserDetailHeader user={regularUser} onRefetch={vi.fn()} />
+			</TestProviders>,
+		);
+
+		await ue.click(screen.getByRole("button", { name: /user actions/i }));
+
+		expect(
+			screen.queryByRole("menuitem", { name: /delete user/i }),
+		).not.toBeInTheDocument();
+	});
+
+	test("shows Delete user under basic auth with User:Write", async () => {
+		const ue = userEvent.setup();
+		const authContext = authenticatedContext(canWriteUserAbility, {
+			authType: AuthType.BASIC,
+		});
+
+		render(
+			<TestProviders authContext={authContext}>
+				<UserDetailHeader user={regularUser} onRefetch={vi.fn()} />
+			</TestProviders>,
+		);
+
+		await ue.click(screen.getByRole("button", { name: /user actions/i }));
+
+		expect(
+			screen.getByRole("menuitem", { name: /delete user/i }),
+		).toBeInTheDocument();
 	});
 
 	test("shows actions menu when authType is BASIC", () => {
