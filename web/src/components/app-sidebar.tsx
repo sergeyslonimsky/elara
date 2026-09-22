@@ -28,7 +28,6 @@ import {
 	SidebarMenuItem,
 	SidebarRail,
 } from "@/components/ui/sidebar";
-import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
 import { GetCapabilitiesResponseSchema } from "@/gen/elara/capabilities/v1/capabilities_service_pb";
 
 export function AppSidebar() {
@@ -46,6 +45,7 @@ export function AppSidebar() {
 	const visibility = uiVisibility(
 		ability,
 		capabilities ?? create(GetCapabilitiesResponseSchema, {}),
+		authType,
 	);
 
 	const navItems = [
@@ -111,8 +111,10 @@ export function AppSidebar() {
 		},
 	].filter((item) => item.show);
 
-	const showAdministration =
-		authType !== AuthType.NONE && administrationItems.length > 0;
+	// authType is already folded into canSeeUsersSection/canSeeGroupsSection
+	// (see uiVisibility), so administrationItems is already empty when
+	// authType === AuthType.NONE — no separate check needed here.
+	const showAdministration = administrationItems.length > 0;
 
 	return (
 		<Sidebar>

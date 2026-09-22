@@ -30,7 +30,11 @@ export function AuthGuard() {
 	}
 
 	// authenticated
-	const visibility = uiVisibility(state.ability, state.capabilities);
+	const visibility = uiVisibility(
+		state.ability,
+		state.capabilities,
+		state.authType,
+	);
 
 	// Route protection based on visibility
 	if (pathname.startsWith("/users") && !visibility.canSeeUsersSection) {
@@ -52,6 +56,12 @@ export function AuthGuard() {
 		return <Navigate to="/" replace />;
 	}
 	if (pathname.startsWith("/browse") && !visibility.canSeeConfigsSection) {
+		return <Navigate to="/" replace />;
+	}
+	if (pathname.startsWith("/config") && !visibility.canSeeConfigsSection) {
+		return <Navigate to="/" replace />;
+	}
+	if (pathname.startsWith("/webhooks") && !visibility.canSeeWebhooksSection) {
 		return <Navigate to="/" replace />;
 	}
 
