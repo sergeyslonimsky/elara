@@ -95,8 +95,7 @@
                 "session": {
                   "type": "object",
                   "properties": {
-                    "secret": { "type": "string" },
-                    "ttl":    { "type": "string", "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)+$" }
+                    "secureCookie": { "type": "boolean" }
                   }
                 }
               }

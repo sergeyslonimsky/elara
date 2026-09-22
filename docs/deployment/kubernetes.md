@@ -80,8 +80,7 @@ helm install elara ./helm/elara \
   --set config.ui.auth.enabled=true \
   --set config.ui.auth.type=basic-auth \
   --set config.ui.auth.basicAuth.username=admin@example.com \
-  --set config.ui.auth.basicAuth.password=ChangeMe123 \
-  --set config.ui.auth.session.secret=a-long-random-string
+  --set config.ui.auth.basicAuth.password=ChangeMe123
 ```
 
 The chart creates a `{release}-auth` Secret holding the sensitive values. The
@@ -99,8 +98,9 @@ helm install elara ./helm/elara \
   --set config.ui.auth.existingSecret=my-elara-auth-secret
 ```
 
-The existing Secret must contain keys: `UI_AUTH_SESSION_SECRET` and
-`UI_AUTH_BASICAUTH_PASSWORD`.
+The existing Secret must contain `UI_AUTH_BASICAUTH_PASSWORD` (or
+`UI_AUTH_OIDC_CLIENTSECRET` when `type=oidc`) — it is mounted with `envFrom`,
+so any other key in it also reaches the service as an env var.
 
 ### With OIDC
 
@@ -112,8 +112,7 @@ helm install elara ./helm/elara \
   --set config.ui.auth.oidc.clientId=MY_CLIENT_ID \
   --set config.ui.auth.oidc.clientSecret=MY_CLIENT_SECRET \
   --set "config.ui.auth.oidc.redirectUrl=https://elara.example.com/auth/callback" \
-  --set config.ui.auth.oidc.adminEmail=admin@example.com \
-  --set config.ui.auth.session.secret=a-long-random-string
+  --set config.ui.auth.oidc.adminEmail=admin@example.com
 ```
 
 See [OIDC Setup](../auth/oidc.md) for how the admin bootstrap and anti-hijack
@@ -176,8 +175,6 @@ Key sections:
 | `config.ui.auth.oidc.redirectUrl` | `""` | OIDC callback URL |
 | `config.ui.auth.oidc.scopes` | `[]` | OIDC scopes; defaults to `[openid, email, profile]` |
 | `config.ui.auth.oidc.adminEmail` | `""` | Bootstrap admin email; pre-provisioned as superadmin placeholder, claimed by first matching OIDC login (required for OIDC) |
-| `config.ui.auth.session.secret` | `""` | Session signing secret; must be stable across restarts; stored in chart Secret |
-| `config.ui.auth.session.ttl` | `24h` | Server-side session lifetime |
 | `config.ui.auth.session.secureCookie` | `true` | Add `Secure` flag to session cookie; disable only for HTTP dev |
 | `config.ui.auth.existingSecret` | `""` | Use a pre-existing Secret instead of the chart-managed one |
 | `config.client.etcd.port` | `2379` | etcd-compatible gRPC API |
@@ -204,8 +201,10 @@ Key sections:
 `values.yaml` → `ConfigMap` (env vars) → service reads them through Viper,
 same mapping rule as everywhere else in Elara — see
 [Configuration → Environment-variable naming](configuration.md#environment-variable-naming).
-Sensitive values (`session.secret`, `basicAuth.password`, `oidc.clientSecret`)
-go into a Secret instead of the ConfigMap. Add extra env-vars via `extraEnv` or
+Sensitive values (`basicAuth.password`, `oidc.clientSecret`) go into a Secret
+instead of the ConfigMap. Session lifetime is not a chart value: sessions are
+opaque server-side ids with compile-time TTLs — see
+[Sessions & Tokens](../auth/sessions-tokens.md). Add extra env-vars via `extraEnv` or
 wire a Secret with `extraEnvFrom`.
 
 ## gRPC exposure
