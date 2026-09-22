@@ -17,10 +17,19 @@ const (
 type mocks struct {
 	txm               *storage_mock.MockManager
 	pdp               *configmock.Mockpdp
-	storage           *configmock.MockstorageRepo
+	storage           *configmock.MockconfigRepo
+	kv                *configmock.MockkvRepo
 	watcher           *configmock.Mockwatcher
 	namespaceProvider *configmock.MocknamespaceProvider
 	schemaValidator   *configmock.MockschemaValidator
+}
+
+// repoMock satisfies both configRepo and kvRepo by embedding their separate
+// mocks — config.New takes one repo value typed as the union of the two
+// (see its doc comment); most tests only ever set expectations on one side.
+type repoMock struct {
+	*configmock.MockconfigRepo
+	*configmock.MockkvRepo
 }
 
 func setupService(t *testing.T) (*config.Service, mocks, *gomock.Controller) {
@@ -30,12 +39,14 @@ func setupService(t *testing.T) (*config.Service, mocks, *gomock.Controller) {
 	m := mocks{
 		txm:               storage_mock.NewMockManager(ctrl),
 		pdp:               configmock.NewMockpdp(ctrl),
-		storage:           configmock.NewMockstorageRepo(ctrl),
+		storage:           configmock.NewMockconfigRepo(ctrl),
+		kv:                configmock.NewMockkvRepo(ctrl),
 		watcher:           configmock.NewMockwatcher(ctrl),
 		namespaceProvider: configmock.NewMocknamespaceProvider(ctrl),
 		schemaValidator:   configmock.NewMockschemaValidator(ctrl),
 	}
-	svc := config.New(m.txm, m.pdp, m.storage, m.watcher, m.namespaceProvider, m.schemaValidator)
+	repo := repoMock{m.storage, m.kv}
+	svc := config.New(m.txm, m.pdp, repo, m.watcher, m.namespaceProvider, m.schemaValidator)
 
 	return svc, m, ctrl
 }

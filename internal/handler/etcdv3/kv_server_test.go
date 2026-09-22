@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/etcdv3"
+	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
 // fakeKVRepo is an in-memory KVRepo suitable for testing KVServer logic
@@ -46,13 +48,10 @@ func (f *fakeKVRepo) CurrentRevisionValue(_ context.Context) (int64, error) {
 	return f.rev, nil
 }
 
-func (f *fakeKVRepo) RangeQuery(
+func (f *fakeKVRepo) RangeKVs(
 	_ context.Context,
-	startNS, startPath string,
-	endNS, endPath string,
-	limit int64,
-	_ int64,
-	keysOnly bool,
+	startNS, startPath, endNS, endPath string,
+	opts configuc.KVRangeOpts,
 ) ([]*domain.KVPair, bool, error) {
 	if f.rangeErr != nil {
 		return nil, false, f.rangeErr
@@ -65,7 +64,7 @@ func (f *fakeKVRepo) RangeQuery(
 
 	for _, k := range f.matchKeys(startNS, startPath, endNS, endPath) {
 		clone := *f.pairs[k]
-		if keysOnly {
+		if opts.KeysOnly {
 			clone.Value = nil
 		}
 
@@ -75,25 +74,45 @@ func (f *fakeKVRepo) RangeQuery(
 	sortByKey(results)
 
 	more := false
-	if limit > 0 && int64(len(results)) > limit {
-		results = results[:limit]
+	if opts.Limit > 0 && int64(len(results)) > opts.Limit {
+		results = results[:opts.Limit]
 		more = true
 	}
 
 	return results, more, nil
 }
 
+func (f *fakeKVRepo) RangeQuery(
+	ctx context.Context,
+	startNS, startPath, endNS, endPath string,
+	opts configuc.KVRangeOpts,
+) ([]*domain.KVPair, int64, bool, error) {
+	results, more, err := f.RangeKVs(ctx, startNS, startPath, endNS, endPath, opts)
+	if err != nil {
+		return nil, 0, false, err
+	}
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	if f.currentErr != nil {
+		return nil, 0, false, f.currentErr
+	}
+
+	return results, f.rev, more, nil
+}
+
 func (f *fakeKVRepo) PutKey(
 	_ context.Context,
 	namespace, path string,
 	value []byte,
-) (*domain.KVPair, int64, error) {
+) (*domain.Config, *domain.KVPair, int64, error) {
 	if f.interceptOp != nil {
 		f.interceptOp()
 	}
 
 	if f.putErr != nil {
-		return nil, 0, f.putErr
+		return nil, nil, 0, f.putErr
 	}
 
 	f.mu.Lock()
@@ -107,6 +126,15 @@ func (f *fakeKVRepo) PutKey(
 	valCopy := make([]byte, len(value))
 	copy(valCopy, value)
 
+	cfg := &domain.Config{
+		Path:      path,
+		Namespace: namespace,
+		Content:   string(value),
+		Format:    domain.DetectFormatFromPath(path),
+		Revision:  f.rev,
+		UpdatedAt: time.Now(),
+	}
+
 	if prev == nil {
 		f.pairs[k] = &domain.KVPair{
 			Namespace:      namespace,
@@ -117,10 +145,15 @@ func (f *fakeKVRepo) PutKey(
 			Version:        1,
 		}
 
-		return nil, f.rev, nil
+		cfg.Version = 1
+		cfg.CreateRevision = f.rev
+		cfg.CreatedAt = cfg.UpdatedAt
+
+		return cfg, nil, f.rev, nil
 	}
 
 	// Return a copy so callers cannot mutate our internal state.
+	prevCopy := *prev
 	f.pairs[k] = &domain.KVPair{
 		Namespace:      namespace,
 		Path:           path,
@@ -130,7 +163,10 @@ func (f *fakeKVRepo) PutKey(
 		Version:        prev.Version + 1,
 	}
 
-	return new(*prev), f.rev, nil
+	cfg.Version = prev.Version + 1
+	cfg.CreateRevision = prev.CreateRevision
+
+	return cfg, &prevCopy, f.rev, nil
 }
 
 func (f *fakeKVRepo) DeleteRangeKeys(

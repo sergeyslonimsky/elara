@@ -12,8 +12,10 @@ type (
 	sessionKey struct{}
 )
 
-// WithClaims stores JWT claims in context. Retained for backward compatibility
-// during the EL-49 session migration; prefer WithSession/UserFromContext for new code.
+// WithClaims stores service-token claims in context — the etcd-compatible
+// gRPC API's auth path (a 3rd-party service credential), distinct from
+// WithSession's user-session path (UI/ConnectRPC). Both are live, not
+// old-vs-new: use WithSession/UserFromContext for the session path.
 func WithClaims(ctx context.Context, claims *Claims) context.Context {
 	return context.WithValue(ctx, claimsKey{}, claims)
 }
@@ -51,7 +53,9 @@ func UserFromContext(ctx context.Context) (*domain.User, bool) {
 }
 
 // AuthInfoFromContext resolves domain.AuthInfo from context.
-// It checks the new session-based user first, then falls back to JWT claims.
+// It checks the session-based user first (UI/ConnectRPC path), then falls
+// back to service-token claims (etcd-compatible gRPC API path) — the two
+// auth surfaces are independent, not a migration fallback.
 func AuthInfoFromContext(ctx context.Context) (domain.AuthInfo, error) {
 	if user, ok := UserFromContext(ctx); ok {
 		return domain.AuthInfo{

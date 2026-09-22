@@ -62,11 +62,19 @@ type nsMocks struct {
 
 type cfgMocks struct {
 	txm               *storage_mock.MockManager
-	storage           *configmock.MockstorageRepo
+	storage           *configmock.MockconfigRepo
+	kv                *configmock.MockkvRepo
 	watcher           *configmock.Mockwatcher
 	namespaceProvider *configmock.MocknamespaceProvider
 	schemaValidator   *configmock.MockschemaValidator
 	pdp               *configmock.Mockpdp
+}
+
+// cfgRepoMock satisfies config.New's repo parameter (configRepo + kvRepo) by
+// embedding both mocks — demo seeding never exercises the KV surface.
+type cfgRepoMock struct {
+	*configmock.MockconfigRepo
+	*configmock.MockkvRepo
 }
 
 type schemaMocks struct {
@@ -96,7 +104,8 @@ func setup(t *testing.T) (demo.Deps, demoMocks) {
 		},
 		cfg: cfgMocks{
 			txm:               storage_mock.NewMockManager(ctrl),
-			storage:           configmock.NewMockstorageRepo(ctrl),
+			storage:           configmock.NewMockconfigRepo(ctrl),
+			kv:                configmock.NewMockkvRepo(ctrl),
 			watcher:           configmock.NewMockwatcher(ctrl),
 			namespaceProvider: configmock.NewMocknamespaceProvider(ctrl),
 			schemaValidator:   configmock.NewMockschemaValidator(ctrl),
@@ -115,7 +124,7 @@ func setup(t *testing.T) (demo.Deps, demoMocks) {
 		Configs: config.New(
 			m.cfg.txm,
 			m.cfg.pdp,
-			m.cfg.storage,
+			cfgRepoMock{m.cfg.storage, m.cfg.kv},
 			m.cfg.watcher,
 			m.cfg.namespaceProvider,
 			m.cfg.schemaValidator,

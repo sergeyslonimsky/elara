@@ -22,7 +22,9 @@ type (
 		EffectiveNamespaces(actor string, action domain.Action) authz.DomainSet
 	}
 
-	storageRepo interface {
+	// configRepo is the structured config-CRUD storage surface — everything
+	// except service_kv.go's raw etcd-KV path (see kvRepo below).
+	configRepo interface {
 		Create(ctx context.Context, cfg *domain.Config) error
 		Get(ctx context.Context, path, namespace string) (*domain.Config, error)
 		Update(ctx context.Context, cfg *domain.Config) error
@@ -44,6 +46,27 @@ type (
 		SearchByPath(ctx context.Context, query, namespace string) ([]*domain.ConfigSummary, error)
 		LockConfig(ctx context.Context, namespace, path string) error
 		UnlockConfig(ctx context.Context, namespace, path string) error
+	}
+
+	// kvRepo backs the etcd-compatible gRPC API's raw KV path (see
+	// service_kv.go) — separate from configRepo because it operates on raw
+	// bytes/namespace-path pairs, not hydrated domain.Config, and only
+	// service_kv.go's methods ever call it. Signatures mirror
+	// storage/bbolt/config/etcd.go's KVRepo verbatim.
+	kvRepo interface {
+		CurrentRevisionValue(ctx context.Context) (int64, error)
+		RangeQuery(
+			ctx context.Context,
+			startNS, startPath, endNS, endPath string,
+			limit, revision int64,
+			keysOnly bool,
+		) ([]*domain.KVPair, bool, error)
+		PutKey(ctx context.Context, namespace, path string, value []byte) (*domain.KVPair, int64, error)
+		DeleteRangeKeys(
+			ctx context.Context,
+			startNS, startPath, endNS, endPath string,
+			returnPrev bool,
+		) ([]*domain.KVPair, int64, error)
 	}
 
 	watcher interface {
@@ -75,16 +98,25 @@ type (
 type Service struct {
 	txm               storage.Manager
 	pdp               pdp
-	storage           storageRepo
+	storage           configRepo
+	kv                kvRepo
 	watcher           watcher
 	namespaceProvider namespaceProvider
 	schemaValidator   schemaValidator
 }
 
+// New's repo parameter is a single value satisfying both configRepo and
+// kvRepo — in production it's the same *storage/bbolt/config.Repository
+// either way (see internal/di/service/services.go) — split into two typed
+// Service fields so each of configRepo/kvRepo stays small and single-purpose
+// instead of one large storage-surface interface.
 func New(
 	txm storage.Manager,
 	pdp pdp,
-	storageRepo storageRepo,
+	repo interface {
+		configRepo
+		kvRepo
+	},
 	watcher watcher,
 	namespaceProvider namespaceProvider,
 	schemaValidator schemaValidator,
@@ -92,7 +124,8 @@ func New(
 	return &Service{
 		txm:               txm,
 		pdp:               pdp,
-		storage:           storageRepo,
+		storage:           repo,
+		kv:                repo,
 		watcher:           watcher,
 		namespaceProvider: namespaceProvider,
 		schemaValidator:   schemaValidator,

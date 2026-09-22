@@ -46,7 +46,7 @@ func NewServiceManager(
 	}
 
 	handlers := NewV2Handlers(services, sessionSvc, cfg)
-	etcdHandlers := NewEtcdHandlers(adapters)
+	etcdHandlers := NewEtcdHandlers(adapters, services)
 
 	mgrs := &Managers{
 		Adapters:     adapters,
