@@ -1,10 +1,10 @@
 <!--
   This page mirrors the repository README.md (EL-53 M1.1), adapted for MkDocs:
   repo-root file links (LICENSE, CONTRIBUTING.md, SECURITY.md) point at absolute
-  GitHub URLs, in-docs links stay relative (quickstart.md, architecture.md,
-  adr/…); the repo-root logo (logo.svg) is omitted so the MkDocs build stays
-  clean, but the dashboard screenshot lives under docs/assets/ and is included
-  below with a relative path.
+  GitHub URLs, in-docs links stay relative (getting-started/quickstart.md,
+  architecture.md, adr/…); the repo-root logo (logo.svg) is omitted so the
+  MkDocs build stays clean, but the dashboard screenshot lives under
+  docs/assets/ and is included below with a relative path.
 -->
 
 # Elara
@@ -31,8 +31,8 @@ consumer view that shows **which pod reads which key**. One binary, one
 
 ![Elara dashboard](assets/aha-hero.webp)
 
-New here? Start with the [Quickstart](quickstart.md), then read the
-[Architecture](architecture.md) overview.
+New here? Start with the [Quickstart](getting-started/quickstart.md), then
+read the [Architecture](architecture.md) overview.
 
 ## Quickstart
 
@@ -51,9 +51,10 @@ them. Try editing `production/api/limits.json` to a bad value to watch schema
 validation reject the write. The etcd-compatible API is live at `localhost:2379`
 at the same time.
 
-See the [Quickstart guide](quickstart.md) for a guided 5-minute tour, or the
-[todo-app tutorial](tutorial-todo-app.md) for a worked example with three
-services reading config live.
+See the [Quickstart guide](getting-started/quickstart.md) for a guided
+5-minute tour, or the
+[todo-app tutorial](getting-started/tutorial-todo-app.md) for a worked
+example with three services reading config live.
 
 ### Deploy to Kubernetes
 
@@ -62,9 +63,9 @@ helm repo add elara https://sergeyslonimsky.github.io/elara
 helm install elara elara/elara
 ```
 
-See the [Helm chart docs](https://github.com/sergeyslonimsky/elara/blob/master/helm/elara/README.md)
-for prerequisites, `values.yaml` reference, and production configuration
-(ingress, persistence, resource limits).
+See [Deployment → Kubernetes](deployment/kubernetes.md) for prerequisites,
+`values.yaml` reference, and production configuration (ingress, persistence,
+resource limits).
 
 ## Why Elara
 
@@ -119,12 +120,14 @@ plane on top:
 | Per-key consumer view   | —             | **k8s-aware (namespace / pod / node)**     |
 | Config history          | revision only | **full version history + side-by-side diff** |
 
-**Single-instance, on purpose.** One binary, one bbolt file, one backup command
-— no cluster to operate, no quorum to reason about. The trade-off is that Elara
-is not yet highly available: bbolt holds an exclusive file lock, so exactly one
-instance runs at a time. If you need HA today, use a bare etcd cluster; if you
-want a simple, auditable config plane you can back up with `cp`, this is the
-trade Elara makes.
+**Single-instance, on purpose.** One binary, one bbolt file — no cluster to
+operate, no quorum to reason about. The trade-off is that Elara is not yet
+highly available: bbolt holds an exclusive file lock, so exactly one instance
+runs at a time. If you need HA today, use a bare etcd cluster; if you want a
+simple, auditable config plane you can back up by copying the bbolt file while
+the process is stopped (there is no online backup RPC yet — see
+[Troubleshooting & FAQ](reference/troubleshooting.md#backup-restore)), this is
+the trade Elara makes.
 
 ## Architecture
 

@@ -7,6 +7,11 @@ on:
       - "docs/**"
       - "mkdocs.yml"
       - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
 
 # Cancel in-progress runs for the same branch — save Actions minutes.
 concurrency:
@@ -38,7 +43,10 @@ jobs:
       # NOTE: gh-pages also hosts the Helm chart repository (index.yaml + chart
       # tarballs) published by release.yml. keep_files: true preserves those
       # artifacts so the docs site and the Helm repo coexist on the same branch.
+      # PRs only need the --strict build above (broken-link check); only a
+      # push to master should actually publish.
       - name: Deploy to gh-pages
+        if: github.event_name == 'push'
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
