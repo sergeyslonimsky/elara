@@ -93,22 +93,6 @@ type ConfigSummary struct {
 	UpdatedAt       time.Time
 }
 
-func (c *Config) ToSummary() *ConfigSummary {
-	return &ConfigSummary{
-		Path:            c.Path,
-		ContentHash:     c.ContentHash,
-		Format:          c.Format,
-		Version:         c.Version,
-		Revision:        c.Revision,
-		Namespace:       c.Namespace,
-		Metadata:        c.Metadata,
-		Locked:          c.Locked,
-		NamespaceLocked: c.NamespaceLocked,
-		CreatedAt:       c.CreatedAt,
-		UpdatedAt:       c.UpdatedAt,
-	}
-}
-
 func (c *Config) GenerateHash() {
 	hash := sha256.Sum256([]byte(c.Content))
 	c.ContentHash = hex.EncodeToString(hash[:])
@@ -118,12 +102,6 @@ func (c *Config) SetDefaults() {
 	if c.Metadata == nil {
 		c.Metadata = make(map[string]string)
 	}
-}
-
-func (c *Config) HasContentChanged(newContent string) bool {
-	hash := sha256.Sum256([]byte(newContent))
-
-	return c.ContentHash != hex.EncodeToString(hash[:])
 }
 
 type ConfigKey struct {
