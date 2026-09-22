@@ -1,4 +1,4 @@
-# Configuration
+# Configuration reference
 
 Elara is configured entirely through [Viper](https://github.com/spf13/viper).
 Values can come from a config file, but **environment variables override every
@@ -40,9 +40,7 @@ ui:
 
 Environment variables still override anything set here.
 
-## Reference
-
-### Server & data
+## Server & data
 
 | Env Var | Config Key | Default | Description |
 |---|---|---|---|
@@ -52,9 +50,9 @@ Environment variables still override anything set here.
 | `CLIENT_ETCD_PORT` | `client.etcd.port` | `2379` | Port for the etcd-compatible gRPC API consumed by `etcdctl` and typed clients. |
 | `CONFIG_DATA_PATH` | `config.data.path` | `~/.elara/data` (bare binary) / `/var/lib/elara` (container image) | Directory holding the single bbolt state file (`elara.db`). Only one instance may run against it at a time (exclusive file lock). |
 | `SERVICE_NAME` | `service.name` | `elara` | Service identity embedded in Prometheus / OTLP resource labels. |
-| `SERVICE_VERSION` | `service.version` | _(empty)_ | Service version embedded in Prometheus / OTLP resource labels. |
+| `SERVICE_VERSION` | `service.version` | _(empty — falls back to the build-stamped version, see `elara version`)_ | Service version embedded in Prometheus / OTLP resource labels. |
 
-### Observability
+## Observability
 
 | Env Var | Config Key | Default | Description |
 |---|---|---|---|
@@ -65,17 +63,20 @@ Environment variables still override anything set here.
 | `LOG_FORMAT` | `log.format` | `json` | Log output format: `json` \| `text`. |
 | `LOG_NOSOURCE` | `log.noSource` | `false` | When `true`, omit source file/line from log records. |
 
-### Authentication
+See [Concepts → Clients & Observability](../concepts/clients-observability.md)
+for what the connected-clients monitor tracks separately from these metrics.
+
+## Authentication
 
 The variables below are listed for completeness. Auth setup — basic-auth vs OIDC,
-the bootstrap superadmin flow, and session behavior — is covered in depth on the
-[Authentication](authentication.md) page. Do not enable auth from this table
-alone; read that page first.
+the bootstrap superadmin flow, and session behavior — is covered in depth in
+[Auth & Access](../auth/index.md). Do not enable auth from this table
+alone; read that section first.
 
 | Env Var | Config Key | Default | Description |
 |---|---|---|---|
 | `UI_AUTH_ENABLED` | `ui.auth.enabled` | `false` | Master switch for UI/API authentication. When `false`, auth type is forced to `none` and permission checks are skipped. |
-| `UI_AUTH_TYPE` | `ui.auth.type` | `none` | `basic-auth` \| `oidc` \| `none`. Anything unrecognized falls back to `none`. |
+| `UI_AUTH_TYPE` | `ui.auth.type` | `none` | `basic-auth` \| `oidc` \| `none`. Empty is treated as `none` (Helm's chart always sets this variable, so an empty value is expected, not a mistake). Any other unrecognized value fails startup instead of silently falling back — fix the typo rather than relying on a fallback. |
 | `UI_AUTH_BASICAUTH_USERNAME` | `ui.auth.basicAuth.username` | _(empty)_ | Initial superadmin username (required when type is `basic-auth`; **must be email-shaped** — Elara refuses to boot otherwise). |
 | `UI_AUTH_BASICAUTH_PASSWORD` | `ui.auth.basicAuth.password` | _(empty)_ | Initial superadmin password (required when type is `basic-auth`). |
 | `UI_AUTH_OIDC_ISSUERURL` | `ui.auth.oidc.issuerUrl` | _(empty)_ | OIDC issuer URL. |
@@ -86,22 +87,22 @@ alone; read that page first.
 | `UI_AUTH_OIDC_ADMINEMAIL` | `ui.auth.oidc.adminEmail` | _(empty)_ | Email that bootstraps the first superadmin on OIDC (required when type is `oidc`). |
 | `UI_AUTH_SESSION_SECURECOOKIE` | `ui.auth.session.secureCookie` | `false` | Marks the session cookie `Secure`. Set to `true` only when served over HTTPS — browsers drop `Secure` cookies on plain HTTP. |
 
-### Client / etcd API
+## Client / etcd API
 
 | Env Var | Config Key | Default | Description |
 |---|---|---|---|
-| `CLIENT_AUTH_ENABLED` | `client.auth.enabled` | `false` | Requires token authentication on the etcd-compatible gRPC API. |
+| `CLIENT_AUTH_ENABLED` | `client.auth.enabled` | `false` | Requires token authentication on the etcd-compatible gRPC API. See [Client Auth (etcd)](../auth/client-auth.md). |
 | `CLIENT_HISTORY_MAX_RECORDS` | `client.history.max_records` | `1000` | Max connected-client history records retained. Values `<= 0` fall back to the default. |
 | `CLIENT_HISTORY_MAX_AGE` | `client.history.max_age` | `720h` (30 days) | Max age of retained client-history records. Values `<= 0` fall back to the default. |
 | `CLIENT_RECENT_EVENTS_CAPACITY` | `client.recent_events.capacity` | `100` | Ring-buffer capacity for recent client events. Values `<= 0` fall back to the default. |
 
-### Demo mode
+## Demo mode
 
 | Env Var | Config Key | Default | Description |
 |---|---|---|---|
-| `DEMO_MODE` | `demo.mode` | `false` | Seeds sample namespaces/configs/schemas on startup, injects simulated etcd clients into the monitor, and shows a first-run welcome modal. See the [Quickstart](quickstart.md) for the demo walkthrough. |
+| `DEMO_MODE` | `demo.mode` | `false` | Seeds sample namespaces/configs/schemas on startup, injects simulated etcd clients into the monitor, and shows a first-run welcome modal. See the [Quickstart](../getting-started/quickstart.md) for the demo walkthrough. |
 
-### Advanced / dangerous
+## Advanced / dangerous
 
 | Env Var | Config Key | Default | Description |
 |---|---|---|---|
@@ -112,83 +113,7 @@ alone; read that page first.
     — it removes them. Leave it unset (`false`) in any shared or production
     environment.
 
-## Docker deployment
-
-The image builds to a `scratch`-based runtime that runs as a non-root user
-(UID/GID `65532`), exposes ports `8080` and `2379`, and defaults
-`CONFIG_DATA_PATH` to `/var/lib/elara` (declared as a `VOLUME`).
-
-Build the image locally (no published image is required):
-
-```bash
-docker build -t elara:latest .
-```
-
-For the pre-seeded demo variant, build with `--build-arg DEMO_MODE=true` — see
-the [Quickstart](quickstart.md) for the full demo walkthrough.
-
-### Minimal production-ish run
-
-Mount a host directory for the bbolt state so data survives container restarts,
-and enable basic-auth:
-
-```bash
-docker run -d --name elara \
-  -p 8080:8080 \
-  -p 2379:2379 \
-  -v elara-data:/var/lib/elara \
-  -e UI_AUTH_ENABLED=true \
-  -e UI_AUTH_TYPE=basic-auth \
-  -e UI_AUTH_BASICAUTH_USERNAME=admin@example.com \
-  -e UI_AUTH_BASICAUTH_PASSWORD='change-me' \
-  -e UI_AUTH_SESSION_SECURECOOKIE=true \
-  elara:latest
-```
-
-Notes:
-
-- The volume target must match `CONFIG_DATA_PATH` (`/var/lib/elara` in the
-  image). A named volume (`elara-data`) or a bind mount both work; only one
-  Elara instance may use a given data file at a time.
-- Set `UI_AUTH_SESSION_SECURECOOKIE=true` only when the service is reached over
-  HTTPS (e.g. behind a TLS-terminating proxy). On plain HTTP the browser drops
-  the cookie and login silently fails.
-- To scrape metrics, add `-e METRICS_ENABLED=true` and scrape `/metrics` on
-  port `8080`.
-
-### docker-compose
-
-```yaml
-services:
-  elara:
-    image: elara:latest
-    build: .
-    ports:
-      - "8080:8080"
-      - "2379:2379"
-    volumes:
-      - elara-data:/var/lib/elara
-    environment:
-      UI_AUTH_ENABLED: "true"
-      UI_AUTH_TYPE: "basic-auth"
-      UI_AUTH_BASICAUTH_USERNAME: "admin@example.com"
-      UI_AUTH_BASICAUTH_PASSWORD: "change-me"
-      UI_AUTH_SESSION_SECURECOOKIE: "true"
-
-volumes:
-  elara-data:
-```
-
-## Kubernetes deployment
-
-Elara ships an official Helm chart. Every environment variable above maps to a
-chart value, and the chart wires up a `Deployment`, `Service`, persistence, and
-optional `ServiceMonitor`. The TL;DR:
-
-```bash
-helm repo add elara https://sergeyslonimsky.github.io/elara
-helm install elara elara/elara
-```
-
-For prerequisites, the full `values.yaml` reference, ingress, persistence, and
-observability wiring, see the [Helm chart docs](https://github.com/sergeyslonimsky/elara/blob/master/helm/elara/README.md).
+    It cannot be combined with `UI_AUTH_ENABLED=true` or `CLIENT_AUTH_ENABLED=true`
+    — Elara refuses to start rather than silently running with a login screen
+    (or a Tokens UI) that looks like it enforces access when it doesn't. Use it
+    only for a fully open instance with both of those left `false`.

@@ -46,12 +46,35 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started:
-      - Quickstart: quickstart.md
-      - Configuration: configuration.md
-  - Concepts: concepts.md
-  - Authentication: authentication.md
-  - Guides:
-      - Todo-App Tutorial: tutorial-todo-app.md
+      - Quickstart: getting-started/quickstart.md
+      - Install: getting-started/install.md
+      - Todo-App Tutorial: getting-started/tutorial-todo-app.md
+  - Concepts:
+      - concepts/index.md
+      - Namespaces & Configs: concepts/namespaces-configs.md
+      - Schema Validation: concepts/schema-validation.md
+      - Bundles: concepts/bundles.md
+      - Watch & Revisions: concepts/watch-revisions.md
+      - Webhooks: concepts/webhooks.md
+      - Clients & Observability: concepts/clients-observability.md
+  - Auth & Access:
+      - auth/index.md
+      - Basic Auth: auth/basic.md
+      - OIDC: auth/oidc.md
+      - Passthrough: auth/passthrough.md
+      - Sessions & Tokens: auth/sessions-tokens.md
+      - "RBAC, Groups & Roles": auth/rbac-groups.md
+      - Client Auth (etcd): auth/client-auth.md
+  - Deployment:
+      - Docker: deployment/docker.md
+      - Kubernetes (Helm): deployment/kubernetes.md
+      - Configuration reference: deployment/configuration.md
+      - Users & Groups lifecycle: deployment/users-groups-lifecycle.md
+  - Reference:
+      - etcd API compatibility: reference/etcd-compatibility.md
+      - ConnectRPC API: reference/connectrpc-api.md
+      - Errors catalog: reference/errors-catalog.md
+      - Troubleshooting & FAQ: reference/troubleshooting.md
   - Architecture:
       - Overview: architecture.md
       - "ADR 0001: Usecase-owned Transactions": adr/0001-usecase-owned-transactions.md

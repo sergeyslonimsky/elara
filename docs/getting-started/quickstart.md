@@ -19,12 +19,13 @@ docker run --rm -p 8080:8080 -p 2379:2379 elara:demo
 
 That's the whole install. Elara is a single binary backed by one
 [bbolt](https://github.com/etcd-io/bbolt) file — there's no external database,
-message broker, or cluster to stand up.
+message broker, or cluster to stand up. For other ways to run it (a plain
+Docker image, a downloaded binary, or Helm), see [Install](install.md).
 
 Two ports are now listening:
 
 | Port   | Surface                                            |
-|--------|----------------------------------------------------|
+|--------|-----------------------------------------------------|
 | `8080` | Web UI + ConnectRPC API (HTTP/2)                    |
 | `2379` | etcd-compatible gRPC API (drop-in for etcd v3)     |
 
@@ -37,12 +38,6 @@ dismiss it to reach the dashboard.
     `go run ./cmd/service`) and the instance starts empty. Create a namespace
     and a config from the UI (or with `etcdctl`, see below) and the rest of
     this tour still applies.
-
-!!! note "Don't want Docker?"
-    Every [release](https://github.com/sergeyslonimsky/elara/releases) also
-    publishes prebuilt binaries for macOS and Linux — download, extract, and
-    run `./elara`. See [Configuration](configuration.md#config-file-for-local-installs)
-    for its `~/.elara` data/config defaults.
 
 ## 2. Tour the seeded demo data
 
@@ -117,10 +112,10 @@ were never stored.
 
 ## Next steps
 
-- Read the [Architecture](architecture.md) overview to understand how a request
-  flows from the UI or an etcd client down to the bbolt file.
+- Read the [Architecture](../architecture.md) overview to understand how a
+  request flows from the UI or an etcd client down to the bbolt file.
 - Turn on **authentication** (basic-auth or OIDC) and explore the groups-based
-  RBAC model — see [ADR 0002 — Groups-only RBAC](adr/0002-groups-only-rbac.md).
+  RBAC model — see [Auth & Access](../auth/index.md).
 - Point one of your own services at `localhost:2379` with its existing etcd v3
   client. No code changes: Elara speaks the etcd v3 wire protocol.
 

@@ -18,7 +18,7 @@ changes. That's the whole point: your existing etcd clients talk to Elara with
 zero code changes.
 
 Everything for this tutorial lives in
-[`examples/todo-app/`](../examples/todo-app/).
+[`examples/todo-app/`](../../examples/todo-app/).
 
 ---
 
@@ -235,5 +235,5 @@ etcdctl / your app ──┘      │
   JSON Schema validation, RBAC, audit history, and GitOps bundles.
 
 To go deeper, read the service code in
-[`examples/todo-app/services/`](../examples/todo-app/services/) — it's about a
+[`examples/todo-app/services/`](../../examples/todo-app/services/) — it's about a
 page of Go per service.

@@ -76,9 +76,9 @@ them. Try editing `production/api/limits.json` to a bad value to watch schema
 validation reject the write. The etcd-compatible API is live at `localhost:2379`
 at the same time.
 
-For a guided 5-minute tour see the [Quickstart guide](docs/quickstart.md); for a
+For a guided 5-minute tour see the [Quickstart guide](docs/getting-started/quickstart.md); for a
 worked example with three services reading config live, follow the
-[todo-app tutorial](docs/tutorial-todo-app.md).
+[todo-app tutorial](docs/getting-started/tutorial-todo-app.md).
 
 ### Deploy to Kubernetes
 
@@ -102,7 +102,7 @@ your platform, extract it, and run:
 
 With no config at all, it stores its bbolt state at `~/.elara/data/elara.db`
 and auto-loads `~/.elara/config.yaml` if you create one — see the
-[Configuration docs](docs/configuration.md) for the full reference and every
+[Configuration docs](docs/deployment/configuration.md) for the full reference and every
 env var.
 
 ## Why Elara
@@ -158,12 +158,14 @@ plane on top:
 | Per-key consumer view   | —             | **k8s-aware (namespace / pod / node)**     |
 | Config history          | revision only | **full version history + side-by-side diff** |
 
-**Single-instance, on purpose.** One binary, one bbolt file, one backup command
-— no cluster to operate, no quorum to reason about. The trade-off is that Elara
-is not yet highly available: bbolt holds an exclusive file lock, so exactly one
-instance runs at a time. If you need HA today, use a bare etcd cluster; if you
-want a simple, auditable config plane you can back up with `cp`, this is the
-trade Elara makes.
+**Single-instance, on purpose.** One binary, one bbolt file — no cluster to
+operate, no quorum to reason about. The trade-off is that Elara is not yet
+highly available: bbolt holds an exclusive file lock, so exactly one instance
+runs at a time. If you need HA today, use a bare etcd cluster; if you want a
+simple, auditable config plane you can back up by copying the bbolt file while
+the process is stopped (there is no online backup RPC yet — see
+[Troubleshooting & FAQ](https://sergeyslonimsky.github.io/elara/reference/troubleshooting/#backup-restore)),
+this is the trade Elara makes.
 
 ## Architecture
 
