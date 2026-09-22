@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/sergeyslonimsky/core/di"
 	"github.com/sergeyslonimsky/core/http2"
@@ -60,6 +61,14 @@ var (
 		"basic-auth requires ui.auth.basicAuth.password to be set",
 	)
 	ErrOIDCAdminEmailRequired = errors.New("oidc requires ui.auth.oidc.adminEmail to be set")
+
+	// ErrUIAuthTypeUnrecognized is returned when ui.auth.enabled is true and
+	// ui.auth.type is a non-empty value that isn't "oidc", "basic-auth", or
+	// "none". An empty value is NOT an error here — Helm's configmap always
+	// emits UI_AUTH_TYPE, so "" is the common legitimate case, not a typo.
+	ErrUIAuthTypeUnrecognized = errors.New(
+		`ui.auth.type must be "oidc", "basic-auth", or "none" (or unset)`,
+	)
 )
 
 // Validate returns an error if the configuration is invalid.
@@ -88,6 +97,11 @@ func (c UIAuthConfig) Validate() error {
 }
 
 func newUIConfig(cfg *di.Config) (UI, error) {
+	authType, err := getAuthType(cfg)
+	if err != nil {
+		return UI{}, err
+	}
+
 	ui := UI{
 		Server: http2.Config{
 			Port:        cfg.GetStringOrDefault("ui.server.port", defaultHTTPPort),
@@ -100,7 +114,7 @@ func newUIConfig(cfg *di.Config) (UI, error) {
 		},
 		Auth: UIAuthConfig{
 			Enabled: cfg.GetBool("ui.auth.enabled"),
-			Type:    getAuthType(cfg),
+			Type:    authType,
 			BasicAuth: BasicAuthConfig{
 				Username: cfg.GetString("ui.auth.basicAuth.username"),
 				Password: cfg.GetString("ui.auth.basicAuth.password"),
@@ -129,21 +143,30 @@ func newUIConfig(cfg *di.Config) (UI, error) {
 	return ui, nil
 }
 
-func getAuthType(cfg *di.Config) domain.AuthType {
-	if !cfg.GetBool("ui.auth.enabled") {
-		return domain.AuthTypeNone
+func getAuthType(cfg *di.Config) (domain.AuthType, error) {
+	return resolveAuthType(cfg.GetBool("ui.auth.enabled"), cfg.GetString("ui.auth.type"))
+}
+
+// resolveAuthType is getAuthType's pure logic, split out so it's testable
+// without a *di.Config. When enabled is false, auth is off entirely and the
+// raw type string is irrelevant. When enabled is true, an empty raw value
+// and "none" both legitimately mean AuthTypeNone (see
+// ErrUIAuthTypeUnrecognized's doc comment on why empty must not error); any
+// other unrecognized non-empty value is a config mistake (typo) and fails
+// fast instead of silently downgrading to no-auth.
+func resolveAuthType(enabled bool, raw string) (domain.AuthType, error) {
+	if !enabled {
+		return domain.AuthTypeNone, nil
 	}
 
-	authType := cfg.GetString("ui.auth.type")
-
-	switch authType {
+	switch raw {
+	case "", "none":
+		return domain.AuthTypeNone, nil
 	case "oidc":
-		return domain.AuthTypeOIDC
+		return domain.AuthTypeOIDC, nil
 	case "basic-auth":
-		return domain.AuthTypeBasicAuth
-	case "none":
-		return domain.AuthTypeNone
+		return domain.AuthTypeBasicAuth, nil
 	default:
-		return domain.AuthTypeNone
+		return "", fmt.Errorf("%w: got %q", ErrUIAuthTypeUnrecognized, raw)
 	}
 }

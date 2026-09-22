@@ -65,7 +65,7 @@ func NewServices(
 ) (*Services, error) {
 	schemaValidator := schemavalidator.New(a.SchemaRepo)
 
-	skipPermissions := !cfg.UI.Auth.Enabled || cfg.DangerouslySkipPermissions
+	skipPermissions := cfg.ShouldSkipPermissionsForUI()
 	pdp := authz.NewPDP(enforcer, authz.WithSkipPermissions(skipPermissions))
 	pap := authz.NewPAP(enforcer, a.StorageManager)
 	scope := authz.NewScope(pdp, pap, a.AuthGroups)

@@ -2,11 +2,14 @@ package config
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
 
 	"github.com/sergeyslonimsky/core/di"
+
+	"github.com/sergeyslonimsky/elara/internal/domain"
 )
 
 const (
@@ -55,6 +58,24 @@ type Config struct {
 	DangerouslySkipPermissions bool
 }
 
+// ErrDangerousSkipPermissionsWithRealAuth is returned when
+// DangerouslySkipPermissions is combined with a real auth surface
+// (ui.auth.enabled and/or client.auth.enabled). That combination makes the
+// deployment look secured — a login screen, a Tokens UI that appears to
+// enforce scopes — while every permission check is actually bypassed
+// underneath (internal/di/service/services.go's PDP.WithSkipPermissions,
+// internal/di/service/handler.go's web-auth-interceptor skip, and
+// cmd/service/main.go's etcd token-interceptor skip). "Dangerously" in the
+// name is the intended failure mode for a fully-open dev instance —
+// combined with real auth config it stops being a deliberate choice and
+// becomes a trap. Leave both auth surfaces disabled instead if an open
+// instance is actually wanted.
+var ErrDangerousSkipPermissionsWithRealAuth = errors.New(
+	"dangerously.skip.permissions=true cannot be combined with ui.auth.enabled=true or " +
+		"client.auth.enabled=true — the deployment would look secured while enforcing nothing; " +
+		"disable those instead if an open instance is intended",
+)
+
 // DemoConfig controls demo mode. When Enabled, the service seeds sample
 // namespaces/configs/schemas on startup and injects simulated etcd clients
 // into the connected-clients monitor, and the UI shows a welcome modal.
@@ -95,9 +116,11 @@ func NewConfig(ctx context.Context) (Config, error) {
 		return Config{}, err
 	}
 
-	return Config{
+	client := newClientConfig(cfg)
+
+	c := Config{
 		UI:     ui,
-		Client: newClientConfig(cfg),
+		Client: client,
 
 		DataPath:       cfg.GetStringOrDefault("config.data.path", defaultDataPath()),
 		ServiceName:    cfg.GetStringOrDefault("service.name", defaultServiceName),
@@ -123,7 +146,13 @@ func NewConfig(ctx context.Context) (Config, error) {
 			Enabled: cfg.GetBool("demo.mode"),
 		},
 		DangerouslySkipPermissions: cfg.GetBool("dangerously.skip.permissions"),
-	}, nil
+	}
+
+	if err := c.validateSkipPermissions(); err != nil {
+		return Config{}, err
+	}
+
+	return c, nil
 }
 
 // defaultDataPath is the bbolt data directory used when config.data.path /
@@ -162,4 +191,36 @@ func stringsOrDefault(v, d []string) []string {
 	}
 
 	return v
+}
+
+// ShouldSkipPermissionsForUI reports whether the web/ConnectRPC surface
+// (PDP enforcement and the session AuthInterceptor) should bypass permission
+// checks: passthrough mode (Type == AuthTypeNone) or the explicit escape
+// hatch. Type == AuthTypeNone alone already covers !UI.Auth.Enabled, since
+// resolveAuthType always resolves to AuthTypeNone when auth is disabled —
+// using Enabled here instead of Type was a real bug: ui.auth.enabled=true +
+// ui.auth.type=none ("passthrough", Validate()'s documented legitimate
+// case) left PDP enforcing against the AuthInterceptor's synthetic
+// uuid.Nil bypass principal, which has no Casbin policy — every request
+// was denied.
+//
+// The web-auth-interceptor skip and the PDP skip MUST stay in lockstep (see
+// interceptor.AuthInterceptor's doc comment) — both call this one function
+// instead of duplicating the condition.
+func (c Config) ShouldSkipPermissionsForUI() bool {
+	return c.UI.Auth.Type == domain.AuthTypeNone || c.DangerouslySkipPermissions
+}
+
+// validateSkipPermissions rejects the DangerouslySkipPermissions +
+// real-auth-surface combination described on ErrDangerousSkipPermissionsWithRealAuth.
+func (c Config) validateSkipPermissions() error {
+	if !c.DangerouslySkipPermissions {
+		return nil
+	}
+
+	if c.UI.Auth.Enabled || c.Client.Auth.Enabled {
+		return ErrDangerousSkipPermissionsWithRealAuth
+	}
+
+	return nil
 }
