@@ -1,0 +1,124 @@
+# git-cliff configuration — generates CHANGELOG.md from Conventional Commits.
+#
+#   git cliff -o CHANGELOG.md          # regenerate the whole file
+#   git cliff --unreleased             # preview what would land in the next tag
+#   git cliff --bumped-version         # ask git-cliff which version comes next
+#
+# Docs: https://git-cliff.org/docs/configuration
+
+[changelog]
+header = """
+# Changelog
+
+All notable changes to Elara are documented in this file.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
+the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Entries are generated from [Conventional Commits](https://www.conventionalcommits.org/)
+by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
+
+"""
+
+# One section per release. Breaking changes are pulled out into their own block
+# ahead of the type groups: they are the part a reader upgrading between versions
+# must not miss, and burying them inside "Features" is how that happens.
+body = """
+{% if version -%}
+## [{{ version | trim_start_matches(pat="v") }}](https://github.com/sergeyslonimsky/elara/releases/tag/{{ version }}) — {{ timestamp | date(format="%Y-%m-%d") }}
+{%- else -%}
+## Unreleased
+{%- endif %}
+{% set breaking = commits | filter(attribute="breaking", value=true) -%}
+{%- if breaking | length > 0 %}
+### ⚠ Breaking changes
+
+{% for commit in breaking -%}
+- **{{ commit.scope | default(value="general") }}:** {{ commit.breaking_description | trim | replace(from="\n", to=" ") | upper_first }}
+{% endfor %}
+{%- endif -%}
+{#- Each bullet renders the subject line only. For a conventional commit
+    `message` is already just the summary, but for the pre-convention
+    squash-merges it is the entire raw message, body included — without the
+    split it would dump whole PR descriptions into the changelog. -#}
+{%- for group, group_commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+{% for commit in group_commits %}
+- {% if commit.scope %}**{{ commit.scope }}:** {% endif %}{{ commit.message | split(pat="\n") | first | upper_first | trim }} ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/sergeyslonimsky/elara/commit/{{ commit.id }}))
+{%- endfor %}
+{% endfor -%}
+{%- if previous.version and version %}
+**Full diff:** [{{ previous.version }}...{{ version }}](https://github.com/sergeyslonimsky/elara/compare/{{ previous.version }}...{{ version }})
+{% endif %}
+
+"""
+
+footer = ""
+trim = true
+
+# Turn the bare "(#123)" that GitHub's squash-merge appends to a subject into an
+# actual link to the pull request. Anchored on the commit link that always
+# follows it, so a "#123" occurring anywhere else in the text is left alone.
+postprocessors = [
+  { pattern = '\s+\(#(\d+)\)(\s+\(\[[0-9a-f]{7}\])', replace = " ([#${1}](https://github.com/sergeyslonimsky/elara/pull/${1}))${2}" },
+]
+
+[git]
+conventional_commits = true
+# Keep non-conventional subjects instead of dropping them: history before
+# v0.4.0 predates the convention, and silently omitting those commits would
+# make a full regeneration look like nothing happened for months. They land in
+# "Other changes" via the catch-all parser below.
+filter_unconventional = false
+filter_commits = false
+split_commits = false
+protect_breaking_commits = true
+
+# Order is significant: the first matching parser wins.
+#
+# The `<!-- N -->` prefixes exist only to sort the groups — git-cliff orders
+# groups lexicographically, and the template strips the comment before
+# rendering. Without them the sections would come out alphabetically, putting
+# "Build & CI" above "Features".
+#
+# Legacy type aliases (ref/doc/infr) come from this repo's pre-convention
+# history and are folded into their modern equivalents rather than dumped into
+# "Other changes".
+commit_parsers = [
+  # Noise: merges and automated dependency bumps.
+  { message = "^Merge (pull request|branch|remote-tracking)", skip = true },
+  { message = "^[Bb]ump ", skip = true },
+  { message = "^chore\\(deps\\)", skip = true },
+  { message = "^build\\(deps\\)", skip = true },
+
+  { message = "^feat", group = "<!-- 01 -->Features" },
+  { message = "^fix", group = "<!-- 02 -->Bug fixes" },
+  { message = "^perf", group = "<!-- 03 -->Performance" },
+  { message = "^(refactor|ref)", group = "<!-- 04 -->Refactoring" },
+  { message = "^(docs|doc)", group = "<!-- 05 -->Documentation" },
+  { message = "^test", group = "<!-- 06 -->Testing" },
+  { message = "^(build|ci|infr)", group = "<!-- 07 -->Build & CI" },
+
+  # chore is deliberately last among the known types and hidden: it is the
+  # catch-all people reach for when a change has no user-visible effect, which
+  # is exactly what a changelog reader does not need.
+  { message = "^chore", skip = true },
+
+  { message = ".*", group = "<!-- 08 -->Other changes" },
+]
+
+# The Helm chart is released by chart-releaser under its own `elara-X.Y.Z` tags
+# on the same repository. Without this pattern git-cliff would interleave chart
+# tags with service releases and attribute service commits to chart versions.
+tag_pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+"
+
+topo_order = false
+sort_commits = "oldest"
+
+[bump]
+features_always_bump_minor = true
+# While Elara is on 0.y.z, a breaking change bumps the minor rather than
+# cutting 1.0.0: semver §4 reserves 0.y.z for initial development precisely so
+# that incompatible changes can land without exhausting the major. Releasing
+# 1.0.0 should be a deliberate statement that the API is stable, not a side
+# effect of a BREAKING CHANGE footer. Flip this to true at 1.0.0.
+breaking_always_bump_major = false
