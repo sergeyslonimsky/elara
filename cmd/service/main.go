@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -16,6 +17,7 @@ import (
 	coregrpc "github.com/sergeyslonimsky/core/grpc"
 	corehttp "github.com/sergeyslonimsky/core/http2"
 
+	"github.com/sergeyslonimsky/elara/internal/cli"
 	"github.com/sergeyslonimsky/elara/internal/di"
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/di/service"
@@ -29,6 +31,18 @@ import (
 
 const shutdownTimeout = 30 * time.Second
 
+// version, commit, and date are stamped at build time via ldflags (see
+// .goreleaser.yaml and the Dockerfile) — e.g.
+// -X main.version=v1.2.3 -X main.commit=abc123 -X main.date=2026-01-01.
+// Left at these defaults for `go run`/`go build` without ldflags.
+var (
+	version = "dev"
+	//nolint:gochecknoglobals // ldflags injection target, see comment above
+	commit = "none"
+	//nolint:gochecknoglobals // ldflags injection target, see comment above
+	date = "unknown"
+)
+
 // Env vars core/di's config loader checks to decide whether to read a
 // config file at all (see vendor/.../core/di/config.go loadFromFile) — it
 // only loads a file when one of these is explicitly set, it never searches
@@ -41,7 +55,16 @@ const (
 const localConfigFileName = "config.yaml"
 
 func main() {
-	if err := run(); err != nil && !errors.Is(err, context.Canceled) {
+	info := cli.VersionInfo{
+		Version:   version,
+		Commit:    commit,
+		Date:      date,
+		GoVersion: runtime.Version(),
+		OS:        runtime.GOOS,
+		Arch:      runtime.GOARCH,
+	}
+
+	if err := cli.Execute(run, info); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("service exited with error", slog.Any("err", err))
 		os.Exit(1)
 	}
@@ -63,6 +86,7 @@ func run() error {
 	}
 
 	cfg, svc := container.Config, container.Services
+	cfg = withDefaultServiceVersion(cfg)
 	setupLogger(cfg)
 
 	a := coreapp.New(coreapp.WithShutdownTimeout(shutdownTimeout))
@@ -149,6 +173,18 @@ func run() error {
 	}
 
 	return nil
+}
+
+// withDefaultServiceVersion falls back cfg.ServiceVersion to the ldflags-
+// stamped build version when the operator hasn't set service.version /
+// SERVICE_VERSION explicitly. cfg is a value, so the caller must use the
+// returned copy.
+func withDefaultServiceVersion(cfg config.Config) config.Config {
+	if cfg.ServiceVersion == "" {
+		cfg.ServiceVersion = version
+	}
+
+	return cfg
 }
 
 // bootstrap performs idempotent superadmin seeding: the system:superadmin
