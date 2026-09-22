@@ -34,6 +34,7 @@ by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
 - Restructure the site into sectioned navigation ([844acce](https://github.com/sergeyslonimsky/elara/commit/844acced98652d27b70ad6c73161b60443f5decf))
 - Correct claims the etcd and auth changes invalidated ([8dfc810](https://github.com/sergeyslonimsky/elara/commit/8dfc810cf4a609c3fcb6e18dc36380902100ab78))
+- Document the CLI, close the remaining audit gaps ([bc69371](https://github.com/sergeyslonimsky/elara/commit/bc69371e70e959624e90859df6dec2db9ac3e2da))
 
 **Full diff:** [v0.4.0...v0.5.0](https://github.com/sergeyslonimsky/elara/compare/v0.4.0...v0.5.0)
 
