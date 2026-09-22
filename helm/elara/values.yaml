@@ -138,17 +138,14 @@ config:
         # superadmin group.
         adminEmail: ""
       session:
-        # -- Session signing secret. Must be stable across pod restarts.
-        # If empty the service will fail to start when auth is enabled.
-        # Use existingSecret in production.
-        secret: ""
-        # -- Server-side session lifetime (Go duration).
-        ttl: "24h"
+        # Session lifetime is not configurable: sessions are opaque
+        # server-side ids (there is nothing to sign, so no secret either) and
+        # the TTLs are compile-time constants — 8h sliding for the web,
+        # capped at 30d from creation, 30d absolute for the CLI.
         # -- Add the Secure flag to the session cookie.
         # Must be true in production (HTTPS). Set to false for local HTTP development.
         secureCookie: true
       # -- Name of a pre-existing Secret that supplies sensitive env vars:
-      #    UI_AUTH_SESSION_SECRET
       #    UI_AUTH_BASICAUTH_PASSWORD   (basic-auth mode)
       #    UI_AUTH_OIDC_CLIENTSECRET    (oidc mode)
       # When set the chart does NOT create its own auth Secret.

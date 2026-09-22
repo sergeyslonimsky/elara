@@ -48,7 +48,6 @@ data:
   UI_AUTH_ENABLED: {{ .Values.config.ui.auth.enabled | quote }}
   {{- if .Values.config.ui.auth.enabled }}
   UI_AUTH_TYPE: {{ .Values.config.ui.auth.type | quote }}
-  UI_AUTH_SESSION_TTL: {{ .Values.config.ui.auth.session.ttl | quote }}
   UI_AUTH_SESSION_SECURECOOKIE: {{ .Values.config.ui.auth.session.secureCookie | quote }}
   {{- if eq .Values.config.ui.auth.type "basic-auth" }}
   UI_AUTH_BASICAUTH_USERNAME: {{ .Values.config.ui.auth.basicAuth.username | quote }}
