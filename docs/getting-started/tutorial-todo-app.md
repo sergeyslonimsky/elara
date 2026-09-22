@@ -45,7 +45,7 @@ toy services, so it takes a minute or two. When it settles you'll see the
 services connect and load their config. A one-shot `seed` container writes the
 initial keys, so the services show real values right away:
 
-```
+```text
 api-1       | [api] loaded /production/api/limits.json = {"max_todos_per_user":100,"rate_limit_per_min":60}
 api-1       | [api] watching /production/api/limits.json for changes...
 worker-1    | [worker] loaded /production/worker/settings.json = {"batch_size":50,"poll_interval_seconds":5}
@@ -59,6 +59,12 @@ Now open the Web UI at <http://localhost:8080> and log in:
 
 - **Username:** `admin@elara.local`
 - **Password:** `password`
+
+The UI will immediately require a new password — the bootstrap admin is
+created with `password_change_required`, and until you set a new one every
+other request is rejected, so you cannot create the namespace in the next step.
+Pick anything and continue. See
+[Basic Auth → forced password change](../auth/basic.md#required-first-step-forced-password-change).
 
 ### Register the namespace in the UI
 
@@ -89,7 +95,7 @@ limit and watch the running service react without a restart.
 Within a second, the `api` service logs the new value in your `docker compose`
 terminal:
 
-```
+```text
 api-1  | [api] config changed: /production/api/limits.json = {"max_todos_per_user":500,"rate_limit_per_min":60} (revision 6)
 ```
 
@@ -199,7 +205,7 @@ apply your edit). You can do a dry run first to preview what would change.
 Once imported, the `notifier` service logs the new value it picked up over its
 watch:
 
-```
+```text
 notifier-1  | [notifier] config changed: /production/notifier/config.json = {"channel":"slack","digest_enabled":true} (revision 9)
 ```
 
@@ -219,7 +225,7 @@ docker compose down -v       # also delete Elara's stored data
 
 ## How it fits together
 
-```
+```text
 Web UI / ConnectRPC ─┐
                      ├─→  Elara  ─(bbolt)
 etcdctl / your app ──┘      │

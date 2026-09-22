@@ -11,7 +11,7 @@ Config keys are dotted (e.g. `ui.auth.basicAuth.username`). Viper is set up with
 `AutomaticEnv()` and a `.` → `_` key replacer, then uppercases the whole key.
 The mapping is therefore mechanical:
 
-```
+```text
 ui.auth.basicAuth.username   →   UI_AUTH_BASICAUTH_USERNAME
 config.data.path             →   CONFIG_DATA_PATH
 ```

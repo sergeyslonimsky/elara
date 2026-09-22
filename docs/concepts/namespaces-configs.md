@@ -56,7 +56,7 @@ Fields that matter:
 `/{namespace}{path}`, where the path keeps its leading slash
 (`internal/handler/etcdv3/keyencoding.go`):
 
-```
+```text
 namespace "prod" + path "/services/api.yaml"  →  /prod/services/api.yaml
 namespace "default" + path "/foo.json"        →  /default/foo.json
 ```

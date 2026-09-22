@@ -26,6 +26,27 @@ directory if you actually intend to run two independent instances.
 know who to bootstrap as the first superadmin. See
 [OIDC Setup](../auth/oidc.md#environment).
 
+### `ui.auth.type must be "oidc", "basic-auth", or "none" (or unset)`
+
+`UI_AUTH_TYPE` carries a value outside that set — almost always a typo
+(`basicAuth`, `basic_auth`, `OIDC` with different casing). Elara fails fast
+rather than falling back to no-auth, because the silent fallback used to boot a
+wide-open instance from a one-character mistake.
+
+An **empty** `UI_AUTH_TYPE` is legal and means `none`: the Helm chart always
+emits the variable, so blank is an expected state rather than a mistake.
+
+### `dangerously.skip.permissions=true cannot be combined with ui.auth.enabled=true or client.auth.enabled=true`
+
+`DANGEROUSLY_SKIP_PERMISSIONS` disables authorization entirely. Combined with a
+real auth surface it produces a deployment that *looks* secured — a login
+screen, a Tokens UI that appears to enforce scopes — while every permission
+check is bypassed underneath.
+
+Fix: pick one. For a deliberately open dev instance leave `UI_AUTH_ENABLED` and
+`CLIENT_AUTH_ENABLED` at `false`; for anything else drop the flag. See
+[Configuration → Advanced / dangerous](../deployment/configuration.md).
+
 ## Login and permissions
 
 ### "password change required" blocks every API call after basic-auth login
@@ -93,9 +114,7 @@ torn/inconsistent write. If you need online backups, take periodic
 are safe to run against a live instance, though they capture config content,
 not the full store (RBAC policy, sessions, tokens, webhook history).
 
-## General
-
-### General error reference
+## General error reference
 
 For what a given error code/message means across both APIs, see
 [Reference → Errors catalog](errors-catalog.md).

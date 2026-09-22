@@ -22,8 +22,15 @@ prebuilt binaries for macOS and Linux (amd64/arm64). Download the archive for
 your platform, extract it, and run:
 
 ```bash
-./elara
+./elara              # run the server (same as `./elara serve`)
+./elara version      # which build is this?
 ```
+
+!!! warning "`go install` is not supported"
+    The frontend is embedded into the binary at compile time from `web/dist`,
+    which is a build artifact and is not committed — so `go install` cannot
+    satisfy the embed directive from module source alone. Use a release
+    archive or the container image. See [CLI Reference](../reference/cli.md).
 
 With no config at all, it stores its bbolt state at `~/.elara/data/elara.db`
 and auto-loads `~/.elara/config.yaml` if you create one — see

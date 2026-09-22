@@ -46,8 +46,8 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started:
-      - Quickstart: getting-started/quickstart.md
       - Install: getting-started/install.md
+      - Quickstart: getting-started/quickstart.md
       - Todo-App Tutorial: getting-started/tutorial-todo-app.md
   - Concepts:
       - concepts/index.md
@@ -65,12 +65,15 @@ nav:
       - Sessions & Tokens: auth/sessions-tokens.md
       - "RBAC, Groups & Roles": auth/rbac-groups.md
       - Client Auth (etcd): auth/client-auth.md
+      - Users & Groups lifecycle: auth/users-lifecycle.md
   - Deployment:
+      - deployment/index.md
       - Docker: deployment/docker.md
       - Kubernetes (Helm): deployment/kubernetes.md
       - Configuration reference: deployment/configuration.md
-      - Users & Groups lifecycle: deployment/users-groups-lifecycle.md
   - Reference:
+      - reference/index.md
+      - CLI: reference/cli.md
       - etcd API compatibility: reference/etcd-compatibility.md
       - ConnectRPC API: reference/connectrpc-api.md
       - Errors catalog: reference/errors-catalog.md

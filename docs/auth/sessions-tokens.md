@@ -63,7 +63,7 @@ The auth interceptor, per request: extract session id (Bearer beats cookie) →
 → reject if `User.Status != active` → best-effort throttled `Refresh` → inject
 session + user into context. A deactivated user cannot make any authenticated
 request even if they hold a still-valid session id — see
-[Users & Groups lifecycle](../deployment/users-groups-lifecycle.md).
+[Users & Groups lifecycle](users-lifecycle.md).
 
 ## Tokens (service credentials for etcd clients)
 
@@ -102,7 +102,7 @@ prefixed `elara_`.
 
 Send it as gRPC metadata on the `:2379` connection:
 
-```
+```text
 authorization: Bearer elara_<rest-of-token>
 ```
 

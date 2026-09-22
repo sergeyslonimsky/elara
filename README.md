@@ -87,8 +87,9 @@ helm repo add elara https://sergeyslonimsky.github.io/elara
 helm install elara elara/elara
 ```
 
-See the [Helm chart docs](helm/elara/README.md) for prerequisites, `values.yaml`
-reference, and production configuration (ingress, persistence, resource limits).
+See [Deployment → Kubernetes](docs/deployment/kubernetes.md) for prerequisites,
+`values.yaml` reference, and production configuration (ingress, persistence,
+resource limits).
 
 ### Run locally without Docker
 
@@ -120,7 +121,7 @@ Three things Elara gives you that a bare etcd cluster does not:
    etcdctl watch --prefix /prod/services/billing/
    ```
 
-2. **JSON Schema validation per path pattern.** Attach a JSON Schema (draft-07)
+2. **JSON Schema validation per path pattern.** Attach a JSON Schema (draft-07 through 2020-12)
    to a glob pattern such as `/services/**` or `/**/*.yaml`. Every write is
    validated before it is stored; on failure the API returns the exact failing
    path, message, and schema keyword, and the stored config is untouched. The

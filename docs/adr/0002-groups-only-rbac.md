@@ -42,7 +42,7 @@ Chosen option: **"Groups-only"**, enforced structurally — there is **no API
 surface** that can write a `user → role` grant. The only `g`-rules the system
 ever writes are:
 
-```
+```text
 g, <user-UUID>, group:<name>, *              # membership, global (MembershipDomain)
 g, group:<name>, <role>, <namespace-or-*>    # the group's role in a domain
 ```
