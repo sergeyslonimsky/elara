@@ -32,10 +32,16 @@ compiled with `github.com/santhosh-tekuri/jsonschema` v6, which reads the draft
 from the schema's `$schema` keyword (through draft 2020-12), and compiled
 schemas are cached by content hash.
 
-!!! warning "Not enforced on the etcd-compatible API"
-    Schema validation currently runs on writes through the Web UI/ConnectRPC
-    `ConfigService`. Writes through the etcd-compatible gRPC API (`Put`) do
-    not go through the same validation path yet — see the etcd `Put` entry in
+**Where it runs.** Both write paths: the Web UI/ConnectRPC `ConfigService` and
+the etcd-compatible gRPC API. A `Put` that violates an attached schema is
+rejected with gRPC `InvalidArgument` and nothing is stored.
+
+!!! note "What the etcd path does *not* do"
+    Schema validation is the only part of the config-management pipeline the
+    etcd write path runs. Content normalization and path validation are
+    deliberately skipped there, because etcd values are opaque bytes —
+    distributed locks, leader-election payloads — and reformatting them would
+    break the byte-for-byte fidelity the wire protocol guarantees. See
     [Reference → etcd API compatibility](../reference/etcd-compatibility.md).
 
 **On failure.** The write is rejected with a `SchemaValidationError` carrying a

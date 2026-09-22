@@ -67,7 +67,8 @@ Wiring lives in `internal/di/`; the entry point is
 | `8080` | HTTP/2: Web UI, ConnectRPC API                             |
 | `2379` | etcd-compatible gRPC API (`KV`, `Watch`, `Maintenance`, `Cluster`) |
 
-All state lives in a single bbolt file (`./data/elara.db` by default) with ACID
+All state lives in a single bbolt file (`~/.elara/data/elara.db` by default;
+`/var/lib/elara/elara.db` in the container image) with ACID
 transactions and a monotonic, etcd-style global revision counter. Only one
 instance can run at a time — bbolt holds an exclusive file lock, which is why
 the Helm chart pins `replicaCount` to `1` until raft-based HA lands.

@@ -33,8 +33,11 @@ and publishes changes so the UI can update live.
   (`DisconnectedAt == nil`).
 - The **History** view shows clients that have since disconnected.
 
-All of this state is in-memory only — it is not persisted and is lost on
-restart.
+The live registry, the active-watch list, and the per-RPC ring buffer are
+in-memory only and are lost on restart. **Connection history is persisted** to
+bbolt and survives restarts; how much is kept is governed by
+`CLIENT_HISTORY_MAX_RECORDS` and `CLIENT_HISTORY_MAX_AGE` — see
+[Configuration](../deployment/configuration.md).
 
 ## Metrics and tracing
 

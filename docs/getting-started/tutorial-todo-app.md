@@ -117,11 +117,11 @@ Elara can validate config content against a JSON Schema **before** it is
 written. Invalid values are rejected up front instead of quietly breaking a
 consumer.
 
-> **Where it applies:** schema validation runs on the config-management path —
-> edits made through the Web UI and the ConnectRPC API. It is what protects a
-> human (or a CI job) from saving a broken config. (Raw etcd `Put` calls are
-> the low-level wire path and are not schema-checked, so keep management edits
-> going through the UI/API where the guardrails live.)
+> **Where it applies:** every write path. Edits through the Web UI, the
+> ConnectRPC API, and raw etcd `Put` calls are all checked against the
+> attached schema, so a broken config cannot reach a consumer whichever door
+> it comes through. An etcd write that violates the schema fails with
+> `InvalidArgument`.
 
 1. In the Web UI, open the **`production`** namespace.
 2. Use the namespace's **Attach Schema** action. Fill in:
