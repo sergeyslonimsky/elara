@@ -162,7 +162,7 @@ func (h *ConfigHandler) ListConfigs(
 	params := configuc.ListParams{
 		Namespace: req.Msg.GetNamespace(),
 		Path:      req.Msg.GetPath(),
-		Sort:      protoSortToDomain(req.Msg.GetSort()),
+		Sort:      v2.ProtoSortToDomain(req.Msg.GetSort()),
 		Query:     req.Msg.GetQuery(),
 	}
 
@@ -262,7 +262,7 @@ func (h *ConfigHandler) SearchConfigs(
 	params := configuc.SearchParams{
 		Query:     req.Msg.GetQuery(),
 		Namespace: req.Msg.GetNamespace(),
-		Sort:      protoSortToDomain(req.Msg.GetSort()),
+		Sort:      v2.ProtoSortToDomain(req.Msg.GetSort()),
 	}
 
 	if p := req.Msg.GetPagination(); p != nil {
@@ -599,17 +599,6 @@ func protoFormatToDomain(f configv2.Format) domain.Format {
 		return ""
 	default:
 		return ""
-	}
-}
-
-func protoSortToDomain(s *commonv1.SortRequest) domain.SortParams {
-	if s == nil {
-		return domain.SortParams{}
-	}
-
-	return domain.SortParams{
-		Field: s.GetField(),
-		Desc:  s.GetDirection() == commonv1.SortDirection_SORT_DIRECTION_DESC,
 	}
 }
 

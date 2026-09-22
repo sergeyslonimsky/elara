@@ -106,7 +106,7 @@ func (h *Handler) ListTokens(
 	}
 
 	params := tokenuc.ListParams{
-		Sort: protoSortToDomain(req.Msg.GetSorting()),
+		Sort: v2.ProtoSortToDomain(req.Msg.GetSorting()),
 	}
 
 	if f := req.Msg.GetFilters(); f != nil {
@@ -238,17 +238,6 @@ func roleToPermissionAction(r domain.Role) commonv1.PermissionAction {
 		return commonv1.PermissionAction_PERMISSION_ACTION_ALL
 	default:
 		return commonv1.PermissionAction_PERMISSION_ACTION_UNSPECIFIED
-	}
-}
-
-func protoSortToDomain(s *commonv1.SortRequest) domain.SortParams {
-	if s == nil {
-		return domain.SortParams{}
-	}
-
-	return domain.SortParams{
-		Field: s.GetField(),
-		Desc:  s.GetDirection() == commonv1.SortDirection_SORT_DIRECTION_DESC,
 	}
 }
 
