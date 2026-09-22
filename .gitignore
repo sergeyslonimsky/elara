@@ -39,6 +39,10 @@ vendor/
 # goreleaser local build output (`goreleaser release --snapshot --clean`)
 /dist/
 
+# mkdocs build output (`mkdocs build` / `mkdocs serve`) — the published site is
+# built by .github/workflows/docs.yml and lives on the gh-pages branch.
+/site/
+
 # Claude code
 CLAUDE.md
 GEMINI.md
