@@ -112,7 +112,7 @@ func (h *Handler) ListNamespaces(
 	req *connect.Request[namespacev2.ListNamespacesRequest],
 ) (*connect.Response[namespacev2.ListNamespacesResponse], error) {
 	params := nsuc.ListParams{
-		Sort:  protoSortToDomain(req.Msg.GetSort()),
+		Sort:  v2.ProtoSortToDomain(req.Msg.GetSort()),
 		Query: req.Msg.GetQuery(),
 	}
 
@@ -208,16 +208,5 @@ func domainNamespaceToProto(ns *domain.Namespace) *namespacev2.Namespace {
 		Locked:      ns.Locked,
 		CreatedAt:   timestamppb.New(ns.CreatedAt),
 		UpdatedAt:   timestamppb.New(ns.UpdatedAt),
-	}
-}
-
-func protoSortToDomain(s *commonv1.SortRequest) domain.SortParams {
-	if s == nil {
-		return domain.SortParams{}
-	}
-
-	return domain.SortParams{
-		Field: s.GetField(),
-		Desc:  s.GetDirection() == commonv1.SortDirection_SORT_DIRECTION_DESC,
 	}
 }
