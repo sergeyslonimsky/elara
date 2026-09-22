@@ -35,10 +35,19 @@ COPY . .
 # 3) Pre-built frontend — Go's embed.FS picks it up from web/dist.
 COPY --from=frontend /app/web/dist ./web/dist
 
-# 4) Build a static, stripped binary.
+# 4) Build a static, stripped binary. VERSION/COMMIT/DATE are passed via
+#    --build-arg from CI (.github/workflows/release.yml) so `elara version`
+#    reports something meaningful in the published image; a local `docker
+#    build` with no --build-arg falls back to the same "dev"/"none"/"unknown"
+#    defaults main.go uses for a plain `go build`.
+ARG VERSION=dev
+ARG COMMIT=none
+ARG DATE=unknown
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /bin/elara ./cmd/service
+    CGO_ENABLED=0 go build -trimpath \
+    -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
+    -o /bin/elara ./cmd/service
 
 # 5) Pre-create the bbolt data directory so the scratch image can carry it
 #    with the runtime UID/GID baked in. scratch has no shell, so we cannot

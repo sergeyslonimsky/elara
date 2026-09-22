@@ -15,6 +15,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/sergeyslonimsky/core v1.4.0
+	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	go.etcd.io/bbolt v1.4.3
 	go.etcd.io/etcd/api/v3 v3.6.11
@@ -57,6 +58,7 @@ require (
 	github.com/google/cel-go v0.28.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
