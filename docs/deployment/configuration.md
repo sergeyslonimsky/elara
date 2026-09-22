@@ -32,11 +32,16 @@ image, which always configures itself through environment variables.
 # ~/.elara/config.yaml
 ui:
   auth:
-    type: basicAuth
+    enabled: true
+    type: basic-auth          # one of: basic-auth | oidc | none
     basicAuth:
-      username: admin
+      username: admin@example.com   # must be email-shaped
       password: change-me
 ```
+
+Both `enabled: true` and a recognized `type` are required: with `enabled`
+omitted auth stays off entirely, and an unrecognized `type` now fails startup
+rather than silently falling back to no-auth.
 
 Environment variables still override anything set here.
 

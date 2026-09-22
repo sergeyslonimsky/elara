@@ -60,12 +60,18 @@ Elara does not JIT-provision OIDC users — only the configured
 Elara first, then linked on their first verified OIDC login. See
 [OIDC Setup](../auth/oidc.md).
 
-### A write over the etcd-compatible API isn't rejected by a schema I attached
+### A write over the etcd-compatible API is rejected with `InvalidArgument`
 
-Expected today — schema validation runs on the Web UI/ConnectRPC write path,
-not yet on etcd `Put`. See the warning in
+The value does not satisfy the JSON Schema attached to that namespace. Schema
+validation runs on the etcd `Put` path exactly as it does on the Web
+UI/ConnectRPC path, and the rejected write is not stored. Either fix the value
+or detach the schema — see
 [Schema Validation](../concepts/schema-validation.md) and
 [etcd API compatibility → KV](../reference/etcd-compatibility.md#supported-rpcs).
+
+Note that this applies to `json` and `yaml` configs; `other`-format content is
+not schema-checked. A `Put` of opaque bytes (a distributed lock, a
+leader-election payload) under a path no schema pattern matches is unaffected.
 
 ## Backup & Restore
 

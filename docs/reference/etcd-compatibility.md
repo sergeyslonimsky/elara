@@ -26,7 +26,7 @@ underlying domain fields this maps to.
 | RPC | Support | Notes |
 |---|---|---|
 | `Range` | ✅ Full | Prefix ranges (`range_end`) and full-keyspace scans work; historical reads by revision are supported. |
-| `Put` | ✅ | Writes a config. **Does not run JSON Schema validation** — see the warning in [Schema Validation](../concepts/schema-validation.md). Rejected with `FailedPrecondition` if the target config or its namespace is locked. |
+| `Put` | ✅ | Writes a config. **Runs JSON Schema validation** against the namespace's attached schema — a violation is rejected with `InvalidArgument` and nothing is stored (see [Schema Validation](../concepts/schema-validation.md)). Rejected with `FailedPrecondition` if the target config or its namespace is locked. `ignore_value` is rejected with `Unimplemented`. |
 | `DeleteRange` | ✅ | Supports `PrevKv` to return deleted values. |
 | `Txn` | ⚠️ Partial | Compare-and-swap style transactions work, but the transaction is **not fully atomic** with the rest of the write path yet — a multi-op `Txn` is not guaranteed all-or-nothing under concurrent writes the way real etcd's is. Don't rely on it for correctness-critical multi-key transactions today. |
 | `Compact` | ⚠️ No-op | Accepted and returns success, but Elara never truncates history — there is nothing to compact. Safe to call (e.g. from a client library that compacts periodically); it just does nothing. |
@@ -68,6 +68,7 @@ unauthenticated if `client.auth.enabled=false`) — see
 Unlike the ConnectRPC API's structured error codes, the etcd wire protocol
 returns plain gRPC status codes: `Unauthenticated` for a missing/invalid/expired
 token, `PermissionDenied` for a namespace or role check failure,
-`FailedPrecondition` for a locked config/namespace. See
+`FailedPrecondition` for a locked config/namespace, and `InvalidArgument` for a
+value that fails the namespace's attached JSON Schema. See
 [Reference → Errors catalog](errors-catalog.md) for the full domain-error
 mapping.

@@ -49,8 +49,10 @@ valid. See [Sessions & Tokens → Enforcement on every request](../auth/sessions
   the OIDC `adminEmail` placeholder — see [OIDC Setup](../auth/oidc.md))
   carries this flag, as does the passthrough synthetic admin (see
   [Passthrough](../auth/passthrough.md)).
-- **`Group.System = true`** — set on the `system-superadmin` group.
-  Protected from deletion and rename by the same `EnsureMutable` pattern.
+- **`Group.System = true`** — set on the `superadmin` group. Protected from
+  deletion and rename by the same `EnsureMutable` pattern. Note that
+  "systemness" is carried by the flag, not by the name: there is no reserved
+  name prefix, and the group appears in the UI as plain `superadmin`.
 
 ## Deactivating/reactivating a user
 
