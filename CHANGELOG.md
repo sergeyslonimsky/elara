@@ -23,6 +23,7 @@ by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
 - **auth:** Derive permission-skip from auth type, reject misleading configs ([bcbda51](https://github.com/sergeyslonimsky/elara/commit/bcbda51ec25b44b04a55a3a43e3d4cb09183fcfd))
 - **web:** Correct user-action and route visibility across auth modes ([6880895](https://github.com/sergeyslonimsky/elara/commit/688089595370b831e333f49c04ee3cc57f7e835e))
+- **helm:** Drop session values the service never reads ([cc44a4e](https://github.com/sergeyslonimsky/elara/commit/cc44a4ec4bee97abd32cd62e82a0723eb61c4267))
 
 ### Refactoring
 
@@ -32,6 +33,7 @@ by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 ### Documentation
 
 - Restructure the site into sectioned navigation ([844acce](https://github.com/sergeyslonimsky/elara/commit/844acced98652d27b70ad6c73161b60443f5decf))
+- Correct claims the etcd and auth changes invalidated ([8dfc810](https://github.com/sergeyslonimsky/elara/commit/8dfc810cf4a609c3fcb6e18dc36380902100ab78))
 
 **Full diff:** [v0.4.0...v0.5.0](https://github.com/sergeyslonimsky/elara/compare/v0.4.0...v0.5.0)
 
