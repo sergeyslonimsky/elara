@@ -170,7 +170,7 @@ User records and their group memberships. Mounted only when `ui.auth.enabled=tru
 |-----|-------------|
 | `ListUsers` | Paginated listing. With `User:Read *` returns everyone; otherwise the result is derived through `Group:Read` — only users in groups the caller can read (unassigned users are invisible). |
 | `GetUser` | One user by UUID. `visible_group_ids` is independently filtered by the caller's `Group:Read` scope. |
-| `CreateUser` | Creates a user, optionally joining `initial_group_ids` atomically. A password is required in basic-auth mode and must be empty under OIDC. |
+| `CreateUser` | Creates a user, optionally joining `initial_group_ids` atomically. A password is required in basic-auth mode and must be empty under OIDC. Rejected with `ErrFeatureNotAvailable` when the auth type is `none` — passthrough has no identities to create. |
 | `UpdateUserGroups` | Explicit membership delta (`add_group_ids` / `remove_group_ids`). Adds/removes that are no-ops are accepted; the same id in both lists is `InvalidArgument`. Supports `expected_version` optimistic locking (`FailedPrecondition` on mismatch). |
 | `ResetUserPassword` | Admin reset — sets a new password and `password_change_required`. Basic-auth mode only. |
 | `DeactivateUser` | Deactivates the user **and revokes all their sessions** in one transaction. Does *not* revoke tokens they issued. |
@@ -244,7 +244,7 @@ I *write* to?" rather than post-filtering client-side.
 | `GetNamespaces` | Namespace picker items, narrowed to those on which the caller holds the requested `actions`. |
 | `GetGroups` | Group picker items, same `actions` narrowing. |
 | `GetUsers` | User picker items, same `actions` narrowing. |
-| `GetPermissionCatalog` | The static catalog for permission-assignment forms: per `PermissionObject`, which `PermissionAction`s are meaningful and what domain the assignment must carry — `GLOBAL` (domain must be `*`), `NAMESPACE` (a namespace name or `*`), or `GROUP` (`group:<id>` or `*`). The server validates assignments against the same catalog. |
+| `GetPermissionCatalog` | The static catalog for permission-assignment forms: per `PermissionObject`, which `PermissionAction`s are meaningful and what domain the assignment must carry — `GLOBAL` (domain must be `*`), `NAMESPACE` (a namespace name or `*`), or `GROUP` (`group:<name>` or `*`). The server validates assignments against the same catalog. |
 
 ## TransferService
 

@@ -1,6 +1,13 @@
 <!--
-  This page mirrors the repository README.md (EL-53 M1.1), adapted for MkDocs:
-  repo-root file links (LICENSE, CONTRIBUTING.md, SECURITY.md) point at absolute
+  This page covers the same ground as the repository README.md, adapted for
+  MkDocs. It is NOT a mechanical mirror and is not generated — the two diverge
+  on purpose: the README carries the badge row and an inline architecture
+  diagram for GitHub readers, this page links into the docs tree instead.
+  Keep the prose sections (Why Elara, feature list, Quickstart) in sync by
+  hand when you change either one.
+
+  Link conventions here: repo-root files (LICENSE, CONTRIBUTING.md,
+  SECURITY.md) point at absolute
   GitHub URLs, in-docs links stay relative (getting-started/quickstart.md,
   architecture.md, adr/…); the repo-root logo (logo.svg) is omitted so the
   MkDocs build stays clean, but the dashboard screenshot lives under
@@ -67,6 +74,15 @@ See [Deployment → Kubernetes](deployment/kubernetes.md) for prerequisites,
 `values.yaml` reference, and production configuration (ingress, persistence,
 resource limits).
 
+### Run locally without Docker
+
+Every [release](https://github.com/sergeyslonimsky/elara/releases) publishes
+prebuilt binaries for macOS and Linux (amd64/arm64). Extract the archive for
+your platform and run `./elara`; `./elara version` reports which build you
+have. With no config at all it stores state at `~/.elara/data/elara.db` and
+auto-loads `~/.elara/config.yaml` if you create one. Note that `go install` is
+not supported — see [Install](getting-started/install.md).
+
 ## Why Elara
 
 Three things Elara gives you that a bare etcd cluster does not:
@@ -82,7 +98,7 @@ Three things Elara gives you that a bare etcd cluster does not:
    etcdctl watch --prefix /prod/services/billing/
    ```
 
-2. **JSON Schema validation per path pattern.** Attach a JSON Schema (draft-07)
+2. **JSON Schema validation per path pattern.** Attach a JSON Schema (draft-07 through 2020-12)
    to a glob pattern such as `/services/**` or `/**/*.yaml`. Every write is
    validated before it is stored; on failure the API returns the exact failing
    path, message, and schema keyword, and the stored config is untouched. The

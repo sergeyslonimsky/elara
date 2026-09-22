@@ -47,7 +47,7 @@ rejected with gRPC `InvalidArgument` and nothing is stored.
 **On failure.** The write is rejected with a `SchemaValidationError` carrying a
 list of violations, each `{path, message, keyword}`. Its message reads:
 
-```
+```text
 schema validation failed: N violation(s): /field: message [keyword]; ...
 ```
 

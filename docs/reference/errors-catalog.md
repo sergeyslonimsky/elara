@@ -22,9 +22,9 @@ produced (noted below).
 | `ErrUnauthorized` | `Unauthenticated` | No valid credential presented. |
 | `ErrForbidden` | `PermissionDenied` | Credential valid, but RBAC denies the action. |
 | `ErrPermissionEscalation` | `PermissionDenied` | You tried to grant a permission you don't hold yourself. See [RBAC, Groups & Roles](../auth/rbac-groups.md). |
-| `ErrSystemImmutable` | `PermissionDenied` | Target is a system-protected entity (`User.System`/`Group.System`) — see [Users & Groups lifecycle](../deployment/users-groups-lifecycle.md#system-protected-entities). |
+| `ErrSystemImmutable` | `PermissionDenied` | Target is a system-protected entity (`User.System`/`Group.System`) — see [Users & Groups lifecycle](../auth/users-lifecycle.md#system-protected-entities). |
 | `ErrInvalidToken` | `Unauthenticated` | Service token not found (etcd gRPC API). |
-| `ErrUserDeactivated` | `PermissionDenied` | The authenticated user's account is deactivated. See [Users & Groups lifecycle](../deployment/users-groups-lifecycle.md). |
+| `ErrUserDeactivated` | `PermissionDenied` | The authenticated user's account is deactivated. See [Users & Groups lifecycle](../auth/users-lifecycle.md). |
 | `SchemaValidationError` (not a sentinel — a typed error) | `InvalidArgument` | JSON Schema violation; response carries a structured `SchemaValidationFailure` detail with per-field violations. See [Schema Validation](../concepts/schema-validation.md). |
 | `ValidationError` (typed) | `InvalidArgument` | Generic field validation failure. |
 | *(anything else)* | `Internal` | Unmapped/unexpected error — treat as a bug report. |
@@ -43,9 +43,11 @@ These are mapped where they're produced, not in `ToConnectError`:
 
 ## Not centrally mapped (fall through to `Internal`)
 
-`ErrInvalidIdentityProvider`, `ErrEmailTaken`, `ErrCanonicalNameImmutable` are
-programming-error-shaped sentinels (bad provider tag, duplicate email at the
-storage layer, attempted rename of an immutable canonical name) — they
+`ErrInvalidIdentityProvider`, `ErrEmailTaken`, `ErrCanonicalNameImmutable` and
+`ErrInvalidContent` are programming-error-shaped sentinels (bad provider tag,
+duplicate email at the storage layer, attempted rename of an immutable
+canonical name, content that fails a structural check before format
+validation) — they
 currently surface as `Internal` if they ever escape to a handler. If you see
 one of these in a client-facing error, it's worth filing as a bug: the
 intent is that validation catches these before they reach the domain layer.

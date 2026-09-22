@@ -9,7 +9,7 @@ connects unchanged, provided it only uses the RPCs below.
 A config is addressable as `/{namespace}{path}`, where `path` keeps its
 leading slash:
 
-```
+```text
 namespace "prod" + path "/services/api.yaml"  →  /prod/services/api.yaml
 ```
 
@@ -61,6 +61,22 @@ underlying domain fields this maps to.
 | **Auth API** (etcd's own `AuthEnable`/`UserAdd`/`RoleGrantPermission`/…) | ❌ Not applicable | Elara has its own token-based auth for this port — see [Client Auth (etcd)](../auth/client-auth.md) — not etcd's built-in RBAC. Don't confuse the two. |
 
 ## Authentication and error mapping
+
+## Where the write path diverges
+
+A key written through `Put` is stored differently from the same key written
+through the ConnectRPC `ConfigService`:
+
+- **Content is stored byte-for-byte.** The normalization the management path
+  applies (re-marshaling, canonical formatting) is deliberately skipped, so a
+  value round-trips exactly as written. etcd values are frequently not
+  structured config at all — distributed locks, leader-election payloads — and
+  rewriting them would break clients that compare bytes.
+- **Path validation is skipped.** A key written over etcd may carry a path the
+  ConnectRPC API would reject.
+
+Schema validation is the one management-path rule that *does* apply — see the
+`Put` row above.
 
 Requests are authenticated via a Bearer service token in gRPC metadata (or
 unauthenticated if `client.auth.enabled=false`) — see

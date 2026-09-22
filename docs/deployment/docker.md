@@ -35,6 +35,10 @@ docker run -d --name elara \
 
 Notes:
 
+- On first login the admin is forced to change their password before any other
+  request is accepted — see
+  [Basic Auth → forced password change](../auth/basic.md#required-first-step-forced-password-change).
+  The password above is only the initial one.
 - The volume target must match `CONFIG_DATA_PATH` (`/var/lib/elara` in the
   image). A named volume (`elara-data`) or a bind mount both work; only one
   Elara instance may use a given data file at a time.

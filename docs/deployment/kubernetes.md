@@ -166,7 +166,7 @@ Key sections:
 | `config.ui.server.port` | `8080` | HTTP/2, ConnectRPC, Web UI |
 | `config.ui.server.writeTimeout` | `24h` | Server-streaming RPCs need a long write timeout |
 | `config.ui.auth.enabled` | `false` | Enable authentication; all RPCs are public when false |
-| `config.ui.auth.type` | `basic-auth` | `basic-auth`, `oidc`, or `none` |
+| `config.ui.auth.type` | `basic-auth` | `basic-auth`, `oidc`, or `none`. The chart always emits `UI_AUTH_TYPE`, even with auth disabled — which is why the service treats an empty value as `none` rather than as a typo. An unrecognized value fails startup. |
 | `config.ui.auth.basicAuth.username` | `""` | Bootstrap admin email (required for basic-auth) |
 | `config.ui.auth.basicAuth.password` | `""` | Bootstrap admin password (basic-auth); stored in chart Secret |
 | `config.ui.auth.oidc.issuerUrl` | `""` | OIDC issuer (e.g. `https://accounts.google.com`) |
@@ -214,7 +214,7 @@ default HTTP Ingress. Common patterns:
 
 1. **Cluster-internal only** (default): consume via the ClusterIP service.
 
-   ```
+   ```text
    elara.{namespace}.svc.cluster.local:2379
    ```
 
