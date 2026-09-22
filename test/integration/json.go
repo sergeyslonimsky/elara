@@ -57,12 +57,6 @@ func CompareJSON(t *testing.T, path string, expected, actual any) {
 	}
 }
 
-// ReadJSON reads the JSON file at path and unmarshals it into v.
-func ReadJSON(t *testing.T, path string, v any) {
-	t.Helper()
-	require.NoError(t, json.Unmarshal(ReadFile(t, path), v))
-}
-
 // CompareJSONBytes parses expected and actual as JSON and delegates to CompareJSON.
 // Use this when both sides are raw []byte (e.g. a golden file and an HTTP response body).
 func CompareJSONBytes(t *testing.T, expected, actual []byte) {

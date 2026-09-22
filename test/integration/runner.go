@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"io"
 	"net/http"
 	"testing"
 
@@ -17,17 +16,9 @@ const SessionCookieName = "elara_session"
 // Option mutates an outgoing request before send.
 type Option func(*http.Request)
 
-// WithHeader sets a request header.
-func WithHeader(key, value string) Option {
-	return func(r *http.Request) { r.Header.Set(key, value) }
-}
-
-// WithCookie attaches a single cookie via the Cookie header.
-func WithCookie(name, value string) Option {
-	return func(r *http.Request) { r.AddCookie(&http.Cookie{Name: name, Value: value}) }
-}
-
-// SessionCookie returns the raw session JWT for the given persona, or "" for unauthenticated.
+// SessionCookie returns the raw session token for the given persona, or ""
+// for unauthenticated — a service-token-style credential minted for test
+// personas, not a JWT.
 func SessionCookie(s *Suite, persona string) string { return s.Tokens[persona] }
 
 // WithPersona attaches the session cookie for the given persona to the outgoing
@@ -43,7 +34,7 @@ func WithPersona(s *Suite, persona string) Option {
 	}
 }
 
-// WithToken attaches an explicit session JWT as the elara_session cookie.
+// WithToken attaches an explicit session token as the elara_session cookie.
 // Use this for ad-hoc personas created via AddPersona where there's no
 // stable key under s.Tokens.
 func WithToken(token string) Option {
@@ -95,45 +86,4 @@ func InjectFileAsBase64(t *testing.T, body []byte, field, filePath string) []byt
 	require.NoError(t, err)
 
 	return out
-}
-
-// TC is one integration sub-test: load reqPath verbatim, send as persona, compare body to respPath.
-type TC struct {
-	Name    string
-	Persona string
-	Req     string
-	Resp    string
-}
-
-// RunCases is sugar for the common pattern. For cases that need pre-processing
-// (e.g. binary field injection), drop to the primitives instead.
-func RunCases(t *testing.T, endpoint string, cases []TC) {
-	t.Helper()
-
-	for _, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
-			t.Parallel()
-			Run(t, New(t), endpoint, tc.Persona, tc.Req, tc.Resp)
-		})
-	}
-}
-
-// Run executes a single case: load reqPath verbatim, POST as persona, compare resp to respPath.
-func Run(t *testing.T, s *Suite, endpoint, persona, reqPath, respPath string) {
-	t.Helper()
-
-	body := ReadFile(t, reqPath)
-
-	var opts []Option
-	if c := SessionCookie(s, persona); c != "" {
-		opts = append(opts, WithCookie(SessionCookieName, c))
-	}
-
-	resp := DoRequest(t, s, endpoint, body, opts...)
-	defer func() { _ = resp.Body.Close() }()
-
-	got, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-
-	CompareJSONBytes(t, ReadFile(t, respPath), got)
 }
