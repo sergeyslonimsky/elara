@@ -97,10 +97,18 @@ var DefaultPersonas = map[string]Persona{
 // Suite is a running httptest.Server with persona session tokens pre-issued.
 type Suite struct {
 	Server     *httptest.Server
-	Tokens     map[string]string // persona name → raw session JWT
+	Tokens     map[string]string // persona name → raw session token
 	PersonaIDs map[string]string // persona name → user UUID
-	Managers   *service.Managers
-	Adapters   *service.Adapters
+	// Managers is built via the legacy service.NewManagers helper, which
+	// only populates Enforcer and Sessions — Managers.Services is always
+	// nil here (compiles fine, panics at runtime). Use Services below for
+	// the domain-service set; do not reach through Managers.Services.
+	Managers *service.Managers
+	Adapters *service.Adapters
+	// Services is the full domain-service set (config/namespace/schema/...),
+	// built via service.NewServices — distinct from Managers.Services (see
+	// its doc comment above), which is always nil on this suite.
+	Services *service.Services
 }
 
 // muxAdapter implements the server interface required by service.V2Routes.
@@ -145,6 +153,62 @@ func New(t *testing.T) *Suite {
 
 	seedData(t, ctx, adapters)
 
+	tokens, personaIDs := seedPersonaTokens(t, ctx, adapters, managers)
+
+	seedRBAC(t, ctx, managers.Enforcer, adapters.StorageManager, personaIDs)
+
+	// Bootstrap and seedRBAC write directly through the policy repo; reload
+	// the enforcer cache so subsequent Enforce checks see the new rules.
+	require.NoError(t, managers.Enforcer.LoadPolicy())
+
+	mux := http.NewServeMux()
+	service.V2Routes(&muxAdapter{mux}, handlers, managers.Sessions, adapters.AuthUsers, cfg)
+
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	return &Suite{
+		Server:     srv,
+		Tokens:     tokens,
+		PersonaIDs: personaIDs,
+		Managers:   managers,
+		Adapters:   adapters,
+		Services:   services,
+	}
+}
+
+func testConfig(t *testing.T) config.Config {
+	t.Helper()
+
+	return config.Config{
+		DataPath: t.TempDir(),
+		UI: config.UI{
+			Auth: config.UIAuthConfig{
+				Enabled: true,
+				Type:    domain.AuthTypeBasicAuth,
+			},
+		},
+		Client: config.Client{
+			History:      config.ClientHistory{MaxRecords: 1000, MaxAge: 30 * 24 * time.Hour},
+			RecentEvents: config.ClientRecentEvents{Capacity: 100},
+		},
+		Metrics: config.MetricsConfig{Enabled: false},
+		Tracing: config.TracingConfig{Enabled: false},
+		Log:     config.LogConfig{Level: "error", Format: "text"},
+	}
+}
+
+// seedPersonaTokens creates (or, for "admin", looks up) a domain.User per
+// DefaultPersonas entry with a non-empty Email, issues a session for each,
+// and returns persona name → session token / user UUID maps.
+func seedPersonaTokens(
+	t *testing.T,
+	ctx context.Context,
+	adapters *service.Adapters,
+	managers *service.Managers,
+) (map[string]string, map[string]string) {
+	t.Helper()
+
 	tokens := make(map[string]string, len(DefaultPersonas))
 	personaIDs := make(map[string]string, len(DefaultPersonas))
 
@@ -180,40 +244,7 @@ func New(t *testing.T) *Suite {
 		tokens[name] = sess.ID
 	}
 
-	seedRBAC(t, ctx, managers.Enforcer, adapters.StorageManager, personaIDs)
-
-	// Bootstrap and seedRBAC write directly through the policy repo; reload
-	// the enforcer cache so subsequent Enforce checks see the new rules.
-	require.NoError(t, managers.Enforcer.LoadPolicy())
-
-	mux := http.NewServeMux()
-	service.V2Routes(&muxAdapter{mux}, handlers, managers.Sessions, adapters.AuthUsers, cfg)
-
-	srv := httptest.NewServer(mux)
-	t.Cleanup(srv.Close)
-
-	return &Suite{Server: srv, Tokens: tokens, PersonaIDs: personaIDs, Managers: managers, Adapters: adapters}
-}
-
-func testConfig(t *testing.T) config.Config {
-	t.Helper()
-
-	return config.Config{
-		DataPath: t.TempDir(),
-		UI: config.UI{
-			Auth: config.UIAuthConfig{
-				Enabled: true,
-				Type:    domain.AuthTypeBasicAuth,
-			},
-		},
-		Client: config.Client{
-			History:      config.ClientHistory{MaxRecords: 1000, MaxAge: 30 * 24 * time.Hour},
-			RecentEvents: config.ClientRecentEvents{Capacity: 100},
-		},
-		Metrics: config.MetricsConfig{Enabled: false},
-		Tracing: config.TracingConfig{Enabled: false},
-		Log:     config.LogConfig{Level: "error", Format: "text"},
-	}
+	return tokens, personaIDs
 }
 
 // seedData populates the store with the standard dataset used across all integration tests.
@@ -251,7 +282,7 @@ func seedData(t *testing.T, ctx context.Context, adapters *service.Adapters) {
 	}
 }
 
-// AddPersona issues a session JWT for a fresh email and seeds the given group
+// AddPersona issues a session token for a fresh email and seeds the given group
 // permissions on a new ad-hoc group. Use this for M9 acceptance tests that
 // need finely-scoped personas (e.g. `(Group, Create, *)` only) without
 // polluting DefaultGroupPermissions for everyone.

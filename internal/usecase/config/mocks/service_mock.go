@@ -70,32 +70,32 @@ func (mr *MockpdpMockRecorder) EffectiveNamespaces(actor, action any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EffectiveNamespaces", reflect.TypeOf((*Mockpdp)(nil).EffectiveNamespaces), actor, action)
 }
 
-// MockstorageRepo is a mock of storageRepo interface.
-type MockstorageRepo struct {
+// MockconfigRepo is a mock of configRepo interface.
+type MockconfigRepo struct {
 	ctrl     *gomock.Controller
-	recorder *MockstorageRepoMockRecorder
+	recorder *MockconfigRepoMockRecorder
 	isgomock struct{}
 }
 
-// MockstorageRepoMockRecorder is the mock recorder for MockstorageRepo.
-type MockstorageRepoMockRecorder struct {
-	mock *MockstorageRepo
+// MockconfigRepoMockRecorder is the mock recorder for MockconfigRepo.
+type MockconfigRepoMockRecorder struct {
+	mock *MockconfigRepo
 }
 
-// NewMockstorageRepo creates a new mock instance.
-func NewMockstorageRepo(ctrl *gomock.Controller) *MockstorageRepo {
-	mock := &MockstorageRepo{ctrl: ctrl}
-	mock.recorder = &MockstorageRepoMockRecorder{mock}
+// NewMockconfigRepo creates a new mock instance.
+func NewMockconfigRepo(ctrl *gomock.Controller) *MockconfigRepo {
+	mock := &MockconfigRepo{ctrl: ctrl}
+	mock.recorder = &MockconfigRepoMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockstorageRepo) EXPECT() *MockstorageRepoMockRecorder {
+func (m *MockconfigRepo) EXPECT() *MockconfigRepoMockRecorder {
 	return m.recorder
 }
 
 // Create mocks base method.
-func (m *MockstorageRepo) Create(ctx context.Context, cfg *domain.Config) error {
+func (m *MockconfigRepo) Create(ctx context.Context, cfg *domain.Config) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, cfg)
 	ret0, _ := ret[0].(error)
@@ -103,13 +103,13 @@ func (m *MockstorageRepo) Create(ctx context.Context, cfg *domain.Config) error 
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockstorageRepoMockRecorder) Create(ctx, cfg any) *gomock.Call {
+func (mr *MockconfigRepoMockRecorder) Create(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockstorageRepo)(nil).Create), ctx, cfg)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockconfigRepo)(nil).Create), ctx, cfg)
 }
 
 // Delete mocks base method.
-func (m *MockstorageRepo) Delete(ctx context.Context, path, namespace string) (int64, error) {
+func (m *MockconfigRepo) Delete(ctx context.Context, path, namespace string) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, path, namespace)
 	ret0, _ := ret[0].(int64)
@@ -118,13 +118,13 @@ func (m *MockstorageRepo) Delete(ctx context.Context, path, namespace string) (i
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockstorageRepoMockRecorder) Delete(ctx, path, namespace any) *gomock.Call {
+func (mr *MockconfigRepoMockRecorder) Delete(ctx, path, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockstorageRepo)(nil).Delete), ctx, path, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockconfigRepo)(nil).Delete), ctx, path, namespace)
 }
 
 // Get mocks base method.
-func (m *MockstorageRepo) Get(ctx context.Context, path, namespace string) (*domain.Config, error) {
+func (m *MockconfigRepo) Get(ctx context.Context, path, namespace string) (*domain.Config, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, path, namespace)
 	ret0, _ := ret[0].(*domain.Config)
@@ -133,13 +133,13 @@ func (m *MockstorageRepo) Get(ctx context.Context, path, namespace string) (*dom
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockstorageRepoMockRecorder) Get(ctx, path, namespace any) *gomock.Call {
+func (mr *MockconfigRepoMockRecorder) Get(ctx, path, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockstorageRepo)(nil).Get), ctx, path, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockconfigRepo)(nil).Get), ctx, path, namespace)
 }
 
 // GetAtRevision mocks base method.
-func (m *MockstorageRepo) GetAtRevision(ctx context.Context, path, namespace string, revision int64) (*domain.HistoryEntry, error) {
+func (m *MockconfigRepo) GetAtRevision(ctx context.Context, path, namespace string, revision int64) (*domain.HistoryEntry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAtRevision", ctx, path, namespace, revision)
 	ret0, _ := ret[0].(*domain.HistoryEntry)
@@ -148,13 +148,13 @@ func (m *MockstorageRepo) GetAtRevision(ctx context.Context, path, namespace str
 }
 
 // GetAtRevision indicates an expected call of GetAtRevision.
-func (mr *MockstorageRepoMockRecorder) GetAtRevision(ctx, path, namespace, revision any) *gomock.Call {
+func (mr *MockconfigRepoMockRecorder) GetAtRevision(ctx, path, namespace, revision any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAtRevision", reflect.TypeOf((*MockstorageRepo)(nil).GetAtRevision), ctx, path, namespace, revision)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAtRevision", reflect.TypeOf((*MockconfigRepo)(nil).GetAtRevision), ctx, path, namespace, revision)
 }
 
 // GetConfigHistory mocks base method.
-func (m *MockstorageRepo) GetConfigHistory(ctx context.Context, path, namespace string, limit int) ([]*domain.HistoryEntry, error) {
+func (m *MockconfigRepo) GetConfigHistory(ctx context.Context, path, namespace string, limit int) ([]*domain.HistoryEntry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfigHistory", ctx, path, namespace, limit)
 	ret0, _ := ret[0].([]*domain.HistoryEntry)
@@ -163,13 +163,13 @@ func (m *MockstorageRepo) GetConfigHistory(ctx context.Context, path, namespace 
 }
 
 // GetConfigHistory indicates an expected call of GetConfigHistory.
-func (mr *MockstorageRepoMockRecorder) GetConfigHistory(ctx, path, namespace, limit any) *gomock.Call {
+func (mr *MockconfigRepoMockRecorder) GetConfigHistory(ctx, path, namespace, limit any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigHistory", reflect.TypeOf((*MockstorageRepo)(nil).GetConfigHistory), ctx, path, namespace, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigHistory", reflect.TypeOf((*MockconfigRepo)(nil).GetConfigHistory), ctx, path, namespace, limit)
 }
 
 // ListSummariesByPrefix mocks base method.
-func (m *MockstorageRepo) ListSummariesByPrefix(ctx context.Context, pathPrefix, namespace string) ([]*domain.ConfigSummary, error) {
+func (m *MockconfigRepo) ListSummariesByPrefix(ctx context.Context, pathPrefix, namespace string) ([]*domain.ConfigSummary, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListSummariesByPrefix", ctx, pathPrefix, namespace)
 	ret0, _ := ret[0].([]*domain.ConfigSummary)
@@ -178,13 +178,13 @@ func (m *MockstorageRepo) ListSummariesByPrefix(ctx context.Context, pathPrefix,
 }
 
 // ListSummariesByPrefix indicates an expected call of ListSummariesByPrefix.
-func (mr *MockstorageRepoMockRecorder) ListSummariesByPrefix(ctx, pathPrefix, namespace any) *gomock.Call {
+func (mr *MockconfigRepoMockRecorder) ListSummariesByPrefix(ctx, pathPrefix, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSummariesByPrefix", reflect.TypeOf((*MockstorageRepo)(nil).ListSummariesByPrefix), ctx, pathPrefix, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSummariesByPrefix", reflect.TypeOf((*MockconfigRepo)(nil).ListSummariesByPrefix), ctx, pathPrefix, namespace)
 }
 
 // LockConfig mocks base method.
-func (m *MockstorageRepo) LockConfig(ctx context.Context, namespace, path string) error {
+func (m *MockconfigRepo) LockConfig(ctx context.Context, namespace, path string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LockConfig", ctx, namespace, path)
 	ret0, _ := ret[0].(error)
@@ -192,13 +192,13 @@ func (m *MockstorageRepo) LockConfig(ctx context.Context, namespace, path string
 }
 
 // LockConfig indicates an expected call of LockConfig.
-func (mr *MockstorageRepoMockRecorder) LockConfig(ctx, namespace, path any) *gomock.Call {
+func (mr *MockconfigRepoMockRecorder) LockConfig(ctx, namespace, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockConfig", reflect.TypeOf((*MockstorageRepo)(nil).LockConfig), ctx, namespace, path)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockConfig", reflect.TypeOf((*MockconfigRepo)(nil).LockConfig), ctx, namespace, path)
 }
 
 // SearchByPath mocks base method.
-func (m *MockstorageRepo) SearchByPath(ctx context.Context, query, namespace string) ([]*domain.ConfigSummary, error) {
+func (m *MockconfigRepo) SearchByPath(ctx context.Context, query, namespace string) ([]*domain.ConfigSummary, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchByPath", ctx, query, namespace)
 	ret0, _ := ret[0].([]*domain.ConfigSummary)
@@ -207,13 +207,13 @@ func (m *MockstorageRepo) SearchByPath(ctx context.Context, query, namespace str
 }
 
 // SearchByPath indicates an expected call of SearchByPath.
-func (mr *MockstorageRepoMockRecorder) SearchByPath(ctx, query, namespace any) *gomock.Call {
+func (mr *MockconfigRepoMockRecorder) SearchByPath(ctx, query, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchByPath", reflect.TypeOf((*MockstorageRepo)(nil).SearchByPath), ctx, query, namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchByPath", reflect.TypeOf((*MockconfigRepo)(nil).SearchByPath), ctx, query, namespace)
 }
 
 // UnlockConfig mocks base method.
-func (m *MockstorageRepo) UnlockConfig(ctx context.Context, namespace, path string) error {
+func (m *MockconfigRepo) UnlockConfig(ctx context.Context, namespace, path string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnlockConfig", ctx, namespace, path)
 	ret0, _ := ret[0].(error)
@@ -221,13 +221,13 @@ func (m *MockstorageRepo) UnlockConfig(ctx context.Context, namespace, path stri
 }
 
 // UnlockConfig indicates an expected call of UnlockConfig.
-func (mr *MockstorageRepoMockRecorder) UnlockConfig(ctx, namespace, path any) *gomock.Call {
+func (mr *MockconfigRepoMockRecorder) UnlockConfig(ctx, namespace, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlockConfig", reflect.TypeOf((*MockstorageRepo)(nil).UnlockConfig), ctx, namespace, path)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlockConfig", reflect.TypeOf((*MockconfigRepo)(nil).UnlockConfig), ctx, namespace, path)
 }
 
 // Update mocks base method.
-func (m *MockstorageRepo) Update(ctx context.Context, cfg *domain.Config) error {
+func (m *MockconfigRepo) Update(ctx context.Context, cfg *domain.Config) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, cfg)
 	ret0, _ := ret[0].(error)
@@ -235,9 +235,96 @@ func (m *MockstorageRepo) Update(ctx context.Context, cfg *domain.Config) error 
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockstorageRepoMockRecorder) Update(ctx, cfg any) *gomock.Call {
+func (mr *MockconfigRepoMockRecorder) Update(ctx, cfg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockstorageRepo)(nil).Update), ctx, cfg)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockconfigRepo)(nil).Update), ctx, cfg)
+}
+
+// MockkvRepo is a mock of kvRepo interface.
+type MockkvRepo struct {
+	ctrl     *gomock.Controller
+	recorder *MockkvRepoMockRecorder
+	isgomock struct{}
+}
+
+// MockkvRepoMockRecorder is the mock recorder for MockkvRepo.
+type MockkvRepoMockRecorder struct {
+	mock *MockkvRepo
+}
+
+// NewMockkvRepo creates a new mock instance.
+func NewMockkvRepo(ctrl *gomock.Controller) *MockkvRepo {
+	mock := &MockkvRepo{ctrl: ctrl}
+	mock.recorder = &MockkvRepoMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockkvRepo) EXPECT() *MockkvRepoMockRecorder {
+	return m.recorder
+}
+
+// CurrentRevisionValue mocks base method.
+func (m *MockkvRepo) CurrentRevisionValue(ctx context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CurrentRevisionValue", ctx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CurrentRevisionValue indicates an expected call of CurrentRevisionValue.
+func (mr *MockkvRepoMockRecorder) CurrentRevisionValue(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentRevisionValue", reflect.TypeOf((*MockkvRepo)(nil).CurrentRevisionValue), ctx)
+}
+
+// DeleteRangeKeys mocks base method.
+func (m *MockkvRepo) DeleteRangeKeys(ctx context.Context, startNS, startPath, endNS, endPath string, returnPrev bool) ([]*domain.KVPair, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRangeKeys", ctx, startNS, startPath, endNS, endPath, returnPrev)
+	ret0, _ := ret[0].([]*domain.KVPair)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// DeleteRangeKeys indicates an expected call of DeleteRangeKeys.
+func (mr *MockkvRepoMockRecorder) DeleteRangeKeys(ctx, startNS, startPath, endNS, endPath, returnPrev any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRangeKeys", reflect.TypeOf((*MockkvRepo)(nil).DeleteRangeKeys), ctx, startNS, startPath, endNS, endPath, returnPrev)
+}
+
+// PutKey mocks base method.
+func (m *MockkvRepo) PutKey(ctx context.Context, namespace, path string, value []byte) (*domain.KVPair, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PutKey", ctx, namespace, path, value)
+	ret0, _ := ret[0].(*domain.KVPair)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// PutKey indicates an expected call of PutKey.
+func (mr *MockkvRepoMockRecorder) PutKey(ctx, namespace, path, value any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutKey", reflect.TypeOf((*MockkvRepo)(nil).PutKey), ctx, namespace, path, value)
+}
+
+// RangeQuery mocks base method.
+func (m *MockkvRepo) RangeQuery(ctx context.Context, startNS, startPath, endNS, endPath string, limit, revision int64, keysOnly bool) ([]*domain.KVPair, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RangeQuery", ctx, startNS, startPath, endNS, endPath, limit, revision, keysOnly)
+	ret0, _ := ret[0].([]*domain.KVPair)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// RangeQuery indicates an expected call of RangeQuery.
+func (mr *MockkvRepoMockRecorder) RangeQuery(ctx, startNS, startPath, endNS, endPath, limit, revision, keysOnly any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RangeQuery", reflect.TypeOf((*MockkvRepo)(nil).RangeQuery), ctx, startNS, startPath, endNS, endPath, limit, revision, keysOnly)
 }
 
 // Mockwatcher is a mock of watcher interface.

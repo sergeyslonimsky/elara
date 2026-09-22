@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"sort"
-	"time"
 
 	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
@@ -14,24 +13,30 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
-// KVRepo is the storage surface the KV server needs.
-type KVRepo interface {
+// KVUsecase is the usecase surface the KV server translates etcd wire
+// requests onto. Backed by usecase/config.Service (see service_kv.go) —
+// KVServer no longer talks to ConfigRepo directly.
+type KVUsecase interface {
 	CurrentRevisionValue(ctx context.Context) (int64, error)
 	RangeQuery(
 		ctx context.Context,
-		startNS, startPath string,
-		endNS, endPath string,
-		limit int64,
-		revision int64,
-		keysOnly bool,
+		startNS, startPath, endNS, endPath string,
+		opts configuc.KVRangeOpts,
+	) ([]*domain.KVPair, int64, bool, error)
+	// RangeKVs is RangeQuery without the current-revision fetch — for
+	// compare-only callers (evalCompare) that discard it anyway.
+	RangeKVs(
+		ctx context.Context,
+		startNS, startPath, endNS, endPath string,
+		opts configuc.KVRangeOpts,
 	) ([]*domain.KVPair, bool, error)
-	PutKey(ctx context.Context, namespace, path string, value []byte) (*domain.KVPair, int64, error)
+	PutKey(ctx context.Context, namespace, path string, value []byte) (*domain.Config, *domain.KVPair, int64, error)
 	DeleteRangeKeys(
 		ctx context.Context,
-		startNS, startPath string,
-		endNS, endPath string,
+		startNS, startPath, endNS, endPath string,
 		returnPrev bool,
 	) ([]*domain.KVPair, int64, error)
 }
@@ -43,17 +48,17 @@ type KVPublisher interface {
 	NotifyDeleted(ctx context.Context, path, namespace string, revision int64)
 }
 
-// KVServer implements etcdserverpb.KVServer backed by bbolt storage.
+// KVServer implements etcdserverpb.KVServer backed by usecase/config.
 type KVServer struct {
 	etcdserverpb.UnimplementedKVServer
 
-	repo      KVRepo
+	usecase   KVUsecase
 	publisher KVPublisher
 	metrics   *kvMetrics
 }
 
-func NewKVServer(repo KVRepo, publisher KVPublisher) *KVServer {
-	return &KVServer{repo: repo, publisher: publisher, metrics: newKVMetrics()}
+func NewKVServer(usecase KVUsecase, publisher KVPublisher) *KVServer {
+	return &KVServer{usecase: usecase, publisher: publisher, metrics: newKVMetrics()}
 }
 
 func (s *KVServer) Range(
@@ -73,21 +78,14 @@ func (s *KVServer) Range(
 		return nil, err
 	}
 
-	kvs, more, err := s.repo.RangeQuery(
+	kvs, currentRev, more, err := s.usecase.RangeQuery(
 		ctx,
 		startNS, startPath,
 		endNS, endPath,
-		req.Limit,
-		req.Revision,
-		req.KeysOnly,
+		configuc.KVRangeOpts{Limit: req.Limit, Revision: req.Revision, KeysOnly: req.KeysOnly},
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "range query: %v", err)
-	}
-
-	currentRev, err := s.repo.CurrentRevisionValue(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get revision: %v", err)
 	}
 
 	protoKVs := make([]*mvccpb.KeyValue, 0, len(kvs))
@@ -131,14 +129,14 @@ func (s *KVServer) Put(
 		return nil, status.Errorf(codes.Unimplemented, "ignore_value is not supported")
 	}
 
-	prev, newRev, err := s.repo.PutKey(ctx, namespace, path, req.Value)
+	cfg, prev, newRev, err := s.usecase.PutKey(ctx, namespace, path, req.Value)
 	if err != nil {
 		s.recordRejectedWrite(ctx, "put", namespace, err)
 
 		return nil, toKVStatus(err, "put", path)
 	}
 
-	s.notifyPut(ctx, namespace, path, req.Value, prev, newRev)
+	s.notifyPut(ctx, cfg, prev)
 
 	resp := &etcdserverpb.PutResponse{
 		Header: newHeader(newRev),
@@ -168,7 +166,7 @@ func (s *KVServer) DeleteRange(
 		return nil, err
 	}
 
-	deleted, newRev, err := s.repo.DeleteRangeKeys(
+	deleted, newRev, err := s.usecase.DeleteRangeKeys(
 		ctx,
 		startNS,
 		startPath,
@@ -184,7 +182,7 @@ func (s *KVServer) DeleteRange(
 
 	if newRev == 0 {
 		// Nothing was deleted — return current revision.
-		newRev, err = s.repo.CurrentRevisionValue(ctx)
+		newRev, err = s.usecase.CurrentRevisionValue(ctx)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "get revision: %v", err)
 		}
@@ -200,10 +198,18 @@ func (s *KVServer) DeleteRange(
 }
 
 // Txn implements a best-effort transaction. NOTE: not strictly atomic —
-// compares and ops run in separate bbolt transactions. For MVP single-instance
+// compares and ops each run in their own transaction via KVUsecase (one
+// evalCompare/runOp call = one usecase-level WithTx). For MVP single-instance
 // this matches etcd behaviour for the common case (e.g. leader election,
 // distributed locks) under low contention but can race under high write
-// concurrency. TODO: expose bbolt tx to make this truly atomic.
+// concurrency — confirmed empirically in
+// TestIntegration_KVConformance_TxnCompareAndSwap_Concurrent
+// (kv_conformance_integration_test.go), which documents this as baseline,
+// not desired, behavior. Making Txn atomic requires wrapping the whole
+// compare+ops sequence in one outer WithTx while deferring watch
+// notification until after that commits (today's per-op notify would
+// otherwise fire before a later op in the same Txn fails and rolls
+// everything back) — deliberately left for a follow-up, not done here.
 func (s *KVServer) Txn(
 	ctx context.Context,
 	req *etcdserverpb.TxnRequest,
@@ -245,7 +251,7 @@ func (s *KVServer) Txn(
 	}
 
 	if lastRev == 0 {
-		rev, err := s.repo.CurrentRevisionValue(ctx)
+		rev, err := s.usecase.CurrentRevisionValue(ctx)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "get revision: %v", err)
 		}
@@ -265,7 +271,7 @@ func (s *KVServer) Compact(
 	_ *etcdserverpb.CompactionRequest,
 ) (*etcdserverpb.CompactionResponse, error) {
 	// No-op — we don't truncate history.
-	rev, err := s.repo.CurrentRevisionValue(ctx)
+	rev, err := s.usecase.CurrentRevisionValue(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get revision: %v", err)
 	}
@@ -311,40 +317,20 @@ func (s *KVServer) buildDeleteRangeResponse(
 	return resp
 }
 
-func (s *KVServer) notifyPut(
-	ctx context.Context,
-	namespace, path string,
-	value []byte,
-	prev *domain.KVPair,
-	newRev int64,
-) {
+// notifyPut fires the create/update watch notification for cfg, which
+// usecase/config.Service.PutKey has already fully built (see its NOTE on
+// which fields are intentionally left unpopulated).
+func (s *KVServer) notifyPut(ctx context.Context, cfg *domain.Config, prev *domain.KVPair) {
 	if s.publisher == nil {
 		return
 	}
 
-	// NOTE: notifies with incomplete config — ContentHash, Format, Metadata,
-	// and CreatedAt are not populated because PutKey returns a slim KVPair.
-	// A dedicated GetKey repo method would fill all fields without a second
-	// bbolt transaction.
-	cfg := &domain.Config{
-		Path:      path,
-		Namespace: namespace,
-		Content:   string(value),
-		Revision:  newRev,
-		UpdatedAt: time.Now(),
-	}
-
 	if prev != nil {
-		cfg.Version = prev.Version + 1
-		cfg.CreateRevision = prev.CreateRevision
 		s.publisher.NotifyUpdated(ctx, cfg)
 
 		return
 	}
 
-	cfg.Version = 1
-	cfg.CreateRevision = newRev
-	cfg.CreatedAt = cfg.UpdatedAt
 	s.publisher.NotifyCreated(ctx, cfg)
 }
 
@@ -358,7 +344,7 @@ func (s *KVServer) evalCompare(ctx context.Context, cmp *etcdserverpb.Compare) (
 		)
 	}
 
-	kvs, _, err := s.repo.RangeQuery(ctx, startNS, startPath, endNS, endPath, 0, 0, false)
+	kvs, _, err := s.usecase.RangeKVs(ctx, startNS, startPath, endNS, endPath, configuc.KVRangeOpts{})
 	if err != nil {
 		return false, status.Errorf(codes.Internal, "compare range: %v", err)
 	}
@@ -555,10 +541,22 @@ func newHeader(rev int64) *etcdserverpb.ResponseHeader {
 // client. Lock errors are normalized to a uniform "config %q is locked"
 // message regardless of whether the underlying cause was a config or
 // namespace lock — etcd has no concept of namespace, and clients should
-// only need to react to FailedPrecondition with a path.
+// only need to react to FailedPrecondition with a path. This does NOT cover
+// the full error taxonomy handler/v2/errors.go's ToConnectError maps for
+// ConnectRPC (NotFound/AlreadyExists/Forbidden/VersionConflict etc.) — only
+// the two kinds PutKey/DeleteRangeKeys can actually produce today. A future
+// domain error introduced on this path needs its own case here; the two
+// classifiers are not unified.
 func toKVStatus(err error, op, path string) error {
 	if errors.Is(err, domain.ErrLocked) {
 		return status.Errorf(codes.FailedPrecondition, "%s: config %q is locked", op, path)
+	}
+
+	// Schema-validation rejection specifically mirrors ToConnectError's
+	// CodeInvalidArgument mapping for the same domain.SchemaValidationError,
+	// so a rejected write reads as "your data is invalid", not "we broke".
+	if domain.IsSchemaValidationError(err) {
+		return status.Errorf(codes.InvalidArgument, "%s: %v", op, err)
 	}
 
 	return status.Errorf(codes.Internal, "%s: %v", op, err)

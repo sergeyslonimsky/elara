@@ -16,7 +16,11 @@ type EtcdHandlers struct {
 	Cluster     *etcdv3.ClusterServer
 }
 
-func NewEtcdHandlers(adapters *Adapters) *EtcdHandlers {
+// NewEtcdHandlers wires the etcd-compatible gRPC API. KV goes through
+// services.Config (usecase/config) rather than adapters.ConfigRepo directly
+// — see plans/etcd-usecase-decoupling/plan.md Ш1. Watch/Maintenance/Cluster
+// are unaffected by that plan and still talk to the repo directly.
+func NewEtcdHandlers(adapters *Adapters, services *Services) *EtcdHandlers {
 	// WatchServer integrates with the connected-clients monitor: each create/cancel
 	// adjusts the active-watches counter on the originating connection. The conn
 	// ID is stashed by the gRPC stats.Handler at TagConn time.
@@ -24,7 +28,7 @@ func NewEtcdHandlers(adapters *Adapters) *EtcdHandlers {
 		WithTracker(adapters.ClientRegistry, grpctransport.ConnIDFromContext)
 
 	return &EtcdHandlers{
-		KV:          etcdv3.NewKVServer(adapters.ConfigRepo, adapters.Watch),
+		KV:          etcdv3.NewKVServer(services.Config, adapters.Watch),
 		Watch:       watchServer,
 		Maintenance: etcdv3.NewMaintenanceServer(adapters.ConfigRepo),
 		Cluster:     etcdv3.NewClusterServer(adapters.ConfigRepo),
