@@ -53,3 +53,9 @@ release:
   # goreleaser is the one that creates it — mode: append just means a
   # second goreleaser run for the same tag adds to it rather than failing.
   mode: append
+  # Mark a tag carrying a semver prerelease suffix (v1.2.3-rc.1) as a
+  # GitHub pre-release. Without this goreleaser defaults to false and an rc
+  # is published as a full release, which makes it the repository's "Latest"
+  # — displayed above the newest stable version on the releases page and
+  # returned by the releases/latest API that install scripts follow.
+  prerelease: auto
