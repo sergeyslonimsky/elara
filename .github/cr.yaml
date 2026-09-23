@@ -1,3 +1,15 @@
 sign: true
 key: Sergey Slonimsky
 # keyring and passphrase-file are set via CR_KEYRING / CR_PASSPHRASE_FILE env vars
+
+# Do not let the chart release take the repository's "Latest" badge.
+#
+# chart-releaser publishes a GitHub Release per chart version (elara-X.Y.Z)
+# and marks it latest by default. Its job runs after goreleaser's, so the
+# badge ended up on the chart release — and README.md and docs/index.md both
+# link "Latest Release" at /releases/latest, which then served two .tgz chart
+# files to someone looking for a binary.
+#
+# The service release (vX.Y.Z) is what that link should resolve to; the chart
+# is consumed through the Helm repository, not the releases page.
+make-release-latest: false
