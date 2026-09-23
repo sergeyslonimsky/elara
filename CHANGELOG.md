@@ -25,6 +25,7 @@ by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 - **web:** Correct user-action and route visibility across auth modes ([6880895](https://github.com/sergeyslonimsky/elara/commit/688089595370b831e333f49c04ee3cc57f7e835e))
 - **helm:** Drop session values the service never reads ([cc44a4e](https://github.com/sergeyslonimsky/elara/commit/cc44a4ec4bee97abd32cd62e82a0723eb61c4267))
 - **ci:** Run the integration suites and attribute their coverage ([a72a110](https://github.com/sergeyslonimsky/elara/commit/a72a11052b9342032920393d6cff4187db1ec672))
+- **ci:** Scope workflow permissions to each job ([254129d](https://github.com/sergeyslonimsky/elara/commit/254129df3de5cf572f2b3b1970d05dc11a468d59))
 
 ### Refactoring
 
