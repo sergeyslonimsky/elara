@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { Ability } from "@casl/ability";
+import { createMongoAbility } from "@casl/ability";
 import { useQuery } from "@connectrpc/connect-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -39,9 +39,7 @@ describe("GroupsPage", () => {
 		vi.clearAllMocks();
 
 		authContext = authenticatedContext(
-			new Ability([
-				{ action: "write", subject: "Group" },
-			]) as unknown as AppAbility,
+			createMongoAbility<AppAbility>([{ action: "write", subject: "Group" }]),
 		);
 	});
 
