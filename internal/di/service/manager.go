@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sergeyslonimsky/core/di"
+
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/casbin"
 	"github.com/sergeyslonimsky/elara/internal/service/auth/sessions"
@@ -20,10 +22,14 @@ type Managers struct {
 	Sessions *sessions.Service
 }
 
+// NewServiceManager satisfies di.ServicesInit. The returned di.Rollback is
+// invoked by di.NewContainer only when this function also returns an error —
+// it undoes a partial construction and is discarded on success. Normal
+// shutdown is separate: cmd/service registers Adapters as an app resource.
 func NewServiceManager(
 	ctx context.Context,
 	cfg config.Config,
-) (*Managers, func(context.Context) error, error) {
+) (*Managers, di.Rollback, error) {
 	adapters, err := NewAdapters(ctx, cfg)
 	if err != nil {
 		return nil, nil, fmt.Errorf("create adapters: %w", err)

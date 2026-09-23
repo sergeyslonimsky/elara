@@ -122,30 +122,30 @@ func NewConfig(ctx context.Context) (Config, error) {
 		UI:     ui,
 		Client: client,
 
-		DataPath:       cfg.GetStringOrDefault("config.data.path", defaultDataPath()),
-		ServiceName:    cfg.GetStringOrDefault("service.name", defaultServiceName),
-		ServiceVersion: cfg.GetString("service.version"),
+		DataPath:       di.GetOrDefault(cfg, "config.data.path", defaultDataPath()),
+		ServiceName:    di.GetOrDefault(cfg, "service.name", defaultServiceName),
+		ServiceVersion: di.Get[string](cfg, "service.version"),
 		Metrics: MetricsConfig{
 			// Reads metrics.enabled / METRICS_ENABLED. Default: false.
-			Enabled: cfg.GetBool("metrics.enabled"),
+			Enabled: di.Get[bool](cfg, "metrics.enabled"),
 		},
 		Tracing: TracingConfig{
 			// Reads tracing.enabled / TRACING_ENABLED. Default: false.
-			Enabled: cfg.GetBool("tracing.enabled"),
+			Enabled: di.Get[bool](cfg, "tracing.enabled"),
 			// Reads tracing.otlp.endpoint / TRACING_OTLP_ENDPOINT.
 			// Required when Tracing.Enabled is true; validated at setup.
-			OTLPEndpoint: cfg.GetString("tracing.otlp.endpoint"),
+			OTLPEndpoint: di.Get[string](cfg, "tracing.otlp.endpoint"),
 		},
 		Log: LogConfig{
-			Level:    cfg.GetStringOrDefault("log.level", defaultLogLevel),
-			Format:   cfg.GetStringOrDefault("log.format", defaultLogFormat),
-			NoSource: cfg.GetBool("log.noSource"),
+			Level:    di.GetOrDefault(cfg, "log.level", defaultLogLevel),
+			Format:   di.GetOrDefault(cfg, "log.format", defaultLogFormat),
+			NoSource: di.Get[bool](cfg, "log.noSource"),
 		},
 		Demo: DemoConfig{
 			// Reads demo.mode / DEMO_MODE. Default: false.
-			Enabled: cfg.GetBool("demo.mode"),
+			Enabled: di.Get[bool](cfg, "demo.mode"),
 		},
-		DangerouslySkipPermissions: cfg.GetBool("dangerously.skip.permissions"),
+		DangerouslySkipPermissions: di.Get[bool](cfg, "dangerously.skip.permissions"),
 	}
 
 	if err := c.validateSkipPermissions(); err != nil {

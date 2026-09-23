@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/sergeyslonimsky/core/di"
 	"github.com/sergeyslonimsky/core/http2"
@@ -104,34 +105,34 @@ func newUIConfig(cfg *di.Config) (UI, error) {
 
 	ui := UI{
 		Server: http2.Config{
-			Port:        cfg.GetStringOrDefault("ui.server.port", defaultHTTPPort),
-			ReadTimeout: cfg.GetDuration("ui.server.readTimeout"),
+			Port:        di.GetOrDefault(cfg, "ui.server.port", defaultHTTPPort),
+			ReadTimeout: di.Get[time.Duration](cfg, "ui.server.readTimeout"),
 			// Streaming-friendly default — see defaultFrontendWriteTimeout.
 			WriteTimeout: durOrDefault(
-				cfg.GetDuration("ui.server.writeTimeout"),
+				di.Get[time.Duration](cfg, "ui.server.writeTimeout"),
 				defaultFrontendWriteTimeout,
 			),
 		},
 		Auth: UIAuthConfig{
-			Enabled: cfg.GetBool("ui.auth.enabled"),
+			Enabled: di.Get[bool](cfg, "ui.auth.enabled"),
 			Type:    authType,
 			BasicAuth: BasicAuthConfig{
-				Username: cfg.GetString("ui.auth.basicAuth.username"),
-				Password: cfg.GetString("ui.auth.basicAuth.password"),
+				Username: di.Get[string](cfg, "ui.auth.basicAuth.username"),
+				Password: di.Get[string](cfg, "ui.auth.basicAuth.password"),
 			},
 			OIDC: OIDCConfig{
-				IssuerURL:    cfg.GetString("ui.auth.oidc.issuerUrl"),
-				ClientID:     cfg.GetString("ui.auth.oidc.clientId"),
-				ClientSecret: cfg.GetString("ui.auth.oidc.clientSecret"),
-				RedirectURL:  cfg.GetString("ui.auth.oidc.redirectUrl"),
+				IssuerURL:    di.Get[string](cfg, "ui.auth.oidc.issuerUrl"),
+				ClientID:     di.Get[string](cfg, "ui.auth.oidc.clientId"),
+				ClientSecret: di.Get[string](cfg, "ui.auth.oidc.clientSecret"),
+				RedirectURL:  di.Get[string](cfg, "ui.auth.oidc.redirectUrl"),
 				Scopes: stringsOrDefault(
-					cfg.GetStringSlice("ui.auth.oidc.scopes"),
+					di.Get[[]string](cfg, "ui.auth.oidc.scopes"),
 					[]string{"openid", "email", "profile"},
 				),
-				AdminEmail: cfg.GetString("ui.auth.oidc.adminEmail"),
+				AdminEmail: di.Get[string](cfg, "ui.auth.oidc.adminEmail"),
 			},
 			Session: SessionConfig{
-				SecureCookie: cfg.GetBool("ui.auth.session.secureCookie"),
+				SecureCookie: di.Get[bool](cfg, "ui.auth.session.secureCookie"),
 			},
 		},
 	}
@@ -144,7 +145,7 @@ func newUIConfig(cfg *di.Config) (UI, error) {
 }
 
 func getAuthType(cfg *di.Config) (domain.AuthType, error) {
-	return resolveAuthType(cfg.GetBool("ui.auth.enabled"), cfg.GetString("ui.auth.type"))
+	return resolveAuthType(di.Get[bool](cfg, "ui.auth.enabled"), di.Get[string](cfg, "ui.auth.type"))
 }
 
 // resolveAuthType is getAuthType's pure logic, split out so it's testable
