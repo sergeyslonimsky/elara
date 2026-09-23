@@ -38,14 +38,20 @@ checksum:
   name_template: checksums.txt
 
 # Release notes are produced by git-cliff and handed to goreleaser via
-# --release-notes (see .github/workflows/release.yml), so its built-in
-# changelog is switched off. Keeping both meant two groupings competing for
-# the same release body, and goreleaser's has no BREAKING CHANGE handling —
-# the v0.5.0 notes went out with no breaking-changes section for a release
-# that had three. cliff.toml is now the single source of truth for both the
-# GitHub Release body and CHANGELOG.md.
+# --release-notes (see .github/workflows/release.yml). cliff.toml is the
+# single source of truth for both the GitHub Release body and CHANGELOG.md —
+# goreleaser's own grouping has no BREAKING CHANGE handling, which is how the
+# v0.5.0 notes went out with no breaking-changes section for a release that
+# had three.
+#
+# Do NOT set `disable: true` here. The --release-notes file is loaded *by*
+# this pipe, so disabling it drops the flag on the floor and publishes an
+# empty release body — that is what happened to v0.5.1-rc.2. The flag already
+# suppresses goreleaser's own generation on its own ("will skip GoReleaser
+# changelog generation" per `goreleaser release --help`), so the pipe must
+# stay enabled for the flag to be read at all.
 changelog:
-  disable: true
+  use: git
 
 release:
   # No other job creates a GitHub Release for the vX.Y.Z tag (the Helm
@@ -53,6 +59,12 @@ release:
   # goreleaser is the one that creates it — mode: append just means a
   # second goreleaser run for the same tag adds to it rather than failing.
   mode: append
+  # Make asset upload idempotent. v0.5.1-rc.2 uploaded all five artifacts,
+  # then goreleaser's retry re-POSTed them and GitHub answered
+  # `422 already_exists`, failing the job over a release that was in fact
+  # complete. With this set, an upload that retries replaces the asset instead
+  # of colliding with it.
+  replace_existing_artifacts: true
   # Mark a tag carrying a semver prerelease suffix (v1.2.3-rc.1) as a
   # GitHub pre-release. Without this goreleaser defaults to false and an rc
   # is published as a full release, which makes it the repository's "Latest"
