@@ -152,7 +152,7 @@ func (s *WatchServer) handleWatchRequest(
 	nextID *atomic.Int64,
 	send func(*etcdserverpb.WatchResponse) error,
 ) error {
-	switch r := req.RequestUnion.(type) {
+	switch r := req.GetRequestUnion().(type) {
 	case *etcdserverpb.WatchRequest_CreateRequest:
 		w, err := s.createWatcher(ctx, r.CreateRequest, nextID.Add(1), send)
 		if err != nil {
@@ -164,7 +164,7 @@ func (s *WatchServer) handleWatchRequest(
 		mu.Unlock()
 
 	case *etcdserverpb.WatchRequest_CancelRequest:
-		id := r.CancelRequest.WatchId
+		id := r.CancelRequest.GetWatchId()
 
 		mu.Lock()
 		w, ok := watchers[id]
@@ -211,9 +211,9 @@ func (s *WatchServer) createWatcher(
 	id int64,
 	send func(*etcdserverpb.WatchResponse) error,
 ) (*watcher, error) {
-	startNS, startPath, endNS, endPath, ok := SplitRange(req.Key, req.RangeEnd)
+	startNS, startPath, endNS, endPath, ok := SplitRange(req.GetKey(), req.GetRangeEnd())
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid watch key: %q", string(req.Key))
+		return nil, status.Errorf(codes.InvalidArgument, "invalid watch key: %q", string(req.GetKey()))
 	}
 
 	scanAll := endNS == "\x00"
@@ -248,14 +248,14 @@ func (s *WatchServer) createWatcher(
 
 	w := &watcher{
 		id:          id,
-		start:       req.Key,
-		end:         req.RangeEnd,
+		start:       req.GetKey(),
+		end:         req.GetRangeEnd(),
 		namespace:   subNamespace,
 		pathPrefix:  subPrefix,
 		scanAll:     scanAll,
 		singleKey:   singleKey,
-		prevKv:      req.PrevKv,
-		progress:    req.ProgressNotify,
+		prevKv:      req.GetPrevKv(),
+		progress:    req.GetProgressNotify(),
 		cancel:      cancel,
 		unsubscribe: unsubscribe,
 		claims:      claims,
@@ -268,7 +268,7 @@ func (s *WatchServer) createWatcher(
 
 	s.trackWatcher(ctx, w, req)
 
-	go s.runWatcher(subCtx, w, req.StartRevision, currentRev, events, send)
+	go s.runWatcher(subCtx, w, req.GetStartRevision(), currentRev, events, send)
 
 	return w, nil
 }
@@ -313,12 +313,12 @@ func (s *WatchServer) trackWatcher(
 
 	s.tracker.RegisterWatch(cid, domain.ActiveWatch{
 		WatchID:        w.id,
-		StartKey:       string(req.Key),
-		EndKey:         string(req.RangeEnd),
-		StartRevision:  req.StartRevision,
+		StartKey:       string(req.GetKey()),
+		EndKey:         string(req.GetRangeEnd()),
+		StartRevision:  req.GetStartRevision(),
 		CreatedAt:      time.Now(),
-		PrevKv:         req.PrevKv,
-		ProgressNotify: req.ProgressNotify,
+		PrevKv:         req.GetPrevKv(),
+		ProgressNotify: req.GetProgressNotify(),
 	})
 	w.tracked = cid
 }

@@ -65,12 +65,12 @@ func (s *KVServer) Range(
 	ctx context.Context,
 	req *etcdserverpb.RangeRequest,
 ) (*etcdserverpb.RangeResponse, error) {
-	startNS, startPath, endNS, endPath, ok := SplitRange(req.Key, req.RangeEnd)
+	startNS, startPath, endNS, endPath, ok := SplitRange(req.GetKey(), req.GetRangeEnd())
 	if !ok {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
 			"invalid key encoding: %q",
-			string(req.Key),
+			string(req.GetKey()),
 		)
 	}
 
@@ -82,7 +82,7 @@ func (s *KVServer) Range(
 		ctx,
 		startNS, startPath,
 		endNS, endPath,
-		configuc.KVRangeOpts{Limit: req.Limit, Revision: req.Revision, KeysOnly: req.KeysOnly},
+		configuc.KVRangeOpts{Limit: req.GetLimit(), Revision: req.GetRevision(), KeysOnly: req.GetKeysOnly()},
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "range query: %v", err)
@@ -93,10 +93,10 @@ func (s *KVServer) Range(
 		protoKVs = append(protoKVs, kvPairToProto(kv))
 	}
 
-	sortKVs(protoKVs, req.SortOrder, req.SortTarget)
+	sortKVs(protoKVs, req.GetSortOrder(), req.GetSortTarget())
 
 	count := int64(len(protoKVs))
-	if req.CountOnly {
+	if req.GetCountOnly() {
 		protoKVs = nil
 	}
 
@@ -112,12 +112,12 @@ func (s *KVServer) Put(
 	ctx context.Context,
 	req *etcdserverpb.PutRequest,
 ) (*etcdserverpb.PutResponse, error) {
-	namespace, path, ok := SplitKey(req.Key)
+	namespace, path, ok := SplitKey(req.GetKey())
 	if !ok {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
 			"invalid key encoding: %q",
-			string(req.Key),
+			string(req.GetKey()),
 		)
 	}
 
@@ -125,11 +125,11 @@ func (s *KVServer) Put(
 		return nil, err
 	}
 
-	if req.IgnoreValue {
+	if req.GetIgnoreValue() {
 		return nil, status.Errorf(codes.Unimplemented, "ignore_value is not supported")
 	}
 
-	cfg, prev, newRev, err := s.usecase.PutKey(ctx, namespace, path, req.Value)
+	cfg, prev, newRev, err := s.usecase.PutKey(ctx, namespace, path, req.GetValue())
 	if err != nil {
 		s.recordRejectedWrite(ctx, "put", namespace, err)
 
@@ -142,7 +142,7 @@ func (s *KVServer) Put(
 		Header: newHeader(newRev),
 	}
 
-	if req.PrevKv && prev != nil {
+	if req.GetPrevKv() && prev != nil {
 		resp.PrevKv = kvPairToProto(prev)
 	}
 
@@ -153,12 +153,12 @@ func (s *KVServer) DeleteRange(
 	ctx context.Context,
 	req *etcdserverpb.DeleteRangeRequest,
 ) (*etcdserverpb.DeleteRangeResponse, error) {
-	startNS, startPath, endNS, endPath, ok := SplitRange(req.Key, req.RangeEnd)
+	startNS, startPath, endNS, endPath, ok := SplitRange(req.GetKey(), req.GetRangeEnd())
 	if !ok {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
 			"invalid key encoding: %q",
-			string(req.Key),
+			string(req.GetKey()),
 		)
 	}
 
@@ -172,7 +172,7 @@ func (s *KVServer) DeleteRange(
 		startPath,
 		endNS,
 		endPath,
-		req.PrevKv,
+		req.GetPrevKv(),
 	)
 	if err != nil {
 		s.recordRejectedWrite(ctx, "delete", startNS, err)
@@ -194,7 +194,7 @@ func (s *KVServer) DeleteRange(
 		}
 	}
 
-	return s.buildDeleteRangeResponse(newRev, deleted, req.PrevKv), nil
+	return s.buildDeleteRangeResponse(newRev, deleted, req.GetPrevKv()), nil
 }
 
 // Txn implements a best-effort transaction. NOTE: not strictly atomic —
@@ -216,7 +216,7 @@ func (s *KVServer) Txn(
 ) (*etcdserverpb.TxnResponse, error) {
 	succeeded := true
 
-	for _, cmp := range req.Compare {
+	for _, cmp := range req.GetCompare() {
 		ok, err := s.evalCompare(ctx, cmp)
 		if err != nil {
 			return nil, err
@@ -229,9 +229,9 @@ func (s *KVServer) Txn(
 		}
 	}
 
-	ops := req.Success
+	ops := req.GetSuccess()
 	if !succeeded {
-		ops = req.Failure
+		ops = req.GetFailure()
 	}
 
 	responses := make([]*etcdserverpb.ResponseOp, 0, len(ops))
@@ -335,12 +335,12 @@ func (s *KVServer) notifyPut(ctx context.Context, cfg *domain.Config, prev *doma
 }
 
 func (s *KVServer) evalCompare(ctx context.Context, cmp *etcdserverpb.Compare) (bool, error) {
-	startNS, startPath, endNS, endPath, ok := SplitRange(cmp.Key, cmp.RangeEnd)
+	startNS, startPath, endNS, endPath, ok := SplitRange(cmp.GetKey(), cmp.GetRangeEnd())
 	if !ok {
 		return false, status.Errorf(
 			codes.InvalidArgument,
 			"invalid compare key: %q",
-			string(cmp.Key),
+			string(cmp.GetKey()),
 		)
 	}
 
@@ -376,26 +376,26 @@ func compareSingle(cmp *etcdserverpb.Compare, kv *domain.KVPair) bool {
 		value = kv.Value
 	}
 
-	switch cmp.Target {
+	switch cmp.GetTarget() {
 	case etcdserverpb.Compare_VERSION:
 		want := cmp.GetVersion()
 
-		return compareInt64(cmp.Result, version, want)
+		return compareInt64(cmp.GetResult(), version, want)
 
 	case etcdserverpb.Compare_CREATE:
 		want := cmp.GetCreateRevision()
 
-		return compareInt64(cmp.Result, createRev, want)
+		return compareInt64(cmp.GetResult(), createRev, want)
 
 	case etcdserverpb.Compare_MOD:
 		want := cmp.GetModRevision()
 
-		return compareInt64(cmp.Result, modRev, want)
+		return compareInt64(cmp.GetResult(), modRev, want)
 
 	case etcdserverpb.Compare_VALUE:
 		want := cmp.GetValue()
 
-		return compareBytes(cmp.Result, value, want)
+		return compareBytes(cmp.GetResult(), value, want)
 
 	default:
 		return false
@@ -440,7 +440,7 @@ func (s *KVServer) runOp(
 	ctx context.Context,
 	op *etcdserverpb.RequestOp,
 ) (*etcdserverpb.ResponseOp, int64, error) {
-	switch r := op.Request.(type) {
+	switch r := op.GetRequest().(type) {
 	case *etcdserverpb.RequestOp_RequestRange:
 		resp, err := s.Range(ctx, r.RequestRange)
 		if err != nil {
@@ -459,7 +459,7 @@ func (s *KVServer) runOp(
 
 		return &etcdserverpb.ResponseOp{
 			Response: &etcdserverpb.ResponseOp_ResponsePut{ResponsePut: resp},
-		}, resp.Header.Revision, nil
+		}, resp.GetHeader().GetRevision(), nil
 
 	case *etcdserverpb.RequestOp_RequestDeleteRange:
 		resp, err := s.DeleteRange(ctx, r.RequestDeleteRange)
@@ -469,7 +469,7 @@ func (s *KVServer) runOp(
 
 		return &etcdserverpb.ResponseOp{
 			Response: &etcdserverpb.ResponseOp_ResponseDeleteRange{ResponseDeleteRange: resp},
-		}, resp.Header.Revision, nil
+		}, resp.GetHeader().GetRevision(), nil
 
 	case *etcdserverpb.RequestOp_RequestTxn:
 		resp, err := s.Txn(ctx, r.RequestTxn)
@@ -479,7 +479,7 @@ func (s *KVServer) runOp(
 
 		return &etcdserverpb.ResponseOp{
 			Response: &etcdserverpb.ResponseOp_ResponseTxn{ResponseTxn: resp},
-		}, resp.Header.Revision, nil
+		}, resp.GetHeader().GetRevision(), nil
 
 	default:
 		return nil, 0, status.Errorf(codes.InvalidArgument, "unknown txn request op")
@@ -508,15 +508,15 @@ func sortKVs(
 	less := func(i, j int) bool {
 		switch target {
 		case etcdserverpb.RangeRequest_VERSION:
-			return kvs[i].Version < kvs[j].Version
+			return kvs[i].GetVersion() < kvs[j].GetVersion()
 		case etcdserverpb.RangeRequest_CREATE:
-			return kvs[i].CreateRevision < kvs[j].CreateRevision
+			return kvs[i].GetCreateRevision() < kvs[j].GetCreateRevision()
 		case etcdserverpb.RangeRequest_MOD:
-			return kvs[i].ModRevision < kvs[j].ModRevision
+			return kvs[i].GetModRevision() < kvs[j].GetModRevision()
 		case etcdserverpb.RangeRequest_VALUE:
-			return bytes.Compare(kvs[i].Value, kvs[j].Value) < 0
+			return bytes.Compare(kvs[i].GetValue(), kvs[j].GetValue()) < 0
 		default:
-			return bytes.Compare(kvs[i].Key, kvs[j].Key) < 0
+			return bytes.Compare(kvs[i].GetKey(), kvs[j].GetKey()) < 0
 		}
 	}
 

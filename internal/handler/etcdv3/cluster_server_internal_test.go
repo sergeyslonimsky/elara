@@ -23,7 +23,7 @@ func TestClusterServer_MemberList(t *testing.T) {
 
 	resp, err := s.MemberList(context.Background(), &etcdserverpb.MemberListRequest{})
 	require.NoError(t, err)
-	assert.Equal(t, int64(100), resp.Header.Revision)
-	require.Len(t, resp.Members, 1)
-	assert.Equal(t, "elara", resp.Members[0].Name)
+	assert.Equal(t, int64(100), resp.GetHeader().GetRevision())
+	require.Len(t, resp.GetMembers(), 1)
+	assert.Equal(t, "elara", resp.GetMembers()[0].GetName())
 }

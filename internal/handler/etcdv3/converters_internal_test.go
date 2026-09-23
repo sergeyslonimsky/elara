@@ -24,11 +24,11 @@ func TestKvPairToProto(t *testing.T) {
 
 	got := kvPairToProto(kv)
 
-	assert.Equal(t, []byte("/default/foo.json"), got.Key)
-	assert.Equal(t, []byte(`{"x":1}`), got.Value)
-	assert.Equal(t, int64(10), got.CreateRevision)
-	assert.Equal(t, int64(15), got.ModRevision)
-	assert.Equal(t, int64(3), got.Version)
+	assert.Equal(t, []byte("/default/foo.json"), got.GetKey())
+	assert.Equal(t, []byte(`{"x":1}`), got.GetValue())
+	assert.Equal(t, int64(10), got.GetCreateRevision())
+	assert.Equal(t, int64(15), got.GetModRevision())
+	assert.Equal(t, int64(3), got.GetVersion())
 }
 
 func TestNewHeader(t *testing.T) {
@@ -36,10 +36,10 @@ func TestNewHeader(t *testing.T) {
 
 	h := newHeader(42)
 
-	assert.Equal(t, int64(42), h.Revision)
-	assert.Equal(t, clusterID, h.ClusterId)
-	assert.Equal(t, memberID, h.MemberId)
-	assert.Equal(t, raftTerm, h.RaftTerm)
+	assert.Equal(t, int64(42), h.GetRevision())
+	assert.Equal(t, clusterID, h.GetClusterId())
+	assert.Equal(t, memberID, h.GetMemberId())
+	assert.Equal(t, raftTerm, h.GetRaftTerm())
 }
 
 func TestCompareInt64(t *testing.T) {
@@ -196,9 +196,9 @@ func TestSortKVs(t *testing.T) {
 
 		kvs := makeKVs()
 		sortKVs(kvs, etcdserverpb.RangeRequest_NONE, etcdserverpb.RangeRequest_KEY)
-		assert.Equal(t, []byte("/b"), kvs[0].Key)
-		assert.Equal(t, []byte("/a"), kvs[1].Key)
-		assert.Equal(t, []byte("/c"), kvs[2].Key)
+		assert.Equal(t, []byte("/b"), kvs[0].GetKey())
+		assert.Equal(t, []byte("/a"), kvs[1].GetKey())
+		assert.Equal(t, []byte("/c"), kvs[2].GetKey())
 	})
 
 	t.Run("ASCEND by KEY", func(t *testing.T) {
@@ -206,9 +206,9 @@ func TestSortKVs(t *testing.T) {
 
 		kvs := makeKVs()
 		sortKVs(kvs, etcdserverpb.RangeRequest_ASCEND, etcdserverpb.RangeRequest_KEY)
-		assert.Equal(t, []byte("/a"), kvs[0].Key)
-		assert.Equal(t, []byte("/b"), kvs[1].Key)
-		assert.Equal(t, []byte("/c"), kvs[2].Key)
+		assert.Equal(t, []byte("/a"), kvs[0].GetKey())
+		assert.Equal(t, []byte("/b"), kvs[1].GetKey())
+		assert.Equal(t, []byte("/c"), kvs[2].GetKey())
 	})
 
 	t.Run("DESCEND by KEY", func(t *testing.T) {
@@ -216,9 +216,9 @@ func TestSortKVs(t *testing.T) {
 
 		kvs := makeKVs()
 		sortKVs(kvs, etcdserverpb.RangeRequest_DESCEND, etcdserverpb.RangeRequest_KEY)
-		assert.Equal(t, []byte("/c"), kvs[0].Key)
-		assert.Equal(t, []byte("/b"), kvs[1].Key)
-		assert.Equal(t, []byte("/a"), kvs[2].Key)
+		assert.Equal(t, []byte("/c"), kvs[0].GetKey())
+		assert.Equal(t, []byte("/b"), kvs[1].GetKey())
+		assert.Equal(t, []byte("/a"), kvs[2].GetKey())
 	})
 
 	t.Run("ASCEND by VERSION", func(t *testing.T) {
@@ -226,9 +226,9 @@ func TestSortKVs(t *testing.T) {
 
 		kvs := makeKVs()
 		sortKVs(kvs, etcdserverpb.RangeRequest_ASCEND, etcdserverpb.RangeRequest_VERSION)
-		assert.Equal(t, int64(1), kvs[0].Version)
-		assert.Equal(t, int64(2), kvs[1].Version)
-		assert.Equal(t, int64(5), kvs[2].Version)
+		assert.Equal(t, int64(1), kvs[0].GetVersion())
+		assert.Equal(t, int64(2), kvs[1].GetVersion())
+		assert.Equal(t, int64(5), kvs[2].GetVersion())
 	})
 
 	t.Run("ASCEND by CREATE", func(t *testing.T) {
@@ -236,9 +236,9 @@ func TestSortKVs(t *testing.T) {
 
 		kvs := makeKVs()
 		sortKVs(kvs, etcdserverpb.RangeRequest_ASCEND, etcdserverpb.RangeRequest_CREATE)
-		assert.Equal(t, int64(1), kvs[0].CreateRevision)
-		assert.Equal(t, int64(2), kvs[1].CreateRevision)
-		assert.Equal(t, int64(3), kvs[2].CreateRevision)
+		assert.Equal(t, int64(1), kvs[0].GetCreateRevision())
+		assert.Equal(t, int64(2), kvs[1].GetCreateRevision())
+		assert.Equal(t, int64(3), kvs[2].GetCreateRevision())
 	})
 
 	t.Run("ASCEND by MOD", func(t *testing.T) {
@@ -246,9 +246,9 @@ func TestSortKVs(t *testing.T) {
 
 		kvs := makeKVs()
 		sortKVs(kvs, etcdserverpb.RangeRequest_ASCEND, etcdserverpb.RangeRequest_MOD)
-		assert.Equal(t, int64(5), kvs[0].ModRevision)
-		assert.Equal(t, int64(8), kvs[1].ModRevision)
-		assert.Equal(t, int64(10), kvs[2].ModRevision)
+		assert.Equal(t, int64(5), kvs[0].GetModRevision())
+		assert.Equal(t, int64(8), kvs[1].GetModRevision())
+		assert.Equal(t, int64(10), kvs[2].GetModRevision())
 	})
 
 	t.Run("ASCEND by VALUE", func(t *testing.T) {
@@ -256,9 +256,9 @@ func TestSortKVs(t *testing.T) {
 
 		kvs := makeKVs()
 		sortKVs(kvs, etcdserverpb.RangeRequest_ASCEND, etcdserverpb.RangeRequest_VALUE)
-		assert.Equal(t, []byte("x"), kvs[0].Value)
-		assert.Equal(t, []byte("y"), kvs[1].Value)
-		assert.Equal(t, []byte("z"), kvs[2].Value)
+		assert.Equal(t, []byte("x"), kvs[0].GetValue())
+		assert.Equal(t, []byte("y"), kvs[1].GetValue())
+		assert.Equal(t, []byte("z"), kvs[2].GetValue())
 	})
 }
 
@@ -283,12 +283,12 @@ func TestEventToProto_Put(t *testing.T) {
 
 	got := eventToProto(ev)
 
-	assert.Equal(t, mvccpb.PUT, got.Type)
-	assert.Equal(t, []byte("/default/foo.json"), got.Kv.Key)
-	assert.Equal(t, []byte(`{"x":1}`), got.Kv.Value)
-	assert.Equal(t, int64(3), got.Kv.CreateRevision)
-	assert.Equal(t, int64(5), got.Kv.ModRevision)
-	assert.Equal(t, int64(2), got.Kv.Version)
+	assert.Equal(t, mvccpb.PUT, got.GetType())
+	assert.Equal(t, []byte("/default/foo.json"), got.GetKv().GetKey())
+	assert.Equal(t, []byte(`{"x":1}`), got.GetKv().GetValue())
+	assert.Equal(t, int64(3), got.GetKv().GetCreateRevision())
+	assert.Equal(t, int64(5), got.GetKv().GetModRevision())
+	assert.Equal(t, int64(2), got.GetKv().GetVersion())
 }
 
 func TestEventToProto_Delete_CarriesRevision(t *testing.T) {
@@ -305,12 +305,12 @@ func TestEventToProto_Delete_CarriesRevision(t *testing.T) {
 
 	got := eventToProto(ev)
 
-	assert.Equal(t, mvccpb.DELETE, got.Type)
-	assert.Equal(t, []byte("/default/foo.json"), got.Kv.Key)
-	assert.Equal(t, int64(7), got.Kv.ModRevision, "delete must carry delete revision")
-	assert.Equal(t, int64(0), got.Kv.Version, "delete resets version to 0")
-	assert.Empty(t, got.Kv.Value)
-	assert.Equal(t, int64(0), got.Kv.CreateRevision)
+	assert.Equal(t, mvccpb.DELETE, got.GetType())
+	assert.Equal(t, []byte("/default/foo.json"), got.GetKv().GetKey())
+	assert.Equal(t, int64(7), got.GetKv().GetModRevision(), "delete must carry delete revision")
+	assert.Equal(t, int64(0), got.GetKv().GetVersion(), "delete resets version to 0")
+	assert.Empty(t, got.GetKv().GetValue())
+	assert.Equal(t, int64(0), got.GetKv().GetCreateRevision())
 }
 
 func TestEventToProto_PutWithNilConfig(t *testing.T) {
@@ -327,9 +327,9 @@ func TestEventToProto_PutWithNilConfig(t *testing.T) {
 	}
 
 	got := eventToProto(ev)
-	assert.Equal(t, mvccpb.PUT, got.Type)
-	assert.Equal(t, []byte("/ns/x"), got.Kv.Key)
-	assert.Equal(t, int64(9), got.Kv.ModRevision)
+	assert.Equal(t, mvccpb.PUT, got.GetType())
+	assert.Equal(t, []byte("/ns/x"), got.GetKv().GetKey())
+	assert.Equal(t, int64(9), got.GetKv().GetModRevision())
 }
 
 func TestChangelogToEvent_Put(t *testing.T) {
@@ -345,11 +345,11 @@ func TestChangelogToEvent_Put(t *testing.T) {
 
 	got := changelogToEvent(e, []byte("content"))
 
-	assert.Equal(t, mvccpb.PUT, got.Type)
-	assert.Equal(t, []byte("/default/foo.json"), got.Kv.Key)
-	assert.Equal(t, int64(5), got.Kv.ModRevision)
-	assert.Equal(t, int64(2), got.Kv.Version)
-	assert.Equal(t, []byte("content"), got.Kv.Value)
+	assert.Equal(t, mvccpb.PUT, got.GetType())
+	assert.Equal(t, []byte("/default/foo.json"), got.GetKv().GetKey())
+	assert.Equal(t, int64(5), got.GetKv().GetModRevision())
+	assert.Equal(t, int64(2), got.GetKv().GetVersion())
+	assert.Equal(t, []byte("content"), got.GetKv().GetValue())
 }
 
 func TestChangelogToEvent_Delete(t *testing.T) {
@@ -365,10 +365,10 @@ func TestChangelogToEvent_Delete(t *testing.T) {
 
 	got := changelogToEvent(e, []byte("old"))
 
-	assert.Equal(t, mvccpb.DELETE, got.Type)
-	assert.Equal(t, int64(9), got.Kv.ModRevision)
-	assert.Equal(t, int64(0), got.Kv.Version, "delete forces version=0 per etcd semantics")
-	assert.Nil(t, got.Kv.Value)
+	assert.Equal(t, mvccpb.DELETE, got.GetType())
+	assert.Equal(t, int64(9), got.GetKv().GetModRevision())
+	assert.Equal(t, int64(0), got.GetKv().GetVersion(), "delete forces version=0 per etcd semantics")
+	assert.Nil(t, got.GetKv().GetValue())
 }
 
 func TestRevisionOfEvent(t *testing.T) {
