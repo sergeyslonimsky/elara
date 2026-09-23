@@ -30,24 +30,24 @@ type ClientAuth struct {
 func newClientConfig(cfg *di.Config) Client {
 	return Client{
 		EtcdServer: coregrpc.Config{
-			Port: cfg.GetStringOrDefault("client.etcd.port", defaultGRPCPort),
+			Port: di.GetOrDefault(cfg, "client.etcd.port", defaultGRPCPort),
 		},
 		Auth: ClientAuth{
-			Enabled: cfg.GetBool("client.auth.enabled"),
+			Enabled: di.Get[bool](cfg, "client.auth.enabled"),
 		},
 		History: ClientHistory{
 			MaxRecords: intOrDefault(
-				cfg.GetInt("client.history.max_records"),
+				di.Get[int](cfg, "client.history.max_records"),
 				defaultClientHistoryMaxRecords,
 			),
 			MaxAge: durOrDefault(
-				cfg.GetDuration("client.history.max_age"),
+				di.Get[time.Duration](cfg, "client.history.max_age"),
 				defaultClientHistoryMaxAge,
 			),
 		},
 		RecentEvents: ClientRecentEvents{
 			Capacity: intOrDefault(
-				cfg.GetInt("client.recent_events.capacity"),
+				di.Get[int](cfg, "client.recent_events.capacity"),
 				defaultClientRecentEventsCap,
 			),
 		},
