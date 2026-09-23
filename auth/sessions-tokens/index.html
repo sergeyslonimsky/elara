@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../../architecture/">
+        <link rel="prev" href="../passthrough/">
       
       
-        <link rel="next" href="../0002-groups-only-rbac/">
+        <link rel="next" href="../rbac-groups/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>ADR 0001: Usecase-owned Transactions - Elara</title>
+        <title>Sessions & Tokens - Elara</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#usecase-owned-transactions-with-context-injected-tx-handles" class="md-skip">
+        <a href="#sessions-tokens" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0001: Usecase-owned Transactions
+              Sessions & Tokens
             
           </span>
         </div>
@@ -685,6 +685,8 @@
       
   
   
+    
+  
   
   
     
@@ -717,15 +719,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../auth/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -749,7 +751,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -769,7 +771,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../auth/basic/" class="md-nav__link">
+      <a href="../basic/" class="md-nav__link">
         
   
   
@@ -797,7 +799,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../auth/oidc/" class="md-nav__link">
+      <a href="../oidc/" class="md-nav__link">
         
   
   
@@ -825,7 +827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../auth/passthrough/" class="md-nav__link">
+      <a href="../passthrough/" class="md-nav__link">
         
   
   
@@ -850,10 +852,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../auth/sessions-tokens/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions & Tokens
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -869,6 +898,137 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sessions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sessions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sessions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-transports-one-entity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two transports, one entity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ttls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TTLs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#audit-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Audit log
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enforcement-on-every-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enforcement on every request
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tokens-service-credentials-for-etcd-clients" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tokens (service credentials for etcd clients)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tokens (service credentials for etcd clients)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#token-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issuing-a-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issuing a token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-a-token-against-the-etcd-grpc-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using a token against the etcd gRPC API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -881,7 +1041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../auth/rbac-groups/" class="md-nav__link">
+      <a href="../rbac-groups/" class="md-nav__link">
         
   
   
@@ -909,7 +1069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../auth/client-auth/" class="md-nav__link">
+      <a href="../client-auth/" class="md-nav__link">
         
   
   
@@ -937,7 +1097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../auth/users-lifecycle/" class="md-nav__link">
+      <a href="../users-lifecycle/" class="md-nav__link">
         
   
   
@@ -1357,10 +1517,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1379,11 +1537,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
           <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
@@ -1404,7 +1562,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1447,37 +1605,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0001: Usecase-owned Transactions
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../adr/0001-usecase-owned-transactions/" class="md-nav__link">
         
   
   
@@ -1493,137 +1624,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#context-and-problem-statement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context and Problem Statement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-drivers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Drivers
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#considered-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Considered Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-outcome" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Outcome
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision Outcome">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pros-and-cons-of-the-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pros and Cons of the Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pros and Cons of the Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#option-1-explicit-tx-parameter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 1 — Explicit tx parameter
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-2-service-owned-transactions-previous-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 2 — Service-owned transactions (previous state)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-3-usecase-owned-context-injected-chosen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 3 — Usecase-owned, context-injected (chosen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1636,7 +1636,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0002-groups-only-rbac/" class="md-nav__link">
+      <a href="../../adr/0002-groups-only-rbac/" class="md-nav__link">
         
   
   
@@ -1691,55 +1691,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#context-and-problem-statement" class="md-nav__link">
+  <a href="#sessions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context and Problem Statement
+        Sessions
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-drivers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Drivers
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#considered-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Considered Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-outcome" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Outcome
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision Outcome">
+    <nav class="md-nav" aria-label="Sessions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+  <a href="#two-transports-one-entity" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Consequences
+        Two transports, one entity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ttls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TTLs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#audit-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Audit log
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enforcement-on-every-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enforcement on every request
       
     </span>
   </a>
@@ -1752,22 +1752,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pros-and-cons-of-the-options" class="md-nav__link">
+  <a href="#tokens-service-credentials-for-etcd-clients" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pros and Cons of the Options
+        Tokens (service credentials for etcd clients)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Pros and Cons of the Options">
+    <nav class="md-nav" aria-label="Tokens (service credentials for etcd clients)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#option-1-explicit-tx-parameter" class="md-nav__link">
+  <a href="#token-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 1 — Explicit tx parameter
+        Token fields
       
     </span>
   </a>
@@ -1775,10 +1775,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#option-2-service-owned-transactions-previous-state" class="md-nav__link">
+  <a href="#issuing-a-token" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 2 — Service-owned transactions (previous state)
+        Issuing a token
       
     </span>
   </a>
@@ -1786,10 +1786,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#option-3-usecase-owned-context-injected-chosen" class="md-nav__link">
+  <a href="#using-a-token-against-the-etcd-grpc-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 3 — Usecase-owned, context-injected (chosen)
+        Using a token against the etcd gRPC API
       
     </span>
   </a>
@@ -1821,104 +1821,157 @@
   
 
 
-<h1 id="usecase-owned-transactions-with-context-injected-tx-handles">Usecase-owned transactions with context-injected tx handles</h1>
+<h1 id="sessions-tokens">Sessions &amp; Tokens</h1>
+<p>Elara has two distinct credential types. Mixing them up is the most common
+source of confusion when integrating a client:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Session</th>
+<th>Token</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Purpose</td>
+<td>User auth on the UI/ConnectRPC API</td>
+<td>Service auth on the etcd gRPC API</td>
+</tr>
+<tr>
+<td>Permissions</td>
+<td>The user's group-derived RBAC</td>
+<td>The token's <strong>own</strong> <code>Role</code> + <code>Namespaces</code></td>
+</tr>
+<tr>
+<td>Lifecycle</td>
+<td>Tied to the user (deactivation cascades)</td>
+<td><strong>Independent of the issuing user</strong></td>
+</tr>
+<tr>
+<td>Storage</td>
+<td><code>sessions</code> bucket</td>
+<td>Token store, hashed (SHA-256)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sessions">Sessions</h2>
+<p>A <strong>session</strong> is user authentication state for the UI/ConnectRPC API. It is
+server-side and opaque: the id is a 256-bit cryptographically random value,
+base64-URL-encoded — no JWT, no embedded claims. Sessions live in the bbolt
+<code>sessions</code> bucket.</p>
+<h3 id="two-transports-one-entity">Two transports, one entity</h3>
+<table>
+<thead>
+<tr>
+<th>Client</th>
+<th>How the session id travels</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Web UI</td>
+<td><code>elara_session</code> cookie (HttpOnly, <code>SameSite=Lax</code>, <code>Path=/</code>, <code>Secure</code> per <code>secureCookie</code>)</td>
+</tr>
+<tr>
+<td>CLI / API clients</td>
+<td><code>Authorization: Bearer &lt;session-id&gt;</code> header</td>
+</tr>
+</tbody>
+</table>
+<p>If <strong>both</strong> are present on one request, the <strong>Bearer header wins</strong> (it is checked
+before the cookie).</p>
+<h3 id="ttls">TTLs</h3>
+<p>Verified against <code>internal/service/auth/sessions/model.go</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Session type</th>
+<th>Initial TTL</th>
+<th>Sliding?</th>
+<th>Hard cap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Web (<code>ClientTypeWeb</code>)</td>
+<td>8 hours</td>
+<td>Yes — extended on activity</td>
+<td>30 days from creation</td>
+</tr>
+<tr>
+<td>CLI (<code>ClientTypeCLI</code>)</td>
+<td>30 days</td>
+<td>No (absolute in MVP)</td>
+<td>30 days</td>
+</tr>
+</tbody>
+</table>
+<p>Web sliding-TTL refresh is throttled (~60s) and only extends when the delta
+exceeds ~5 minutes, so an active session keeps rolling forward its 8-hour window
+until it hits the 30-day hard cap from creation.</p>
+<h3 id="audit-log">Audit log</h3>
+<p>Every <strong>active</strong> state change appends a <code>SessionEvent</code> to the <code>session_events</code>
+bucket (append-only audit trail). Event types:</p>
 <ul>
-<li>Status: accepted</li>
-<li>Date: 2026-06-10</li>
-<li>Deciders: Elara maintainers</li>
-<li>Tags: storage, transactions, layering</li>
+<li><code>created</code> — a session was minted (login)</li>
+<li><code>refreshed</code> — a sliding-TTL extension was applied (web only)</li>
+<li><code>revoked_by_user</code> — user logged out / revoked their own session</li>
+<li><code>revoked_by_admin</code> — an admin revoked it</li>
+<li><code>revoked_cascade</code> — revoked as a side effect (e.g. user deactivation)</li>
 </ul>
-<p>Technical Story: EL-51 — Usecase-owned Transactions (<code>plans/EL-51/architecture.md</code>).
-Landed across <code>cf364f0</code>, <code>8c107f1</code>, <code>2f6b415</code>, <code>71d1713</code> ("ref: update project
-architecture", 2026-05-31 → 2026-06-10); the deactivate cascade that motivated it
-shipped in <code>07b93ef</code> (#67); the dead <code>internal/service/storage</code> TxManager was
-removed in <code>415c7b5</code> (#76).</p>
-<h2 id="context-and-problem-statement">Context and Problem Statement</h2>
-<p>Elara is backed by a single <a href="https://github.com/etcd-io/bbolt">bbolt</a> file. Before
-EL-51, the <em>service</em> layer owned transactions through a <code>TxManager</code> whose <code>Tx</code>
-type exposed <code>Bucket(name []byte)</code> — bbolt semantics leaking into a "backend
-agnostic" API. Each service method opened its own transaction internally, e.g.
-<code>sessions.RevokeAllForUser</code> wrapped its bulk-revoke in <code>txm.Write</code>.</p>
-<p>This broke down the moment a usecase needed two service calls to be atomic. The
-EL-50 user-deactivation flow must flip <code>User.Status</code> <strong>and</strong> revoke every session
-in one unit of work. With each service opening its own transaction, that was
-impossible: two independent transactions, no shared rollback. How should Elara
-place transaction boundaries so multi-step writes are atomic, without threading a
-<code>tx</code> object through every layer?</p>
-<h2 id="decision-drivers">Decision Drivers</h2>
+<p><strong>Passive expiration is not logged.</strong> When <code>ExpiresAt &lt; now</code> the session simply
+stops authenticating; the expiration moment is observable directly from the
+row's <code>ExpiresAt</code>. The audit log records observed actions, not time-driven
+transitions.</p>
+<h3 id="enforcement-on-every-request">Enforcement on every request</h3>
+<p>The auth interceptor, per request: extract session id (Bearer beats cookie) →
+<code>SessionService.Validate</code> (rejects not-found / revoked / expired) → load the user
+→ reject if <code>User.Status != active</code> → best-effort throttled <code>Refresh</code> → inject
+session + user into context. A deactivated user cannot make any authenticated
+request even if they hold a still-valid session id — see
+<a href="../users-lifecycle/">Users &amp; Groups lifecycle</a>.</p>
+<h2 id="tokens-service-credentials-for-etcd-clients">Tokens (service credentials for etcd clients)</h2>
+<p>A <strong>token</strong> is a service credential for 3rd-party clients hitting the
+etcd-compatible gRPC API (<code>:2379</code>). Tokens are <strong>not</strong> sessions and <strong>not</strong>
+personal access tokens.</p>
+<p>A token's permissions come <strong>only</strong> from its own fields, never inherited from the
+issuer. Deactivating, renaming, or deleting the user who issued a token has <strong>no
+effect</strong> on that token — tokens must be revoked explicitly via
+<code>TokenService.Revoke</code>.</p>
+<h3 id="token-fields">Token fields</h3>
+<p>Defined in <code>internal/domain/token.go</code>:</p>
 <ul>
-<li>Multi-step writes spanning several repos/services must be atomic.</li>
-<li>Transaction boundaries should be visible where the unit of work is defined.</li>
-<li>Stop leaking bbolt (<code>Bucket</code>) into the storage contract; keep a Postgres swap open.</li>
-<li>Avoid duplicated method variants (<code>Update</code> vs <code>UpdateInTx</code>) and tx-mock boilerplate.</li>
+<li><code>Role</code> — either <code>writer</code> or <code>reader</code> <strong>only</strong> (a token can never be <code>admin</code>).</li>
+<li><code>reader</code> → read allowed.</li>
+<li><code>writer</code> → read + write allowed (write implies read).</li>
+<li><code>Namespaces</code> — explicit non-empty list of namespaces the token may touch;
+  <code>*</code> grants all namespaces (required for unbounded / scan-all watches).</li>
+<li><code>ExpiresAt</code> — optional; <code>nil</code> means the token never expires.</li>
 </ul>
-<h2 id="considered-options">Considered Options</h2>
-<ol>
-<li><strong>Explicit <code>tx</code> parameter</strong> threaded through service and repo signatures.</li>
-<li><strong>Service-owned transactions</strong> (status quo) — each service opens its own.</li>
-<li><strong>Usecase-owned transactions, tx handle injected via <code>context.Context</code>.</strong></li>
-</ol>
-<h2 id="decision-outcome">Decision Outcome</h2>
-<p>Chosen option: <strong>3 — usecase-owned transactions with context injection.</strong></p>
-<p>The only way to open a transaction is <code>storage.Manager.WithTx(ctx, func(ctx) error) error</code>
-(<code>internal/storage/manager.go</code>). The <strong>usecase</strong> owns the boundary: it wraps the
-whole unit of work in one <code>WithTx</code> call. <code>internal/usecase/user/service.go</code>
-(<code>transitionStatus</code>) wraps <code>GetByID</code> + status change + <code>RevokeAllForUser</code> in a
-single <code>WithTx</code>, so deactivation commits or rolls back as a whole.</p>
-<p>Repos and services are <strong>transaction-agnostic</strong>. <code>WithTx</code> stores the <code>*bolt.Tx</code>
-under a private context key (<code>pkg/bbolt/manager.go</code>, <code>txKey{}</code>); repos read it via
-<code>GetQuerier(ctx)</code> — the active tx if one is in ctx, otherwise a short-lived
-auto-tx. Signatures never mention <code>tx</code>; code in and out of a transaction is
-identical. The reusable orchestration lives in <code>pkg/bbolt</code>, deliberately mirroring
-<code>sergeyslonimsky/core/sql</code> so a Postgres adapter can be dropped in with no usecase
-changes.</p>
-<p><strong>Nested <code>WithTx</code> flattens.</strong> The implementation checks for an existing writable
-tx in ctx and, if present, just calls the callback in the same tx rather than
-opening a new one:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">m</span><span class="w"> </span><span class="o">*</span><span class="nx">DBManager</span><span class="p">)</span><span class="w"> </span><span class="nx">WithTx</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">callback</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">existing</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">TxFromContext</span><span class="p">(</span><span class="nx">ctx</span><span class="p">);</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">existing</span><span class="p">.</span><span class="nx">Writable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">callback</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span><span class="w"> </span><span class="c1">// reuse outer tx — no nested begin</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="nx">tx</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">m</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">Begin</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
-<span class="w">    </span><span class="c1">// ... runTx: commit on success, rollback on error/panic/Goexit</span>
-<span class="p">}</span>
+<p>A token can never grant more than its creator holds: issuing a <code>writer</code> token
+for namespace <code>prod</code> requires the creator to have write on <code>prod</code>, otherwise the
+request fails with a permission-escalation error.</p>
+<h3 id="issuing-a-token">Issuing a token</h3>
+<p>Via the Web UI (Tokens page) or <code>TokenService.Create</code> on the ConnectRPC API.
+The <strong>raw token string is returned exactly once at creation</strong> (only its SHA-256
+hash is stored) — copy it then; it cannot be retrieved again. Raw tokens are
+prefixed <code>elara_</code>.</p>
+<h3 id="using-a-token-against-the-etcd-grpc-api">Using a token against the etcd gRPC API</h3>
+<p>Send it as gRPC metadata on the <code>:2379</code> connection:</p>
+<div class="highlight"><pre><span></span><code>authorization: Bearer elara_&lt;rest-of-token&gt;
 </code></pre></div>
-<p>This is what makes service-level atomicity composable: a service can call <code>WithTx</code>
-defensively, and when a usecase already opened one, it simply joins — bbolt allows
-only one write-tx at a time, so flattening is the only safe behavior.</p>
-<h3 id="consequences">Consequences</h3>
-<ul>
-<li>Good: multi-step writes are atomic with the boundary declared in one place (the usecase).</li>
-<li>Good: the service layer shrank — no tx plumbing, no <code>txm.Write</code> wrappers; easier to test.</li>
-<li>Good: <code>Manager</code> is backend-agnostic; <code>pkg/bbolt</code> shadows <code>core/sql</code> for a future Postgres adapter.</li>
-<li>Good: single method per operation — no <code>*InTx</code> twins, no <code>tx</code> parameter threading.</li>
-<li>Bad: the tx handle travels <strong>implicitly</strong> via ctx. Coupling is invisible in signatures; a reader must know the convention.</li>
-<li>Bad: discipline required — a repo/service must never open a competing tx; it must join the ctx one. bbolt's single-writer model turns a mistake here into a deadlock or lost atomicity.</li>
-<li>Bad: auto-tx fallback means a bare repo call outside <code>WithTx</code> silently opens its own short-lived tx — convenient, but atomicity across such calls is not guaranteed.</li>
-</ul>
-<h2 id="pros-and-cons-of-the-options">Pros and Cons of the Options</h2>
-<h3 id="option-1-explicit-tx-parameter">Option 1 — Explicit <code>tx</code> parameter</h3>
-<ul>
-<li>Good: coupling is visible; the type system tracks who is in a transaction.</li>
-<li>Good: no hidden ctx convention.</li>
-<li>Bad: every repo/service signature carries <code>tx</code>; adding/removing a boundary churns many APIs.</li>
-<li>Bad: tends toward <code>Update</code>/<code>UpdateInTx</code> duplication and leaks the tx type across layers.</li>
-</ul>
-<h3 id="option-2-service-owned-transactions-previous-state">Option 2 — Service-owned transactions (previous state)</h3>
-<ul>
-<li>Good: simple for single-service operations.</li>
-<li>Bad: cross-service atomicity is impossible — the EL-51 blocker.</li>
-<li>Bad: boundaries hidden inside services; <code>Tx.Bucket</code> leaked bbolt into the contract.</li>
-</ul>
-<h3 id="option-3-usecase-owned-context-injected-chosen">Option 3 — Usecase-owned, context-injected (chosen)</h3>
-<ul>
-<li>Good: composable atomicity, clean signatures, backend-agnostic contract.</li>
-<li>Good: nested <code>WithTx</code> flattens, so defensive wrapping is safe.</li>
-<li>Bad: implicit ctx coupling and a discipline requirement the compiler cannot enforce.</li>
-</ul>
-<p>This is a genuine trade-off. The Go community is split on implicit ctx-based tx
-propagation versus explicit parameters; Elara chose implicit for the leaner API,
-accepting that correctness now rests on convention rather than the type system.</p>
+<p>The gRPC token interceptor (<code>internal/handler/etcdv3/interceptor/auth.go</code>)
+hashes the presented token, looks it up, rejects unknown (<code>invalid token</code>) or
+expired (<code>token expired</code>) tokens, records last-used IP/time, and injects the
+token's namespace/role claims. Every KV and Watch RPC is then checked against
+those claims: reads need the namespace in scope; writes additionally need
+<code>writer</code> role; scan-all watches need a <code>*</code> (wildcard) token.</p>
+<p>With an etcd client library, set the metadata credential per your library's API
+(e.g. a per-RPC credential that emits the <code>authorization</code> header). Example with
+<code>etcdctl</code>-style usage is client-specific; the wire requirement is simply the
+<code>authorization: Bearer elara_…</code> metadata pair above.</p>
+<p>This requires <code>client.auth.enabled=true</code> — see <a href="../client-auth/">Client Auth</a>.</p>
 
 
 

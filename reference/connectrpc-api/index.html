@@ -1,0 +1,2696 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Configuration management service with a Web UI, a ConnectRPC API, and an etcd-compatible gRPC API.">
+      
+      
+      
+      
+        <link rel="prev" href="../etcd-compatibility/">
+      
+      
+        <link rel="next" href="../errors-catalog/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>ConnectRPC API - Elara</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#connectrpc-api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Elara" class="md-header__button md-logo" aria-label="Elara" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Elara
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ConnectRPC API
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/sergeyslonimsky/elara" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sergeyslonimsky/elara
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Elara" class="md-nav__button md-logo" aria-label="Elara" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    Elara
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/sergeyslonimsky/elara" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    sergeyslonimsky/elara
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/tutorial-todo-app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Todo-App Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../concepts/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/namespaces-configs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Namespaces & Configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/schema-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/bundles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bundles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/watch-revisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Watch & Revisions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/webhooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/clients-observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clients & Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../auth/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Auth & Access
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Auth & Access
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../auth/basic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../auth/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../auth/passthrough/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passthrough
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../auth/sessions-tokens/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions & Tokens
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../auth/rbac-groups/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC, Groups & Roles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../auth/client-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client Auth (etcd)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../auth/users-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Users & Groups lifecycle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../deployment/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deployment
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/kubernetes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes (Helm)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../etcd-compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    etcd API compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ConnectRPC API
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ConnectRPC API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transport
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AuthService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#profileservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ProfileService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capabilitiesservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CapabilitiesService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConfigService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schemaservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SchemaService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#namespaceservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NamespaceService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#userservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UserService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#groupservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GroupService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tokenservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TokenService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clientsservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ClientsService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dashboardservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DashboardService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filterservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FilterService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transferservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TransferService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#webhookservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WebhookService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generating-a-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generating a client
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../errors-catalog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting & FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0001-usecase-owned-transactions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0001: Usecase-owned Transactions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0002-groups-only-rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0002: Groups-only RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transport
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AuthService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#profileservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ProfileService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capabilitiesservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CapabilitiesService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConfigService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schemaservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SchemaService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#namespaceservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NamespaceService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#userservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UserService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#groupservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GroupService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tokenservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TokenService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clientsservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ClientsService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dashboardservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DashboardService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filterservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FilterService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transferservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TransferService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#webhookservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WebhookService
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generating-a-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generating a client
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="connectrpc-api">ConnectRPC API</h1>
+<p>Elara's management API is a set of <strong>14 <a href="https://connectrpc.com/">ConnectRPC</a>
+services</strong> served from the HTTP/2 server on port <strong><code>8080</code></strong>, alongside the
+embedded Web UI. The Web UI is itself a client of this API — anything the UI can
+do, an external client can do.</p>
+<h2 id="transport">Transport</h2>
+<p>ConnectRPC handlers speak three protocols on the same endpoint, and the server
+picks one per request from the <code>Content-Type</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Protocol</th>
+<th><code>Content-Type</code></th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>gRPC</strong></td>
+<td><code>application/grpc</code></td>
+<td>Wire-compatible with any gRPC client/codegen</td>
+</tr>
+<tr>
+<td><strong>gRPC-Web</strong></td>
+<td><code>application/grpc-web</code></td>
+<td>For browsers / proxies that cannot do trailers</td>
+</tr>
+<tr>
+<td><strong>Connect</strong></td>
+<td><code>application/json</code>, <code>application/proto</code></td>
+<td>Connect's own protocol — unary calls are plain HTTP POST, so <code>curl</code> works</td>
+</tr>
+</tbody>
+</table>
+<p>Procedure URLs follow the standard gRPC path shape,
+<code>/&lt;proto.package&gt;.&lt;Service&gt;/&lt;Method&gt;</code>, e.g.:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://elara.example.com/elara.namespace.v1.NamespaceService/ListNamespaces<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Authorization: Bearer &lt;session-id&gt;'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{}'</span>
+</code></pre></div>
+<p>Streaming RPCs (<code>WatchConfigs</code>, <code>WatchClients</code>, <code>WatchClient</code>) are server-streaming
+and require HTTP/2 (gRPC / Connect streaming); they are not usable over plain
+unary JSON POST.</p>
+<div class="admonition note">
+<p class="admonition-title">This is not the etcd API</p>
+<p>Port <code>8080</code> is the management/UI surface. Config <strong>consumers</strong> use the
+etcd-compatible gRPC API on port <code>2379</code> with a service token — see
+<a href="../../auth/client-auth/">Client Auth (etcd)</a>. The two are separate ports,
+separate protocols, and separate credentials.</p>
+</div>
+<h2 id="authentication">Authentication</h2>
+<p>Every service except <code>AuthService</code> is mounted behind the auth interceptor
+(<code>privateOpts</code> in <code>internal/di/service/handler.go</code>) and requires a <strong>session</strong> —
+either the <code>elara_session</code> cookie or <code>Authorization: Bearer &lt;session-id&gt;</code>
+(the Bearer header wins if both are present).</p>
+<p>Three services are also <strong>conditionally mounted</strong>: if their feature flag is off,
+the routes do not exist at all and calls return HTTP 404, not <code>Unauthenticated</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Auth</th>
+<th>Mounted when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AuthService</code></td>
+<td><strong>Public</strong> — no session required</td>
+<td>always</td>
+</tr>
+<tr>
+<td><code>CapabilitiesService</code></td>
+<td>Session required</td>
+<td>always</td>
+</tr>
+<tr>
+<td><code>ProfileService</code></td>
+<td>Session required</td>
+<td>always</td>
+</tr>
+<tr>
+<td><code>ConfigService</code>, <code>SchemaService</code></td>
+<td>Session required</td>
+<td>always</td>
+</tr>
+<tr>
+<td><code>NamespaceService</code></td>
+<td>Session required</td>
+<td>always</td>
+</tr>
+<tr>
+<td><code>ClientsService</code>, <code>DashboardService</code>, <code>FilterService</code></td>
+<td>Session required</td>
+<td>always</td>
+</tr>
+<tr>
+<td><code>TransferService</code>, <code>WebhookService</code></td>
+<td>Session required</td>
+<td>always</td>
+</tr>
+<tr>
+<td><code>UserService</code>, <code>GroupService</code></td>
+<td>Session required</td>
+<td><code>ui.auth.enabled=true</code></td>
+</tr>
+<tr>
+<td><code>TokenService</code></td>
+<td>Session required</td>
+<td><code>client.auth.enabled=true</code></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Forced password change blocks almost everything</p>
+<p>While the session's user has <code>password_change_required</code> set (bootstrap
+basic-auth admin, or after <code>ResetUserPassword</code>), the interceptor rejects
+every procedure except exactly three:
+<code>ProfileService/ChangePassword</code>, <code>ProfileService/Me</code>, and
+<code>ProfileService/Logout</code>.</p>
+</div>
+<p>In passthrough mode (<code>ui.auth.enabled=false</code>) the interceptor runs with
+<code>skipPermissions=true</code> and rewrites every request — authenticated or not — as a
+synthetic superadmin. Do not expose such an instance.</p>
+<p>Beyond authentication, most write RPCs are additionally authorized against the
+groups-only RBAC model, with anti-escalation checks (you cannot grant what you
+do not hold). <code>GroupService</code> and <code>UserService</code> document their exact rules in the
+<code>.proto</code> comments.</p>
+<hr />
+<h2 id="authservice">AuthService</h2>
+<p>Login and auth-mode discovery. <strong>The only public service</strong> — it is what an
+unauthenticated client calls to obtain a session.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetAuthInfo</code></td>
+<td>Returns the server's configured <code>AuthType</code> (<code>none</code> / <code>basic-auth</code> / <code>oidc</code>) so a client knows which login flow to drive.</td>
+</tr>
+<tr>
+<td><code>OIDCLogin</code></td>
+<td>Starts the OIDC flow; returns the IdP <code>redirect_url</code> to send the browser to.</td>
+</tr>
+<tr>
+<td><code>OIDCCallback</code></td>
+<td>Exchanges the IdP <code>code</code> + <code>state</code> for a session; sets the <code>elara_session</code> cookie.</td>
+</tr>
+<tr>
+<td><code>BasicLogin</code></td>
+<td>Password login with <code>email</code> + <code>password</code>; sets the session cookie and returns <code>password_change_required</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>There is no <code>Login</code>-side logout — logout lives on <code>ProfileService</code>, which is
+authenticated by definition.</p>
+<h2 id="profileservice">ProfileService</h2>
+<p>The current session's own identity and credentials.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Me</code></td>
+<td>Returns the caller's <code>email</code>, <code>name</code>, <code>picture</code>, <code>password_change_required</code>, and the full flattened list of permission assignments the UI uses for client-side gating.</td>
+</tr>
+<tr>
+<td><code>ChangePassword</code></td>
+<td>Sets a new password. <code>current_password</code> is required for a voluntary change but may be omitted when <code>password_change_required</code> is set. Basic-auth only — returns <code>InvalidArgument</code> under OIDC/passthrough.</td>
+</tr>
+<tr>
+<td><code>Logout</code></td>
+<td>Revokes the current session and clears the cookie.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="capabilitiesservice">CapabilitiesService</h2>
+<p>Server feature flags, so a client can hide UI/skip calls for services that are
+not mounted.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetCapabilities</code></td>
+<td>Returns <code>etcd_token_auth_enabled</code> (is <code>TokenService</code> mounted?), <code>user_management_enabled</code> (are <code>UserService</code>/<code>GroupService</code> mounted?), and <code>demo_mode</code> (instance seeded with sample data).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="configservice">ConfigService</h2>
+<p>CRUD, history, and locking for config entries. This is the primary data-plane
+service of the management API.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CreateConfig</code></td>
+<td>Creates a config at <code>path</code> in <code>namespace</code> with <code>content</code>, format, and metadata.</td>
+</tr>
+<tr>
+<td><code>GetConfig</code></td>
+<td>Reads the current revision of one config by <code>namespace</code> + <code>path</code>.</td>
+</tr>
+<tr>
+<td><code>UpdateConfig</code></td>
+<td>Writes new content. Pass <code>version</code> for optimistic concurrency.</td>
+</tr>
+<tr>
+<td><code>DeleteConfig</code></td>
+<td>Deletes a config.</td>
+</tr>
+<tr>
+<td><code>ListConfigs</code></td>
+<td>Directory-style listing: returns the entries under a folder <code>path</code> (<code>""</code>/<code>/</code> = root), paginated and sortable, with optional name-substring <code>query</code>.</td>
+</tr>
+<tr>
+<td><code>GetConfigHistory</code></td>
+<td>Returns the newest-first revision history for a path (<code>limit</code> defaults to 20).</td>
+</tr>
+<tr>
+<td><code>GetConfigAtRevision</code></td>
+<td>Returns the content of one specific historical revision.</td>
+</tr>
+<tr>
+<td><code>SearchConfigs</code></td>
+<td>Full search across configs by <code>query</code>, optionally scoped to a namespace; paginated.</td>
+</tr>
+<tr>
+<td><code>CopyConfig</code></td>
+<td>Copies a config from a source <code>namespace</code>+<code>path</code> to a destination pair (cross-namespace allowed).</td>
+</tr>
+<tr>
+<td><code>ValidateConfig</code></td>
+<td>Validates candidate <code>content</code> against the schema that would apply at <code>namespace</code>+<code>path</code>, without writing.</td>
+</tr>
+<tr>
+<td><code>WatchConfigs</code></td>
+<td><strong>Server stream.</strong> Emits change events for a <code>path_prefix</code> within a namespace (<code>CREATED</code>, <code>UPDATED</code>, <code>DELETED</code>, <code>LOCKED</code>, <code>UNLOCKED</code>, <code>NAMESPACE_LOCKED</code>, <code>NAMESPACE_UNLOCKED</code>).</td>
+</tr>
+<tr>
+<td><code>GetConfigDiff</code></td>
+<td>Returns <code>from_content</code>, <code>to_content</code>, and a rendered textual <code>diff</code> between two revisions.</td>
+</tr>
+<tr>
+<td><code>LockConfig</code></td>
+<td>Marks a single config read-only.</td>
+</tr>
+<tr>
+<td><code>UnlockConfig</code></td>
+<td>Clears the lock.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="schemaservice">SchemaService</h2>
+<p>JSON Schema attachments that validate config content on write.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AttachSchema</code></td>
+<td>Attaches a <code>json_schema</code> to a <code>path_pattern</code> within a namespace (creates or replaces).</td>
+</tr>
+<tr>
+<td><code>DetachSchema</code></td>
+<td>Removes the attachment for an exact <code>path_pattern</code>.</td>
+</tr>
+<tr>
+<td><code>GetSchema</code></td>
+<td>Fetches the attachment registered for an exact <code>path_pattern</code>.</td>
+</tr>
+<tr>
+<td><code>GetEffectiveSchema</code></td>
+<td>Resolves which attachment actually applies to a concrete <code>path</code> — use this, not <code>GetSchema</code>, to answer "what validates this config?".</td>
+</tr>
+<tr>
+<td><code>ListSchemas</code></td>
+<td>All attachments in a namespace.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="namespaceservice">NamespaceService</h2>
+<p>Namespaces are the top-level tenancy and RBAC domain unit.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CreateNamespace</code></td>
+<td>Creates a namespace (<code>name</code> is validated against the namespace name pattern).</td>
+</tr>
+<tr>
+<td><code>GetNamespace</code></td>
+<td>Fetches one namespace by name.</td>
+</tr>
+<tr>
+<td><code>UpdateNamespace</code></td>
+<td>Updates the <code>description</code> only — namespace names are immutable.</td>
+</tr>
+<tr>
+<td><code>ListNamespaces</code></td>
+<td>Paginated, sortable listing with an optional name-substring <code>query</code>.</td>
+</tr>
+<tr>
+<td><code>DeleteNamespace</code></td>
+<td>Deletes a namespace.</td>
+</tr>
+<tr>
+<td><code>LockNamespace</code></td>
+<td>Marks the whole namespace read-only; emits a <code>NAMESPACE_LOCKED</code> watch event.</td>
+</tr>
+<tr>
+<td><code>UnlockNamespace</code></td>
+<td>Clears the namespace lock.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="userservice">UserService</h2>
+<p>User records and their group memberships. Mounted only when <code>ui.auth.enabled=true</code>.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ListUsers</code></td>
+<td>Paginated listing. With <code>User:Read *</code> returns everyone; otherwise the result is derived through <code>Group:Read</code> — only users in groups the caller can read (unassigned users are invisible).</td>
+</tr>
+<tr>
+<td><code>GetUser</code></td>
+<td>One user by UUID. <code>visible_group_ids</code> is independently filtered by the caller's <code>Group:Read</code> scope.</td>
+</tr>
+<tr>
+<td><code>CreateUser</code></td>
+<td>Creates a user, optionally joining <code>initial_group_ids</code> atomically. A password is required in basic-auth mode and must be empty under OIDC. Rejected with <code>ErrFeatureNotAvailable</code> when the auth type is <code>none</code> — passthrough has no identities to create.</td>
+</tr>
+<tr>
+<td><code>UpdateUserGroups</code></td>
+<td>Explicit membership delta (<code>add_group_ids</code> / <code>remove_group_ids</code>). Adds/removes that are no-ops are accepted; the same id in both lists is <code>InvalidArgument</code>. Supports <code>expected_version</code> optimistic locking (<code>FailedPrecondition</code> on mismatch).</td>
+</tr>
+<tr>
+<td><code>ResetUserPassword</code></td>
+<td>Admin reset — sets a new password and <code>password_change_required</code>. Basic-auth mode only.</td>
+</tr>
+<tr>
+<td><code>DeactivateUser</code></td>
+<td>Deactivates the user <strong>and revokes all their sessions</strong> in one transaction. Does <em>not</em> revoke tokens they issued.</td>
+</tr>
+<tr>
+<td><code>ReactivateUser</code></td>
+<td>Reactivates a deactivated user. Revoked sessions are not restored — they must log in again.</td>
+</tr>
+<tr>
+<td><code>DeleteUser</code></td>
+<td>Deletes the user and all their memberships. Basic-auth mode only. System users (<code>is_system</code>) cannot be deleted or deactivated.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="groupservice">GroupService</h2>
+<p>Groups are the <strong>only</strong> way permissions reach a user. Mounted only when
+<code>ui.auth.enabled=true</code>.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CreateGroup</code></td>
+<td>Creates a group, optionally with <code>initial_permissions</code>, <code>initial_member_emails</code>, and <code>initial_manager_group_names</code> (groups granted <code>Group:Write</code> over the new group). The caller must hold every permission being granted.</td>
+</tr>
+<tr>
+<td><code>GetGroup</code></td>
+<td>One group by name. The full permission set is returned; <code>visible_members</code> is filtered through the caller's derived <code>User:Read</code> scope.</td>
+</tr>
+<tr>
+<td><code>UpdateGroup</code></td>
+<td>Metadata only — <code>display_name</code> and <code>description</code>. Members and permissions have their own RPCs by design.</td>
+</tr>
+<tr>
+<td><code>UpdateGroupMembers</code></td>
+<td>Explicit membership delta by email. Anti-escalation: each added member inherits the group's whole permission set, so the caller must hold all of it. <code>expected_members_version</code> gives optimistic locking.</td>
+</tr>
+<tr>
+<td><code>UpdateGroupPermissions</code></td>
+<td>Explicit permission delta. Checked both per-delta (caller holds each added permission) and as a cascade (caller holds everything the group will hold, if it has members). <code>expected_permissions_version</code> gives optimistic locking.</td>
+</tr>
+<tr>
+<td><code>DeleteGroup</code></td>
+<td>Deletes the group and all of its membership and permission rules in one Casbin write. System groups return <code>FailedPrecondition</code>.</td>
+</tr>
+<tr>
+<td><code>ListGroups</code></td>
+<td>With <code>Group:Read *</code> returns every group; otherwise only groups the caller can read individually. An empty page is a valid result, not an error.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="tokenservice">TokenService</h2>
+<p>Service credentials for the <strong>etcd-compatible gRPC API</strong> on <code>:2379</code>. Mounted only
+when <code>client.auth.enabled=true</code>.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CreateToken</code></td>
+<td>Issues a token with a <code>name</code>, an explicit <code>namespaces</code> list (<code>*</code> = all), a <code>permission</code> (reader/writer — never admin), and an optional <code>expires_at</code>. <strong>The <code>raw_token</code> is returned exactly once here</strong>; only its hash is stored.</td>
+</tr>
+<tr>
+<td><code>ListTokens</code></td>
+<td>Paginated, sortable, filterable listing of token metadata (never the secret).</td>
+</tr>
+<tr>
+<td><code>GetToken</code></td>
+<td>One token's metadata by id.</td>
+</tr>
+<tr>
+<td><code>RevokeToken</code></td>
+<td>Revokes a token by id. This is the <em>only</em> way a token dies early — issuer lifecycle events never cascade to tokens.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A token's permissions come from its own <code>Role</code> and <code>Namespaces</code>, not from the
+user who issued it. See <a href="../../auth/sessions-tokens/#tokens-service-credentials-for-etcd-clients">Sessions &amp; Tokens</a>.</p>
+</div>
+<hr />
+<h2 id="clientsservice">ClientsService</h2>
+<p>Observability over the etcd-API clients currently connected to <code>:2379</code>.
+Connection history is persisted; per-RPC event logs are in-memory and bounded.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ListActiveClients</code></td>
+<td>All currently-connected clients.</td>
+</tr>
+<tr>
+<td><code>GetClient</code></td>
+<td>One client (active or recently disconnected) plus its recent in-memory event log. <code>recent_events</code> is empty for disconnected clients — those events are not persisted.</td>
+</tr>
+<tr>
+<td><code>ListHistoricalConnections</code></td>
+<td>Past connections, newest first, <code>limit</code>-bounded (0 → server default).</td>
+</tr>
+<tr>
+<td><code>ListClientSessions</code></td>
+<td>Past connections of the <em>same logical client</em>, matched on <code>client_name</code> + <code>k8s_namespace</code>, newest first; the <code>current_id</code> session is excluded if given.</td>
+</tr>
+<tr>
+<td><code>WatchClients</code></td>
+<td><strong>Server stream.</strong> Periodic full <code>SNAPSHOT</code> updates plus immediate <code>CONNECTED</code>/<code>DISCONNECTED</code> events. Feeds a live list view; ends when the caller closes the stream.</td>
+</tr>
+<tr>
+<td><code>WatchClient</code></td>
+<td><strong>Server stream</strong> for a single client: snapshot updates plus <code>REQUEST_RECORDED</code> per-RPC events for a tailing activity log. Ends when that client disconnects.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="dashboardservice">DashboardService</h2>
+<p>Aggregate counters and a recent-changes feed for the UI home screen.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetStats</code></td>
+<td><code>namespace_count</code>, <code>config_count</code>, <code>active_client_count</code>, and the current <code>global_revision</code>.</td>
+</tr>
+<tr>
+<td><code>ListActivity</code></td>
+<td>Recent config change entries (revision, event type, path, namespace, version, timestamp). <code>limit</code> defaults to 50.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="filterservice">FilterService</h2>
+<p>Read-only lookup data for building permission-aware pickers and forms. Every
+listing RPC accepts an <code>actions</code> filter so the UI can ask "which namespaces can
+I <em>write</em> to?" rather than post-filtering client-side.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetNamespaces</code></td>
+<td>Namespace picker items, narrowed to those on which the caller holds the requested <code>actions</code>.</td>
+</tr>
+<tr>
+<td><code>GetGroups</code></td>
+<td>Group picker items, same <code>actions</code> narrowing.</td>
+</tr>
+<tr>
+<td><code>GetUsers</code></td>
+<td>User picker items, same <code>actions</code> narrowing.</td>
+</tr>
+<tr>
+<td><code>GetPermissionCatalog</code></td>
+<td>The static catalog for permission-assignment forms: per <code>PermissionObject</code>, which <code>PermissionAction</code>s are meaningful and what domain the assignment must carry — <code>GLOBAL</code> (domain must be <code>*</code>), <code>NAMESPACE</code> (a namespace name or <code>*</code>), or <code>GROUP</code> (<code>group:&lt;name&gt;</code> or <code>*</code>). The server validates assignments against the same catalog.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="transferservice">TransferService</h2>
+<p>Bulk import/export of configs as a bundle (JSON or YAML, optionally zipped).</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ExportNamespace</code></td>
+<td>Exports one namespace. Returns raw <code>data</code> plus <code>content_type</code> and a suggested <code>filename</code>.</td>
+</tr>
+<tr>
+<td><code>ExportAll</code></td>
+<td>Exports every namespace. <code>zip_layout</code> selects a single <code>BUNDLE</code> file or one file <code>PER_NAMESPACE</code>.</td>
+</tr>
+<tr>
+<td><code>ImportNamespace</code></td>
+<td>Imports a bundle. <code>on_conflict</code> is <code>SKIP</code> / <code>OVERWRITE</code> / <code>FAIL</code>; <code>dry_run</code> validates without writing; <code>namespace</code> overrides the bundle's namespace (and then rejects an all-namespaces bundle). Returns <code>created</code> / <code>updated</code> / <code>skipped</code> / <code>failed</code> counts plus per-entry <code>errors</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="webhookservice">WebhookService</h2>
+<p>Outbound HTTP notifications on config changes.</p>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CreateWebhook</code></td>
+<td>Registers a <code>url</code> with a <code>namespace_filter</code>, <code>path_prefix</code>, an <code>events</code> list (<code>CREATED</code> / <code>UPDATED</code> / <code>DELETED</code>), an HMAC <code>secret</code>, and an <code>enabled</code> flag.</td>
+</tr>
+<tr>
+<td><code>GetWebhook</code></td>
+<td>One webhook by id.</td>
+</tr>
+<tr>
+<td><code>UpdateWebhook</code></td>
+<td>Updates any of the above fields by id.</td>
+</tr>
+<tr>
+<td><code>DeleteWebhook</code></td>
+<td>Removes a webhook.</td>
+</tr>
+<tr>
+<td><code>ListWebhooks</code></td>
+<td>All registered webhooks.</td>
+</tr>
+<tr>
+<td><code>GetDeliveryHistory</code></td>
+<td>Recent delivery attempts for one webhook — status, timing, and failures, for debugging endpoints that are not receiving events.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="generating-a-client">Generating a client</h2>
+<p>Protobuf sources live in <code>proto/elara/&lt;area&gt;/v1/</code>. <code>make generate</code> runs
+<code>buf generate</code> and emits, per <code>buf.gen.yaml</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Output</th>
+<th>Plugin</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Go messages</td>
+<td><code>internal/proto/elara/&lt;area&gt;/v1/*.pb.go</code></td>
+<td><code>protocolbuffers/go</code></td>
+</tr>
+<tr>
+<td>Go Connect clients/handlers</td>
+<td><code>internal/proto/elara/&lt;area&gt;/v1/&lt;area&gt;v1connect/*.go</code></td>
+<td><code>connectrpc/go</code></td>
+</tr>
+<tr>
+<td>TypeScript messages</td>
+<td><code>web/src/gen/elara/&lt;area&gt;/v1/*_pb.ts</code></td>
+<td><code>bufbuild/es</code></td>
+</tr>
+<tr>
+<td>TypeScript TanStack Query hooks</td>
+<td><code>web/src/gen/elara/&lt;area&gt;/v1/*-&lt;Service&gt;Query.ts</code></td>
+<td><code>connectrpc/query-es</code></td>
+</tr>
+</tbody>
+</table>
+<p>Both generated trees are committed, so a Go client can import the
+<code>*v1connect</code> packages directly. For clients outside this repo, point your own
+<code>buf generate</code> (or <code>protoc</code>) at <code>proto/</code> — the service definitions are the
+contract, and any gRPC-capable language works via the gRPC protocol.</p>
+<div class="admonition note">
+<p class="admonition-title">This page is hand-maintained</p>
+<p><code>buf.gen.yaml</code> has <strong>no</strong> <code>protoc-gen-doc</code> plugin — nothing regenerates this
+page. When you add, rename, or remove an RPC, update the relevant table here
+in the same change. The <code>.proto</code> files remain the source of truth for exact
+field names, validation rules, and authorization comments.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.top", "navigation.sections", "navigation.indexes", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

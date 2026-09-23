@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../../architecture/">
+        <link rel="prev" href="../errors-catalog/">
       
       
-        <link rel="next" href="../0002-groups-only-rbac/">
+        <link rel="next" href="../../architecture/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>ADR 0001: Usecase-owned Transactions - Elara</title>
+        <title>Troubleshooting & FAQ - Elara</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#usecase-owned-transactions-with-context-injected-tx-handles" class="md-skip">
+        <a href="#troubleshooting-faq" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0001: Usecase-owned Transactions
+              Troubleshooting & FAQ
             
           </span>
         </div>
@@ -1133,6 +1133,8 @@
       
   
   
+    
+  
   
   
     
@@ -1161,15 +1163,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -1193,7 +1195,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1213,7 +1215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/" class="md-nav__link">
+      <a href="../cli/" class="md-nav__link">
         
   
   
@@ -1241,7 +1243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/etcd-compatibility/" class="md-nav__link">
+      <a href="../etcd-compatibility/" class="md-nav__link">
         
   
   
@@ -1269,7 +1271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/connectrpc-api/" class="md-nav__link">
+      <a href="../connectrpc-api/" class="md-nav__link">
         
   
   
@@ -1297,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/errors-catalog/" class="md-nav__link">
+      <a href="../errors-catalog/" class="md-nav__link">
         
   
   
@@ -1322,10 +1324,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/troubleshooting/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting & FAQ
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1341,6 +1370,209 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Startup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Startup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load-container-open-bbolt-database-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load container: open bbolt database: timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basic-auth-requires-uiauthbasicauthusername-to-be-set-password-to-be-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic-auth requires ui.auth.basicAuth.username to be set / ...password to be set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oidc-requires-uiauthoidcadminemail-to-be-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oidc requires ui.auth.oidc.adminEmail to be set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uiauthtype-must-be-oidc-basic-auth-or-none-or-unset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ui.auth.type must be "oidc", "basic-auth", or "none" (or unset)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dangerouslyskippermissionstrue-cannot-be-combined-with-uiauthenabledtrue-or-clientauthenabledtrue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dangerously.skip.permissions=true cannot be combined with ui.auth.enabled=true or client.auth.enabled=true
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#login-and-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Login and permissions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Login and permissions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#password-change-required-blocks-every-api-call-after-basic-auth-login" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "password change required" blocks every API call after basic-auth login
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logged-in-but-the-sidebar-only-shows-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logged in but the sidebar only shows Dashboard
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#login-works-over-http-but-the-session-doesnt-stick-redirects-back-to-login" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Login works over HTTP but the session doesn't stick (redirects back to login)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#an-oidc-user-gets-permissiondenied-identity-not-provisioned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An OIDC user gets PermissionDenied / identity not provisioned
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-write-over-the-etcd-compatible-api-is-rejected-with-invalidargument" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A write over the etcd-compatible API is rejected with InvalidArgument
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backup-restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backup &amp; Restore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-error-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General error reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="General error reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-does-elara-store-its-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where does Elara store its data?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1357,10 +1589,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1379,11 +1609,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
           <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
@@ -1404,7 +1634,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1447,37 +1677,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0001: Usecase-owned Transactions
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../adr/0001-usecase-owned-transactions/" class="md-nav__link">
         
   
   
@@ -1493,137 +1696,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#context-and-problem-statement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context and Problem Statement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-drivers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Drivers
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#considered-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Considered Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-outcome" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Outcome
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision Outcome">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pros-and-cons-of-the-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pros and Cons of the Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pros and Cons of the Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#option-1-explicit-tx-parameter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 1 — Explicit tx parameter
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-2-service-owned-transactions-previous-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 2 — Service-owned transactions (previous state)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-3-usecase-owned-context-injected-chosen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 3 — Usecase-owned, context-injected (chosen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1636,7 +1708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0002-groups-only-rbac/" class="md-nav__link">
+      <a href="../../adr/0002-groups-only-rbac/" class="md-nav__link">
         
   
   
@@ -1691,55 +1763,66 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#context-and-problem-statement" class="md-nav__link">
+  <a href="#startup" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context and Problem Statement
+        Startup
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-drivers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Drivers
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#considered-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Considered Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-outcome" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Outcome
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision Outcome">
+    <nav class="md-nav" aria-label="Startup">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+  <a href="#load-container-open-bbolt-database-timeout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Consequences
+        load container: open bbolt database: timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#basic-auth-requires-uiauthbasicauthusername-to-be-set-password-to-be-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        basic-auth requires ui.auth.basicAuth.username to be set / ...password to be set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oidc-requires-uiauthoidcadminemail-to-be-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oidc requires ui.auth.oidc.adminEmail to be set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uiauthtype-must-be-oidc-basic-auth-or-none-or-unset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ui.auth.type must be "oidc", "basic-auth", or "none" (or unset)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dangerouslyskippermissionstrue-cannot-be-combined-with-uiauthenabledtrue-or-clientauthenabledtrue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dangerously.skip.permissions=true cannot be combined with ui.auth.enabled=true or client.auth.enabled=true
       
     </span>
   </a>
@@ -1752,22 +1835,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pros-and-cons-of-the-options" class="md-nav__link">
+  <a href="#login-and-permissions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pros and Cons of the Options
+        Login and permissions
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Pros and Cons of the Options">
+    <nav class="md-nav" aria-label="Login and permissions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#option-1-explicit-tx-parameter" class="md-nav__link">
+  <a href="#password-change-required-blocks-every-api-call-after-basic-auth-login" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 1 — Explicit tx parameter
+        "password change required" blocks every API call after basic-auth login
       
     </span>
   </a>
@@ -1775,10 +1858,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#option-2-service-owned-transactions-previous-state" class="md-nav__link">
+  <a href="#logged-in-but-the-sidebar-only-shows-dashboard" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 2 — Service-owned transactions (previous state)
+        Logged in but the sidebar only shows Dashboard
       
     </span>
   </a>
@@ -1786,10 +1869,71 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#option-3-usecase-owned-context-injected-chosen" class="md-nav__link">
+  <a href="#login-works-over-http-but-the-session-doesnt-stick-redirects-back-to-login" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 3 — Usecase-owned, context-injected (chosen)
+        Login works over HTTP but the session doesn't stick (redirects back to login)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#an-oidc-user-gets-permissiondenied-identity-not-provisioned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An OIDC user gets PermissionDenied / identity not provisioned
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-write-over-the-etcd-compatible-api-is-rejected-with-invalidargument" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A write over the etcd-compatible API is rejected with InvalidArgument
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backup-restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backup &amp; Restore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-error-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General error reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="General error reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-does-elara-store-its-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where does Elara store its data?
       
     </span>
   </a>
@@ -1821,104 +1965,97 @@
   
 
 
-<h1 id="usecase-owned-transactions-with-context-injected-tx-handles">Usecase-owned transactions with context-injected tx handles</h1>
-<ul>
-<li>Status: accepted</li>
-<li>Date: 2026-06-10</li>
-<li>Deciders: Elara maintainers</li>
-<li>Tags: storage, transactions, layering</li>
-</ul>
-<p>Technical Story: EL-51 — Usecase-owned Transactions (<code>plans/EL-51/architecture.md</code>).
-Landed across <code>cf364f0</code>, <code>8c107f1</code>, <code>2f6b415</code>, <code>71d1713</code> ("ref: update project
-architecture", 2026-05-31 → 2026-06-10); the deactivate cascade that motivated it
-shipped in <code>07b93ef</code> (#67); the dead <code>internal/service/storage</code> TxManager was
-removed in <code>415c7b5</code> (#76).</p>
-<h2 id="context-and-problem-statement">Context and Problem Statement</h2>
-<p>Elara is backed by a single <a href="https://github.com/etcd-io/bbolt">bbolt</a> file. Before
-EL-51, the <em>service</em> layer owned transactions through a <code>TxManager</code> whose <code>Tx</code>
-type exposed <code>Bucket(name []byte)</code> — bbolt semantics leaking into a "backend
-agnostic" API. Each service method opened its own transaction internally, e.g.
-<code>sessions.RevokeAllForUser</code> wrapped its bulk-revoke in <code>txm.Write</code>.</p>
-<p>This broke down the moment a usecase needed two service calls to be atomic. The
-EL-50 user-deactivation flow must flip <code>User.Status</code> <strong>and</strong> revoke every session
-in one unit of work. With each service opening its own transaction, that was
-impossible: two independent transactions, no shared rollback. How should Elara
-place transaction boundaries so multi-step writes are atomic, without threading a
-<code>tx</code> object through every layer?</p>
-<h2 id="decision-drivers">Decision Drivers</h2>
-<ul>
-<li>Multi-step writes spanning several repos/services must be atomic.</li>
-<li>Transaction boundaries should be visible where the unit of work is defined.</li>
-<li>Stop leaking bbolt (<code>Bucket</code>) into the storage contract; keep a Postgres swap open.</li>
-<li>Avoid duplicated method variants (<code>Update</code> vs <code>UpdateInTx</code>) and tx-mock boilerplate.</li>
-</ul>
-<h2 id="considered-options">Considered Options</h2>
-<ol>
-<li><strong>Explicit <code>tx</code> parameter</strong> threaded through service and repo signatures.</li>
-<li><strong>Service-owned transactions</strong> (status quo) — each service opens its own.</li>
-<li><strong>Usecase-owned transactions, tx handle injected via <code>context.Context</code>.</strong></li>
-</ol>
-<h2 id="decision-outcome">Decision Outcome</h2>
-<p>Chosen option: <strong>3 — usecase-owned transactions with context injection.</strong></p>
-<p>The only way to open a transaction is <code>storage.Manager.WithTx(ctx, func(ctx) error) error</code>
-(<code>internal/storage/manager.go</code>). The <strong>usecase</strong> owns the boundary: it wraps the
-whole unit of work in one <code>WithTx</code> call. <code>internal/usecase/user/service.go</code>
-(<code>transitionStatus</code>) wraps <code>GetByID</code> + status change + <code>RevokeAllForUser</code> in a
-single <code>WithTx</code>, so deactivation commits or rolls back as a whole.</p>
-<p>Repos and services are <strong>transaction-agnostic</strong>. <code>WithTx</code> stores the <code>*bolt.Tx</code>
-under a private context key (<code>pkg/bbolt/manager.go</code>, <code>txKey{}</code>); repos read it via
-<code>GetQuerier(ctx)</code> — the active tx if one is in ctx, otherwise a short-lived
-auto-tx. Signatures never mention <code>tx</code>; code in and out of a transaction is
-identical. The reusable orchestration lives in <code>pkg/bbolt</code>, deliberately mirroring
-<code>sergeyslonimsky/core/sql</code> so a Postgres adapter can be dropped in with no usecase
-changes.</p>
-<p><strong>Nested <code>WithTx</code> flattens.</strong> The implementation checks for an existing writable
-tx in ctx and, if present, just calls the callback in the same tx rather than
-opening a new one:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">m</span><span class="w"> </span><span class="o">*</span><span class="nx">DBManager</span><span class="p">)</span><span class="w"> </span><span class="nx">WithTx</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">callback</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">existing</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">TxFromContext</span><span class="p">(</span><span class="nx">ctx</span><span class="p">);</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">existing</span><span class="p">.</span><span class="nx">Writable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">callback</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span><span class="w"> </span><span class="c1">// reuse outer tx — no nested begin</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="nx">tx</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">m</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">Begin</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
-<span class="w">    </span><span class="c1">// ... runTx: commit on success, rollback on error/panic/Goexit</span>
-<span class="p">}</span>
+<h1 id="troubleshooting-faq">Troubleshooting &amp; FAQ</h1>
+<h2 id="startup">Startup</h2>
+<h3 id="load-container-open-bbolt-database-timeout"><code>load container: open bbolt database: timeout</code></h3>
+<p>Another process already holds the exclusive lock on the bbolt file at
+<code>CONFIG_DATA_PATH</code> (default <code>~/.elara/data/elara.db</code> for a bare binary,
+<code>/var/lib/elara/elara.db</code> in the container image). Elara waits up to 1 second
+for the lock before giving up. This is by design: <strong>only one Elara instance
+may run against a given data file at a time</strong> — see
+<a href="../../deployment/kubernetes/#values-reference">Kubernetes → <code>replicaCount</code></a>.</p>
+<p>Fix: stop the other instance, or point <code>CONFIG_DATA_PATH</code> at a different
+directory if you actually intend to run two independent instances.</p>
+<h3 id="basic-auth-requires-uiauthbasicauthusername-to-be-set-password-to-be-set"><code>basic-auth requires ui.auth.basicAuth.username to be set</code> / <code>...password to be set</code></h3>
+<p><code>UI_AUTH_TYPE=basic-auth</code> but <code>UI_AUTH_BASICAUTH_USERNAME</code> or
+<code>UI_AUTH_BASICAUTH_PASSWORD</code> is empty. See
+<a href="../../auth/basic/#environment">Basic Auth Setup</a>.</p>
+<h3 id="oidc-requires-uiauthoidcadminemail-to-be-set"><code>oidc requires ui.auth.oidc.adminEmail to be set</code></h3>
+<p><code>UI_AUTH_TYPE=oidc</code> but <code>UI_AUTH_OIDC_ADMINEMAIL</code> is empty — Elara needs it to
+know who to bootstrap as the first superadmin. See
+<a href="../../auth/oidc/#environment">OIDC Setup</a>.</p>
+<h3 id="uiauthtype-must-be-oidc-basic-auth-or-none-or-unset"><code>ui.auth.type must be "oidc", "basic-auth", or "none" (or unset)</code></h3>
+<p><code>UI_AUTH_TYPE</code> carries a value outside that set — almost always a typo
+(<code>basicAuth</code>, <code>basic_auth</code>, <code>OIDC</code> with different casing). Elara fails fast
+rather than falling back to no-auth, because the silent fallback used to boot a
+wide-open instance from a one-character mistake.</p>
+<p>An <strong>empty</strong> <code>UI_AUTH_TYPE</code> is legal and means <code>none</code>: the Helm chart always
+emits the variable, so blank is an expected state rather than a mistake.</p>
+<h3 id="dangerouslyskippermissionstrue-cannot-be-combined-with-uiauthenabledtrue-or-clientauthenabledtrue"><code>dangerously.skip.permissions=true cannot be combined with ui.auth.enabled=true or client.auth.enabled=true</code></h3>
+<p><code>DANGEROUSLY_SKIP_PERMISSIONS</code> disables authorization entirely. Combined with a
+real auth surface it produces a deployment that <em>looks</em> secured — a login
+screen, a Tokens UI that appears to enforce scopes — while every permission
+check is bypassed underneath.</p>
+<p>Fix: pick one. For a deliberately open dev instance leave <code>UI_AUTH_ENABLED</code> and
+<code>CLIENT_AUTH_ENABLED</code> at <code>false</code>; for anything else drop the flag. See
+<a href="../../deployment/configuration/">Configuration → Advanced / dangerous</a>.</p>
+<h2 id="login-and-permissions">Login and permissions</h2>
+<h3 id="password-change-required-blocks-every-api-call-after-basic-auth-login">"password change required" blocks every API call after basic-auth login</h3>
+<p>Expected on first login with the bootstrap admin credentials. Call
+<code>ProfileService.ChangePassword</code> — see
+<a href="../../auth/basic/#required-first-step-forced-password-change">Basic Auth Setup → Required first step</a>.
+Only <code>ProfileService/{ChangePassword,Me,Logout}</code> work until you do.</p>
+<h3 id="logged-in-but-the-sidebar-only-shows-dashboard">Logged in but the sidebar only shows Dashboard</h3>
+<p>Classic symptom of a fresh bbolt file where Casbin's superadmin wildcard
+policy hasn't propagated into the in-memory enforcer yet — should self-resolve
+after the first successful boot, since <code>main.go</code>'s startup sequence reloads
+the policy right after bootstrap. If it persists across restarts, check that
+<code>ui.auth.enabled</code> and the auth type match what you expect
+(<code>GetCapabilities</code>/<code>GetAuthInfo</code> in the browser network tab will show what the
+server thinks is configured) and that the logged-in identity is actually a
+member of the superadmin group.</p>
+<h3 id="login-works-over-http-but-the-session-doesnt-stick-redirects-back-to-login">Login works over HTTP but the session doesn't stick (redirects back to login)</h3>
+<p><code>UI_AUTH_SESSION_SECURECOOKIE=true</code> marks the cookie <code>Secure</code>, and browsers
+silently drop <code>Secure</code> cookies over plain HTTP (RFC 6265). Set it <code>false</code> for
+local/plain-HTTP setups, <code>true</code> only behind TLS. See
+<a href="../../auth/#configuration-keys">Auth &amp; Access → <code>secureCookie</code> warning</a>.</p>
+<h3 id="an-oidc-user-gets-permissiondenied-identity-not-provisioned">An OIDC user gets <code>PermissionDenied</code> / <code>identity not provisioned</code></h3>
+<p>Elara does not JIT-provision OIDC users — only the configured
+<code>adminEmail</code> bootstraps automatically. Every other user must be created in
+Elara first, then linked on their first verified OIDC login. See
+<a href="../../auth/oidc/">OIDC Setup</a>.</p>
+<h3 id="a-write-over-the-etcd-compatible-api-is-rejected-with-invalidargument">A write over the etcd-compatible API is rejected with <code>InvalidArgument</code></h3>
+<p>The value does not satisfy the JSON Schema attached to that namespace. Schema
+validation runs on the etcd <code>Put</code> path exactly as it does on the Web
+UI/ConnectRPC path, and the rejected write is not stored. Either fix the value
+or detach the schema — see
+<a href="../../concepts/schema-validation/">Schema Validation</a> and
+<a href="../etcd-compatibility/#supported-rpcs">etcd API compatibility → KV</a>.</p>
+<p>Note that this applies to <code>json</code> and <code>yaml</code> configs; <code>other</code>-format content is
+not schema-checked. A <code>Put</code> of opaque bytes (a distributed lock, a
+leader-election payload) under a path no schema pattern matches is unaffected.</p>
+<h2 id="backup-restore">Backup &amp; Restore</h2>
+<p>Elara does not yet expose an online backup RPC (<code>Maintenance/Snapshot</code> is
+unimplemented — see
+<a href="../etcd-compatibility/#supported-rpcs">etcd API compatibility</a>). Until it
+does, back up by copying the bbolt file while the process is <strong>stopped</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># stop elara, then:</span>
+cp<span class="w"> </span>/var/lib/elara/elara.db<span class="w"> </span>/backup/elara-<span class="k">$(</span>date<span class="w"> </span>+%F<span class="k">)</span>.db
+<span class="c1"># restart elara</span>
 </code></pre></div>
-<p>This is what makes service-level atomicity composable: a service can call <code>WithTx</code>
-defensively, and when a usecase already opened one, it simply joins — bbolt allows
-only one write-tx at a time, so flattening is the only safe behavior.</p>
-<h3 id="consequences">Consequences</h3>
-<ul>
-<li>Good: multi-step writes are atomic with the boundary declared in one place (the usecase).</li>
-<li>Good: the service layer shrank — no tx plumbing, no <code>txm.Write</code> wrappers; easier to test.</li>
-<li>Good: <code>Manager</code> is backend-agnostic; <code>pkg/bbolt</code> shadows <code>core/sql</code> for a future Postgres adapter.</li>
-<li>Good: single method per operation — no <code>*InTx</code> twins, no <code>tx</code> parameter threading.</li>
-<li>Bad: the tx handle travels <strong>implicitly</strong> via ctx. Coupling is invisible in signatures; a reader must know the convention.</li>
-<li>Bad: discipline required — a repo/service must never open a competing tx; it must join the ctx one. bbolt's single-writer model turns a mistake here into a deadlock or lost atomicity.</li>
-<li>Bad: auto-tx fallback means a bare repo call outside <code>WithTx</code> silently opens its own short-lived tx — convenient, but atomicity across such calls is not guaranteed.</li>
-</ul>
-<h2 id="pros-and-cons-of-the-options">Pros and Cons of the Options</h2>
-<h3 id="option-1-explicit-tx-parameter">Option 1 — Explicit <code>tx</code> parameter</h3>
-<ul>
-<li>Good: coupling is visible; the type system tracks who is in a transaction.</li>
-<li>Good: no hidden ctx convention.</li>
-<li>Bad: every repo/service signature carries <code>tx</code>; adding/removing a boundary churns many APIs.</li>
-<li>Bad: tends toward <code>Update</code>/<code>UpdateInTx</code> duplication and leaks the tx type across layers.</li>
-</ul>
-<h3 id="option-2-service-owned-transactions-previous-state">Option 2 — Service-owned transactions (previous state)</h3>
-<ul>
-<li>Good: simple for single-service operations.</li>
-<li>Bad: cross-service atomicity is impossible — the EL-51 blocker.</li>
-<li>Bad: boundaries hidden inside services; <code>Tx.Bucket</code> leaked bbolt into the contract.</li>
-</ul>
-<h3 id="option-3-usecase-owned-context-injected-chosen">Option 3 — Usecase-owned, context-injected (chosen)</h3>
-<ul>
-<li>Good: composable atomicity, clean signatures, backend-agnostic contract.</li>
-<li>Good: nested <code>WithTx</code> flattens, so defensive wrapping is safe.</li>
-<li>Bad: implicit ctx coupling and a discipline requirement the compiler cannot enforce.</li>
-</ul>
-<p>This is a genuine trade-off. The Go community is split on implicit ctx-based tx
-propagation versus explicit parameters; Elara chose implicit for the leaner API,
-accepting that correctness now rests on convention rather than the type system.</p>
+<p>Copying the file while Elara is running is unsafe — bbolt's on-disk format
+requires a consistent snapshot, and a live file copy can capture a
+torn/inconsistent write. If you need online backups, take periodic
+<a href="../../concepts/bundles/">Bundle exports</a> instead (<code>TransferService</code>) — those
+are safe to run against a live instance, though they capture config content,
+not the full store (RBAC policy, sessions, tokens, webhook history).</p>
+<h2 id="general-error-reference">General error reference</h2>
+<p>For what a given error code/message means across both APIs, see
+<a href="../errors-catalog/">Reference → Errors catalog</a>.</p>
+<h3 id="where-does-elara-store-its-data">Where does Elara store its data?</h3>
+<p>A single bbolt file — see <code>CONFIG_DATA_PATH</code> in
+<a href="../../deployment/configuration/#server-data">Configuration reference</a>.
+No external database, message broker, or cluster.</p>
 
 
 

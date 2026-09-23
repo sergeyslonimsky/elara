@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../../architecture/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../0002-groups-only-rbac/">
+        <link rel="next" href="../etcd-compatibility/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>ADR 0001: Usecase-owned Transactions - Elara</title>
+        <title>CLI - Elara</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#usecase-owned-transactions-with-context-injected-tx-handles" class="md-skip">
+        <a href="#cli-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0001: Usecase-owned Transactions
+              CLI
             
           </span>
         </div>
@@ -1133,6 +1133,8 @@
       
   
   
+    
+  
   
   
     
@@ -1161,15 +1163,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -1193,7 +1195,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1210,10 +1212,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/cli/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1229,6 +1258,70 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#elara" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        elara
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elara-serve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        elara serve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elara-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        elara version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1241,7 +1334,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/etcd-compatibility/" class="md-nav__link">
+      <a href="../etcd-compatibility/" class="md-nav__link">
         
   
   
@@ -1269,7 +1362,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/connectrpc-api/" class="md-nav__link">
+      <a href="../connectrpc-api/" class="md-nav__link">
         
   
   
@@ -1297,7 +1390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/errors-catalog/" class="md-nav__link">
+      <a href="../errors-catalog/" class="md-nav__link">
         
   
   
@@ -1325,7 +1418,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/troubleshooting/" class="md-nav__link">
+      <a href="../troubleshooting/" class="md-nav__link">
         
   
   
@@ -1357,10 +1450,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1379,11 +1470,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
           <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
@@ -1404,7 +1495,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1447,37 +1538,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0001: Usecase-owned Transactions
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../adr/0001-usecase-owned-transactions/" class="md-nav__link">
         
   
   
@@ -1493,137 +1557,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#context-and-problem-statement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context and Problem Statement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-drivers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Drivers
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#considered-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Considered Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-outcome" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Outcome
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision Outcome">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pros-and-cons-of-the-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pros and Cons of the Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pros and Cons of the Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#option-1-explicit-tx-parameter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 1 — Explicit tx parameter
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-2-service-owned-transactions-previous-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 2 — Service-owned transactions (previous state)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-3-usecase-owned-context-injected-chosen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 3 — Usecase-owned, context-injected (chosen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1636,7 +1569,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0002-groups-only-rbac/" class="md-nav__link">
+      <a href="../../adr/0002-groups-only-rbac/" class="md-nav__link">
         
   
   
@@ -1691,10 +1624,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#context-and-problem-statement" class="md-nav__link">
+  <a href="#elara" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context and Problem Statement
+        elara
       
     </span>
   </a>
@@ -1702,10 +1635,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision-drivers" class="md-nav__link">
+  <a href="#elara-serve" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision Drivers
+        elara serve
       
     </span>
   </a>
@@ -1713,10 +1646,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#considered-options" class="md-nav__link">
+  <a href="#elara-version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Considered Options
+        elara version
       
     </span>
   </a>
@@ -1724,80 +1657,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision-outcome" class="md-nav__link">
+  <a href="#installing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision Outcome
+        Installing
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Decision Outcome">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pros-and-cons-of-the-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pros and Cons of the Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pros and Cons of the Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#option-1-explicit-tx-parameter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 1 — Explicit tx parameter
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-2-service-owned-transactions-previous-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 2 — Service-owned transactions (previous state)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-3-usecase-owned-context-injected-chosen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 3 — Usecase-owned, context-injected (chosen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1821,104 +1687,49 @@
   
 
 
-<h1 id="usecase-owned-transactions-with-context-injected-tx-handles">Usecase-owned transactions with context-injected tx handles</h1>
-<ul>
-<li>Status: accepted</li>
-<li>Date: 2026-06-10</li>
-<li>Deciders: Elara maintainers</li>
-<li>Tags: storage, transactions, layering</li>
-</ul>
-<p>Technical Story: EL-51 — Usecase-owned Transactions (<code>plans/EL-51/architecture.md</code>).
-Landed across <code>cf364f0</code>, <code>8c107f1</code>, <code>2f6b415</code>, <code>71d1713</code> ("ref: update project
-architecture", 2026-05-31 → 2026-06-10); the deactivate cascade that motivated it
-shipped in <code>07b93ef</code> (#67); the dead <code>internal/service/storage</code> TxManager was
-removed in <code>415c7b5</code> (#76).</p>
-<h2 id="context-and-problem-statement">Context and Problem Statement</h2>
-<p>Elara is backed by a single <a href="https://github.com/etcd-io/bbolt">bbolt</a> file. Before
-EL-51, the <em>service</em> layer owned transactions through a <code>TxManager</code> whose <code>Tx</code>
-type exposed <code>Bucket(name []byte)</code> — bbolt semantics leaking into a "backend
-agnostic" API. Each service method opened its own transaction internally, e.g.
-<code>sessions.RevokeAllForUser</code> wrapped its bulk-revoke in <code>txm.Write</code>.</p>
-<p>This broke down the moment a usecase needed two service calls to be atomic. The
-EL-50 user-deactivation flow must flip <code>User.Status</code> <strong>and</strong> revoke every session
-in one unit of work. With each service opening its own transaction, that was
-impossible: two independent transactions, no shared rollback. How should Elara
-place transaction boundaries so multi-step writes are atomic, without threading a
-<code>tx</code> object through every layer?</p>
-<h2 id="decision-drivers">Decision Drivers</h2>
-<ul>
-<li>Multi-step writes spanning several repos/services must be atomic.</li>
-<li>Transaction boundaries should be visible where the unit of work is defined.</li>
-<li>Stop leaking bbolt (<code>Bucket</code>) into the storage contract; keep a Postgres swap open.</li>
-<li>Avoid duplicated method variants (<code>Update</code> vs <code>UpdateInTx</code>) and tx-mock boilerplate.</li>
-</ul>
-<h2 id="considered-options">Considered Options</h2>
-<ol>
-<li><strong>Explicit <code>tx</code> parameter</strong> threaded through service and repo signatures.</li>
-<li><strong>Service-owned transactions</strong> (status quo) — each service opens its own.</li>
-<li><strong>Usecase-owned transactions, tx handle injected via <code>context.Context</code>.</strong></li>
-</ol>
-<h2 id="decision-outcome">Decision Outcome</h2>
-<p>Chosen option: <strong>3 — usecase-owned transactions with context injection.</strong></p>
-<p>The only way to open a transaction is <code>storage.Manager.WithTx(ctx, func(ctx) error) error</code>
-(<code>internal/storage/manager.go</code>). The <strong>usecase</strong> owns the boundary: it wraps the
-whole unit of work in one <code>WithTx</code> call. <code>internal/usecase/user/service.go</code>
-(<code>transitionStatus</code>) wraps <code>GetByID</code> + status change + <code>RevokeAllForUser</code> in a
-single <code>WithTx</code>, so deactivation commits or rolls back as a whole.</p>
-<p>Repos and services are <strong>transaction-agnostic</strong>. <code>WithTx</code> stores the <code>*bolt.Tx</code>
-under a private context key (<code>pkg/bbolt/manager.go</code>, <code>txKey{}</code>); repos read it via
-<code>GetQuerier(ctx)</code> — the active tx if one is in ctx, otherwise a short-lived
-auto-tx. Signatures never mention <code>tx</code>; code in and out of a transaction is
-identical. The reusable orchestration lives in <code>pkg/bbolt</code>, deliberately mirroring
-<code>sergeyslonimsky/core/sql</code> so a Postgres adapter can be dropped in with no usecase
-changes.</p>
-<p><strong>Nested <code>WithTx</code> flattens.</strong> The implementation checks for an existing writable
-tx in ctx and, if present, just calls the callback in the same tx rather than
-opening a new one:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">m</span><span class="w"> </span><span class="o">*</span><span class="nx">DBManager</span><span class="p">)</span><span class="w"> </span><span class="nx">WithTx</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">callback</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">existing</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">TxFromContext</span><span class="p">(</span><span class="nx">ctx</span><span class="p">);</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">existing</span><span class="p">.</span><span class="nx">Writable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">callback</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span><span class="w"> </span><span class="c1">// reuse outer tx — no nested begin</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="nx">tx</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">m</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">Begin</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
-<span class="w">    </span><span class="c1">// ... runTx: commit on success, rollback on error/panic/Goexit</span>
-<span class="p">}</span>
+<h1 id="cli-reference">CLI Reference</h1>
+<p>The <code>elara</code> binary ships three commands. There is no separate client binary —
+the same executable serves the UI, the ConnectRPC API, and the
+etcd-compatible gRPC API.</p>
+<h2 id="elara"><code>elara</code></h2>
+<p>Runs the server. Equivalent to <code>elara serve</code>.</p>
+<p>Running bare is the supported default, not a shorthand: the container image's
+<code>ENTRYPOINT</code> is <code>["/bin/elara"]</code> and the Helm chart passes no arguments, so
+the no-subcommand form is what every packaged deployment actually invokes.</p>
+<h2 id="elara-serve"><code>elara serve</code></h2>
+<p>The same thing, named explicitly. Use it when a process supervisor or
+container spec reads better with the verb spelled out.</p>
+<p>All configuration comes from environment variables or a config file — there
+are no server flags. See <a href="../../deployment/configuration/">Configuration</a>.</p>
+<h2 id="elara-version"><code>elara version</code></h2>
+<p>Prints build and platform information:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>elara<span class="w"> </span>version
+<span class="go">elara v0.5.0</span>
+<span class="go">  commit:     3f2a1c9e4b7d8a6f5c2e1b0d9a8f7e6c5d4b3a29</span>
+<span class="go">  built:      2026-09-23T11:04:17Z</span>
+<span class="go">  go version: go1.26.3</span>
+<span class="go">  platform:   linux/amd64</span>
 </code></pre></div>
-<p>This is what makes service-level atomicity composable: a service can call <code>WithTx</code>
-defensively, and when a usecase already opened one, it simply joins — bbolt allows
-only one write-tx at a time, so flattening is the only safe behavior.</p>
-<h3 id="consequences">Consequences</h3>
-<ul>
-<li>Good: multi-step writes are atomic with the boundary declared in one place (the usecase).</li>
-<li>Good: the service layer shrank — no tx plumbing, no <code>txm.Write</code> wrappers; easier to test.</li>
-<li>Good: <code>Manager</code> is backend-agnostic; <code>pkg/bbolt</code> shadows <code>core/sql</code> for a future Postgres adapter.</li>
-<li>Good: single method per operation — no <code>*InTx</code> twins, no <code>tx</code> parameter threading.</li>
-<li>Bad: the tx handle travels <strong>implicitly</strong> via ctx. Coupling is invisible in signatures; a reader must know the convention.</li>
-<li>Bad: discipline required — a repo/service must never open a competing tx; it must join the ctx one. bbolt's single-writer model turns a mistake here into a deadlock or lost atomicity.</li>
-<li>Bad: auto-tx fallback means a bare repo call outside <code>WithTx</code> silently opens its own short-lived tx — convenient, but atomicity across such calls is not guaranteed.</li>
-</ul>
-<h2 id="pros-and-cons-of-the-options">Pros and Cons of the Options</h2>
-<h3 id="option-1-explicit-tx-parameter">Option 1 — Explicit <code>tx</code> parameter</h3>
-<ul>
-<li>Good: coupling is visible; the type system tracks who is in a transaction.</li>
-<li>Good: no hidden ctx convention.</li>
-<li>Bad: every repo/service signature carries <code>tx</code>; adding/removing a boundary churns many APIs.</li>
-<li>Bad: tends toward <code>Update</code>/<code>UpdateInTx</code> duplication and leaks the tx type across layers.</li>
-</ul>
-<h3 id="option-2-service-owned-transactions-previous-state">Option 2 — Service-owned transactions (previous state)</h3>
-<ul>
-<li>Good: simple for single-service operations.</li>
-<li>Bad: cross-service atomicity is impossible — the EL-51 blocker.</li>
-<li>Bad: boundaries hidden inside services; <code>Tx.Bucket</code> leaked bbolt into the contract.</li>
-</ul>
-<h3 id="option-3-usecase-owned-context-injected-chosen">Option 3 — Usecase-owned, context-injected (chosen)</h3>
-<ul>
-<li>Good: composable atomicity, clean signatures, backend-agnostic contract.</li>
-<li>Good: nested <code>WithTx</code> flattens, so defensive wrapping is safe.</li>
-<li>Bad: implicit ctx coupling and a discipline requirement the compiler cannot enforce.</li>
-</ul>
-<p>This is a genuine trade-off. The Go community is split on implicit ctx-based tx
-propagation versus explicit parameters; Elara chose implicit for the leaner API,
-accepting that correctness now rests on convention rather than the type system.</p>
+<p><code>version</code>, <code>commit</code>, and <code>built</code> are stamped at link time. A binary built
+without those flags — a plain <code>go build</code>, or <code>go run ./cmd/service</code> during
+development — reports <code>dev</code> / <code>none</code> / <code>unknown</code> instead. Release archives and
+the published container images always carry real values, so this is the fastest
+way to confirm which build a running instance came from.</p>
+<p>The same version is used as the default for <code>SERVICE_VERSION</code> in logs and
+metrics when you do not set it explicitly.</p>
+<h2 id="installing">Installing</h2>
+<p>See <a href="../../getting-started/install/">Install</a> for the three supported routes:
+container image, release archive, and Helm.</p>
+<div class="admonition warning">
+<p class="admonition-title"><code>go install</code> is not supported</p>
+<p><code>go install github.com/sergeyslonimsky/elara/cmd/service@latest</code> produces a
+binary that fails to build. <code>web/embed.go</code> embeds the compiled frontend
+with <code>//go:embed all:dist</code>, and <code>web/dist</code> is a build artifact that is not
+committed to the repository — so the embed directive cannot be satisfied
+from module source alone. Building from a checkout requires
+<code>cd web &amp;&amp; npm run build</code> first.</p>
+<p>Use a release archive or the container image instead.</p>
+</div>
 
 
 

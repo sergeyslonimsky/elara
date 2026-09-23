@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../../architecture/">
+        <link rel="prev" href="../install/">
       
       
-        <link rel="next" href="../0002-groups-only-rbac/">
+        <link rel="next" href="../tutorial-todo-app/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>ADR 0001: Usecase-owned Transactions - Elara</title>
+        <title>Quickstart - Elara</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#usecase-owned-transactions-with-context-injected-tx-handles" class="md-skip">
+        <a href="#quickstart" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0001: Usecase-owned Transactions
+              Quickstart
             
           </span>
         </div>
@@ -280,8 +280,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -300,11 +302,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -325,7 +327,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -343,7 +345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -368,10 +370,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../getting-started/quickstart/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -387,6 +416,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-run-elara" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Run Elara
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-tour-the-seeded-demo-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Tour the seeded demo data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-make-your-first-change-through-the-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Make your first change through the UI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Make your first change through the UI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-same-change-from-an-etcd-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The same change from an etcd client
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#developing-elara-itself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Developing Elara itself
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -399,7 +520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/tutorial-todo-app/" class="md-nav__link">
+      <a href="../tutorial-todo-app/" class="md-nav__link">
         
   
   
@@ -1357,10 +1478,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1379,11 +1498,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
           <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
@@ -1404,7 +1523,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1447,37 +1566,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0001: Usecase-owned Transactions
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../adr/0001-usecase-owned-transactions/" class="md-nav__link">
         
   
   
@@ -1493,137 +1585,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#context-and-problem-statement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context and Problem Statement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-drivers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Drivers
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#considered-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Considered Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-outcome" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Outcome
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision Outcome">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pros-and-cons-of-the-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pros and Cons of the Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pros and Cons of the Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#option-1-explicit-tx-parameter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 1 — Explicit tx parameter
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-2-service-owned-transactions-previous-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 2 — Service-owned transactions (previous state)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-3-usecase-owned-context-injected-chosen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 3 — Usecase-owned, context-injected (chosen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1636,7 +1597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0002-groups-only-rbac/" class="md-nav__link">
+      <a href="../../adr/0002-groups-only-rbac/" class="md-nav__link">
         
   
   
@@ -1691,10 +1652,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#context-and-problem-statement" class="md-nav__link">
+  <a href="#1-run-elara" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context and Problem Statement
+        1. Run Elara
       
     </span>
   </a>
@@ -1702,10 +1663,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision-drivers" class="md-nav__link">
+  <a href="#2-tour-the-seeded-demo-data" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision Drivers
+        2. Tour the seeded demo data
       
     </span>
   </a>
@@ -1713,33 +1674,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#considered-options" class="md-nav__link">
+  <a href="#3-make-your-first-change-through-the-ui" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Considered Options
+        3. Make your first change through the UI
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-outcome" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Outcome
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision Outcome">
+    <nav class="md-nav" aria-label="3. Make your first change through the UI">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+  <a href="#the-same-change-from-an-etcd-client" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Consequences
+        The same change from an etcd client
       
     </span>
   </a>
@@ -1752,52 +1702,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pros-and-cons-of-the-options" class="md-nav__link">
+  <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pros and Cons of the Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pros and Cons of the Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#option-1-explicit-tx-parameter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 1 — Explicit tx parameter
+        Next steps
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#option-2-service-owned-transactions-previous-state" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#developing-elara-itself" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 2 — Service-owned transactions (previous state)
+        Developing Elara itself
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-3-usecase-owned-context-injected-chosen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 3 — Usecase-owned, context-injected (chosen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1821,104 +1743,144 @@
   
 
 
-<h1 id="usecase-owned-transactions-with-context-injected-tx-handles">Usecase-owned transactions with context-injected tx handles</h1>
-<ul>
-<li>Status: accepted</li>
-<li>Date: 2026-06-10</li>
-<li>Deciders: Elara maintainers</li>
-<li>Tags: storage, transactions, layering</li>
-</ul>
-<p>Technical Story: EL-51 — Usecase-owned Transactions (<code>plans/EL-51/architecture.md</code>).
-Landed across <code>cf364f0</code>, <code>8c107f1</code>, <code>2f6b415</code>, <code>71d1713</code> ("ref: update project
-architecture", 2026-05-31 → 2026-06-10); the deactivate cascade that motivated it
-shipped in <code>07b93ef</code> (#67); the dead <code>internal/service/storage</code> TxManager was
-removed in <code>415c7b5</code> (#76).</p>
-<h2 id="context-and-problem-statement">Context and Problem Statement</h2>
-<p>Elara is backed by a single <a href="https://github.com/etcd-io/bbolt">bbolt</a> file. Before
-EL-51, the <em>service</em> layer owned transactions through a <code>TxManager</code> whose <code>Tx</code>
-type exposed <code>Bucket(name []byte)</code> — bbolt semantics leaking into a "backend
-agnostic" API. Each service method opened its own transaction internally, e.g.
-<code>sessions.RevokeAllForUser</code> wrapped its bulk-revoke in <code>txm.Write</code>.</p>
-<p>This broke down the moment a usecase needed two service calls to be atomic. The
-EL-50 user-deactivation flow must flip <code>User.Status</code> <strong>and</strong> revoke every session
-in one unit of work. With each service opening its own transaction, that was
-impossible: two independent transactions, no shared rollback. How should Elara
-place transaction boundaries so multi-step writes are atomic, without threading a
-<code>tx</code> object through every layer?</p>
-<h2 id="decision-drivers">Decision Drivers</h2>
-<ul>
-<li>Multi-step writes spanning several repos/services must be atomic.</li>
-<li>Transaction boundaries should be visible where the unit of work is defined.</li>
-<li>Stop leaking bbolt (<code>Bucket</code>) into the storage contract; keep a Postgres swap open.</li>
-<li>Avoid duplicated method variants (<code>Update</code> vs <code>UpdateInTx</code>) and tx-mock boilerplate.</li>
-</ul>
-<h2 id="considered-options">Considered Options</h2>
-<ol>
-<li><strong>Explicit <code>tx</code> parameter</strong> threaded through service and repo signatures.</li>
-<li><strong>Service-owned transactions</strong> (status quo) — each service opens its own.</li>
-<li><strong>Usecase-owned transactions, tx handle injected via <code>context.Context</code>.</strong></li>
-</ol>
-<h2 id="decision-outcome">Decision Outcome</h2>
-<p>Chosen option: <strong>3 — usecase-owned transactions with context injection.</strong></p>
-<p>The only way to open a transaction is <code>storage.Manager.WithTx(ctx, func(ctx) error) error</code>
-(<code>internal/storage/manager.go</code>). The <strong>usecase</strong> owns the boundary: it wraps the
-whole unit of work in one <code>WithTx</code> call. <code>internal/usecase/user/service.go</code>
-(<code>transitionStatus</code>) wraps <code>GetByID</code> + status change + <code>RevokeAllForUser</code> in a
-single <code>WithTx</code>, so deactivation commits or rolls back as a whole.</p>
-<p>Repos and services are <strong>transaction-agnostic</strong>. <code>WithTx</code> stores the <code>*bolt.Tx</code>
-under a private context key (<code>pkg/bbolt/manager.go</code>, <code>txKey{}</code>); repos read it via
-<code>GetQuerier(ctx)</code> — the active tx if one is in ctx, otherwise a short-lived
-auto-tx. Signatures never mention <code>tx</code>; code in and out of a transaction is
-identical. The reusable orchestration lives in <code>pkg/bbolt</code>, deliberately mirroring
-<code>sergeyslonimsky/core/sql</code> so a Postgres adapter can be dropped in with no usecase
-changes.</p>
-<p><strong>Nested <code>WithTx</code> flattens.</strong> The implementation checks for an existing writable
-tx in ctx and, if present, just calls the callback in the same tx rather than
-opening a new one:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">m</span><span class="w"> </span><span class="o">*</span><span class="nx">DBManager</span><span class="p">)</span><span class="w"> </span><span class="nx">WithTx</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">callback</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">existing</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">TxFromContext</span><span class="p">(</span><span class="nx">ctx</span><span class="p">);</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">existing</span><span class="p">.</span><span class="nx">Writable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">callback</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span><span class="w"> </span><span class="c1">// reuse outer tx — no nested begin</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="nx">tx</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">m</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">Begin</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
-<span class="w">    </span><span class="c1">// ... runTx: commit on success, rollback on error/panic/Goexit</span>
-<span class="p">}</span>
+<h1 id="quickstart">Quickstart</h1>
+<p>This walkthrough takes about <strong>5 minutes</strong>. You'll start Elara from a single
+Docker command, tour the seeded demo data, and make your first configuration
+change through the Web UI — watching schema validation reject a bad value along
+the way.</p>
+<h2 id="1-run-elara">1. Run Elara</h2>
+<p>There's no published <code>:demo</code> image yet — build the demo variant locally from
+the repo, which seeds sample data via <code>DEMO_MODE</code>:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/sergeyslonimsky/elara.git
+<span class="nb">cd</span><span class="w"> </span>elara
+docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">DEMO_MODE</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>-t<span class="w"> </span>elara:demo<span class="w"> </span>.
+docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span>-p<span class="w"> </span><span class="m">2379</span>:2379<span class="w"> </span>elara:demo
 </code></pre></div>
-<p>This is what makes service-level atomicity composable: a service can call <code>WithTx</code>
-defensively, and when a usecase already opened one, it simply joins — bbolt allows
-only one write-tx at a time, so flattening is the only safe behavior.</p>
-<h3 id="consequences">Consequences</h3>
+<p>That's the whole install. Elara is a single binary backed by one
+<a href="https://github.com/etcd-io/bbolt">bbolt</a> file — there's no external database,
+message broker, or cluster to stand up. For other ways to run it (a plain
+Docker image, a downloaded binary, or Helm), see <a href="../install/">Install</a>.</p>
+<p>Two ports are now listening:</p>
+<table>
+<thead>
+<tr>
+<th>Port</th>
+<th>Surface</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>8080</code></td>
+<td>Web UI + ConnectRPC API (HTTP/2)</td>
+</tr>
+<tr>
+<td><code>2379</code></td>
+<td>etcd-compatible gRPC API (drop-in for etcd v3)</td>
+</tr>
+</tbody>
+</table>
+<p>Open <a href="http://localhost:8080">http://localhost:8080</a> in your browser. On first launch demo mode
+greets you with a welcome modal explaining that you're looking at sample data —
+dismiss it to reach the dashboard.</p>
+<div class="admonition note">
+<p class="admonition-title">Prefer a clean instance?</p>
+<p>Build without <code>--build-arg DEMO_MODE=true</code> (or run the binary directly via
+<code>go run ./cmd/service</code>) and the instance starts empty. Create a namespace
+and a config from the UI (or with <code>etcdctl</code>, see below) and the rest of
+this tour still applies.</p>
+</div>
+<h2 id="2-tour-the-seeded-demo-data">2. Tour the seeded demo data</h2>
+<p>The demo image ships with three namespaces, roughly ten keys, JSON Schemas
+attached to a few path patterns, and a set of simulated Kubernetes pod
+consumers so the observability views have something to show.</p>
+<p>Start on the <strong>Dashboard</strong>. It gives you the cluster-wide picture at a glance:</p>
 <ul>
-<li>Good: multi-step writes are atomic with the boundary declared in one place (the usecase).</li>
-<li>Good: the service layer shrank — no tx plumbing, no <code>txm.Write</code> wrappers; easier to test.</li>
-<li>Good: <code>Manager</code> is backend-agnostic; <code>pkg/bbolt</code> shadows <code>core/sql</code> for a future Postgres adapter.</li>
-<li>Good: single method per operation — no <code>*InTx</code> twins, no <code>tx</code> parameter threading.</li>
-<li>Bad: the tx handle travels <strong>implicitly</strong> via ctx. Coupling is invisible in signatures; a reader must know the convention.</li>
-<li>Bad: discipline required — a repo/service must never open a competing tx; it must join the ctx one. bbolt's single-writer model turns a mistake here into a deadlock or lost atomicity.</li>
-<li>Bad: auto-tx fallback means a bare repo call outside <code>WithTx</code> silently opens its own short-lived tx — convenient, but atomicity across such calls is not guaranteed.</li>
+<li>Total namespaces, configs, active clients, and the current <strong>global
+  revision</strong> (a monotonic, etcd-style counter that bumps on every write).</li>
+<li>The last 20 config changes.</li>
+<li>A per-namespace config count.</li>
 </ul>
-<h2 id="pros-and-cons-of-the-options">Pros and Cons of the Options</h2>
-<h3 id="option-1-explicit-tx-parameter">Option 1 — Explicit <code>tx</code> parameter</h3>
+<p>Now click through the left navigation:</p>
 <ul>
-<li>Good: coupling is visible; the type system tracks who is in a transaction.</li>
-<li>Good: no hidden ctx convention.</li>
-<li>Bad: every repo/service signature carries <code>tx</code>; adding/removing a boundary churns many APIs.</li>
-<li>Bad: tends toward <code>Update</code>/<code>UpdateInTx</code> duplication and leaks the tx type across layers.</li>
+<li><strong>Namespaces</strong> — three logical groups are seeded: <code>production</code>, <code>staging</code>,
+  and <code>dev</code>. Namespaces are just containers for configs; a namespace can't be
+  deleted while it still holds any.</li>
+<li><strong>Configs</strong> — a directory-style browser. Open <code>production</code> and drill into the
+  seeded keys, for example <code>production/api/limits.json</code>. The editor is
+  format-aware (JSON / YAML / raw) and every key carries <strong>version history</strong> —
+  each edit is retained and retrievable by revision.</li>
+<li><strong>Clients</strong> — the live list of connected etcd-compatible clients. The demo
+  seeds simulated k8s pod consumers here so you can see which workloads are
+  reading configuration and at which revision, without wiring up a real
+  cluster.</li>
 </ul>
-<h3 id="option-2-service-owned-transactions-previous-state">Option 2 — Service-owned transactions (previous state)</h3>
+<p>Take a minute to open a config's <strong>history</strong> tab and a side-by-side diff of two
+revisions — this is the audit trail Elara keeps for every change.</p>
+<h2 id="3-make-your-first-change-through-the-ui">3. Make your first change through the UI</h2>
+<p>Let's edit a value and watch Elara enforce a schema.</p>
+<ol>
+<li>Go to <strong>Configs → <code>production</code></strong> and open <code>api/limits.json</code>. In the demo
+   seed this file has a JSON Schema attached to its path pattern (visible on the
+   config's <strong>Schema</strong> tab), so writes are validated before they're stored.</li>
+<li>Click <strong>Edit</strong>. Change a numeric field — say bump a rate limit from <code>100</code> to
+   <code>250</code> — and <strong>Save</strong>. The write succeeds, the <strong>global revision increments</strong>
+   (watch the dashboard counter), and a new entry appears in the change feed.</li>
+<li>Now break it on purpose. Edit the same file and set that field to a string,
+   e.g. <code>"lots"</code>, or delete a required property. <strong>Save</strong> again.</li>
+</ol>
+<p>The write is <strong>rejected before storage</strong>. Elara returns a validation error
+   listing the exact failing path, the message, and the JSON Schema keyword
+   that failed — the config on disk is untouched. This is the core guardrail:
+   invalid configuration never reaches the services that consume it.</p>
+<ol>
+<li>Fix the value back to a valid number and save once more to confirm the write
+   goes through.</li>
+</ol>
+<h3 id="the-same-change-from-an-etcd-client">The same change from an etcd client</h3>
+<p>Every UI edit is just a write against the same store your services read from.
+Any etcd v3 client can do it too:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">ETCDCTL_API</span><span class="o">=</span><span class="m">3</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ETCDCTL_ENDPOINTS</span><span class="o">=</span>localhost:2379
+
+<span class="c1"># Read the seeded value</span>
+etcdctl<span class="w"> </span>get<span class="w"> </span>/production/api/limits.json
+
+<span class="c1"># Watch the key while you edit it in the UI — updates stream live</span>
+etcdctl<span class="w"> </span>watch<span class="w"> </span>/production/api/limits.json
+</code></pre></div>
+<p>Leave the <code>watch</code> running and repeat step 3 in the browser: valid writes show
+up on the stream immediately, and rejected ones never appear — because they
+were never stored.</p>
+<h2 id="next-steps">Next steps</h2>
 <ul>
-<li>Good: simple for single-service operations.</li>
-<li>Bad: cross-service atomicity is impossible — the EL-51 blocker.</li>
-<li>Bad: boundaries hidden inside services; <code>Tx.Bucket</code> leaked bbolt into the contract.</li>
+<li>Read the <a href="../../architecture/">Architecture</a> overview to understand how a
+  request flows from the UI or an etcd client down to the bbolt file.</li>
+<li>Turn on <strong>authentication</strong> (basic-auth or OIDC) and explore the groups-based
+  RBAC model — see <a href="../../auth/">Auth &amp; Access</a>.</li>
+<li>Point one of your own services at <code>localhost:2379</code> with its existing etcd v3
+  client. No code changes: Elara speaks the etcd v3 wire protocol.</li>
 </ul>
-<h3 id="option-3-usecase-owned-context-injected-chosen">Option 3 — Usecase-owned, context-injected (chosen)</h3>
-<ul>
-<li>Good: composable atomicity, clean signatures, backend-agnostic contract.</li>
-<li>Good: nested <code>WithTx</code> flattens, so defensive wrapping is safe.</li>
-<li>Bad: implicit ctx coupling and a discipline requirement the compiler cannot enforce.</li>
-</ul>
-<p>This is a genuine trade-off. The Go community is split on implicit ctx-based tx
-propagation versus explicit parameters; Elara chose implicit for the leaner API,
-accepting that correctness now rests on convention rather than the type system.</p>
+<h2 id="developing-elara-itself">Developing Elara itself</h2>
+<p>Want to build from source rather than run the image? Prerequisites are the Go
+version pinned in <a href="https://github.com/sergeyslonimsky/elara/blob/master/go.mod"><code>go.mod</code></a>,
+Node.js 20+, <code>buf</code>, and <code>golangci-lint</code>.</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/sergeyslonimsky/elara.git
+<span class="nb">cd</span><span class="w"> </span>elara
+
+<span class="c1"># Build the frontend first — web/embed.go embeds web/dist at compile time</span>
+<span class="nb">cd</span><span class="w"> </span>web<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>install<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>..
+
+<span class="c1"># Run the service</span>
+go<span class="w"> </span>run<span class="w"> </span>./cmd/service
+
+<span class="c1"># Tests (race detector on) and lint</span>
+make<span class="w"> </span><span class="nb">test</span>
+make<span class="w"> </span>lint
+</code></pre></div>
+<p>For live frontend reload, run the backend in one terminal and
+<code>cd web &amp;&amp; npm run dev</code> (<a href="http://localhost:3000">http://localhost:3000</a>) in another. The full
+contributor guide is in
+<a href="https://github.com/sergeyslonimsky/elara/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
 
 
 

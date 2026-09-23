@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../../architecture/">
+        <link rel="prev" href="../quickstart/">
       
       
-        <link rel="next" href="../0002-groups-only-rbac/">
+        <link rel="next" href="../../concepts/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>ADR 0001: Usecase-owned Transactions - Elara</title>
+        <title>Todo-App Tutorial - Elara</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#usecase-owned-transactions-with-context-injected-tx-handles" class="md-skip">
+        <a href="#tutorial-manage-configs-for-a-3-service-todo-app" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR 0001: Usecase-owned Transactions
+              Todo-App Tutorial
             
           </span>
         </div>
@@ -280,8 +280,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -300,11 +302,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -325,7 +327,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -343,7 +345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -371,7 +373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/quickstart/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
@@ -396,10 +398,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../getting-started/tutorial-todo-app/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Todo-App Tutorial
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -415,6 +444,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-start-the-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1 — Start the stack
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1 — Start the stack">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#register-the-namespace-in-the-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Register the namespace in the UI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-change-a-limit-and-watch-it-propagate-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2 — Change a limit and watch it propagate live
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-attach-a-json-schema-and-reject-an-invalid-value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3 — Attach a JSON Schema and reject an invalid value
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-bundle-export-edit-in-git-import-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 — Bundle export → edit in Git → import back
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tear-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tear down
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-fits-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it fits together
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1357,10 +1500,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1379,11 +1520,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
           <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
@@ -1404,7 +1545,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1447,37 +1588,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR 0001: Usecase-owned Transactions
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../adr/0001-usecase-owned-transactions/" class="md-nav__link">
         
   
   
@@ -1493,137 +1607,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#context-and-problem-statement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context and Problem Statement
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-drivers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Drivers
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#considered-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Considered Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-outcome" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Outcome
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision Outcome">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#pros-and-cons-of-the-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pros and Cons of the Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pros and Cons of the Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#option-1-explicit-tx-parameter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 1 — Explicit tx parameter
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-2-service-owned-transactions-previous-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 2 — Service-owned transactions (previous state)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-3-usecase-owned-context-injected-chosen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 3 — Usecase-owned, context-injected (chosen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1636,7 +1619,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../0002-groups-only-rbac/" class="md-nav__link">
+      <a href="../../adr/0002-groups-only-rbac/" class="md-nav__link">
         
   
   
@@ -1691,10 +1674,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#context-and-problem-statement" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context and Problem Statement
+        Prerequisites
       
     </span>
   </a>
@@ -1702,44 +1685,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#decision-drivers" class="md-nav__link">
+  <a href="#step-1-start-the-stack" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision Drivers
+        Step 1 — Start the stack
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#considered-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Considered Options
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision-outcome" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision Outcome
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision Outcome">
+    <nav class="md-nav" aria-label="Step 1 — Start the stack">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+  <a href="#register-the-namespace-in-the-ui" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Consequences
+        Register the namespace in the UI
       
     </span>
   </a>
@@ -1752,52 +1713,57 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pros-and-cons-of-the-options" class="md-nav__link">
+  <a href="#step-2-change-a-limit-and-watch-it-propagate-live" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pros and Cons of the Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Pros and Cons of the Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#option-1-explicit-tx-parameter" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option 1 — Explicit tx parameter
+        Step 2 — Change a limit and watch it propagate live
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#option-2-service-owned-transactions-previous-state" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-3-attach-a-json-schema-and-reject-an-invalid-value" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 2 — Service-owned transactions (previous state)
+        Step 3 — Attach a JSON Schema and reject an invalid value
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#option-3-usecase-owned-context-injected-chosen" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-4-bundle-export-edit-in-git-import-back" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option 3 — Usecase-owned, context-injected (chosen)
+        Step 4 — Bundle export → edit in Git → import back
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#tear-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tear down
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-fits-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it fits together
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1821,104 +1787,199 @@
   
 
 
-<h1 id="usecase-owned-transactions-with-context-injected-tx-handles">Usecase-owned transactions with context-injected tx handles</h1>
-<ul>
-<li>Status: accepted</li>
-<li>Date: 2026-06-10</li>
-<li>Deciders: Elara maintainers</li>
-<li>Tags: storage, transactions, layering</li>
-</ul>
-<p>Technical Story: EL-51 — Usecase-owned Transactions (<code>plans/EL-51/architecture.md</code>).
-Landed across <code>cf364f0</code>, <code>8c107f1</code>, <code>2f6b415</code>, <code>71d1713</code> ("ref: update project
-architecture", 2026-05-31 → 2026-06-10); the deactivate cascade that motivated it
-shipped in <code>07b93ef</code> (#67); the dead <code>internal/service/storage</code> TxManager was
-removed in <code>415c7b5</code> (#76).</p>
-<h2 id="context-and-problem-statement">Context and Problem Statement</h2>
-<p>Elara is backed by a single <a href="https://github.com/etcd-io/bbolt">bbolt</a> file. Before
-EL-51, the <em>service</em> layer owned transactions through a <code>TxManager</code> whose <code>Tx</code>
-type exposed <code>Bucket(name []byte)</code> — bbolt semantics leaking into a "backend
-agnostic" API. Each service method opened its own transaction internally, e.g.
-<code>sessions.RevokeAllForUser</code> wrapped its bulk-revoke in <code>txm.Write</code>.</p>
-<p>This broke down the moment a usecase needed two service calls to be atomic. The
-EL-50 user-deactivation flow must flip <code>User.Status</code> <strong>and</strong> revoke every session
-in one unit of work. With each service opening its own transaction, that was
-impossible: two independent transactions, no shared rollback. How should Elara
-place transaction boundaries so multi-step writes are atomic, without threading a
-<code>tx</code> object through every layer?</p>
-<h2 id="decision-drivers">Decision Drivers</h2>
-<ul>
-<li>Multi-step writes spanning several repos/services must be atomic.</li>
-<li>Transaction boundaries should be visible where the unit of work is defined.</li>
-<li>Stop leaking bbolt (<code>Bucket</code>) into the storage contract; keep a Postgres swap open.</li>
-<li>Avoid duplicated method variants (<code>Update</code> vs <code>UpdateInTx</code>) and tx-mock boilerplate.</li>
-</ul>
-<h2 id="considered-options">Considered Options</h2>
+<h1 id="tutorial-manage-configs-for-a-3-service-todo-app">Tutorial: manage configs for a 3-service todo app</h1>
+<p>This walkthrough runs a small stack — Elara plus three toy microservices — and
+takes you through the four things that make Elara more than "etcd with a UI":</p>
 <ol>
-<li><strong>Explicit <code>tx</code> parameter</strong> threaded through service and repo signatures.</li>
-<li><strong>Service-owned transactions</strong> (status quo) — each service opens its own.</li>
-<li><strong>Usecase-owned transactions, tx handle injected via <code>context.Context</code>.</strong></li>
+<li>Start the stack and watch the services read their config from Elara.</li>
+<li>Change a limit in the Web UI and watch a service pick it up <strong>live</strong>, with
+   no restart, over the etcd watch protocol.</li>
+<li>Attach a JSON Schema to a key and see an invalid value get <strong>rejected</strong>
+   before it is ever stored.</li>
+<li>Export a config bundle, edit it in Git, and import it back — a GitOps
+   round-trip.</li>
 </ol>
-<h2 id="decision-outcome">Decision Outcome</h2>
-<p>Chosen option: <strong>3 — usecase-owned transactions with context injection.</strong></p>
-<p>The only way to open a transaction is <code>storage.Manager.WithTx(ctx, func(ctx) error) error</code>
-(<code>internal/storage/manager.go</code>). The <strong>usecase</strong> owns the boundary: it wraps the
-whole unit of work in one <code>WithTx</code> call. <code>internal/usecase/user/service.go</code>
-(<code>transitionStatus</code>) wraps <code>GetByID</code> + status change + <code>RevokeAllForUser</code> in a
-single <code>WithTx</code>, so deactivation commits or rolls back as a whole.</p>
-<p>Repos and services are <strong>transaction-agnostic</strong>. <code>WithTx</code> stores the <code>*bolt.Tx</code>
-under a private context key (<code>pkg/bbolt/manager.go</code>, <code>txKey{}</code>); repos read it via
-<code>GetQuerier(ctx)</code> — the active tx if one is in ctx, otherwise a short-lived
-auto-tx. Signatures never mention <code>tx</code>; code in and out of a transaction is
-identical. The reusable orchestration lives in <code>pkg/bbolt</code>, deliberately mirroring
-<code>sergeyslonimsky/core/sql</code> so a Postgres adapter can be dropped in with no usecase
-changes.</p>
-<p><strong>Nested <code>WithTx</code> flattens.</strong> The implementation checks for an existing writable
-tx in ctx and, if present, just calls the callback in the same tx rather than
-opening a new one:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">m</span><span class="w"> </span><span class="o">*</span><span class="nx">DBManager</span><span class="p">)</span><span class="w"> </span><span class="nx">WithTx</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">callback</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">existing</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">TxFromContext</span><span class="p">(</span><span class="nx">ctx</span><span class="p">);</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">existing</span><span class="p">.</span><span class="nx">Writable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">callback</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span><span class="w"> </span><span class="c1">// reuse outer tx — no nested begin</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="nx">tx</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">m</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">Begin</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
-<span class="w">    </span><span class="c1">// ... runTx: commit on success, rollback on error/panic/Goexit</span>
+<p>The three services (<code>api</code>, <code>worker</code>, <code>notifier</code>) are deliberately tiny. Each is
+a ~40-line Go program that uses the <strong>stock <code>go.etcd.io/etcd/client/v3</code>
+library</strong> — unchanged — to read one config key on startup and watch it for
+changes. That's the whole point: your existing etcd clients talk to Elara with
+zero code changes.</p>
+<p>Everything for this tutorial lives in
+<a href="../../examples/todo-app/"><code>examples/todo-app/</code></a>.</p>
+<hr />
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Docker with the Compose plugin (<code>docker compose version</code> should work).</li>
+<li>Ports <code>8080</code> (Web UI) and <code>2379</code> (etcd gRPC) free on your machine.</li>
+</ul>
+<p>No Go toolchain is needed on your host — everything builds inside containers.</p>
+<hr />
+<h2 id="step-1-start-the-stack">Step 1 — Start the stack</h2>
+<p>From the repository root:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>examples/todo-app
+docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>--build
+</code></pre></div>
+<p>The first build compiles the Elara image (frontend + Go binary) and the three
+toy services, so it takes a minute or two. When it settles you'll see the
+services connect and load their config. A one-shot <code>seed</code> container writes the
+initial keys, so the services show real values right away:</p>
+<div class="highlight"><pre><span></span><code>api-1       | [api] loaded /production/api/limits.json = {"max_todos_per_user":100,"rate_limit_per_min":60}
+api-1       | [api] watching /production/api/limits.json for changes...
+worker-1    | [worker] loaded /production/worker/settings.json = {"batch_size":50,"poll_interval_seconds":5}
+notifier-1  | [notifier] loaded /production/notifier/config.json = {"channel":"email","digest_enabled":true}
+</code></pre></div>
+<p>If a service starts before Elara is ready it retries automatically, so a few
+"cannot reach Elara … retrying" lines at the top are normal.</p>
+<p>Now open the Web UI at <a href="http://localhost:8080">http://localhost:8080</a> and log in:</p>
+<ul>
+<li><strong>Username:</strong> <code>admin@elara.local</code></li>
+<li><strong>Password:</strong> <code>password</code></li>
+</ul>
+<p>The UI will immediately require a new password — the bootstrap admin is
+created with <code>password_change_required</code>, and until you set a new one every
+other request is rejected, so you cannot create the namespace in the next step.
+Pick anything and continue. See
+<a href="../../auth/basic/#required-first-step-forced-password-change">Basic Auth → forced password change</a>.</p>
+<h3 id="register-the-namespace-in-the-ui">Register the namespace in the UI</h3>
+<p>The services and the seeder address config by <code>namespace/path</code> and talk to
+Elara over the raw etcd wire, which doesn't create a namespace <em>record</em>. To
+manage those keys in the UI, create the matching namespace once:</p>
+<ol>
+<li>Create a namespace named <strong><code>production</code></strong> in the Web UI.</li>
+</ol>
+<p>The three keys the seeder already wrote (<code>api/limits.json</code>,
+<code>worker/settings.json</code>, <code>notifier/config.json</code>) now appear inside it — creating
+the namespace record doesn't touch the config data that's already there.</p>
+<blockquote>
+<p><strong>Tip:</strong> keep the <code>docker compose up</code> terminal visible. The service logs are
+how you'll <em>see</em> config changes propagate in the next steps.</p>
+</blockquote>
+<hr />
+<h2 id="step-2-change-a-limit-and-watch-it-propagate-live">Step 2 — Change a limit and watch it propagate live</h2>
+<p>The <code>api</code> service reads <code>/production/api/limits.json</code>. Let's raise its todo
+limit and watch the running service react without a restart.</p>
+<ol>
+<li>In the Web UI, open the <strong><code>production</code></strong> namespace.</li>
+<li>Open the config <strong><code>api/limits.json</code></strong>.</li>
+<li>Change <code>max_todos_per_user</code> from <code>100</code> to <code>500</code> and save.</li>
+</ol>
+<p>Within a second, the <code>api</code> service logs the new value in your <code>docker compose</code>
+terminal:</p>
+<div class="highlight"><pre><span></span><code>api-1  | [api] config changed: /production/api/limits.json = {"max_todos_per_user":500,"rate_limit_per_min":60} (revision 6)
+</code></pre></div>
+<p>That change travelled from the Web UI → Elara → the etcd <strong>watch</strong> stream the
+<code>api</code> service opened at startup. The service used the ordinary
+<code>clientv3.Watch(...)</code> API — the same call it would make against a real etcd
+cluster.</p>
+<p>You can prove the drop-in compatibility from your host too, if you have
+<code>etcdctl</code> installed (client auth is disabled in this demo, so no token is
+needed):</p>
+<div class="highlight"><pre><span></span><code>etcdctl<span class="w"> </span>--endpoints<span class="o">=</span>localhost:2379<span class="w"> </span>get<span class="w"> </span>/production/api/limits.json
+etcdctl<span class="w"> </span>--endpoints<span class="o">=</span>localhost:2379<span class="w"> </span>put<span class="w"> </span>/production/worker/settings.json<span class="w"> </span><span class="s1">'{"batch_size":100,"poll_interval_seconds":2}'</span>
+</code></pre></div>
+<p>Watch the <code>worker</code> service log the change you just made with <code>etcdctl</code>.</p>
+<hr />
+<h2 id="step-3-attach-a-json-schema-and-reject-an-invalid-value">Step 3 — Attach a JSON Schema and reject an invalid value</h2>
+<p>Elara can validate config content against a JSON Schema <strong>before</strong> it is
+written. Invalid values are rejected up front instead of quietly breaking a
+consumer.</p>
+<blockquote>
+<p><strong>Where it applies:</strong> every write path. Edits through the Web UI, the
+ConnectRPC API, and raw etcd <code>Put</code> calls are all checked against the
+attached schema, so a broken config cannot reach a consumer whichever door
+it comes through. An etcd write that violates the schema fails with
+<code>InvalidArgument</code>.</p>
+</blockquote>
+<ol>
+<li>In the Web UI, open the <strong><code>production</code></strong> namespace.</li>
+<li>Use the namespace's <strong>Attach Schema</strong> action. Fill in:</li>
+<li><strong>Path Pattern:</strong> <code>/api/**</code> (this glob matches <code>api/limits.json</code>).</li>
+<li><strong>JSON Schema:</strong> paste the schema below.</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"max_todos_per_user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span><span class="w"> </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">"maximum"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"rate_limit_per_min"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integer"</span><span class="p">,</span><span class="w"> </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"max_todos_per_user"</span><span class="p">,</span><span class="w"> </span><span class="s2">"rate_limit_per_min"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>This is what makes service-level atomicity composable: a service can call <code>WithTx</code>
-defensively, and when a usecase already opened one, it simply joins — bbolt allows
-only one write-tx at a time, so flattening is the only safe behavior.</p>
-<h3 id="consequences">Consequences</h3>
+<ol>
+<li>Now open <code>api/limits.json</code> and try to save an invalid value, for example:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="w"> </span><span class="nt">"max_todos_per_user"</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span><span class="w"> </span><span class="nt">"rate_limit_per_min"</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p><code>5000</code> exceeds the schema's <code>maximum</code> of <code>1000</code>, so Elara rejects the save
+   and the UI shows a schema-validation error. The stored value — and what the
+   <code>api</code> service sees — is unchanged.</p>
+<ol>
+<li>Fix the value (e.g. <code>750</code>) and save. This time it succeeds, and the <code>api</code>
+   service logs the update.</li>
+</ol>
+<p>Try another invalid case to get a feel for it: change <code>max_todos_per_user</code> to
+the string <code>"lots"</code> and save — the <code>integer</code> type constraint rejects it.</p>
+<hr />
+<h2 id="step-4-bundle-export-edit-in-git-import-back">Step 4 — Bundle export → edit in Git → import back</h2>
+<p>Elara can round-trip a namespace to a YAML or JSON bundle, so you can review
+config changes in a pull request and apply them back — a lightweight GitOps
+flow.</p>
+<p><strong>Export.</strong> In the Web UI, open the <code>production</code> namespace and use its
+<strong>Export</strong> action. Choose the bundle format (<strong>YAML</strong> or <strong>JSON</strong>) and
+download. You'll get a file like <code>production-export.yaml</code> containing every key
+in the namespace:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
+<span class="nt">configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/api/limits.json</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">'{"max_todos_per_user":750,"rate_limit_per_min":60}'</span>
+<span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/notifier/config.json</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">'{"channel":"email","digest_enabled":true}'</span>
+<span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/worker/settings.json</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">'{"batch_size":100,"poll_interval_seconds":2}'</span>
+<span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
+</code></pre></div>
+<p><strong>Edit in Git.</strong> Commit that file to a repo and change a value in a normal
+editor — say, flip the notifier channel:</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/notifier/config.json</span>
+<span class="w">    </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">'{"channel":"slack","digest_enabled":true}'</span>
+<span class="w">    </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
+</code></pre></div>
+<p><strong>Import back.</strong> In the Web UI, use the <strong>Import Configs</strong> action, upload the
+edited bundle, and choose how to resolve conflicts (overwrite existing keys to
+apply your edit). You can do a dry run first to preview what would change.</p>
+<p>Once imported, the <code>notifier</code> service logs the new value it picked up over its
+watch:</p>
+<div class="highlight"><pre><span></span><code>notifier-1  | [notifier] config changed: /production/notifier/config.json = {"channel":"slack","digest_enabled":true} (revision 9)
+</code></pre></div>
+<p>Your Git history is now the audit trail for that change, and Elara enforced it
+against any attached schemas on the way in.</p>
+<hr />
+<h2 id="tear-down">Tear down</h2>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w">          </span><span class="c1"># stop the stack, keep the data volume</span>
+docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w"> </span>-v<span class="w">       </span><span class="c1"># also delete Elara's stored data</span>
+</code></pre></div>
+<hr />
+<h2 id="how-it-fits-together">How it fits together</h2>
+<div class="highlight"><pre><span></span><code>Web UI / ConnectRPC ─┐
+                     ├─→  Elara  ─(bbolt)
+etcdctl / your app ──┘      │
+                            └─→ etcd v3 watch stream ──→ api / worker / notifier
+</code></pre></div>
 <ul>
-<li>Good: multi-step writes are atomic with the boundary declared in one place (the usecase).</li>
-<li>Good: the service layer shrank — no tx plumbing, no <code>txm.Write</code> wrappers; easier to test.</li>
-<li>Good: <code>Manager</code> is backend-agnostic; <code>pkg/bbolt</code> shadows <code>core/sql</code> for a future Postgres adapter.</li>
-<li>Good: single method per operation — no <code>*InTx</code> twins, no <code>tx</code> parameter threading.</li>
-<li>Bad: the tx handle travels <strong>implicitly</strong> via ctx. Coupling is invisible in signatures; a reader must know the convention.</li>
-<li>Bad: discipline required — a repo/service must never open a competing tx; it must join the ctx one. bbolt's single-writer model turns a mistake here into a deadlock or lost atomicity.</li>
-<li>Bad: auto-tx fallback means a bare repo call outside <code>WithTx</code> silently opens its own short-lived tx — convenient, but atomicity across such calls is not guaranteed.</li>
+<li>The toy services use the <strong>unmodified</strong> <code>go.etcd.io/etcd/client/v3</code> library.
+  Keys are addressed as <code>/{namespace}/{path}</code>, e.g.
+  <code>/production/api/limits.json</code>.</li>
+<li>A change made in the UI, via the ConnectRPC API, or via <code>etcdctl</code> all land in
+  the same store and fan out to every watcher.</li>
+<li>The management path (UI/API) adds the guardrails bare etcd doesn't have:
+  JSON Schema validation, RBAC, audit history, and GitOps bundles.</li>
 </ul>
-<h2 id="pros-and-cons-of-the-options">Pros and Cons of the Options</h2>
-<h3 id="option-1-explicit-tx-parameter">Option 1 — Explicit <code>tx</code> parameter</h3>
-<ul>
-<li>Good: coupling is visible; the type system tracks who is in a transaction.</li>
-<li>Good: no hidden ctx convention.</li>
-<li>Bad: every repo/service signature carries <code>tx</code>; adding/removing a boundary churns many APIs.</li>
-<li>Bad: tends toward <code>Update</code>/<code>UpdateInTx</code> duplication and leaks the tx type across layers.</li>
-</ul>
-<h3 id="option-2-service-owned-transactions-previous-state">Option 2 — Service-owned transactions (previous state)</h3>
-<ul>
-<li>Good: simple for single-service operations.</li>
-<li>Bad: cross-service atomicity is impossible — the EL-51 blocker.</li>
-<li>Bad: boundaries hidden inside services; <code>Tx.Bucket</code> leaked bbolt into the contract.</li>
-</ul>
-<h3 id="option-3-usecase-owned-context-injected-chosen">Option 3 — Usecase-owned, context-injected (chosen)</h3>
-<ul>
-<li>Good: composable atomicity, clean signatures, backend-agnostic contract.</li>
-<li>Good: nested <code>WithTx</code> flattens, so defensive wrapping is safe.</li>
-<li>Bad: implicit ctx coupling and a discipline requirement the compiler cannot enforce.</li>
-</ul>
-<p>This is a genuine trade-off. The Go community is split on implicit ctx-based tx
-propagation versus explicit parameters; Elara chose implicit for the leaner API,
-accepting that correctness now rests on convention rather than the type system.</p>
+<p>To go deeper, read the service code in
+<a href="../../examples/todo-app/services/"><code>examples/todo-app/services/</code></a> — it's about a
+page of Go per service.</p>
 
 
 
