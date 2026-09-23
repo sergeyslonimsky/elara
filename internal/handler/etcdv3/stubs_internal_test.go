@@ -28,12 +28,12 @@ func TestMaintenance_Status(t *testing.T) {
 	resp, err := m.Status(context.Background(), &etcdserverpb.StatusRequest{})
 	require.NoError(t, err)
 
-	assert.Equal(t, etcdVersion, resp.Version)
-	assert.Equal(t, memberID, resp.Leader)
-	assert.Equal(t, raftTerm, resp.RaftTerm)
-	assert.Equal(t, uint64(42), resp.RaftIndex)
-	require.NotNil(t, resp.Header)
-	assert.Equal(t, int64(42), resp.Header.Revision)
+	assert.Equal(t, etcdVersion, resp.GetVersion())
+	assert.Equal(t, memberID, resp.GetLeader())
+	assert.Equal(t, raftTerm, resp.GetRaftTerm())
+	assert.Equal(t, uint64(42), resp.GetRaftIndex())
+	require.NotNil(t, resp.GetHeader())
+	assert.Equal(t, int64(42), resp.GetHeader().GetRevision())
 }
 
 func TestMaintenance_Alarm_ReturnsEmpty(t *testing.T) {
@@ -43,9 +43,9 @@ func TestMaintenance_Alarm_ReturnsEmpty(t *testing.T) {
 
 	resp, err := m.Alarm(context.Background(), &etcdserverpb.AlarmRequest{})
 	require.NoError(t, err)
-	require.NotNil(t, resp.Header)
-	assert.Equal(t, int64(7), resp.Header.Revision)
-	assert.Empty(t, resp.Alarms)
+	require.NotNil(t, resp.GetHeader())
+	assert.Equal(t, int64(7), resp.GetHeader().GetRevision())
+	assert.Empty(t, resp.GetAlarms())
 }
 
 func TestCluster_MemberList(t *testing.T) {
@@ -56,9 +56,9 @@ func TestCluster_MemberList(t *testing.T) {
 	resp, err := c.MemberList(context.Background(), &etcdserverpb.MemberListRequest{})
 	require.NoError(t, err)
 
-	require.Len(t, resp.Members, 1)
-	assert.Equal(t, memberID, resp.Members[0].ID)
-	assert.Equal(t, "elara", resp.Members[0].Name)
-	assert.NotEmpty(t, resp.Members[0].ClientURLs)
-	assert.Equal(t, int64(3), resp.Header.Revision)
+	require.Len(t, resp.GetMembers(), 1)
+	assert.Equal(t, memberID, resp.GetMembers()[0].GetID())
+	assert.Equal(t, "elara", resp.GetMembers()[0].GetName())
+	assert.NotEmpty(t, resp.GetMembers()[0].GetClientURLs())
+	assert.Equal(t, int64(3), resp.GetHeader().GetRevision())
 }

@@ -306,8 +306,8 @@ func TestKVServer_Put_CreatesNewKey(t *testing.T) {
 		Value: []byte("hello"),
 	})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), resp.Header.Revision)
-	assert.Nil(t, resp.PrevKv)
+	assert.Equal(t, int64(1), resp.GetHeader().GetRevision())
+	assert.Nil(t, resp.GetPrevKv())
 
 	assert.Len(t, pub.created, 1, "publisher.NotifyCreated called")
 	assert.Empty(t, pub.updated, "publisher.NotifyUpdated NOT called on create")
@@ -334,10 +334,10 @@ func TestKVServer_Put_UpdatesExistingKey_WithPrevKv(t *testing.T) {
 		Key: []byte("/default/foo"), Value: []byte("v2"), PrevKv: true,
 	})
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), resp.Header.Revision)
-	require.NotNil(t, resp.PrevKv)
-	assert.Equal(t, []byte("v1"), resp.PrevKv.Value)
-	assert.Equal(t, int64(1), resp.PrevKv.Version)
+	assert.Equal(t, int64(2), resp.GetHeader().GetRevision())
+	require.NotNil(t, resp.GetPrevKv())
+	assert.Equal(t, []byte("v1"), resp.GetPrevKv().GetValue())
+	assert.Equal(t, int64(1), resp.GetPrevKv().GetVersion())
 
 	assert.Len(t, pub.created, 1)
 	assert.Len(t, pub.updated, 1, "second Put notifies Updated, not Created")
@@ -396,10 +396,10 @@ func TestKVServer_Range_SingleKey(t *testing.T) {
 		Key: []byte("/default/foo"),
 	})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), resp.Count)
-	require.Len(t, resp.Kvs, 1)
-	assert.Equal(t, []byte("/default/foo"), resp.Kvs[0].Key)
-	assert.Equal(t, []byte("v1"), resp.Kvs[0].Value)
+	assert.Equal(t, int64(1), resp.GetCount())
+	require.Len(t, resp.GetKvs(), 1)
+	assert.Equal(t, []byte("/default/foo"), resp.GetKvs()[0].GetKey())
+	assert.Equal(t, []byte("v1"), resp.GetKvs()[0].GetValue())
 }
 
 func TestKVServer_Range_Prefix(t *testing.T) {
@@ -420,8 +420,8 @@ func TestKVServer_Range_Prefix(t *testing.T) {
 		RangeEnd: []byte("/default0"),
 	})
 	require.NoError(t, err)
-	assert.Equal(t, int64(3), resp.Count)
-	assert.Len(t, resp.Kvs, 3)
+	assert.Equal(t, int64(3), resp.GetCount())
+	assert.Len(t, resp.GetKvs(), 3)
 }
 
 func TestKVServer_Range_Limit_ReportsMore(t *testing.T) {
@@ -442,8 +442,8 @@ func TestKVServer_Range_Limit_ReportsMore(t *testing.T) {
 		Limit:    2,
 	})
 	require.NoError(t, err)
-	assert.Len(t, resp.Kvs, 2)
-	assert.True(t, resp.More, "More should be true when results truncated")
+	assert.Len(t, resp.GetKvs(), 2)
+	assert.True(t, resp.GetMore(), "More should be true when results truncated")
 }
 
 func TestKVServer_Range_CountOnly(t *testing.T) {
@@ -462,8 +462,8 @@ func TestKVServer_Range_CountOnly(t *testing.T) {
 		Key: []byte("/ns/"), RangeEnd: []byte("/ns0"), CountOnly: true,
 	})
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), resp.Count)
-	assert.Empty(t, resp.Kvs)
+	assert.Equal(t, int64(2), resp.GetCount())
+	assert.Empty(t, resp.GetKvs())
 }
 
 func TestKVServer_Range_KeysOnly(t *testing.T) {
@@ -480,8 +480,8 @@ func TestKVServer_Range_KeysOnly(t *testing.T) {
 		Key: []byte("/ns/a"), KeysOnly: true,
 	})
 	require.NoError(t, err)
-	require.Len(t, resp.Kvs, 1)
-	assert.Empty(t, resp.Kvs[0].Value, "KeysOnly must strip Value")
+	require.Len(t, resp.GetKvs(), 1)
+	assert.Empty(t, resp.GetKvs()[0].GetValue(), "KeysOnly must strip Value")
 }
 
 func TestKVServer_Range_Sort_Descend(t *testing.T) {
@@ -501,9 +501,9 @@ func TestKVServer_Range_Sort_Descend(t *testing.T) {
 		SortOrder: etcdserverpb.RangeRequest_DESCEND, SortTarget: etcdserverpb.RangeRequest_KEY,
 	})
 	require.NoError(t, err)
-	require.Len(t, resp.Kvs, 3)
-	assert.Equal(t, []byte("/ns/c"), resp.Kvs[0].Key)
-	assert.Equal(t, []byte("/ns/a"), resp.Kvs[2].Key)
+	require.Len(t, resp.GetKvs(), 3)
+	assert.Equal(t, []byte("/ns/c"), resp.GetKvs()[0].GetKey())
+	assert.Equal(t, []byte("/ns/a"), resp.GetKvs()[2].GetKey())
 }
 
 func TestKVServer_Range_InvalidKey(t *testing.T) {
@@ -544,9 +544,9 @@ func TestKVServer_DeleteRange_SingleKey(t *testing.T) {
 		Key: []byte("/ns/x"), PrevKv: true,
 	})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), resp.Deleted)
-	require.Len(t, resp.PrevKvs, 1)
-	assert.Equal(t, []byte("v"), resp.PrevKvs[0].Value)
+	assert.Equal(t, int64(1), resp.GetDeleted())
+	require.Len(t, resp.GetPrevKvs(), 1)
+	assert.Equal(t, []byte("v"), resp.GetPrevKvs()[0].GetValue())
 
 	assert.Len(t, pub.deleted, 1)
 	assert.Equal(t, "/x", pub.deleted[0].path)
@@ -566,8 +566,8 @@ func TestKVServer_DeleteRange_Nothing_ReturnsCurrentRev(t *testing.T) {
 		Key: []byte("/ns/missing"),
 	})
 	require.NoError(t, err)
-	assert.Equal(t, int64(0), resp.Deleted)
-	assert.Equal(t, int64(7), resp.Header.Revision)
+	assert.Equal(t, int64(0), resp.GetDeleted())
+	assert.Equal(t, int64(7), resp.GetHeader().GetRevision())
 	assert.Empty(t, pub.deleted, "no publisher notifications when nothing deleted")
 }
 
@@ -588,7 +588,7 @@ func TestKVServer_DeleteRange_Prefix(t *testing.T) {
 		Key: []byte("/ns/"), RangeEnd: []byte("/ns0"),
 	})
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), resp.Deleted)
+	assert.Equal(t, int64(2), resp.GetDeleted())
 	assert.Len(t, pub.deleted, 2)
 }
 
@@ -614,7 +614,7 @@ func TestKVServer_Compact_IsNoOp(t *testing.T) {
 
 	resp, err := s.Compact(context.Background(), &etcdserverpb.CompactionRequest{Revision: 10})
 	require.NoError(t, err)
-	assert.Equal(t, int64(42), resp.Header.Revision)
+	assert.Equal(t, int64(42), resp.GetHeader().GetRevision())
 }
 
 // -----------------------------------------------------------------------------
@@ -651,14 +651,14 @@ func TestKVServer_Txn_SuccessBranch(t *testing.T) {
 		}},
 	})
 	require.NoError(t, err)
-	assert.True(t, resp.Succeeded)
-	require.Len(t, resp.Responses, 1)
-	_, isPut := resp.Responses[0].Response.(*etcdserverpb.ResponseOp_ResponsePut)
+	assert.True(t, resp.GetSucceeded())
+	require.Len(t, resp.GetResponses(), 1)
+	_, isPut := resp.GetResponses()[0].GetResponse().(*etcdserverpb.ResponseOp_ResponsePut)
 	assert.True(t, isPut)
 
 	rg, err := s.Range(ctx, &etcdserverpb.RangeRequest{Key: []byte("/ns/k2")})
 	require.NoError(t, err)
-	assert.Equal(t, int64(1), rg.Count)
+	assert.Equal(t, int64(1), rg.GetCount())
 }
 
 func TestKVServer_Txn_FailureBranch(t *testing.T) {
@@ -691,12 +691,12 @@ func TestKVServer_Txn_FailureBranch(t *testing.T) {
 		}},
 	})
 	require.NoError(t, err)
-	assert.False(t, resp.Succeeded)
+	assert.False(t, resp.GetSucceeded())
 
 	// Ensure the Success branch didn't leak a side effect.
 	rg, err := s.Range(ctx, &etcdserverpb.RangeRequest{Key: []byte("/ns/k3")})
 	require.NoError(t, err)
-	assert.Equal(t, int64(0), rg.Count)
+	assert.Equal(t, int64(0), rg.GetCount())
 }
 
 func TestKVServer_Txn_ConjunctionShortCircuit(t *testing.T) {
@@ -727,7 +727,7 @@ func TestKVServer_Txn_ConjunctionShortCircuit(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	assert.False(t, resp.Succeeded)
+	assert.False(t, resp.GetSucceeded())
 }
 
 func TestKVServer_Txn_MissingKey_AgainstCreateRev0(t *testing.T) {
@@ -751,7 +751,7 @@ func TestKVServer_Txn_MissingKey_AgainstCreateRev0(t *testing.T) {
 		}},
 	})
 	require.NoError(t, err)
-	assert.True(t, resp.Succeeded)
+	assert.True(t, resp.GetSucceeded())
 }
 
 func TestKVServer_Txn_EmptyOps_ReturnsCurrentRev(t *testing.T) {
@@ -763,9 +763,9 @@ func TestKVServer_Txn_EmptyOps_ReturnsCurrentRev(t *testing.T) {
 
 	resp, err := s.Txn(context.Background(), &etcdserverpb.TxnRequest{})
 	require.NoError(t, err)
-	assert.True(t, resp.Succeeded, "no compares → vacuously true")
-	assert.Equal(t, int64(5), resp.Header.Revision)
-	assert.Empty(t, resp.Responses)
+	assert.True(t, resp.GetSucceeded(), "no compares → vacuously true")
+	assert.Equal(t, int64(5), resp.GetHeader().GetRevision())
+	assert.Empty(t, resp.GetResponses())
 }
 
 func TestKVServer_Txn_NestedTxn(t *testing.T) {
@@ -788,9 +788,9 @@ func TestKVServer_Txn_NestedTxn(t *testing.T) {
 		}},
 	})
 	require.NoError(t, err)
-	assert.True(t, resp.Succeeded)
-	require.Len(t, resp.Responses, 1)
-	_, ok := resp.Responses[0].Response.(*etcdserverpb.ResponseOp_ResponseTxn)
+	assert.True(t, resp.GetSucceeded())
+	require.Len(t, resp.GetResponses(), 1)
+	_, ok := resp.GetResponses()[0].GetResponse().(*etcdserverpb.ResponseOp_ResponseTxn)
 	assert.True(t, ok)
 }
 
@@ -828,7 +828,7 @@ func TestKVServer_Txn_CompareWithRange_AllMatch(t *testing.T) {
 		}},
 	})
 	require.NoError(t, err)
-	assert.True(t, resp.Succeeded)
+	assert.True(t, resp.GetSucceeded())
 
 	// Now add a mismatching value and re-run.
 	_, err = s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte("/ns/c"), Value: []byte("different")})
@@ -842,7 +842,7 @@ func TestKVServer_Txn_CompareWithRange_AllMatch(t *testing.T) {
 		}},
 	})
 	require.NoError(t, err)
-	assert.False(t, resp2.Succeeded, "one mismatching value in range must fail the compare")
+	assert.False(t, resp2.GetSucceeded(), "one mismatching value in range must fail the compare")
 }
 
 func TestKVServer_Txn_RunOp_Range(t *testing.T) {
@@ -854,9 +854,9 @@ func TestKVServer_Txn_RunOp_Range(t *testing.T) {
 		},
 	})
 
-	rr, ok := resp.Responses[0].Response.(*etcdserverpb.ResponseOp_ResponseRange)
+	rr, ok := resp.GetResponses()[0].GetResponse().(*etcdserverpb.ResponseOp_ResponseRange)
 	require.True(t, ok)
-	assert.Equal(t, int64(1), rr.ResponseRange.Count)
+	assert.Equal(t, int64(1), rr.ResponseRange.GetCount())
 }
 
 func TestKVServer_Txn_RunOp_DeleteRange(t *testing.T) {
@@ -868,9 +868,9 @@ func TestKVServer_Txn_RunOp_DeleteRange(t *testing.T) {
 		},
 	})
 
-	dr, ok := resp.Responses[0].Response.(*etcdserverpb.ResponseOp_ResponseDeleteRange)
+	dr, ok := resp.GetResponses()[0].GetResponse().(*etcdserverpb.ResponseOp_ResponseDeleteRange)
 	require.True(t, ok)
-	assert.Equal(t, int64(1), dr.ResponseDeleteRange.Deleted)
+	assert.Equal(t, int64(1), dr.ResponseDeleteRange.GetDeleted())
 }
 
 // txnWithSingleOp seeds a key, runs a Txn with a single success op, and
@@ -893,7 +893,7 @@ func txnWithSingleOp(
 		Success: []*etcdserverpb.RequestOp{op},
 	})
 	require.NoError(t, err)
-	require.Len(t, resp.Responses, 1)
+	require.Len(t, resp.GetResponses(), 1)
 
 	return resp
 }

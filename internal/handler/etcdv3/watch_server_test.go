@@ -286,9 +286,9 @@ func TestWatchServer_Create_SendsCreatedAck(t *testing.T) {
 	})
 
 	resps := waitForResps(t, stream, 1)
-	assert.True(t, resps[0].Created, "first response must be Created ack")
-	assert.Equal(t, int64(1), resps[0].WatchId, "first watch id is 1")
-	assert.Equal(t, int64(3), resps[0].Header.Revision)
+	assert.True(t, resps[0].GetCreated(), "first response must be Created ack")
+	assert.Equal(t, int64(1), resps[0].GetWatchId(), "first watch id is 1")
+	assert.Equal(t, int64(3), resps[0].GetHeader().GetRevision())
 
 	cancel()
 	<-done
@@ -333,11 +333,11 @@ func TestWatchServer_RealtimeEvent_Delivered(t *testing.T) {
 
 	resps := waitForResps(t, stream, 2)
 	ev := resps[1]
-	require.Len(t, ev.Events, 1)
-	assert.Equal(t, mvccpb.PUT, ev.Events[0].Type)
-	assert.Equal(t, []byte("/default/foo"), ev.Events[0].Kv.Key)
-	assert.Equal(t, int64(5), ev.Events[0].Kv.ModRevision)
-	assert.Equal(t, int64(5), ev.Header.Revision, "header carries event revision")
+	require.Len(t, ev.GetEvents(), 1)
+	assert.Equal(t, mvccpb.PUT, ev.GetEvents()[0].GetType())
+	assert.Equal(t, []byte("/default/foo"), ev.GetEvents()[0].GetKv().GetKey())
+	assert.Equal(t, int64(5), ev.GetEvents()[0].GetKv().GetModRevision())
+	assert.Equal(t, int64(5), ev.GetHeader().GetRevision(), "header carries event revision")
 
 	cancel()
 	<-done
@@ -377,7 +377,7 @@ func TestWatchServer_FiltersByNamespace(t *testing.T) {
 	})
 
 	resps := waitForResps(t, stream, 2)
-	assert.Equal(t, []byte("/default/foo"), resps[1].Events[0].Kv.Key)
+	assert.Equal(t, []byte("/default/foo"), resps[1].GetEvents()[0].GetKv().GetKey())
 
 	cancel()
 	<-done
@@ -420,7 +420,7 @@ func TestWatchServer_FiltersByExactPathSingleKey(t *testing.T) {
 
 	resps := waitForResps(t, stream, 2)
 	require.Len(t, resps, 2, "should only receive ack + exact match")
-	assert.Equal(t, []byte("/default/foo"), resps[1].Events[0].Kv.Key)
+	assert.Equal(t, []byte("/default/foo"), resps[1].GetEvents()[0].GetKv().GetKey())
 
 	cancel()
 	<-done
@@ -471,11 +471,11 @@ func TestWatchServer_HistoricalReplay(t *testing.T) {
 
 	resps := waitForResps(t, stream, 3) // Created + 2 history entries
 
-	assert.True(t, resps[0].Created)
-	assert.Equal(t, int64(2), resps[1].Events[0].Kv.ModRevision)
-	assert.Equal(t, []byte("v1"), resps[1].Events[0].Kv.Value)
-	assert.Equal(t, int64(4), resps[2].Events[0].Kv.ModRevision)
-	assert.Equal(t, []byte("v2"), resps[2].Events[0].Kv.Value)
+	assert.True(t, resps[0].GetCreated())
+	assert.Equal(t, int64(2), resps[1].GetEvents()[0].GetKv().GetModRevision())
+	assert.Equal(t, []byte("v1"), resps[1].GetEvents()[0].GetKv().GetValue())
+	assert.Equal(t, int64(4), resps[2].GetEvents()[0].GetKv().GetModRevision())
+	assert.Equal(t, []byte("v2"), resps[2].GetEvents()[0].GetKv().GetValue())
 
 	cancel()
 	<-done
@@ -508,10 +508,10 @@ func TestWatchServer_HistoricalReplay_DeletesPublished(t *testing.T) {
 	})
 
 	resps := waitForResps(t, stream, 2)
-	assert.True(t, resps[0].Created)
-	assert.Equal(t, mvccpb.DELETE, resps[1].Events[0].Type)
-	assert.Equal(t, int64(2), resps[1].Events[0].Kv.ModRevision)
-	assert.Equal(t, int64(0), resps[1].Events[0].Kv.Version, "delete version=0")
+	assert.True(t, resps[0].GetCreated())
+	assert.Equal(t, mvccpb.DELETE, resps[1].GetEvents()[0].GetType())
+	assert.Equal(t, int64(2), resps[1].GetEvents()[0].GetKv().GetModRevision())
+	assert.Equal(t, int64(0), resps[1].GetEvents()[0].GetKv().GetVersion(), "delete version=0")
 
 	cancel()
 	<-done
@@ -568,7 +568,7 @@ func TestWatchServer_HistoricalDedupesWithRealtime(t *testing.T) {
 
 	resps := waitForResps(t, stream, 3)
 	require.Len(t, resps, 3, "duplicate rev=3 must be dropped, only rev=7 delivered")
-	assert.Equal(t, int64(7), resps[2].Events[0].Kv.ModRevision)
+	assert.Equal(t, int64(7), resps[2].GetEvents()[0].GetKv().GetModRevision())
 
 	cancel()
 	<-done
@@ -603,8 +603,8 @@ func TestWatchServer_Cancel_StopsWatch(t *testing.T) {
 		},
 	})
 	resps := waitForResps(t, stream, 2)
-	assert.True(t, resps[1].Canceled, "cancel ack sent")
-	assert.Equal(t, int64(1), resps[1].WatchId)
+	assert.True(t, resps[1].GetCanceled(), "cancel ack sent")
+	assert.Equal(t, int64(1), resps[1].GetWatchId())
 
 	// Allow goroutine to unsubscribe
 	deadline := time.Now().Add(time.Second)
@@ -640,8 +640,8 @@ func TestWatchServer_Progress(t *testing.T) {
 	})
 
 	resps := waitForResps(t, stream, 1)
-	assert.Equal(t, int64(-1), resps[0].WatchId, "progress response uses WatchId=-1")
-	assert.Equal(t, int64(9), resps[0].Header.Revision)
+	assert.Equal(t, int64(-1), resps[0].GetWatchId(), "progress response uses WatchId=-1")
+	assert.Equal(t, int64(9), resps[0].GetHeader().GetRevision())
 
 	cancel()
 	<-done
@@ -773,7 +773,7 @@ func TestWatchServer_Create_AllowedForScanAllWithWildcardToken(t *testing.T) {
 	})
 
 	resps := waitForResps(t, stream, 1)
-	assert.True(t, resps[0].Created, "wildcard token may create a scanAll watch")
+	assert.True(t, resps[0].GetCreated(), "wildcard token may create a scanAll watch")
 
 	pub.push(domain.WatchEvent{
 		Type: domain.EventTypeCreated, Path: "/foo", Namespace: "anything-else", Revision: 5,
@@ -784,7 +784,7 @@ func TestWatchServer_Create_AllowedForScanAllWithWildcardToken(t *testing.T) {
 	})
 
 	resps = waitForResps(t, stream, 2)
-	require.Len(t, resps[1].Events, 1, "wildcard token receives events from any namespace under scanAll")
+	require.Len(t, resps[1].GetEvents(), 1, "wildcard token receives events from any namespace under scanAll")
 
 	cancel()
 	<-done
@@ -813,7 +813,7 @@ func TestWatchServer_Create_AllowedForScanAllWithNilClaims(t *testing.T) {
 	})
 
 	resps := waitForResps(t, stream, 1)
-	assert.True(t, resps[0].Created, "auth disabled (nil claims) must allow scanAll watch creation")
+	assert.True(t, resps[0].GetCreated(), "auth disabled (nil claims) must allow scanAll watch creation")
 
 	cancel()
 	<-done
@@ -883,8 +883,13 @@ func TestWatchServer_CrossNamespaceRange_FiltersNamespaceOutsideScope(t *testing
 	})
 
 	resps := waitForResps(t, stream, 2)
-	require.Len(t, resps[1].Events, 1)
-	assert.Equal(t, []byte("/a/x"), resps[1].Events[0].Kv.Key, "only the in-scope namespace event is delivered")
+	require.Len(t, resps[1].GetEvents(), 1)
+	assert.Equal(
+		t,
+		[]byte("/a/x"),
+		resps[1].GetEvents()[0].GetKv().GetKey(),
+		"only the in-scope namespace event is delivered",
+	)
 
 	cancel()
 	<-done
@@ -915,10 +920,10 @@ func TestWatchServer_MultipleWatchers_DistinctIDs(t *testing.T) {
 	})
 
 	resps := waitForResps(t, stream, 2)
-	require.True(t, resps[0].Created)
-	require.True(t, resps[1].Created)
-	assert.Equal(t, int64(1), resps[0].WatchId)
-	assert.Equal(t, int64(2), resps[1].WatchId, "IDs are monotonic per stream")
+	require.True(t, resps[0].GetCreated())
+	require.True(t, resps[1].GetCreated())
+	assert.Equal(t, int64(1), resps[0].GetWatchId())
+	assert.Equal(t, int64(2), resps[1].GetWatchId(), "IDs are monotonic per stream")
 
 	stream.close()
 	<-done

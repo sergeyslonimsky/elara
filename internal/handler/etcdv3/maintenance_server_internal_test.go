@@ -23,10 +23,10 @@ func TestMaintenanceServer_Status(t *testing.T) {
 
 	resp, err := s.Status(context.Background(), &etcdserverpb.StatusRequest{})
 	require.NoError(t, err)
-	assert.Equal(t, int64(200), resp.Header.Revision)
-	assert.Equal(t, uint64(200), resp.RaftIndex)
-	assert.Equal(t, etcdVersion, resp.Version)
-	assert.Equal(t, memberID, resp.Leader)
+	assert.Equal(t, int64(200), resp.GetHeader().GetRevision())
+	assert.Equal(t, uint64(200), resp.GetRaftIndex())
+	assert.Equal(t, etcdVersion, resp.GetVersion())
+	assert.Equal(t, memberID, resp.GetLeader())
 }
 
 func TestMaintenanceServer_Alarm(t *testing.T) {
@@ -40,6 +40,6 @@ func TestMaintenanceServer_Alarm(t *testing.T) {
 
 	resp, err := s.Alarm(context.Background(), &etcdserverpb.AlarmRequest{})
 	require.NoError(t, err)
-	assert.Equal(t, int64(42), resp.Header.Revision)
-	assert.Empty(t, resp.Alarms)
+	assert.Equal(t, int64(42), resp.GetHeader().GetRevision())
+	assert.Empty(t, resp.GetAlarms())
 }
