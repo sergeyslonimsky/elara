@@ -106,8 +106,16 @@ jobs:
         with:
           version: latest
 
+      # -tags=integration is required: the handler integration suites are all
+      # behind that build tag, so without it CI silently compiles and runs
+      # none of them — `go test ./...` still reports success.
+      #
+      # -coverpkg is required for those suites to count. They live in the
+      # handler packages but exercise code in usecase/, service/ and storage/;
+      # with per-package coverage (the default) Go attributes none of it, so
+      # a usecase covered only by an integration test reads as 0%.
       - name: Test (race)
-        run: go tool gotestsum --format=testname --hide-summary=output --junitfile junit.xml -- -race -count=1 -shuffle=on -coverprofile=coverage.txt ./...
+        run: go tool gotestsum --format=testname --hide-summary=output --junitfile junit.xml -- -race -count=1 -shuffle=on -tags=integration -coverpkg=./internal/... -coverprofile=coverage.txt ./...
 
       - name: Filter generated files from coverage
         run: grep -vE "\.pb\.go:|\.connect\.go:" coverage.txt > coverage_filtered.txt && mv coverage_filtered.txt coverage.txt
