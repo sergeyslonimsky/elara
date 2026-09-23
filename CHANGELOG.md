@@ -7,6 +7,18 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 Entries are generated from [Conventional Commits](https://www.conventionalcommits.org/)
 by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
+## [0.5.1](https://github.com/sergeyslonimsky/elara/releases/tag/v0.5.1) — 2026-09-23
+
+### Bug fixes
+
+- **release:** Generate release notes with git-cliff ([783106b](https://github.com/sergeyslonimsky/elara/commit/783106b6eae9e64bebc5874c4e6254ebc7625e11))
+- **release:** Pin git-cliff-action by commit SHA ([8587c17](https://github.com/sergeyslonimsky/elara/commit/8587c17c64425ac524c4eff9ab255460fe254e5d))
+- **release:** Make prerelease tags safe to cut ([00e51f7](https://github.com/sergeyslonimsky/elara/commit/00e51f7c55991349b8c089a0f859afe6ced8bd59))
+- **release:** Write generated notes outside the work tree ([976dd6b](https://github.com/sergeyslonimsky/elara/commit/976dd6b1fd98b25e8314ae65924b707f40a1318a))
+- **release:** Stop disabling the pipe that reads --release-notes ([bfc37e0](https://github.com/sergeyslonimsky/elara/commit/bfc37e069c0909006ca202dfd6954785b4674fcc))
+
+**Full diff:** [v0.5.0...v0.5.1](https://github.com/sergeyslonimsky/elara/compare/v0.5.0...v0.5.1)
+
 ## [0.5.0](https://github.com/sergeyslonimsky/elara/releases/tag/v0.5.0) — 2026-09-23
 
 ### ⚠ Breaking changes
@@ -147,17 +159,13 @@ by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
 ## [0.2.0-rc.2](https://github.com/sergeyslonimsky/elara/releases/tag/v0.2.0-rc.2) — 2026-04-26
 
-### Bug fixes
-
-- Add docker login to release ci ([f645f3d](https://github.com/sergeyslonimsky/elara/commit/f645f3d09e8e34b0446271e93008c04c399bc433))
-
-**Full diff:** [v0.2.0-rc.1...v0.2.0-rc.2](https://github.com/sergeyslonimsky/elara/compare/v0.2.0-rc.1...v0.2.0-rc.2)
-
-## [0.2.0-rc.1](https://github.com/sergeyslonimsky/elara/releases/tag/v0.2.0-rc.1) — 2026-04-26
-
 ### Features
 
 - Add JSON Schema validation for configs ([#29](https://github.com/sergeyslonimsky/elara/pull/29)) ([9a3368a](https://github.com/sergeyslonimsky/elara/commit/9a3368a941b1cd9339de552604eae79682b1310c))
+
+### Bug fixes
+
+- Add docker login to release ci ([f645f3d](https://github.com/sergeyslonimsky/elara/commit/f645f3d09e8e34b0446271e93008c04c399bc433))
 
 ### Refactoring
 
@@ -167,7 +175,7 @@ by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
 - Add new ci job for signing helm release ([#22](https://github.com/sergeyslonimsky/elara/pull/22)) ([8e47ce5](https://github.com/sergeyslonimsky/elara/commit/8e47ce59b6ba321ee502cd5598ea1236ced4841e))
 
-**Full diff:** [v0.2.0-rc.0...v0.2.0-rc.1](https://github.com/sergeyslonimsky/elara/compare/v0.2.0-rc.0...v0.2.0-rc.1)
+**Full diff:** [v0.2.0-rc.0...v0.2.0-rc.2](https://github.com/sergeyslonimsky/elara/compare/v0.2.0-rc.0...v0.2.0-rc.2)
 
 ## [0.2.0-rc.0](https://github.com/sergeyslonimsky/elara/releases/tag/v0.2.0-rc.0) — 2026-04-22
 
