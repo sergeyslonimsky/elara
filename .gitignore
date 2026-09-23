@@ -43,6 +43,12 @@ vendor/
 # built by .github/workflows/docs.yml and lives on the gh-pages branch.
 /site/
 
+# git-cliff-action's default output directory. release.yml points OUTPUT at
+# the runner temp dir instead, so this should never appear — it is here as a
+# safety net, because an untracked file in the tree makes goreleaser abort the
+# release ("git is in a dirty state").
+/git-cliff/
+
 # Claude code
 CLAUDE.md
 GEMINI.md

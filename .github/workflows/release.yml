@@ -129,16 +129,21 @@ jobs:
       #
       # Needs the full history the checkout above already fetches
       # (fetch-depth: 0) — --latest resolves the previous tag.
+      # OUTPUT must point outside the workspace. The action defaults to
+      # `git-cliff/CHANGELOG.md` *inside* the repository, which leaves an
+      # untracked directory behind — and goreleaser refuses to release from a
+      # dirty tree ("git is in a dirty state: ?? git-cliff/"). The action
+      # honours OUTPUT as an override and reports the resulting path back as
+      # its `changelog` output, so the next step still reads the path from the
+      # action rather than repeating it.
       - name: Generate release notes
         id: notes
         uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4.9.1
         with:
           config: cliff.toml
           args: --latest --strip header
-
-      # The path comes from the action's own `changelog` output rather than
-      # being hardcoded, so this does not depend on where the action chooses
-      # to write the file.
+        env:
+          OUTPUT: ${{ runner.temp }}/release-notes.md
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
         with:
