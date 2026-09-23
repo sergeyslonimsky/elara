@@ -37,24 +37,15 @@ archives:
 checksum:
   name_template: checksums.txt
 
+# Release notes are produced by git-cliff and handed to goreleaser via
+# --release-notes (see .github/workflows/release.yml), so its built-in
+# changelog is switched off. Keeping both meant two groupings competing for
+# the same release body, and goreleaser's has no BREAKING CHANGE handling —
+# the v0.5.0 notes went out with no breaking-changes section for a release
+# that had three. cliff.toml is now the single source of truth for both the
+# GitHub Release body and CHANGELOG.md.
 changelog:
-  sort: asc
-  use: git
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-      - "^chore:"
-      - "^Merge"
-  groups:
-    - title: Features
-      regexp: '^.*?feat(\(.+\))??!?:.+$'
-      order: 0
-    - title: Bug fixes
-      regexp: '^.*?fix(\(.+\))??!?:.+$'
-      order: 1
-    - title: Others
-      order: 999
+  disable: true
 
 release:
   # No other job creates a GitHub Release for the vX.Y.Z tag (the Helm
