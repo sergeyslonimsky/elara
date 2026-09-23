@@ -16,27 +16,27 @@ by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
 ### Features
 
-- **cli:** Add `elara version` and stamp build metadata into releases ([3213b58](https://github.com/sergeyslonimsky/elara/commit/3213b5866e43d2ba30edd1742cf470be8c6d277a))
-- **etcd:** Route the KV server through the config usecase ([305ac43](https://github.com/sergeyslonimsky/elara/commit/305ac4306a4f5ab610bf84942ca79ddbfb3367c1))
+- **cli:** Add `elara version` and stamp build metadata into releases ([58daf2f](https://github.com/sergeyslonimsky/elara/commit/58daf2fb542194026cfba11463e5a267142f79c9))
+- **etcd:** Route the KV server through the config usecase ([fc0843d](https://github.com/sergeyslonimsky/elara/commit/fc0843db7c5467cdeb6b89e6aba716bd309e8900))
 
 ### Bug fixes
 
-- **auth:** Derive permission-skip from auth type, reject misleading configs ([bcbda51](https://github.com/sergeyslonimsky/elara/commit/bcbda51ec25b44b04a55a3a43e3d4cb09183fcfd))
-- **web:** Correct user-action and route visibility across auth modes ([6880895](https://github.com/sergeyslonimsky/elara/commit/688089595370b831e333f49c04ee3cc57f7e835e))
-- **helm:** Drop session values the service never reads ([cc44a4e](https://github.com/sergeyslonimsky/elara/commit/cc44a4ec4bee97abd32cd62e82a0723eb61c4267))
-- **ci:** Run the integration suites and attribute their coverage ([a72a110](https://github.com/sergeyslonimsky/elara/commit/a72a11052b9342032920393d6cff4187db1ec672))
-- **ci:** Scope workflow permissions to each job ([254129d](https://github.com/sergeyslonimsky/elara/commit/254129df3de5cf572f2b3b1970d05dc11a468d59))
+- **auth:** Derive permission-skip from auth type, reject misleading configs ([2ba7cd3](https://github.com/sergeyslonimsky/elara/commit/2ba7cd3903d6f8fd48e4414bf1980f14786d9a62))
+- **web:** Correct user-action and route visibility across auth modes ([4b7609a](https://github.com/sergeyslonimsky/elara/commit/4b7609aaedf1847010d493f384ff26cf2b7e24f5))
+- **helm:** Drop session values the service never reads ([54942c6](https://github.com/sergeyslonimsky/elara/commit/54942c6852c5f7f2090b0c6ca3786414407a1fba))
+- **ci:** Run the integration suites and attribute their coverage ([19b39df](https://github.com/sergeyslonimsky/elara/commit/19b39df7de4126d228b4839353ad310269925019))
+- **ci:** Scope workflow permissions to each job ([26ea7c3](https://github.com/sergeyslonimsky/elara/commit/26ea7c3d70df1341a80b54b9f6ce549c992a1d80))
 
 ### Refactoring
 
-- **handler:** Extract shared ProtoSortToDomain helper ([5755c1c](https://github.com/sergeyslonimsky/elara/commit/5755c1cc2ed0d3c312421c966b11be37814f93f0))
-- Drop unused domain methods and integration-test helpers ([03876da](https://github.com/sergeyslonimsky/elara/commit/03876da8b51e093f557bdb9372a4003755894679))
+- **handler:** Extract shared ProtoSortToDomain helper ([fb01717](https://github.com/sergeyslonimsky/elara/commit/fb01717171220d4a2ee08f72f4fd9f090bc4e65c))
+- Drop unused domain methods and integration-test helpers ([c9788bd](https://github.com/sergeyslonimsky/elara/commit/c9788bdf5d66662941606648bc3ed30b3b705509))
 
 ### Documentation
 
-- Restructure the site into sectioned navigation ([844acce](https://github.com/sergeyslonimsky/elara/commit/844acced98652d27b70ad6c73161b60443f5decf))
-- Correct claims the etcd and auth changes invalidated ([8dfc810](https://github.com/sergeyslonimsky/elara/commit/8dfc810cf4a609c3fcb6e18dc36380902100ab78))
-- Document the CLI, close the remaining audit gaps ([bc69371](https://github.com/sergeyslonimsky/elara/commit/bc69371e70e959624e90859df6dec2db9ac3e2da))
+- Restructure the site into sectioned navigation ([a5e5da8](https://github.com/sergeyslonimsky/elara/commit/a5e5da8400ec605f979a60cb116cd0eee8e851ba))
+- Correct claims the etcd and auth changes invalidated ([6408d06](https://github.com/sergeyslonimsky/elara/commit/6408d06fb0349bec7b06b4258a76efde587614f8))
+- Document the CLI, close the remaining audit gaps ([ca647d3](https://github.com/sergeyslonimsky/elara/commit/ca647d3667f43ccad44293d162497c6ffc3322d2))
 
 **Full diff:** [v0.4.0...v0.5.0](https://github.com/sergeyslonimsky/elara/compare/v0.4.0...v0.5.0)
 
