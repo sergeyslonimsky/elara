@@ -155,6 +155,12 @@ jobs:
     name: Publish Helm chart
     runs-on: ubuntu-latest
     needs: image
+    # Stable tags only. A prerelease tag (v1.2.3-rc.1) would publish a chart
+    # of that version into the gh-pages Helm repository and create an extra
+    # `elara-1.2.3-rc.1` GitHub release — and removing an entry from a
+    # published index.yaml afterwards is far harder than not adding it. The
+    # image job already guards its `latest` tag the same way.
+    if: ${{ !contains(github.ref_name, '-') }}
     timeout-minutes: 10
     permissions:
       contents: write  # chart-releaser pushes to gh-pages + creates GH releases
