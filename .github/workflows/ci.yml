@@ -11,13 +11,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  pull-requests: read
-
 jobs:
   frontend:
     name: Frontend test, lint & build
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -75,6 +73,8 @@ jobs:
 
   go:
     name: Go test & lint
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -143,6 +143,8 @@ jobs:
 
   proto:
     name: Proto lint
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -155,6 +157,8 @@ jobs:
 
   helm:
     name: Helm lint & template
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -193,6 +197,9 @@ jobs:
 
   sonarcloud:
     name: SonarCloud
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: github.actor != 'dependabot[bot]'
@@ -218,6 +225,8 @@ jobs:
 
   docker:
     name: Docker build
+    permissions:
+      contents: read
     needs: [frontend, go]
     runs-on: ubuntu-latest
     timeout-minutes: 15
