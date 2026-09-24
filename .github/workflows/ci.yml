@@ -149,7 +149,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
-      - uses: bufbuild/buf-setup-action@v1
+      # Pinned by SHA and given a token deliberately. buf-setup-action
+      # resolves its download URL through the GitHub API, and on a shared
+      # runner IP the unauthenticated quota is routinely exhausted by other
+      # tenants — the job then fails with "API rate limit exceeded" on a PR
+      # that touches no proto at all. The token moves the call to the
+      # repository's own 5000/hr budget.
+      - uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1.50.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
       - run: buf lint
       - run: buf breaking --against 'https://github.com/${{ github.repository }}.git#branch=master'
         if: github.event_name == 'pull_request'
