@@ -6,6 +6,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Groups exist for packages that share an interface contract across module
+    # boundaries. Dependabot treats such siblings as unrelated and will happily
+    # raise one without the other, producing a PR that cannot compile.
     groups:
       otel:
         patterns:
@@ -14,6 +17,17 @@ updates:
         patterns:
           - "google.golang.org/grpc*"
           - "connectrpc.com/*"
+      # api/v3, client/v3 and client/pkg/v3 are released together from one repo
+      # and reference each other's types. A bump of api/v3 alone changed the KV
+      # interface that client/v3 implements, breaking the build inside the
+      # dependency itself.
+      #
+      # Deliberately NOT "go.etcd.io/*": go.etcd.io/bbolt is a separate project
+      # with its own release cadence and no shared contract — grouping it here
+      # would block an independent bbolt patch behind an etcd release.
+      etcd:
+        patterns:
+          - "go.etcd.io/etcd/*"
 
   - package-ecosystem: npm
     directory: /web
@@ -21,11 +35,30 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Order matters: dependabot assigns each package to the FIRST group whose
+    # patterns match, so the narrow sibling groups must precede the catch-all
+    # `dev` group below.
     groups:
       react:
         patterns:
           - "react*"
           - "@types/react*"
+      # The @vitest/* plugins load into the vitest runtime and are versioned in
+      # lockstep with it. `dev` nominally covers all three, but it bundles a
+      # dozen unrelated packages, and a conflict elsewhere in that bundle left
+      # @vitest/coverage-v8 and @vitest/ui on 5.x while vitest itself silently
+      # stayed behind. A dedicated group keeps the three in one small PR that
+      # can resolve on its own.
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+      # @casl/react declares a peer range on @casl/ability and rejects a major
+      # it predates. Both live in `dependencies`, so no group caught them and
+      # each arrived in its own PR — neither installable alone.
+      casl:
+        patterns:
+          - "@casl/*"
       dev:
         dependency-type: "development"
 
