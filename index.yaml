@@ -25,6 +25,58 @@ entries:
         fingerprint: 7B11D05E0EFFD8DB25ED8119ADC3B0CE9EB1B31B
         url: https://raw.githubusercontent.com/sergeyslonimsky/elara/master/helm-signing-key.asc
     apiVersion: v2
+    appVersion: 0.5.2
+    created: "2026-09-24T18:38:32.315116358Z"
+    description: 'Elara — configuration management service with Web UI, ConnectRPC
+      API, and etcd-compatible gRPC API. Single-instance bbolt storage (raft HA on
+      roadmap). '
+    digest: b5cdb9d228299fc16c05db19a923e0f87e77cba754cc2ee9f78db36d6670456d
+    home: https://github.com/sergeyslonimsky/elara
+    icon: https://raw.githubusercontent.com/sergeyslonimsky/elara/master/helm/elara/assets/logo.svg
+    keywords:
+    - configuration
+    - config-management
+    - etcd
+    - connectrpc
+    - grpc
+    - key-value
+    - web-ui
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - email: sergeyslonimsky@gmail.com
+      name: Sergey Slonimsky
+      url: https://github.com/sergeyslonimsky
+    name: elara
+    sources:
+    - https://github.com/sergeyslonimsky/elara
+    type: application
+    urls:
+    - https://github.com/sergeyslonimsky/elara/releases/download/elara-0.5.2/elara-0.5.2.tgz
+    version: 0.5.2
+  - annotations:
+      artifacthub.io/category: networking
+      artifacthub.io/changes: |
+        - kind: changed
+          description: Deployment switched to StatefulSet with volumeClaimTemplates
+        - kind: fixed
+          description: Environment variable names now match the service config schema
+        - kind: fixed
+          description: Probe paths corrected to /livez and /readyz
+        - kind: added
+          description: values.schema.json, NOTES.txt, ServiceMonitor, NetworkPolicy, helm tests
+        - kind: removed
+          description: Dead PostgreSQL migrations and HPA templates (reserved for future raft HA)
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: GitHub
+          url: https://github.com/sergeyslonimsky/elara
+        - name: Chart Source
+          url: https://github.com/sergeyslonimsky/elara/tree/master/helm
+      artifacthub.io/prerelease: "false"
+      artifacthub.io/signKey: |
+        fingerprint: 7B11D05E0EFFD8DB25ED8119ADC3B0CE9EB1B31B
+        url: https://raw.githubusercontent.com/sergeyslonimsky/elara/master/helm-signing-key.asc
+    apiVersion: v2
     appVersion: 0.5.1
     created: "2026-09-23T17:56:29.487860913Z"
     description: 'Elara — configuration management service with Web UI, ConnectRPC
@@ -870,4 +922,4 @@ entries:
     urls:
     - https://github.com/sergeyslonimsky/elara/releases/download/elara-0.1.0-rc.0/elara-0.1.0-rc.0.tgz
     version: 0.1.0-rc.0
-generated: "2026-09-23T17:56:29.488048284Z"
+generated: "2026-09-24T18:38:32.315307586Z"
