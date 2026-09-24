@@ -7,6 +7,21 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 Entries are generated from [Conventional Commits](https://www.conventionalcommits.org/)
 by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
+## [0.5.2](https://github.com/sergeyslonimsky/elara/releases/tag/v0.5.2) — 2026-09-24
+
+### Bug fixes
+
+- **release:** Stop the chart release taking the "Latest" badge ([c452ca0](https://github.com/sergeyslonimsky/elara/commit/c452ca01b2932aba5e58cf3e30fedc189057f63b))
+- **ci:** Authenticate buf-setup-action to avoid shared-runner rate limits ([13abe58](https://github.com/sergeyslonimsky/elara/commit/13abe58d072d3bbe9cee4a1ef2f6372b466c143f))
+- **web:** Drop the now-unused @ts-expect-error on the public-sans import ([642cd0b](https://github.com/sergeyslonimsky/elara/commit/642cd0b086e8ad4e133d7a331f1f023810e7cb47))
+- **web:** Make package-lock.json regenerable again ([41e5973](https://github.com/sergeyslonimsky/elara/commit/41e5973636ebd18a4ecd4982d722a2a14943292f))
+
+### Refactoring
+
+- **etcdv3:** Use proto getters for request field access ([5b28dc6](https://github.com/sergeyslonimsky/elara/commit/5b28dc625e177b7d6178b7724658aede98b41135))
+
+**Full diff:** [v0.5.1...v0.5.2](https://github.com/sergeyslonimsky/elara/compare/v0.5.1...v0.5.2)
+
 ## [0.5.1](https://github.com/sergeyslonimsky/elara/releases/tag/v0.5.1) — 2026-09-23
 
 ### Bug fixes
@@ -128,10 +143,6 @@ by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 - Add webhooks section to README ([b907c06](https://github.com/sergeyslonimsky/elara/commit/b907c06e94907596506dcb05accee9869cb3e096))
 - Add codecov badge ([18694bb](https://github.com/sergeyslonimsky/elara/commit/18694bba128a7f47d9885ecb7c977f90f926cd0b))
 
-### Build & CI
-
-- **deps-dev:** Bump the dev group in /web with 2 updates ([#34](https://github.com/sergeyslonimsky/elara/pull/34)) ([8d3044d](https://github.com/sergeyslonimsky/elara/commit/8d3044d63c2139ac28a7eb8d41642694ba198f98))
-
 ### Other changes
 
 - Add Contributor Covenant Code of Conduct ([c8cded1](https://github.com/sergeyslonimsky/elara/commit/c8cded106dc3f675e3a53578f5d18aa1dc7cbcb7))
@@ -200,10 +211,6 @@ by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 ### Documentation
 
 - Update readme with code quality badges ([55328f3](https://github.com/sergeyslonimsky/elara/commit/55328f3eae31e71c56ba6101c3130fb67258319c))
-
-### Build & CI
-
-- **deps-dev:** Bump vite from 8.0.8 to 8.0.9 in /web in the dev group ([#14](https://github.com/sergeyslonimsky/elara/pull/14)) ([615a79d](https://github.com/sergeyslonimsky/elara/commit/615a79d1660fd5ba583d7fc7e93364fcfbb53180))
 
 ### Other changes
 

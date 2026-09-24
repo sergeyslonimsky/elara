@@ -87,8 +87,12 @@ commit_parsers = [
   # Noise: merges and automated dependency bumps.
   { message = "^Merge (pull request|branch|remote-tracking)", skip = true },
   { message = "^[Bb]ump ", skip = true },
-  { message = "^chore\\(deps\\)", skip = true },
-  { message = "^build\\(deps\\)", skip = true },
+  # No closing paren in the pattern: dependabot also emits scopes like
+  # build(deps-dev) and chore(deps-dev), and "^build\\(deps\\)" matched only
+  # the bare form — so dev-toolchain bumps leaked into release notes while
+  # every other dependency bump was filtered out.
+  { message = "^chore\\(deps", skip = true },
+  { message = "^build\\(deps", skip = true },
 
   { message = "^feat", group = "<!-- 01 -->Features" },
   { message = "^fix", group = "<!-- 02 -->Bug fixes" },
