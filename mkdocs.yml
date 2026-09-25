@@ -77,6 +77,7 @@ nav:
       - etcd API compatibility: reference/etcd-compatibility.md
       - ConnectRPC API: reference/connectrpc-api.md
       - Errors catalog: reference/errors-catalog.md
+      - Performance baseline: reference/performance.md
       - Troubleshooting & FAQ: reference/troubleshooting.md
   - Architecture:
       - Overview: architecture.md
