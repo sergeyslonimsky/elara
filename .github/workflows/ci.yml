@@ -141,6 +141,91 @@ jobs:
           name: go-coverage
           path: coverage.txt
 
+  bench:
+    name: Benchmarks vs base
+    permissions:
+      contents: read
+    # Only on a pull request: on a push to master there is no "before" side to
+    # compare against.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # fetch-depth: 0 so the base commit is available locally — the baseline
+      # is produced by checking it out, not by downloading an artifact.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Same go:embed constraint as the go job. web/dist is untracked, so this
+      # survives the git checkouts below and only needs creating once.
+      - name: Create dummy dist for go:embed
+        run: |
+          mkdir -p web/dist
+          touch web/dist/.gitkeep
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # -skip=_Durable drops the fsync benchmarks. They are the honest
+      # production latency, but on a shared runner the disk is the noisiest
+      # thing available and would swamp a comparison that is about code.
+      #
+      # -count=6 is not arbitrary: benchstat needs at least 6 samples to report
+      # a confidence interval at level 0.95, and below that it prints bare
+      # numbers with no indication of whether a difference means anything.
+      # -benchtime=200ms keeps the job predictable at that sample count.
+      #
+      # set -o pipefail is required, not cosmetic: piping into tee would
+      # otherwise hand the step tee's exit code and a benchmark that panics or
+      # fails to build would pass silently — the exact rot this job exists to
+      # prevent.
+      - name: Benchmark base commit
+        run: |
+          set -o pipefail
+          git checkout --detach ${{ github.event.pull_request.base.sha }}
+          go test -run='^$' -bench=. -skip=_Durable -benchmem \
+            -benchtime=200ms -count=6 ./internal/... | tee base.txt
+
+      - name: Benchmark pull request
+        run: |
+          set -o pipefail
+          git checkout --detach ${{ github.event.pull_request.head.sha }}
+          go test -run='^$' -bench=. -skip=_Durable -benchmem \
+            -benchtime=200ms -count=6 ./internal/... | tee new.txt
+
+      # Informational, not a gate. benchstat on a shared runner reports real
+      # regressions and imaginary ones in roughly equal measure; failing the
+      # job on its verdict would train everyone to ignore it. The job still
+      # fails if a benchmark stops compiling or starts erroring, which is what
+      # actually keeps them from rotting.
+      #
+      # The `||` fallback is insurance only. A base side with no matching
+      # benchmarks — the PR that first adds them, for instance — is not an
+      # error to benchstat: it exits 0 and prints the new side alone. The
+      # fallback exists so that a malformed input cannot turn an informational
+      # step into a red job.
+      - name: Compare
+        run: |
+          {
+            echo '## Benchmarks vs base'
+            echo
+            echo '```'
+            go tool benchstat base.txt new.txt || echo 'no benchmarks in common with the base commit'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmarks
+          path: |
+            base.txt
+            new.txt
+
   proto:
     name: Proto lint
     permissions:
