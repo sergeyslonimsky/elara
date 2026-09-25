@@ -108,15 +108,14 @@ func BenchmarkValidator_Validate_NoSchemaAttached(b *testing.B) {
 }
 
 // BenchmarkValidator_Validate_PatternMatching scales the number of attached
-// schemas. Every write compiles each candidate pattern as a glob and scores
-// it for specificity, so the cost is per attachment in the namespace, not per
-// matching attachment.
+// schemas. Every write scores each candidate pattern for specificity, so the
+// cost is per attachment in the namespace, not per matching attachment.
 func BenchmarkValidator_Validate_PatternMatching(b *testing.B) {
 	for _, n := range []int{1, 10, 100} {
 		b.Run(strconv.Itoa(n), func(b *testing.B) {
 			b.ReportAllocs()
 
-			v := schemavalidator.New(&benchSchemaStore{schemas: benchSchemas(n)})
+			v := schemavalidator.New(&benchSchemaStore{schemas: benchPatternSchemas(n)})
 			ctx := b.Context()
 
 			if err := v.Validate(ctx, "ns", "/svc/app.json", benchValidJSON, domain.FormatJSON); err != nil {
@@ -203,12 +202,12 @@ func (s *benchSchemaStore) List(_ context.Context, _ string) ([]*domain.SchemaAt
 	return []*domain.SchemaAttachment{cur}, nil
 }
 
-// benchSchemas builds n attachments that all match /svc/app.json but differ
-// in content, so no two share a cache entry.
+// benchSchemas builds n attachments that all match /svc/app.json but differ in
+// schema content, so no two share a compiled-schema cache entry.
 //
-// Every attachment being a candidate is the worst case on purpose: findBestMatch
-// compiles and scores each one, so the scaling benchmark measures the ceiling
-// rather than a namespace where most patterns are filtered out cheaply.
+// Used by the cache hit and miss benchmarks, which need every returned schema
+// to match — a non-matching pattern would make Validate return early and
+// compile nothing.
 func benchSchemas(n int) []*domain.SchemaAttachment {
 	schemas := make([]*domain.SchemaAttachment, 0, n)
 
@@ -217,6 +216,34 @@ func benchSchemas(n int) []*domain.SchemaAttachment {
 			ID:          strconv.Itoa(i),
 			Namespace:   "ns",
 			PathPattern: "/svc/*",
+			JSONSchema:  fmt.Sprintf(benchSchemaTemplate, i),
+		})
+	}
+
+	return schemas
+}
+
+// benchPatternSchemas builds n attachments with n distinct patterns, exactly
+// one of which matches /svc/app.json — the shape of a namespace holding
+// schemas for several path families, only one of which a given write hits.
+//
+// The patterns must be distinct or the benchmark lies: identical ones collapse
+// into a single pattern-cache entry, and the measurement becomes deduplication
+// instead of the per-attachment scoring that actually scales with how much an
+// operator has configured.
+func benchPatternSchemas(n int) []*domain.SchemaAttachment {
+	schemas := make([]*domain.SchemaAttachment, 0, n)
+
+	for i := range n {
+		pattern := "/other-" + strconv.Itoa(i) + "/*"
+		if i == n-1 {
+			pattern = "/svc/*"
+		}
+
+		schemas = append(schemas, &domain.SchemaAttachment{
+			ID:          strconv.Itoa(i),
+			Namespace:   "ns",
+			PathPattern: pattern,
 			JSONSchema:  fmt.Sprintf(benchSchemaTemplate, i),
 		})
 	}
