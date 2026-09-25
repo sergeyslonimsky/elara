@@ -15,6 +15,9 @@ do, see [Concepts](../concepts/index.md).
   notes. This is the API the Web UI itself uses.
 - **[Errors catalog](errors-catalog.md)** — every domain sentinel error and
   the status code a client sees for it, on both APIs.
+- **[Performance baseline](performance.md)** — what each operation costs, what
+  scales with what, and how to re-measure. Start here before optimizing
+  anything, and note that a durable write is dominated by a single `fsync`.
 - **[Troubleshooting & FAQ](troubleshooting.md)** — symptom-first. Start here
   when something is already broken; most entries link back into the reference
   pages above.
