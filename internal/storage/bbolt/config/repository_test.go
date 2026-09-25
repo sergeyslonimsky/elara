@@ -30,10 +30,10 @@ func newRepo(t *testing.T) (*configrepo.Repository, *namespacerepo.Repository, p
 	return configrepo.NewRepository(mgr), namespacerepo.NewRepository(mgr), mgr
 }
 
-func seedNamespace(t *testing.T, ns *namespacerepo.Repository, name string) {
-	t.Helper()
+func seedNamespace(tb testing.TB, ns *namespacerepo.Repository, name string) {
+	tb.Helper()
 
-	require.NoError(t, ns.Create(t.Context(), &domain.Namespace{
+	require.NoError(tb, ns.Create(tb.Context(), &domain.Namespace{
 		Name:        name,
 		Description: "test ns",
 		CreatedAt:   time.Now(),

@@ -21,6 +21,7 @@ config.yaml
 data/
 coverage.out
 coverage.txt
+benchmarks.txt
 junit.xml
 web/test-results/
 *.log
