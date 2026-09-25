@@ -116,12 +116,13 @@ rest are the cost of the code, which is the part a change can actually move.
 
 | Operation | Time | Allocations |
 |---|---|---|
-| Validate JSON, schema cached | 4.7 µs | 64 |
-| Validate YAML, schema cached | 13.5 µs | 140 |
-| Validate, schema not cached (compiles) | 86 µs | 748 |
-| Validate, 10 attachments in namespace | 11.3 µs | 217 |
-| Validate, 100 attachments in namespace | 76 µs | 1747 |
-| Validate, payload rejected | 4.1 µs | 65 |
+| Validate JSON, schema cached | 3.7 µs | 47 |
+| Validate YAML, schema cached | 12.8 µs | 123 |
+| Validate, schema not cached (compiles) | 87 µs | 731 |
+| Validate, 1 attachment in namespace | 3.8 µs | 47 |
+| Validate, 10 attachments in namespace | 4.2 µs | 47 |
+| Validate, 100 attachments in namespace | 8.6 µs | 47 |
+| Validate, payload rejected | 3.4 µs | 48 |
 | Validator early-return, no schema matched | 8 ns | 0 |
 
 The early-return figure excludes the storage lookup that precedes it — the
@@ -153,10 +154,17 @@ being held open longer per call.
 costs 1.52 ms against 1.71 ms for fetching all of them — but 134 KB against
 364 KB. The bbolt scan is the same; only materialisation is bounded.
 
-**Schema path patterns are recompiled on every write.** The compiled *schema*
-is cached; the glob in `findBestMatch` is not, and it runs once per attachment
-per call. A namespace with 100 attachments therefore pays 76 µs and 1747
-allocations on every single write, matching or not.
+**Schema validation no longer scales with how much is configured.** Allocations
+per validated write are flat at 47 whether the namespace holds 1 attachment or
+100, and time grows only with the glob matching itself: 3.8 µs → 8.6 µs across
+that range.
+
+This is the first thing the benchmarks caught. The compiled *schema* was
+cached, but the glob in `findBestMatch` was not, and it ran once per attachment
+on every write: a namespace with 100 attachments paid 86 µs and 1846
+allocations per write, matching or not. Caching the compiled pattern alongside
+its specificity score cut that by 90% in time and 97% in allocations, and made
+the allocation count independent of configuration size.
 
 **Watch fan-out is allocation-free but linear in subscribers.** `notify` holds
 a read lock and walks every subscription, so 1000 watchers cost 90 µs per
