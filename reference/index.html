@@ -1154,6 +1154,8 @@
       
         
       
+        
+      
     
     
     
@@ -1307,6 +1309,34 @@
     
   
     Errors catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance baseline
   
 
     
@@ -1560,6 +1590,9 @@ do, see <a href="../concepts/">Concepts</a>.</p>
   notes. This is the API the Web UI itself uses.</li>
 <li><strong><a href="errors-catalog/">Errors catalog</a></strong> — every domain sentinel error and
   the status code a client sees for it, on both APIs.</li>
+<li><strong><a href="performance/">Performance baseline</a></strong> — what each operation costs, what
+  scales with what, and how to re-measure. Start here before optimizing
+  anything, and note that a durable write is dominated by a single <code>fsync</code>.</li>
 <li><strong><a href="troubleshooting/">Troubleshooting &amp; FAQ</a></strong> — symptom-first. Start here
   when something is already broken; most entries link back into the reference
   pages above.</li>
