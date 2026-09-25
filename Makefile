@@ -34,6 +34,28 @@ test-all: test-react test-integration
 test-react:
 	@npm --prefix ./web run test
 
+# Benchmarks are opt-in and never part of `make test`: -bench is off by default,
+# and the _Durable cases fsync on every write, so a full run takes minutes.
+#
+# -count=6 is the minimum that gives benchstat enough samples to report a
+# confidence interval instead of a single noisy number.
+.PHONY: bench
+bench:
+	@go test -run='^$$' -bench=. -benchmem -count=6 ./internal/... | tee benchmarks.txt
+
+# Fast smoke run — proves the benchmarks still compile and pass, without
+# producing numbers worth comparing.
+.PHONY: bench-quick
+bench-quick:
+	@go test -run='^$$' -bench=. -benchmem -benchtime=10x ./internal/...
+
+# Compare a previous run against the current benchmarks.txt, e.g.
+#   git stash && make bench && mv benchmarks.txt base.txt && git stash pop
+#   make bench && make bench-compare BASE=base.txt
+.PHONY: bench-compare
+bench-compare:
+	@go tool benchstat $(BASE) benchmarks.txt
+
 .PHONY: generate
 generate:
 	@buf generate
