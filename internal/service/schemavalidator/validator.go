@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gobwas/glob"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -28,11 +27,20 @@ type storage interface {
 type Validator struct {
 	storage storage
 	cache   *compiledSchemaCache
+	// patterns caches compiled path-pattern globs. Separate from cache
+	// because a pattern's compiled form does not depend on the schema body
+	// attached to it, and every write scores every pattern in the namespace
+	// whether it matches or not.
+	patterns *compiledPatternCache
 }
 
 // New creates a new Validator.
 func New(repo storage) *Validator {
-	return &Validator{storage: repo, cache: newCompiledSchemaCache()}
+	return &Validator{
+		storage:  repo,
+		cache:    newCompiledSchemaCache(),
+		patterns: newCompiledPatternCache(),
+	}
 }
 
 // Validate validates the config content against the best-matching JSON Schema for the namespace.
@@ -51,7 +59,7 @@ func (s *Validator) Validate(
 		return fmt.Errorf("list schemas: %w", err)
 	}
 
-	best := findBestMatch(schemas, configPath)
+	best := s.findBestMatch(schemas, configPath)
 	if best == nil {
 		return nil
 	}
@@ -108,25 +116,33 @@ func (s *Validator) compileSchema(sa *domain.SchemaAttachment) (*jsonschema.Sche
 
 // findBestMatch returns the most specific matching schema (fewest wildcard chars).
 // On equal specificity, the oldest CreatedAt wins.
-func findBestMatch(schemas []*domain.SchemaAttachment, configPath string) *domain.SchemaAttachment {
+// findBestMatch picks the most specific attached pattern that matches
+// configPath, breaking ties by which attachment is older.
+//
+// Runs on every write into a namespace that has any schema attached, and scores
+// every attachment rather than stopping at the first match — hence the pattern
+// cache: compiling the globs here was previously repeated per write.
+func (s *Validator) findBestMatch(
+	schemas []*domain.SchemaAttachment,
+	configPath string,
+) *domain.SchemaAttachment {
 	var best *domain.SchemaAttachment
 	bestScore := -1
 
-	for _, s := range schemas {
-		g, err := glob.Compile(s.PathPattern, '/')
-		if err != nil {
+	for _, sa := range schemas {
+		pattern := s.patterns.compile(sa.PathPattern)
+		if pattern.err != nil {
 			continue
 		}
 
-		if !g.Match(configPath) {
+		if !pattern.glob.Match(configPath) {
 			continue
 		}
 
-		score := specificity(s.PathPattern)
-		if best == nil || score > bestScore ||
-			(score == bestScore && s.CreatedAt.Before(best.CreatedAt)) {
-			best = s
-			bestScore = score
+		if best == nil || pattern.specificity > bestScore ||
+			(pattern.specificity == bestScore && sa.CreatedAt.Before(best.CreatedAt)) {
+			best = sa
+			bestScore = pattern.specificity
 		}
 	}
 
