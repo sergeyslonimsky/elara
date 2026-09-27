@@ -1400,6 +1400,8 @@
       
         
       
+        
+      
     
     
     
@@ -1531,6 +1533,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#which-layer-gets-a-new-responsibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which layer gets a new responsibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1620,6 +1639,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0003-responsibility-placement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0003: Responsibility placement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1672,6 +1719,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Layers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#which-layer-gets-a-new-responsibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which layer gets a new responsibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1802,6 +1866,40 @@ any etcd v3 client — all converge on the same layered core and the same store.
 </table>
 <p>Wiring lives in <code>internal/di/</code>; the entry point is
 <code>cmd/service/main.go</code> → <code>di.LoadContainer</code> → <code>service.NewServiceManager</code>.</p>
+<h3 id="which-layer-gets-a-new-responsibility">Which layer gets a new responsibility</h3>
+<p>The table says what each layer owns; it does not say how to place something new.
+The rule is in <a href="../adr/0003-responsibility-placement/">ADR 0003</a>: a
+responsibility belongs to the layer whose concerns it depends on. The handler
+owns what depends on <em>how the call arrived</em> — wire format, authentication,
+authorizing the caller, resolving who is calling. The usecase owns what depends
+on <em>what the caller wants</em> — the flow, the transaction boundary, the ordering of
+side effects against the commit. A service does one concrete job and knows
+nothing about the business case that invoked it.</p>
+<p>The test: move the code to a different transport. If it must come along
+unchanged it is a usecase concern; if it only makes sense for that transport it
+is a handler concern.</p>
+<p>Two consequences that are easy to get wrong:</p>
+<ul>
+<li><strong>Watch and webhook notifications are published by the usecase.</strong>
+  <code>internal/transport/{watch,webhook}</code> holds the publisher and the dispatcher,
+  but the usecase calls them — see
+  <code>internal/usecase/config/service_create.go</code> and its siblings. An event must
+  not be published before its transaction commits, which is why publication is
+  ordered by whoever owns the boundary.</li>
+<li><strong>Authorizing the caller is a handler concern</strong>, because the mechanism depends
+  on the transport: ConnectRPC authorizes in <code>internal/handler/v2/interceptor</code>
+  over session identity, while the etcd-compatible API authorizes in
+  <code>internal/handler/etcdv3/access.go</code> over service-token claims. <code>pdp.Effective*</code>
+  calls inside a usecase are <em>scoping</em> — which namespaces a principal may see —
+  not permission checks.</li>
+</ul>
+<blockquote>
+<p><strong>Known deviation, 2026-09-27.</strong> <code>internal/handler/etcdv3/kv_server.go</code>
+orchestrates <code>Txn</code> and publishes watch events itself. Both belong in the
+usecase. <code>internal/handler/v2/</code> is the correct reference for this layering;
+do not model new code on the etcd handler's write path until the atomic-<code>Txn</code>
+work has moved it.</p>
+</blockquote>
 <h2 id="ports-and-state">Ports and state</h2>
 <table>
 <thead>
@@ -1827,7 +1925,7 @@ transactions and a monotonic, etcd-style global revision counter. Only one
 instance can run at a time — bbolt holds an exclusive file lock, which is why
 the Helm chart pins <code>replicaCount</code> to <code>1</code> until raft-based HA lands.</p>
 <h2 id="design-decisions">Design decisions</h2>
-<p>Two architecture decision records capture the non-obvious choices behind this
+<p>Three architecture decision records capture the non-obvious choices behind this
 layering:</p>
 <ul>
 <li><a href="../adr/0001-usecase-owned-transactions/">ADR 0001 — Usecase-owned transactions with context-injected tx handles</a>:
@@ -1838,6 +1936,9 @@ layering:</p>
   why there is no API to grant a role directly to a user, and how Casbin's
   recursive role resolution makes group membership the single, auditable lever
   for access.</li>
+<li><a href="../adr/0003-responsibility-placement/">ADR 0003 — Where a responsibility goes: the layer is decided by what the code depends on</a>:
+  the rule for placing something new, the transport test that applies it, and
+  why notification is a usecase concern while authorizing the caller is not.</li>
 </ul>
 
 

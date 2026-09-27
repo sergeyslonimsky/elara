@@ -11,10 +11,8 @@
       
       
       
-        <link rel="prev" href="../passthrough/">
+        <link rel="prev" href="../0002-groups-only-rbac/">
       
-      
-        <link rel="next" href="../rbac-groups/">
       
       
         
@@ -25,7 +23,7 @@
     
     
       
-        <title>Sessions & Tokens - Elara</title>
+        <title>ADR 0003: Responsibility placement - Elara</title>
       
     
     
@@ -76,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sessions-tokens" class="md-skip">
+        <a href="#3-where-a-responsibility-goes-the-layer-is-decided-by-what-the-code-depends-on" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +109,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Sessions & Tokens
+              ADR 0003: Responsibility placement
             
           </span>
         </div>
@@ -685,8 +683,6 @@
       
   
   
-    
-  
   
   
     
@@ -719,15 +715,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../auth/" class="md-nav__link ">
               
   
   
@@ -751,7 +747,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -771,7 +767,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../basic/" class="md-nav__link">
+      <a href="../../auth/basic/" class="md-nav__link">
         
   
   
@@ -799,7 +795,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../oidc/" class="md-nav__link">
+      <a href="../../auth/oidc/" class="md-nav__link">
         
   
   
@@ -827,7 +823,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../passthrough/" class="md-nav__link">
+      <a href="../../auth/passthrough/" class="md-nav__link">
         
   
   
@@ -852,37 +848,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sessions & Tokens
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../auth/sessions-tokens/" class="md-nav__link">
         
   
   
@@ -898,137 +867,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#sessions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Sessions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Sessions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#two-transports-one-entity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Two transports, one entity
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ttls" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        TTLs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#audit-log" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Audit log
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#enforcement-on-every-request" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enforcement on every request
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tokens-service-credentials-for-etcd-clients" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tokens (service credentials for etcd clients)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Tokens (service credentials for etcd clients)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#token-fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token fields
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#issuing-a-token" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Issuing a token
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#using-a-token-against-the-etcd-grpc-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using a token against the etcd gRPC API
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1041,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rbac-groups/" class="md-nav__link">
+      <a href="../../auth/rbac-groups/" class="md-nav__link">
         
   
   
@@ -1069,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client-auth/" class="md-nav__link">
+      <a href="../../auth/client-auth/" class="md-nav__link">
         
   
   
@@ -1097,7 +935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../users-lifecycle/" class="md-nav__link">
+      <a href="../../auth/users-lifecycle/" class="md-nav__link">
         
   
   
@@ -1547,8 +1385,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -1569,11 +1409,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
           <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
@@ -1594,7 +1434,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1640,7 +1480,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0001-usecase-owned-transactions/" class="md-nav__link">
+      <a href="../0001-usecase-owned-transactions/" class="md-nav__link">
         
   
   
@@ -1668,7 +1508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0002-groups-only-rbac/" class="md-nav__link">
+      <a href="../0002-groups-only-rbac/" class="md-nav__link">
         
   
   
@@ -1693,10 +1533,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../adr/0003-responsibility-placement/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0003: Responsibility placement
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1712,6 +1579,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context-and-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context and Problem Statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-drivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision Drivers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#considered-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Considered Options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-outcome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision Outcome
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision Outcome">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The test
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reference-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1751,22 +1721,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#sessions" class="md-nav__link">
+  <a href="#context-and-problem-statement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Sessions
+        Context and Problem Statement
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Sessions">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-drivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision Drivers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#considered-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Considered Options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-outcome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision Outcome
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision Outcome">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#two-transports-one-entity" class="md-nav__link">
+  <a href="#the-test" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Two transports, one entity
+        The test
       
     </span>
   </a>
@@ -1774,32 +1777,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ttls" class="md-nav__link">
+  <a href="#reference-implementation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        TTLs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#audit-log" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Audit log
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#enforcement-on-every-request" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enforcement on every request
+        Reference implementation
       
     </span>
   </a>
@@ -1812,52 +1793,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#tokens-service-credentials-for-etcd-clients" class="md-nav__link">
+  <a href="#consequences" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tokens (service credentials for etcd clients)
+        Consequences
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Tokens (service credentials for etcd clients)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#token-fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token fields
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#issuing-a-token" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Issuing a token
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#using-a-token-against-the-etcd-grpc-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using a token against the etcd gRPC API
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1881,157 +1823,104 @@
   
 
 
-<h1 id="sessions-tokens">Sessions &amp; Tokens</h1>
-<p>Elara has two distinct credential types. Mixing them up is the most common
-source of confusion when integrating a client:</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>Session</th>
-<th>Token</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Purpose</td>
-<td>User auth on the UI/ConnectRPC API</td>
-<td>Service auth on the etcd gRPC API</td>
-</tr>
-<tr>
-<td>Permissions</td>
-<td>The user's group-derived RBAC</td>
-<td>The token's <strong>own</strong> <code>Role</code> + <code>Namespaces</code></td>
-</tr>
-<tr>
-<td>Lifecycle</td>
-<td>Tied to the user (deactivation cascades)</td>
-<td><strong>Independent of the issuing user</strong></td>
-</tr>
-<tr>
-<td>Storage</td>
-<td><code>sessions</code> bucket</td>
-<td>Token store, hashed (SHA-256)</td>
-</tr>
-</tbody>
-</table>
-<h2 id="sessions">Sessions</h2>
-<p>A <strong>session</strong> is user authentication state for the UI/ConnectRPC API. It is
-server-side and opaque: the id is a 256-bit cryptographically random value,
-base64-URL-encoded — no JWT, no embedded claims. Sessions live in the bbolt
-<code>sessions</code> bucket.</p>
-<h3 id="two-transports-one-entity">Two transports, one entity</h3>
-<table>
-<thead>
-<tr>
-<th>Client</th>
-<th>How the session id travels</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Web UI</td>
-<td><code>elara_session</code> cookie (HttpOnly, <code>SameSite=Lax</code>, <code>Path=/</code>, <code>Secure</code> per <code>secureCookie</code>)</td>
-</tr>
-<tr>
-<td>CLI / API clients</td>
-<td><code>Authorization: Bearer &lt;session-id&gt;</code> header</td>
-</tr>
-</tbody>
-</table>
-<p>If <strong>both</strong> are present on one request, the <strong>Bearer header wins</strong> (it is checked
-before the cookie).</p>
-<h3 id="ttls">TTLs</h3>
-<p>Verified against <code>internal/service/auth/sessions/model.go</code>:</p>
-<table>
-<thead>
-<tr>
-<th>Session type</th>
-<th>Initial TTL</th>
-<th>Sliding?</th>
-<th>Hard cap</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Web (<code>ClientTypeWeb</code>)</td>
-<td>8 hours</td>
-<td>Yes — extended on activity</td>
-<td>30 days from creation</td>
-</tr>
-<tr>
-<td>CLI (<code>ClientTypeCLI</code>)</td>
-<td>30 days</td>
-<td>No (absolute in MVP)</td>
-<td>30 days</td>
-</tr>
-</tbody>
-</table>
-<p>Web sliding-TTL refresh is throttled (~60s) and only extends when the delta
-exceeds ~5 minutes, so an active session keeps rolling forward its 8-hour window
-until it hits the 30-day hard cap from creation.</p>
-<h3 id="audit-log">Audit log</h3>
-<p>Every <strong>active</strong> state change appends a <code>SessionEvent</code> to the <code>session_events</code>
-bucket (append-only audit trail). Event types:</p>
+<h1 id="3-where-a-responsibility-goes-the-layer-is-decided-by-what-the-code-depends-on">3. Where a responsibility goes: the layer is decided by what the code depends on</h1>
 <ul>
-<li><code>created</code> — a session was minted (login)</li>
-<li><code>refreshed</code> — a sliding-TTL extension was applied (web only)</li>
-<li><code>revoked_by_user</code> — user logged out / revoked their own session</li>
-<li><code>revoked_by_admin</code> — an admin revoked it</li>
-<li><code>revoked_cascade</code> — revoked as a side effect (e.g. user deactivation)</li>
+<li>Status: accepted</li>
+<li>Date: 2026-09-27</li>
+<li>Deciders: Elara maintainers</li>
 </ul>
-<p><strong>Passive expiration is not logged.</strong> When <code>ExpiresAt &lt; now</code> the session simply
-stops authenticating; the expiration moment is observable directly from the
-row's <code>ExpiresAt</code>. The audit log records observed actions, not time-driven
-transitions.</p>
-<h3 id="enforcement-on-every-request">Enforcement on every request</h3>
-<p>The auth interceptor, per request: extract session id (Bearer beats cookie) →
-<code>SessionService.Validate</code> (rejects not-found / revoked / expired) → load the user
-→ reject if <code>User.Status != active</code> → best-effort throttled <code>Refresh</code> → inject
-session + user into context. A deactivated user cannot make any authenticated
-request even if they hold a still-valid session id — see
-<a href="../users-lifecycle/">Users &amp; Groups lifecycle</a>.</p>
-<h2 id="tokens-service-credentials-for-etcd-clients">Tokens (service credentials for etcd clients)</h2>
-<p>A <strong>token</strong> is a service credential for 3rd-party clients hitting the
-etcd-compatible gRPC API (<code>:2379</code>). Tokens are <strong>not</strong> sessions and <strong>not</strong>
-personal access tokens.</p>
-<p>A token's permissions come <strong>only</strong> from its own fields, never inherited from the
-issuer. Deactivating, renaming, or deleting the user who issued a token has <strong>no
-effect</strong> on that token — tokens must be revoked explicitly via
-<code>TokenService.Revoke</code>.</p>
-<h3 id="token-fields">Token fields</h3>
-<p>Defined in <code>internal/domain/token.go</code>:</p>
+<h2 id="context-and-problem-statement">Context and Problem Statement</h2>
+<p><a href="../0001-usecase-owned-transactions/">ADR 0001</a> settled who owns a transaction.
+<a href="../../architecture/"><code>docs/architecture.md</code></a> lists what each layer owns. Neither
+answers the question that actually comes up while writing code: <strong>given a new
+responsibility, which layer does it go in?</strong></p>
+<p>"No business logic in handlers" is a prohibition, not a test. It does not say
+whether authorizing a caller is business logic, or who publishes a watch event,
+or why a transaction boundary cannot sit in a handler. In practice those
+questions get answered by looking at neighbouring code — which works only as
+long as the neighbouring code is correct. <code>internal/handler/etcdv3</code> is not (see
+Consequences), so reading it as a model reproduces the deviation.</p>
+<p>This ADR states the rule that decides placement, and the test for applying it.</p>
+<h2 id="decision-drivers">Decision Drivers</h2>
 <ul>
-<li><code>Role</code> — either <code>writer</code> or <code>reader</code> <strong>only</strong> (a token can never be <code>admin</code>).</li>
-<li><code>reader</code> → read allowed.</li>
-<li><code>writer</code> → read + write allowed (write implies read).</li>
-<li><code>Namespaces</code> — explicit non-empty list of namespaces the token may touch;
-  <code>*</code> grants all namespaces (required for unbounded / scan-all watches).</li>
-<li><code>ExpiresAt</code> — optional; <code>nil</code> means the token never expires.</li>
+<li>A new responsibility should have one obvious home, derivable without asking.</li>
+<li>The rule must survive a second transport: adding WebSocket or a CLI must not
+  require moving business logic.</li>
+<li>Existing code may be in violation. The rule has to be usable as a standard
+  that code is measured against, not as a description of what the code does.</li>
 </ul>
-<p>A token can never grant more than its creator holds: issuing a <code>writer</code> token
-for namespace <code>prod</code> requires the creator to have write on <code>prod</code>, otherwise the
-request fails with a permission-escalation error.</p>
-<h3 id="issuing-a-token">Issuing a token</h3>
-<p>Via the Web UI (Tokens page) or <code>TokenService.Create</code> on the ConnectRPC API.
-The <strong>raw token string is returned exactly once at creation</strong> (only its SHA-256
-hash is stored) — copy it then; it cannot be retrieved again. Raw tokens are
-prefixed <code>elara_</code>.</p>
-<h3 id="using-a-token-against-the-etcd-grpc-api">Using a token against the etcd gRPC API</h3>
-<p>Send it as gRPC metadata on the <code>:2379</code> connection:</p>
-<div class="highlight"><pre><span></span><code>authorization: Bearer elara_&lt;rest-of-token&gt;
-</code></pre></div>
-<p>The gRPC token interceptor (<code>internal/handler/etcdv3/interceptor/auth.go</code>)
-hashes the presented token, looks it up, rejects unknown (<code>invalid token</code>) or
-expired (<code>token expired</code>) tokens, records last-used IP/time, and injects the
-token's namespace/role claims. Every KV and Watch RPC is then checked against
-those claims: reads need the namespace in scope; writes additionally need
-<code>writer</code> role; scan-all watches need a <code>*</code> (wildcard) token.</p>
-<p>With an etcd client library, set the metadata credential per your library's API
-(e.g. a per-RPC credential that emits the <code>authorization</code> header). Example with
-<code>etcdctl</code>-style usage is client-specific; the wire requirement is simply the
-<code>authorization: Bearer elara_…</code> metadata pair above.</p>
-<p>This requires <code>client.auth.enabled=true</code> — see <a href="../client-auth/">Client Auth</a>.</p>
+<h2 id="considered-options">Considered Options</h2>
+<ol>
+<li><strong>Enumerate responsibilities per layer</strong> — extend the layer table with every
+   case as it comes up.</li>
+<li><strong>Decide by dependency direction</strong> — a responsibility belongs to the layer
+   whose concerns it actually depends on.</li>
+</ol>
+<h2 id="decision-outcome">Decision Outcome</h2>
+<p>Chosen option: <strong>2 — decide by dependency direction.</strong></p>
+<p><strong>Handler</strong> owns everything that depends on <em>how the call arrived</em>: the wire
+format, decoding into internal structures, authentication, authorization of the
+caller, and resolving who is calling. It hands the usecase a request plus a
+caller identity — or no identity, where the usecase allows that, as a background
+job has none. A handler never decides <em>what happens</em>.</p>
+<p><strong>UseCase</strong> owns everything that depends on <em>what the caller wants</em>: the flow,
+the transaction boundary, the ordering of side effects against the commit, and
+which services to call. It <strong>receives</strong> the caller's identity rather than
+discovering it, and it publishes notifications.</p>
+<p><strong>Service</strong> does one concrete job — reach a repository, call an OIDC provider,
+hash a password, validate against a schema, dispatch a webhook — and knows
+nothing about the business case that invoked it.</p>
+<h3 id="the-test">The test</h3>
+<p>Move the code to a different transport.</p>
+<ul>
+<li>If it must come along unchanged, it belongs in the <strong>usecase</strong>.</li>
+<li>If it only makes sense for the transport it is in, it belongs in the
+  <strong>handler</strong>.</li>
+</ul>
+<p>Applied to a watch notification: an etcd <code>Put</code> and a ConnectRPC <code>CreateConfig</code>
+must both publish the event, and publishing does not change with the wire
+format. Usecase. Applied to <code>checkAccess</code> on etcd token claims: a ConnectRPC
+call authorizes through an interceptor over sessions instead, and the mechanism
+is a property of the transport. Handler.</p>
+<h3 id="reference-implementation">Reference implementation</h3>
+<p><code>internal/handler/v2/</code> follows this ADR: zero <code>Notify</code> calls, zero authorization
+calls — authorization happens in <code>internal/handler/v2/interceptor</code>, and the
+usecases publish their own events. When placement is unclear, diff the two
+handler packages before designing anything; where they disagree, <code>v2</code> is right.</p>
+<h2 id="consequences">Consequences</h2>
+<p><strong>Notification is a usecase concern.</strong> <code>internal/transport/{watch,webhook}</code> holds
+the publisher and the dispatcher because they are wire transports, but they are
+<em>called</em> from the usecase. <code>internal/usecase/config/service_create.go</code>,
+<code>service_update.go</code>, <code>service_delete.go</code> and <code>service_copy.go</code> are the model.</p>
+<p><strong>The transaction boundary can only be usecase-owned</strong> — this is ADR 0001's
+conclusion re-derived from the rule rather than asserted. Side effects have to
+be ordered against the commit: an event must not be published before the
+transaction that produced it commits, and must not be published at all if it
+rolls back. Deciding when to publish <em>is</em> deciding what happens, so a layer that
+owns the boundary must be a layer allowed to make that decision. A handler is
+not. It follows that a handler must never be handed a transaction boundary, not
+even under another name.</p>
+<p><strong>Authorization in a handler is not a violation of "no business logic".</strong>
+Permitting a caller is not deciding what happens to the data. The mechanism
+differs per transport — ConnectRPC authorizes in an interceptor over session
+identity, the etcd-compatible gRPC API authorizes in
+<code>internal/handler/etcdv3/access.go</code> over service-token claims — and that
+difference is exactly why it cannot be consolidated into a usecase.</p>
+<p><strong><code>pdp.Effective*</code> inside a usecase is scoping, not permission.</strong>
+<code>EffectiveNamespaces</code> and <code>EffectiveDomains</code> answer "which namespaces may this
+principal see" and shape a result set; see
+<code>internal/usecase/config/service_search.go</code> and
+<code>internal/usecase/token/service_list.go</code>. That is business logic over an
+identity the handler already resolved, and it does not make authorization a
+usecase concern.</p>
+<p><strong>Known deviation, as of 2026-09-27.</strong> <code>internal/handler/etcdv3/kv_server.go</code>
+orchestrates <code>Txn</code> — evaluating compares, selecting the success/failure branch,
+looping operations — and publishes watch events from <code>notifyPut</code> and from
+<code>DeleteRange</code>. Both belong in the usecase by this rule. The deviation predates
+this ADR and is being paid down by the work that makes <code>Txn</code> atomic, which
+cannot be done correctly without it: there is no way to put a transaction
+boundary around orchestration that lives in a handler without handing the
+handler that boundary.</p>
 
 
 
