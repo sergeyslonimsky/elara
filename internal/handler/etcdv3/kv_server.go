@@ -33,32 +33,31 @@ type KVUsecase interface {
 		startNS, startPath, endNS, endPath string,
 		opts configuc.KVRangeOpts,
 	) ([]*domain.KVPair, bool, error)
-	PutKey(ctx context.Context, namespace, path string, value []byte) (*domain.Config, *domain.KVPair, int64, error)
+	PutKey(ctx context.Context, namespace, path string, value []byte) (*domain.KVPair, int64, error)
 	DeleteRangeKeys(
 		ctx context.Context,
 		startNS, startPath, endNS, endPath string,
 		returnPrev bool,
 	) ([]*domain.KVPair, int64, error)
-}
-
-// KVPublisher is the pub/sub surface for realtime events after mutations.
-type KVPublisher interface {
-	NotifyCreated(ctx context.Context, cfg *domain.Config)
-	NotifyUpdated(ctx context.Context, cfg *domain.Config)
-	NotifyDeleted(ctx context.Context, path, namespace string, revision int64)
+	// Txn evaluates the guard and runs one branch atomically, publishing watch
+	// events only after the commit.
+	Txn(ctx context.Context, in configuc.KVTxnInput) (configuc.KVTxnResult, error)
 }
 
 // KVServer implements etcdserverpb.KVServer backed by usecase/config.
+//
+// It does not publish watch events. Notification is ordered against the
+// transaction that produced it, so it belongs to the layer that owns the
+// transaction boundary — see docs/adr/0003-responsibility-placement.md.
 type KVServer struct {
 	etcdserverpb.UnimplementedKVServer
 
-	usecase   KVUsecase
-	publisher KVPublisher
-	metrics   *kvMetrics
+	usecase KVUsecase
+	metrics *kvMetrics
 }
 
-func NewKVServer(usecase KVUsecase, publisher KVPublisher) *KVServer {
-	return &KVServer{usecase: usecase, publisher: publisher, metrics: newKVMetrics()}
+func NewKVServer(usecase KVUsecase) *KVServer {
+	return &KVServer{usecase: usecase, metrics: newKVMetrics()}
 }
 
 func (s *KVServer) Range(
@@ -88,6 +87,19 @@ func (s *KVServer) Range(
 		return nil, status.Errorf(codes.Internal, "range query: %v", err)
 	}
 
+	return buildRangeResponse(req, kvs, currentRev, more), nil
+}
+
+// buildRangeResponse shapes matched pairs into a Range response. Shared with the
+// Txn path so a range nested in a transaction comes back byte-identical to the
+// same range issued on its own — sort order, count-only and the header all being
+// properties of the request rather than of the stored data.
+func buildRangeResponse(
+	req *etcdserverpb.RangeRequest,
+	kvs []*domain.KVPair,
+	revision int64,
+	more bool,
+) *etcdserverpb.RangeResponse {
 	protoKVs := make([]*mvccpb.KeyValue, 0, len(kvs))
 	for _, kv := range kvs {
 		protoKVs = append(protoKVs, kvPairToProto(kv))
@@ -101,11 +113,11 @@ func (s *KVServer) Range(
 	}
 
 	return &etcdserverpb.RangeResponse{
-		Header: newHeader(currentRev),
+		Header: newHeader(revision),
 		Kvs:    protoKVs,
 		More:   more,
 		Count:  count,
-	}, nil
+	}
 }
 
 func (s *KVServer) Put(
@@ -129,14 +141,12 @@ func (s *KVServer) Put(
 		return nil, status.Errorf(codes.Unimplemented, "ignore_value is not supported")
 	}
 
-	cfg, prev, newRev, err := s.usecase.PutKey(ctx, namespace, path, req.GetValue())
+	prev, newRev, err := s.usecase.PutKey(ctx, namespace, path, req.GetValue())
 	if err != nil {
 		s.recordRejectedWrite(ctx, "put", namespace, err)
 
 		return nil, toKVStatus(err, "put", path)
 	}
-
-	s.notifyPut(ctx, cfg, prev)
 
 	resp := &etcdserverpb.PutResponse{
 		Header: newHeader(newRev),
@@ -188,82 +198,7 @@ func (s *KVServer) DeleteRange(
 		}
 	}
 
-	if s.publisher != nil {
-		for _, kv := range deleted {
-			s.publisher.NotifyDeleted(ctx, kv.Path, kv.Namespace, newRev)
-		}
-	}
-
-	return s.buildDeleteRangeResponse(newRev, deleted, req.GetPrevKv()), nil
-}
-
-// Txn implements a best-effort transaction. NOTE: not strictly atomic —
-// compares and ops each run in their own transaction via KVUsecase (one
-// evalCompare/runOp call = one usecase-level WithTx). For MVP single-instance
-// this matches etcd behaviour for the common case (e.g. leader election,
-// distributed locks) under low contention but can race under high write
-// concurrency — confirmed empirically in
-// TestIntegration_KVConformance_TxnCompareAndSwap_Concurrent
-// (kv_conformance_integration_test.go), which documents this as baseline,
-// not desired, behavior. Making Txn atomic requires wrapping the whole
-// compare+ops sequence in one outer WithTx while deferring watch
-// notification until after that commits (today's per-op notify would
-// otherwise fire before a later op in the same Txn fails and rolls
-// everything back) — deliberately left for a follow-up, not done here.
-func (s *KVServer) Txn(
-	ctx context.Context,
-	req *etcdserverpb.TxnRequest,
-) (*etcdserverpb.TxnResponse, error) {
-	succeeded := true
-
-	for _, cmp := range req.GetCompare() {
-		ok, err := s.evalCompare(ctx, cmp)
-		if err != nil {
-			return nil, err
-		}
-
-		if !ok {
-			succeeded = false
-
-			break
-		}
-	}
-
-	ops := req.GetSuccess()
-	if !succeeded {
-		ops = req.GetFailure()
-	}
-
-	responses := make([]*etcdserverpb.ResponseOp, 0, len(ops))
-	var lastRev int64
-
-	for _, op := range ops {
-		resp, rev, err := s.runOp(ctx, op)
-		if err != nil {
-			return nil, err
-		}
-
-		if rev > lastRev {
-			lastRev = rev
-		}
-
-		responses = append(responses, resp)
-	}
-
-	if lastRev == 0 {
-		rev, err := s.usecase.CurrentRevisionValue(ctx)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "get revision: %v", err)
-		}
-
-		lastRev = rev
-	}
-
-	return &etcdserverpb.TxnResponse{
-		Header:    newHeader(lastRev),
-		Succeeded: succeeded,
-		Responses: responses,
-	}, nil
+	return buildDeleteRangeResponse(newRev, deleted, req.GetPrevKv()), nil
 }
 
 func (s *KVServer) Compact(
@@ -297,7 +232,7 @@ func (s *KVServer) checkRangeAccess(
 	return nil
 }
 
-func (s *KVServer) buildDeleteRangeResponse(
+func buildDeleteRangeResponse(
 	newRev int64,
 	deleted []*domain.KVPair,
 	prevKv bool,
@@ -315,175 +250,6 @@ func (s *KVServer) buildDeleteRangeResponse(
 	}
 
 	return resp
-}
-
-// notifyPut fires the create/update watch notification for cfg, which
-// usecase/config.Service.PutKey has already fully built (see its NOTE on
-// which fields are intentionally left unpopulated).
-func (s *KVServer) notifyPut(ctx context.Context, cfg *domain.Config, prev *domain.KVPair) {
-	if s.publisher == nil {
-		return
-	}
-
-	if prev != nil {
-		s.publisher.NotifyUpdated(ctx, cfg)
-
-		return
-	}
-
-	s.publisher.NotifyCreated(ctx, cfg)
-}
-
-func (s *KVServer) evalCompare(ctx context.Context, cmp *etcdserverpb.Compare) (bool, error) {
-	startNS, startPath, endNS, endPath, ok := SplitRange(cmp.GetKey(), cmp.GetRangeEnd())
-	if !ok {
-		return false, status.Errorf(
-			codes.InvalidArgument,
-			"invalid compare key: %q",
-			string(cmp.GetKey()),
-		)
-	}
-
-	kvs, _, err := s.usecase.RangeKVs(ctx, startNS, startPath, endNS, endPath, configuc.KVRangeOpts{})
-	if err != nil {
-		return false, status.Errorf(codes.Internal, "compare range: %v", err)
-	}
-
-	// If nothing matches, all revision/version targets default to 0 and value to nil.
-	if len(kvs) == 0 {
-		return compareSingle(cmp, nil), nil
-	}
-
-	for _, kv := range kvs {
-		if !compareSingle(cmp, kv) {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
-func compareSingle(cmp *etcdserverpb.Compare, kv *domain.KVPair) bool {
-	var (
-		version, createRev, modRev int64
-		value                      []byte
-	)
-
-	if kv != nil {
-		version = kv.Version
-		createRev = kv.CreateRevision
-		modRev = kv.ModRevision
-		value = kv.Value
-	}
-
-	switch cmp.GetTarget() {
-	case etcdserverpb.Compare_VERSION:
-		want := cmp.GetVersion()
-
-		return compareInt64(cmp.GetResult(), version, want)
-
-	case etcdserverpb.Compare_CREATE:
-		want := cmp.GetCreateRevision()
-
-		return compareInt64(cmp.GetResult(), createRev, want)
-
-	case etcdserverpb.Compare_MOD:
-		want := cmp.GetModRevision()
-
-		return compareInt64(cmp.GetResult(), modRev, want)
-
-	case etcdserverpb.Compare_VALUE:
-		want := cmp.GetValue()
-
-		return compareBytes(cmp.GetResult(), value, want)
-
-	default:
-		return false
-	}
-}
-
-func compareInt64(op etcdserverpb.Compare_CompareResult, got, want int64) bool {
-	switch op {
-	case etcdserverpb.Compare_EQUAL:
-		return got == want
-	case etcdserverpb.Compare_NOT_EQUAL:
-		return got != want
-	case etcdserverpb.Compare_GREATER:
-		return got > want
-	case etcdserverpb.Compare_LESS:
-		return got < want
-	default:
-		return false
-	}
-}
-
-func compareBytes(op etcdserverpb.Compare_CompareResult, got, want []byte) bool {
-	cmp := bytes.Compare(got, want)
-
-	switch op {
-	case etcdserverpb.Compare_EQUAL:
-		return cmp == 0
-	case etcdserverpb.Compare_NOT_EQUAL:
-		return cmp != 0
-	case etcdserverpb.Compare_GREATER:
-		return cmp > 0
-	case etcdserverpb.Compare_LESS:
-		return cmp < 0
-	default:
-		return false
-	}
-}
-
-// runOp executes a single txn request op and returns its response wrapped in a ResponseOp.
-// Returns the revision produced by the op (0 if op was a Range).
-func (s *KVServer) runOp(
-	ctx context.Context,
-	op *etcdserverpb.RequestOp,
-) (*etcdserverpb.ResponseOp, int64, error) {
-	switch r := op.GetRequest().(type) {
-	case *etcdserverpb.RequestOp_RequestRange:
-		resp, err := s.Range(ctx, r.RequestRange)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		return &etcdserverpb.ResponseOp{
-			Response: &etcdserverpb.ResponseOp_ResponseRange{ResponseRange: resp},
-		}, 0, nil
-
-	case *etcdserverpb.RequestOp_RequestPut:
-		resp, err := s.Put(ctx, r.RequestPut)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		return &etcdserverpb.ResponseOp{
-			Response: &etcdserverpb.ResponseOp_ResponsePut{ResponsePut: resp},
-		}, resp.GetHeader().GetRevision(), nil
-
-	case *etcdserverpb.RequestOp_RequestDeleteRange:
-		resp, err := s.DeleteRange(ctx, r.RequestDeleteRange)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		return &etcdserverpb.ResponseOp{
-			Response: &etcdserverpb.ResponseOp_ResponseDeleteRange{ResponseDeleteRange: resp},
-		}, resp.GetHeader().GetRevision(), nil
-
-	case *etcdserverpb.RequestOp_RequestTxn:
-		resp, err := s.Txn(ctx, r.RequestTxn)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		return &etcdserverpb.ResponseOp{
-			Response: &etcdserverpb.ResponseOp_ResponseTxn{ResponseTxn: resp},
-		}, resp.GetHeader().GetRevision(), nil
-
-	default:
-		return nil, 0, status.Errorf(codes.InvalidArgument, "unknown txn request op")
-	}
 }
 
 func kvPairToProto(kv *domain.KVPair) *mvccpb.KeyValue {

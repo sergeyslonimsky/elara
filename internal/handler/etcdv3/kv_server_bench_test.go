@@ -325,7 +325,7 @@ func newBenchKVServerSync(b *testing.B, noSync bool) (*etcdv3.KVServer, context.
 
 	// A context carrying no claims is what namespaceAllowed treats as "auth
 	// disabled, allowed" — the interceptor is not part of what is measured.
-	return etcdv3.NewKVServer(usecase, pub), b.Context()
+	return etcdv3.NewKVServer(usecase), b.Context()
 }
 
 // benchCASRequest builds the compare-and-swap request once. Txn does not
@@ -362,15 +362,15 @@ func seedBenchKey(b *testing.B, srv *etcdv3.KVServer, ctx context.Context) {
 	}
 }
 
-// benchWatcher is a no-op stand-in for the watch publisher, serving both the
-// usecase's watcher seam and the handler's KVPublisher.
+// benchWatcher is a no-op stand-in for the usecase's watcher seam.
 //
 // Two reasons it is not the real thing. Layering: depguard forbids
 // internal/handler from importing internal/transport, and a test file is no
 // exception. Measurement: fan-out cost belongs to the publisher and is
 // benchmarked in its own package, so keeping it out of here leaves these
 // numbers about the storage transaction — which is what the atomic-Txn work
-// changes.
+// changes. Building the event and buffering it until commit is in scope and
+// does show up, because that is now part of every write.
 type benchWatcher struct{}
 
 func (benchWatcher) NotifyCreated(context.Context, *domain.Config) {}
