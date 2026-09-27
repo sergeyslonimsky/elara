@@ -90,11 +90,11 @@ Two consequences that are easy to get wrong:
   calls inside a usecase are *scoping* — which namespaces a principal may see —
   not permission checks.
 
-> **Known deviation, 2026-09-27.** `internal/handler/etcdv3/kv_server.go`
-> orchestrates `Txn` and publishes watch events itself. Both belong in the
-> usecase. `internal/handler/v2/` is the correct reference for this layering;
-> do not model new code on the etcd handler's write path until the atomic-`Txn`
-> work has moved it.
+Both handler packages follow this today. `internal/handler/etcdv3` used to
+orchestrate `Txn` and publish its own watch events; that moved into
+`internal/usecase/config` when `Txn` was made atomic, which could not be done
+without it — a transaction boundary cannot be placed around orchestration that
+lives in a handler.
 
 ## Ports and state
 

@@ -118,10 +118,11 @@ Two things this settles, because both get guessed wrong:
 
 The rule wins, and you say so instead of designing around the code.
 
-`internal/handler/etcdv3` currently violates the layering: `kv_server.go`
-orchestrates `Txn` and publishes its own watch events. `internal/handler/v2/` is
-correct. **When placement is unclear, diff the two handler packages before you
-design anything** — one grep for `Notify` across both settles most questions.
+**When placement is unclear, diff the two handler packages before you design
+anything** — one grep for `Notify` across `internal/handler/v2/` and
+`internal/handler/etcdv3/` settles most questions. Both follow the rule today;
+`etcdv3` did not until `Txn` was made atomic, and the mistake that prompted this
+section was designing from the version that did not.
 
 If your task seems to require putting business logic in a handler, that is
 evidence the surrounding code is already in violation, not permission to add
@@ -297,7 +298,6 @@ When handing off to test-writer, include: (a) scope path, (b) list of public met
 - **Logic in handlers** beyond proto↔domain conversion and a single Service call.
 - **Publishing watch/webhook events from a handler.** That is the usecase's job — see ADR 0003.
 - **Accepting a transaction boundary in a handler**, including a usecase method that only wraps `WithTx` for the handler to call. Side effects must be ordered against the commit by whoever may decide what happens.
-- **Modelling new code on `internal/handler/etcdv3`'s write path.** It is a known layering violation; use `internal/handler/v2/`.
 - **Importing infrastructure** in domain.
 - **Comments that restate the code** or reference task/PR numbers.
 - **`else` after `return`**, named returns (linter), `init()` for non-trivial setup.
@@ -305,7 +305,7 @@ When handing off to test-writer, include: (a) scope path, (b) list of public met
 ## Workflow you must follow
 
 1. `mcp__goland__get_file_problems` on the file you are about to edit. (The live JetBrains MCP server is `goland`; the older `jetbrains-goland` registration is superseded and its tool names no longer exist.)
-2. **Read a sibling file in the same layer** as a stylistic reference before writing new code. Match its conventions — and if that sibling is in `internal/handler/etcdv3`'s write path, read ADR 0003 instead, because it is a known violation.
+2. **Read a sibling file in the same layer** as a stylistic reference before writing new code. Match its conventions. If it is in a handler, check it against ADR 0003 before copying its shape.
 3. Implement the change. Keep diffs small and focused — no incidental refactors.
 4. `mcp__goland__reformat_file` on every file you touched.
 5. `mcp__goland__get_file_problems` again — fix anything new.

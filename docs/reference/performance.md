@@ -83,18 +83,18 @@ rest are the cost of the code, which is the part a change can actually move.
 
 | Operation | Time | Allocations |
 |---|---|---|
-| `Put` | 77 µs | 180 |
-| `Put`, **durable** | 8.3 ms | 167 |
-| `Txn` compare-and-swap | 84 µs | 213 |
-| `Txn` compare-and-swap, contended | 83 µs | 214 |
-| `Txn` compare fails (no write) | 3.7 µs | 41 |
-| `Txn` read-only range | 5.3 µs | 60 |
-| `Txn` 1 put | 78 µs | 185 |
-| `Txn` 5 puts | 394 µs | 914 |
-| `Txn` 20 puts | 2.13 ms | 3688 |
-| `Txn` 1 put, **durable** | 8.1 ms | 172 |
-| `Txn` 5 puts, **durable** | 41.9 ms | 859 |
-| `Txn` 20 puts, **durable** | 169 ms | 3459 |
+| `Put` | 74 µs | 183 |
+| `Put`, **durable** | 8.1 ms | 161 |
+| `Txn` compare-and-swap | 77 µs | 210 |
+| `Txn` compare-and-swap, contended | 81 µs | 215 |
+| `Txn` compare fails (no write) | 3.9 µs | 42 |
+| `Txn` read-only range | 4.2 µs | 53 |
+| `Txn` 1 put | 76 µs | 194 |
+| `Txn` 5 puts | 202 µs | 460 |
+| `Txn` 20 puts | 570 µs | 1412 |
+| `Txn` 1 put, **durable** | 8.2 ms | 177 |
+| `Txn` 5 puts, **durable** | 8.5 ms | 422 |
+| `Txn` 20 puts, **durable** | 9.4 ms | 1339 |
 
 ## Watch fan-out
 
@@ -136,19 +136,26 @@ lookup comes back empty, the validator adds nothing.
 transactions a request opens changes client-visible latency by milliseconds,
 not microseconds.
 
-**`Txn` opens one transaction per operation today.** The 1/5/20-put curve is
-linear — 8.1 ms, 41.9 ms, 169 ms durable — because each op commits separately.
-Wrapping a whole `Txn` in one transaction should collapse that to roughly the
-cost of a single commit. The widely-voiced concern that a wider transaction
-serialises more applies to contention *between* concurrent `Txn` calls, not to
-the multi-op case, which stands to get dramatically faster.
+**A `Txn` is one transaction, and that is what makes multi-op cheap.** The
+durable 1/5/20-put curve is 8.2 ms, 8.5 ms, 9.4 ms — almost flat, because all
+the operations share a single commit and therefore a single `fsync`. Before
+`Txn` became atomic each operation committed separately and the same curve read
+8.1 ms, 40.4 ms, 165 ms. Twenty writes in one transaction went from 165 ms to
+9.4 ms, a 17-fold improvement, with allocations down 54 %.
 
-**Writes are already fully serialised.** Contended and sequential land at the
-same ns/op, which is what a single-writer resource looks like under
-`RunParallel`: throughput is capped at one writer regardless of how many are
-waiting. Parity is the baseline here, not evidence that contention is free. If
-the contended number ever rises above the sequential one, a transaction is
-being held open longer per call.
+That is worth stating plainly because the expectation was the opposite: widening
+a transaction was assumed to cost throughput, since bbolt permits one writer at
+a time. It did not. The serialisation concern was real but it applies *between*
+concurrent `Txn` calls, not to the operations inside one — and even there
+nothing measurable appeared, with contended compare-and-swap coming out 3 %
+*faster* than before.
+
+**Writes are fully serialised, and contended matches sequential.** Under
+`RunParallel` a single-writer resource lands at the same ns/op as its sequential
+benchmark, because throughput is capped at one writer no matter how many wait.
+Parity is therefore the baseline, not evidence that contention is free. If the
+contended number ever rises above the sequential one, a transaction is being
+held open longer per call.
 
 **Paging saves allocations, not scanning.** Fetching 20 summaries out of 1000
 costs 1.52 ms against 1.71 ms for fetching all of them — but 134 KB against
