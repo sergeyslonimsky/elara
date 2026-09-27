@@ -1,6 +1,6 @@
 ---
 name: go-code-writer
-description: Implements and refactors Go code in Elara following project DDD layering, naming, error-handling, and style conventions. Invoke for feature implementation or refactoring tasks. Not for tests-only (use test-writer), migrations (use migration-specialist), or pure proto changes.
+description: Implements and refactors Go code in Elara following project DDD layering, naming, error-handling, and style conventions. Invoke for feature implementation or refactoring tasks. Not for tests-only (use test-writer) or pure proto changes.
 tools: ["*"]
 model: inherit
 ---
@@ -44,7 +44,7 @@ This applies to:
 
 How to delegate (depends on your runtime):
 - **If you have an `Agent`/`Task` tool that can invoke other agents** (Claude Code with sub-agents): call it with `subagent_type: "test-writer"` and pass the explicit scope, the methods/interfaces that changed, and the failing test names if any.
-- **If you don't have a sub-agent tool** (Gemini CLI or similar): read `.agents/test-writer.md` and apply its conventions yourself. Treat that file as the binding spec for any test-file edit. Do NOT invent your own test style — match the patterns in existing `service_<method>_test.go` files in the same package.
+- **If you don't have a sub-agent tool** (Gemini CLI or similar): read `.agents/go-test-writer.md` and apply its conventions yourself. Treat that file as the binding spec for any test-file edit. Do NOT invent your own test style — match the patterns in existing `service_<method>_test.go` files in the same package.
 
 What you DO with tests:
 - ✅ Run them: `go test -count=1 ./<scope>/...`.
@@ -58,32 +58,34 @@ Why: writing tests has its own conventions (mockFunc pattern, errIs/wantErr, gci
 ## When you are invoked
 
 - "Implement X" or "Refactor Y" for Go code
-- Adding a new use case method, service, handler, or adapter
+- Adding a new use case method, service, handler, or repository
 - Restructuring code between layers
 
 You are NOT the right agent for:
 - **Tests only** → delegate to `test-writer`
-- **DB migrations** → delegate to `migration-specialist`
 - **Proto-only changes** → handle in main conversation (regenerate via `make generate`)
 - **Frontend** → delegate to `react-code-writer`
 
 ## Architecture: layer flow
 
 ```
-ConnectRPC client / etcdctl  →  Handler  →  UseCase (Service)  →  Domain  →  Adapter (bbolt / watch)
+ConnectRPC client / etcdctl  →  Handler  →  UseCase  →  Service  →  Domain
+                                              ↓
+                              Storage (bbolt) / Transport (watch, webhook)
 ```
 
 | Layer | Path | What lives here | What MUST NOT live here |
 |-------|------|-----------------|-------------------------|
-| Handler | `internal/handler/v2/<domain>/`, `internal/handler/etcdv3/` | Proto ↔ domain conversion, calls into use cases | Business logic, repo access, transactions |
-| UseCase | `internal/usecase/<domain>/service.go` | Application logic: orchestration, authz checks, domain calls | Proto types, HTTP/gRPC concerns, SQL/bbolt details |
+| Handler | `internal/handler/v2/<domain>/`, `internal/handler/etcdv3/` | Proto ↔ domain conversion, authenticating and authorizing the caller, a single use-case call | Business logic, repo access, transactions, publishing notifications |
+| UseCase | `internal/usecase/<domain>/service.go` | Application logic: orchestration, transaction boundary, notifications, scoping by the identity it was handed | Proto types, HTTP/gRPC concerns, bbolt details, discovering who the caller is |
+| Service | `internal/service/<topic>/` | One concrete job used across use cases (schema validation, OIDC, password hashing, dispatching) | Knowledge of the business case that called it |
 | Domain | `internal/domain/` | Pure entities, validation, sentinel errors | ANY infra import (bbolt, connect, viper, etc.) |
-| Adapter | `internal/adapter/{bbolt,watch,webhook}/` | Storage and pub/sub implementations | Application logic, authz |
-| Shared service | `internal/service/<topic>/` | Stateful helpers used across use cases (e.g. schema validator) | Single-domain logic |
+| Storage | `internal/storage/` (interface) + `internal/storage/bbolt/` (impl) | `storage.Manager.WithTx` and the repositories | Application logic, authz, reaching up into usecase/service/handler |
+| Transport | `internal/transport/{grpc,watch,webhook}` | Wire transports orthogonal to request/response: etcd gRPC server, watch pub/sub, webhook dispatch | Application logic — the usecase calls these, they do not call back |
 | Util | `internal/util/<topic>/` | Pure stateless helpers | Anything with dependencies / DI |
 | DI | `internal/di/` | Wiring only — construction, not behavior | Business logic, validation |
 
-**If you find yourself importing `internal/adapter` from `internal/domain` — stop and rethink.**
+**If you find yourself importing `internal/storage` or `internal/transport` from `internal/domain` — stop and rethink.** `depguard` enforces most of these directions; see `.golangci.yml`.
 
 ### Placing something new: decide by dependency, not by neighbours
 
@@ -243,7 +245,7 @@ func (s *Service) Get(ctx context.Context, in GetInput) (*domain.Config, error) 
 - **Avoid `else` after `return`.** Early-return chains read better than nested if/else.
 - **Comments answer WHY, not WHAT.** Identifier names cover WHAT. Skip the comment if removing it wouldn't confuse a future reader. Never reference current task / PR / ticket inside code comments.
 
-## Style rules enforced by `make lint`
+## Style rules enforced by `golangci-lint`
 
 These are enforced — you should still know them so you don't write code that fails CI:
 
@@ -302,15 +304,16 @@ When handing off to test-writer, include: (a) scope path, (b) list of public met
 
 ## Workflow you must follow
 
-1. `mcp__jetbrains-goland__get_file_problems` on the file you are about to edit.
-2. **Read a sibling file in the same layer** as a stylistic reference before writing new code. Match its conventions.
+1. `mcp__goland__get_file_problems` on the file you are about to edit. (The live JetBrains MCP server is `goland`; the older `jetbrains-goland` registration is superseded and its tool names no longer exist.)
+2. **Read a sibling file in the same layer** as a stylistic reference before writing new code. Match its conventions — and if that sibling is in `internal/handler/etcdv3`'s write path, read ADR 0003 instead, because it is a known violation.
 3. Implement the change. Keep diffs small and focused — no incidental refactors.
-4. `mcp__jetbrains-goland__reformat_file` on every file you touched.
-5. `mcp__jetbrains-goland__get_file_problems` again — fix anything new.
-6. If you touched anything that triggers `go vet` (most things) and `web/dist/` does not exist, run `cd web && npm run build` first (project-level CLAUDE.md mandates this).
-7. `make lint` — fix all reported issues, do not skip.
-8. `make test` — must be green.
-9. Report back: list of files changed, summary in 1–3 lines, any decisions you made that the user might want to override.
+4. `mcp__goland__reformat_file` on every file you touched.
+5. `mcp__goland__get_file_problems` again — fix anything new.
+6. `golangci-lint run ./<scope>/...` — fix all reported issues, do not skip.
+7. `go test -count=1 ./<scope>/...` — must be green. Add `-tags=integration` if the package has suites behind that tag.
+8. Report back: list of files changed, summary in 1–3 lines, any decisions you made that the user might want to override.
+
+Both commands are scoped on purpose: `make lint` and `make test` are forbidden above, and nothing in this workflow overrides that. If a Go command fails because `web/dist/` is missing, **stop and report it as a blocker** — do not run `npm run build`. The main agent owns that step.
 
 ## Commits
 
