@@ -5,7 +5,6 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,31 +12,46 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/handler/etcdv3"
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
 )
 
-// fakeKVRepo is an in-memory KVRepo suitable for testing KVServer logic
-// without touching bbolt. It stores pairs keyed by (namespace, path).
-type fakeKVRepo struct {
+// fakeKVUsecase stands in for usecase/config.Service — the KVUsecase surface,
+// not a repository, despite what the KV path's storage-shaped method names
+// suggest.
+//
+// Range/Put/DeleteRange are backed by a real in-memory store so the handler's
+// wire shaping can be asserted end-to-end. Txn deliberately is NOT: evaluating
+// the guard, choosing a branch and ordering notifications against the commit
+// live in the usecase and are tested there
+// (usecase/config/service_txn_test.go). Re-implementing that here would assert
+// the fake rather than the handler, so Txn only records the converted input and
+// replays a scripted result — which is exactly the handler's own contract:
+// proto→DTO conversion, authorization, DTO→proto conversion.
+type fakeKVUsecase struct {
 	mu    sync.Mutex
 	pairs map[string]*domain.KVPair // key: ns+"\x00"+path
 	rev   int64
 
 	// injection hooks for error paths
-	rangeErr    error
-	putErr      error
-	deleteErr   error
-	currentErr  error
-	interceptOp func() // called at start of each mutation
+	rangeErr   error
+	putErr     error
+	deleteErr  error
+	currentErr error
+
+	// Txn recorder/replayer.
+	txnCalls  []configuc.KVTxnInput
+	txnResult configuc.KVTxnResult
+	txnErr    error
 }
 
-func newFakeKVRepo() *fakeKVRepo {
-	return &fakeKVRepo{pairs: make(map[string]*domain.KVPair)}
+func newFakeKVUsecase() *fakeKVUsecase {
+	return &fakeKVUsecase{pairs: make(map[string]*domain.KVPair)}
 }
 
-func (f *fakeKVRepo) CurrentRevisionValue(_ context.Context) (int64, error) {
+func (f *fakeKVUsecase) CurrentRevisionValue(_ context.Context) (int64, error) {
 	if f.currentErr != nil {
 		return 0, f.currentErr
 	}
@@ -48,7 +62,7 @@ func (f *fakeKVRepo) CurrentRevisionValue(_ context.Context) (int64, error) {
 	return f.rev, nil
 }
 
-func (f *fakeKVRepo) RangeKVs(
+func (f *fakeKVUsecase) RangeKVs(
 	_ context.Context,
 	startNS, startPath, endNS, endPath string,
 	opts configuc.KVRangeOpts,
@@ -82,7 +96,7 @@ func (f *fakeKVRepo) RangeKVs(
 	return results, more, nil
 }
 
-func (f *fakeKVRepo) RangeQuery(
+func (f *fakeKVUsecase) RangeQuery(
 	ctx context.Context,
 	startNS, startPath, endNS, endPath string,
 	opts configuc.KVRangeOpts,
@@ -102,17 +116,13 @@ func (f *fakeKVRepo) RangeQuery(
 	return results, f.rev, more, nil
 }
 
-func (f *fakeKVRepo) PutKey(
+func (f *fakeKVUsecase) PutKey(
 	_ context.Context,
 	namespace, path string,
 	value []byte,
-) (*domain.Config, *domain.KVPair, int64, error) {
-	if f.interceptOp != nil {
-		f.interceptOp()
-	}
-
+) (*domain.KVPair, int64, error) {
 	if f.putErr != nil {
-		return nil, nil, 0, f.putErr
+		return nil, 0, f.putErr
 	}
 
 	f.mu.Lock()
@@ -126,15 +136,6 @@ func (f *fakeKVRepo) PutKey(
 	valCopy := make([]byte, len(value))
 	copy(valCopy, value)
 
-	cfg := &domain.Config{
-		Path:      path,
-		Namespace: namespace,
-		Content:   string(value),
-		Format:    domain.DetectFormatFromPath(path),
-		Revision:  f.rev,
-		UpdatedAt: time.Now(),
-	}
-
 	if prev == nil {
 		f.pairs[k] = &domain.KVPair{
 			Namespace:      namespace,
@@ -145,11 +146,7 @@ func (f *fakeKVRepo) PutKey(
 			Version:        1,
 		}
 
-		cfg.Version = 1
-		cfg.CreateRevision = f.rev
-		cfg.CreatedAt = cfg.UpdatedAt
-
-		return cfg, nil, f.rev, nil
+		return nil, f.rev, nil
 	}
 
 	// Return a copy so callers cannot mutate our internal state.
@@ -163,22 +160,15 @@ func (f *fakeKVRepo) PutKey(
 		Version:        prev.Version + 1,
 	}
 
-	cfg.Version = prev.Version + 1
-	cfg.CreateRevision = prev.CreateRevision
-
-	return cfg, &prevCopy, f.rev, nil
+	return &prevCopy, f.rev, nil
 }
 
-func (f *fakeKVRepo) DeleteRangeKeys(
+func (f *fakeKVUsecase) DeleteRangeKeys(
 	_ context.Context,
 	startNS, startPath string,
 	endNS, endPath string,
 	returnPrev bool,
 ) ([]*domain.KVPair, int64, error) {
-	if f.interceptOp != nil {
-		f.interceptOp()
-	}
-
 	if f.deleteErr != nil {
 		return nil, 0, f.deleteErr
 	}
@@ -201,7 +191,8 @@ func (f *fakeKVRepo) DeleteRangeKeys(
 		delete(f.pairs, k)
 
 		if returnPrev {
-			deleted = append(deleted, new(*kv))
+			kvCopy := *kv
+			deleted = append(deleted, &kvCopy)
 		} else {
 			deleted = append(deleted, &domain.KVPair{Namespace: kv.Namespace, Path: kv.Path})
 		}
@@ -212,12 +203,48 @@ func (f *fakeKVRepo) DeleteRangeKeys(
 	return deleted, f.rev, nil
 }
 
-func (f *fakeKVRepo) key(ns, path string) string { return ns + "\x00" + path }
+func (f *fakeKVUsecase) Txn(
+	_ context.Context,
+	in configuc.KVTxnInput,
+) (configuc.KVTxnResult, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	f.txnCalls = append(f.txnCalls, in)
+
+	if f.txnErr != nil {
+		return configuc.KVTxnResult{}, f.txnErr
+	}
+
+	return f.txnResult, nil
+}
+
+// lastTxnInput returns the single KVTxnInput the handler converted, failing the
+// test if the usecase was not called exactly once.
+func (f *fakeKVUsecase) lastTxnInput(t *testing.T) configuc.KVTxnInput {
+	t.Helper()
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	require.Len(t, f.txnCalls, 1, "usecase.Txn called exactly once")
+
+	return f.txnCalls[0]
+}
+
+func (f *fakeKVUsecase) txnCallCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	return len(f.txnCalls)
+}
+
+func (f *fakeKVUsecase) key(ns, path string) string { return ns + "\x00" + path }
 
 // matchKeys returns the sorted list of map keys that fall within the given
 // etcd-style [start, end) range. Centralises the range-match logic so
 // RangeQuery and DeleteRangeKeys don't each re-implement it.
-func (f *fakeKVRepo) matchKeys(startNS, startPath, endNS, endPath string) []string {
+func (f *fakeKVUsecase) matchKeys(startNS, startPath, endNS, endPath string) []string {
 	single := endNS == "" && endPath == ""
 	scanAll := endNS == "\x00"
 	startKey := f.key(startNS, startPath)
@@ -259,78 +286,36 @@ func sortByKey(kvs []*domain.KVPair) {
 	}
 }
 
-// fakePublisher records notifications for assertions.
-type fakePublisher struct {
-	mu      sync.Mutex
-	created []*domain.Config
-	updated []*domain.Config
-	deleted []deletedNotify
-}
-
-type deletedNotify struct {
-	path, namespace string
-	revision        int64
-}
-
-func (f *fakePublisher) NotifyCreated(_ context.Context, cfg *domain.Config) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.created = append(f.created, cfg)
-}
-
-func (f *fakePublisher) NotifyUpdated(_ context.Context, cfg *domain.Config) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.updated = append(f.updated, cfg)
-}
-
-func (f *fakePublisher) NotifyDeleted(_ context.Context, path, ns string, rev int64) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.deleted = append(f.deleted, deletedNotify{path, ns, rev})
-}
-
 // -----------------------------------------------------------------------------
-// Tests
+// Put / Range / DeleteRange / Compact
 // -----------------------------------------------------------------------------
 
 func TestKVServer_Put_CreatesNewKey(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	pub := &fakePublisher{}
-	s := etcdv3.NewKVServer(repo, pub)
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
 
-	resp, err := s.Put(context.Background(), &etcdserverpb.PutRequest{
+	resp, err := s.Put(t.Context(), &etcdserverpb.PutRequest{
 		Key:   []byte("/default/foo.json"),
 		Value: []byte("hello"),
 	})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), resp.GetHeader().GetRevision())
 	assert.Nil(t, resp.GetPrevKv())
-
-	assert.Len(t, pub.created, 1, "publisher.NotifyCreated called")
-	assert.Empty(t, pub.updated, "publisher.NotifyUpdated NOT called on create")
-	assert.Equal(t, "default", pub.created[0].Namespace)
-	assert.Equal(t, "/foo.json", pub.created[0].Path)
-	assert.Equal(t, int64(1), pub.created[0].Version)
-	assert.Equal(t, int64(1), pub.created[0].CreateRevision)
-	assert.Equal(t, int64(1), pub.created[0].Revision)
 }
 
 func TestKVServer_Put_UpdatesExistingKey_WithPrevKv(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	pub := &fakePublisher{}
-	s := etcdv3.NewKVServer(repo, pub)
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
+	ctx := t.Context()
 
-	_, err := s.Put(context.Background(), &etcdserverpb.PutRequest{
+	_, err := s.Put(ctx, &etcdserverpb.PutRequest{
 		Key: []byte("/default/foo"), Value: []byte("v1"),
 	})
 	require.NoError(t, err)
 
-	resp, err := s.Put(context.Background(), &etcdserverpb.PutRequest{
+	resp, err := s.Put(ctx, &etcdserverpb.PutRequest{
 		Key: []byte("/default/foo"), Value: []byte("v2"), PrevKv: true,
 	})
 	require.NoError(t, err)
@@ -338,19 +323,14 @@ func TestKVServer_Put_UpdatesExistingKey_WithPrevKv(t *testing.T) {
 	require.NotNil(t, resp.GetPrevKv())
 	assert.Equal(t, []byte("v1"), resp.GetPrevKv().GetValue())
 	assert.Equal(t, int64(1), resp.GetPrevKv().GetVersion())
-
-	assert.Len(t, pub.created, 1)
-	assert.Len(t, pub.updated, 1, "second Put notifies Updated, not Created")
-	assert.Equal(t, int64(2), pub.updated[0].Version)
-	assert.Equal(t, int64(1), pub.updated[0].CreateRevision, "CreateRevision preserved on update")
 }
 
 func TestKVServer_Put_InvalidKey(t *testing.T) {
 	t.Parallel()
 
-	s := etcdv3.NewKVServer(newFakeKVRepo(), nil)
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
 
-	_, err := s.Put(context.Background(), &etcdserverpb.PutRequest{Key: []byte("bad")})
+	_, err := s.Put(t.Context(), &etcdserverpb.PutRequest{Key: []byte("bad")})
 	require.Error(t, err)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 }
@@ -358,23 +338,23 @@ func TestKVServer_Put_InvalidKey(t *testing.T) {
 func TestKVServer_Put_IgnoreValueUnsupported(t *testing.T) {
 	t.Parallel()
 
-	s := etcdv3.NewKVServer(newFakeKVRepo(), nil)
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
 
-	_, err := s.Put(context.Background(), &etcdserverpb.PutRequest{
+	_, err := s.Put(t.Context(), &etcdserverpb.PutRequest{
 		Key: []byte("/ns/x"), IgnoreValue: true,
 	})
 	require.Error(t, err)
 	assert.Equal(t, codes.Unimplemented, status.Code(err))
 }
 
-func TestKVServer_Put_RepoError(t *testing.T) {
+func TestKVServer_Put_UsecaseError(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	repo.putErr = errors.New("boom")
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
+	uc := newFakeKVUsecase()
+	uc.putErr = errors.New("boom")
+	s := etcdv3.NewKVServer(uc)
 
-	_, err := s.Put(context.Background(), &etcdserverpb.PutRequest{
+	_, err := s.Put(t.Context(), &etcdserverpb.PutRequest{
 		Key: []byte("/ns/x"), Value: []byte("v"),
 	})
 	require.Error(t, err)
@@ -384,15 +364,15 @@ func TestKVServer_Put_RepoError(t *testing.T) {
 func TestKVServer_Range_SingleKey(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
+	ctx := t.Context()
 
-	_, err := s.Put(context.Background(), &etcdserverpb.PutRequest{
+	_, err := s.Put(ctx, &etcdserverpb.PutRequest{
 		Key: []byte("/default/foo"), Value: []byte("v1"),
 	})
 	require.NoError(t, err)
 
-	resp, err := s.Range(context.Background(), &etcdserverpb.RangeRequest{
+	resp, err := s.Range(ctx, &etcdserverpb.RangeRequest{
 		Key: []byte("/default/foo"),
 	})
 	require.NoError(t, err)
@@ -405,10 +385,9 @@ func TestKVServer_Range_SingleKey(t *testing.T) {
 func TestKVServer_Range_Prefix(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
+	ctx := t.Context()
 
-	ctx := context.Background()
 	for _, k := range []string{"/default/a", "/default/b", "/default/c", "/prod/x"} {
 		_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte(k), Value: []byte("v")})
 		require.NoError(t, err)
@@ -427,10 +406,9 @@ func TestKVServer_Range_Prefix(t *testing.T) {
 func TestKVServer_Range_Limit_ReportsMore(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
+	ctx := t.Context()
 
-	ctx := context.Background()
 	for _, k := range []string{"/ns/a", "/ns/b", "/ns/c"} {
 		_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte(k), Value: []byte("v")})
 		require.NoError(t, err)
@@ -449,9 +427,8 @@ func TestKVServer_Range_Limit_ReportsMore(t *testing.T) {
 func TestKVServer_Range_CountOnly(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-	ctx := context.Background()
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
+	ctx := t.Context()
 
 	for _, k := range []string{"/ns/a", "/ns/b"} {
 		_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte(k), Value: []byte("v")})
@@ -469,9 +446,8 @@ func TestKVServer_Range_CountOnly(t *testing.T) {
 func TestKVServer_Range_KeysOnly(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-	ctx := context.Background()
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
+	ctx := t.Context()
 
 	_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte("/ns/a"), Value: []byte("v1")})
 	require.NoError(t, err)
@@ -487,9 +463,8 @@ func TestKVServer_Range_KeysOnly(t *testing.T) {
 func TestKVServer_Range_Sort_Descend(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-	ctx := context.Background()
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
+	ctx := t.Context()
 
 	for _, k := range []string{"/ns/a", "/ns/b", "/ns/c"} {
 		_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte(k), Value: []byte("v")})
@@ -509,21 +484,21 @@ func TestKVServer_Range_Sort_Descend(t *testing.T) {
 func TestKVServer_Range_InvalidKey(t *testing.T) {
 	t.Parallel()
 
-	s := etcdv3.NewKVServer(newFakeKVRepo(), &fakePublisher{})
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
 
-	_, err := s.Range(context.Background(), &etcdserverpb.RangeRequest{Key: []byte("bad")})
+	_, err := s.Range(t.Context(), &etcdserverpb.RangeRequest{Key: []byte("bad")})
 	require.Error(t, err)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 }
 
-func TestKVServer_Range_RepoError(t *testing.T) {
+func TestKVServer_Range_UsecaseError(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	repo.rangeErr = errors.New("boom")
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
+	uc := newFakeKVUsecase()
+	uc.rangeErr = errors.New("boom")
+	s := etcdv3.NewKVServer(uc)
 
-	_, err := s.Range(context.Background(), &etcdserverpb.RangeRequest{Key: []byte("/ns/x")})
+	_, err := s.Range(t.Context(), &etcdserverpb.RangeRequest{Key: []byte("/ns/x")})
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
 	assert.Contains(t, status.Convert(err).Message(), "boom")
@@ -532,10 +507,8 @@ func TestKVServer_Range_RepoError(t *testing.T) {
 func TestKVServer_DeleteRange_SingleKey(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	pub := &fakePublisher{}
-	s := etcdv3.NewKVServer(repo, pub)
-	ctx := context.Background()
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
+	ctx := t.Context()
 
 	_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte("/ns/x"), Value: []byte("v")})
 	require.NoError(t, err)
@@ -547,37 +520,29 @@ func TestKVServer_DeleteRange_SingleKey(t *testing.T) {
 	assert.Equal(t, int64(1), resp.GetDeleted())
 	require.Len(t, resp.GetPrevKvs(), 1)
 	assert.Equal(t, []byte("v"), resp.GetPrevKvs()[0].GetValue())
-
-	assert.Len(t, pub.deleted, 1)
-	assert.Equal(t, "/x", pub.deleted[0].path)
-	assert.Equal(t, "ns", pub.deleted[0].namespace)
-	assert.Equal(t, int64(2), pub.deleted[0].revision, "delete must carry the new revision")
+	assert.Equal(t, int64(2), resp.GetHeader().GetRevision())
 }
 
 func TestKVServer_DeleteRange_Nothing_ReturnsCurrentRev(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	repo.rev = 7
-	pub := &fakePublisher{}
-	s := etcdv3.NewKVServer(repo, pub)
+	uc := newFakeKVUsecase()
+	uc.rev = 7
+	s := etcdv3.NewKVServer(uc)
 
-	resp, err := s.DeleteRange(context.Background(), &etcdserverpb.DeleteRangeRequest{
+	resp, err := s.DeleteRange(t.Context(), &etcdserverpb.DeleteRangeRequest{
 		Key: []byte("/ns/missing"),
 	})
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), resp.GetDeleted())
 	assert.Equal(t, int64(7), resp.GetHeader().GetRevision())
-	assert.Empty(t, pub.deleted, "no publisher notifications when nothing deleted")
 }
 
 func TestKVServer_DeleteRange_Prefix(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	pub := &fakePublisher{}
-	s := etcdv3.NewKVServer(repo, pub)
-	ctx := context.Background()
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
+	ctx := t.Context()
 
 	for _, k := range []string{"/ns/a", "/ns/b", "/other/c"} {
 		_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte(k), Value: []byte("v")})
@@ -589,343 +554,17 @@ func TestKVServer_DeleteRange_Prefix(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), resp.GetDeleted())
-	assert.Len(t, pub.deleted, 2)
 }
 
 func TestKVServer_DeleteRange_InvalidKey(t *testing.T) {
 	t.Parallel()
 
-	s := etcdv3.NewKVServer(newFakeKVRepo(), &fakePublisher{})
+	s := etcdv3.NewKVServer(newFakeKVUsecase())
 
 	_, err := s.DeleteRange(
-		context.Background(),
+		t.Context(),
 		&etcdserverpb.DeleteRangeRequest{Key: []byte("bad")},
 	)
-	require.Error(t, err)
-	assert.Equal(t, codes.InvalidArgument, status.Code(err))
-}
-
-func TestKVServer_Compact_IsNoOp(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeKVRepo()
-	repo.rev = 42
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-
-	resp, err := s.Compact(context.Background(), &etcdserverpb.CompactionRequest{Revision: 10})
-	require.NoError(t, err)
-	assert.Equal(t, int64(42), resp.GetHeader().GetRevision())
-}
-
-// -----------------------------------------------------------------------------
-// Txn
-// -----------------------------------------------------------------------------
-
-func TestKVServer_Txn_SuccessBranch(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-	ctx := context.Background()
-
-	_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte("/ns/k"), Value: []byte("hello")})
-	require.NoError(t, err)
-
-	// If value == "hello" then put /ns/k2
-	resp, err := s.Txn(ctx, &etcdserverpb.TxnRequest{
-		Compare: []*etcdserverpb.Compare{{
-			Key:         []byte("/ns/k"),
-			Target:      etcdserverpb.Compare_VALUE,
-			Result:      etcdserverpb.Compare_EQUAL,
-			TargetUnion: &etcdserverpb.Compare_Value{Value: []byte("hello")},
-		}},
-		Success: []*etcdserverpb.RequestOp{{
-			Request: &etcdserverpb.RequestOp_RequestPut{RequestPut: &etcdserverpb.PutRequest{
-				Key: []byte("/ns/k2"), Value: []byte("ok"),
-			}},
-		}},
-		Failure: []*etcdserverpb.RequestOp{{
-			Request: &etcdserverpb.RequestOp_RequestRange{RequestRange: &etcdserverpb.RangeRequest{
-				Key: []byte("/ns/k"),
-			}},
-		}},
-	})
-	require.NoError(t, err)
-	assert.True(t, resp.GetSucceeded())
-	require.Len(t, resp.GetResponses(), 1)
-	_, isPut := resp.GetResponses()[0].GetResponse().(*etcdserverpb.ResponseOp_ResponsePut)
-	assert.True(t, isPut)
-
-	rg, err := s.Range(ctx, &etcdserverpb.RangeRequest{Key: []byte("/ns/k2")})
-	require.NoError(t, err)
-	assert.Equal(t, int64(1), rg.GetCount())
-}
-
-func TestKVServer_Txn_FailureBranch(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-	ctx := context.Background()
-
-	_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte("/ns/k"), Value: []byte("hello")})
-	require.NoError(t, err)
-
-	// Compare mismatches → failure branch executes (just a Range here).
-	resp, err := s.Txn(ctx, &etcdserverpb.TxnRequest{
-		Compare: []*etcdserverpb.Compare{{
-			Key: []byte(
-				"/ns/k",
-			), Target: etcdserverpb.Compare_VALUE, Result: etcdserverpb.Compare_EQUAL,
-			TargetUnion: &etcdserverpb.Compare_Value{Value: []byte("different")},
-		}},
-		Success: []*etcdserverpb.RequestOp{{
-			Request: &etcdserverpb.RequestOp_RequestPut{RequestPut: &etcdserverpb.PutRequest{
-				Key: []byte("/ns/k3"), Value: []byte("should-not-exist"),
-			}},
-		}},
-		Failure: []*etcdserverpb.RequestOp{{
-			Request: &etcdserverpb.RequestOp_RequestRange{RequestRange: &etcdserverpb.RangeRequest{
-				Key: []byte("/ns/k"),
-			}},
-		}},
-	})
-	require.NoError(t, err)
-	assert.False(t, resp.GetSucceeded())
-
-	// Ensure the Success branch didn't leak a side effect.
-	rg, err := s.Range(ctx, &etcdserverpb.RangeRequest{Key: []byte("/ns/k3")})
-	require.NoError(t, err)
-	assert.Equal(t, int64(0), rg.GetCount())
-}
-
-func TestKVServer_Txn_ConjunctionShortCircuit(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-	ctx := context.Background()
-
-	_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte("/ns/k"), Value: []byte("v")})
-	require.NoError(t, err)
-
-	// Two compares: first true, second false → overall false.
-	resp, err := s.Txn(ctx, &etcdserverpb.TxnRequest{
-		Compare: []*etcdserverpb.Compare{
-			{
-				Key: []byte(
-					"/ns/k",
-				), Target: etcdserverpb.Compare_VALUE, Result: etcdserverpb.Compare_EQUAL,
-				TargetUnion: &etcdserverpb.Compare_Value{Value: []byte("v")},
-			},
-			{
-				Key: []byte(
-					"/ns/k",
-				), Target: etcdserverpb.Compare_VERSION, Result: etcdserverpb.Compare_EQUAL,
-				TargetUnion: &etcdserverpb.Compare_Version{Version: 999},
-			},
-		},
-	})
-	require.NoError(t, err)
-	assert.False(t, resp.GetSucceeded())
-}
-
-func TestKVServer_Txn_MissingKey_AgainstCreateRev0(t *testing.T) {
-	t.Parallel()
-
-	// Canonical etcd idiom: assert "key does not exist" via Compare(CreateRevision, =, 0)
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-
-	resp, err := s.Txn(context.Background(), &etcdserverpb.TxnRequest{
-		Compare: []*etcdserverpb.Compare{{
-			Key: []byte(
-				"/ns/new",
-			), Target: etcdserverpb.Compare_CREATE, Result: etcdserverpb.Compare_EQUAL,
-			TargetUnion: &etcdserverpb.Compare_CreateRevision{CreateRevision: 0},
-		}},
-		Success: []*etcdserverpb.RequestOp{{
-			Request: &etcdserverpb.RequestOp_RequestPut{RequestPut: &etcdserverpb.PutRequest{
-				Key: []byte("/ns/new"), Value: []byte("v"),
-			}},
-		}},
-	})
-	require.NoError(t, err)
-	assert.True(t, resp.GetSucceeded())
-}
-
-func TestKVServer_Txn_EmptyOps_ReturnsCurrentRev(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeKVRepo()
-	repo.rev = 5
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-
-	resp, err := s.Txn(context.Background(), &etcdserverpb.TxnRequest{})
-	require.NoError(t, err)
-	assert.True(t, resp.GetSucceeded(), "no compares → vacuously true")
-	assert.Equal(t, int64(5), resp.GetHeader().GetRevision())
-	assert.Empty(t, resp.GetResponses())
-}
-
-func TestKVServer_Txn_NestedTxn(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-
-	inner := &etcdserverpb.TxnRequest{
-		Success: []*etcdserverpb.RequestOp{{
-			Request: &etcdserverpb.RequestOp_RequestPut{RequestPut: &etcdserverpb.PutRequest{
-				Key: []byte("/ns/nested"), Value: []byte("v"),
-			}},
-		}},
-	}
-
-	resp, err := s.Txn(context.Background(), &etcdserverpb.TxnRequest{
-		Success: []*etcdserverpb.RequestOp{{
-			Request: &etcdserverpb.RequestOp_RequestTxn{RequestTxn: inner},
-		}},
-	})
-	require.NoError(t, err)
-	assert.True(t, resp.GetSucceeded())
-	require.Len(t, resp.GetResponses(), 1)
-	_, ok := resp.GetResponses()[0].GetResponse().(*etcdserverpb.ResponseOp_ResponseTxn)
-	assert.True(t, ok)
-}
-
-func TestKVServer_Txn_CompareInvalidKey(t *testing.T) {
-	t.Parallel()
-
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-
-	_, err := s.Txn(context.Background(), &etcdserverpb.TxnRequest{
-		Compare: []*etcdserverpb.Compare{{Key: []byte("bad")}},
-	})
-	require.Error(t, err)
-	assert.Equal(t, codes.InvalidArgument, status.Code(err))
-}
-
-func TestKVServer_Txn_CompareWithRange_AllMatch(t *testing.T) {
-	t.Parallel()
-
-	// Compare against a range — all keys in range must satisfy the predicate.
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-	ctx := context.Background()
-
-	for _, k := range []string{"/ns/a", "/ns/b"} {
-		_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte(k), Value: []byte("same")})
-		require.NoError(t, err)
-	}
-
-	resp, err := s.Txn(ctx, &etcdserverpb.TxnRequest{
-		Compare: []*etcdserverpb.Compare{{
-			Key: []byte("/ns/"), RangeEnd: []byte("/ns0"),
-			Target: etcdserverpb.Compare_VALUE, Result: etcdserverpb.Compare_EQUAL,
-			TargetUnion: &etcdserverpb.Compare_Value{Value: []byte("same")},
-		}},
-	})
-	require.NoError(t, err)
-	assert.True(t, resp.GetSucceeded())
-
-	// Now add a mismatching value and re-run.
-	_, err = s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte("/ns/c"), Value: []byte("different")})
-	require.NoError(t, err)
-
-	resp2, err := s.Txn(ctx, &etcdserverpb.TxnRequest{
-		Compare: []*etcdserverpb.Compare{{
-			Key: []byte("/ns/"), RangeEnd: []byte("/ns0"),
-			Target: etcdserverpb.Compare_VALUE, Result: etcdserverpb.Compare_EQUAL,
-			TargetUnion: &etcdserverpb.Compare_Value{Value: []byte("same")},
-		}},
-	})
-	require.NoError(t, err)
-	assert.False(t, resp2.GetSucceeded(), "one mismatching value in range must fail the compare")
-}
-
-func TestKVServer_Txn_RunOp_Range(t *testing.T) {
-	t.Parallel()
-
-	resp := txnWithSingleOp(t, "/ns/a", &etcdserverpb.RequestOp{
-		Request: &etcdserverpb.RequestOp_RequestRange{
-			RequestRange: &etcdserverpb.RangeRequest{Key: []byte("/ns/a")},
-		},
-	})
-
-	rr, ok := resp.GetResponses()[0].GetResponse().(*etcdserverpb.ResponseOp_ResponseRange)
-	require.True(t, ok)
-	assert.Equal(t, int64(1), rr.ResponseRange.GetCount())
-}
-
-func TestKVServer_Txn_RunOp_DeleteRange(t *testing.T) {
-	t.Parallel()
-
-	resp := txnWithSingleOp(t, "/ns/x", &etcdserverpb.RequestOp{
-		Request: &etcdserverpb.RequestOp_RequestDeleteRange{
-			RequestDeleteRange: &etcdserverpb.DeleteRangeRequest{Key: []byte("/ns/x")},
-		},
-	})
-
-	dr, ok := resp.GetResponses()[0].GetResponse().(*etcdserverpb.ResponseOp_ResponseDeleteRange)
-	require.True(t, ok)
-	assert.Equal(t, int64(1), dr.ResponseDeleteRange.GetDeleted())
-}
-
-// txnWithSingleOp seeds a key, runs a Txn with a single success op, and
-// returns the response. Shared setup for RunOp_Range and RunOp_DeleteRange.
-func txnWithSingleOp(
-	t *testing.T,
-	key string,
-	op *etcdserverpb.RequestOp,
-) *etcdserverpb.TxnResponse {
-	t.Helper()
-
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-	ctx := context.Background()
-
-	_, err := s.Put(ctx, &etcdserverpb.PutRequest{Key: []byte(key), Value: []byte("v")})
-	require.NoError(t, err)
-
-	resp, err := s.Txn(ctx, &etcdserverpb.TxnRequest{
-		Success: []*etcdserverpb.RequestOp{op},
-	})
-	require.NoError(t, err)
-	require.Len(t, resp.GetResponses(), 1)
-
-	return resp
-}
-
-func TestKVServer_Txn_RunOp_PropagatesError(t *testing.T) {
-	t.Parallel()
-
-	// If any op in the chosen branch fails, Txn must return an error.
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
-
-	// Put with invalid key must cause runOp → Put → error.
-	_, err := s.Txn(context.Background(), &etcdserverpb.TxnRequest{
-		Success: []*etcdserverpb.RequestOp{{
-			Request: &etcdserverpb.RequestOp_RequestPut{RequestPut: &etcdserverpb.PutRequest{
-				Key: []byte("bad"),
-			}},
-		}},
-	})
-	require.Error(t, err)
-	assert.Equal(t, codes.InvalidArgument, status.Code(err))
-}
-
-func TestKVServer_Txn_RunOp_UnknownRequestType(t *testing.T) {
-	t.Parallel()
-
-	// An empty request op (nil union) must be rejected.
-	s := etcdv3.NewKVServer(newFakeKVRepo(), &fakePublisher{})
-
-	_, err := s.Txn(context.Background(), &etcdserverpb.TxnRequest{
-		Success: []*etcdserverpb.RequestOp{{Request: nil}},
-	})
 	require.Error(t, err)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 }
@@ -934,12 +573,27 @@ func TestKVServer_DeleteRange_CurrentRevError(t *testing.T) {
 	t.Parallel()
 
 	// When no keys match AND CurrentRevisionValue errors, DeleteRange returns Internal.
-	repo := newFakeKVRepo()
-	repo.currentErr = errors.New("boom")
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
+	uc := newFakeKVUsecase()
+	uc.currentErr = errors.New("boom")
+	s := etcdv3.NewKVServer(uc)
 
 	_, err := s.DeleteRange(
-		context.Background(),
+		t.Context(),
+		&etcdserverpb.DeleteRangeRequest{Key: []byte("/ns/x")},
+	)
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+func TestKVServer_DeleteRange_UsecaseError(t *testing.T) {
+	t.Parallel()
+
+	uc := newFakeKVUsecase()
+	uc.deleteErr = errors.New("boom")
+	s := etcdv3.NewKVServer(uc)
+
+	_, err := s.DeleteRange(
+		t.Context(),
 		&etcdserverpb.DeleteRangeRequest{Key: []byte("/ns/x")},
 	)
 	require.Error(t, err)
@@ -949,86 +603,939 @@ func TestKVServer_DeleteRange_CurrentRevError(t *testing.T) {
 func TestKVServer_Range_CurrentRevError(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	repo.currentErr = errors.New("boom")
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
+	uc := newFakeKVUsecase()
+	uc.currentErr = errors.New("boom")
+	s := etcdv3.NewKVServer(uc)
 
-	_, err := s.Range(context.Background(), &etcdserverpb.RangeRequest{Key: []byte("/ns/x")})
+	_, err := s.Range(t.Context(), &etcdserverpb.RangeRequest{Key: []byte("/ns/x")})
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+func TestKVServer_Compact_IsNoOp(t *testing.T) {
+	t.Parallel()
+
+	uc := newFakeKVUsecase()
+	uc.rev = 42
+	s := etcdv3.NewKVServer(uc)
+
+	resp, err := s.Compact(t.Context(), &etcdserverpb.CompactionRequest{Revision: 10})
+	require.NoError(t, err)
+	assert.Equal(t, int64(42), resp.GetHeader().GetRevision())
 }
 
 func TestKVServer_Compact_CurrentRevError(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	repo.currentErr = errors.New("boom")
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
+	uc := newFakeKVUsecase()
+	uc.currentErr = errors.New("boom")
+	s := etcdv3.NewKVServer(uc)
 
-	_, err := s.Compact(context.Background(), &etcdserverpb.CompactionRequest{})
+	_, err := s.Compact(t.Context(), &etcdserverpb.CompactionRequest{})
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
 }
 
-func TestKVServer_DeleteRange_RepoError(t *testing.T) {
+// -----------------------------------------------------------------------------
+// Txn — proto→DTO conversion
+// -----------------------------------------------------------------------------
+
+func TestKVServer_Txn_ConvertsRequest(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	repo.deleteErr = errors.New("boom")
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
+	tests := []struct {
+		name string
+		req  *etcdserverpb.TxnRequest
+		want configuc.KVTxnInput
+	}{
+		{
+			name: "create-if-absent compare",
+			req: &etcdserverpb.TxnRequest{
+				Compare: []*etcdserverpb.Compare{{
+					Key:         []byte("/ns/k"),
+					Target:      etcdserverpb.Compare_CREATE,
+					Result:      etcdserverpb.Compare_EQUAL,
+					TargetUnion: &etcdserverpb.Compare_CreateRevision{CreateRevision: 0},
+				}},
+			},
+			want: configuc.KVTxnInput{
+				Compare: []configuc.KVCompare{{
+					StartNS:      "ns",
+					StartPath:    "/k",
+					Target:       configuc.KVCompareCreateRevision,
+					Result:       configuc.KVCompareEqual,
+					WantRevision: 0,
+				}},
+				Success: []configuc.KVOp{},
+				Failure: []configuc.KVOp{},
+			},
+		},
+		{
+			name: "mod-revision compare carries the revision, not the value",
+			req: &etcdserverpb.TxnRequest{
+				Compare: []*etcdserverpb.Compare{{
+					Key:         []byte("/ns/k"),
+					Target:      etcdserverpb.Compare_MOD,
+					Result:      etcdserverpb.Compare_GREATER,
+					TargetUnion: &etcdserverpb.Compare_ModRevision{ModRevision: 12},
+				}},
+			},
+			want: configuc.KVTxnInput{
+				Compare: []configuc.KVCompare{{
+					StartNS:      "ns",
+					StartPath:    "/k",
+					Target:       configuc.KVCompareModRevision,
+					Result:       configuc.KVCompareGreater,
+					WantRevision: 12,
+				}},
+				Success: []configuc.KVOp{},
+				Failure: []configuc.KVOp{},
+			},
+		},
+		{
+			name: "version compare over a range",
+			req: &etcdserverpb.TxnRequest{
+				Compare: []*etcdserverpb.Compare{{
+					Key:         []byte("/ns/"),
+					RangeEnd:    []byte("/ns0"),
+					Target:      etcdserverpb.Compare_VERSION,
+					Result:      etcdserverpb.Compare_LESS,
+					TargetUnion: &etcdserverpb.Compare_Version{Version: 3},
+				}},
+			},
+			want: configuc.KVTxnInput{
+				Compare: []configuc.KVCompare{{
+					StartNS:      "ns",
+					StartPath:    "/",
+					EndNS:        "ns0",
+					EndPath:      "/",
+					Target:       configuc.KVCompareVersion,
+					Result:       configuc.KVCompareLess,
+					WantRevision: 3,
+				}},
+				Success: []configuc.KVOp{},
+				Failure: []configuc.KVOp{},
+			},
+		},
+		{
+			name: "value compare carries the value, not a revision",
+			req: &etcdserverpb.TxnRequest{
+				Compare: []*etcdserverpb.Compare{{
+					Key:         []byte("/ns/k"),
+					Target:      etcdserverpb.Compare_VALUE,
+					Result:      etcdserverpb.Compare_NOT_EQUAL,
+					TargetUnion: &etcdserverpb.Compare_Value{Value: []byte("held")},
+				}},
+			},
+			want: configuc.KVTxnInput{
+				Compare: []configuc.KVCompare{{
+					StartNS:   "ns",
+					StartPath: "/k",
+					Target:    configuc.KVCompareValue,
+					Result:    configuc.KVCompareNotEqual,
+					WantValue: []byte("held"),
+				}},
+				Success: []configuc.KVOp{},
+				Failure: []configuc.KVOp{},
+			},
+		},
+		{
+			// LEASE is a target this server does not implement. It must not be
+			// rejected: the usecase treats target 0 as a condition that does not
+			// hold, so an odd compare selects the failure branch — the behaviour
+			// this path had before the orchestration moved.
+			name: "unsupported compare target maps to zero, not an error",
+			req: &etcdserverpb.TxnRequest{
+				Compare: []*etcdserverpb.Compare{{
+					Key:    []byte("/ns/k"),
+					Target: etcdserverpb.Compare_LEASE,
+					Result: etcdserverpb.Compare_EQUAL,
+				}},
+			},
+			want: configuc.KVTxnInput{
+				Compare: []configuc.KVCompare{{
+					StartNS:   "ns",
+					StartPath: "/k",
+					Target:    0,
+					Result:    configuc.KVCompareEqual,
+				}},
+				Success: []configuc.KVOp{},
+				Failure: []configuc.KVOp{},
+			},
+		},
+		{
+			name: "unrecognised compare target and result both map to zero",
+			req: &etcdserverpb.TxnRequest{
+				Compare: []*etcdserverpb.Compare{{
+					Key:    []byte("/ns/k"),
+					Target: etcdserverpb.Compare_CompareTarget(99),
+					Result: etcdserverpb.Compare_CompareResult(99),
+				}},
+			},
+			want: configuc.KVTxnInput{
+				Compare: []configuc.KVCompare{{
+					StartNS:   "ns",
+					StartPath: "/k",
+					Target:    0,
+					Result:    0,
+				}},
+				Success: []configuc.KVOp{},
+				Failure: []configuc.KVOp{},
+			},
+		},
+		{
+			name: "put op splits the key into namespace and path",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestPut{
+						RequestPut: &etcdserverpb.PutRequest{
+							Key:   []byte("/prod/svc/api.yaml"),
+							Value: []byte("ok"),
+						},
+					},
+				}},
+			},
+			want: configuc.KVTxnInput{
+				Compare: []configuc.KVCompare{},
+				Success: []configuc.KVOp{{
+					Kind: configuc.KVOpPut,
+					Put: &configuc.KVPutOp{
+						Namespace: "prod",
+						Path:      "/svc/api.yaml",
+						Value:     []byte("ok"),
+					},
+				}},
+				Failure: []configuc.KVOp{},
+			},
+		},
+		{
+			name: "range op carries the range options",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestRange{
+						RequestRange: &etcdserverpb.RangeRequest{
+							Key:      []byte("/ns/a"),
+							Limit:    5,
+							Revision: 9,
+							KeysOnly: true,
+						},
+					},
+				}},
+			},
+			want: configuc.KVTxnInput{
+				Compare: []configuc.KVCompare{},
+				Success: []configuc.KVOp{{
+					Kind: configuc.KVOpRange,
+					Range: &configuc.KVRangeOp{
+						StartNS:   "ns",
+						StartPath: "/a",
+						Opts: configuc.KVRangeOpts{
+							Limit:    5,
+							Revision: 9,
+							KeysOnly: true,
+						},
+					},
+				}},
+				Failure: []configuc.KVOp{},
+			},
+		},
+		{
+			name: "delete-range op in the failure branch carries prev_kv",
+			req: &etcdserverpb.TxnRequest{
+				Failure: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestDeleteRange{
+						RequestDeleteRange: &etcdserverpb.DeleteRangeRequest{
+							Key:      []byte("/ns/"),
+							RangeEnd: []byte{0},
+							PrevKv:   true,
+						},
+					},
+				}},
+			},
+			want: configuc.KVTxnInput{
+				Compare: []configuc.KVCompare{},
+				Success: []configuc.KVOp{},
+				Failure: []configuc.KVOp{{
+					Kind: configuc.KVOpDeleteRange,
+					DeleteRange: &configuc.KVDeleteRangeOp{
+						StartNS:    "ns",
+						StartPath:  "/",
+						EndNS:      "\x00",
+						ReturnPrev: true,
+					},
+				}},
+			},
+		},
+		{
+			name: "nested txn converts recursively",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestTxn{
+						RequestTxn: &etcdserverpb.TxnRequest{
+							Success: []*etcdserverpb.RequestOp{{
+								Request: &etcdserverpb.RequestOp_RequestPut{
+									RequestPut: &etcdserverpb.PutRequest{
+										Key:   []byte("/ns/nested"),
+										Value: []byte("v"),
+									},
+								},
+							}},
+						},
+					},
+				}},
+			},
+			want: configuc.KVTxnInput{
+				Compare: []configuc.KVCompare{},
+				Success: []configuc.KVOp{{
+					Kind: configuc.KVOpTxn,
+					Txn: &configuc.KVTxnInput{
+						Compare: []configuc.KVCompare{},
+						Success: []configuc.KVOp{{
+							Kind: configuc.KVOpPut,
+							Put: &configuc.KVPutOp{
+								Namespace: "ns",
+								Path:      "/nested",
+								Value:     []byte("v"),
+							},
+						}},
+						Failure: []configuc.KVOp{},
+					},
+				}},
+				Failure: []configuc.KVOp{},
+			},
+		},
+	}
 
-	_, err := s.DeleteRange(
-		context.Background(),
-		&etcdserverpb.DeleteRangeRequest{Key: []byte("/ns/x")},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			uc := newFakeKVUsecase()
+			// The branch that runs must have as many results as it has
+			// requests; every case above has at most one op per branch.
+			uc.txnResult = configuc.KVTxnResult{
+				Succeeded: true,
+				Revision:  1,
+				Responses: txnResultsFor(tt.req.GetSuccess()),
+			}
+			s := etcdv3.NewKVServer(uc)
+
+			_, err := s.Txn(t.Context(), tt.req)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.want, uc.lastTxnInput(t))
+		})
+	}
+}
+
+// txnResultsFor builds the minimum set of results the response converter needs
+// for the given requests — one per op, with the matching pointer populated.
+func txnResultsFor(ops []*etcdserverpb.RequestOp) []configuc.KVOpResult {
+	results := make([]configuc.KVOpResult, 0, len(ops))
+
+	for _, op := range ops {
+		switch op.GetRequest().(type) {
+		case *etcdserverpb.RequestOp_RequestRange:
+			results = append(results, configuc.KVOpResult{
+				Kind:  configuc.KVOpRange,
+				Range: &configuc.KVRangeResult{},
+			})
+		case *etcdserverpb.RequestOp_RequestPut:
+			results = append(results, configuc.KVOpResult{
+				Kind: configuc.KVOpPut,
+				Put:  &configuc.KVPutResult{},
+			})
+		case *etcdserverpb.RequestOp_RequestDeleteRange:
+			results = append(results, configuc.KVOpResult{
+				Kind:        configuc.KVOpDeleteRange,
+				DeleteRange: &configuc.KVDeleteRangeResult{},
+			})
+		case *etcdserverpb.RequestOp_RequestTxn:
+			results = append(results, configuc.KVOpResult{
+				Kind: configuc.KVOpTxn,
+				Txn:  &configuc.KVTxnResult{Responses: []configuc.KVOpResult{}},
+			})
+		}
+	}
+
+	return results
+}
+
+func TestKVServer_Txn_RejectsInvalidRequest(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		req      *etcdserverpb.TxnRequest
+		wantCode codes.Code
+	}{
+		{
+			name: "compare key is not /namespace/path",
+			req: &etcdserverpb.TxnRequest{
+				Compare: []*etcdserverpb.Compare{{Key: []byte("bad")}},
+			},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "compare range end is not /namespace/path",
+			req: &etcdserverpb.TxnRequest{
+				Compare: []*etcdserverpb.Compare{{
+					Key: []byte("/ns/a"), RangeEnd: []byte("bad"),
+				}},
+			},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "put key is not /namespace/path",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestPut{
+						RequestPut: &etcdserverpb.PutRequest{Key: []byte("bad")},
+					},
+				}},
+			},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "range key is not /namespace/path",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestRange{
+						RequestRange: &etcdserverpb.RangeRequest{Key: []byte("bad")},
+					},
+				}},
+			},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "delete-range key is not /namespace/path",
+			req: &etcdserverpb.TxnRequest{
+				Failure: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestDeleteRange{
+						RequestDeleteRange: &etcdserverpb.DeleteRangeRequest{Key: []byte("bad")},
+					},
+				}},
+			},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "op with no request set",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{Request: nil}},
+			},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			// Rejected during conversion, exactly as a standalone Put is.
+			name: "ignore_value inside a txn put",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestPut{
+						RequestPut: &etcdserverpb.PutRequest{
+							Key: []byte("/ns/x"), IgnoreValue: true,
+						},
+					},
+				}},
+			},
+			wantCode: codes.Unimplemented,
+		},
+		{
+			name: "invalid op nested inside a nested txn",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestTxn{
+						RequestTxn: &etcdserverpb.TxnRequest{
+							Success: []*etcdserverpb.RequestOp{{
+								Request: &etcdserverpb.RequestOp_RequestPut{
+									RequestPut: &etcdserverpb.PutRequest{Key: []byte("bad")},
+								},
+							}},
+						},
+					},
+				}},
+			},
+			wantCode: codes.InvalidArgument,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			uc := newFakeKVUsecase()
+			s := etcdv3.NewKVServer(uc)
+
+			_, err := s.Txn(t.Context(), tt.req)
+			require.Error(t, err)
+			assert.Equal(t, tt.wantCode, status.Code(err))
+			assert.Equal(t, 0, uc.txnCallCount(), "a rejected request never reaches the usecase")
+		})
+	}
+}
+
+// -----------------------------------------------------------------------------
+// Txn — authorization
+// -----------------------------------------------------------------------------
+
+func TestKVServer_Txn_PermissionDenied(t *testing.T) {
+	t.Parallel()
+
+	writerOnAllowed := &authctx.Claims{Namespaces: []string{"allowed"}, Role: "writer"}
+
+	holdingCompare := []*etcdserverpb.Compare{{
+		Key:         []byte("/allowed/k"),
+		Target:      etcdserverpb.Compare_CREATE,
+		Result:      etcdserverpb.Compare_EQUAL,
+		TargetUnion: &etcdserverpb.Compare_CreateRevision{CreateRevision: 0},
+	}}
+
+	putOp := func(key string) *etcdserverpb.RequestOp {
+		return &etcdserverpb.RequestOp{
+			Request: &etcdserverpb.RequestOp_RequestPut{
+				RequestPut: &etcdserverpb.PutRequest{Key: []byte(key), Value: []byte("v")},
+			},
+		}
+	}
+
+	tests := []struct {
+		name   string
+		claims *authctx.Claims
+		req    *etcdserverpb.TxnRequest
+	}{
+		{
+			// The branch is not known until the compares run inside the
+			// transaction, so both are authorized up front — as etcd does. A
+			// forbidden write in the branch that would NOT have run still
+			// rejects the request.
+			name:   "failure branch writes to a forbidden namespace",
+			claims: writerOnAllowed,
+			req: &etcdserverpb.TxnRequest{
+				Compare: holdingCompare,
+				Success: []*etcdserverpb.RequestOp{putOp("/allowed/k")},
+				Failure: []*etcdserverpb.RequestOp{putOp("/denied/k")},
+			},
+		},
+		{
+			name:   "success branch writes to a forbidden namespace",
+			claims: writerOnAllowed,
+			req: &etcdserverpb.TxnRequest{
+				Compare: holdingCompare,
+				Success: []*etcdserverpb.RequestOp{putOp("/denied/k")},
+			},
+		},
+		{
+			name:   "compare reads a forbidden namespace",
+			claims: writerOnAllowed,
+			req: &etcdserverpb.TxnRequest{
+				Compare: []*etcdserverpb.Compare{{
+					Key:    []byte("/denied/k"),
+					Target: etcdserverpb.Compare_CREATE,
+					Result: etcdserverpb.Compare_EQUAL,
+				}},
+			},
+		},
+		{
+			name:   "range op reads a forbidden namespace",
+			claims: writerOnAllowed,
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestRange{
+						RequestRange: &etcdserverpb.RangeRequest{Key: []byte("/denied/k")},
+					},
+				}},
+			},
+		},
+		{
+			name:   "delete-range op writes to a forbidden namespace",
+			claims: writerOnAllowed,
+			req: &etcdserverpb.TxnRequest{
+				Failure: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestDeleteRange{
+						RequestDeleteRange: &etcdserverpb.DeleteRangeRequest{
+							Key: []byte("/denied/k"),
+						},
+					},
+				}},
+			},
+		},
+		{
+			name:   "nested txn writes to a forbidden namespace",
+			claims: writerOnAllowed,
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestTxn{
+						RequestTxn: &etcdserverpb.TxnRequest{
+							Success: []*etcdserverpb.RequestOp{putOp("/denied/k")},
+						},
+					},
+				}},
+			},
+		},
+		{
+			name:   "reader role cannot write to a namespace it can read",
+			claims: &authctx.Claims{Namespaces: []string{"allowed"}, Role: "reader"},
+			req: &etcdserverpb.TxnRequest{
+				Compare: holdingCompare,
+				Success: []*etcdserverpb.RequestOp{putOp("/allowed/k")},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			uc := newFakeKVUsecase()
+			s := etcdv3.NewKVServer(uc)
+
+			ctx := authctx.WithClaims(t.Context(), tt.claims)
+
+			_, err := s.Txn(ctx, tt.req)
+			require.Error(t, err)
+			assert.Equal(t, codes.PermissionDenied, status.Code(err))
+			assert.Equal(t, 0, uc.txnCallCount(), "a denied request never reaches the usecase")
+		})
+	}
+}
+
+func TestKVServer_Txn_AuthorizedWriteReachesUsecase(t *testing.T) {
+	t.Parallel()
+
+	uc := newFakeKVUsecase()
+	uc.txnResult = configuc.KVTxnResult{
+		Succeeded: true,
+		Revision:  4,
+		Responses: []configuc.KVOpResult{{
+			Kind: configuc.KVOpPut,
+			Put:  &configuc.KVPutResult{Revision: 4},
+		}},
+	}
+	s := etcdv3.NewKVServer(uc)
+
+	ctx := authctx.WithClaims(
+		t.Context(),
+		&authctx.Claims{Namespaces: []string{"allowed"}, Role: "writer"},
 	)
-	require.Error(t, err)
-	assert.Equal(t, codes.Internal, status.Code(err))
+
+	resp, err := s.Txn(ctx, &etcdserverpb.TxnRequest{
+		Compare: []*etcdserverpb.Compare{{
+			Key:         []byte("/allowed/k"),
+			Target:      etcdserverpb.Compare_CREATE,
+			Result:      etcdserverpb.Compare_EQUAL,
+			TargetUnion: &etcdserverpb.Compare_CreateRevision{CreateRevision: 0},
+		}},
+		Success: []*etcdserverpb.RequestOp{{
+			Request: &etcdserverpb.RequestOp_RequestPut{
+				RequestPut: &etcdserverpb.PutRequest{
+					Key: []byte("/allowed/k"), Value: []byte("v"),
+				},
+			},
+		}},
+	})
+	require.NoError(t, err)
+	assert.True(t, resp.GetSucceeded())
+	assert.Equal(t, int64(4), resp.GetHeader().GetRevision())
+	assert.Equal(t, 1, uc.txnCallCount())
 }
 
-func TestKVServer_EvalCompare_PropagatesRangeError(t *testing.T) {
+// -----------------------------------------------------------------------------
+// Txn — DTO→proto conversion
+// -----------------------------------------------------------------------------
+
+func TestKVServer_Txn_ConvertsResult(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	repo.rangeErr = errors.New("db failed")
-	s := etcdv3.NewKVServer(repo, &fakePublisher{})
+	kv := &domain.KVPair{
+		Namespace:      "ns",
+		Path:           "/a",
+		Value:          []byte("v"),
+		CreateRevision: 1,
+		ModRevision:    2,
+		Version:        2,
+	}
 
-	_, err := s.Txn(context.Background(), &etcdserverpb.TxnRequest{
-		Compare: []*etcdserverpb.Compare{{
-			Key: []byte("/ns/x"), Target: etcdserverpb.Compare_VERSION,
-			TargetUnion: &etcdserverpb.Compare_Version{Version: 0},
+	tests := []struct {
+		name   string
+		req    *etcdserverpb.TxnRequest
+		result configuc.KVTxnResult
+		assert func(*testing.T, *etcdserverpb.TxnResponse)
+	}{
+		{
+			// buildRangeResponse is shared with the standalone Range RPC, so
+			// count-only shaping must apply to a nested range identically.
+			name: "count-only range nested in a txn sets Count and drops Kvs",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestRange{
+						RequestRange: &etcdserverpb.RangeRequest{
+							Key: []byte("/ns/a"), CountOnly: true,
+						},
+					},
+				}},
+			},
+			result: configuc.KVTxnResult{
+				Succeeded: true,
+				Revision:  2,
+				Responses: []configuc.KVOpResult{{
+					Kind:  configuc.KVOpRange,
+					Range: &configuc.KVRangeResult{KVs: []*domain.KVPair{kv}, Revision: 2},
+				}},
+			},
+			assert: func(t *testing.T, resp *etcdserverpb.TxnResponse) {
+				t.Helper()
+
+				rr, ok := resp.GetResponses()[0].
+					GetResponse().(*etcdserverpb.ResponseOp_ResponseRange)
+				require.True(t, ok)
+				assert.Equal(t, int64(1), rr.ResponseRange.GetCount())
+				assert.Nil(t, rr.ResponseRange.GetKvs(), "CountOnly must drop the pairs")
+			},
+		},
+		{
+			name: "range nested in a txn is sorted by the request's sort order",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestRange{
+						RequestRange: &etcdserverpb.RangeRequest{
+							Key:        []byte("/ns/"),
+							RangeEnd:   []byte("/ns0"),
+							SortOrder:  etcdserverpb.RangeRequest_DESCEND,
+							SortTarget: etcdserverpb.RangeRequest_KEY,
+						},
+					},
+				}},
+			},
+			result: configuc.KVTxnResult{
+				Succeeded: true,
+				Revision:  3,
+				Responses: []configuc.KVOpResult{{
+					Kind: configuc.KVOpRange,
+					Range: &configuc.KVRangeResult{
+						KVs: []*domain.KVPair{
+							{Namespace: "ns", Path: "/a"},
+							{Namespace: "ns", Path: "/b"},
+						},
+						Revision: 3,
+						More:     true,
+					},
+				}},
+			},
+			assert: func(t *testing.T, resp *etcdserverpb.TxnResponse) {
+				t.Helper()
+
+				rr, ok := resp.GetResponses()[0].
+					GetResponse().(*etcdserverpb.ResponseOp_ResponseRange)
+				require.True(t, ok)
+				require.Len(t, rr.ResponseRange.GetKvs(), 2)
+				assert.Equal(t, []byte("/ns/b"), rr.ResponseRange.GetKvs()[0].GetKey())
+				assert.True(t, rr.ResponseRange.GetMore())
+			},
+		},
+		{
+			name: "put response carries prev_kv only when asked",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{
+					{Request: &etcdserverpb.RequestOp_RequestPut{
+						RequestPut: &etcdserverpb.PutRequest{
+							Key: []byte("/ns/a"), Value: []byte("v"), PrevKv: true,
+						},
+					}},
+					{Request: &etcdserverpb.RequestOp_RequestPut{
+						RequestPut: &etcdserverpb.PutRequest{
+							Key: []byte("/ns/b"), Value: []byte("v"),
+						},
+					}},
+				},
+			},
+			result: configuc.KVTxnResult{
+				Succeeded: true,
+				Revision:  5,
+				Responses: []configuc.KVOpResult{
+					{Kind: configuc.KVOpPut, Put: &configuc.KVPutResult{Prev: kv, Revision: 5}},
+					{Kind: configuc.KVOpPut, Put: &configuc.KVPutResult{Prev: kv, Revision: 5}},
+				},
+			},
+			assert: func(t *testing.T, resp *etcdserverpb.TxnResponse) {
+				t.Helper()
+
+				withPrev, ok := resp.GetResponses()[0].
+					GetResponse().(*etcdserverpb.ResponseOp_ResponsePut)
+				require.True(t, ok)
+				require.NotNil(t, withPrev.ResponsePut.GetPrevKv())
+				assert.Equal(t, []byte("/ns/a"), withPrev.ResponsePut.GetPrevKv().GetKey())
+
+				withoutPrev, ok := resp.GetResponses()[1].
+					GetResponse().(*etcdserverpb.ResponseOp_ResponsePut)
+				require.True(t, ok)
+				assert.Nil(t, withoutPrev.ResponsePut.GetPrevKv())
+			},
+		},
+		{
+			// Succeeded == false means the results belong to the Failure
+			// requests — zipping them against Success would mis-shape them.
+			name: "failure branch results are zipped with the failure requests",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestPut{
+						RequestPut: &etcdserverpb.PutRequest{Key: []byte("/ns/a")},
+					},
+				}},
+				Failure: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestDeleteRange{
+						RequestDeleteRange: &etcdserverpb.DeleteRangeRequest{
+							Key: []byte("/ns/a"), PrevKv: true,
+						},
+					},
+				}},
+			},
+			result: configuc.KVTxnResult{
+				Succeeded: false,
+				Revision:  6,
+				Responses: []configuc.KVOpResult{{
+					Kind: configuc.KVOpDeleteRange,
+					DeleteRange: &configuc.KVDeleteRangeResult{
+						Deleted:  []*domain.KVPair{kv},
+						Revision: 6,
+					},
+				}},
+			},
+			assert: func(t *testing.T, resp *etcdserverpb.TxnResponse) {
+				t.Helper()
+
+				assert.False(t, resp.GetSucceeded())
+
+				dr, ok := resp.GetResponses()[0].
+					GetResponse().(*etcdserverpb.ResponseOp_ResponseDeleteRange)
+				require.True(t, ok)
+				assert.Equal(t, int64(1), dr.ResponseDeleteRange.GetDeleted())
+				require.Len(t, dr.ResponseDeleteRange.GetPrevKvs(), 1)
+			},
+		},
+		{
+			name: "nested txn result converts recursively",
+			req: &etcdserverpb.TxnRequest{
+				Success: []*etcdserverpb.RequestOp{{
+					Request: &etcdserverpb.RequestOp_RequestTxn{
+						RequestTxn: &etcdserverpb.TxnRequest{
+							Success: []*etcdserverpb.RequestOp{{
+								Request: &etcdserverpb.RequestOp_RequestPut{
+									RequestPut: &etcdserverpb.PutRequest{Key: []byte("/ns/a")},
+								},
+							}},
+						},
+					},
+				}},
+			},
+			result: configuc.KVTxnResult{
+				Succeeded: true,
+				Revision:  7,
+				Responses: []configuc.KVOpResult{{
+					Kind: configuc.KVOpTxn,
+					Txn: &configuc.KVTxnResult{
+						Succeeded: true,
+						Revision:  7,
+						Responses: []configuc.KVOpResult{{
+							Kind: configuc.KVOpPut,
+							Put:  &configuc.KVPutResult{Revision: 7},
+						}},
+					},
+				}},
+			},
+			assert: func(t *testing.T, resp *etcdserverpb.TxnResponse) {
+				t.Helper()
+
+				inner, ok := resp.GetResponses()[0].
+					GetResponse().(*etcdserverpb.ResponseOp_ResponseTxn)
+				require.True(t, ok)
+				assert.True(t, inner.ResponseTxn.GetSucceeded())
+				require.Len(t, inner.ResponseTxn.GetResponses(), 1)
+			},
+		},
+		{
+			name:   "empty transaction returns the usecase's revision and no responses",
+			req:    &etcdserverpb.TxnRequest{},
+			result: configuc.KVTxnResult{Succeeded: true, Revision: 5},
+			assert: func(t *testing.T, resp *etcdserverpb.TxnResponse) {
+				t.Helper()
+
+				assert.True(t, resp.GetSucceeded())
+				assert.Equal(t, int64(5), resp.GetHeader().GetRevision())
+				assert.Empty(t, resp.GetResponses())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			uc := newFakeKVUsecase()
+			uc.txnResult = tt.result
+			s := etcdv3.NewKVServer(uc)
+
+			resp, err := s.Txn(t.Context(), tt.req)
+			require.NoError(t, err)
+
+			tt.assert(t, resp)
+		})
+	}
+}
+
+func TestKVServer_Txn_UsecaseError(t *testing.T) {
+	t.Parallel()
+
+	uc := newFakeKVUsecase()
+	uc.txnErr = errors.New("boom")
+	s := etcdv3.NewKVServer(uc)
+
+	_, err := s.Txn(t.Context(), &etcdserverpb.TxnRequest{
+		Success: []*etcdserverpb.RequestOp{{
+			Request: &etcdserverpb.RequestOp_RequestPut{
+				RequestPut: &etcdserverpb.PutRequest{Key: []byte("/ns/a"), Value: []byte("v")},
+			},
 		}},
 	})
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
-	assert.Contains(t, status.Convert(err).Message(), "db failed")
+	assert.Contains(t, status.Convert(err).Message(), "boom")
 }
 
-func TestKVServer_Put_NilPublisher(t *testing.T) {
+func TestKVServer_Txn_LockedKeyIsFailedPrecondition(t *testing.T) {
 	t.Parallel()
 
-	// Regression guard: notifyPut must tolerate a nil publisher.
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, nil)
+	uc := newFakeKVUsecase()
+	uc.txnErr = domain.ErrLocked
+	s := etcdv3.NewKVServer(uc)
 
-	_, err := s.Put(context.Background(), &etcdserverpb.PutRequest{
-		Key: []byte("/ns/x"), Value: []byte("v"),
+	_, err := s.Txn(t.Context(), &etcdserverpb.TxnRequest{
+		Success: []*etcdserverpb.RequestOp{{
+			Request: &etcdserverpb.RequestOp_RequestPut{
+				RequestPut: &etcdserverpb.PutRequest{Key: []byte("/ns/a"), Value: []byte("v")},
+			},
+		}},
 	})
-	require.NoError(t, err)
+	require.Error(t, err)
+	assert.Equal(t, codes.FailedPrecondition, status.Code(err))
 }
 
-func TestKVServer_DeleteRange_NilPublisher(t *testing.T) {
+func TestKVServer_Txn_ResponseArityMismatch(t *testing.T) {
 	t.Parallel()
 
-	repo := newFakeKVRepo()
-	s := etcdv3.NewKVServer(repo, nil)
+	// The usecase must return one result per op in the branch it ran. A
+	// mismatch would silently mis-shape the wire response, so it is reported
+	// rather than zipped over.
+	uc := newFakeKVUsecase()
+	uc.txnResult = configuc.KVTxnResult{Succeeded: true, Revision: 1}
+	s := etcdv3.NewKVServer(uc)
 
-	_, err := s.Put(context.Background(), &etcdserverpb.PutRequest{
-		Key: []byte("/ns/x"), Value: []byte("v"),
+	_, err := s.Txn(t.Context(), &etcdserverpb.TxnRequest{
+		Success: []*etcdserverpb.RequestOp{{
+			Request: &etcdserverpb.RequestOp_RequestPut{
+				RequestPut: &etcdserverpb.PutRequest{Key: []byte("/ns/a"), Value: []byte("v")},
+			},
+		}},
 	})
-	require.NoError(t, err)
-
-	_, err = s.DeleteRange(context.Background(), &etcdserverpb.DeleteRangeRequest{
-		Key: []byte("/ns/x"),
-	})
-	require.NoError(t, err)
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+	assert.Contains(t, status.Convert(err).Message(), "txn response mismatch")
 }
