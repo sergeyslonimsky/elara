@@ -106,11 +106,17 @@ principal see" and shape a result set; see
 identity the handler already resolved, and it does not make authorization a
 usecase concern.
 
-**Known deviation, as of 2026-09-27.** `internal/handler/etcdv3/kv_server.go`
-orchestrates `Txn` — evaluating compares, selecting the success/failure branch,
-looping operations — and publishes watch events from `notifyPut` and from
-`DeleteRange`. Both belong in the usecase by this rule. The deviation predates
-this ADR and is being paid down by the work that makes `Txn` atomic, which
-cannot be done correctly without it: there is no way to put a transaction
-boundary around orchestration that lives in a handler without handing the
-handler that boundary.
+**The deviation that prompted this ADR is resolved.** When this was written,
+`internal/handler/etcdv3/kv_server.go` orchestrated `Txn` — evaluating compares,
+selecting the success/failure branch, looping operations — and published watch
+events from `notifyPut` and from `DeleteRange`. Both moved into
+`internal/usecase/config` (`service_txn.go`, `kv_events.go`) as part of making
+`Txn` atomic, which could not be done correctly without the move: there is no way
+to put a transaction boundary around orchestration that lives in a handler
+without handing the handler that boundary.
+
+That is the rule's first real test, and the outcome is worth recording. Paying
+down the violation was not a tax on the feature — it *was* the feature. Twenty
+writes in one transaction went from 165 ms to 9.4 ms once they shared a commit,
+and contended compare-and-swap did not regress. See
+[the performance baseline](../reference/performance.md).
