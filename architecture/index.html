@@ -1893,13 +1893,11 @@ is a handler concern.</p>
   calls inside a usecase are <em>scoping</em> — which namespaces a principal may see —
   not permission checks.</li>
 </ul>
-<blockquote>
-<p><strong>Known deviation, 2026-09-27.</strong> <code>internal/handler/etcdv3/kv_server.go</code>
-orchestrates <code>Txn</code> and publishes watch events itself. Both belong in the
-usecase. <code>internal/handler/v2/</code> is the correct reference for this layering;
-do not model new code on the etcd handler's write path until the atomic-<code>Txn</code>
-work has moved it.</p>
-</blockquote>
+<p>Both handler packages follow this today. <code>internal/handler/etcdv3</code> used to
+orchestrate <code>Txn</code> and publish its own watch events; that moved into
+<code>internal/usecase/config</code> when <code>Txn</code> was made atomic, which could not be done
+without it — a transaction boundary cannot be placed around orchestration that
+lives in a handler.</p>
 <h2 id="ports-and-state">Ports and state</h2>
 <table>
 <thead>

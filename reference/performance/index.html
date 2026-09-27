@@ -2005,63 +2005,63 @@ rest are the cost of the code, which is the part a change can actually move.</p>
 <tbody>
 <tr>
 <td><code>Put</code></td>
-<td>77 µs</td>
-<td>180</td>
+<td>74 µs</td>
+<td>183</td>
 </tr>
 <tr>
 <td><code>Put</code>, <strong>durable</strong></td>
-<td>8.3 ms</td>
-<td>167</td>
+<td>8.1 ms</td>
+<td>161</td>
 </tr>
 <tr>
 <td><code>Txn</code> compare-and-swap</td>
-<td>84 µs</td>
-<td>213</td>
+<td>77 µs</td>
+<td>210</td>
 </tr>
 <tr>
 <td><code>Txn</code> compare-and-swap, contended</td>
-<td>83 µs</td>
-<td>214</td>
+<td>81 µs</td>
+<td>215</td>
 </tr>
 <tr>
 <td><code>Txn</code> compare fails (no write)</td>
-<td>3.7 µs</td>
-<td>41</td>
+<td>3.9 µs</td>
+<td>42</td>
 </tr>
 <tr>
 <td><code>Txn</code> read-only range</td>
-<td>5.3 µs</td>
-<td>60</td>
+<td>4.2 µs</td>
+<td>53</td>
 </tr>
 <tr>
 <td><code>Txn</code> 1 put</td>
-<td>78 µs</td>
-<td>185</td>
+<td>76 µs</td>
+<td>194</td>
 </tr>
 <tr>
 <td><code>Txn</code> 5 puts</td>
-<td>394 µs</td>
-<td>914</td>
+<td>202 µs</td>
+<td>460</td>
 </tr>
 <tr>
 <td><code>Txn</code> 20 puts</td>
-<td>2.13 ms</td>
-<td>3688</td>
+<td>570 µs</td>
+<td>1412</td>
 </tr>
 <tr>
 <td><code>Txn</code> 1 put, <strong>durable</strong></td>
-<td>8.1 ms</td>
-<td>172</td>
+<td>8.2 ms</td>
+<td>177</td>
 </tr>
 <tr>
 <td><code>Txn</code> 5 puts, <strong>durable</strong></td>
-<td>41.9 ms</td>
-<td>859</td>
+<td>8.5 ms</td>
+<td>422</td>
 </tr>
 <tr>
 <td><code>Txn</code> 20 puts, <strong>durable</strong></td>
-<td>169 ms</td>
-<td>3459</td>
+<td>9.4 ms</td>
+<td>1339</td>
 </tr>
 </tbody>
 </table>
@@ -2174,18 +2174,24 @@ lookup comes back empty, the validator adds nothing.</p>
 8.2 ms against 77 µs of actual work. Anything that changes how many
 transactions a request opens changes client-visible latency by milliseconds,
 not microseconds.</p>
-<p><strong><code>Txn</code> opens one transaction per operation today.</strong> The 1/5/20-put curve is
-linear — 8.1 ms, 41.9 ms, 169 ms durable — because each op commits separately.
-Wrapping a whole <code>Txn</code> in one transaction should collapse that to roughly the
-cost of a single commit. The widely-voiced concern that a wider transaction
-serialises more applies to contention <em>between</em> concurrent <code>Txn</code> calls, not to
-the multi-op case, which stands to get dramatically faster.</p>
-<p><strong>Writes are already fully serialised.</strong> Contended and sequential land at the
-same ns/op, which is what a single-writer resource looks like under
-<code>RunParallel</code>: throughput is capped at one writer regardless of how many are
-waiting. Parity is the baseline here, not evidence that contention is free. If
-the contended number ever rises above the sequential one, a transaction is
-being held open longer per call.</p>
+<p><strong>A <code>Txn</code> is one transaction, and that is what makes multi-op cheap.</strong> The
+durable 1/5/20-put curve is 8.2 ms, 8.5 ms, 9.4 ms — almost flat, because all
+the operations share a single commit and therefore a single <code>fsync</code>. Before
+<code>Txn</code> became atomic each operation committed separately and the same curve read
+8.1 ms, 40.4 ms, 165 ms. Twenty writes in one transaction went from 165 ms to
+9.4 ms, a 17-fold improvement, with allocations down 54 %.</p>
+<p>That is worth stating plainly because the expectation was the opposite: widening
+a transaction was assumed to cost throughput, since bbolt permits one writer at
+a time. It did not. The serialisation concern was real but it applies <em>between</em>
+concurrent <code>Txn</code> calls, not to the operations inside one — and even there
+nothing measurable appeared, with contended compare-and-swap coming out 3 %
+<em>faster</em> than before.</p>
+<p><strong>Writes are fully serialised, and contended matches sequential.</strong> Under
+<code>RunParallel</code> a single-writer resource lands at the same ns/op as its sequential
+benchmark, because throughput is capped at one writer no matter how many wait.
+Parity is therefore the baseline, not evidence that contention is free. If the
+contended number ever rises above the sequential one, a transaction is being
+held open longer per call.</p>
 <p><strong>Paging saves allocations, not scanning.</strong> Fetching 20 summaries out of 1000
 costs 1.52 ms against 1.71 ms for fetching all of them — but 134 KB against
 364 KB. The bbolt scan is the same; only materialisation is bounded.</p>
