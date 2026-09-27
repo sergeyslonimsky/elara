@@ -85,6 +85,51 @@ ConnectRPC client / etcdctl  →  Handler  →  UseCase (Service)  →  Domain  
 
 **If you find yourself importing `internal/adapter` from `internal/domain` — stop and rethink.**
 
+### Placing something new: decide by dependency, not by neighbours
+
+The table above says what each layer owns. It does not tell you where to put a
+responsibility it doesn't list. The rule is `docs/adr/0003-responsibility-placement.md`
+— read it before moving anything between layers. In short:
+
+- **Handler** owns what depends on *how the call arrived*: wire format, decoding,
+  authentication, authorizing the caller, resolving who is calling. It hands the
+  usecase a request plus an identity (or none, for background jobs). It never
+  decides what happens.
+- **UseCase** owns what depends on *what the caller wants*: the flow, the
+  transaction boundary, the ordering of side effects against the commit, which
+  services to call, and publishing notifications. It receives the identity, it
+  does not discover it.
+- **Service** does one concrete job and knows nothing about the business case.
+
+**The test:** move the code to a different transport. Must it come along
+unchanged? Usecase. Only makes sense there? Handler.
+
+Two things this settles, because both get guessed wrong:
+
+- **Watch/webhook notifications are published by the usecase**, not the handler.
+  `internal/usecase/config/service_create.go` is the model.
+- **Never accept a transaction boundary in a handler**, under any name. Side
+  effects must be ordered against the commit, and deciding when to publish is
+  deciding what happens — which a handler may not do.
+
+### When the code and the documented rule disagree
+
+The rule wins, and you say so instead of designing around the code.
+
+`internal/handler/etcdv3` currently violates the layering: `kv_server.go`
+orchestrates `Txn` and publishes its own watch events. `internal/handler/v2/` is
+correct. **When placement is unclear, diff the two handler packages before you
+design anything** — one grep for `Notify` across both settles most questions.
+
+If your task seems to require putting business logic in a handler, that is
+evidence the surrounding code is already in violation, not permission to add
+more. Report it and ask.
+
+A ticket, a plan, or a code comment that prescribes *how* to implement something
+is not authoritative about layering; only `docs/architecture.md` and
+`docs/adr/` are. And if one statement in such a document has already turned out
+to be wrong, downgrade the whole document — not just the sentence you disproved.
+
 ## Use case → service convention
 
 Use cases are organised as **one Service per domain with methods**, NOT one type per operation. The package is laid out across several files:
@@ -248,6 +293,9 @@ When handing off to test-writer, include: (a) scope path, (b) list of public met
 - **`context.Background()`** outside `main` / tests. Always thread the request context.
 - **Mocking the database** in integration tests.
 - **Logic in handlers** beyond proto↔domain conversion and a single Service call.
+- **Publishing watch/webhook events from a handler.** That is the usecase's job — see ADR 0003.
+- **Accepting a transaction boundary in a handler**, including a usecase method that only wraps `WithTx` for the handler to call. Side effects must be ordered against the commit by whoever may decide what happens.
+- **Modelling new code on `internal/handler/etcdv3`'s write path.** It is a known layering violation; use `internal/handler/v2/`.
 - **Importing infrastructure** in domain.
 - **Comments that restate the code** or reference task/PR numbers.
 - **`else` after `return`**, named returns (linter), `init()` for non-trivial setup.
