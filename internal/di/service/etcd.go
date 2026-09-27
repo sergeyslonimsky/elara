@@ -28,7 +28,7 @@ func NewEtcdHandlers(adapters *Adapters, services *Services) *EtcdHandlers {
 		WithTracker(adapters.ClientRegistry, grpctransport.ConnIDFromContext)
 
 	return &EtcdHandlers{
-		KV:          etcdv3.NewKVServer(services.Config, adapters.Watch),
+		KV:          etcdv3.NewKVServer(services.Config),
 		Watch:       watchServer,
 		Maintenance: etcdv3.NewMaintenanceServer(adapters.ConfigRepo),
 		Cluster:     etcdv3.NewClusterServer(adapters.ConfigRepo),

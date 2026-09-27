@@ -95,19 +95,21 @@ func (s *Service) PutKey(
 	ctx context.Context,
 	namespace, path string,
 	value []byte,
-) (*domain.Config, *domain.KVPair, int64, error) {
+) (*domain.KVPair, int64, error) {
 	format := domain.DetectFormatFromPath(path)
 
 	if err := s.schemaValidator.Validate(ctx, namespace, path, string(value), format); err != nil {
-		return nil, nil, 0, fmt.Errorf("schema validation: %w", err)
+		return nil, 0, fmt.Errorf("schema validation: %w", err)
 	}
+
+	outer, pending, owner := withPendingEvents(ctx)
 
 	var (
 		prev   *domain.KVPair
 		newRev int64
 	)
 
-	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
+	err := s.txm.WithTx(outer, func(ctx context.Context) error {
 		p, rev, err := s.kv.PutKey(ctx, namespace, path, value)
 		prev = p
 		newRev = rev
@@ -116,16 +118,82 @@ func (s *Service) PutKey(
 			return fmt.Errorf("put key: %w", err)
 		}
 
+		cfg := kvPutConfig(namespace, path, value, format, p, rev)
+		if p != nil {
+			pending.add(func(ctx context.Context) { s.watcher.NotifyUpdated(ctx, cfg) })
+		} else {
+			pending.add(func(ctx context.Context) { s.watcher.NotifyCreated(ctx, cfg) })
+		}
+
 		return nil
 	})
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("put key tx: %w", err)
+		return nil, 0, fmt.Errorf("put key tx: %w", err)
 	}
 
-	// NOTE: intentionally incomplete — ContentHash, Metadata, and Locked
-	// aren't populated. The etcd wire protocol's own response
-	// (mvccpb.KeyValue) never needs them; the only consumer of this cfg is
-	// watch/webhook notification, which doesn't read those fields either.
+	if owner {
+		pending.flush(ctx)
+	}
+
+	return prev, newRev, nil
+}
+
+// DeleteRangeKeys deletes the KV pairs in [startNS/startPath,
+// endNS/endPath) — the etcd-compatible gRPC API's DeleteRange RPC.
+func (s *Service) DeleteRangeKeys(
+	ctx context.Context,
+	startNS, startPath, endNS, endPath string,
+	returnPrev bool,
+) ([]*domain.KVPair, int64, error) {
+	outer, pending, owner := withPendingEvents(ctx)
+
+	var (
+		deleted []*domain.KVPair
+		newRev  int64
+	)
+
+	err := s.txm.WithTx(outer, func(ctx context.Context) error {
+		d, rev, err := s.kv.DeleteRangeKeys(ctx, startNS, startPath, endNS, endPath, returnPrev)
+		deleted = d
+		newRev = rev
+
+		if err != nil {
+			return fmt.Errorf("delete range keys: %w", err)
+		}
+
+		for _, kv := range d {
+			deletedPath, deletedNS := kv.Path, kv.Namespace
+			pending.add(func(ctx context.Context) {
+				s.watcher.NotifyDeleted(ctx, deletedPath, deletedNS, rev)
+			})
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, 0, fmt.Errorf("delete range keys tx: %w", err)
+	}
+
+	if owner {
+		pending.flush(ctx)
+	}
+
+	return deleted, newRev, nil
+}
+
+// kvPutConfig builds the domain.Config that a KV write notifies with.
+//
+// Intentionally incomplete: ContentHash, Metadata and Locked are not populated.
+// The etcd wire protocol's own response (mvccpb.KeyValue) never needs them, and
+// the only consumer of this value is watch/webhook notification, which does not
+// read those fields either.
+func kvPutConfig(
+	namespace, path string,
+	value []byte,
+	format domain.Format,
+	prev *domain.KVPair,
+	newRev int64,
+) *domain.Config {
 	cfg := &domain.Config{
 		Path:      path,
 		Namespace: namespace,
@@ -138,41 +206,13 @@ func (s *Service) PutKey(
 	if prev != nil {
 		cfg.Version = prev.Version + 1
 		cfg.CreateRevision = prev.CreateRevision
-	} else {
-		cfg.Version = 1
-		cfg.CreateRevision = newRev
-		cfg.CreatedAt = cfg.UpdatedAt
+
+		return cfg
 	}
 
-	return cfg, prev, newRev, nil
-}
+	cfg.Version = 1
+	cfg.CreateRevision = newRev
+	cfg.CreatedAt = cfg.UpdatedAt
 
-// DeleteRangeKeys deletes the KV pairs in [startNS/startPath,
-// endNS/endPath) — the etcd-compatible gRPC API's DeleteRange RPC.
-func (s *Service) DeleteRangeKeys(
-	ctx context.Context,
-	startNS, startPath, endNS, endPath string,
-	returnPrev bool,
-) ([]*domain.KVPair, int64, error) {
-	var (
-		deleted []*domain.KVPair
-		newRev  int64
-	)
-
-	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
-		d, rev, err := s.kv.DeleteRangeKeys(ctx, startNS, startPath, endNS, endPath, returnPrev)
-		deleted = d
-		newRev = rev
-
-		if err != nil {
-			return fmt.Errorf("delete range keys: %w", err)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, 0, fmt.Errorf("delete range keys tx: %w", err)
-	}
-
-	return deleted, newRev, nil
+	return cfg
 }

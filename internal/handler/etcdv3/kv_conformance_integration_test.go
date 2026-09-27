@@ -204,17 +204,13 @@ func TestIntegration_KVConformance_TxnCompareAndSwap(t *testing.T) {
 }
 
 // TestIntegration_KVConformance_TxnCompareAndSwap_Concurrent races N clients
-// doing the create-if-absent CAS pattern against the same key. This
-// documents CURRENT (broken) behavior, not desired behavior: Txn's compare
-// and write run in separate bbolt transactions (kv_server.go admits this in
-// its own comment), so under real concurrency more than one racer can see
-// CreateRevision==0 and "win" — confirmed empirically here, not just from
-// the comment. Only ">= 1 winner" is a safe baseline assertion; the exact
-// count is nondeterministic race-timing, not a stable invariant.
+// doing the create-if-absent CAS pattern against the same key. Exactly one may
+// win: the compare and the write share one transaction (see
+// usecase/config.Txn), so no second racer can observe CreateRevision==0 after
+// the first one's write has landed.
 //
-// Once Ш1 wraps this path in storage.Manager.WithTx, tighten the assertion
-// below to require exactly one winner — that flip is the atomicity
-// regression test for Ш1.
+// More than one winner means the compare and the write are no longer in one
+// transaction — the guarantee every lock recipe built on this key is relying on.
 func TestIntegration_KVConformance_TxnCompareAndSwap_Concurrent(t *testing.T) {
 	t.Parallel()
 
@@ -251,8 +247,12 @@ func TestIntegration_KVConformance_TxnCompareAndSwap_Concurrent(t *testing.T) {
 		require.NoError(t, <-results)
 	}
 
-	t.Logf("racers that won the CAS: %d/%d (non-atomic Txn baseline, see kv_server.go:202-206)", wins.Load(), racers)
-	assert.GreaterOrEqual(t, wins.Load(), int32(1), "at least one create-if-absent racer must win")
+	assert.Equal(
+		t,
+		int32(1),
+		wins.Load(),
+		"more than one winner means the compare and the write are no longer in one transaction",
+	)
 
 	get, err := cli.Get(ctx, "/prod/racer.key")
 	require.NoError(t, err)
