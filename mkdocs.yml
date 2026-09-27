@@ -83,3 +83,4 @@ nav:
       - Overview: architecture.md
       - "ADR 0001: Usecase-owned Transactions": adr/0001-usecase-owned-transactions.md
       - "ADR 0002: Groups-only RBAC": adr/0002-groups-only-rbac.md
+      - "ADR 0003: Responsibility placement": adr/0003-responsibility-placement.md

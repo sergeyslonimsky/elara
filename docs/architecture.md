@@ -60,6 +60,42 @@ Dependencies point downward; the domain layer imports no infrastructure.
 Wiring lives in `internal/di/`; the entry point is
 `cmd/service/main.go` → `di.LoadContainer` → `service.NewServiceManager`.
 
+### Which layer gets a new responsibility
+
+The table says what each layer owns; it does not say how to place something new.
+The rule is in [ADR 0003](adr/0003-responsibility-placement.md): a
+responsibility belongs to the layer whose concerns it depends on. The handler
+owns what depends on *how the call arrived* — wire format, authentication,
+authorizing the caller, resolving who is calling. The usecase owns what depends
+on *what the caller wants* — the flow, the transaction boundary, the ordering of
+side effects against the commit. A service does one concrete job and knows
+nothing about the business case that invoked it.
+
+The test: move the code to a different transport. If it must come along
+unchanged it is a usecase concern; if it only makes sense for that transport it
+is a handler concern.
+
+Two consequences that are easy to get wrong:
+
+- **Watch and webhook notifications are published by the usecase.**
+  `internal/transport/{watch,webhook}` holds the publisher and the dispatcher,
+  but the usecase calls them — see
+  `internal/usecase/config/service_create.go` and its siblings. An event must
+  not be published before its transaction commits, which is why publication is
+  ordered by whoever owns the boundary.
+- **Authorizing the caller is a handler concern**, because the mechanism depends
+  on the transport: ConnectRPC authorizes in `internal/handler/v2/interceptor`
+  over session identity, while the etcd-compatible API authorizes in
+  `internal/handler/etcdv3/access.go` over service-token claims. `pdp.Effective*`
+  calls inside a usecase are *scoping* — which namespaces a principal may see —
+  not permission checks.
+
+> **Known deviation, 2026-09-27.** `internal/handler/etcdv3/kv_server.go`
+> orchestrates `Txn` and publishes watch events itself. Both belong in the
+> usecase. `internal/handler/v2/` is the correct reference for this layering;
+> do not model new code on the etcd handler's write path until the atomic-`Txn`
+> work has moved it.
+
 ## Ports and state
 
 | Port   | Surface                                                    |
@@ -75,7 +111,7 @@ the Helm chart pins `replicaCount` to `1` until raft-based HA lands.
 
 ## Design decisions
 
-Two architecture decision records capture the non-obvious choices behind this
+Three architecture decision records capture the non-obvious choices behind this
 layering:
 
 - [ADR 0001 — Usecase-owned transactions with context-injected tx handles](adr/0001-usecase-owned-transactions.md):
@@ -86,3 +122,6 @@ layering:
   why there is no API to grant a role directly to a user, and how Casbin's
   recursive role resolution makes group membership the single, auditable lever
   for access.
+- [ADR 0003 — Where a responsibility goes: the layer is decided by what the code depends on](adr/0003-responsibility-placement.md):
+  the rule for placing something new, the transport test that applies it, and
+  why notification is a usecase concern while authorizing the caller is not.
