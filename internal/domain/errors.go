@@ -37,6 +37,14 @@ var (
 	// has no corresponding user record. JIT-provisioning is not supported;
 	// admins must pre-provision users.
 	ErrIdentityNotProvisioned = errors.New("identity not provisioned")
+	ErrLeaseNotFound          = errors.New("lease not found")
+	ErrLeaseExpired           = errors.New("lease expired")
+	ErrLeaseTTLInvalid        = errors.New("lease ttl must be positive")
+	ErrLeaseExists            = errors.New("lease already exists")
+	// ErrLeaseIDExhausted means several generated IDs in a row were already
+	// taken. On a 63-bit random space that is not bad luck — it points at a
+	// broken source of randomness.
+	ErrLeaseIDExhausted = errors.New("could not allocate a free lease id")
 )
 
 type ValidationError struct {

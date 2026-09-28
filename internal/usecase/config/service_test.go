@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/mock/gomock"
 
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	storage_mock "github.com/sergeyslonimsky/elara/internal/storage/mocks"
 	"github.com/sergeyslonimsky/elara/internal/usecase/config"
 	configmock "github.com/sergeyslonimsky/elara/internal/usecase/config/mocks"
@@ -19,6 +20,7 @@ type mocks struct {
 	pdp               *configmock.Mockpdp
 	storage           *configmock.MockconfigRepo
 	kv                *configmock.MockkvRepo
+	leases            *configmock.MockleaseIndex
 	watcher           *configmock.Mockwatcher
 	namespaceProvider *configmock.MocknamespaceProvider
 	schemaValidator   *configmock.MockschemaValidator
@@ -41,12 +43,18 @@ func setupService(t *testing.T) (*config.Service, mocks, *gomock.Controller) {
 		pdp:               configmock.NewMockpdp(ctrl),
 		storage:           configmock.NewMockconfigRepo(ctrl),
 		kv:                configmock.NewMockkvRepo(ctrl),
+		leases:            configmock.NewMockleaseIndex(ctrl),
 		watcher:           configmock.NewMockwatcher(ctrl),
 		namespaceProvider: configmock.NewMocknamespaceProvider(ctrl),
 		schemaValidator:   configmock.NewMockschemaValidator(ctrl),
 	}
 	repo := repoMock{m.storage, m.kv}
-	svc := config.New(m.txm, m.pdp, repo, m.watcher, m.namespaceProvider, m.schemaValidator)
+	svc := config.New(m.txm, m.pdp, repo, m.leases, m.watcher, m.namespaceProvider, m.schemaValidator)
 
 	return svc, m, ctrl
 }
+
+// noLease is the ordinary write path's lease argument. It is the zero value on
+// purpose — the type is built so that a caller with no interest in leases needs
+// no special constant.
+func noLease() domain.LeaseAssignment { return domain.LeaseAssignment{} }

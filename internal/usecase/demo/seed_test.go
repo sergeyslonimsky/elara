@@ -125,6 +125,10 @@ func setup(t *testing.T) (demo.Deps, demoMocks) {
 			m.cfg.txm,
 			m.cfg.pdp,
 			cfgRepoMock{m.cfg.storage, m.cfg.kv},
+			// Lease index is nil deliberately: demo seeding goes through the
+			// structured Create/Update path, which never touches leases. A stub
+			// would hide it if that changed; nil panics instead.
+			nil,
 			m.cfg.watcher,
 			m.cfg.namespaceProvider,
 			m.cfg.schemaValidator,

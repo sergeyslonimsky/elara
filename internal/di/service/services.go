@@ -17,6 +17,7 @@ import (
 	dashboarduc "github.com/sergeyslonimsky/elara/internal/usecase/dashboard"
 	filteruc "github.com/sergeyslonimsky/elara/internal/usecase/filter"
 	groupuc "github.com/sergeyslonimsky/elara/internal/usecase/group"
+	leaseuc "github.com/sergeyslonimsky/elara/internal/usecase/lease"
 	nsuc "github.com/sergeyslonimsky/elara/internal/usecase/namespace"
 	profileuc "github.com/sergeyslonimsky/elara/internal/usecase/profile"
 	schemauc "github.com/sergeyslonimsky/elara/internal/usecase/schema"
@@ -42,6 +43,12 @@ type Services struct {
 	Token     *tokenuc.Service
 	Auth      *authuc.Service
 	Filter    *filteruc.Service
+	Lease     *leaseuc.Service
+
+	// LeaseExpirer is started by cmd/service/main.go. Without it leases are
+	// granted and renewed but never expire, so keys attached to one outlive
+	// their TTL.
+	LeaseExpirer *leaseuc.Expirer
 
 	// Authz is the shared per-RPC authorization gate used by v2 handlers.
 	// It is exposed on Services so V2Handlers wiring can pass it into each
@@ -78,6 +85,7 @@ func NewServices(
 			a.StorageManager,
 			pdp,
 			a.ConfigRepo,
+			a.LeaseRepo,
 			a.Watch,
 			a.NamespaceRepo,
 			schemaValidator,
@@ -112,6 +120,20 @@ func NewServices(
 		Authz:          authzSvc,
 		AdminBootstrap: adminBootstrap,
 	}
+
+	// Assigned after the literal rather than inside it: revoking a lease deletes
+	// the keys it held, and that goes through the config usecase so the deletion
+	// keeps its revision and watch semantics (see usecase/lease.keyDeleter).
+	services.Lease = leaseuc.New(a.StorageManager, a.LeaseRepo, services.Config, leaseuc.Config{
+		MinTTL:              cfg.Lease.MinTTL,
+		MaxTTL:              cfg.Lease.MaxTTL,
+		CheckpointThreshold: cfg.Lease.CheckpointThreshold,
+	})
+	services.LeaseExpirer = leaseuc.NewExpirer(
+		services.Lease,
+		cfg.Lease.SweepInterval,
+		cfg.Lease.SweepBatch,
+	)
 
 	if err := configureAuthService(ctx, services, a, cfg, userSvc, sessionSvc); err != nil {
 		return nil, err

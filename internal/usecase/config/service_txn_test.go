@@ -82,7 +82,7 @@ func expectPut(m mocks, namespace, path, value string, rev int64) {
 		Validate(gomock.Any(), namespace, path, value, domain.FormatJSON).
 		Return(nil)
 	m.kv.EXPECT().
-		PutKey(gomock.Any(), namespace, path, []byte(value)).
+		PutKey(gomock.Any(), namespace, path, []byte(value), gomock.Any()).
 		Return(nil, rev, nil)
 }
 
@@ -301,7 +301,7 @@ func TestService_Txn(t *testing.T) {
 					Validate(gomock.Any(), "prod", "/win.json", "yes", domain.FormatJSON).
 					Return(nil)
 				m.kv.EXPECT().
-					PutKey(gomock.Any(), "prod", "/win.json", []byte("yes")).
+					PutKey(gomock.Any(), "prod", "/win.json", []byte("yes"), gomock.Any()).
 					Return(nil, int64(0), errors.New("db error"))
 			},
 			wantErr: "txn tx: txn put: put key tx: put key: db error",
@@ -378,7 +378,7 @@ func TestService_Txn_PublishesAfterTheCommit(t *testing.T) {
 		RangeQuery(gomock.Any(), "prod", "/lock.json", "", "", int64(0), int64(0), false).
 		Return(nil, false, nil)
 	m.kv.EXPECT().
-		PutKey(gomock.Any(), "prod", "/lock.json", []byte("mine")).
+		PutKey(gomock.Any(), "prod", "/lock.json", []byte("mine"), gomock.Any()).
 		Return(nil, int64(1), nil)
 	m.watcher.EXPECT().
 		NotifyCreated(gomock.Any(), gomock.Any()).
@@ -422,7 +422,7 @@ func TestService_Txn_PublishesNothingOnRollback(t *testing.T) {
 		Validate(gomock.Any(), "prod", "/b.json", "v", domain.FormatJSON).
 		Return(nil)
 	m.kv.EXPECT().
-		PutKey(gomock.Any(), "prod", "/b.json", []byte("v")).
+		PutKey(gomock.Any(), "prod", "/b.json", []byte("v"), gomock.Any()).
 		Return(nil, int64(0), errors.New("db error"))
 
 	_, err := svc.Txn(t.Context(), config.KVTxnInput{

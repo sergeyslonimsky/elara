@@ -33,7 +33,12 @@ type KVUsecase interface {
 		startNS, startPath, endNS, endPath string,
 		opts configuc.KVRangeOpts,
 	) ([]*domain.KVPair, bool, error)
-	PutKey(ctx context.Context, namespace, path string, value []byte) (*domain.KVPair, int64, error)
+	PutKey(
+		ctx context.Context,
+		namespace, path string,
+		value []byte,
+		lease domain.LeaseAssignment,
+	) (*domain.KVPair, int64, error)
 	DeleteRangeKeys(
 		ctx context.Context,
 		startNS, startPath, endNS, endPath string,
@@ -81,7 +86,7 @@ func (s *KVServer) Range(
 		ctx,
 		startNS, startPath,
 		endNS, endPath,
-		configuc.KVRangeOpts{Limit: req.GetLimit(), Revision: req.GetRevision(), KeysOnly: req.GetKeysOnly()},
+		rangeOpts(req),
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "range query: %v", err)
@@ -105,9 +110,25 @@ func buildRangeResponse(
 		protoKVs = append(protoKVs, kvPairToProto(kv))
 	}
 
+	protoKVs = filterByRevisionBounds(req, protoKVs)
+
 	sortKVs(protoKVs, req.GetSortOrder(), req.GetSortTarget())
 
 	count := int64(len(protoKVs))
+
+	// Applying the limit here, after the sort, is what makes a sorted range mean
+	// what etcd means by it. The store walks keys in key order, so it can only
+	// honour a limit by key; taking the first N there and sorting afterwards
+	// answers with the first N *keys* re-ordered, not the first N by the
+	// requested target. That difference is invisible until a client asks for
+	// "the single oldest key by create revision" — which is exactly what
+	// clientv3's WithFirstCreate does, and what every lock and election recipe
+	// is built on (see rangeOpts).
+	if limit := req.GetLimit(); limit > 0 && int64(len(protoKVs)) > limit {
+		protoKVs = protoKVs[:limit]
+		more = true
+	}
+
 	if req.GetCountOnly() {
 		protoKVs = nil
 	}
@@ -141,7 +162,7 @@ func (s *KVServer) Put(
 		return nil, status.Errorf(codes.Unimplemented, "ignore_value is not supported")
 	}
 
-	prev, newRev, err := s.usecase.PutKey(ctx, namespace, path, req.GetValue())
+	prev, newRev, err := s.usecase.PutKey(ctx, namespace, path, req.GetValue(), putLease(req))
 	if err != nil {
 		s.recordRejectedWrite(ctx, "put", namespace, err)
 
@@ -259,7 +280,105 @@ func kvPairToProto(kv *domain.KVPair) *mvccpb.KeyValue {
 		CreateRevision: kv.CreateRevision,
 		ModRevision:    kv.ModRevision,
 		Version:        kv.Version,
+		Lease:          kv.Lease,
 	}
+}
+
+// filterByRevisionBounds applies the four revision predicates a RangeRequest can
+// carry. Zero means "no bound", which is how the wire spells an unset field.
+//
+// etcd filters before it sorts and limits, and the order matters: these bounds
+// are how a client asks for "the newest key created no later than revision N",
+// which is the query clientv3's waitDeletes issues while waiting its turn for a
+// lock. Filtering after a limit would answer from the wrong candidates.
+func filterByRevisionBounds(
+	req *etcdserverpb.RangeRequest,
+	kvs []*mvccpb.KeyValue,
+) []*mvccpb.KeyValue {
+	bounds := revisionBoundsOf(req)
+	if bounds.unset() {
+		return kvs
+	}
+
+	out := kvs[:0]
+
+	for _, kv := range kvs {
+		if bounds.admits(kv) {
+			out = append(out, kv)
+		}
+	}
+
+	return out
+}
+
+// revisionBounds is the four-sided predicate a RangeRequest can carry. Zero on
+// any side means that side is open, which is how the wire spells an unset field.
+type revisionBounds struct {
+	minCreate, maxCreate int64
+	minMod, maxMod       int64
+}
+
+func revisionBoundsOf(req *etcdserverpb.RangeRequest) revisionBounds {
+	return revisionBounds{
+		minCreate: req.GetMinCreateRevision(),
+		maxCreate: req.GetMaxCreateRevision(),
+		minMod:    req.GetMinModRevision(),
+		maxMod:    req.GetMaxModRevision(),
+	}
+}
+
+func (b revisionBounds) unset() bool {
+	return b.minCreate == 0 && b.maxCreate == 0 && b.minMod == 0 && b.maxMod == 0
+}
+
+func (b revisionBounds) admits(kv *mvccpb.KeyValue) bool {
+	create, mod := kv.GetCreateRevision(), kv.GetModRevision()
+
+	return withinBound(create, b.minCreate, b.maxCreate) && withinBound(mod, b.minMod, b.maxMod)
+}
+
+func withinBound(v, low, high int64) bool {
+	if low > 0 && v < low {
+		return false
+	}
+
+	return high == 0 || v <= high
+}
+
+// rangeOpts translates a RangeRequest into the usecase's options.
+//
+// A sorted range deliberately drops the limit on the way down: the store cannot
+// apply it without changing which keys come back (see buildRangeResponse), so
+// the full match set is fetched and the limit is applied after sorting. The
+// unsorted case keeps pushing the limit down, where it still saves the scan.
+func rangeOpts(req *etcdserverpb.RangeRequest) configuc.KVRangeOpts {
+	opts := configuc.KVRangeOpts{
+		Limit:    req.GetLimit(),
+		Revision: req.GetRevision(),
+		KeysOnly: req.GetKeysOnly(),
+	}
+
+	// Revision bounds disqualify a pushed-down limit for the same reason a sort
+	// does: the store would count keys that the filter is about to drop.
+	if req.GetSortOrder() != etcdserverpb.RangeRequest_NONE || hasRevisionBounds(req) {
+		opts.Limit = 0
+	}
+
+	return opts
+}
+
+func hasRevisionBounds(req *etcdserverpb.RangeRequest) bool {
+	return req.GetMinCreateRevision() > 0 ||
+		req.GetMaxCreateRevision() > 0 ||
+		req.GetMinModRevision() > 0 ||
+		req.GetMaxModRevision() > 0
+}
+
+// putLease carries a PutRequest's two lease fields across to the usecase
+// unchanged. They stay separate all the way down because on the wire, lease 0
+// with ignore_lease set and lease 0 without it mean different things.
+func putLease(req *etcdserverpb.PutRequest) domain.LeaseAssignment {
+	return domain.LeaseAssignment{ID: req.GetLease(), Ignore: req.GetIgnoreLease()}
 }
 
 func sortKVs(

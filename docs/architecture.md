@@ -125,3 +125,7 @@ layering:
 - [ADR 0003 — Where a responsibility goes: the layer is decided by what the code depends on](adr/0003-responsibility-placement.md):
   the rule for placing something new, the transport test that applies it, and
   why notification is a usecase concern while authorizing the caller is not.
+- [ADR 0004 — Lease expiry decided from stored state, with throttled renewals](adr/0004-lease-expiry-from-stored-state.md):
+  why a lease's expiry lives in the record rather than in a process-local timer,
+  why the sweep passes in the instant it judges against, and what the renewal
+  threshold buys and costs.

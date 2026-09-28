@@ -36,6 +36,9 @@ var buckets = [][]byte{
 	[]byte("session_events"),
 	[]byte("session_events_by_session"),
 	[]byte("session_events_by_user"),
+	[]byte("leases"),
+	[]byte("lease_keys"),
+	[]byte("lease_expiry"),
 }
 
 const (

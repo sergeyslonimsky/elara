@@ -55,6 +55,9 @@ type Config struct {
 	// default; the `elara:demo` image sets DEMO_MODE=true.
 	Demo DemoConfig
 
+	// Lease bounds etcd lease grants and paces the expiry sweep.
+	Lease Lease
+
 	DangerouslySkipPermissions bool
 }
 
@@ -145,6 +148,7 @@ func NewConfig(ctx context.Context) (Config, error) {
 			// Reads demo.mode / DEMO_MODE. Default: false.
 			Enabled: di.Get[bool](cfg, "demo.mode"),
 		},
+		Lease:                      newLeaseConfig(cfg),
 		DangerouslySkipPermissions: di.Get[bool](cfg, "dangerously.skip.permissions"),
 	}
 
