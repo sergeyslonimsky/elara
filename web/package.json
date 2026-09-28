@@ -16,7 +16,7 @@
 		"test:coverage": "vitest run --coverage"
 	},
 	"dependencies": {
-		"@base-ui/react": "^1.4.1",
+		"@base-ui/react": "^1.8.0",
 		"@bufbuild/protobuf": "^2.12.0",
 		"@casl/ability": "^7.0.1",
 		"@casl/react": "^7.0.1",
