@@ -37,6 +37,9 @@ var (
 	// has no corresponding user record. JIT-provisioning is not supported;
 	// admins must pre-provision users.
 	ErrIdentityNotProvisioned = errors.New("identity not provisioned")
+	ErrLeaseNotFound          = errors.New("lease not found")
+	ErrLeaseExpired           = errors.New("lease expired")
+	ErrLeaseTTLInvalid        = errors.New("lease ttl must be positive")
 )
 
 type ValidationError struct {
