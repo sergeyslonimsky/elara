@@ -96,6 +96,28 @@ rest are the cost of the code, which is the part a change can actually move.
 | `Txn` 5 puts, **durable** | 8.5 ms | 422 |
 | `Txn` 20 puts, **durable** | 9.4 ms | 1339 |
 
+Attaching a key to a lease costs nothing measurable on the write path: `Put`
+moved -1.5 % and `Txn` compare-and-swap was unchanged when lease support landed.
+
+## Lease renewal
+
+`internal/usecase/lease/service_keepalive.go`
+
+`KeepAlive` arrives roughly every TTL/3 per session, so what it costs decides
+what a fleet of sessions costs. The renewal is answered from the entity and only
+written once the expiry has drifted past `lease.checkpoint.threshold` × TTL.
+
+| Operation | Time | Allocations |
+|---|---|---|
+| `KeepAlive`, throttled (default) | 1.8 µs | 13 |
+| `KeepAlive`, persisting every renewal | 22 µs | 84 |
+| `KeepAlive`, persisting every renewal, **durable** | 8.1 ms | 84 |
+
+Twelve times cheaper against the code path, and four thousand times against a
+store that fsyncs — which is why the threshold exists rather than persisting
+every ping. What it buys is paid for in staleness: see
+[etcd compatibility](etcd-compatibility.md#lease).
+
 ## Watch fan-out
 
 `internal/transport/watch/publisher.go`
