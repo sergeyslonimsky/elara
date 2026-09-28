@@ -245,11 +245,7 @@ func txnRangeOp(req *etcdserverpb.RangeRequest) (configuc.KVOp, error) {
 			StartPath: startPath,
 			EndNS:     endNS,
 			EndPath:   endPath,
-			Opts: configuc.KVRangeOpts{
-				Limit:    req.GetLimit(),
-				Revision: req.GetRevision(),
-				KeysOnly: req.GetKeysOnly(),
-			},
+			Opts:      rangeOpts(req),
 		},
 	}, nil
 }
