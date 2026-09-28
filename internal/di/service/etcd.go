@@ -14,6 +14,7 @@ type EtcdHandlers struct {
 	Watch       *etcdv3.WatchServer
 	Maintenance *etcdv3.MaintenanceServer
 	Cluster     *etcdv3.ClusterServer
+	Lease       *etcdv3.LeaseServer
 }
 
 // NewEtcdHandlers wires the etcd-compatible gRPC API. KV goes through
@@ -32,6 +33,7 @@ func NewEtcdHandlers(adapters *Adapters, services *Services) *EtcdHandlers {
 		Watch:       watchServer,
 		Maintenance: etcdv3.NewMaintenanceServer(adapters.ConfigRepo),
 		Cluster:     etcdv3.NewClusterServer(adapters.ConfigRepo),
+		Lease:       etcdv3.NewLeaseServer(services.Lease, adapters.ConfigRepo),
 	}
 }
 
@@ -42,5 +44,6 @@ func EtcdRoutes(server *coregrpc.Server, handlers *EtcdHandlers) {
 		etcdserverpb.RegisterWatchServer(gs, handlers.Watch)
 		etcdserverpb.RegisterMaintenanceServer(gs, handlers.Maintenance)
 		etcdserverpb.RegisterClusterServer(gs, handlers.Cluster)
+		etcdserverpb.RegisterLeaseServer(gs, handlers.Lease)
 	})
 }
