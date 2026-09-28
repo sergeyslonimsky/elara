@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/usecase/txevents"
 )
 
 // KVRangeOpts configures RangeQuery — the etcd-compatible gRPC API's Range
@@ -108,7 +109,7 @@ func (s *Service) PutKey(
 		return nil, 0, fmt.Errorf("schema validation: %w", err)
 	}
 
-	outer, pending, owner := withPendingEvents(ctx)
+	outer, pending, owner := txevents.Install(ctx)
 
 	var (
 		prev   *domain.KVPair
@@ -134,9 +135,9 @@ func (s *Service) PutKey(
 
 		cfg := kvPutConfig(namespace, path, value, format, p, rev)
 		if p != nil {
-			pending.add(func(ctx context.Context) { s.watcher.NotifyUpdated(ctx, cfg) })
+			pending.Add(func(ctx context.Context) { s.watcher.NotifyUpdated(ctx, cfg) })
 		} else {
-			pending.add(func(ctx context.Context) { s.watcher.NotifyCreated(ctx, cfg) })
+			pending.Add(func(ctx context.Context) { s.watcher.NotifyCreated(ctx, cfg) })
 		}
 
 		return nil
@@ -146,7 +147,7 @@ func (s *Service) PutKey(
 	}
 
 	if owner {
-		pending.flush(ctx)
+		pending.Flush(ctx)
 	}
 
 	return prev, newRev, nil
@@ -159,7 +160,7 @@ func (s *Service) DeleteRangeKeys(
 	startNS, startPath, endNS, endPath string,
 	returnPrev bool,
 ) ([]*domain.KVPair, int64, error) {
-	outer, pending, owner := withPendingEvents(ctx)
+	outer, pending, owner := txevents.Install(ctx)
 
 	var (
 		deleted []*domain.KVPair
@@ -181,7 +182,7 @@ func (s *Service) DeleteRangeKeys(
 
 		for _, kv := range d {
 			deletedPath, deletedNS := kv.Path, kv.Namespace
-			pending.add(func(ctx context.Context) {
+			pending.Add(func(ctx context.Context) {
 				s.watcher.NotifyDeleted(ctx, deletedPath, deletedNS, rev)
 			})
 		}
@@ -193,7 +194,7 @@ func (s *Service) DeleteRangeKeys(
 	}
 
 	if owner {
-		pending.flush(ctx)
+		pending.Flush(ctx)
 	}
 
 	return deleted, newRev, nil
@@ -212,7 +213,7 @@ func (s *Service) DeleteKeys(
 	refs []domain.KeyRef,
 	returnPrev bool,
 ) ([]*domain.KVPair, int64, error) {
-	outer, pending, owner := withPendingEvents(ctx)
+	outer, pending, owner := txevents.Install(ctx)
 
 	var (
 		deleted []*domain.KVPair
@@ -234,7 +235,7 @@ func (s *Service) DeleteKeys(
 
 		for _, kv := range d {
 			deletedPath, deletedNS := kv.Path, kv.Namespace
-			pending.add(func(ctx context.Context) {
+			pending.Add(func(ctx context.Context) {
 				s.watcher.NotifyDeleted(ctx, deletedPath, deletedNS, rev)
 			})
 		}
@@ -246,7 +247,7 @@ func (s *Service) DeleteKeys(
 	}
 
 	if owner {
-		pending.flush(ctx)
+		pending.Flush(ctx)
 	}
 
 	return deleted, newRev, nil
