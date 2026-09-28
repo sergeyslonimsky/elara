@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/usecase/txevents"
 )
 
 // KVCompareTarget names the stored field a compare inspects.
@@ -151,7 +152,7 @@ func (s *Service) Txn(ctx context.Context, in KVTxnInput) (KVTxnResult, error) {
 		return res, nil
 	}
 
-	outer, pending, owner := withPendingEvents(ctx)
+	outer, pending, owner := txevents.Install(ctx)
 
 	var res KVTxnResult
 
@@ -170,7 +171,7 @@ func (s *Service) Txn(ctx context.Context, in KVTxnInput) (KVTxnResult, error) {
 	}
 
 	if owner {
-		pending.flush(ctx)
+		pending.Flush(ctx)
 	}
 
 	return res, nil

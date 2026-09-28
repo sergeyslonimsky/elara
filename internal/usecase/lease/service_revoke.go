@@ -7,6 +7,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/storage"
+	"github.com/sergeyslonimsky/elara/internal/usecase/txevents"
 )
 
 // Revoke deletes a lease and every key attached to it.
@@ -14,12 +15,25 @@ import (
 // One transaction covers the lease record, both indexes and the keys, so a
 // watcher never sees a lease's keys disappear while the lease still exists — or
 // the reverse, which would leave keys nothing will ever delete.
+//
+// The notification collector is installed here, around the transaction, not
+// left to the config write path inside it. Whoever opens the outermost
+// transaction has to own publication: the inner write would otherwise flush as
+// soon as its own (flattened) call returned, which is before this transaction
+// commits — and a watcher told of a delete it cannot yet read goes on waiting
+// for an event that has already been sent.
 func (s *Service) Revoke(ctx context.Context, id int64) error {
-	err := s.txm.WithTx(ctx, func(ctx context.Context) error {
+	outer, pending, owner := txevents.Install(ctx)
+
+	err := s.txm.WithTx(outer, func(ctx context.Context) error {
 		return s.revokeTx(ctx, id)
 	})
 	if err != nil {
 		return fmt.Errorf("revoke lease %d: %w", id, err)
+	}
+
+	if owner {
+		pending.Flush(ctx)
 	}
 
 	return nil
