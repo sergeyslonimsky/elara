@@ -72,6 +72,9 @@ type KVRangeOp struct {
 type KVPutOp struct {
 	Namespace, Path string
 	Value           []byte
+	// Lease follows PutKey's three-valued convention: nil is ignore_lease, a
+	// pointer to zero detaches, non-zero attaches.
+	Lease domain.LeaseAssignment
 }
 
 type KVDeleteRangeOp struct {
@@ -350,7 +353,7 @@ func (s *Service) runRangeOp(ctx context.Context, op *KVRangeOp) (KVOpResult, in
 }
 
 func (s *Service) runPutOp(ctx context.Context, op *KVPutOp) (KVOpResult, int64, error) {
-	prev, rev, err := s.PutKey(ctx, op.Namespace, op.Path, op.Value)
+	prev, rev, err := s.PutKey(ctx, op.Namespace, op.Path, op.Value, op.Lease)
 	if err != nil {
 		return KVOpResult{}, 0, fmt.Errorf("txn put: %w", err)
 	}

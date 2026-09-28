@@ -97,6 +97,7 @@ func (r *Repository) RangeQuery(
 				CreateRevision: m.CreateRevision,
 				ModRevision:    modRev,
 				Version:        m.Version,
+				Lease:          m.Lease,
 			})
 
 			if limit > 0 && int64(len(results)) >= limit {
@@ -235,6 +236,7 @@ func buildPutMeta(
 	path string,
 	value []byte,
 	revision int64,
+	lease int64,
 	existing existingKeyInfo,
 	found bool,
 ) (internal.ConfigMeta, domain.EventType) {
@@ -243,6 +245,7 @@ func buildPutMeta(
 		ContentHash: computeHash(value),
 		Format:      string(domain.DetectFormatFromPath(path)),
 		Revision:    revision,
+		Lease:       lease,
 		UpdatedAt:   now,
 	}
 
@@ -266,10 +269,16 @@ func buildPutMeta(
 // PutKey creates or updates a key in etcd semantics. Returns the previous KV
 // (if it existed) and the new revision. Always upserts — etcd Put has no
 // version check.
+//
+// lease's zero value means "no lease" (see domain.LeaseAssignment), so an
+// ordinary write passes it empty. This method stays deliberately dumb about it:
+// verifying that the lease exists and is live, and maintaining the lease-to-keys
+// index, belong to the usecase that owns the transaction.
 func (r *Repository) PutKey(
 	ctx context.Context,
 	namespace, path string,
 	value []byte,
+	lease domain.LeaseAssignment,
 ) (*domain.KVPair, int64, error) {
 	var (
 		prev   *domain.KVPair
@@ -277,7 +286,7 @@ func (r *Repository) PutKey(
 	)
 
 	err := r.dbm.WithTx(ctx, func(ctx context.Context) error {
-		p, rev, err := putKeyTx(r.dbm.GetQuerier(ctx), namespace, path, value)
+		p, rev, err := putKeyTx(r.dbm.GetQuerier(ctx), namespace, path, value, lease)
 		prev = p
 		newRev = rev
 
@@ -290,7 +299,12 @@ func (r *Repository) PutKey(
 	return prev, newRev, nil
 }
 
-func putKeyTx(q bbolt.Querier, namespace, path string, value []byte) (*domain.KVPair, int64, error) {
+func putKeyTx(
+	q bbolt.Querier,
+	namespace, path string,
+	value []byte,
+	lease domain.LeaseAssignment,
+) (*domain.KVPair, int64, error) {
 	key := configKey(namespace, path)
 
 	existing, found, err := resolveExistingKey(q, key)
@@ -311,8 +325,8 @@ func putKeyTx(q bbolt.Querier, namespace, path string, value []byte) (*domain.KV
 		return nil, 0, err
 	}
 
-	newMeta, eventType := buildPutMeta(path, value, revision, existing, found)
 	prev := buildPrevKV(existing, found, namespace, path)
+	newMeta, eventType := buildPutMeta(path, value, revision, lease.Resolve(prev), existing, found)
 
 	if err := q.Bucket(bucketContent).Put(key, value); err != nil {
 		return nil, 0, fmt.Errorf("put content: %w", err)
@@ -371,6 +385,10 @@ func collectDeleteTargets(
 		if m.Locked {
 			return nil, fmt.Errorf("delete range: %w", domain.NewLockedError(path))
 		}
+
+		// Always carried, regardless of returnPrev: the caller needs it to drop
+		// the lease's claim on a key it just deleted, not only to answer prev_kv.
+		kv.Lease = m.Lease
 
 		if returnPrev {
 			kv.CreateRevision = m.CreateRevision
@@ -442,27 +460,161 @@ func deleteRangeKeysTx(
 		return nil, 0, err
 	}
 
+	kvs, err := applyDeletes(q, targets, revision)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return kvs, revision, nil
+}
+
+// DeleteKeys deletes an explicit set of keys in a single revision and returns
+// the deleted KVPairs with that revision.
+//
+// Distinct from DeleteRangeKeys because the keys a lease holds are an arbitrary
+// set rather than a contiguous range, and etcd removes all of a lease's keys in
+// one revision. A loop over DeleteRangeKeys would allocate a revision per key
+// and emit a separate watch batch for each — observable, and wrong for clients
+// that reason about revisions.
+//
+// A key that is already gone is skipped rather than reported: the expiry sweep
+// can race a client that deleted the key itself.
+func (r *Repository) DeleteKeys(
+	ctx context.Context,
+	refs []domain.KeyRef,
+	returnPrev bool,
+) ([]*domain.KVPair, int64, error) {
+	var (
+		deleted []*domain.KVPair
+		newRev  int64
+	)
+
+	err := r.dbm.WithTx(ctx, func(ctx context.Context) error {
+		kvs, rev, err := deleteKeysTx(r.dbm.GetQuerier(ctx), refs, returnPrev)
+		deleted = kvs
+		newRev = rev
+
+		return err
+	})
+	if err != nil {
+		return nil, 0, fmt.Errorf("delete keys: %w", err)
+	}
+
+	return deleted, newRev, nil
+}
+
+func deleteKeysTx(
+	q bbolt.Querier,
+	refs []domain.KeyRef,
+	returnPrev bool,
+) ([]*domain.KVPair, int64, error) {
+	targets, err := collectKeyTargets(q, refs, returnPrev)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if len(targets) == 0 {
+		return nil, 0, nil
+	}
+
+	revision, err := nextRevision(q)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	kvs, err := applyDeletes(q, targets, revision)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return kvs, revision, nil
+}
+
+// collectKeyTargets resolves an explicit key set into delete targets, skipping
+// keys that no longer exist. Each namespace is checked for a lock once, however
+// many of its keys the set contains.
+func collectKeyTargets(
+	q bbolt.Querier,
+	refs []domain.KeyRef,
+	returnPrev bool,
+) ([]deleteTarget, error) {
+	content := q.Bucket(bucketContent)
+	checkedNS := make(map[string]struct{}, 1)
+
+	var targets []deleteTarget
+
+	for _, ref := range refs {
+		if _, done := checkedNS[ref.Namespace]; !done {
+			if err := validateNamespaceUnlocked(q, ref.Namespace); err != nil {
+				return nil, err
+			}
+
+			checkedNS[ref.Namespace] = struct{}{}
+		}
+
+		key := configKey(ref.Namespace, ref.Path)
+
+		m, err := bbolt.Get[internal.ConfigMeta](q, bucketMeta, key)
+		if errors.Is(err, bbolt.ErrNotFound) {
+			continue
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("unmarshal meta: %w", err)
+		}
+
+		if m.Locked {
+			return nil, fmt.Errorf("delete keys: %w", domain.NewLockedError(ref.Path))
+		}
+
+		kv := &domain.KVPair{Namespace: ref.Namespace, Path: ref.Path, Lease: m.Lease}
+
+		if returnPrev {
+			kv.CreateRevision = m.CreateRevision
+			kv.ModRevision = m.Revision
+			kv.Version = m.Version
+
+			if val := content.Get(key); val != nil {
+				kv.Value = make([]byte, len(val))
+				copy(kv.Value, val)
+			}
+		}
+
+		targets = append(targets, deleteTarget{key: key, kv: kv})
+	}
+
+	return targets, nil
+}
+
+// applyDeletes removes every target's content and meta and appends one changelog
+// entry per key, all at the given revision. Shared by the range and explicit-set
+// delete paths so both emit the same records.
+func applyDeletes(
+	q bbolt.Querier,
+	targets []deleteTarget,
+	revision int64,
+) ([]*domain.KVPair, error) {
 	content := q.Bucket(bucketContent)
 	metaBkt := q.Bucket(bucketMeta)
 	kvs := make([]*domain.KVPair, 0, len(targets))
 
 	for _, t := range targets {
 		if err := content.Delete(t.key); err != nil {
-			return nil, 0, fmt.Errorf("delete content: %w", err)
+			return nil, fmt.Errorf("delete content: %w", err)
 		}
 
 		if err := metaBkt.Delete(t.key); err != nil {
-			return nil, 0, fmt.Errorf("delete meta: %w", err)
+			return nil, fmt.Errorf("delete meta: %w", err)
 		}
 
 		if err := writeChangelog(q, revision, domain.EventTypeDeleted, t.kv.Path, t.kv.Namespace, 0); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 
 		kvs = append(kvs, t.kv)
 	}
 
-	return kvs, revision, nil
+	return kvs, nil
 }
 
 func buildPrevKV(existing existingKeyInfo, found bool, namespace, path string) *domain.KVPair {
@@ -477,6 +629,7 @@ func buildPrevKV(existing existingKeyInfo, found bool, namespace, path string) *
 		CreateRevision: existing.meta.CreateRevision,
 		ModRevision:    existing.meta.Revision,
 		Version:        existing.meta.Version,
+		Lease:          existing.meta.Lease,
 	}
 }
 

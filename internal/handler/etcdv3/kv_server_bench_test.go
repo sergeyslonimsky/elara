@@ -13,6 +13,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/service/schemavalidator"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 	configrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/config"
+	leaserepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/lease"
 	namespacerepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/namespace"
 	schemarepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/schema"
 	configuc "github.com/sergeyslonimsky/elara/internal/usecase/config"
@@ -318,6 +319,7 @@ func newBenchKVServerSync(b *testing.B, noSync bool) (*etcdv3.KVServer, context.
 		bbolt.NewManager(store.DB()),
 		nil,
 		configs,
+		leaserepo.NewRepository(pkgMgr),
 		pub,
 		namespacerepo.NewRepository(pkgMgr),
 		schemavalidator.New(schemarepo.NewRepository(pkgMgr)),

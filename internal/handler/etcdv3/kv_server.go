@@ -33,7 +33,12 @@ type KVUsecase interface {
 		startNS, startPath, endNS, endPath string,
 		opts configuc.KVRangeOpts,
 	) ([]*domain.KVPair, bool, error)
-	PutKey(ctx context.Context, namespace, path string, value []byte) (*domain.KVPair, int64, error)
+	PutKey(
+		ctx context.Context,
+		namespace, path string,
+		value []byte,
+		lease domain.LeaseAssignment,
+	) (*domain.KVPair, int64, error)
 	DeleteRangeKeys(
 		ctx context.Context,
 		startNS, startPath, endNS, endPath string,
@@ -141,7 +146,7 @@ func (s *KVServer) Put(
 		return nil, status.Errorf(codes.Unimplemented, "ignore_value is not supported")
 	}
 
-	prev, newRev, err := s.usecase.PutKey(ctx, namespace, path, req.GetValue())
+	prev, newRev, err := s.usecase.PutKey(ctx, namespace, path, req.GetValue(), putLease(req))
 	if err != nil {
 		s.recordRejectedWrite(ctx, "put", namespace, err)
 
@@ -259,7 +264,15 @@ func kvPairToProto(kv *domain.KVPair) *mvccpb.KeyValue {
 		CreateRevision: kv.CreateRevision,
 		ModRevision:    kv.ModRevision,
 		Version:        kv.Version,
+		Lease:          kv.Lease,
 	}
+}
+
+// putLease carries a PutRequest's two lease fields across to the usecase
+// unchanged. They stay separate all the way down because on the wire, lease 0
+// with ignore_lease set and lease 0 without it mean different things.
+func putLease(req *etcdserverpb.PutRequest) domain.LeaseAssignment {
+	return domain.LeaseAssignment{ID: req.GetLease(), Ignore: req.GetIgnoreLease()}
 }
 
 func sortKVs(

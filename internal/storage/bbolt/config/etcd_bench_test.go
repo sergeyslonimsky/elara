@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 	configrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/config"
 	namespacerepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/namespace"
@@ -43,7 +44,7 @@ func BenchmarkPutKey_NewKey(b *testing.B) {
 	b.ResetTimer()
 
 	for i := range b.N {
-		if _, _, err := repo.PutKey(ctx, "ns", keys[i], value); err != nil {
+		if _, _, err := repo.PutKey(ctx, "ns", keys[i], value, domain.LeaseAssignment{}); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -64,7 +65,7 @@ func BenchmarkPutKey_NewKey_Durable(b *testing.B) {
 	b.ResetTimer()
 
 	for i := range b.N {
-		if _, _, err := repo.PutKey(ctx, "ns", keys[i], value); err != nil {
+		if _, _, err := repo.PutKey(ctx, "ns", keys[i], value, domain.LeaseAssignment{}); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -84,14 +85,14 @@ func BenchmarkPutKey_Overwrite(b *testing.B) {
 
 	value := benchPayload(256)
 
-	if _, _, err := repo.PutKey(ctx, "ns", key, value); err != nil {
+	if _, _, err := repo.PutKey(ctx, "ns", key, value, domain.LeaseAssignment{}); err != nil {
 		b.Fatal(err)
 	}
 
 	b.ResetTimer()
 
 	for b.Loop() {
-		if _, _, err := repo.PutKey(ctx, "ns", key, value); err != nil {
+		if _, _, err := repo.PutKey(ctx, "ns", key, value, domain.LeaseAssignment{}); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -115,7 +116,7 @@ func BenchmarkPutKey_Contended(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			if _, _, err := repo.PutKey(ctx, "ns", key, value); err != nil {
+			if _, _, err := repo.PutKey(ctx, "ns", key, value, domain.LeaseAssignment{}); err != nil {
 				b.Error(err)
 
 				return
@@ -133,7 +134,7 @@ func BenchmarkRangeQuery_SingleKey(b *testing.B) {
 
 	const key = "/svc/single.json"
 
-	if _, _, err := repo.PutKey(ctx, "ns", key, benchPayload(256)); err != nil {
+	if _, _, err := repo.PutKey(ctx, "ns", key, benchPayload(256), domain.LeaseAssignment{}); err != nil {
 		b.Fatal(err)
 	}
 
@@ -212,7 +213,7 @@ func BenchmarkRangeQuery_AtRevision(b *testing.B) {
 
 	value := benchPayload(256)
 	for range 10 {
-		if _, _, err := repo.PutKey(ctx, "ns", key, value); err != nil {
+		if _, _, err := repo.PutKey(ctx, "ns", key, value, domain.LeaseAssignment{}); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -237,7 +238,7 @@ func BenchmarkDeleteRangeKeys_SingleKey(b *testing.B) {
 	value := benchPayload(256)
 
 	for i := range b.N {
-		if _, _, err := repo.PutKey(ctx, "ns", keys[i], value); err != nil {
+		if _, _, err := repo.PutKey(ctx, "ns", keys[i], value, domain.LeaseAssignment{}); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -258,7 +259,7 @@ func BenchmarkCurrentRevisionValue(b *testing.B) {
 	ctx := b.Context()
 	seedNamespace(b, nsr, "ns")
 
-	if _, _, err := repo.PutKey(ctx, "ns", "/svc/x.json", benchPayload(16)); err != nil {
+	if _, _, err := repo.PutKey(ctx, "ns", "/svc/x.json", benchPayload(16), domain.LeaseAssignment{}); err != nil {
 		b.Fatal(err)
 	}
 
@@ -299,7 +300,7 @@ func seedKeys(b *testing.B, repo *configrepo.Repository, namespace string, n int
 
 	value := benchPayload(256)
 	for _, k := range benchKeys(n) {
-		if _, _, err := repo.PutKey(b.Context(), namespace, k, value); err != nil {
+		if _, _, err := repo.PutKey(b.Context(), namespace, k, value, domain.LeaseAssignment{}); err != nil {
 			b.Fatal(err)
 		}
 	}
