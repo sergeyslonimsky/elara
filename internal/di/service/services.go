@@ -45,6 +45,11 @@ type Services struct {
 	Filter    *filteruc.Service
 	Lease     *leaseuc.Service
 
+	// LeaseExpirer is started by cmd/service/main.go. Without it leases are
+	// granted and renewed but never expire, so keys attached to one outlive
+	// their TTL.
+	LeaseExpirer *leaseuc.Expirer
+
 	// Authz is the shared per-RPC authorization gate used by v2 handlers.
 	// It is exposed on Services so V2Handlers wiring can pass it into each
 	// handler that needs Require(...).
@@ -124,6 +129,11 @@ func NewServices(
 		MaxTTL:              cfg.Lease.MaxTTL,
 		CheckpointThreshold: cfg.Lease.CheckpointThreshold,
 	})
+	services.LeaseExpirer = leaseuc.NewExpirer(
+		services.Lease,
+		cfg.Lease.SweepInterval,
+		cfg.Lease.SweepBatch,
+	)
 
 	if err := configureAuthService(ctx, services, a, cfg, userSvc, sessionSvc); err != nil {
 		return nil, err
