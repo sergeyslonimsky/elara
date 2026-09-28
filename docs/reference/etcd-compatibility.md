@@ -57,8 +57,33 @@ underlying domain fields this maps to.
 
 | API | Status | Why |
 |---|---|---|
-| **Lease** (`LeaseGrant`, `LeaseKeepAlive`, `LeaseRevoke`, `LeaseTimeToLive`, `LeaseLeases`) | ❌ Not registered at all | No `LeaseServer` is wired up — key TTLs and lease-based locks/elections that depend on leases (e.g. etcd `concurrency` package election recipes) will not work against Elara. |
 | **Auth API** (etcd's own `AuthEnable`/`UserAdd`/`RoleGrantPermission`/…) | ❌ Not applicable | Elara has its own token-based auth for this port — see [Client Auth (etcd)](../auth/client-auth.md) — not etcd's built-in RBAC. Don't confuse the two. |
+
+## Lease
+
+| RPC | Support | Notes |
+|---|---|---|
+| `LeaseGrant` | ✅ Supported | A requested TTL is clamped to the configured bounds and the granted TTL is returned, as in etcd. Asking for an ID that is taken fails with `FailedPrecondition`. |
+| `LeaseKeepAlive` | ✅ Supported | A lease that will not be renewed — unknown or already expired — is answered with `TTL 0` rather than a stream error, which is the contract `clientv3` relies on to close its keep-alive channel. |
+| `LeaseRevoke` | ✅ Supported | Deletes every key the lease held in a single revision, and publishes one watch batch for them. |
+| `LeaseTimeToLive` | ✅ Supported | Reports remaining and granted TTL; `-1` means there is no such lease. With `keys`, the attached keys are returned, gated by the token's namespace scope. |
+| `LeaseLeases` | ✅ Supported | Lease IDs are not filtered by namespace: an ID carries no key material, and every operation that can act on one checks the scope of the keys it holds. |
+
+Keys attached to a lease are deleted by a background sweep when the lease
+expires. The sweep reads expiry from the store rather than from an in-process
+timer, so a restart loses nothing.
+
+**Renewals are throttled.** `KeepAlive` answers immediately and writes the new
+expiry only once it has drifted past a fraction of the TTL
+(`lease.checkpoint.threshold`, default 0.5). The cost is bounded staleness: after
+an abrupt process death, a lease can expire up to that fraction of its TTL
+earlier than the client was last promised. This is the same trade etcd makes when
+lease checkpointing is off. The benefit is measurable — see
+[Performance](performance.md).
+
+Lock and leader-election recipes from `clientv3/concurrency` work against Elara:
+`Session`, `Mutex`, and `Election` (including a leader's lease expiring and
+leadership moving to a waiting candidate) are covered by the integration suite.
 
 ## Authentication and error mapping
 
