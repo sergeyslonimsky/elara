@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	"github.com/sergeyslonimsky/elara/internal/usecase/txevents"
 )
 
 // RevokeExpired revokes the leases that were due before now, at most limit of
@@ -35,9 +36,11 @@ func (s *Service) RevokeExpired(ctx context.Context, now time.Time, limit int) (
 	)
 
 	for _, id := range ids {
-		err := s.txm.WithTx(ctx, func(ctx context.Context) error {
-			return s.revokeTx(ctx, id)
-		})
+		// Per lease: its own transaction, and its own collector flushed after
+		// that transaction commits (see Revoke). Sharing one collector across the
+		// batch would hold every notification until the last lease was done, and
+		// a failure midway would strand the events of the ones that succeeded.
+		err := s.revokeOne(ctx, id)
 
 		switch {
 		case err == nil:
@@ -52,4 +55,20 @@ func (s *Service) RevokeExpired(ctx context.Context, now time.Time, limit int) (
 	}
 
 	return revoked, errors.Join(failed...)
+}
+
+func (s *Service) revokeOne(ctx context.Context, id int64) error {
+	outer, pending, owner := txevents.Install(ctx)
+
+	if err := s.txm.WithTx(outer, func(ctx context.Context) error {
+		return s.revokeTx(ctx, id)
+	}); err != nil {
+		return fmt.Errorf("revoke lease tx: %w", err)
+	}
+
+	if owner {
+		pending.Flush(ctx)
+	}
+
+	return nil
 }
