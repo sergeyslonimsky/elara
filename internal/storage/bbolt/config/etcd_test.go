@@ -16,7 +16,7 @@ func TestRepository_PutKey_AndRangeQuery(t *testing.T) {
 	ctx := t.Context()
 	seedNamespace(t, nsr, "ns")
 
-	prev, rev, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"))
+	prev, rev, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"), domain.LeaseAssignment{})
 	require.NoError(t, err)
 	assert.Nil(t, prev)
 	assert.Equal(t, int64(1), rev)
@@ -29,9 +29,9 @@ func TestRepository_PutKey_AndRangeQuery(t *testing.T) {
 	assert.Equal(t, "/a", results[0].Path)
 	assert.Equal(t, int64(1), results[0].Version)
 
-	_, _, err = repo.PutKey(ctx, "ns", "/b", []byte("v1"))
+	_, _, err = repo.PutKey(ctx, "ns", "/b", []byte("v1"), domain.LeaseAssignment{})
 	require.NoError(t, err)
-	_, _, err = repo.PutKey(ctx, "ns", "/c", []byte("v1"))
+	_, _, err = repo.PutKey(ctx, "ns", "/c", []byte("v1"), domain.LeaseAssignment{})
 	require.NoError(t, err)
 
 	results, _, err = repo.RangeQuery(ctx, "ns", "/a", "ns", "/d", 0, 0, false)
@@ -46,10 +46,10 @@ func TestRepository_PutKey_UpdatesExisting(t *testing.T) {
 	ctx := t.Context()
 	seedNamespace(t, nsr, "ns")
 
-	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"))
+	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"), domain.LeaseAssignment{})
 	require.NoError(t, err)
 
-	prev, rev, err := repo.PutKey(ctx, "ns", "/a", []byte("v2"))
+	prev, rev, err := repo.PutKey(ctx, "ns", "/a", []byte("v2"), domain.LeaseAssignment{})
 	require.NoError(t, err)
 	require.NotNil(t, prev)
 	assert.Equal(t, []byte("v1"), prev.Value)
@@ -70,7 +70,7 @@ func TestRepository_DeleteRangeKeys(t *testing.T) {
 	seedNamespace(t, nsr, "ns")
 
 	for _, p := range []string{"/a", "/b", "/c"} {
-		_, _, err := repo.PutKey(ctx, "ns", p, []byte("v"))
+		_, _, err := repo.PutKey(ctx, "ns", p, []byte("v"), domain.LeaseAssignment{})
 		require.NoError(t, err)
 	}
 
@@ -95,11 +95,11 @@ func TestRepository_PutKey_LockedConfig(t *testing.T) {
 	ctx := t.Context()
 	seedNamespace(t, nsr, "ns")
 
-	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"))
+	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"), domain.LeaseAssignment{})
 	require.NoError(t, err)
 	require.NoError(t, repo.LockConfig(ctx, "ns", "/a"))
 
-	_, _, err = repo.PutKey(ctx, "ns", "/a", []byte("v2"))
+	_, _, err = repo.PutKey(ctx, "ns", "/a", []byte("v2"), domain.LeaseAssignment{})
 	require.ErrorIs(t, err, domain.ErrLocked)
 }
 
@@ -123,7 +123,7 @@ func TestRepository_DeleteRangeKeys_LockedConfig(t *testing.T) {
 	ctx := t.Context()
 	seedNamespace(t, nsr, "ns")
 
-	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v"))
+	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v"), domain.LeaseAssignment{})
 	require.NoError(t, err)
 	require.NoError(t, repo.LockConfig(ctx, "ns", "/a"))
 
@@ -138,7 +138,7 @@ func TestRepository_RangeQuery_KeysOnly(t *testing.T) {
 	ctx := t.Context()
 	seedNamespace(t, nsr, "ns")
 
-	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"))
+	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"), domain.LeaseAssignment{})
 	require.NoError(t, err)
 
 	results, _, err := repo.RangeQuery(ctx, "ns", "/a", "", "", 0, 0, true)
@@ -155,9 +155,9 @@ func TestRepository_RangeQuery_AtRevision(t *testing.T) {
 	ctx := t.Context()
 	seedNamespace(t, nsr, "ns")
 
-	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"))
+	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"), domain.LeaseAssignment{})
 	require.NoError(t, err)
-	_, _, err = repo.PutKey(ctx, "ns", "/a", []byte("v2"))
+	_, _, err = repo.PutKey(ctx, "ns", "/a", []byte("v2"), domain.LeaseAssignment{})
 	require.NoError(t, err)
 
 	results, _, err := repo.RangeQuery(ctx, "ns", "/a", "", "", 0, 1, false)
@@ -175,7 +175,7 @@ func TestRepository_RangeQuery_Limit_SetsMore(t *testing.T) {
 	seedNamespace(t, nsr, "ns")
 
 	for _, p := range []string{"/a", "/b", "/c"} {
-		_, _, err := repo.PutKey(ctx, "ns", p, []byte("v"))
+		_, _, err := repo.PutKey(ctx, "ns", p, []byte("v"), domain.LeaseAssignment{})
 		require.NoError(t, err)
 	}
 
@@ -196,7 +196,7 @@ func TestRepository_CurrentRevisionValue(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), rev)
 
-	_, _, err = repo.PutKey(ctx, "ns", "/a", []byte("v"))
+	_, _, err = repo.PutKey(ctx, "ns", "/a", []byte("v"), domain.LeaseAssignment{})
 	require.NoError(t, err)
 
 	rev, err = repo.CurrentRevisionValue(ctx)
@@ -211,9 +211,9 @@ func TestRepository_GetKVAtRevision(t *testing.T) {
 	ctx := t.Context()
 	seedNamespace(t, nsr, "ns")
 
-	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"))
+	_, _, err := repo.PutKey(ctx, "ns", "/a", []byte("v1"), domain.LeaseAssignment{})
 	require.NoError(t, err)
-	_, _, err = repo.PutKey(ctx, "ns", "/a", []byte("v2"))
+	_, _, err = repo.PutKey(ctx, "ns", "/a", []byte("v2"), domain.LeaseAssignment{})
 	require.NoError(t, err)
 
 	got, err := repo.GetKVAtRevision(ctx, "ns", "/a", 1)

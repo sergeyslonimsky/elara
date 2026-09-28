@@ -120,6 +120,7 @@ func (f *fakeKVUsecase) PutKey(
 	_ context.Context,
 	namespace, path string,
 	value []byte,
+	lease domain.LeaseAssignment,
 ) (*domain.KVPair, int64, error) {
 	if f.putErr != nil {
 		return nil, 0, f.putErr
@@ -144,6 +145,7 @@ func (f *fakeKVUsecase) PutKey(
 			CreateRevision: f.rev,
 			ModRevision:    f.rev,
 			Version:        1,
+			Lease:          lease.Resolve(nil),
 		}
 
 		return nil, f.rev, nil
@@ -158,6 +160,7 @@ func (f *fakeKVUsecase) PutKey(
 		CreateRevision: prev.CreateRevision,
 		ModRevision:    f.rev,
 		Version:        prev.Version + 1,
+		Lease:          lease.Resolve(prev),
 	}
 
 	return &prevCopy, f.rev, nil

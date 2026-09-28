@@ -270,7 +270,12 @@ func txnPutOp(req *etcdserverpb.PutRequest) (configuc.KVOp, error) {
 
 	return configuc.KVOp{
 		Kind: configuc.KVOpPut,
-		Put:  &configuc.KVPutOp{Namespace: namespace, Path: path, Value: req.GetValue()},
+		Put: &configuc.KVPutOp{
+			Namespace: namespace,
+			Path:      path,
+			Value:     req.GetValue(),
+			Lease:     putLease(req),
+		},
 	}, nil
 }
 

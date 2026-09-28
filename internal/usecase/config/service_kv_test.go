@@ -128,7 +128,7 @@ func TestService_PutKey(t *testing.T) {
 					Return(nil)
 				expectPassthroughTx(m, 1)
 				m.kv.EXPECT().
-					PutKey(gomock.Any(), "prod", "/lock.json", []byte(`{"a":1}`)).
+					PutKey(gomock.Any(), "prod", "/lock.json", []byte(`{"a":1}`), gomock.Any()).
 					Return(nil, int64(7), nil)
 			},
 			wantRev: 7,
@@ -153,7 +153,7 @@ func TestService_PutKey(t *testing.T) {
 					Return(nil)
 				expectPassthroughTx(m, 1)
 				m.kv.EXPECT().
-					PutKey(gomock.Any(), "prod", "/lock.json", []byte(`{"a":2}`)).
+					PutKey(gomock.Any(), "prod", "/lock.json", []byte(`{"a":2}`), gomock.Any()).
 					Return(&domain.KVPair{Version: 4, CreateRevision: 2}, int64(9), nil)
 			},
 			wantPrev: &domain.KVPair{Version: 4, CreateRevision: 2},
@@ -191,7 +191,7 @@ func TestService_PutKey(t *testing.T) {
 					Return(nil)
 				expectPassthroughTx(m, 1)
 				m.kv.EXPECT().
-					PutKey(gomock.Any(), "prod", "/lock.json", []byte(`{"a":1}`)).
+					PutKey(gomock.Any(), "prod", "/lock.json", []byte(`{"a":1}`), gomock.Any()).
 					Return(nil, int64(0), errors.New("db error"))
 			},
 			wantErr: "put key tx: put key: db error",
@@ -208,7 +208,7 @@ func TestService_PutKey(t *testing.T) {
 			captureNotifications(m, capture)
 			tt.mockFunc(m)
 
-			prev, rev, err := svc.PutKey(t.Context(), tt.namespace, tt.path, tt.value)
+			prev, rev, err := svc.PutKey(t.Context(), tt.namespace, tt.path, tt.value, noLease())
 
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
@@ -245,10 +245,10 @@ func TestService_PutKey_CreatedCarriesCreationTimestamp(t *testing.T) {
 		Return(nil)
 	expectPassthroughTx(m, 1)
 	m.kv.EXPECT().
-		PutKey(gomock.Any(), "prod", "/a.json", []byte("v")).
+		PutKey(gomock.Any(), "prod", "/a.json", []byte("v"), gomock.Any()).
 		Return(nil, int64(1), nil)
 
-	_, _, err := svc.PutKey(t.Context(), "prod", "/a.json", []byte("v"))
+	_, _, err := svc.PutKey(t.Context(), "prod", "/a.json", []byte("v"), noLease())
 	require.NoError(t, err)
 
 	created, _, _ := capture.snapshot()

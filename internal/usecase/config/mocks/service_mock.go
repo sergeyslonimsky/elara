@@ -279,6 +279,22 @@ func (mr *MockkvRepoMockRecorder) CurrentRevisionValue(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentRevisionValue", reflect.TypeOf((*MockkvRepo)(nil).CurrentRevisionValue), ctx)
 }
 
+// DeleteKeys mocks base method.
+func (m *MockkvRepo) DeleteKeys(ctx context.Context, refs []domain.KeyRef, returnPrev bool) ([]*domain.KVPair, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteKeys", ctx, refs, returnPrev)
+	ret0, _ := ret[0].([]*domain.KVPair)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// DeleteKeys indicates an expected call of DeleteKeys.
+func (mr *MockkvRepoMockRecorder) DeleteKeys(ctx, refs, returnPrev any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteKeys", reflect.TypeOf((*MockkvRepo)(nil).DeleteKeys), ctx, refs, returnPrev)
+}
+
 // DeleteRangeKeys mocks base method.
 func (m *MockkvRepo) DeleteRangeKeys(ctx context.Context, startNS, startPath, endNS, endPath string, returnPrev bool) ([]*domain.KVPair, int64, error) {
 	m.ctrl.T.Helper()
@@ -296,9 +312,9 @@ func (mr *MockkvRepoMockRecorder) DeleteRangeKeys(ctx, startNS, startPath, endNS
 }
 
 // PutKey mocks base method.
-func (m *MockkvRepo) PutKey(ctx context.Context, namespace, path string, value []byte) (*domain.KVPair, int64, error) {
+func (m *MockkvRepo) PutKey(ctx context.Context, namespace, path string, value []byte, lease domain.LeaseAssignment) (*domain.KVPair, int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PutKey", ctx, namespace, path, value)
+	ret := m.ctrl.Call(m, "PutKey", ctx, namespace, path, value, lease)
 	ret0, _ := ret[0].(*domain.KVPair)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
@@ -306,9 +322,9 @@ func (m *MockkvRepo) PutKey(ctx context.Context, namespace, path string, value [
 }
 
 // PutKey indicates an expected call of PutKey.
-func (mr *MockkvRepoMockRecorder) PutKey(ctx, namespace, path, value any) *gomock.Call {
+func (mr *MockkvRepoMockRecorder) PutKey(ctx, namespace, path, value, lease any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutKey", reflect.TypeOf((*MockkvRepo)(nil).PutKey), ctx, namespace, path, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutKey", reflect.TypeOf((*MockkvRepo)(nil).PutKey), ctx, namespace, path, value, lease)
 }
 
 // RangeQuery mocks base method.
@@ -325,6 +341,73 @@ func (m *MockkvRepo) RangeQuery(ctx context.Context, startNS, startPath, endNS, 
 func (mr *MockkvRepoMockRecorder) RangeQuery(ctx, startNS, startPath, endNS, endPath, limit, revision, keysOnly any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RangeQuery", reflect.TypeOf((*MockkvRepo)(nil).RangeQuery), ctx, startNS, startPath, endNS, endPath, limit, revision, keysOnly)
+}
+
+// MockleaseIndex is a mock of leaseIndex interface.
+type MockleaseIndex struct {
+	ctrl     *gomock.Controller
+	recorder *MockleaseIndexMockRecorder
+	isgomock struct{}
+}
+
+// MockleaseIndexMockRecorder is the mock recorder for MockleaseIndex.
+type MockleaseIndexMockRecorder struct {
+	mock *MockleaseIndex
+}
+
+// NewMockleaseIndex creates a new mock instance.
+func NewMockleaseIndex(ctrl *gomock.Controller) *MockleaseIndex {
+	mock := &MockleaseIndex{ctrl: ctrl}
+	mock.recorder = &MockleaseIndexMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockleaseIndex) EXPECT() *MockleaseIndexMockRecorder {
+	return m.recorder
+}
+
+// AttachKey mocks base method.
+func (m *MockleaseIndex) AttachKey(ctx context.Context, id int64, ref domain.KeyRef) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AttachKey", ctx, id, ref)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AttachKey indicates an expected call of AttachKey.
+func (mr *MockleaseIndexMockRecorder) AttachKey(ctx, id, ref any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AttachKey", reflect.TypeOf((*MockleaseIndex)(nil).AttachKey), ctx, id, ref)
+}
+
+// DetachKey mocks base method.
+func (m *MockleaseIndex) DetachKey(ctx context.Context, id int64, ref domain.KeyRef) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DetachKey", ctx, id, ref)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DetachKey indicates an expected call of DetachKey.
+func (mr *MockleaseIndexMockRecorder) DetachKey(ctx, id, ref any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachKey", reflect.TypeOf((*MockleaseIndex)(nil).DetachKey), ctx, id, ref)
+}
+
+// Get mocks base method.
+func (m *MockleaseIndex) Get(ctx context.Context, id int64) (*domain.Lease, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, id)
+	ret0, _ := ret[0].(*domain.Lease)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockleaseIndexMockRecorder) Get(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockleaseIndex)(nil).Get), ctx, id)
 }
 
 // Mockwatcher is a mock of watcher interface.
