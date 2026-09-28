@@ -134,6 +134,15 @@ func run() error {
 		}
 	}()
 
+	// Background worker: expire leases whose TTL has run out, deleting the keys
+	// attached to them. Without it a lease is granted and renewed but never
+	// expires, so an etcd client's lock key outlives the session holding it.
+	// Run blocks until ctx cancel and returns that cancellation, which is not a
+	// failure worth reporting.
+	go func() {
+		_ = svc.Services.LeaseExpirer.Run(ctx)
+	}()
+
 	// Registration order is LIFO for shutdown:
 	//   otelProvider      ← shuts down LAST (telemetry exporters close last)
 	//   promMetrics       ← just before otel (flushes metrics before close)

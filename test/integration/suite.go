@@ -195,6 +195,17 @@ func testConfig(t *testing.T) config.Config {
 		Metrics: config.MetricsConfig{Enabled: false},
 		Tracing: config.TracingConfig{Enabled: false},
 		Log:     config.LogConfig{Level: "error", Format: "text"},
+		// Sweeping far more often than production, so a test that waits for a
+		// lease to expire waits a fraction of a second. The threshold is zero so
+		// every renewal is persisted: checkpoint throttling is worth measuring in
+		// a benchmark, but in a test it only makes stored state harder to reason
+		// about.
+		Lease: config.Lease{
+			MinTTL:              time.Second,
+			SweepInterval:       20 * time.Millisecond,
+			SweepBatch:          128,
+			CheckpointThreshold: 0,
+		},
 	}
 }
 
