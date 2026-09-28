@@ -78,6 +78,7 @@ func NewServices(
 			a.StorageManager,
 			pdp,
 			a.ConfigRepo,
+			a.LeaseRepo,
 			a.Watch,
 			a.NamespaceRepo,
 			schemaValidator,

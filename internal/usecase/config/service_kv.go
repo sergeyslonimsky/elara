@@ -91,10 +91,16 @@ func (s *Service) RangeQuery(
 // wire protocol has always accepted byte-for-byte (see plan's byte-fidelity
 // risk). Schema validation is the one piece of ConnectRPC-path business
 // logic this method deliberately brings over — see plan finding #1.
+//
+// lease is three-valued (domain.EffectiveLease): a non-nil zero detaches the
+// key, a non-nil non-zero attaches it, and nil means ignore_lease — keep the
+// existing attachment, which requires the key to already exist. Callers on the
+// ordinary write path pass a pointer to zero, not nil.
 func (s *Service) PutKey(
 	ctx context.Context,
 	namespace, path string,
 	value []byte,
+	lease domain.LeaseAssignment,
 ) (*domain.KVPair, int64, error) {
 	format := domain.DetectFormatFromPath(path)
 
@@ -110,12 +116,20 @@ func (s *Service) PutKey(
 	)
 
 	err := s.txm.WithTx(outer, func(ctx context.Context) error {
-		p, rev, err := s.kv.PutKey(ctx, namespace, path, value)
+		if err := s.ensureLeaseAssignable(ctx, namespace, path, lease); err != nil {
+			return err
+		}
+
+		p, rev, err := s.kv.PutKey(ctx, namespace, path, value, lease)
 		prev = p
 		newRev = rev
 
 		if err != nil {
 			return fmt.Errorf("put key: %w", err)
+		}
+
+		if err := s.moveLeaseClaim(ctx, namespace, path, prev, lease); err != nil {
+			return err
 		}
 
 		cfg := kvPutConfig(namespace, path, value, format, p, rev)
@@ -161,6 +175,10 @@ func (s *Service) DeleteRangeKeys(
 			return fmt.Errorf("delete range keys: %w", err)
 		}
 
+		if err := s.dropLeaseClaims(ctx, d); err != nil {
+			return err
+		}
+
 		for _, kv := range d {
 			deletedPath, deletedNS := kv.Path, kv.Namespace
 			pending.add(func(ctx context.Context) {
@@ -172,6 +190,59 @@ func (s *Service) DeleteRangeKeys(
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("delete range keys tx: %w", err)
+	}
+
+	if owner {
+		pending.flush(ctx)
+	}
+
+	return deleted, newRev, nil
+}
+
+// DeleteKeys deletes an explicit set of keys in one revision and one watch
+// batch, releasing each key's lease claim as it goes.
+//
+// This is the method a lease revoke calls, and the reason it exists on the
+// config service rather than being assembled by the caller: the pending-events
+// collector may only be flushed by whoever installed it (see kv_events.go), so
+// an outside caller looping over DeleteRangeKeys would publish each deletion
+// before its own transaction had committed.
+func (s *Service) DeleteKeys(
+	ctx context.Context,
+	refs []domain.KeyRef,
+	returnPrev bool,
+) ([]*domain.KVPair, int64, error) {
+	outer, pending, owner := withPendingEvents(ctx)
+
+	var (
+		deleted []*domain.KVPair
+		newRev  int64
+	)
+
+	err := s.txm.WithTx(outer, func(ctx context.Context) error {
+		d, rev, err := s.kv.DeleteKeys(ctx, refs, returnPrev)
+		deleted = d
+		newRev = rev
+
+		if err != nil {
+			return fmt.Errorf("delete keys: %w", err)
+		}
+
+		if err := s.dropLeaseClaims(ctx, d); err != nil {
+			return err
+		}
+
+		for _, kv := range d {
+			deletedPath, deletedNS := kv.Path, kv.Namespace
+			pending.add(func(ctx context.Context) {
+				s.watcher.NotifyDeleted(ctx, deletedPath, deletedNS, rev)
+			})
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, 0, fmt.Errorf("delete keys tx: %w", err)
 	}
 
 	if owner {

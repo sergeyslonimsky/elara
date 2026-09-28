@@ -61,12 +61,33 @@ type (
 			limit, revision int64,
 			keysOnly bool,
 		) ([]*domain.KVPair, bool, error)
-		PutKey(ctx context.Context, namespace, path string, value []byte) (*domain.KVPair, int64, error)
+		PutKey(
+			ctx context.Context,
+			namespace, path string,
+			value []byte,
+			lease domain.LeaseAssignment,
+		) (*domain.KVPair, int64, error)
 		DeleteRangeKeys(
 			ctx context.Context,
 			startNS, startPath, endNS, endPath string,
 			returnPrev bool,
 		) ([]*domain.KVPair, int64, error)
+		DeleteKeys(
+			ctx context.Context,
+			refs []domain.KeyRef,
+			returnPrev bool,
+		) ([]*domain.KVPair, int64, error)
+	}
+
+	// leaseIndex is the lease-to-keys index, maintained from the KV write path.
+	//
+	// The claim has to move inside the same transaction that writes the key:
+	// a key attached to a lease with no index entry never expires, and an index
+	// entry with no key makes a revoke delete something it does not own.
+	leaseIndex interface {
+		Get(ctx context.Context, id int64) (*domain.Lease, error)
+		AttachKey(ctx context.Context, id int64, ref domain.KeyRef) error
+		DetachKey(ctx context.Context, id int64, ref domain.KeyRef) error
 	}
 
 	watcher interface {
@@ -100,6 +121,7 @@ type Service struct {
 	pdp               pdp
 	storage           configRepo
 	kv                kvRepo
+	leases            leaseIndex
 	watcher           watcher
 	namespaceProvider namespaceProvider
 	schemaValidator   schemaValidator
@@ -117,6 +139,7 @@ func New(
 		configRepo
 		kvRepo
 	},
+	leases leaseIndex,
 	watcher watcher,
 	namespaceProvider namespaceProvider,
 	schemaValidator schemaValidator,
@@ -126,6 +149,7 @@ func New(
 		pdp:               pdp,
 		storage:           repo,
 		kv:                repo,
+		leases:            leases,
 		watcher:           watcher,
 		namespaceProvider: namespaceProvider,
 		schemaValidator:   schemaValidator,

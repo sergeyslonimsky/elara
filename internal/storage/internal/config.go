@@ -18,8 +18,12 @@ type ConfigMeta struct {
 	CreateRevision int64             `json:"create_revision"`
 	Metadata       map[string]string `json:"metadata,omitempty"`
 	Locked         bool              `json:"locked,omitempty"`
-	CreatedAt      time.Time         `json:"created_at"`
-	UpdatedAt      time.Time         `json:"updated_at"`
+	// Lease is the lease the key is attached to, zero when none. Additive and
+	// omitempty, so records written before leases existed decode as zero, which
+	// is exactly "no lease" — no migration, no schema-version bump.
+	Lease     int64     `json:"lease,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func DomainToConfigMeta(cfg *domain.Config) ConfigMeta {

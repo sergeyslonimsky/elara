@@ -15,6 +15,7 @@ import (
 	clienthistoryrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/client_history"
 	configrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/config"
 	grouprepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/group"
+	leaserepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/lease"
 	namespacerepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/namespace"
 	policyrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/policy"
 	schemarepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/schema"
@@ -40,6 +41,7 @@ type Adapters struct {
 	AuthPolicy        *policyrepo.Repository
 	SessionRepo       *sessionrepo.Repository
 	SessionEventRepo  *sessionrepo.EventRepository
+	LeaseRepo         *leaserepo.Repository
 	Watch             *watchadapter.Publisher
 	WebhookDispatcher *webhookadapter.Dispatcher
 	StorageManager    storage.Manager
@@ -95,6 +97,7 @@ func NewAdapters(ctx context.Context, cfg config.Config) (*Adapters, error) {
 		AuthPolicy:        policyrepo.NewRepository(pkgManager),
 		SessionRepo:       sessionrepo.NewRepository(pkgManager),
 		SessionEventRepo:  sessionrepo.NewEventRepository(pkgManager),
+		LeaseRepo:         leaserepo.NewRepository(pkgManager),
 		Watch:             watchPublisher,
 		WebhookDispatcher: webhookDispatcher,
 		StorageManager:    storageManager,
