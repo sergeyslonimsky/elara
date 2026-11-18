@@ -282,6 +282,17 @@ func awaitWatchExit(t *testing.T, done <-chan error) {
 	}
 }
 
+// waitForSubscriptions blocks until the publisher holds n active
+// subscriptions. createWatcher sends the Created ack before it subscribes,
+// so the ack alone does not mean an event pushed now will be delivered:
+// the fake publisher drops events nobody is subscribed to yet.
+func waitForSubscriptions(t *testing.T, pub *fakeWatchPublisher, n int) {
+	t.Helper()
+
+	require.Eventually(t, func() bool { return pub.subscriptionCount() == n },
+		time.Second, 5*time.Millisecond, "waiting for %d subscription(s)", n)
+}
+
 func TestWatchServer_Create_SendsCreatedAck(t *testing.T) {
 	t.Parallel()
 
@@ -334,6 +345,7 @@ func TestWatchServer_RealtimeEvent_Delivered(t *testing.T) {
 
 	// Wait for Created ack before firing an event
 	waitForResps(t, stream, 1)
+	waitForSubscriptions(t, pub, 1)
 
 	// Fire event
 	pub.push(domain.WatchEvent{
@@ -380,6 +392,7 @@ func TestWatchServer_FiltersByNamespace(t *testing.T) {
 	})
 
 	waitForResps(t, stream, 1)
+	waitForSubscriptions(t, pub, 1)
 
 	// Miss: wrong namespace — should NOT produce an event.
 	// (Publisher's own filter will drop it since we subscribe on "default";
@@ -419,6 +432,7 @@ func TestWatchServer_FiltersByExactPathSingleKey(t *testing.T) {
 		},
 	})
 	waitForResps(t, stream, 1)
+	waitForSubscriptions(t, pub, 1)
 
 	// Push a PUT for /foo.json (prefix-matches "/foo" but NOT exact).
 	// Publisher subscription is on prefix="/foo" — it will forward this event
@@ -571,6 +585,7 @@ func TestWatchServer_HistoricalDedupesWithRealtime(t *testing.T) {
 
 	// Wait for Created + historical event
 	waitForResps(t, stream, 2)
+	waitForSubscriptions(t, pub, 1)
 
 	// Push a realtime event with rev=3 (duplicate) and rev=7 (new).
 	pub.push(domain.WatchEvent{
@@ -610,10 +625,7 @@ func TestWatchServer_Cancel_StopsWatch(t *testing.T) {
 		},
 	})
 	waitForResps(t, stream, 1)
-	// The Created ack is sent before Subscribe runs, so the ack alone does
-	// not prove the subscription exists yet.
-	require.Eventually(t, func() bool { return pub.subscriptionCount() == 1 },
-		time.Second, 5*time.Millisecond, "subscribed after create")
+	waitForSubscriptions(t, pub, 1)
 
 	// Cancel
 	stream.pushReq(&etcdserverpb.WatchRequest{
@@ -792,6 +804,7 @@ func TestWatchServer_Create_AllowedForScanAllWithWildcardToken(t *testing.T) {
 	})
 
 	resps := waitForResps(t, stream, 1)
+	waitForSubscriptions(t, pub, 1)
 	assert.True(t, resps[0].GetCreated(), "wildcard token may create a scanAll watch")
 
 	pub.push(domain.WatchEvent{
@@ -892,6 +905,7 @@ func TestWatchServer_CrossNamespaceRange_FiltersNamespaceOutsideScope(t *testing
 	})
 
 	waitForResps(t, stream, 1) // Created ack
+	waitForSubscriptions(t, pub, 1)
 
 	// Out of scope despite being inside the requested byte range.
 	pub.push(domain.WatchEvent{Path: "/anything", Namespace: "m", Revision: 2})
