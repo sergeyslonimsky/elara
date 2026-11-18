@@ -184,7 +184,6 @@ export function CreateGroupDialog({
 													id={cbId}
 													checked={checked}
 													onCheckedChange={() => toggleManagerGroup(g.name)}
-													aria-label={g.name}
 												/>
 												<label htmlFor={cbId} className="cursor-pointer">
 													{g.name}

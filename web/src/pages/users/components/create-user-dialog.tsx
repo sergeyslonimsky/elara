@@ -213,7 +213,6 @@ export function CreateUserDialog() {
 														id={cbId}
 														checked={checked}
 														onCheckedChange={() => toggleGroup(g.name)}
-														aria-label={g.name}
 													/>
 													<label htmlFor={cbId} className="cursor-pointer">
 														{g.displayName || g.name}

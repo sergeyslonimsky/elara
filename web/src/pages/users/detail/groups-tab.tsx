@@ -130,7 +130,6 @@ export function GroupsTab({
 									checked={checked}
 									disabled={!editable}
 									onCheckedChange={() => toggle(g)}
-									aria-label={g.name}
 								/>
 								<div className="flex flex-col">
 									<label
