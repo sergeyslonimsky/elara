@@ -13,6 +13,8 @@
 package etcdv3_test
 
 import (
+	"context"
+	"strconv"
 	"sync/atomic"
 	"testing"
 
@@ -258,4 +260,89 @@ func TestIntegration_KVConformance_TxnCompareAndSwap_Concurrent(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, get.Kvs, 1)
 	assert.Equal(t, "winner", string(get.Kvs[0].Value))
+}
+
+// TestIntegration_KVConformance_ReadOnlyTxnIsOneSnapshot races a writer that
+// always sets a group of keys to one value in one transaction against a
+// read-only Txn that ranges every key of the group. etcd serves a Txn from one
+// revision, so the reader must never see the group split.
+//
+// A split group means the reads joined separate read transactions and a write
+// committed between them — exactly what reading related keys through one Txn,
+// rather than several Range calls, is supposed to rule out. The group is wide
+// so that the window between the first and the last read is wide enough for a
+// commit to land in it.
+func TestIntegration_KVConformance_ReadOnlyTxnIsOneSnapshot(t *testing.T) {
+	t.Parallel()
+
+	s := itest.New(t)
+	cli := s.StartEtcd(t)
+	ctx := t.Context()
+
+	const (
+		groupSize = 16
+		reads     = 500
+	)
+
+	keys := make([]string, groupSize)
+	for i := range keys {
+		keys[i] = "/prod/group." + strconv.Itoa(i)
+	}
+
+	putAll := func(ctx context.Context, v string) error {
+		ops := make([]clientv3.Op, 0, len(keys))
+		for _, k := range keys {
+			ops = append(ops, clientv3.OpPut(k, v))
+		}
+
+		_, err := cli.Txn(ctx).Then(ops...).Commit()
+
+		return err
+	}
+
+	require.NoError(t, putAll(ctx, "0"))
+
+	writerCtx, stopWriter := context.WithCancel(ctx)
+	writerDone := make(chan error, 1)
+
+	go func() {
+		for i := 1; writerCtx.Err() == nil; i++ {
+			if err := putAll(writerCtx, strconv.Itoa(i)); err != nil && writerCtx.Err() == nil {
+				writerDone <- err
+
+				return
+			}
+		}
+
+		writerDone <- nil
+	}()
+
+	gets := make([]clientv3.Op, 0, len(keys))
+	for _, k := range keys {
+		gets = append(gets, clientv3.OpGet(k))
+	}
+
+	for range reads {
+		resp, err := cli.Txn(ctx).Then(gets...).Commit()
+		require.NoError(t, err)
+		require.Len(t, resp.Responses, len(keys))
+
+		first := resp.Responses[0].GetResponseRange().GetKvs()
+		require.Len(t, first, 1)
+
+		for i, r := range resp.Responses[1:] {
+			kvs := r.GetResponseRange().GetKvs()
+			require.Len(t, kvs, 1)
+			require.Equal(
+				t,
+				string(first[0].GetValue()),
+				string(kvs[0].GetValue()),
+				"a read-only Txn saw the group split at key %d: its reads came from different revisions",
+				i+1,
+			)
+		}
+	}
+
+	stopWriter()
+	require.NoError(t, <-writerDone)
 }

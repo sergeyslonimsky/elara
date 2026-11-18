@@ -136,17 +136,28 @@ type KVTxnResult struct {
 // kv_events.go. Publishing per operation, as this path used to, would let an
 // observer see a write that a later failing operation rolled back.
 //
-// A transaction whose branches only read does NOT open a writable transaction:
-// bbolt permits one writer at a time, so doing that would serialise read-only
-// transactions behind every writer for no gain. Known limitation, unchanged from
-// before this method existed: those reads are therefore not a single snapshot —
-// each joins its own short read transaction. Fixing that needs WithReadTx on
-// storage.Manager, which is deliberately out of scope here.
+// A transaction whose branches only read runs in a read-only transaction
+// instead: still one snapshot, so a group of keys read together is never split
+// by a writer committing between two reads, as etcd guarantees. It does not
+// take the writable path because bbolt permits one writer at a time, and that
+// would queue every read-only Txn behind every writer;
+// BenchmarkTxn_RangeOnly guards that.
 func (s *Service) Txn(ctx context.Context, in KVTxnInput) (KVTxnResult, error) {
 	if !in.hasWrites() {
-		res, err := s.runTxn(ctx, in)
+		var res KVTxnResult
+
+		err := s.txm.WithReadTx(ctx, func(ctx context.Context) error {
+			r, err := s.runTxn(ctx, in)
+			if err != nil {
+				return err
+			}
+
+			res = r
+
+			return nil
+		})
 		if err != nil {
-			return KVTxnResult{}, err
+			return KVTxnResult{}, fmt.Errorf("txn read tx: %w", err)
 		}
 
 		return res, nil
