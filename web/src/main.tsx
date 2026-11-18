@@ -1,5 +1,4 @@
 import "@fontsource-variable/public-sans";
-// @ts-expect-error font CSS import
 import "@fontsource-variable/geist";
 import "./index.css";
 

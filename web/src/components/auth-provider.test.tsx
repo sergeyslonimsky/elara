@@ -3,7 +3,6 @@ import { Code, ConnectError, createRouterTransport } from "@connectrpc/connect";
 import { TransportProvider } from "@connectrpc/connect-query";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
-import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 import { AuthProvider, useAuth } from "@/components/auth-provider";
 import { AuthType } from "@/gen/elara/auth/v1/auth_pb";
@@ -75,17 +74,15 @@ function renderWithTransport(
 		defaultOptions: { queries: { retry: false, staleTime: 0 } },
 	});
 
-	function Wrapper({ children }: { children: ReactNode }) {
-		return (
-			<TransportProvider transport={transport}>
-				<QueryClientProvider client={queryClient}>
-					<AuthProvider>{children}</AuthProvider>
-				</QueryClientProvider>
-			</TransportProvider>
-		);
-	}
-
-	return render(<AuthStateProbe />, { wrapper: Wrapper });
+	return render(
+		<TransportProvider transport={transport}>
+			<QueryClientProvider client={queryClient}>
+				<AuthProvider>
+					<AuthStateProbe />
+				</AuthProvider>
+			</QueryClientProvider>
+		</TransportProvider>,
+	);
 }
 
 describe("AuthProviderInner (real fetch flow)", () => {
