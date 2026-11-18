@@ -43,8 +43,10 @@ place transaction boundaries so multi-step writes are atomic, without threading 
 
 Chosen option: **3 — usecase-owned transactions with context injection.**
 
-The only way to open a transaction is `storage.Manager.WithTx(ctx, func(ctx) error) error`
-(`internal/storage/manager.go`). The **usecase** owns the boundary: it wraps the
+The only way to open a transaction is through `storage.Manager`
+(`internal/storage/manager.go`): `WithTx(ctx, func(ctx) error) error` for a unit
+of work that writes, and `WithReadTx` for one that only reads (see
+[Read-only boundaries](#read-only-boundaries) below). The **usecase** owns the boundary: it wraps the
 whole unit of work in one `WithTx` call. `internal/usecase/user/service.go`
 (`transitionStatus`) wraps `GetByID` + status change + `RevokeAllForUser` in a
 single `WithTx`, so deactivation commits or rolls back as a whole.
@@ -63,7 +65,10 @@ opening a new one:
 
 ```go
 func (m *DBManager) WithTx(ctx context.Context, callback func(context.Context) error) error {
-    if existing, ok := TxFromContext(ctx); ok && existing.Writable() {
+    if existing, ok := TxFromContext(ctx); ok {
+        if !existing.Writable() {
+            return ErrTxReadOnly // see "Read-only boundaries"
+        }
         return callback(ctx) // reuse outer tx — no nested begin
     }
     tx, err := m.db.Begin(true)
@@ -74,6 +79,28 @@ func (m *DBManager) WithTx(ctx context.Context, callback func(context.Context) e
 This is what makes service-level atomicity composable: a service can call `WithTx`
 defensively, and when a usecase already opened one, it simply joins — bbolt allows
 only one write-tx at a time, so flattening is the only safe behavior.
+
+### Read-only boundaries
+
+*Added 2026-11-18.* A flow that only reads but needs every read to see the same
+committed state — a read-only etcd `Txn` ranging several keys — wraps itself in
+`WithReadTx`. Repos join it exactly as they join `WithTx`, so all reads come from
+one snapshot. Without it each repo call opens its own short read transaction and
+a writer can commit between two of them.
+
+It is not `WithTx` with the writes left out: bbolt read transactions run
+alongside the single writer instead of queuing behind it, so the boundary costs
+nothing in throughput (`BenchmarkTxn_RangeOnly` got faster, since several short
+read transactions became one).
+
+`WithReadTx` joins an outer `WithTx` or `WithReadTx`. The reverse is refused:
+`WithTx` inside `WithReadTx` returns `storage.ErrReadOnlyTx` without running.
+Opening a writer there would hold a read-only and a read-write transaction in one
+goroutine, which bbolt documents as a deadlock, and a read boundary cannot be
+upgraded in place. A flow that might write opens `WithTx` itself.
+
+A Postgres adapter maps it to `BEGIN READ ONLY` at `REPEATABLE READ`, so the seam
+stays backend-agnostic.
 
 ### Consequences
 
