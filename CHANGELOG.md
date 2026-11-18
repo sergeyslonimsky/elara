@@ -7,6 +7,61 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 Entries are generated from [Conventional Commits](https://www.conventionalcommits.org/)
 by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
+## [0.6.0](https://github.com/sergeyslonimsky/elara/releases/tag/v0.6.0) — 2026-11-18
+
+### Features
+
+- **etcd:** Make Txn atomic ([560f908](https://github.com/sergeyslonimsky/elara/commit/560f9089b05f22ef22ac27a4c3bb4efacc51bad1))
+- **domain:** Add the Lease entity ([4360c57](https://github.com/sergeyslonimsky/elara/commit/4360c5768b730ce2f9bed76283f86796b80cef97))
+- **storage:** Add the lease repository ([898ca3a](https://github.com/sergeyslonimsky/elara/commit/898ca3a781ec6b2978db5d5902b9753431c78ecd))
+- **etcd:** Carry the lease through the KV write path ([c570bac](https://github.com/sergeyslonimsky/elara/commit/c570bace35fc5178590cd8ad6a8675317ac4ca1b))
+- **lease:** Add the lease usecase ([e81b52d](https://github.com/sergeyslonimsky/elara/commit/e81b52d08a16df5b98c52c9610a4435569e66012))
+- **etcd:** Register the Lease server ([53263df](https://github.com/sergeyslonimsky/elara/commit/53263dff4b1da54ad7bce824af8ac669bd739433))
+- **lease:** Run the expiry sweep ([388e635](https://github.com/sergeyslonimsky/elara/commit/388e6350499ca01ceff595dec9d0558cd67f54a4))
+
+### Bug fixes
+
+- **web:** Name group checkboxes by their visible label ([1f58b94](https://github.com/sergeyslonimsky/elara/commit/1f58b94e8223f9ca6d62d22496fb4f1aaec4e786))
+- **etcd:** Sort and filter a Range before applying its limit ([23f0bc7](https://github.com/sergeyslonimsky/elara/commit/23f0bc717dd514312043dc011147ebb9699fa58f))
+- **lease:** Publish revoke notifications only after the commit ([8b9c141](https://github.com/sergeyslonimsky/elara/commit/8b9c141cce739be9f4731a9361652f6993264329))
+
+### Performance
+
+- **schemavalidator:** Cache compiled path-pattern globs ([9e2a606](https://github.com/sergeyslonimsky/elara/commit/9e2a606e00961e93dc61cbc7a2af48fa3ebbb976))
+
+### Documentation
+
+- **contributing:** Warn about the two build traps ([28908de](https://github.com/sergeyslonimsky/elara/commit/28908dea73623a3aed018c687b0a91a0be8a14b2))
+- **reference:** Record the performance baseline ([46daa2d](https://github.com/sergeyslonimsky/elara/commit/46daa2dcfdf97344b7aff2faf8120ebea4aca925))
+- **reference:** Update the baseline after the pattern-cache fix ([fb3ebae](https://github.com/sergeyslonimsky/elara/commit/fb3ebaee2e6d916b810e1c3bb62f80388b57b383))
+- **adr:** Record the rule that decides which layer owns a responsibility ([c6fce9b](https://github.com/sergeyslonimsky/elara/commit/c6fce9b829108199fec42962a347fd458922ad1a))
+- **agents:** Make the placement rule a hard check for the Go writer ([05a2518](https://github.com/sergeyslonimsky/elara/commit/05a25182c4aee4a1d5a250855d73e355ca64d823))
+- **agents:** Fix six stale or self-contradicting instructions ([49a441b](https://github.com/sergeyslonimsky/elara/commit/49a441b91a9df01466c3fba18d02a3d793ea52fb))
+- **reference:** Record the atomic-Txn numbers and close the deviation ([240ec54](https://github.com/sergeyslonimsky/elara/commit/240ec54b026da3798ce16a6c5371ce77c429a3a3))
+- **adr:** Record the lease expiry model ([60bc347](https://github.com/sergeyslonimsky/elara/commit/60bc347c5b03ea22c03dd21aef1cca7b091030bd))
+
+### Testing
+
+- **domain:** Cover EventType.String and the config pure functions ([e905a84](https://github.com/sergeyslonimsky/elara/commit/e905a84f1bee98c8d49368718ddcd4ce690d6244))
+- **bench:** Add the first performance baseline ([8d55ceb](https://github.com/sergeyslonimsky/elara/commit/8d55cebec1f80e6722a6cda2b3fcc4f756ff1a4a))
+- **bench:** Give the pattern-matching benchmark distinct patterns ([84ec793](https://github.com/sergeyslonimsky/elara/commit/84ec793f4305eaf0e7aa9831fba526b1bbd3994b))
+- **etcd:** Cover the atomic Txn seam ([74db14e](https://github.com/sergeyslonimsky/elara/commit/74db14e49dc0b6f7dab374ea9ff54d7556cb3242))
+- **etcd:** Assert a clean Watch exit after cancel ([f1b82a2](https://github.com/sergeyslonimsky/elara/commit/f1b82a267eecc3cb9503f5abd0401226534c9571))
+- **etcd:** Wait for the subscription instead of racing the Created ack ([685523c](https://github.com/sergeyslonimsky/elara/commit/685523c173dd0fbfc2cac14281e62a35fa477753))
+- **lease:** Run etcd's concurrency recipes against Elara ([caa7355](https://github.com/sergeyslonimsky/elara/commit/caa7355b18cf9d3ba792ba17acb72681ff276a1d))
+- **etcd:** Wait for the subscription before pushing watch events ([dbd226f](https://github.com/sergeyslonimsky/elara/commit/dbd226fda289e5085b7c27a0eeeb541e3cb2a25e))
+- **lease:** Clear lint findings in the integration suites ([84af865](https://github.com/sergeyslonimsky/elara/commit/84af86562778c79db7956f86dc2e6bffc9d5ba46))
+
+### Build & CI
+
+- **bench:** Compare benchmarks against the base commit on every PR ([ce91670](https://github.com/sergeyslonimsky/elara/commit/ce91670a90175e1edb6776073d4d10d0cee0cbe1))
+- Pin golangci-lint and adapt wrapcheck to 2.15 ([942bc7b](https://github.com/sergeyslonimsky/elara/commit/942bc7b4f8051b8d0f96cdc49ef378e7375c50d9))
+- Align Node and Go images across Docker and CI ([9419aa1](https://github.com/sergeyslonimsky/elara/commit/9419aa1168e6d9ed3be5a2d42f997d9bc17abec8))
+- **web:** Move shadcn to devDependencies ([f150790](https://github.com/sergeyslonimsky/elara/commit/f150790851f3717aa99c057f18db70e80bd24ab0))
+- **docs:** Pin Python to 3.14 ([f824cac](https://github.com/sergeyslonimsky/elara/commit/f824cacd3ca6243afca7ad6374faa59f242f6681))
+
+**Full diff:** [v0.5.2...v0.6.0](https://github.com/sergeyslonimsky/elara/compare/v0.5.2...v0.6.0)
+
 ## [0.5.2](https://github.com/sergeyslonimsky/elara/releases/tag/v0.5.2) — 2026-09-24
 
 ### Bug fixes
