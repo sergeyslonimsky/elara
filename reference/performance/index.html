@@ -1444,6 +1444,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#lease-renewal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lease renewal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#watch-fan-out" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1528,6 +1539,8 @@
   
     
     
+      
+        
       
         
       
@@ -1694,6 +1707,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0004-lease-expiry-from-stored-state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0004: Lease expiry from stored state
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1776,6 +1817,17 @@
     <span class="md-ellipsis">
       
         etcd wire operations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lease-renewal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lease renewal
       
     </span>
   </a>
@@ -2065,6 +2117,43 @@ rest are the cost of the code, which is the part a change can actually move.</p>
 </tr>
 </tbody>
 </table>
+<p>Attaching a key to a lease costs nothing measurable on the write path: <code>Put</code>
+moved -1.5 % and <code>Txn</code> compare-and-swap was unchanged when lease support landed.</p>
+<h2 id="lease-renewal">Lease renewal</h2>
+<p><code>internal/usecase/lease/service_keepalive.go</code></p>
+<p><code>KeepAlive</code> arrives roughly every TTL/3 per session, so what it costs decides
+what a fleet of sessions costs. The renewal is answered from the entity and only
+written once the expiry has drifted past <code>lease.checkpoint.threshold</code> × TTL.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Time</th>
+<th>Allocations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>KeepAlive</code>, throttled (default)</td>
+<td>1.8 µs</td>
+<td>13</td>
+</tr>
+<tr>
+<td><code>KeepAlive</code>, persisting every renewal</td>
+<td>22 µs</td>
+<td>84</td>
+</tr>
+<tr>
+<td><code>KeepAlive</code>, persisting every renewal, <strong>durable</strong></td>
+<td>8.1 ms</td>
+<td>84</td>
+</tr>
+</tbody>
+</table>
+<p>Twelve times cheaper against the code path, and four thousand times against a
+store that fsyncs — which is why the threshold exists rather than persisting
+every ping. What it buys is paid for in staleness: see
+<a href="../etcd-compatibility/#lease">etcd compatibility</a>.</p>
 <h2 id="watch-fan-out">Watch fan-out</h2>
 <p><code>internal/transport/watch/publisher.go</code></p>
 <table>

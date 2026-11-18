@@ -1388,6 +1388,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#lease" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lease
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#authentication-and-error-mapping" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1554,6 +1565,8 @@
       
         
       
+        
+      
     
     
     
@@ -1711,6 +1724,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0004-lease-expiry-from-stored-state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0004: Lease expiry from stored state
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1821,6 +1862,17 @@
     <span class="md-ellipsis">
       
         Explicitly unsupported
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lease" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lease
       
     </span>
   </a>
@@ -2003,17 +2055,62 @@ underlying domain fields this maps to.</p>
 </thead>
 <tbody>
 <tr>
-<td><strong>Lease</strong> (<code>LeaseGrant</code>, <code>LeaseKeepAlive</code>, <code>LeaseRevoke</code>, <code>LeaseTimeToLive</code>, <code>LeaseLeases</code>)</td>
-<td>❌ Not registered at all</td>
-<td>No <code>LeaseServer</code> is wired up — key TTLs and lease-based locks/elections that depend on leases (e.g. etcd <code>concurrency</code> package election recipes) will not work against Elara.</td>
-</tr>
-<tr>
 <td><strong>Auth API</strong> (etcd's own <code>AuthEnable</code>/<code>UserAdd</code>/<code>RoleGrantPermission</code>/…)</td>
 <td>❌ Not applicable</td>
 <td>Elara has its own token-based auth for this port — see <a href="../../auth/client-auth/">Client Auth (etcd)</a> — not etcd's built-in RBAC. Don't confuse the two.</td>
 </tr>
 </tbody>
 </table>
+<h2 id="lease">Lease</h2>
+<table>
+<thead>
+<tr>
+<th>RPC</th>
+<th>Support</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LeaseGrant</code></td>
+<td>✅ Supported</td>
+<td>A requested TTL is clamped to the configured bounds and the granted TTL is returned, as in etcd. Asking for an ID that is taken fails with <code>FailedPrecondition</code>.</td>
+</tr>
+<tr>
+<td><code>LeaseKeepAlive</code></td>
+<td>✅ Supported</td>
+<td>A lease that will not be renewed — unknown or already expired — is answered with <code>TTL 0</code> rather than a stream error, which is the contract <code>clientv3</code> relies on to close its keep-alive channel.</td>
+</tr>
+<tr>
+<td><code>LeaseRevoke</code></td>
+<td>✅ Supported</td>
+<td>Deletes every key the lease held in a single revision, and publishes one watch batch for them.</td>
+</tr>
+<tr>
+<td><code>LeaseTimeToLive</code></td>
+<td>✅ Supported</td>
+<td>Reports remaining and granted TTL; <code>-1</code> means there is no such lease. With <code>keys</code>, the attached keys are returned, gated by the token's namespace scope.</td>
+</tr>
+<tr>
+<td><code>LeaseLeases</code></td>
+<td>✅ Supported</td>
+<td>Lease IDs are not filtered by namespace: an ID carries no key material, and every operation that can act on one checks the scope of the keys it holds.</td>
+</tr>
+</tbody>
+</table>
+<p>Keys attached to a lease are deleted by a background sweep when the lease
+expires. The sweep reads expiry from the store rather than from an in-process
+timer, so a restart loses nothing.</p>
+<p><strong>Renewals are throttled.</strong> <code>KeepAlive</code> answers immediately and writes the new
+expiry only once it has drifted past a fraction of the TTL
+(<code>lease.checkpoint.threshold</code>, default 0.5). The cost is bounded staleness: after
+an abrupt process death, a lease can expire up to that fraction of its TTL
+earlier than the client was last promised. This is the same trade etcd makes when
+lease checkpointing is off. The benefit is measurable — see
+<a href="../performance/">Performance</a>.</p>
+<p>Lock and leader-election recipes from <code>clientv3/concurrency</code> work against Elara:
+<code>Session</code>, <code>Mutex</code>, and <code>Election</code> (including a leader's lease expiring and
+leadership moving to a waiting candidate) are covered by the integration suite.</p>
 <h2 id="authentication-and-error-mapping">Authentication and error mapping</h2>
 <h2 id="where-the-write-path-diverges">Where the write path diverges</h2>
 <p>A key written through <code>Put</code> is stored differently from the same key written

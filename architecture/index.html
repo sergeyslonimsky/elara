@@ -1402,6 +1402,8 @@
       
         
       
+        
+      
     
     
     
@@ -1654,6 +1656,34 @@
     
   
     ADR 0003: Responsibility placement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0004-lease-expiry-from-stored-state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR 0004: Lease expiry from stored state
   
 
     
@@ -1937,6 +1967,10 @@ layering:</p>
 <li><a href="../adr/0003-responsibility-placement/">ADR 0003 — Where a responsibility goes: the layer is decided by what the code depends on</a>:
   the rule for placing something new, the transport test that applies it, and
   why notification is a usecase concern while authorizing the caller is not.</li>
+<li><a href="../adr/0004-lease-expiry-from-stored-state/">ADR 0004 — Lease expiry decided from stored state, with throttled renewals</a>:
+  why a lease's expiry lives in the record rather than in a process-local timer,
+  why the sweep passes in the instant it judges against, and what the renewal
+  threshold buys and costs.</li>
 </ul>
 
 
