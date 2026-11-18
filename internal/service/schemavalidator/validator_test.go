@@ -131,6 +131,33 @@ func TestValidator_Validate(t *testing.T) {
 			wantSchemaErr: true,
 		},
 		{
+			// A "/**/" segment matches zero segments too: the schema at
+			// /app/**/config.json must still guard /app/config.json.
+			name: "Globstar_MatchesZeroSegments",
+			input: input{
+				namespace: "ns",
+				path:      "/app/config.json",
+				content:   invalidContent,
+				format:    domain.FormatJSON,
+			},
+			mockFunc: func(ctx context.Context, ctrl *gomock.Controller) *schemavalidator.Validator {
+				schemas := []*domain.SchemaAttachment{
+					{
+						ID:          "1",
+						Namespace:   "ns",
+						PathPattern: "/app/**/config.json",
+						JSONSchema:  testJSONSchema,
+						CreatedAt:   now,
+					},
+				}
+				repo := schemavalidatormock.NewMockstorage(ctrl)
+				repo.EXPECT().List(ctx, "ns").Return(schemas, nil)
+
+				return schemavalidator.New(repo)
+			},
+			wantSchemaErr: true,
+		},
+		{
 			name: "YAML_Valid",
 			input: input{
 				namespace: "ns",
