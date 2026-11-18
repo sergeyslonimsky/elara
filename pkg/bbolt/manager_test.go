@@ -133,6 +133,25 @@ func TestDBManager_WithReadTx_NestedInsideWithTx(t *testing.T) {
 	assert.Equal(t, testItem{ID: "a"}, got)
 }
 
+func TestDBManager_WithTx_InsideWithReadTxFails(t *testing.T) {
+	t.Parallel()
+
+	db := newTestDB(t, "items")
+	mgr := bbolt.NewManager(db)
+
+	called := false
+
+	err := mgr.WithReadTx(t.Context(), func(readCtx context.Context) error {
+		return mgr.WithTx(readCtx, func(context.Context) error {
+			called = true
+
+			return nil
+		})
+	})
+	require.ErrorIs(t, err, bbolt.ErrTxReadOnly)
+	assert.False(t, called, "the write callback must not run inside a read-only transaction")
+}
+
 func TestDBManager_WithReadTx_BeginError(t *testing.T) {
 	t.Parallel()
 

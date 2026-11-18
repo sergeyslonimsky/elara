@@ -35,6 +35,8 @@ type Manager interface {
 	// is rolled back. On success, it is committed.
 	//
 	// Nested WithTx flattens: the inner call reuses the outer transaction.
+	// WithTx inside WithReadTx fails with ErrTxReadOnly rather than opening a
+	// second, writable transaction next to the read-only one.
 	WithTx(ctx context.Context, callback func(context.Context) error) error
 
 	// WithReadTx runs callback inside a single read-only transaction.
@@ -95,7 +97,11 @@ func TxFromContext(ctx context.Context) (*bolt.Tx, bool) {
 
 // WithTx — see Manager.WithTx.
 func (m *DBManager) WithTx(ctx context.Context, callback func(context.Context) error) error {
-	if existing, ok := TxFromContext(ctx); ok && existing.Writable() {
+	if existing, ok := TxFromContext(ctx); ok {
+		if !existing.Writable() {
+			return ErrTxReadOnly
+		}
+
 		return callback(ctx)
 	}
 
