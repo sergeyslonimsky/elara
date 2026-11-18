@@ -1589,6 +1589,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#read-only-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read-only boundaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#consequences" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1826,6 +1837,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#read-only-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read-only boundaries
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#consequences" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1950,8 +1972,10 @@ place transaction boundaries so multi-step writes are atomic, without threading 
 </ol>
 <h2 id="decision-outcome">Decision Outcome</h2>
 <p>Chosen option: <strong>3 — usecase-owned transactions with context injection.</strong></p>
-<p>The only way to open a transaction is <code>storage.Manager.WithTx(ctx, func(ctx) error) error</code>
-(<code>internal/storage/manager.go</code>). The <strong>usecase</strong> owns the boundary: it wraps the
+<p>The only way to open a transaction is through <code>storage.Manager</code>
+(<code>internal/storage/manager.go</code>): <code>WithTx(ctx, func(ctx) error) error</code> for a unit
+of work that writes, and <code>WithReadTx</code> for one that only reads (see
+<a href="#read-only-boundaries">Read-only boundaries</a> below). The <strong>usecase</strong> owns the boundary: it wraps the
 whole unit of work in one <code>WithTx</code> call. <code>internal/usecase/user/service.go</code>
 (<code>transitionStatus</code>) wraps <code>GetByID</code> + status change + <code>RevokeAllForUser</code> in a
 single <code>WithTx</code>, so deactivation commits or rolls back as a whole.</p>
@@ -1966,7 +1990,10 @@ changes.</p>
 tx in ctx and, if present, just calls the callback in the same tx rather than
 opening a new one:</p>
 <div class="highlight"><pre><span></span><code><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">m</span><span class="w"> </span><span class="o">*</span><span class="nx">DBManager</span><span class="p">)</span><span class="w"> </span><span class="nx">WithTx</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">callback</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">existing</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">TxFromContext</span><span class="p">(</span><span class="nx">ctx</span><span class="p">);</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">existing</span><span class="p">.</span><span class="nx">Writable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">existing</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">TxFromContext</span><span class="p">(</span><span class="nx">ctx</span><span class="p">);</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="o">!</span><span class="nx">existing</span><span class="p">.</span><span class="nx">Writable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">ErrTxReadOnly</span><span class="w"> </span><span class="c1">// see "Read-only boundaries"</span>
+<span class="w">        </span><span class="p">}</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">callback</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span><span class="w"> </span><span class="c1">// reuse outer tx — no nested begin</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="nx">tx</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">m</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">Begin</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
@@ -1976,6 +2003,23 @@ opening a new one:</p>
 <p>This is what makes service-level atomicity composable: a service can call <code>WithTx</code>
 defensively, and when a usecase already opened one, it simply joins — bbolt allows
 only one write-tx at a time, so flattening is the only safe behavior.</p>
+<h3 id="read-only-boundaries">Read-only boundaries</h3>
+<p><em>Added 2026-11-18.</em> A flow that only reads but needs every read to see the same
+committed state — a read-only etcd <code>Txn</code> ranging several keys — wraps itself in
+<code>WithReadTx</code>. Repos join it exactly as they join <code>WithTx</code>, so all reads come from
+one snapshot. Without it each repo call opens its own short read transaction and
+a writer can commit between two of them.</p>
+<p>It is not <code>WithTx</code> with the writes left out: bbolt read transactions run
+alongside the single writer instead of queuing behind it, so the boundary costs
+nothing in throughput (<code>BenchmarkTxn_RangeOnly</code> got faster, since several short
+read transactions became one).</p>
+<p><code>WithReadTx</code> joins an outer <code>WithTx</code> or <code>WithReadTx</code>. The reverse is refused:
+<code>WithTx</code> inside <code>WithReadTx</code> returns <code>storage.ErrReadOnlyTx</code> without running.
+Opening a writer there would hold a read-only and a read-write transaction in one
+goroutine, which bbolt documents as a deadlock, and a read boundary cannot be
+upgraded in place. A flow that might write opens <code>WithTx</code> itself.</p>
+<p>A Postgres adapter maps it to <code>BEGIN READ ONLY</code> at <code>REPEATABLE READ</code>, so the seam
+stays backend-agnostic.</p>
 <h3 id="consequences">Consequences</h3>
 <ul>
 <li>Good: multi-step writes are atomic with the boundary declared in one place (the usecase).</li>
