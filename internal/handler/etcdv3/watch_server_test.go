@@ -266,6 +266,22 @@ func waitForResps(t *testing.T, s *fakeWatchStream, n int) []*etcdserverpb.Watch
 	return nil
 }
 
+// awaitWatchExit blocks until the Watch goroutine feeding done returns, after
+// the test has cancelled the stream's context.
+func awaitWatchExit(t *testing.T, done <-chan error) {
+	t.Helper()
+
+	// Watch maps a cancelled stream to nil, so anything else is a real
+	// failure. The timeout turns a hung Watch into a named failure instead
+	// of a stall until the global go test deadline.
+	select {
+	case err := <-done:
+		require.NoError(t, err, "Watch must exit cleanly after cancel")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for Watch to return after cancel")
+	}
+}
+
 func TestWatchServer_Create_SendsCreatedAck(t *testing.T) {
 	t.Parallel()
 
@@ -291,7 +307,7 @@ func TestWatchServer_Create_SendsCreatedAck(t *testing.T) {
 	assert.Equal(t, int64(3), resps[0].GetHeader().GetRevision())
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_RealtimeEvent_Delivered(t *testing.T) {
@@ -340,7 +356,7 @@ func TestWatchServer_RealtimeEvent_Delivered(t *testing.T) {
 	assert.Equal(t, int64(5), ev.GetHeader().GetRevision(), "header carries event revision")
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_FiltersByNamespace(t *testing.T) {
@@ -380,7 +396,7 @@ func TestWatchServer_FiltersByNamespace(t *testing.T) {
 	assert.Equal(t, []byte("/default/foo"), resps[1].GetEvents()[0].GetKv().GetKey())
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_FiltersByExactPathSingleKey(t *testing.T) {
@@ -423,7 +439,7 @@ func TestWatchServer_FiltersByExactPathSingleKey(t *testing.T) {
 	assert.Equal(t, []byte("/default/foo"), resps[1].GetEvents()[0].GetKv().GetKey())
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_HistoricalReplay(t *testing.T) {
@@ -478,7 +494,7 @@ func TestWatchServer_HistoricalReplay(t *testing.T) {
 	assert.Equal(t, []byte("v2"), resps[2].GetEvents()[0].GetKv().GetValue())
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_HistoricalReplay_DeletesPublished(t *testing.T) {
@@ -514,7 +530,7 @@ func TestWatchServer_HistoricalReplay_DeletesPublished(t *testing.T) {
 	assert.Equal(t, int64(0), resps[1].GetEvents()[0].GetKv().GetVersion(), "delete version=0")
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_HistoricalDedupesWithRealtime(t *testing.T) {
@@ -571,7 +587,7 @@ func TestWatchServer_HistoricalDedupesWithRealtime(t *testing.T) {
 	assert.Equal(t, int64(7), resps[2].GetEvents()[0].GetKv().GetModRevision())
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_Cancel_StopsWatch(t *testing.T) {
@@ -618,7 +634,7 @@ func TestWatchServer_Cancel_StopsWatch(t *testing.T) {
 	assert.Equal(t, 0, pub.subscriptionCount(), "subscription released after cancel")
 
 	stream.close()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_Progress(t *testing.T) {
@@ -644,7 +660,7 @@ func TestWatchServer_Progress(t *testing.T) {
 	assert.Equal(t, int64(9), resps[0].GetHeader().GetRevision())
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_StreamEOF_CleansUpSubscriptions(t *testing.T) {
@@ -787,7 +803,7 @@ func TestWatchServer_Create_AllowedForScanAllWithWildcardToken(t *testing.T) {
 	require.Len(t, resps[1].GetEvents(), 1, "wildcard token receives events from any namespace under scanAll")
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_Create_AllowedForScanAllWithNilClaims(t *testing.T) {
@@ -816,7 +832,7 @@ func TestWatchServer_Create_AllowedForScanAllWithNilClaims(t *testing.T) {
 	assert.True(t, resps[0].GetCreated(), "auth disabled (nil claims) must allow scanAll watch creation")
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_CrossNamespaceRange_DeniedWhenEndOutOfScope(t *testing.T) {
@@ -892,7 +908,7 @@ func TestWatchServer_CrossNamespaceRange_FiltersNamespaceOutsideScope(t *testing
 	)
 
 	cancel()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_MultipleWatchers_DistinctIDs(t *testing.T) {
@@ -926,7 +942,7 @@ func TestWatchServer_MultipleWatchers_DistinctIDs(t *testing.T) {
 	assert.Equal(t, int64(2), resps[1].GetWatchId(), "IDs are monotonic per stream")
 
 	stream.close()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 // fakeWatchTracker counts Register/Unregister per connection ID and remembers
@@ -1029,7 +1045,7 @@ func TestWatchServer_Tracker_IncOnCreateDecOnCancel(t *testing.T) {
 
 	// Stream closes → final defer releases the remaining watcher.
 	stream.close()
-	<-done
+	awaitWatchExit(t, done)
 
 	for time.Now().Before(deadline) {
 		if tr.get("conn-A") == 0 {
@@ -1096,7 +1112,7 @@ func TestWatchServer_Tracker_PassesWatchDetail(t *testing.T) {
 	assert.Equal(t, int64(1), got.WatchID, "first watch in stream → ID 1")
 
 	stream.close()
-	<-done
+	awaitWatchExit(t, done)
 }
 
 func TestWatchServer_Tracker_NoConnID_NoTracking(t *testing.T) {
@@ -1123,7 +1139,7 @@ func TestWatchServer_Tracker_NoConnID_NoTracking(t *testing.T) {
 	waitForResps(t, stream, 1)
 
 	stream.close()
-	<-done
+	awaitWatchExit(t, done)
 
 	assert.Equal(t, 0, tr.get(""), "no connID → no Inc/Dec calls")
 }
@@ -1153,5 +1169,5 @@ func TestWatchServer_ReplayError_IsTolerated(t *testing.T) {
 
 	// Close stream to exit Watch cleanly.
 	stream.close()
-	<-done
+	awaitWatchExit(t, done)
 }
