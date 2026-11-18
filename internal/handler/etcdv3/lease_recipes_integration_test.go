@@ -28,7 +28,10 @@ func TestIntegration_Recipes_SessionGrantsAndKeepsALease(t *testing.T) {
 	s.StartLeaseExpirer(t)
 	ctx := t.Context()
 
-	sess, err := concurrency.NewSession(cli, concurrency.WithTTL(1), concurrency.WithContext(ctx))
+	// TTL 3 rather than 1: the client renews every TTL/3, so a one-second
+	// lease died whenever a -race CI runner stalled for about 0.7s between two
+	// renewals. This test is about renewals working, not about a tight margin.
+	sess, err := concurrency.NewSession(cli, concurrency.WithTTL(3), concurrency.WithContext(ctx))
 	require.NoError(t, err)
 
 	defer func() { _ = sess.Close() }()
@@ -36,8 +39,8 @@ func TestIntegration_Recipes_SessionGrantsAndKeepsALease(t *testing.T) {
 	_, err = cli.Put(ctx, "/prod/session-held.json", "v", clientv3.WithLease(sess.Lease()))
 	require.NoError(t, err)
 
-	// Well beyond the TTL: the session's own keepalive is what keeps this alive.
-	time.Sleep(3 * time.Second)
+	// More than twice the TTL: the session's own keepalive is what keeps this alive.
+	time.Sleep(7 * time.Second)
 
 	resp, err := cli.Get(ctx, "/prod/session-held.json")
 	require.NoError(t, err)
