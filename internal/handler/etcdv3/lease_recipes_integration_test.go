@@ -71,15 +71,11 @@ func TestIntegration_Recipes_MutexSerializesTwoHolders(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-
+	wg.Go(func() {
 		if err := waiting.Lock(ctx); err == nil {
 			close(acquired)
 		}
-	}()
+	})
 
 	select {
 	case <-acquired:
@@ -118,7 +114,7 @@ func TestIntegration_Recipes_ElectionElectsALeader(t *testing.T) {
 	leader, err := election.Leader(ctx)
 	require.NoError(t, err)
 	require.Len(t, leader.Kvs, 1)
-	assert.Equal(t, "node-a", string(leader.Kvs[0].Value))
+	assert.Equal(t, "node-a", string(leader.Kvs[0].GetValue()))
 
 	require.NoError(t, election.Resign(ctx))
 
@@ -173,7 +169,7 @@ func TestIntegration_Recipes_LeadershipMovesWhenALeaderDies(t *testing.T) {
 	require.Eventually(t, func() bool {
 		resp, err := cli.Get(ctx, "/prod/failover", clientv3.WithPrefix())
 
-		return err == nil && len(resp.Kvs) == 1 && string(resp.Kvs[0].Value) == "node-b"
+		return err == nil && len(resp.Kvs) == 1 && string(resp.Kvs[0].GetValue()) == "node-b"
 	}, 15*time.Second, 50*time.Millisecond, "the dead leader's key never expired")
 
 	select {
@@ -186,5 +182,5 @@ func TestIntegration_Recipes_LeadershipMovesWhenALeaderDies(t *testing.T) {
 	leader, err := second.Leader(ctx)
 	require.NoError(t, err)
 	require.Len(t, leader.Kvs, 1)
-	assert.Equal(t, "node-b", string(leader.Kvs[0].Value))
+	assert.Equal(t, "node-b", string(leader.Kvs[0].GetValue()))
 }
