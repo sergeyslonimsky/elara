@@ -63,6 +63,23 @@ func expectLoggedTx(m mocks, log *callLog, times int) {
 	)
 }
 
+// expectReadTx makes the transaction manager run a read-only Txn's callback,
+// bracketing it in the log when one is given. The writable WithTx gets no
+// expectation, so a read-only Txn that took the writer path fails on the
+// unexpected call.
+func expectReadTx(m mocks, log *callLog) {
+	m.txm.EXPECT().WithReadTx(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, fn func(context.Context) error) error {
+			if log != nil {
+				log.add("read tx begin")
+				defer log.add("read tx end")
+			}
+
+			return fn(ctx)
+		},
+	)
+}
+
 // putOp is the transaction operation the tests below write with.
 func putOp(namespace, path, value string) config.KVOp {
 	return config.KVOp{
@@ -219,6 +236,7 @@ func TestService_Txn(t *testing.T) {
 				}},
 			},
 			mockFunc: func(m mocks) {
+				expectReadTx(m, nil)
 				m.kv.EXPECT().
 					RangeQuery(
 						gomock.Any(), "prod", "/a.json", "", "",
@@ -244,6 +262,7 @@ func TestService_Txn(t *testing.T) {
 			name:  "an empty transaction reports the current revision",
 			input: config.KVTxnInput{},
 			mockFunc: func(m mocks) {
+				expectReadTx(m, nil)
 				m.kv.EXPECT().CurrentRevisionValue(gomock.Any()).Return(int64(5), nil)
 			},
 			want: config.KVTxnResult{
@@ -257,7 +276,7 @@ func TestService_Txn(t *testing.T) {
 			input: config.KVTxnInput{
 				Success: []config.KVOp{{Kind: config.KVOpKind(99)}},
 			},
-			mockFunc: func(_ mocks) {},
+			mockFunc: func(m mocks) { expectReadTx(m, nil) },
 			wantErr:  "run op: validation: op: unknown transaction operation",
 		},
 		{
@@ -265,7 +284,7 @@ func TestService_Txn(t *testing.T) {
 			input: config.KVTxnInput{
 				Success: []config.KVOp{{Kind: config.KVOpTxn}},
 			},
-			mockFunc: func(_ mocks) {},
+			mockFunc: func(m mocks) { expectReadTx(m, nil) },
 			wantErr:  "run op: validation: txn: nested transaction is empty",
 		},
 		{
@@ -472,18 +491,32 @@ func TestService_Txn_PublishesEachWriteOnceAfterTheOuterCommit(t *testing.T) {
 	}, log.snapshot())
 }
 
-func TestService_Txn_ReadOnlyOpensNoTransaction(t *testing.T) {
+func TestService_Txn_ReadOnlyRunsInOneReadTransaction(t *testing.T) {
 	t.Parallel()
 
 	svc, m, _ := setupService(t)
 
-	// No WithTx expectation: bbolt permits a single writer, so opening a
-	// writable transaction for a transaction that only reads would serialise
+	log := &callLog{}
+
+	// Every read must land inside one read transaction — that is what makes
+	// the result one snapshot. No WithTx expectation: bbolt permits a single
+	// writer, and taking it for a transaction that only reads would queue
 	// every read behind every write. gomock fails on the unexpected call.
+	expectReadTx(m, log)
 	m.kv.EXPECT().
 		RangeQuery(gomock.Any(), "prod", "/a.json", "", "", int64(0), int64(0), false).
-		Return([]*domain.KVPair{{Namespace: "prod", Path: "/a.json"}}, false, nil)
-	m.kv.EXPECT().CurrentRevisionValue(gomock.Any()).Return(int64(3), nil)
+		DoAndReturn(
+			func(context.Context, string, string, string, string, int64, int64, bool) ([]*domain.KVPair, bool, error) {
+				log.add("range /a.json")
+
+				return []*domain.KVPair{{Namespace: "prod", Path: "/a.json"}}, false, nil
+			},
+		)
+	m.kv.EXPECT().CurrentRevisionValue(gomock.Any()).DoAndReturn(func(context.Context) (int64, error) {
+		log.add("current revision")
+
+		return 3, nil
+	})
 
 	res, err := svc.Txn(t.Context(), config.KVTxnInput{
 		Success: []config.KVOp{{
@@ -498,6 +531,12 @@ func TestService_Txn_ReadOnlyOpensNoTransaction(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, res.Succeeded)
 	assert.Equal(t, int64(3), res.Revision)
+	assert.Equal(t, []string{
+		"read tx begin",
+		"range /a.json",
+		"current revision",
+		"read tx end",
+	}, log.snapshot())
 }
 
 func TestService_Txn_WriteInTheUntakenBranchStillOpensTransaction(t *testing.T) {
