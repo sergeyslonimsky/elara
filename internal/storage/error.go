@@ -17,4 +17,9 @@ import (
 var (
 	ErrResourceAlreadyExists = errors.New("resource already exists")
 	ErrResourceNotFound      = errors.New("resource not found")
+
+	// ErrReadOnlyTx is returned by Manager.WithTx called inside
+	// Manager.WithReadTx. A read-only boundary cannot be upgraded; a flow
+	// that might write must open WithTx itself.
+	ErrReadOnlyTx = errors.New("write requested inside a read-only transaction")
 )

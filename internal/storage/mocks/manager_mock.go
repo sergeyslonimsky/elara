@@ -40,6 +40,20 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
 }
 
+// WithReadTx mocks base method.
+func (m *MockManager) WithReadTx(ctx context.Context, callback func(context.Context) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithReadTx", ctx, callback)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WithReadTx indicates an expected call of WithReadTx.
+func (mr *MockManagerMockRecorder) WithReadTx(ctx, callback any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithReadTx", reflect.TypeOf((*MockManager)(nil).WithReadTx), ctx, callback)
+}
+
 // WithTx mocks base method.
 func (m *MockManager) WithTx(ctx context.Context, callback func(context.Context) error) error {
 	m.ctrl.T.Helper()

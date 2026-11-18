@@ -391,3 +391,7 @@ func (s *serializedTxm) WithTx(ctx context.Context, fn func(context.Context) err
 
 	return fn(ctx)
 }
+
+func (s *serializedTxm) WithReadTx(ctx context.Context, fn func(context.Context) error) error {
+	return s.WithTx(ctx, fn)
+}
