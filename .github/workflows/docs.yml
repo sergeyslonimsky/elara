@@ -32,7 +32,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.x"
+          # Pinned: "3.x" moved to 3.15 before PyYAML shipped a cp315 wheel,
+          # and --only-binary below then has nothing to install. Raise this
+          # once the wheels exist.
+          python-version: "3.14"
 
       - name: Install MkDocs
         run: "pip install --only-binary :all: mkdocs-material==9.7.7"
