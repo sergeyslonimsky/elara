@@ -141,17 +141,27 @@ jobs:
         uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4.9.1
         with:
           config: cliff.toml
-          args: --latest --strip header
+          # A final tag usually shares its commit with the rc that rehearsed
+          # it, and --latest then picks the rc. For a final tag, leave
+          # prerelease tags out of the pattern: the notes run from the previous
+          # final release and fold the rc commits in.
+          args: >-
+            --latest --strip header
+            ${{ !contains(github.ref_name, '-') && '--tag-pattern ^v[0-9]+\.[0-9]+\.[0-9]+$' || '' }}
         env:
           OUTPUT: ${{ runner.temp }}/release-notes.md
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           distribution: goreleaser
-          version: latest
+          version: v2.20.2
           args: release --clean --release-notes=${{ steps.notes.outputs.changelog }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without this goreleaser picks a tag on HEAD itself. With v0.6.0 and
+          # v0.6.0-rc.1 on one commit it picked the rc, rebuilt the rc's
+          # binaries and never created the v0.6.0 release.
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
 
   # -----------------------------------------------------------------
   # Helm chart → gh-pages (served via GitHub Pages as a Helm repo)
