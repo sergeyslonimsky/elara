@@ -104,7 +104,10 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          # Pinned: `latest` broke every open PR at once when 2.15 shipped new
+          # wrapcheck/errcheck behaviour. Dependabot does not bump this input —
+          # raise it by hand, together with any .golangci.yml fallout.
+          version: v2.15.0
 
       # -tags=integration is required: the handler integration suites are all
       # behind that build tag, so without it CI silently compiles and runs

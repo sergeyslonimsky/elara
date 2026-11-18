@@ -251,6 +251,16 @@ linters:
     unparam:
       check-exported: false
 
+    # golangci-lint 2.15 started treating packages of this module as
+    # "external", flagging ~160 returns of errors that are already shaped.
+    # The constructors below are the wrapping points themselves: wrapping
+    # their result again only adds noise to the message.
+    wrapcheck:
+      ignore-package-globs:
+        - github.com/sergeyslonimsky/elara/*
+      extra-ignore-sigs:
+        - connect.NewError(
+
     varnamelen:
       ignore-names:
         - ui
