@@ -50,7 +50,8 @@ func findBestMatch(schemas []*domain.SchemaAttachment, configPath string) *domai
 	bestScore := -1
 
 	for _, schema := range schemas {
-		g, err := glob.Compile(schema.PathPattern, '/')
+		// Must match the compiler in service/schemavalidator; see the note there.
+		g, err := glob.Compiler{Separators: []rune{'/'}, Globstar: true}.Compile(schema.PathPattern)
 		if err != nil {
 			continue
 		}

@@ -47,7 +47,7 @@ func (c *compiledSchemaCache) set(k cacheKey, s *jsonschema.Schema) {
 // invalid: without it, a malformed attachment would be recompiled — and fail —
 // on every single write.
 type compiledPattern struct {
-	glob        glob.Glob
+	glob        *glob.Pattern
 	specificity int
 	err         error
 }
@@ -79,7 +79,10 @@ func (c *compiledPatternCache) compile(pattern string) compiledPattern {
 		return entry
 	}
 
-	g, err := glob.Compile(pattern, '/')
+	// Globstar keeps "/**/" matching zero segments, as gobwas/glob 0.2 did;
+	// without it, existing patterns would silently stop guarding paths.
+	// Must match the compiler in usecase/schema.findBestMatch.
+	g, err := glob.Compiler{Separators: []rune{'/'}, Globstar: true}.Compile(pattern)
 	entry = compiledPattern{glob: g, specificity: specificity(pattern), err: err}
 
 	c.mu.Lock()
