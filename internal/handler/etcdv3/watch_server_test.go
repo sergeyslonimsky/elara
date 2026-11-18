@@ -610,7 +610,10 @@ func TestWatchServer_Cancel_StopsWatch(t *testing.T) {
 		},
 	})
 	waitForResps(t, stream, 1)
-	assert.Equal(t, 1, pub.subscriptionCount(), "subscribed after create")
+	// The Created ack is sent before Subscribe runs, so the ack alone does
+	// not prove the subscription exists yet.
+	require.Eventually(t, func() bool { return pub.subscriptionCount() == 1 },
+		time.Second, 5*time.Millisecond, "subscribed after create")
 
 	// Cancel
 	stream.pushReq(&etcdserverpb.WatchRequest{
