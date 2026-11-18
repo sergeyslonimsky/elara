@@ -34,7 +34,7 @@ func TestIntegration_Lease_KeyCarriesItsLease(t *testing.T) {
 	resp, err := cli.Get(ctx, "/prod/lock.json")
 	require.NoError(t, err)
 	require.Len(t, resp.Kvs, 1)
-	assert.Equal(t, int64(grant.ID), resp.Kvs[0].Lease,
+	assert.Equal(t, int64(grant.ID), resp.Kvs[0].GetLease(),
 		"a key read back reports the lease it was written under")
 }
 
@@ -86,8 +86,8 @@ func TestIntegration_Lease_ExpiryPublishesADeleteToWatchers(t *testing.T) {
 	select {
 	case resp := <-watchCh:
 		require.NotEmpty(t, resp.Events)
-		assert.Equal(t, clientv3.EventTypeDelete, resp.Events[0].Type)
-		assert.Equal(t, "/prod/watched/key.json", string(resp.Events[0].Kv.Key))
+		assert.Equal(t, clientv3.EventTypeDelete, resp.Events[0].GetType())
+		assert.Equal(t, "/prod/watched/key.json", string(resp.Events[0].GetKv().GetKey()))
 	case <-time.After(10 * time.Second):
 		t.Fatal("no delete event reached the watcher when the lease expired")
 	}
@@ -144,15 +144,15 @@ func TestIntegration_Range_MaxCreateRevisionExcludesTheCallersOwnKey(t *testing.
 	mine, err := cli.Put(ctx, prefix+"b", "2")
 	require.NoError(t, err)
 
-	myRev := mine.Header.Revision
+	myRev := mine.Header.GetRevision()
 
 	opts := append(clientv3.WithLastCreate(), clientv3.WithMaxCreateRev(myRev-1))
 
 	resp, err := cli.Get(ctx, prefix, opts...)
 	require.NoError(t, err)
 	require.Len(t, resp.Kvs, 1, "exactly the one predecessor")
-	assert.Equal(t, prefix+"a", string(resp.Kvs[0].Key))
-	assert.Equal(t, first.Header.Revision, resp.Kvs[0].CreateRevision)
+	assert.Equal(t, prefix+"a", string(resp.Kvs[0].GetKey()))
+	assert.Equal(t, first.Header.GetRevision(), resp.Kvs[0].GetCreateRevision())
 
 	// And once the predecessor is gone, the same query must come back empty
 	// rather than falling back to the caller's own key.
@@ -182,7 +182,7 @@ func TestIntegration_Watch_SingleKeyFromRevisionSeesDelete(t *testing.T) {
 	got, err := cli.Get(ctx, key)
 	require.NoError(t, err)
 
-	watchCh := cli.Watch(ctx, key, clientv3.WithRev(got.Header.Revision))
+	watchCh := cli.Watch(ctx, key, clientv3.WithRev(got.Header.GetRevision()))
 
 	_, err = cli.Delete(ctx, key)
 	require.NoError(t, err)
@@ -193,7 +193,7 @@ func TestIntegration_Watch_SingleKeyFromRevisionSeesDelete(t *testing.T) {
 		select {
 		case resp := <-watchCh:
 			for _, ev := range resp.Events {
-				if ev.Type == clientv3.EventTypeDelete {
+				if ev.GetType() == clientv3.EventTypeDelete {
 					return
 				}
 			}
@@ -255,7 +255,7 @@ func TestIntegration_Txn_HeaderRevisionMatchesThePutItMade(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, got.Kvs, 1)
 
-			assert.Equal(t, got.Kvs[0].CreateRevision, resp.Header.Revision,
+			assert.Equal(t, got.Kvs[0].GetCreateRevision(), resp.Header.GetRevision(),
 				"the Txn header must report the revision its own Put created")
 		})
 	}
@@ -283,7 +283,7 @@ func TestIntegration_Watch_SingleKeySeesAnExpiryDelete(t *testing.T) {
 	got, err := cli.Get(ctx, key)
 	require.NoError(t, err)
 
-	watchCh := cli.Watch(ctx, key, clientv3.WithRev(got.Header.Revision))
+	watchCh := cli.Watch(ctx, key, clientv3.WithRev(got.Header.GetRevision()))
 
 	deadline := time.After(10 * time.Second)
 
@@ -291,7 +291,7 @@ func TestIntegration_Watch_SingleKeySeesAnExpiryDelete(t *testing.T) {
 		select {
 		case resp := <-watchCh:
 			for _, ev := range resp.Events {
-				if ev.Type == clientv3.EventTypeDelete {
+				if ev.GetType() == clientv3.EventTypeDelete {
 					// A watcher that learns of a delete before the transaction
 					// carrying it commits would read the key back and wait for a
 					// second event that never comes — which is exactly how a
@@ -309,6 +309,7 @@ func TestIntegration_Watch_SingleKeySeesAnExpiryDelete(t *testing.T) {
 		}
 	}
 }
+
 // TestIntegration_Election_WaitQueryAfterTheLeaderExpires replays what a losing
 // candidate does, one call at a time, so a failure points at the step rather
 // than at "the recipe hung".
@@ -347,14 +348,14 @@ func TestIntegration_Election_WaitQueryAfterTheLeaderExpires(t *testing.T) {
 
 	waitOpts := append(
 		clientv3.WithLastCreate(),
-		clientv3.WithMaxCreateRev(challengerTxn.Header.Revision-1),
+		clientv3.WithMaxCreateRev(challengerTxn.Header.GetRevision()-1),
 	)
 
 	// While the leader lives, the challenger sees exactly one predecessor.
 	resp, err := cli.Get(ctx, prefix, waitOpts...)
 	require.NoError(t, err)
 	require.Len(t, resp.Kvs, 1)
-	require.Equal(t, leaderKey, string(resp.Kvs[0].Key))
+	require.Equal(t, leaderKey, string(resp.Kvs[0].GetKey()))
 
 	// The leader is never renewed, so its lease runs out and the sweep takes its
 	// key. After that the same query must come back empty — that emptiness is
@@ -401,7 +402,7 @@ func TestIntegration_Lease_RevokeDeletesKeysAtOnce(t *testing.T) {
 	assert.Empty(t, after.Kvs, "revoking takes every key the lease held")
 
 	// One revision for the whole set, not one per key.
-	assert.Equal(t, before.Header.Revision+1, after.Header.Revision)
+	assert.Equal(t, before.Header.GetRevision()+1, after.Header.GetRevision())
 }
 
 func TestIntegration_Lease_TimeToLiveListsItsKeys(t *testing.T) {
