@@ -28,7 +28,7 @@ underlying domain fields this maps to.
 | `Range` | ✅ Full | Prefix ranges (`range_end`) and full-keyspace scans work; historical reads by revision are supported. |
 | `Put` | ✅ | Writes a config. **Runs JSON Schema validation** against the namespace's attached schema — a violation is rejected with `InvalidArgument` and nothing is stored (see [Schema Validation](../concepts/schema-validation.md)). Rejected with `FailedPrecondition` if the target config or its namespace is locked. `ignore_value` is rejected with `Unimplemented`. |
 | `DeleteRange` | ✅ | Supports `PrevKv` to return deleted values. |
-| `Txn` | ⚠️ Partial | Compare-and-swap style transactions work, but the transaction is **not fully atomic** with the rest of the write path yet — a multi-op `Txn` is not guaranteed all-or-nothing under concurrent writes the way real etcd's is. Don't rely on it for correctness-critical multi-key transactions today. |
+| `Txn` | ✅ | Atomic: the compares and the branch they select run in one transaction, so compare-and-swap is safe under concurrent writers and a multi-op branch is all-or-nothing. A `Txn` that only reads is served from one snapshot — every range sees the same revision. Watch notifications are published after the commit, never for a rolled-back write. A `Txn` with a write in either branch takes the writer path even when the branch it runs only reads. |
 | `Compact` | ⚠️ No-op | Accepted and returns success, but Elara never truncates history — there is nothing to compact. Safe to call (e.g. from a client library that compacts periodically); it just does nothing. |
 
 ### Watch (`watch_server.go`)
