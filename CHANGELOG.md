@@ -7,6 +7,29 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 Entries are generated from [Conventional Commits](https://www.conventionalcommits.org/)
 by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
+## [0.6.1](https://github.com/sergeyslonimsky/elara/releases/tag/v0.6.1) — 2026-11-21
+
+### Features
+
+- **storage:** Add WithReadTx to storage.Manager ([1ee3809](https://github.com/sergeyslonimsky/elara/commit/1ee3809f4659371a984a7d63ec0b0910589b3401))
+
+### Bug fixes
+
+- **ci:** Release the pushed tag, not whichever tag shares its commit ([f901b08](https://github.com/sergeyslonimsky/elara/commit/f901b08df48f06bd312613c93f055322caf63d5d))
+- **bbolt:** Refuse WithTx inside a read-only transaction ([f56c7ab](https://github.com/sergeyslonimsky/elara/commit/f56c7ab598a86a81b96eda908519abd049c85556))
+- **etcd:** Serve a read-only Txn from one snapshot ([1ea907e](https://github.com/sergeyslonimsky/elara/commit/1ea907ef83a5fa7e9d5bfc3394a9d683893736d6))
+- **helm:** Keep volumeClaimTemplates labels stable across chart versions ([4e9fd11](https://github.com/sergeyslonimsky/elara/commit/4e9fd112d5e92194450f6bd55da53a599aad610e))
+
+### Documentation
+
+- Describe atomic, single-snapshot Txn and read-only boundaries ([900d5ab](https://github.com/sergeyslonimsky/elara/commit/900d5abd68746e6cfd99e0870a03db604b71b8a4))
+
+### Testing
+
+- **lease:** Give the keepalive test a margin a CI runner can meet ([0bd7835](https://github.com/sergeyslonimsky/elara/commit/0bd783539f7b32f139932975c10f46b5cd8a1775))
+
+**Full diff:** [v0.6.0...v0.6.1](https://github.com/sergeyslonimsky/elara/compare/v0.6.0...v0.6.1)
+
 ## [0.6.0](https://github.com/sergeyslonimsky/elara/releases/tag/v0.6.0) — 2026-11-18
 
 ### Features
