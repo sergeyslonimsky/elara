@@ -151,8 +151,11 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: data
+        # volumeClaimTemplates are immutable: only labels that never change
+        # between chart versions (no helm.sh/chart, no app version), or every
+        # `helm upgrade` to a new version fails with "field is immutable".
         labels:
-          {{- include "elara.labels" . | nindent 10 }}
+          {{- include "elara.selectorLabels" . | nindent 10 }}
         {{- with .Values.persistence.annotations }}
         annotations:
           {{- toYaml . | nindent 10 }}
