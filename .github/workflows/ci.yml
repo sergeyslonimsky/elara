@@ -291,6 +291,17 @@ jobs:
             echo "schema must reject storage.type=postgres"; exit 1
           fi
 
+      - name: volumeClaimTemplates don't depend on the chart version
+        # They're immutable on a StatefulSet: a label that changes per version
+        # (helm.sh/chart, app.kubernetes.io/version) breaks every upgrade.
+        run: |
+          vct() { sed -n '/volumeClaimTemplates:/,/spec:/p' "$1"; }
+          helm template elara helm/elara/ > /tmp/a.yaml
+          sed -i -E 's/^(version|appVersion):.*/\1: 99.0.0/' helm/elara/Chart.yaml
+          helm template elara helm/elara/ > /tmp/b.yaml
+          git checkout -- helm/elara/Chart.yaml
+          diff <(vct /tmp/a.yaml) <(vct /tmp/b.yaml)
+
   sonarcloud:
     name: SonarCloud
     permissions:
