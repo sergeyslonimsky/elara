@@ -3,7 +3,7 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { useMutation } from "@connectrpc/connect-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -18,7 +18,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -32,11 +32,27 @@ import { createToken } from "@/gen/elara/token/v1/token_service-TokenService_con
 import { invalidate } from "@/lib/queries";
 import { toastError } from "@/lib/toast";
 import { NamespaceMultiSelect } from "./namespace-multi-select";
+import { TokenCreatedView } from "./token-created-view";
 
 const PermissionValues = ["read", "write"] as const;
 
+// Mirrors the server-side rule for the username prefix.
+export const NAME_PREFIX_PATTERN = /^[a-z0-9]([a-z0-9._-]*[a-z0-9])?$/;
+export const NAME_PREFIX_MAX_LENGTH = 48;
+
 const schema = z.object({
-	name: z.string().trim().min(1, "Name is required"),
+	name: z
+		.string()
+		.trim()
+		.min(1, "Name prefix is required")
+		.max(
+			NAME_PREFIX_MAX_LENGTH,
+			`Name prefix must be at most ${NAME_PREFIX_MAX_LENGTH} characters`,
+		)
+		.regex(
+			NAME_PREFIX_PATTERN,
+			"Use only lowercase letters, digits, '.', '_' and '-', starting and ending with a letter or digit",
+		),
 	namespaces: z.array(z.string()).min(1, "Select at least one namespace"),
 	permission: z.enum(PermissionValues),
 	expiresAt: z.string().optional(),
@@ -57,10 +73,14 @@ function toTimestamp(value: string | undefined) {
 	return create(TimestampSchema, { seconds, nanos });
 }
 
+interface CreatedToken {
+	readonly username: string;
+	readonly rawToken: string;
+}
+
 export function CreateTokenDialog() {
 	const [open, setOpen] = useState(false);
-	const [rawToken, setRawToken] = useState<string | null>(null);
-	const [copied, setCopied] = useState(false);
+	const [created, setCreated] = useState<CreatedToken | null>(null);
 	const queryClient = useQueryClient();
 
 	const form = useForm<FormValues>({
@@ -82,16 +102,16 @@ export function CreateTokenDialog() {
 				permission: "read",
 				expiresAt: "",
 			});
-			setRawToken(null);
-			setCopied(false);
+			setCreated(null);
 		}
 	}, [open, form]);
 
 	const mutation = useMutation(createToken, {
 		onSuccess: (data, vars) => {
-			toast.success(`Token "${vars.name}" created`);
+			const username = data.token?.username || vars.name || "";
+			toast.success(`Token "${username}" created`);
 			invalidate(queryClient, "tokens");
-			setRawToken(data.rawToken);
+			setCreated({ username, rawToken: data.rawToken });
 		},
 		onError: toastError,
 	});
@@ -105,18 +125,10 @@ export function CreateTokenDialog() {
 		});
 	};
 
-	const handleCopy = async () => {
-		if (!rawToken) return;
-		try {
-			await navigator.clipboard.writeText(rawToken);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
-		} catch {
-			toast.error("Failed to copy token");
-		}
-	};
-
 	const namespaces = form.watch("namespaces");
+	const nameValue = form.watch("name").trim();
+	const namePreview =
+		nameValue && !form.formState.errors.name ? `${nameValue}-xxxxxx` : null;
 	const permission = form.watch("permission");
 
 	return (
@@ -126,46 +138,12 @@ export function CreateTokenDialog() {
 				New Token
 			</DialogTrigger>
 			<DialogContent>
-				{rawToken ? (
-					<>
-						<DialogHeader>
-							<DialogTitle>Token created</DialogTitle>
-							<DialogDescription>
-								Copy this token now — it will not be shown again.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="flex flex-col gap-2 py-2">
-							<div className="flex items-stretch gap-2">
-								<Input
-									readOnly
-									value={rawToken}
-									className="font-mono text-xs"
-									onFocus={(e) => e.currentTarget.select()}
-									aria-label="Raw token value"
-								/>
-								<Button
-									type="button"
-									variant="outline"
-									size="icon"
-									onClick={handleCopy}
-									aria-label="Copy token"
-								>
-									{copied ? (
-										<Check className="h-4 w-4 text-emerald-500" />
-									) : (
-										<Copy className="h-4 w-4" />
-									)}
-								</Button>
-							</div>
-							<p className="text-muted-foreground text-xs">
-								Store it in a secret manager — this is the only time the raw
-								token is displayed.
-							</p>
-						</div>
-						<DialogFooter>
-							<Button onClick={() => setOpen(false)}>Done</Button>
-						</DialogFooter>
-					</>
+				{created ? (
+					<TokenCreatedView
+						username={created.username}
+						rawToken={created.rawToken}
+						onDone={() => setOpen(false)}
+					/>
 				) : (
 					<form onSubmit={form.handleSubmit(onSubmit)}>
 						<DialogHeader>
@@ -176,14 +154,29 @@ export function CreateTokenDialog() {
 						</DialogHeader>
 						<div className="grid gap-4 py-4">
 							<Field>
-								<FieldLabel htmlFor="ct-name">Name</FieldLabel>
+								<FieldLabel htmlFor="ct-name">Name prefix</FieldLabel>
 								<Input
 									id="ct-name"
 									placeholder="ci-deployer"
+									aria-describedby="ct-name-help"
+									aria-invalid={Boolean(form.formState.errors.name)}
 									{...form.register("name")}
 								/>
+								<FieldDescription id="ct-name-help" className="text-xs">
+									The server appends a random suffix to make the username
+									unique, e.g. <code>ci</code> → <code>ci-k7x2pq</code>.
+									Lowercase letters, digits, '.', '_' and '-'.
+								</FieldDescription>
+								{namePreview && (
+									<p className="text-muted-foreground text-xs">
+										Username:{" "}
+										<code className="font-mono text-foreground">
+											{namePreview}
+										</code>
+									</p>
+								)}
 								{form.formState.errors.name && (
-									<p className="text-xs text-destructive">
+									<p role="alert" className="text-xs text-destructive">
 										{form.formState.errors.name.message}
 									</p>
 								)}
