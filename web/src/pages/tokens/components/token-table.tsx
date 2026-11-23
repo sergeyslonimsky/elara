@@ -52,16 +52,25 @@ function formatLastUsed(token: Token): string {
 	return timeAgo(timestampDate(token.lastUsedAt));
 }
 
+// Tokens created before usernames existed may lack one; fall back to the name.
+function displayName(token: Token): string {
+	return token.username || token.name;
+}
+
 const columns: ColumnDef<Token>[] = [
 	{
-		accessorKey: "name",
+		// Sorting id stays "name" — the server sorts by the username prefix.
+		accessorKey: "username",
+		id: "name",
 		header: ({ column }) => (
-			<SortableHeader column={column}>Name</SortableHeader>
+			<SortableHeader column={column}>Username</SortableHeader>
 		),
 		cell: ({ row }) => (
 			<div className="flex items-center gap-2">
 				<Key className="h-4 w-4 shrink-0 text-muted-foreground" />
-				<span className="font-medium">{row.original.name}</span>
+				<span className="font-mono font-medium text-sm">
+					{displayName(row.original)}
+				</span>
 			</div>
 		),
 	},
@@ -134,7 +143,7 @@ const columns: ColumnDef<Token>[] = [
 			<div className="flex justify-end">
 				<RevokeTokenDialog
 					tokenId={row.original.id}
-					tokenName={row.original.name}
+					tokenName={displayName(row.original)}
 				/>
 			</div>
 		),

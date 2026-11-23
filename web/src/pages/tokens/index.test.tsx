@@ -25,6 +25,7 @@ vi.mock("@connectrpc/connect-query", async (importOriginal) => {
 const tokenFixture = create(TokenSchema, {
 	id: "tok-1",
 	name: "ci-deployer",
+	username: "ci-deployer-k7x2pq",
 	issuedBy: "alice@example.com",
 	namespaces: ["production"],
 	permission: PermissionAction.WRITE,
@@ -54,7 +55,10 @@ describe("TokensPage", () => {
 			</TestProviders>,
 		);
 
-		expect(screen.getByText("ci-deployer")).toBeInTheDocument();
+		expect(
+			screen.getByRole("columnheader", { name: /username/i }),
+		).toBeInTheDocument();
+		expect(screen.getByText("ci-deployer-k7x2pq")).toBeInTheDocument();
 		expect(screen.getByText("alice@example.com")).toBeInTheDocument();
 		expect(screen.getByText("production")).toBeInTheDocument();
 	});
