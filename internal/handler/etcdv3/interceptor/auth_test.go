@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
+	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -104,13 +106,19 @@ func contextWithBearer(ctx context.Context, token string) context.Context {
 	return metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", "Bearer "+token))
 }
 
+func contextWithEtcdToken(ctx context.Context, token string) context.Context {
+	return metadata.NewIncomingContext(ctx, metadata.Pairs(rpctypes.TokenFieldNameGRPC, token))
+}
+
 func TestTokenInterceptor_Unary(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name        string
 		buildCtx    func(context.Context) context.Context
+		fullMethod  string
 		tokens      []*domain.Token
+		errIs       error
 		wantCode    codes.Code
 		wantUpdated bool
 		wantClaims  bool
@@ -163,6 +171,57 @@ func TestTokenInterceptor_Unary(t *testing.T) {
 			tokens:   []*domain.Token{validToken()},
 			wantCode: codes.Unauthenticated,
 		},
+		{
+			name:        "valid raw token in etcd token metadata calls handler",
+			buildCtx:    func(ctx context.Context) context.Context { return contextWithEtcdToken(ctx, testRawToken) },
+			tokens:      []*domain.Token{validToken()},
+			wantUpdated: true,
+			wantClaims:  true,
+		},
+		{
+			name: "etcd token metadata takes precedence over bearer",
+			buildCtx: func(ctx context.Context) context.Context {
+				return metadata.NewIncomingContext(ctx, metadata.Pairs(
+					rpctypes.TokenFieldNameGRPC, testRawToken,
+					"authorization", "Bearer elara_someothertoken",
+				))
+			},
+			tokens:     []*domain.Token{validToken()},
+			wantClaims: true,
+		},
+		{
+			name:     "etcd token metadata without elara_ prefix returns invalid auth token",
+			buildCtx: func(ctx context.Context) context.Context { return contextWithEtcdToken(ctx, testInvalidFmt) },
+			tokens:   []*domain.Token{validToken()},
+			errIs:    rpctypes.ErrGRPCInvalidAuthToken,
+		},
+		{
+			name:     "unknown etcd token returns invalid auth token",
+			buildCtx: func(ctx context.Context) context.Context { return contextWithEtcdToken(ctx, testRawToken) },
+			errIs:    rpctypes.ErrGRPCInvalidAuthToken,
+		},
+		{
+			name:     "expired etcd token returns invalid auth token",
+			buildCtx: func(ctx context.Context) context.Context { return contextWithEtcdToken(ctx, testRawToken) },
+			tokens:   []*domain.Token{expiredToken()},
+			errIs:    rpctypes.ErrGRPCInvalidAuthToken,
+		},
+		{
+			name:     "unknown bearer token returns invalid auth token",
+			buildCtx: func(ctx context.Context) context.Context { return contextWithBearer(ctx, testRawToken) },
+			errIs:    rpctypes.ErrGRPCInvalidAuthToken,
+		},
+		{
+			name:       "Auth.Authenticate is served without credentials",
+			buildCtx:   func(ctx context.Context) context.Context { return ctx },
+			fullMethod: etcdserverpb.Auth_Authenticate_FullMethodName,
+		},
+		{
+			name:       "other Auth methods still require credentials",
+			buildCtx:   func(ctx context.Context) context.Context { return ctx },
+			fullMethod: etcdserverpb.Auth_UserList_FullMethodName,
+			wantCode:   codes.Unauthenticated,
+		},
 	}
 
 	for _, tc := range tests {
@@ -180,7 +239,14 @@ func TestTokenInterceptor_Unary(t *testing.T) {
 				return struct{}{}, nil
 			}
 
-			_, err := i.Unary()(ctx, struct{}{}, &grpc.UnaryServerInfo{}, handler)
+			_, err := i.Unary()(ctx, struct{}{}, &grpc.UnaryServerInfo{FullMethod: tc.fullMethod}, handler)
+
+			if tc.errIs != nil {
+				require.ErrorIs(t, err, tc.errIs)
+				assert.Nil(t, capturedCtx, "handler must not run")
+
+				return
+			}
 
 			if tc.wantCode != 0 {
 				st, ok := status.FromError(err)

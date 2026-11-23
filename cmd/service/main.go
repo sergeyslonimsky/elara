@@ -22,7 +22,6 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/di/config"
 	"github.com/sergeyslonimsky/elara/internal/di/service"
 	"github.com/sergeyslonimsky/elara/internal/domain"
-	etcdinterceptor "github.com/sergeyslonimsky/elara/internal/handler/etcdv3/interceptor"
 	"github.com/sergeyslonimsky/elara/internal/handler/ui"
 	grpctransport "github.com/sergeyslonimsky/elara/internal/transport/grpc"
 	"github.com/sergeyslonimsky/elara/internal/usecase/demo"
@@ -208,11 +207,20 @@ func withDefaultServiceVersion(cfg config.Config) config.Config {
 //     elevated into the group on callback.
 //   - none: creates the synthetic passthrough user used by the interceptor.
 func bootstrap(ctx context.Context, svc *service.Managers, cfg config.Config) error {
+	// Tokens created before Username existed get one derived from their old
+	// name, so they can log in with `etcdctl --user`. Idempotent.
+	assigned, err := svc.Services.Token.EnsureUsernames(ctx)
+	if err != nil {
+		return fmt.Errorf("backfill token usernames: %w", err)
+	}
+
+	if assigned > 0 {
+		slog.InfoContext(ctx, "assigned usernames to existing tokens", "count", assigned)
+	}
+
 	if svc.Services.AdminBootstrap == nil {
 		return nil
 	}
-
-	var err error
 
 	switch cfg.UI.Auth.Type {
 	case domain.AuthTypeBasicAuth:
@@ -298,14 +306,7 @@ func etcdServerOptions(
 	}
 
 	if cfg.Client.Auth.Enabled || cfg.DangerouslySkipPermissions {
-		tokenInterceptor := etcdinterceptor.NewTokenInterceptor(
-			adapters.AuthTokens,
-			etcdinterceptor.WithTokenSkipPermissions(cfg.DangerouslySkipPermissions),
-		)
-		opts = append(opts,
-			coregrpc.WithUnaryInterceptor(tokenInterceptor.Unary()),
-			coregrpc.WithStreamInterceptor(tokenInterceptor.Stream()),
-		)
+		opts = append(opts, service.EtcdAuthOptions(adapters, cfg.DangerouslySkipPermissions)...)
 	}
 
 	return opts

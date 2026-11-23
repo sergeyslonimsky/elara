@@ -2,11 +2,11 @@ package interceptor
 
 import (
 	"context"
-	"crypto/sha256"
-	"fmt"
 	"strings"
 	"time"
 
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
+	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -15,6 +15,7 @@ import (
 
 	auth2 "github.com/sergeyslonimsky/elara/internal/authctx"
 	"github.com/sergeyslonimsky/elara/internal/domain"
+	tokenuc "github.com/sergeyslonimsky/elara/internal/usecase/token"
 )
 
 const (
@@ -28,7 +29,11 @@ type tokenLookup interface {
 	UpdateLastUsed(ctx context.Context, tokenHash, ip string, at time.Time) error
 }
 
-// TokenInterceptor validates Bearer service tokens from gRPC metadata.
+// TokenInterceptor validates service tokens from gRPC metadata. Two carriers
+// are accepted, both holding the raw token:
+//   - `token: <raw>` — what clientv3 and etcdctl send after Auth.Authenticate
+//     (or with clientv3.Config.Token);
+//   - `authorization: Bearer <raw>` — the original Elara form.
 type TokenInterceptor struct {
 	tokens          tokenLookup
 	skipPermissions bool
@@ -54,7 +59,12 @@ func NewTokenInterceptor(tokens tokenLookup, opts ...TokenInterceptorOption) *To
 
 // Unary returns a gRPC unary server interceptor that validates service tokens.
 func (i *TokenInterceptor) Unary() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		// Authenticate is how a client obtains credentials; it can't require them.
+		if info.FullMethod == etcdserverpb.Auth_Authenticate_FullMethodName {
+			return handler(ctx, req)
+		}
+
 		authedCtx, err := i.authenticate(ctx)
 		if err != nil {
 			return nil, err
@@ -88,10 +98,8 @@ func (i *TokenInterceptor) injectBypassClaims(ctx context.Context) context.Conte
 }
 
 // authenticate extracts and validates the bearer token, injecting claims into the context.
-//
-//nolint:wrapcheck // gRPC status errors are terminal; wrapping corrupts the status code
 func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, error) {
-	rawToken, err := extractBearerToken(ctx)
+	rawToken, err := extractRawToken(ctx)
 	if err != nil {
 		if i.skipPermissions {
 			return i.injectBypassClaims(ctx), nil
@@ -100,7 +108,7 @@ func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, e
 		return ctx, err
 	}
 
-	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(rawToken)))
+	hash := tokenuc.HashRawToken(rawToken)
 
 	token, err := i.tokens.GetByHash(ctx, hash)
 	if err != nil {
@@ -108,7 +116,9 @@ func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, e
 			return i.injectBypassClaims(ctx), nil
 		}
 
-		return ctx, status.Error(codes.Unauthenticated, "invalid token")
+		// The etcd-specific message is what makes clientv3 re-run
+		// Authenticate; for Bearer callers the code is still Unauthenticated.
+		return ctx, rpctypes.ErrGRPCInvalidAuthToken
 	}
 
 	if token.IsExpired() {
@@ -116,7 +126,7 @@ func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, e
 			return i.injectBypassClaims(ctx), nil
 		}
 
-		return ctx, status.Error(codes.Unauthenticated, "token expired")
+		return ctx, rpctypes.ErrGRPCInvalidAuthToken
 	}
 
 	peerIP := extractPeerIP(ctx)
@@ -136,10 +146,18 @@ func (i *TokenInterceptor) authenticate(ctx context.Context) (context.Context, e
 }
 
 //nolint:wrapcheck // gRPC status errors are terminal; wrapping corrupts the status code
-func extractBearerToken(ctx context.Context) (string, error) {
+func extractRawToken(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return "", status.Error(codes.Unauthenticated, "missing authorization header")
+	}
+
+	if values := md.Get(rpctypes.TokenFieldNameGRPC); len(values) > 0 && values[0] != "" {
+		if !strings.HasPrefix(values[0], tokenPrefix) {
+			return "", rpctypes.ErrGRPCInvalidAuthToken
+		}
+
+		return values[0], nil
 	}
 
 	values := md.Get(authorizationHeader)
