@@ -7,6 +7,30 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 Entries are generated from [Conventional Commits](https://www.conventionalcommits.org/)
 by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
+## [0.7.0](https://github.com/sergeyslonimsky/elara/releases/tag/v0.7.0) — 2026-11-23
+
+### Features
+
+- **token:** Give service tokens a unique, generated username ([2939583](https://github.com/sergeyslonimsky/elara/commit/2939583883ab37ca299cb95a53fa3e4ee5714db4))
+- **etcd:** Log in with a token's username and password ([56c4065](https://github.com/sergeyslonimsky/elara/commit/56c4065ed4f865e05cf1b92890020b7a16ffc504))
+- **web:** Create tokens by name prefix and reveal their username ([39a193e](https://github.com/sergeyslonimsky/elara/commit/39a193e84fbe3944724c8381d78cdb9741fc697b))
+
+### Bug fixes
+
+- **token:** Check username uniqueness and write in one transaction ([f1c044d](https://github.com/sergeyslonimsky/elara/commit/f1c044d713488e53e5e31b005844f0af2e86b1db))
+- **token:** Search and sort the token list by username ([ce29687](https://github.com/sergeyslonimsky/elara/commit/ce296870501ab0d960bede07439f317a872596e4))
+
+### Documentation
+
+- Describe etcd login with a token username and password ([cc723f0](https://github.com/sergeyslonimsky/elara/commit/cc723f03a07f942b080f1e057bea036f0a7e67ce))
+- Note that revocation does not close open Watch streams ([1722c47](https://github.com/sergeyslonimsky/elara/commit/1722c47eb4bf962c434f55ecfd02cb21bdaaaa19))
+
+### Testing
+
+- **token:** Assert the usecase owns the transaction boundary ([30d60a4](https://github.com/sergeyslonimsky/elara/commit/30d60a4f6f6e217aea2bf5f0ec80cc278922febe))
+
+**Full diff:** [v0.6.1...v0.7.0](https://github.com/sergeyslonimsky/elara/compare/v0.6.1...v0.7.0)
+
 ## [0.6.1](https://github.com/sergeyslonimsky/elara/releases/tag/v0.6.1) — 2026-11-21
 
 ### Features
