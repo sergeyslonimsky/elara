@@ -59,9 +59,9 @@ function displayName(token: Token): string {
 
 const columns: ColumnDef<Token>[] = [
 	{
-		// Sorting id stays "name" — the server sorts by the username prefix.
+		// Column id "username" is also the server sort field: the list is
+		// ordered by the full login shown here, not by the name prefix.
 		accessorKey: "username",
-		id: "name",
 		header: ({ column }) => (
 			<SortableHeader column={column}>Username</SortableHeader>
 		),

@@ -265,7 +265,7 @@ func (r *Repository) List(
 			return nil
 		}
 
-		if !queryMatches(tok.Name, filter.QueryParams) {
+		if !queryMatches(filter.QueryParams, tok.Name, tok.Username) {
 			return nil
 		}
 
@@ -322,19 +322,23 @@ func explicitNamespaceMatches(t *domain.Token, namespaces []string) bool {
 	return false
 }
 
-func queryMatches(name string, queries []string) bool {
+// queryMatches reports whether any query is a case-insensitive substring of
+// any of fields — a token matches by its name prefix or its full username.
+func queryMatches(queries []string, fields ...string) bool {
 	if len(queries) == 0 {
 		return true
 	}
 
-	lower := strings.ToLower(name)
 	for _, q := range queries {
 		if q == "" {
 			continue
 		}
 
-		if strings.Contains(lower, strings.ToLower(q)) {
-			return true
+		lq := strings.ToLower(q)
+		for _, f := range fields {
+			if strings.Contains(strings.ToLower(f), lq) {
+				return true
+			}
 		}
 	}
 
@@ -350,6 +354,8 @@ func sortTokens(tokens []*domain.Token, params domain.SortParams) {
 		switch params.Field {
 		case "name":
 			less = a.Name < b.Name
+		case "username":
+			less = a.Username < b.Username
 		case "last_used":
 			less = lastUsedBefore(a, b)
 		default: // "created" or empty — most recent first

@@ -229,17 +229,23 @@ func TestRepository_List(t *testing.T) {
 		id         string
 		issuedBy   string
 		name       string
+		username   string // defaults to "user-" + id
 		namespaces []string
 		createdAt  time.Time
 		lastUsedAt *time.Time
 	}
 
 	mk := func(s seed) *domain.Token {
+		username := s.username
+		if username == "" {
+			username = "user-" + s.id
+		}
+
 		return &domain.Token{
 			ID:         s.id,
 			IssuedBy:   s.issuedBy,
 			Name:       s.name,
-			Username:   "user-" + s.id,
+			Username:   username,
 			TokenHash:  "hash-" + s.id,
 			Namespaces: s.namespaces,
 			Role:       domain.RoleWriter,
@@ -337,6 +343,40 @@ func TestRepository_List(t *testing.T) {
 			filter:    domain.TokenFilter{AnyNamespace: true, QueryParams: []string{"TOKEN"}},
 			params:    domain.TokenListParams{Sort: domain.SortParams{Field: "name"}},
 			wantIDs:   []string{"a", "b"},
+			wantTotal: 2,
+		},
+		{
+			name: "QueryParams matches the full username, not only the name",
+			seeds: []seed{
+				{
+					id: "a", issuedBy: "u@x", name: "ci", username: "ci-k7x2pq",
+					namespaces: []string{"ns1"}, createdAt: now,
+				},
+				{
+					id: "b", issuedBy: "u@x", name: "ci", username: "ci-zzzzzz",
+					namespaces: []string{"ns1"}, createdAt: now,
+				},
+			},
+			filter:    domain.TokenFilter{AnyNamespace: true, QueryParams: []string{"CI-K7X2PQ"}},
+			params:    domain.TokenListParams{Sort: domain.SortParams{Field: "name"}},
+			wantIDs:   []string{"a"},
+			wantTotal: 1,
+		},
+		{
+			name: "sort by username orders by the full login, not the prefix",
+			seeds: []seed{
+				{
+					id: "a", issuedBy: "u@x", name: "ci", username: "ci-zzzzzz",
+					namespaces: []string{"ns1"}, createdAt: now,
+				},
+				{
+					id: "b", issuedBy: "u@x", name: "ci-prod", username: "ci-prod-aaaaaa",
+					namespaces: []string{"ns1"}, createdAt: now,
+				},
+			},
+			filter:    domain.TokenFilter{AnyNamespace: true},
+			params:    domain.TokenListParams{Sort: domain.SortParams{Field: "username"}},
+			wantIDs:   []string{"b", "a"},
 			wantTotal: 2,
 		},
 		{
