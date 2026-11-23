@@ -23,7 +23,8 @@ produced (noted below).
 | `ErrForbidden` | `PermissionDenied` | Credential valid, but RBAC denies the action. |
 | `ErrPermissionEscalation` | `PermissionDenied` | You tried to grant a permission you don't hold yourself. See [RBAC, Groups & Roles](../auth/rbac-groups.md). |
 | `ErrSystemImmutable` | `PermissionDenied` | Target is a system-protected entity (`User.System`/`Group.System`) — see [Users & Groups lifecycle](../auth/users-lifecycle.md#system-protected-entities). |
-| `ErrInvalidToken` | `Unauthenticated` | Service token not found (etcd gRPC API). |
+| `ErrInvalidToken` | `Unauthenticated` / `InvalidArgument` | Service token unknown, expired or wrong (etcd gRPC API). On a call: `Unauthenticated` `etcdserver: invalid auth token`; on `Auth.Authenticate`: `InvalidArgument` `etcdserver: authentication failed, invalid user ID or password`. |
+| `ErrTokenUsernameTaken` | — | Never reaches a client: a username collision on create is resolved by regenerating the random suffix. |
 | `ErrUserDeactivated` | `PermissionDenied` | The authenticated user's account is deactivated. See [Users & Groups lifecycle](../auth/users-lifecycle.md). |
 | `SchemaValidationError` (not a sentinel — a typed error) | `InvalidArgument` | JSON Schema violation; response carries a structured `SchemaValidationFailure` detail with per-field violations. See [Schema Validation](../concepts/schema-validation.md). |
 | `ValidationError` (typed) | `InvalidArgument` | Generic field validation failure. |
