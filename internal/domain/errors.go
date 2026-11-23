@@ -32,7 +32,10 @@ var (
 	// This is a programming error (typo in code), not user input.
 	ErrInvalidIdentityProvider = errors.New("invalid identity provider")
 	ErrEmailTaken              = errors.New("email already taken")
-	ErrCanonicalNameImmutable  = errors.New("canonical name is immutable")
+	// ErrTokenUsernameTaken is returned when a generated token Username
+	// collides with an existing one; the usecase regenerates the suffix.
+	ErrTokenUsernameTaken     = errors.New("token username already taken")
+	ErrCanonicalNameImmutable = errors.New("canonical name is immutable")
 	// ErrIdentityNotProvisioned is returned when an identity (provider+subject)
 	// has no corresponding user record. JIT-provisioning is not supported;
 	// admins must pre-provision users.

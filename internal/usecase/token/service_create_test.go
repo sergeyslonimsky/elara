@@ -2,6 +2,7 @@ package token_test
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -91,7 +92,71 @@ func TestService_Create(t *testing.T) {
 				m.pdp.EXPECT().HasNamespace(testUserID, "ns1", domain.ActionRead).Return(true)
 				m.store.EXPECT().Create(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 			},
-			wantErr: "db error",
+			wantErr: "create token: db error",
+		},
+		{
+			name: "invalid name prefix",
+			input: token.CreateInput{
+				Name:       "Test Token",
+				Namespaces: []string{"ns1"},
+				Role:       domain.RoleReader,
+			},
+			mockFunc: func(m mocks) {
+				m.pdp.EXPECT().HasNamespace(testUserID, "ns1", domain.ActionRead).Return(true)
+			},
+			wantErr: "validate: validation: name: name prefix may contain only lowercase letters",
+		},
+		{
+			name: "name prefix too long",
+			input: token.CreateInput{
+				Name:       strings.Repeat("a", domain.MaxTokenNamePrefixLen+1),
+				Namespaces: []string{"ns1"},
+				Role:       domain.RoleReader,
+			},
+			mockFunc: func(m mocks) {
+				m.pdp.EXPECT().HasNamespace(testUserID, "ns1", domain.ActionRead).Return(true)
+			},
+			wantErr: "name prefix must be at most 48 characters",
+		},
+		{
+			name: "name prefix at max length is accepted",
+			input: token.CreateInput{
+				Name:       strings.Repeat("a", domain.MaxTokenNamePrefixLen),
+				Namespaces: []string{"ns1"},
+				Role:       domain.RoleReader,
+			},
+			mockFunc: func(m mocks) {
+				m.pdp.EXPECT().HasNamespace(testUserID, "ns1", domain.ActionRead).Return(true)
+				m.store.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+			},
+		},
+		{
+			name: "username collision is retried with a new suffix",
+			input: token.CreateInput{
+				Name:       "ci",
+				Namespaces: []string{"ns1"},
+				Role:       domain.RoleReader,
+			},
+			mockFunc: func(m mocks) {
+				m.pdp.EXPECT().HasNamespace(testUserID, "ns1", domain.ActionRead).Return(true)
+				gomock.InOrder(
+					m.store.EXPECT().Create(gomock.Any(), gomock.Any()).Return(domain.ErrTokenUsernameTaken).Times(2),
+					m.store.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil),
+				)
+			},
+		},
+		{
+			name: "username collision on every attempt fails",
+			input: token.CreateInput{
+				Name:       "ci",
+				Namespaces: []string{"ns1"},
+				Role:       domain.RoleReader,
+			},
+			mockFunc: func(m mocks) {
+				m.pdp.EXPECT().HasNamespace(testUserID, "ns1", domain.ActionRead).Return(true)
+				m.store.EXPECT().Create(gomock.Any(), gomock.Any()).Return(domain.ErrTokenUsernameTaken).Times(5)
+			},
+			wantErr: "create token: token username already taken",
 		},
 	}
 
@@ -111,6 +176,8 @@ func TestService_Create(t *testing.T) {
 			}
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+				assert.Nil(t, testToken)
+				assert.Empty(t, rawToken)
 
 				return
 			}
@@ -122,6 +189,8 @@ func TestService_Create(t *testing.T) {
 			assert.Equal(t, tt.input.Namespaces, testToken.Namespaces)
 			assert.Equal(t, tt.input.Role, testToken.Role)
 			assert.True(t, strings.HasPrefix(rawToken, "elara_"))
+			assert.Regexp(t, "^"+regexp.QuoteMeta(tt.input.Name)+"-[a-z2-7]{6}$", testToken.Username)
+			assert.Equal(t, token.HashRawToken(rawToken), testToken.TokenHash)
 		})
 	}
 }

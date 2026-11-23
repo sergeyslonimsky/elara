@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-const maxTokenNameLen = 128
-
 // TokenFilter narrows a token list to those whose namespace scope intersects
 // the caller's allowed namespaces.
 //
@@ -41,10 +39,17 @@ type TokenListParams struct {
 }
 
 // Token is a service credential issued by a user for use by external etcd clients.
+//
+// Name is the prefix the issuer chose; Username is Name plus a
+// server-generated suffix and is the globally unique login an etcd client
+// presents (`etcdctl --user <Username>:<raw token>`). Names may repeat across
+// tokens; Usernames never do, so a user can't learn of tokens they can't see
+// by picking a name that collides.
 type Token struct {
 	ID         string
 	IssuedBy   string // email of the user who created this token
 	Name       string
+	Username   string     // immutable, unique; Name + "-" + random suffix
 	TokenHash  string     // SHA-256 hex of raw token
 	Namespaces []string   // explicit list; must be non-empty
 	Role       Role       // "writer" or "reader"
@@ -67,12 +72,12 @@ func (t *Token) Validate() error {
 		return NewValidationError("issuedBy", "issued_by must be a valid email address")
 	}
 
-	if t.Name == "" {
-		return NewValidationError("name", "name is required")
+	if err := ValidateTokenNamePrefix(t.Name); err != nil {
+		return err
 	}
 
-	if len(t.Name) > maxTokenNameLen {
-		return NewValidationError("name", "name must be at most 128 characters")
+	if t.Username == "" {
+		return NewValidationError("username", "username is required")
 	}
 
 	if t.TokenHash == "" {

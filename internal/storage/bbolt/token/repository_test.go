@@ -13,6 +13,7 @@ import (
 	"github.com/sergeyslonimsky/elara/internal/storage"
 	"github.com/sergeyslonimsky/elara/internal/storage/bbolt"
 	tokenrepo "github.com/sergeyslonimsky/elara/internal/storage/bbolt/token"
+	"github.com/sergeyslonimsky/elara/internal/storage/internal"
 	pkgbbolt "github.com/sergeyslonimsky/elara/pkg/bbolt"
 )
 
@@ -37,6 +38,7 @@ func newToken(t *testing.T, overrides ...func(*domain.Token)) *domain.Token {
 		ID:         id,
 		IssuedBy:   "alice@example.com",
 		Name:       "Test Token " + id,
+		Username:   "user-" + id,
 		TokenHash:  "hash-" + id,
 		Namespaces: []string{"ns1"},
 		Role:       domain.RoleWriter,
@@ -237,6 +239,7 @@ func TestRepository_List(t *testing.T) {
 			ID:         s.id,
 			IssuedBy:   s.issuedBy,
 			Name:       s.name,
+			Username:   "user-" + s.id,
 			TokenHash:  "hash-" + s.id,
 			Namespaces: s.namespaces,
 			Role:       domain.RoleWriter,
@@ -488,6 +491,7 @@ func TestRepository_ListAll(t *testing.T) {
 				ID:         "a",
 				IssuedBy:   "u@x",
 				Name:       "a",
+				Username:   "a-aaaaaa",
 				TokenHash:  "h-a",
 				Namespaces: []string{"ns1"},
 				Role:       domain.RoleWriter,
@@ -497,6 +501,7 @@ func TestRepository_ListAll(t *testing.T) {
 				ID:         "b",
 				IssuedBy:   "u@x",
 				Name:       "b",
+				Username:   "b-bbbbbb",
 				TokenHash:  "h-b",
 				Namespaces: []string{"ns2"},
 				Role:       domain.RoleReader,
@@ -506,6 +511,7 @@ func TestRepository_ListAll(t *testing.T) {
 				ID:         "c",
 				IssuedBy:   "v@x",
 				Name:       "c",
+				Username:   "c-cccccc",
 				TokenHash:  "h-c",
 				Namespaces: []string{"ns3"},
 				Role:       domain.RoleWriter,
@@ -552,4 +558,242 @@ func TestRepository_WithTx_RollbackDiscardsWrites(t *testing.T) {
 	got, err := repo.ListAll(ctx)
 	require.NoError(t, err)
 	assert.Empty(t, got)
+}
+
+// seedLegacyToken writes a token the way it was stored before Username
+// existed: primary + id index only, no username index entry. Create can't
+// produce this shape, so the raw buckets are written directly.
+func seedLegacyToken(t *testing.T, mgr pkgbbolt.Manager, tok *domain.Token) {
+	t.Helper()
+
+	tok.Username = ""
+
+	require.NoError(t, mgr.WithTx(t.Context(), func(ctx context.Context) error {
+		q := mgr.GetQuerier(ctx)
+		if err := pkgbbolt.Put(q, "auth_tokens", []byte(tok.TokenHash), internal.DomainToTokenMeta(tok)); err != nil {
+			return err
+		}
+
+		return q.Bucket("auth_token_by_id").Put([]byte(tok.ID), []byte(tok.TokenHash))
+	}))
+}
+
+func TestRepository_Create_Username(t *testing.T) {
+	t.Parallel()
+
+	t.Run("writes the username index", func(t *testing.T) {
+		t.Parallel()
+		repo, _ := newRepo(t)
+		ctx := t.Context()
+
+		tok := newToken(t)
+		require.NoError(t, repo.Create(ctx, tok))
+
+		got, err := repo.GetByUsername(ctx, tok.Username)
+		require.NoError(t, err)
+		assert.Equal(t, tok.ID, got.ID)
+		assert.Equal(t, tok.Username, got.Username)
+	})
+
+	t.Run("username collision returns ErrTokenUsernameTaken and writes nothing", func(t *testing.T) {
+		t.Parallel()
+		repo, _ := newRepo(t)
+		ctx := t.Context()
+
+		first := newToken(t, func(tok *domain.Token) {
+			tok.ID = "first"
+			tok.TokenHash = "h-first"
+			tok.Username = "ci-aaaaaa"
+		})
+		require.NoError(t, repo.Create(ctx, first))
+
+		second := newToken(t, func(tok *domain.Token) {
+			tok.ID = "second"
+			tok.TokenHash = "h-second"
+			tok.Username = "ci-aaaaaa"
+		})
+		err := repo.Create(ctx, second)
+		require.ErrorIs(t, err, domain.ErrTokenUsernameTaken)
+		require.ErrorContains(t, err, `token username "ci-aaaaaa"`)
+
+		_, err = repo.GetByID(ctx, "second")
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
+		_, err = repo.GetByHash(ctx, "h-second")
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
+
+		got, err := repo.GetByUsername(ctx, "ci-aaaaaa")
+		require.NoError(t, err)
+		assert.Equal(t, "first", got.ID, "the index must still point at the first token")
+	})
+}
+
+func TestRepository_GetByUsername(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+		repo, _ := newRepo(t)
+		ctx := t.Context()
+
+		tok := newToken(t)
+		require.NoError(t, repo.Create(ctx, tok))
+
+		got, err := repo.GetByUsername(ctx, tok.Username)
+		require.NoError(t, err)
+		assert.Equal(t, tok.ID, got.ID)
+		assert.Equal(t, tok.TokenHash, got.TokenHash)
+		assert.Equal(t, tok.Namespaces, got.Namespaces)
+	})
+
+	t.Run("missing returns ErrResourceNotFound", func(t *testing.T) {
+		t.Parallel()
+		repo, _ := newRepo(t)
+
+		_, err := repo.GetByUsername(t.Context(), "nobody-aaaaaa")
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
+	})
+
+	t.Run("lookup is exact, not by prefix", func(t *testing.T) {
+		t.Parallel()
+		repo, _ := newRepo(t)
+		ctx := t.Context()
+
+		tok := newToken(t, func(tok *domain.Token) { tok.Username = "ci-abcdef" })
+		require.NoError(t, repo.Create(ctx, tok))
+
+		_, err := repo.GetByUsername(ctx, "ci")
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
+	})
+
+	t.Run("deleted token is no longer found", func(t *testing.T) {
+		t.Parallel()
+		repo, _ := newRepo(t)
+		ctx := t.Context()
+
+		tok := newToken(t)
+		require.NoError(t, repo.Create(ctx, tok))
+		require.NoError(t, repo.Delete(ctx, tok.ID))
+
+		_, err := repo.GetByUsername(ctx, tok.Username)
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
+	})
+}
+
+func TestRepository_Delete_FreesUsername(t *testing.T) {
+	t.Parallel()
+
+	repo, _ := newRepo(t)
+	ctx := t.Context()
+
+	first := newToken(t, func(tok *domain.Token) {
+		tok.ID = "first"
+		tok.TokenHash = "h-first"
+		tok.Username = "ci-aaaaaa"
+	})
+	require.NoError(t, repo.Create(ctx, first))
+	require.NoError(t, repo.Delete(ctx, first.ID))
+
+	second := newToken(t, func(tok *domain.Token) {
+		tok.ID = "second"
+		tok.TokenHash = "h-second"
+		tok.Username = "ci-aaaaaa"
+	})
+	require.NoError(t, repo.Create(ctx, second), "a deleted token's username must be reusable")
+}
+
+func TestRepository_Delete_LegacyTokenWithoutUsername(t *testing.T) {
+	t.Parallel()
+
+	repo, mgr := newRepo(t)
+	ctx := t.Context()
+
+	tok := newToken(t)
+	seedLegacyToken(t, mgr, tok)
+
+	require.NoError(t, repo.Delete(ctx, tok.ID))
+
+	_, err := repo.GetByID(ctx, tok.ID)
+	require.ErrorIs(t, err, storage.ErrResourceNotFound)
+}
+
+func TestRepository_SetUsername(t *testing.T) {
+	t.Parallel()
+
+	t.Run("assigns a username to a legacy token", func(t *testing.T) {
+		t.Parallel()
+		repo, mgr := newRepo(t)
+		ctx := t.Context()
+
+		tok := newToken(t)
+		seedLegacyToken(t, mgr, tok)
+
+		require.NoError(t, repo.SetUsername(ctx, tok.ID, "legacy-abcdef"))
+
+		got, err := repo.GetByUsername(ctx, "legacy-abcdef")
+		require.NoError(t, err)
+		assert.Equal(t, tok.ID, got.ID)
+		assert.Equal(t, "legacy-abcdef", got.Username)
+
+		byHash, err := repo.GetByHash(ctx, tok.TokenHash)
+		require.NoError(t, err)
+		assert.Equal(t, "legacy-abcdef", byHash.Username, "primary record must carry the username")
+	})
+
+	t.Run("refuses to overwrite an existing username", func(t *testing.T) {
+		t.Parallel()
+		repo, _ := newRepo(t)
+		ctx := t.Context()
+
+		tok := newToken(t)
+		require.NoError(t, repo.Create(ctx, tok))
+
+		err := repo.SetUsername(ctx, tok.ID, "other-abcdef")
+		require.ErrorIs(t, err, domain.ErrCanonicalNameImmutable)
+		require.ErrorContains(t, err, "already has a username")
+
+		got, err := repo.GetByID(ctx, tok.ID)
+		require.NoError(t, err)
+		assert.Equal(t, tok.Username, got.Username)
+
+		_, err = repo.GetByUsername(ctx, "other-abcdef")
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
+	})
+
+	t.Run("username held by another token returns ErrTokenUsernameTaken", func(t *testing.T) {
+		t.Parallel()
+		repo, mgr := newRepo(t)
+		ctx := t.Context()
+
+		holder := newToken(t, func(tok *domain.Token) {
+			tok.ID = "holder"
+			tok.TokenHash = "h-holder"
+			tok.Username = "ci-aaaaaa"
+		})
+		require.NoError(t, repo.Create(ctx, holder))
+
+		legacy := newToken(t, func(tok *domain.Token) {
+			tok.ID = "legacy"
+			tok.TokenHash = "h-legacy"
+		})
+		seedLegacyToken(t, mgr, legacy)
+
+		err := repo.SetUsername(ctx, legacy.ID, "ci-aaaaaa")
+		require.ErrorIs(t, err, domain.ErrTokenUsernameTaken)
+
+		got, err := repo.GetByID(ctx, legacy.ID)
+		require.NoError(t, err)
+		assert.Empty(t, got.Username)
+
+		byUsername, err := repo.GetByUsername(ctx, "ci-aaaaaa")
+		require.NoError(t, err)
+		assert.Equal(t, "holder", byUsername.ID)
+	})
+
+	t.Run("unknown id returns ErrResourceNotFound", func(t *testing.T) {
+		t.Parallel()
+		repo, _ := newRepo(t)
+
+		err := repo.SetUsername(t.Context(), "unknown-id", "ci-aaaaaa")
+		require.ErrorIs(t, err, storage.ErrResourceNotFound)
+	})
 }

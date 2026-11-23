@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elara/token/v1/token.proto.
  */
 export const file_elara_token_v1_token: GenFile = /*@__PURE__*/
-  fileDesc("ChplbGFyYS90b2tlbi92MS90b2tlbi5wcm90bxIOZWxhcmEudG9rZW4udjEi0QIKBVRva2VuEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEQoJaXNzdWVkX2J5GAMgASgJEhIKCm5hbWVzcGFjZXMYBCADKAkSNQoKcGVybWlzc2lvbhgFIAEoDjIhLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQWN0aW9uEjMKCmV4cGlyZXNfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSACIAQESNQoMbGFzdF91c2VkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgBiAEBEhQKDGxhc3RfdXNlZF9pcBgIIAEoCRIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEINCgtfZXhwaXJlc19hdEIPCg1fbGFzdF91c2VkX2F0QsIBChJjb20uZWxhcmEudG9rZW4udjFCClRva2VuUHJvdG9QAVpGZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvdG9rZW4vdjE7dG9rZW52MaICA0VUWKoCDkVsYXJhLlRva2VuLlYxygIORWxhcmFcVG9rZW5cVjHiAhpFbGFyYVxUb2tlblxWMVxHUEJNZXRhZGF0YeoCEEVsYXJhOjpUb2tlbjo6VjFiBnByb3RvMw", [file_elara_common_v1_permission, file_google_protobuf_timestamp]);
+  fileDesc("ChplbGFyYS90b2tlbi92MS90b2tlbi5wcm90bxIOZWxhcmEudG9rZW4udjEi4wIKBVRva2VuEgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSEQoJaXNzdWVkX2J5GAMgASgJEhIKCm5hbWVzcGFjZXMYBCADKAkSNQoKcGVybWlzc2lvbhgFIAEoDjIhLmVsYXJhLmNvbW1vbi52MS5QZXJtaXNzaW9uQWN0aW9uEjMKCmV4cGlyZXNfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSACIAQESNQoMbGFzdF91c2VkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgBiAEBEhQKDGxhc3RfdXNlZF9pcBgIIAEoCRIuCgpjcmVhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIQCgh1c2VybmFtZRgKIAEoCUINCgtfZXhwaXJlc19hdEIPCg1fbGFzdF91c2VkX2F0QsIBChJjb20uZWxhcmEudG9rZW4udjFCClRva2VuUHJvdG9QAVpGZ2l0aHViLmNvbS9zZXJnZXlzbG9uaW1za3kvZWxhcmEvaW50ZXJuYWwvcHJvdG8vZWxhcmEvdG9rZW4vdjE7dG9rZW52MaICA0VUWKoCDkVsYXJhLlRva2VuLlYxygIORWxhcmFcVG9rZW5cVjHiAhpFbGFyYVxUb2tlblxWMVxHUEJNZXRhZGF0YeoCEEVsYXJhOjpUb2tlbjo6VjFiBnByb3RvMw", [file_elara_common_v1_permission, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message elara.token.v1.Token
@@ -26,6 +26,8 @@ export type Token = Message<"elara.token.v1.Token"> & {
   id: string;
 
   /**
+   * Prefix the issuer chose. Not unique — use username to identify a token.
+   *
    * @generated from field: string name = 2;
    */
   name: string;
@@ -64,6 +66,15 @@ export type Token = Message<"elara.token.v1.Token"> & {
    * @generated from field: google.protobuf.Timestamp created_at = 9;
    */
   createdAt?: Timestamp;
+
+  /**
+   * Globally unique, immutable login: name + "-" + server-generated suffix.
+   * etcd clients present it as the user name, with the raw token as the
+   * password (`etcdctl --user <username>:<raw token>`).
+   *
+   * @generated from field: string username = 10;
+   */
+  username: string;
 };
 
 /**

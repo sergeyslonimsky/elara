@@ -30,6 +30,7 @@ var buckets = [][]byte{
 	[]byte("auth_groups"),
 	[]byte("auth_tokens"),
 	[]byte("auth_token_by_id"),
+	[]byte("auth_token_by_username"),
 	[]byte("auth_policy"),
 	[]byte("sessions"),
 	[]byte("sessions_by_user"),

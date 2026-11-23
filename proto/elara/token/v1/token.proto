@@ -7,6 +7,7 @@ import "google/protobuf/timestamp.proto";
 
 message Token {
   string id = 1;
+  // Prefix the issuer chose. Not unique — use username to identify a token.
   string name = 2;
   string issued_by = 3;
   repeated string namespaces = 4;
@@ -15,4 +16,8 @@ message Token {
   optional google.protobuf.Timestamp last_used_at = 7;
   string last_used_ip = 8;
   google.protobuf.Timestamp created_at = 9;
+  // Globally unique, immutable login: name + "-" + server-generated suffix.
+  // etcd clients present it as the user name, with the raw token as the
+  // password (`etcdctl --user <username>:<raw token>`).
+  string username = 10;
 }

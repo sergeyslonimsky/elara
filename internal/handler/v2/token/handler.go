@@ -192,6 +192,7 @@ func domainTokenToProto(t *domain.Token) *tokenv1.Token {
 	proto := &tokenv1.Token{
 		Id:         t.ID,
 		Name:       t.Name,
+		Username:   t.Username,
 		IssuedBy:   t.IssuedBy,
 		Namespaces: t.Namespaces,
 		Permission: roleToPermissionAction(t.Role),

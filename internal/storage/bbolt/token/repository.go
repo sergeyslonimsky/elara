@@ -37,14 +37,26 @@ func NewRepository(dbm bbolt.Manager) *Repository {
 	return &Repository{dbm: dbm}
 }
 
-// Create persists a brand-new token and writes its secondary-index entry.
+// Create persists a brand-new token and writes its secondary-index entries.
 // Returns storage.ErrResourceAlreadyExists if a token with the same hash
-// already lives in the primary bucket.
+// already lives in the primary bucket, and domain.ErrTokenUsernameTaken if
+// another token already holds token.Username.
 func (r *Repository) Create(ctx context.Context, token *domain.Token) error {
 	q := r.dbm.GetQuerier(ctx)
 
+	// Checked before any write: outside a transaction a late failure would
+	// leave the primary and id-index records behind.
+	if token.Username == "" {
+		return fmt.Errorf("token %s: %w", token.ID, domain.NewValidationError("username", "username is required"))
+	}
+
 	if bbolt.Exists(q, bucketTokens, []byte(token.TokenHash)) {
 		return fmt.Errorf("token %s: %w", token.ID, storage.ErrResourceAlreadyExists)
+	}
+
+	usernameIdx := q.Bucket(bucketTokensByUsername)
+	if usernameIdx.Get([]byte(token.Username)) != nil {
+		return fmt.Errorf("token username %q: %w", token.Username, domain.ErrTokenUsernameTaken)
 	}
 
 	if err := bbolt.Put(q, bucketTokens, []byte(token.TokenHash), internal.DomainToTokenMeta(token)); err != nil {
@@ -53,6 +65,10 @@ func (r *Repository) Create(ctx context.Context, token *domain.Token) error {
 
 	if err := q.Bucket(bucketTokensByID).Put([]byte(token.ID), []byte(token.TokenHash)); err != nil {
 		return fmt.Errorf("put token id index: %w", err)
+	}
+
+	if err := usernameIdx.Put([]byte(token.Username), []byte(token.TokenHash)); err != nil {
+		return fmt.Errorf("put token username index: %w", err)
 	}
 
 	return nil
@@ -69,6 +85,68 @@ func (r *Repository) GetByHash(ctx context.Context, tokenHash string) (*domain.T
 	}
 
 	return internal.TokenMetaToDomain(m), nil
+}
+
+// GetByUsername returns the token whose Username matches exactly.
+func (r *Repository) GetByUsername(ctx context.Context, username string) (*domain.Token, error) {
+	q := r.dbm.GetQuerier(ctx)
+
+	hashBytes := q.Bucket(bucketTokensByUsername).Get([]byte(username))
+	if hashBytes == nil {
+		return nil, fmt.Errorf("token username %q: %w", username, storage.ErrResourceNotFound)
+	}
+
+	m, err := bbolt.Get[internal.TokenMeta](q, bucketTokens, hashBytes)
+	if errors.Is(err, bbolt.ErrNotFound) {
+		return nil, fmt.Errorf("token username %q: %w", username, storage.ErrResourceNotFound)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get token by username: %w", err)
+	}
+
+	return internal.TokenMetaToDomain(m), nil
+}
+
+// SetUsername assigns a Username to a token that has none yet (tokens
+// created before Username existed). It refuses to overwrite an existing
+// Username — the login is immutable once handed out — and returns
+// domain.ErrTokenUsernameTaken if another token already holds username.
+func (r *Repository) SetUsername(ctx context.Context, id, username string) error {
+	q := r.dbm.GetQuerier(ctx)
+
+	hashBytes := q.Bucket(bucketTokensByID).Get([]byte(id))
+	if hashBytes == nil {
+		return fmt.Errorf("token %s: %w", id, storage.ErrResourceNotFound)
+	}
+
+	tokenHash := make([]byte, len(hashBytes))
+	copy(tokenHash, hashBytes)
+
+	m, err := bbolt.Get[internal.TokenMeta](q, bucketTokens, tokenHash)
+	if err != nil {
+		return fmt.Errorf("get token %s: %w", id, err)
+	}
+
+	if m.Username != "" {
+		return fmt.Errorf("token %s already has a username: %w", id, domain.ErrCanonicalNameImmutable)
+	}
+
+	usernameIdx := q.Bucket(bucketTokensByUsername)
+	if usernameIdx.Get([]byte(username)) != nil {
+		return fmt.Errorf("token username %q: %w", username, domain.ErrTokenUsernameTaken)
+	}
+
+	m.Username = username
+
+	if err := bbolt.Put(q, bucketTokens, tokenHash, m); err != nil {
+		return fmt.Errorf("put token: %w", err)
+	}
+
+	if err := usernameIdx.Put([]byte(username), tokenHash); err != nil {
+		return fmt.Errorf("put token username index: %w", err)
+	}
+
+	return nil
 }
 
 // GetByID returns the token identified by its ID using the secondary index.
@@ -105,6 +183,17 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 	// the underlying memory once the entry is removed.
 	tokenHash := make([]byte, len(hashBytes))
 	copy(tokenHash, hashBytes)
+
+	m, err := bbolt.Get[internal.TokenMeta](q, bucketTokens, tokenHash)
+	if err != nil && !errors.Is(err, bbolt.ErrNotFound) {
+		return fmt.Errorf("get token %s: %w", id, err)
+	}
+
+	if m.Username != "" {
+		if err := q.Bucket(bucketTokensByUsername).Delete([]byte(m.Username)); err != nil {
+			return fmt.Errorf("delete token username index: %w", err)
+		}
+	}
 
 	if err := idxBucket.Delete([]byte(id)); err != nil {
 		return fmt.Errorf("delete token id index: %w", err)

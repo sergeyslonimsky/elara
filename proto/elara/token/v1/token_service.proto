@@ -16,6 +16,9 @@ service TokenService {
 }
 
 message CreateTokenRequest {
+  // Prefix of the token's username; the server appends "-" and a random
+  // suffix. Lowercase letters, digits, '.', '_' and '-'; must start and end
+  // with a letter or digit.
   string name = 1 [(buf.validate.field).required = true];
   repeated string namespaces = 2 [(buf.validate.field).required = true];
   elara.common.v1.PermissionAction permission = 3 [(buf.validate.field).required = true];
