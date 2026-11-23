@@ -114,7 +114,7 @@ func NewServices(
 			scope,
 		),
 		Group:  groupuc.New(a.StorageManager, a.AuthGroups, pdp, pap, scope),
-		Token:  tokenuc.New(pdp, a.AuthTokens),
+		Token:  tokenuc.New(a.StorageManager, pdp, a.AuthTokens),
 		Filter: filteruc.New(pdp, a.NamespaceRepo, a.AuthGroups, a.AuthUsers),
 
 		Authz:          authzSvc,

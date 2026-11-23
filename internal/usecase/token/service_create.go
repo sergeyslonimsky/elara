@@ -75,6 +75,9 @@ func (s *Service) Create(
 // Username is unique by construction; a suffix collision is resolved by
 // drawing a new one, never by reporting it to the caller — that would tell
 // them a token they may not see exists.
+//
+// Each attempt runs in one transaction, so the uniqueness check and the
+// record + index writes can't interleave with a concurrent create.
 func (s *Service) createWithUsername(ctx context.Context, token *domain.Token) error {
 	for range maxUsernameAttempts {
 		token.Username = domain.NewTokenUsername(token.Name, generateUsernameSuffix())
@@ -83,7 +86,9 @@ func (s *Service) createWithUsername(ctx context.Context, token *domain.Token) e
 			return fmt.Errorf("validate: %w", err)
 		}
 
-		err := s.store.Create(ctx, token)
+		err := s.txm.WithTx(ctx, func(ctx context.Context) error {
+			return s.store.Create(ctx, token)
+		})
 		if errors.Is(err, domain.ErrTokenUsernameTaken) {
 			continue
 		}
