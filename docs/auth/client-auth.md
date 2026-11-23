@@ -19,6 +19,16 @@ When disabled, the interceptor injects wildcard admin-equivalent claims for
 every call (nil claims are treated as "auth disabled → always allowed" in the
 per-namespace checks), which is why unauthenticated clients get full access.
 
-When enabled, clients authenticate with a **token** — see
-[Sessions & Tokens](sessions-tokens.md#tokens-service-credentials-for-etcd-clients)
-for how to issue one and use it.
+When disabled, `Auth.Authenticate` answers `etcdserver: authentication is not
+enabled`, which etcd clients treat as "continue without a token" — a client
+configured with a user name and password still connects.
+
+When enabled, clients authenticate with a **token**, presented the way any
+etcd client presents credentials — user name and password:
+
+```bash
+etcdctl --user '<token username>:<raw token>' get /my-namespace/app.yaml
+```
+
+See [Sessions & Tokens](sessions-tokens.md#tokens-service-credentials-for-etcd-clients)
+for how to issue a token and every way to use it.

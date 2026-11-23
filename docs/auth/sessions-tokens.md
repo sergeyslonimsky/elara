@@ -80,6 +80,12 @@ effect** on that token — tokens must be revoked explicitly via
 
 Defined in `internal/domain/token.go`:
 
+- `Name` — the **prefix** the issuer picks: lowercase letters, digits, `.`,
+  `_` and `-`, starting and ending with a letter or digit, at most 48
+  characters. Names may repeat across tokens.
+- `Username` — `Name` + `-` + a 6-character random suffix the server
+  generates, e.g. `billing-ci-k7x2pq`. Globally unique and immutable; it is the
+  login an etcd client presents (see below).
 - `Role` — either `writer` or `reader` **only** (a token can never be `admin`).
   - `reader` → read allowed.
   - `writer` → read + write allowed (write implies read).
@@ -94,28 +100,81 @@ request fails with a permission-escalation error.
 ### Issuing a token
 
 Via the Web UI (Tokens page) or `TokenService.Create` on the ConnectRPC API.
-The **raw token string is returned exactly once at creation** (only its SHA-256
-hash is stored) — copy it then; it cannot be retrieved again. Raw tokens are
-prefixed `elara_`.
+You choose the name prefix; the server appends the random suffix. The response
+carries the **username and the raw token, and the raw token is returned exactly
+once** (only its SHA-256 hash is stored) — copy both then; the token cannot be
+retrieved again. Raw tokens are prefixed `elara_`.
+
+!!! note "Why the suffix"
+    A username has to be unique across all tokens, but users only see the
+    tokens in their own namespaces. If the name alone were the login, creating
+    `ci` would fail with "already exists" because of a token the user cannot
+    see — revealing that it exists. A server-generated suffix makes collisions
+    a non-event, so nothing about invisible tokens leaks.
+
+Tokens created before usernames existed get one on the next start, derived
+from their old name (normalized to the allowed characters, falling back to
+`token` when nothing usable remains). The assigned username is shown in the
+token list.
 
 ### Using a token against the etcd gRPC API
 
-Send it as gRPC metadata on the `:2379` connection:
+A token is a **user name + password** pair as far as etcd clients are
+concerned: the username is the user name, the raw token is the password. This
+is etcd's own login flow, so stock tools work unchanged.
 
-```text
-authorization: Bearer elara_<rest-of-token>
-```
+=== "etcdctl"
+
+    ```bash
+    etcdctl --endpoints=elara.example.com:2379 \
+      --user 'billing-ci-k7x2pq:elara_<rest-of-token>' \
+      get /billing/app.yaml
+    ```
+
+=== "Go (clientv3)"
+
+    ```go
+    cli, err := clientv3.New(clientv3.Config{
+        Endpoints: []string{"elara.example.com:2379"},
+        Username:  "billing-ci-k7x2pq",
+        Password:  os.Getenv("ELARA_TOKEN"), // elara_...
+    })
+    ```
+
+=== "Raw gRPC metadata"
+
+    ```text
+    token: elara_<rest-of-token>
+    ```
+
+    or, equivalently, the original form:
+
+    ```text
+    authorization: Bearer elara_<rest-of-token>
+    ```
+
+    `clientv3.Config{Token: "elara_..."}` sends the first form without a login
+    round-trip.
+
+How it works on the wire: the client calls `Auth.Authenticate(name,
+password)`; Elara checks the pair and returns the raw token as the etcd auth
+token, which the client then attaches to every call as `token` metadata.
+Elara keeps no login state — the token is re-validated on every request, so
+revoking it takes effect immediately. A wrong user name, wrong password and
+expired token all fail identically with
+`etcdserver: authentication failed, invalid user ID or password`.
 
 The gRPC token interceptor (`internal/handler/etcdv3/interceptor/auth.go`)
-hashes the presented token, looks it up, rejects unknown (`invalid token`) or
-expired (`token expired`) tokens, records last-used IP/time, and injects the
-token's namespace/role claims. Every KV and Watch RPC is then checked against
-those claims: reads need the namespace in scope; writes additionally need
-`writer` role; scan-all watches need a `*` (wildcard) token.
+hashes the presented token, looks it up, rejects unknown or expired tokens with
+`etcdserver: invalid auth token` (`Unauthenticated`), records last-used
+IP/time, and injects the token's namespace/role claims. Every KV and Watch RPC
+is then checked against those claims: reads need the namespace in scope;
+writes additionally need `writer` role; scan-all watches need a `*` (wildcard)
+token.
 
-With an etcd client library, set the metadata credential per your library's API
-(e.g. a per-RPC credential that emits the `authorization` header). Example with
-`etcdctl`-style usage is client-specific; the wire requirement is simply the
-`authorization: Bearer elara_…` metadata pair above.
+!!! warning "Use TLS"
+    The password is the token itself. Over a plaintext connection it is as
+    exposed as the `authorization` header always was — terminate TLS in front
+    of `:2379` anywhere the network isn't trusted.
 
 This requires `client.auth.enabled=true` — see [Client Auth](client-auth.md).
