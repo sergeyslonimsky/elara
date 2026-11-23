@@ -13,8 +13,9 @@ import (
 // have a Username are skipped, so running it on every start is safe. Returns
 // how many tokens received a Username.
 //
-// Each SetUsername is its own single-step write; a crash halfway leaves the
-// remaining tokens for the next start rather than a half-written token.
+// Each token is assigned in its own transaction (check + record + index
+// land together); a crash halfway leaves the remaining tokens for the next
+// start rather than a half-written token.
 func (s *Service) EnsureUsernames(ctx context.Context) (int, error) {
 	tokens, err := s.store.ListAll(ctx)
 	if err != nil {
@@ -47,7 +48,9 @@ func (s *Service) assignUsername(ctx context.Context, t *domain.Token) error {
 	for range maxUsernameAttempts {
 		username := domain.NewTokenUsername(prefix, generateUsernameSuffix())
 
-		err := s.store.SetUsername(ctx, t.ID, username)
+		err := s.txm.WithTx(ctx, func(ctx context.Context) error {
+			return s.store.SetUsername(ctx, t.ID, username)
+		})
 		if errors.Is(err, domain.ErrTokenUsernameTaken) {
 			continue
 		}

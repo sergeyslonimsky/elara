@@ -13,6 +13,7 @@ import (
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
+	"github.com/sergeyslonimsky/elara/internal/storage"
 )
 
 const (
@@ -52,12 +53,17 @@ type (
 )
 
 type Service struct {
+	txm   storage.Manager
 	pdp   pdp
 	store store
 }
 
-func New(pdp pdp, store store) *Service {
+// New returns the token usecase. txm owns the transaction boundary of the
+// multi-step writes (username uniqueness check + record + indexes); store
+// joins whatever transaction the ctx carries.
+func New(txm storage.Manager, pdp pdp, store store) *Service {
 	return &Service{
+		txm:   txm,
 		pdp:   pdp,
 		store: store,
 	}
@@ -77,6 +83,13 @@ func generateRawToken() (string, string, error) {
 
 // HashRawToken returns the SHA-256 hex digest under which a raw token is
 // stored. Exported so the etcd interceptor hashes exactly the same way.
+//
+// A fast, unsalted hash is deliberate, not an oversight: the input is 256
+// bits from crypto/rand, not a human-chosen password, so there is nothing to
+// brute-force or look up in a dictionary — the cost of bcrypt/argon2 buys no
+// security here. And the digest must be deterministic, because every etcd
+// RPC finds its token by hash; a salted slow hash would make that lookup
+// impossible and add its cost to every call.
 func HashRawToken(raw string) string {
 	sum := sha256.Sum256([]byte(raw))
 
