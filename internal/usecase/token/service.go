@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"github.com/sergeyslonimsky/elara/internal/domain"
 	"github.com/sergeyslonimsky/elara/internal/service/authz"
@@ -17,6 +18,11 @@ import (
 const (
 	tokenPrefix    = "elara_"
 	tokenRandBytes = 32
+
+	// maxUsernameAttempts bounds the regenerate-on-collision loop. With a
+	// 30-bit suffix a single collision is already improbable; five in a row
+	// means something is wrong (e.g. a broken random source).
+	maxUsernameAttempts = 5
 )
 
 type (
@@ -39,6 +45,9 @@ type (
 		) ([]*domain.Token, int, error)
 		Delete(ctx context.Context, id string) error
 		GetByID(ctx context.Context, id string) (*domain.Token, error)
+		GetByUsername(ctx context.Context, username string) (*domain.Token, error)
+		SetUsername(ctx context.Context, id, username string) error
+		ListAll(ctx context.Context) ([]*domain.Token, error)
 	}
 )
 
@@ -62,7 +71,21 @@ func generateRawToken() (string, string, error) {
 	}
 
 	raw := tokenPrefix + base64.RawURLEncoding.EncodeToString(bytes)
+
+	return raw, HashRawToken(raw), nil
+}
+
+// HashRawToken returns the SHA-256 hex digest under which a raw token is
+// stored. Exported so the etcd interceptor hashes exactly the same way.
+func HashRawToken(raw string) string {
 	sum := sha256.Sum256([]byte(raw))
 
-	return raw, hex.EncodeToString(sum[:]), nil
+	return hex.EncodeToString(sum[:])
+}
+
+// generateUsernameSuffix returns TokenUsernameSuffixLen lowercase base32
+// characters (a-z, 2-7) — about 30 bits, enough that collisions are a
+// retry, not a design concern.
+func generateUsernameSuffix() string {
+	return strings.ToLower(rand.Text()[:domain.TokenUsernameSuffixLen])
 }

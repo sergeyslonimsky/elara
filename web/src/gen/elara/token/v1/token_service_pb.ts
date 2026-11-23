@@ -26,6 +26,10 @@ export const file_elara_token_v1_token_service: GenFile = /*@__PURE__*/
  */
 export type CreateTokenRequest = Message<"elara.token.v1.CreateTokenRequest"> & {
   /**
+   * Prefix of the token's username; the server appends "-" and a random
+   * suffix. Lowercase letters, digits, '.', '_' and '-'; must start and end
+   * with a letter or digit.
+   *
    * @generated from field: string name = 1;
    */
   name: string;

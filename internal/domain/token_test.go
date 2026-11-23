@@ -15,7 +15,8 @@ func validToken() domain.Token {
 	return domain.Token{
 		ID:         "token-1",
 		IssuedBy:   "alice@example.com",
-		Name:       "My Token",
+		Name:       "my-token",
+		Username:   "my-token-k7x2pq",
 		TokenHash:  "abc123def456",
 		Namespaces: []string{"prod"},
 		Role:       "reader",
@@ -74,20 +75,20 @@ func TestToken_Validate(t *testing.T) {
 			wantErr: true, errMsg: "name",
 		},
 		{
-			name: "name too long",
+			name: "name prefix too long",
 			token: func() domain.Token {
 				tok := validToken()
-				tok.Name = strings.Repeat("a", 129)
+				tok.Name = strings.Repeat("a", domain.MaxTokenNamePrefixLen+1)
 
 				return tok
 			}(),
 			wantErr: true, errMsg: "name",
 		},
 		{
-			name: "name at max length is valid",
+			name: "name prefix at max length is valid",
 			token: func() domain.Token {
 				tok := validToken()
-				tok.Name = strings.Repeat("a", 128)
+				tok.Name = strings.Repeat("a", domain.MaxTokenNamePrefixLen)
 
 				return tok
 			}(),
@@ -101,6 +102,55 @@ func TestToken_Validate(t *testing.T) {
 				return tok
 			}(),
 			wantErr: true, errMsg: "tokenHash",
+		},
+		{
+			name: "name prefix with colon breaks etcdctl --user",
+			token: func() domain.Token {
+				tok := validToken()
+				tok.Name = "ci:prod"
+
+				return tok
+			}(),
+			wantErr: true, errMsg: "name",
+		},
+		{
+			name: "name prefix with uppercase",
+			token: func() domain.Token {
+				tok := validToken()
+				tok.Name = "CI"
+
+				return tok
+			}(),
+			wantErr: true, errMsg: "name",
+		},
+		{
+			name: "name prefix ending with separator",
+			token: func() domain.Token {
+				tok := validToken()
+				tok.Name = "ci-"
+
+				return tok
+			}(),
+			wantErr: true, errMsg: "name",
+		},
+		{
+			name: "name prefix with dots and underscores is valid",
+			token: func() domain.Token {
+				tok := validToken()
+				tok.Name = "billing.ci_deploy-2"
+
+				return tok
+			}(),
+		},
+		{
+			name: "empty username",
+			token: func() domain.Token {
+				tok := validToken()
+				tok.Username = ""
+
+				return tok
+			}(),
+			wantErr: true, errMsg: "username",
 		},
 		{
 			name: "invalid role",

@@ -2,6 +2,7 @@ package token
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 )
 
 type CreateInput struct {
-	Name       string
+	Name       string // prefix of the generated Username
 	Namespaces []string
 	Role       domain.Role
 	ExpiresAt  *time.Time
@@ -48,6 +49,10 @@ func (s *Service) Create(
 		return nil, "", err
 	}
 
+	if err := domain.ValidateTokenNamePrefix(in.Name); err != nil {
+		return nil, "", fmt.Errorf("validate: %w", err)
+	}
+
 	token := &domain.Token{
 		ID:         uuid.New().String(),
 		IssuedBy:   user.Email,
@@ -59,15 +64,37 @@ func (s *Service) Create(
 		CreatedAt:  time.Now().UTC(),
 	}
 
-	if err := token.Validate(); err != nil {
-		return nil, "", fmt.Errorf("validate: %w", err)
-	}
-
-	if err = s.store.Create(ctx, token); err != nil {
-		return nil, "", fmt.Errorf("create token: %w", err)
+	if err := s.createWithUsername(ctx, token); err != nil {
+		return nil, "", err
 	}
 
 	return token, rawToken, nil
+}
+
+// createWithUsername stores token under a freshly generated Username. The
+// Username is unique by construction; a suffix collision is resolved by
+// drawing a new one, never by reporting it to the caller — that would tell
+// them a token they may not see exists.
+func (s *Service) createWithUsername(ctx context.Context, token *domain.Token) error {
+	for range maxUsernameAttempts {
+		token.Username = domain.NewTokenUsername(token.Name, generateUsernameSuffix())
+
+		if err := token.Validate(); err != nil {
+			return fmt.Errorf("validate: %w", err)
+		}
+
+		err := s.store.Create(ctx, token)
+		if errors.Is(err, domain.ErrTokenUsernameTaken) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("create token: %w", err)
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("create token: %w", domain.ErrTokenUsernameTaken)
 }
 
 // configActionForRole maps a token role to the (Config, action) the creator

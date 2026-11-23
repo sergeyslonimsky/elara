@@ -25,7 +25,10 @@ const (
 )
 
 type CreateTokenRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Prefix of the token's username; the server appends "-" and a random
+	// suffix. Lowercase letters, digits, '.', '_' and '-'; must start and end
+	// with a letter or digit.
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Namespaces    []string               `protobuf:"bytes,2,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
 	Permission    v1.PermissionAction    `protobuf:"varint,3,opt,name=permission,proto3,enum=elara.common.v1.PermissionAction" json:"permission,omitempty"`

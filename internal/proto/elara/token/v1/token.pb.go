@@ -24,16 +24,21 @@ const (
 )
 
 type Token struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	IssuedBy      string                 `protobuf:"bytes,3,opt,name=issued_by,json=issuedBy,proto3" json:"issued_by,omitempty"`
-	Namespaces    []string               `protobuf:"bytes,4,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
-	Permission    v1.PermissionAction    `protobuf:"varint,5,opt,name=permission,proto3,enum=elara.common.v1.PermissionAction" json:"permission,omitempty"`
-	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
-	LastUsedAt    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_used_at,json=lastUsedAt,proto3,oneof" json:"last_used_at,omitempty"`
-	LastUsedIp    string                 `protobuf:"bytes,8,opt,name=last_used_ip,json=lastUsedIp,proto3" json:"last_used_ip,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Prefix the issuer chose. Not unique — use username to identify a token.
+	Name       string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	IssuedBy   string                 `protobuf:"bytes,3,opt,name=issued_by,json=issuedBy,proto3" json:"issued_by,omitempty"`
+	Namespaces []string               `protobuf:"bytes,4,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
+	Permission v1.PermissionAction    `protobuf:"varint,5,opt,name=permission,proto3,enum=elara.common.v1.PermissionAction" json:"permission,omitempty"`
+	ExpiresAt  *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3,oneof" json:"expires_at,omitempty"`
+	LastUsedAt *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_used_at,json=lastUsedAt,proto3,oneof" json:"last_used_at,omitempty"`
+	LastUsedIp string                 `protobuf:"bytes,8,opt,name=last_used_ip,json=lastUsedIp,proto3" json:"last_used_ip,omitempty"`
+	CreatedAt  *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// Globally unique, immutable login: name + "-" + server-generated suffix.
+	// etcd clients present it as the user name, with the raw token as the
+	// password (`etcdctl --user <username>:<raw token>`).
+	Username      string `protobuf:"bytes,10,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -131,11 +136,18 @@ func (x *Token) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Token) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
 var File_elara_token_v1_token_proto protoreflect.FileDescriptor
 
 const file_elara_token_v1_token_proto_rawDesc = "" +
 	"\n" +
-	"\x1aelara/token/v1/token.proto\x12\x0eelara.token.v1\x1a elara/common/v1/permission.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xab\x03\n" +
+	"\x1aelara/token/v1/token.proto\x12\x0eelara.token.v1\x1a elara/common/v1/permission.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc7\x03\n" +
 	"\x05Token\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1b\n" +
@@ -153,7 +165,9 @@ const file_elara_token_v1_token_proto_rawDesc = "" +
 	"\flast_used_ip\x18\b \x01(\tR\n" +
 	"lastUsedIp\x129\n" +
 	"\n" +
-	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB\r\n" +
+	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1a\n" +
+	"\busername\x18\n" +
+	" \x01(\tR\busernameB\r\n" +
 	"\v_expires_atB\x0f\n" +
 	"\r_last_used_atB\xc2\x01\n" +
 	"\x12com.elara.token.v1B\n" +

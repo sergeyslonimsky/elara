@@ -13,6 +13,7 @@ type TokenMeta struct {
 	ID         string     `json:"id"`
 	IssuedBy   string     `json:"issued_by"`
 	Name       string     `json:"name"`
+	Username   string     `json:"username,omitempty"`
 	TokenHash  string     `json:"token_hash"`
 	Namespaces []string   `json:"namespaces"`
 	Role       string     `json:"role"`
@@ -30,6 +31,7 @@ func DomainToTokenMeta(t *domain.Token) TokenMeta {
 		ID:         t.ID,
 		IssuedBy:   t.IssuedBy,
 		Name:       t.Name,
+		Username:   t.Username,
 		TokenHash:  t.TokenHash,
 		Namespaces: namespaces,
 		Role:       string(t.Role),
@@ -48,6 +50,7 @@ func TokenMetaToDomain(m TokenMeta) *domain.Token {
 		ID:         m.ID,
 		IssuedBy:   m.IssuedBy,
 		Name:       m.Name,
+		Username:   m.Username,
 		TokenHash:  m.TokenHash,
 		Namespaces: namespaces,
 		Role:       domain.Role(m.Role),
