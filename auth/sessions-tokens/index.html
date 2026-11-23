@@ -2032,6 +2032,12 @@ effect</strong> on that token — tokens must be revoked explicitly via
 <h3 id="token-fields">Token fields</h3>
 <p>Defined in <code>internal/domain/token.go</code>:</p>
 <ul>
+<li><code>Name</code> — the <strong>prefix</strong> the issuer picks: lowercase letters, digits, <code>.</code>,
+  <code>_</code> and <code>-</code>, starting and ending with a letter or digit, at most 48
+  characters. Names may repeat across tokens.</li>
+<li><code>Username</code> — <code>Name</code> + <code>-</code> + a 6-character random suffix the server
+  generates, e.g. <code>billing-ci-k7x2pq</code>. Globally unique and immutable; it is the
+  login an etcd client presents (see below).</li>
 <li><code>Role</code> — either <code>writer</code> or <code>reader</code> <strong>only</strong> (a token can never be <code>admin</code>).</li>
 <li><code>reader</code> → read allowed.</li>
 <li><code>writer</code> → read + write allowed (write implies read).</li>
@@ -2044,23 +2050,81 @@ for namespace <code>prod</code> requires the creator to have write on <code>prod
 request fails with a permission-escalation error.</p>
 <h3 id="issuing-a-token">Issuing a token</h3>
 <p>Via the Web UI (Tokens page) or <code>TokenService.Create</code> on the ConnectRPC API.
-The <strong>raw token string is returned exactly once at creation</strong> (only its SHA-256
-hash is stored) — copy it then; it cannot be retrieved again. Raw tokens are
-prefixed <code>elara_</code>.</p>
+You choose the name prefix; the server appends the random suffix. The response
+carries the <strong>username and the raw token, and the raw token is returned exactly
+once</strong> (only its SHA-256 hash is stored) — copy both then; the token cannot be
+retrieved again. Raw tokens are prefixed <code>elara_</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Why the suffix</p>
+<p>A username has to be unique across all tokens, but users only see the
+tokens in their own namespaces. If the name alone were the login, creating
+<code>ci</code> would fail with "already exists" because of a token the user cannot
+see — revealing that it exists. A server-generated suffix makes collisions
+a non-event, so nothing about invisible tokens leaks.</p>
+</div>
+<p>Tokens created before usernames existed get one on the next start, derived
+from their old name (normalized to the allowed characters, falling back to
+<code>token</code> when nothing usable remains). The assigned username is shown in the
+token list.</p>
 <h3 id="using-a-token-against-the-etcd-grpc-api">Using a token against the etcd gRPC API</h3>
-<p>Send it as gRPC metadata on the <code>:2379</code> connection:</p>
+<p>A token is a <strong>user name + password</strong> pair as far as etcd clients are
+concerned: the username is the user name, the raw token is the password. This
+is etcd's own login flow, so stock tools work unchanged.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">etcdctl</label><label for="__tabbed_1_2">Go (clientv3)</label><label for="__tabbed_1_3">Raw gRPC metadata</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>etcdctl<span class="w"> </span>--endpoints<span class="o">=</span>elara.example.com:2379<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user<span class="w"> </span><span class="s1">'billing-ci-k7x2pq:elara_&lt;rest-of-token&gt;'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>get<span class="w"> </span>/billing/app.yaml
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="nx">cli</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">clientv3</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="nx">clientv3</span><span class="p">.</span><span class="nx">Config</span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Endpoints</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">"elara.example.com:2379"</span><span class="p">},</span>
+<span class="w">    </span><span class="nx">Username</span><span class="p">:</span><span class="w">  </span><span class="s">"billing-ci-k7x2pq"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">Password</span><span class="p">:</span><span class="w">  </span><span class="nx">os</span><span class="p">.</span><span class="nx">Getenv</span><span class="p">(</span><span class="s">"ELARA_TOKEN"</span><span class="p">),</span><span class="w"> </span><span class="c1">// elara_...</span>
+<span class="p">})</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>token: elara_&lt;rest-of-token&gt;
+</code></pre></div>
+<p>or, equivalently, the original form:</p>
 <div class="highlight"><pre><span></span><code>authorization: Bearer elara_&lt;rest-of-token&gt;
 </code></pre></div>
+<p><code>clientv3.Config{Token: "elara_..."}</code> sends the first form without a login
+round-trip.</p>
+</div>
+</div>
+</div>
+<p>How it works on the wire: the client calls <code>Auth.Authenticate(name,
+password)</code>; Elara checks the pair and returns the raw token as the etcd auth
+token, which the client then attaches to every call as <code>token</code> metadata.
+Elara keeps no login state — the token is re-validated on every RPC, so after
+a revoke every new call fails immediately.</p>
+<div class="admonition warning">
+<p class="admonition-title">Revocation and open Watch streams</p>
+<p>A stream is authenticated once, when it opens. A Watch stream that was
+already open when its token was revoked keeps delivering events — and
+accepts new watches on that stream — until it is closed. Unary calls and
+new streams are refused at once. To cut a client off completely, revoke
+the token and restart the client (or drop its connections). A wrong user name, wrong password and</p>
+</div>
+<p>expired token all fail identically with
+<code>etcdserver: authentication failed, invalid user ID or password</code>.</p>
 <p>The gRPC token interceptor (<code>internal/handler/etcdv3/interceptor/auth.go</code>)
-hashes the presented token, looks it up, rejects unknown (<code>invalid token</code>) or
-expired (<code>token expired</code>) tokens, records last-used IP/time, and injects the
-token's namespace/role claims. Every KV and Watch RPC is then checked against
-those claims: reads need the namespace in scope; writes additionally need
-<code>writer</code> role; scan-all watches need a <code>*</code> (wildcard) token.</p>
-<p>With an etcd client library, set the metadata credential per your library's API
-(e.g. a per-RPC credential that emits the <code>authorization</code> header). Example with
-<code>etcdctl</code>-style usage is client-specific; the wire requirement is simply the
-<code>authorization: Bearer elara_…</code> metadata pair above.</p>
+hashes the presented token, looks it up, rejects unknown or expired tokens with
+<code>etcdserver: invalid auth token</code> (<code>Unauthenticated</code>), records last-used
+IP/time, and injects the token's namespace/role claims. Every KV and Watch RPC
+is then checked against those claims: reads need the namespace in scope;
+writes additionally need <code>writer</code> role; scan-all watches need a <code>*</code> (wildcard)
+token.</p>
+<div class="admonition warning">
+<p class="admonition-title">Use TLS</p>
+<p>The password is the token itself. Over a plaintext connection it is as
+exposed as the <code>authorization</code> header always was — terminate TLS in front
+of <code>:2379</code> anywhere the network isn't trusted.</p>
+</div>
 <p>This requires <code>client.auth.enabled=true</code> — see <a href="../client-auth/">Client Auth</a>.</p>
 
 

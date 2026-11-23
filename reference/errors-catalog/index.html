@@ -1851,8 +1851,13 @@ produced (noted below).</p>
 </tr>
 <tr>
 <td><code>ErrInvalidToken</code></td>
-<td><code>Unauthenticated</code></td>
-<td>Service token not found (etcd gRPC API).</td>
+<td><code>Unauthenticated</code> / <code>InvalidArgument</code></td>
+<td>Service token unknown, expired or wrong (etcd gRPC API). On a call: <code>Unauthenticated</code> <code>etcdserver: invalid auth token</code>; on <code>Auth.Authenticate</code>: <code>InvalidArgument</code> <code>etcdserver: authentication failed, invalid user ID or password</code>.</td>
+</tr>
+<tr>
+<td><code>ErrTokenUsernameTaken</code></td>
+<td>—</td>
+<td>Never reaches a client: a username collision on create is resolved by regenerating the random suffix.</td>
 </tr>
 <tr>
 <td><code>ErrUserDeactivated</code></td>

@@ -2055,7 +2055,12 @@ underlying domain fields this maps to.</p>
 </thead>
 <tbody>
 <tr>
-<td><strong>Auth API</strong> (etcd's own <code>AuthEnable</code>/<code>UserAdd</code>/<code>RoleGrantPermission</code>/…)</td>
+<td><strong>Auth <code>Authenticate</code></strong></td>
+<td>✅ Supported</td>
+<td>Log in with a token's username as the user name and the raw token as the password (<code>etcdctl --user</code>, <code>clientv3.Config{Username, Password}</code>). The returned auth token is sent as <code>token</code> metadata — see <a href="../../auth/sessions-tokens/#using-a-token-against-the-etcd-grpc-api">Sessions &amp; Tokens</a>.</td>
+</tr>
+<tr>
+<td><strong>Auth management</strong> (etcd's own <code>AuthEnable</code>/<code>UserAdd</code>/<code>RoleGrantPermission</code>/…)</td>
 <td>❌ Not applicable</td>
 <td>Elara has its own token-based auth for this port — see <a href="../../auth/client-auth/">Client Auth (etcd)</a> — not etcd's built-in RBAC. Don't confuse the two.</td>
 </tr>
@@ -2126,12 +2131,18 @@ through the ConnectRPC <code>ConfigService</code>:</p>
 </ul>
 <p>Schema validation is the one management-path rule that <em>does</em> apply — see the
 <code>Put</code> row above.</p>
-<p>Requests are authenticated via a Bearer service token in gRPC metadata (or
-unauthenticated if <code>client.auth.enabled=false</code>) — see
+<p>Requests are authenticated with a service token — either through etcd's own
+login (<code>Auth.Authenticate</code> with the token's username and the raw token, then
+<code>token</code> metadata), or as <code>authorization: Bearer</code> metadata (or unauthenticated
+if <code>client.auth.enabled=false</code>) — see
 <a href="../../auth/sessions-tokens/#tokens-service-credentials-for-etcd-clients">Sessions &amp; Tokens → Tokens</a>.
-Unlike the ConnectRPC API's structured error codes, the etcd wire protocol
-returns plain gRPC status codes: <code>Unauthenticated</code> for a missing/invalid/expired
-token, <code>PermissionDenied</code> for a namespace or role check failure,
+Authentication errors use etcd's own messages so stock clients react to them
+correctly: a failed login is <code>InvalidArgument</code> <code>etcdserver: authentication
+failed, invalid user ID or password</code>; an invalid or expired token on a call is
+<code>Unauthenticated</code> <code>etcdserver: invalid auth token</code> (which makes <code>clientv3</code>
+log in again on its own); missing credentials are <code>Unauthenticated</code>. Beyond
+authentication, the etcd wire protocol returns plain gRPC status codes:
+<code>PermissionDenied</code> for a namespace or role check failure,
 <code>FailedPrecondition</code> for a locked config/namespace, and <code>InvalidArgument</code> for a
 value that fails the namespace's attached JSON Schema. See
 <a href="../errors-catalog/">Reference → Errors catalog</a> for the full domain-error

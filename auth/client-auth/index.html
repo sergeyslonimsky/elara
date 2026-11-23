@@ -1661,9 +1661,15 @@ trust.</p>
 <p>When disabled, the interceptor injects wildcard admin-equivalent claims for
 every call (nil claims are treated as "auth disabled → always allowed" in the
 per-namespace checks), which is why unauthenticated clients get full access.</p>
-<p>When enabled, clients authenticate with a <strong>token</strong> — see
-<a href="../sessions-tokens/#tokens-service-credentials-for-etcd-clients">Sessions &amp; Tokens</a>
-for how to issue one and use it.</p>
+<p>When disabled, <code>Auth.Authenticate</code> answers <code>etcdserver: authentication is not
+enabled</code>, which etcd clients treat as "continue without a token" — a client
+configured with a user name and password still connects.</p>
+<p>When enabled, clients authenticate with a <strong>token</strong>, presented the way any
+etcd client presents credentials — user name and password:</p>
+<div class="highlight"><pre><span></span><code>etcdctl<span class="w"> </span>--user<span class="w"> </span><span class="s1">'&lt;token username&gt;:&lt;raw token&gt;'</span><span class="w"> </span>get<span class="w"> </span>/my-namespace/app.yaml
+</code></pre></div>
+<p>See <a href="../sessions-tokens/#tokens-service-credentials-for-etcd-clients">Sessions &amp; Tokens</a>
+for how to issue a token and every way to use it.</p>
 
 
 
