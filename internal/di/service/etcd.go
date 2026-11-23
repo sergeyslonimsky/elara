@@ -6,10 +6,12 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/sergeyslonimsky/elara/internal/handler/etcdv3"
+	etcdinterceptor "github.com/sergeyslonimsky/elara/internal/handler/etcdv3/interceptor"
 	grpctransport "github.com/sergeyslonimsky/elara/internal/transport/grpc"
 )
 
 type EtcdHandlers struct {
+	Auth        *etcdv3.AuthServer
 	KV          *etcdv3.KVServer
 	Watch       *etcdv3.WatchServer
 	Maintenance *etcdv3.MaintenanceServer
@@ -21,7 +23,10 @@ type EtcdHandlers struct {
 // services.Config (usecase/config) rather than adapters.ConfigRepo directly
 // — see plans/etcd-usecase-decoupling/plan.md Ш1. Watch/Maintenance/Cluster
 // are unaffected by that plan and still talk to the repo directly.
-func NewEtcdHandlers(adapters *Adapters, services *Services) *EtcdHandlers {
+//
+// authEnabled mirrors client.auth.enabled: when off, Auth.Authenticate answers
+// "auth not enabled" so credential-configured clients still connect.
+func NewEtcdHandlers(adapters *Adapters, services *Services, authEnabled bool) *EtcdHandlers {
 	// WatchServer integrates with the connected-clients monitor: each create/cancel
 	// adjusts the active-watches counter on the originating connection. The conn
 	// ID is stashed by the gRPC stats.Handler at TagConn time.
@@ -29,6 +34,7 @@ func NewEtcdHandlers(adapters *Adapters, services *Services) *EtcdHandlers {
 		WithTracker(adapters.ClientRegistry, grpctransport.ConnIDFromContext)
 
 	return &EtcdHandlers{
+		Auth:        etcdv3.NewAuthServer(services.Token, authEnabled),
 		KV:          etcdv3.NewKVServer(services.Config),
 		Watch:       watchServer,
 		Maintenance: etcdv3.NewMaintenanceServer(adapters.ConfigRepo),
@@ -37,9 +43,25 @@ func NewEtcdHandlers(adapters *Adapters, services *Services) *EtcdHandlers {
 	}
 }
 
+// EtcdAuthOptions returns the gRPC server options that install the etcd
+// token interceptor. With skipPermissions the interceptor injects bypass
+// claims instead of rejecting unauthenticated calls.
+func EtcdAuthOptions(adapters *Adapters, skipPermissions bool) []coregrpc.Option {
+	ti := etcdinterceptor.NewTokenInterceptor(
+		adapters.AuthTokens,
+		etcdinterceptor.WithTokenSkipPermissions(skipPermissions),
+	)
+
+	return []coregrpc.Option{
+		coregrpc.WithUnaryInterceptor(ti.Unary()),
+		coregrpc.WithStreamInterceptor(ti.Stream()),
+	}
+}
+
 // EtcdRoutes registers all etcd v3 gRPC services on the given gRPC server.
 func EtcdRoutes(server *coregrpc.Server, handlers *EtcdHandlers) {
 	server.Mount(func(gs *grpc.Server) {
+		etcdserverpb.RegisterAuthServer(gs, handlers.Auth)
 		etcdserverpb.RegisterKVServer(gs, handlers.KV)
 		etcdserverpb.RegisterWatchServer(gs, handlers.Watch)
 		etcdserverpb.RegisterMaintenanceServer(gs, handlers.Maintenance)

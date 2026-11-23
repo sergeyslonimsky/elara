@@ -26,14 +26,44 @@ import (
 func (s *Suite) StartEtcd(t *testing.T) *clientv3.Client {
 	t.Helper()
 
-	handlers := service.NewEtcdHandlers(s.Adapters, s.Services)
+	addr := s.startEtcdServer(t, false)
+
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{addr},
+		DialTimeout: 5 * time.Second,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = cli.Close() })
+
+	return cli
+}
+
+// StartEtcdWithAuth boots the same server with client auth enabled — the
+// token interceptor installed and Auth.Authenticate live — and returns its
+// address, so the test builds clients with whatever credentials it checks.
+func (s *Suite) StartEtcdWithAuth(t *testing.T) string {
+	t.Helper()
+
+	return s.startEtcdServer(t, true)
+}
+
+func (s *Suite) startEtcdServer(t *testing.T, authEnabled bool) string {
+	t.Helper()
+
+	handlers := service.NewEtcdHandlers(s.Adapters, s.Services, authEnabled)
 
 	ctx, cancel := context.WithCancel(t.Context())
 
 	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 
-	grpcServer := coregrpc.NewServer(coregrpc.Config{}, coregrpc.WithListener(listener))
+	opts := []coregrpc.Option{coregrpc.WithListener(listener)}
+
+	if authEnabled {
+		opts = append(opts, service.EtcdAuthOptions(s.Adapters, false)...)
+	}
+
+	grpcServer := coregrpc.NewServer(coregrpc.Config{}, opts...)
 	service.EtcdRoutes(grpcServer, handlers)
 
 	done := make(chan struct{})
@@ -47,14 +77,7 @@ func (s *Suite) StartEtcd(t *testing.T) *clientv3.Client {
 		<-done
 	})
 
-	cli, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{listener.Addr().String()},
-		DialTimeout: 5 * time.Second,
-	})
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = cli.Close() })
-
-	return cli
+	return listener.Addr().String()
 }
 
 // StartLeaseExpirer runs the lease expiry sweep for the duration of the test.

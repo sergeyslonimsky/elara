@@ -52,7 +52,7 @@ func NewServiceManager(
 	}
 
 	handlers := NewV2Handlers(services, sessionSvc, cfg)
-	etcdHandlers := NewEtcdHandlers(adapters, services)
+	etcdHandlers := NewEtcdHandlers(adapters, services, cfg.Client.Auth.Enabled)
 
 	mgrs := &Managers{
 		Adapters:     adapters,

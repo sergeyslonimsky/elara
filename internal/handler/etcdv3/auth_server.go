@@ -1,5 +1,7 @@
 package etcdv3
 
+//go:generate mockgen -destination=mocks/auth_server_mock.go -package=etcdv3_mock -source=auth_server.go
+
 import (
 	"context"
 	"errors"
