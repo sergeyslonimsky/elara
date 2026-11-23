@@ -159,8 +159,15 @@ is etcd's own login flow, so stock tools work unchanged.
 How it works on the wire: the client calls `Auth.Authenticate(name,
 password)`; Elara checks the pair and returns the raw token as the etcd auth
 token, which the client then attaches to every call as `token` metadata.
-Elara keeps no login state — the token is re-validated on every request, so
-revoking it takes effect immediately. A wrong user name, wrong password and
+Elara keeps no login state — the token is re-validated on every RPC, so after
+a revoke every new call fails immediately.
+
+!!! warning "Revocation and open Watch streams"
+    A stream is authenticated once, when it opens. A Watch stream that was
+    already open when its token was revoked keeps delivering events — and
+    accepts new watches on that stream — until it is closed. Unary calls and
+    new streams are refused at once. To cut a client off completely, revoke
+    the token and restart the client (or drop its connections). A wrong user name, wrong password and
 expired token all fail identically with
 `etcdserver: authentication failed, invalid user ID or password`.
 
