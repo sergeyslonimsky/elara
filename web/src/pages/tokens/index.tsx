@@ -12,7 +12,7 @@ import { useTableState } from "@/hooks/use-table-state";
 import { CreateTokenDialog } from "./components/create-token-dialog";
 import { TokenTable } from "./components/token-table";
 
-const SORTABLE_FIELDS = new Set(["name", "last_used", "created"]);
+const SORTABLE_FIELDS = new Set(["username", "name", "last_used", "created"]);
 
 function sortingToServerParams(sorting: SortingState) {
 	if (sorting.length === 0) {
