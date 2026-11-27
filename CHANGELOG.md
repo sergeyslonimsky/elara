@@ -7,6 +7,14 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 Entries are generated from [Conventional Commits](https://www.conventionalcommits.org/)
 by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
+## [0.8.1](https://github.com/sergeyslonimsky/elara/releases/tag/v0.8.1) — 2026-11-27
+
+### Bug fixes
+
+- **helm:** Advertise the HTTP port as kubernetes.io/h2c ([3456e28](https://github.com/sergeyslonimsky/elara/commit/3456e28bde7e0a89b97eadb141adbbe36ccda623))
+
+**Full diff:** [v0.8.0...v0.8.1](https://github.com/sergeyslonimsky/elara/compare/v0.8.0...v0.8.1)
+
 ## [0.8.0](https://github.com/sergeyslonimsky/elara/releases/tag/v0.8.0) — 2026-11-27
 
 ### Features
