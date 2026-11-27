@@ -273,6 +273,10 @@ func frontendServerOptions(
 	opts := []corehttp.Option{
 		corehttp.WithRecovery(),
 		corehttp.WithHealthcheckFrom(a),
+		// h2c: inside a cluster the hop to the pod is cleartext, and the Helm
+		// chart advertises appProtocol: http2 — meshes and gateways then
+		// speak HTTP/2 with prior knowledge. HTTP/1.1 stays on for probes.
+		corehttp.WithUnencryptedHTTP2(),
 	}
 
 	if cfg.Tracing.Enabled {
