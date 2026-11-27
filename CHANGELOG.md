@@ -7,6 +7,14 @@ the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 Entries are generated from [Conventional Commits](https://www.conventionalcommits.org/)
 by [git-cliff](https://git-cliff.org) — see `cliff.toml`.
 
+## [0.8.0](https://github.com/sergeyslonimsky/elara/releases/tag/v0.8.0) — 2026-11-27
+
+### Features
+
+- **server:** Serve HTTP/2 over cleartext (h2c) on the HTTP port ([50e4167](https://github.com/sergeyslonimsky/elara/commit/50e416741a06dd89d32d982b5dc662d7a01e0e68))
+
+**Full diff:** [v0.7.0...v0.8.0](https://github.com/sergeyslonimsky/elara/compare/v0.7.0...v0.8.0)
+
 ## [0.7.0](https://github.com/sergeyslonimsky/elara/releases/tag/v0.7.0) — 2026-11-23
 
 ### Features
