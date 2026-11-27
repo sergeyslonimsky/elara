@@ -26,7 +26,7 @@ spec:
       port: {{ .Values.service.ports.http }}
       targetPort: http
       protocol: TCP
-      appProtocol: http2
+      appProtocol: kubernetes.io/h2c
     - name: grpc
       port: {{ .Values.service.ports.grpc }}
       targetPort: grpc
